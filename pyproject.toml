@@ -1,0 +1,35 @@
+[project]
+name = "calibrated-explanations"
+version = "0.0.1"
+authors = [
+  { name="Helena Löfström", email="helena.lofstrom@ju.se" },
+]
+description = "Extract calibrated explanations from machine learning models."
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+  'numpy',
+  'pandas',
+  'scikit-learn',
+  'matplotlib',
+  'lime',
+  'shap',
+  'crepes',
+  'typing',
+  'tqdm',
+  'random',
+  'copy',
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage"    = "https://github.com/Moffran/calibrated_explanations"
+"Bug Tracker" = "https://github.com/Moffran/calibrated_explanations/issues"
+
+[tool.setuptools.packages.find]
+where = ["ce"]
