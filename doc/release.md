@@ -1,7 +1,7 @@
 Releasing calibrated-explanations on PyPI
 =========================================
 
-This is a guide on how to release calibrated-explanations on PyPI.
+This is a guide on how to release calibrated-explanations on [PyPI].
 
 
 ## Pre-requisites (once)
@@ -12,8 +12,8 @@ First make sure to understand the contents of [official Python packaging guide].
 
 Make sure you have the build and twine Python packages installed.
 Use pip or your package manager of choice to install them.
-Make sure you have a test.pypi.org and pypi.org accounts.
-Set-up your .pypirc as instructed when creating a token:
+Make sure you have a [test.pypi.org] and [pypi.org] accounts.
+Set-up your `~/.pypirc` as instructed when creating a token:
 
 ```ini
 [testpypi]
@@ -32,7 +32,7 @@ Set-up your .pypirc as instructed when creating a token:
 
 2. Make sure the build is green on the `main` branch
 
-3. Bump the version number on pyproject.toml.
+3. Bump the version number on `pyproject.toml`.
 
 4. In the project root, clear up your `dist/` directory.
 
@@ -101,3 +101,6 @@ but would only be worth it if we are releasing very often.
 So for now, we just follow the guide.
 
 [semantic version]: https://semver.org/
+[test.pypi.org]: https://test.pypi.org/
+[pypi.org]: https://pypi.org/
+[PyPI]: https://pypi.org/
