@@ -73,6 +73,7 @@ Set-up your `~/.pypirc` as instructed when creating a token:
 9. Commit and tag a new [semantic version] on git.
 
 	```bash
+	git add .
 	git commit -m 'calibrated-explanations vX.Y.Z'
 	git tag vX.Y.Z
 	git push
