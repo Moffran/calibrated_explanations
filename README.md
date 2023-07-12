@@ -33,7 +33,7 @@ Getting started
 ---------------
 
 ```python
->>> import ce
+>>> import calibrated_explanations
 ... TODO: write me...
 ```
 

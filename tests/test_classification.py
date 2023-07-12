@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 from lime.discretize import EntropyDiscretizer
 # from shap import Explainer
 
-from ce import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer
+from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer
 
 model = 'RF'
 def load_binary_dataset():

@@ -65,7 +65,7 @@ Set-up your .pypirc as instructed when creating a token:
 	(venv) $ python3 -m pip install ipython  # TODO: move to requirements!
 	(venv) $ python3 -m pip install -i https://test.pypi.org/simple/ --no-deps calibrated-explanations
 	(venv) $ python3
-	>>> import ce
+	>>> import calibrated_explanations
 	>>> ...
 
 9. Commit and tag a new [semantic version] on git.
@@ -90,7 +90,7 @@ Set-up your .pypirc as instructed when creating a token:
 12. test installation
 
 	$ pip install calibrated-explanations
-	>>> import ce
+	>>> import calibrated_explanations
 
 This could be automated through CI,
 but would only be worth it if we are releasing very often.

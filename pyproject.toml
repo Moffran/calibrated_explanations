@@ -32,4 +32,4 @@ classifiers = [
 "Bug Tracker" = "https://github.com/Moffran/calibrated_explanations/issues"
 
 [tool.setuptools.packages.find]
-where = ["ce"]
+where = ["calibrated_explanations"]
