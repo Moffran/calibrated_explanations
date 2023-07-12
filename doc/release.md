@@ -87,7 +87,7 @@ Set-up your .pypirc as instructed when creating a token:
 
 11. check that the project page was rendered correctly in:
 
-	https://test.pypi.org/project/calibrated-explanations/
+	https://pypi.org/project/calibrated-explanations/
 
 12. test installation
 
