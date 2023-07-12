@@ -59,6 +59,7 @@ Set-up your .pypirc as instructed when creating a token:
 
 8. Test installation of the package in a virtual environment:
 
+	```bash
 	$ python -m venv venv
 	$ source venv/bin/activate
 	(venv) $ python3 -m pip install -r requirements.txt
@@ -67,6 +68,7 @@ Set-up your .pypirc as instructed when creating a token:
 	(venv) $ python3
 	>>> import calibrated_explanations
 	>>> ...
+	```
 
 9. Commit and tag a new [semantic version] on git.
 
@@ -89,8 +91,10 @@ Set-up your .pypirc as instructed when creating a token:
 
 12. test installation
 
+	```bash
 	$ pip install calibrated-explanations
 	>>> import calibrated_explanations
+	```
 
 This could be automated through CI,
 but would only be worth it if we are releasing very often.
