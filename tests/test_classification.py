@@ -72,7 +72,7 @@ def load_multiclass_dataset():
             if len(mapping) > 5:
                 counts = df[col].value_counts().sort_values(ascending=False)
                 id = 0
-                for key, count in counts.iteritems():
+                for key, count in counts.items():
                     if count > 5:
                         id += 1
                         continue
@@ -120,8 +120,7 @@ class TestCalibratedExplainer(unittest.TestCase):
                 # assert that instance values are covered by the rule conditions
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         return True
-    # def test_dummy(self):
-    #     assert True
+
     def test_binary_ce(self):
         trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, feature_names = load_binary_dataset()
         model, model_name = get_classification_model('RF', trainX, trainY)
@@ -160,7 +159,6 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()    
 
-    # @unittest.skip('Test failing since 2023-07-07')
     def test_multiclass_ce(self):
         trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, feature_names = load_multiclass_dataset()
         model, model_name = get_classification_model('RF', trainX, trainY)
