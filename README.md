@@ -55,7 +55,7 @@ Further reading
 The calibrated explanations library is based on the paper
 "Calibrated Explanations for Black-Box Predictions"
 by
-Helena Löfström,
+[Helena Löfström](https://github.com/Moffran),
 [Tuwe Löfström](https://github.com/tuvelofstrom),
 Ulf Johansson and
 Cecilia Sönströd.
