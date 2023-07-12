@@ -84,6 +84,8 @@ class CalibratedExplanation:
         if save_ext is not None and len(save_ext) == 0:
             return
         import os
+        if not os.path.isdir('plots'):
+            os.mkdir('plots')    
         if not os.path.isdir(path):
             os.mkdir(path)
     
