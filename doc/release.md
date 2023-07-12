@@ -23,32 +23,41 @@ Set-up your .pypirc as instructed when creating a token:
 
 ## Release steps (every time)
 
-1. Bump the version number on pyproject.toml.
+1. Checkout the main branch.
 
-2. In the project root, clear up your `dist/` directory.
+	```bash
+	$ git checkout main
+	$ git pull
+	```
+
+2. Make sure the build is green on the `main` branch
+
+3. Bump the version number on pyproject.toml.
+
+4. In the project root, clear up your `dist/` directory.
 
 	```bash
 	$ rm -r dist/
 	```
 
-3. Build a `dist/` of the latest version.
+5. Build a `dist/` of the latest version.
 
 	```bash
 	python -m build
 	```
 
-4. Upload your package using twine.
+6. Upload your package using twine.
 
 	```bash
 	twine upload --repository testpypi dist/*
 	```
 
-5. Check that the package page was rendered correctly
+7. Check that the package page was rendered correctly
    using the link reported by twine, in the form:
 
 	https://test.pypi.org/project/calibrated-explanations/
 
-6. Test installation of the package in a virtual environment:
+8. Test installation of the package in a virtual environment:
 
 	$ python -m venv venv
 	$ source venv/bin/activate
@@ -59,17 +68,26 @@ Set-up your .pypirc as instructed when creating a token:
 	>>> import ce
 	>>> ...
 
-7. Upload your package to the real PyPI using twine:
+9. Commit and tag a new [semantic version] on git.
+
+	```bash
+	git commit -m 'calibrated-explanations vX.Y.Z'
+	git tag vX.Y.Z
+	git push
+	git push --tags
+	```
+
+10. Upload your package to the real PyPI using twine:
 
 	```bash
 	twine upload pypi dist/*
 	```
 
-8. check that the project page was rendered correctly in:
+11. check that the project page was rendered correctly in:
 
 	https://test.pypi.org/project/calibrated-explanations/
 
-9. test installation
+12. test installation
 
 	$ pip install calibrated-explanations
 	>>> import ce
@@ -77,3 +95,5 @@ Set-up your .pypirc as instructed when creating a token:
 This could be automated through CI,
 but would only be worth it if we are releasing very often.
 So for now, we just follow the guide.
+
+[semantic version]: https://semver.org/

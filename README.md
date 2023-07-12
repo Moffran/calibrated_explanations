@@ -40,6 +40,17 @@ Getting started
 ```
 
 
+Development
+-----------
+
+This project has tests that can be executed using `pytest`.
+Just run the following command from the project root.
+
+```bash
+pytest
+```
+
+
 Further reading
 ---------------
 
