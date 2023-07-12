@@ -13,10 +13,8 @@ Install
 
 First, you need a Python environment installed with pip.
 
-__(Does not work yet!)__
 Calibrated Explanations can be installed from PyPI:
 
-	# Does not work yet!
 	pip install calibrated-explanations
 
 The dependencies are:
