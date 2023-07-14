@@ -8,17 +8,17 @@ description = "Extract calibrated explanations from machine learning models."
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
+  'copy',
+  'crepes',
+  'lime',
+  'matplotlib',
   'numpy',
   'pandas',
-  'scikit-learn',
-  'matplotlib',
-  'lime',
-  'shap',
-  'crepes',
-  'typing',
-  'tqdm',
   'random',
-  'copy',
+  'scikit-learn',
+  'shap',
+  'tqdm',
+  'typing',
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
