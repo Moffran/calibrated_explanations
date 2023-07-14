@@ -1,6 +1,7 @@
 Calibrated Explanations
 =======================
 
+[![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
 [![Build Status for Calibrated Explanations][build-status]][build-log]
 
 Calibrated Explanations is a Python library
@@ -64,3 +65,5 @@ If you would like to cite this work, please cite the above paper.
 
 [build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/ce.yml
 [build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/ce.yml/badge.svg
+[pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
+[calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations
