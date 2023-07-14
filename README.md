@@ -63,7 +63,7 @@ Cecilia Sönströd.
 
 If you would like to cite this work, please cite the above paper.
 
-[build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/ce.yml
-[build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/ce.yml/badge.svg
+[build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
+[build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations
