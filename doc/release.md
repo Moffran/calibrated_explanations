@@ -63,7 +63,6 @@ Set-up your `~/.pypirc` as instructed when creating a token:
 	$ python -m venv venv
 	$ source venv/bin/activate
 	(venv) $ python3 -m pip install -r requirements.txt
-	(venv) $ python3 -m pip install ipython  # TODO: move to requirements!
 	(venv) $ python3 -m pip install -i https://test.pypi.org/simple/ --no-deps calibrated-explanations
 	(venv) $ python3
 	>>> import calibrated_explanations
