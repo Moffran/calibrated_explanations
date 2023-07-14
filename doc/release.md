@@ -69,6 +69,8 @@ Set-up your `~/.pypirc` as instructed when creating a token:
 	>>> ...
 	```
 
+	Use `pip install --upgrade` if needed to force installation of the latest version.
+
 9. Commit and tag a new [semantic version] on git.
 
 	```bash
@@ -92,9 +94,13 @@ Set-up your `~/.pypirc` as instructed when creating a token:
 12. test installation
 
 	```bash
-	$ pip install calibrated-explanations
+	$ source venv/bin/activate
+	$ python3 -m pip install calibrated-explanations
+	$ python3
 	>>> import calibrated_explanations
 	```
+
+	Use `pip install --upgrade` if needed to force installation of the latest version.
 
 This could be automated through CI,
 but would only be worth it if we are releasing very often.
