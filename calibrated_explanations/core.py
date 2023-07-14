@@ -108,11 +108,11 @@ class CalibratedExplainer:
         """
         self.__initialized = False
         if isinstance(calX, pd.DataFrame):
-            calX = calX.values
+            self.calX = calX.values
         else: 
             self.calX = calX
         if isinstance(calY, pd.DataFrame):
-            calY = calY.values
+            self.calY = calY.values
         else:
             self.calY = calY
 
