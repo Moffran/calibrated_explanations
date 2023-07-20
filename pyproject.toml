@@ -1,8 +1,13 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "calibrated-explanations"
-version = "0.0.5"
+name = "calibrated_explanations"
+version = "0.0.6a0"
 authors = [
   { name="Helena Löfström", email="helena.lofstrom@ju.se" },
+  { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },
 ]
 description = "Extract calibrated explanations from machine learning models."
 readme = "README.md"
@@ -30,4 +35,4 @@ classifiers = [
 "Bug Tracker" = "https://github.com/Moffran/calibrated_explanations/issues"
 
 [tool.setuptools.packages.find]
-where = ["calibrated_explanations"]
+where = ["src"]

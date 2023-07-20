@@ -6,7 +6,6 @@ dump/
 pickle/
 plots/
 results/
-JMLR_experiments.ipynb
 
 
 # Byte-compiled / optimized / DLL files
