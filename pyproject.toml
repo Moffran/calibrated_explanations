@@ -4,11 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrated_explanations"
-<<<<<<< HEAD
-version = "0.0.6a0"
-=======
-version = "0.0.5a"
->>>>>>> 99b0e7da6944b372347bf682151d5cfd80f69f2d
+version = "0.0.6"
 authors = [
   { name="Helena Löfström", email="helena.lofstrom@ju.se" },
   { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },
