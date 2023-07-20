@@ -1,6 +1,6 @@
 [project]
-name = "calibrated-explanations"
-version = "0.0.5"
+name = "calibrated_explanations"
+version = "0.0.5a"
 authors = [
   { name="Helena Löfström", email="helena.lofstrom@ju.se" },
 ]
