@@ -7,7 +7,7 @@ Calibrated Explanations
 Calibrated Explanations is a Python library for the Calibrated Explanations method, initially developed for classification but is now extended for regression.
 The proposed method is based on Venn-Abers (classification) and Conformal Predictive Systems (regression) and has the following characteristics:
 * Fast, reliable, stable and robust feature importance explanations.
-* Calibration of the underlying model to ensure that probability estimates are closer to reality (classification).
+* Calibration of the underlying model to ensure that predictions reflect reality.
 * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
 * Rules with straightforward interpretation in relation to the feature weights.
 * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions achieved.
