@@ -4,10 +4,15 @@ Calibrated Explanations
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
 [![Build Status for Calibrated Explanations][build-status]][build-log]
 
-Calibrated Explanations is a Python library
-that is able to explain predictions of a black-box model
-using Venn Abers predictors (classification)
-or conformal predictive systems (regression) and perturbations.
+Calibrated Explanations is a Python library for the Calibrated Explanations method, initially developed for classification but is now extended for regression.
+The proposed method is based on Venn-Abers (classification) and Conformal Predictive Systems (regression) and has the following characteristics:
+* Fast, reliable, stable and robust feature importance explanations.
+* Calibration of the underlying model to ensure that probability estimates are closer to reality (classification).
+* Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
+* Rules with straightforward interpretation in relation to the feature weights.
+* Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions achieved.
+* Conjunctional rules conveying joint contribution between features.
+
 
 Install
 -------
@@ -54,7 +59,7 @@ Further reading
 ---------------
 
 The calibrated explanations library is based on the paper
-"Calibrated Explanations for Black-Box Predictions"
+["Calibrated Explanations: with Uncertainty Information and Counterfactuals"](https://arxiv.org/abs/2305.02305)
 by
 [Helena Löfström](https://github.com/Moffran),
 [Tuwe Löfström](https://github.com/tuvelofstrom),
