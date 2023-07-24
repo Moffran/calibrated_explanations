@@ -32,7 +32,6 @@ The dependencies are:
 * [pandas](https://pandas.pydata.org/)
 * [scikit-learn](https://scikit-learn.org/)
 * [SHAP](https://pypi.org/project/shap/)
-* [tqdm](https://tqdm.github.io/)
 
 
 Getting started

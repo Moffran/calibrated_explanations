@@ -8,14 +8,11 @@ Calibrated explanations are a way to explain the predictions of a black-box mode
 using Venn Abers predictors (classification) or conformal predictive systems (regression) and perturbations.
 '''
 
-import inspect
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Union, Tuple, Dict, Callable, Any
 import sklearn.neighbors as nn
 import copy
-from tqdm import tqdm
-import random
 import crepes
 
 from lime.lime_tabular import LimeTabularExplainer
@@ -329,7 +326,7 @@ class CalibratedExplainer:
         prediction =  {'predict':[],'low':[],'high':[], 'classes':[]}
         binned_predict =  {'predict':[],'low':[],'high':[],'current_bin':[],'rule_values':[]}
         
-        for i,x in tqdm(enumerate(testX)) if self.verbose else enumerate(testX):#
+        for i,x in enumerate(testX):
             if y is not None and not np.isscalar(explanation.y):
                 y = float(explanation.y[i])
             predict, low, high, predicted_class = self.predict(x.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles)
@@ -508,7 +505,7 @@ class CalibratedExplainer:
     
     def set_random_state(self, random_state: int) -> None:
         self.random_state = random_state        
-        random.seed(self.random_state)
+        np.random.seed(self.random_state)
     
     
     
@@ -705,51 +702,3 @@ class CalibratedExplainer:
             self.shap_exp = self.shap(self.calX[0,:].reshape(1,-1)) if num_test is None else self.shap(self.calX[:num_test,:]) 
             self.is_SHAP_enabled(True)
         return self.shap, self.shap_exp
-
-
-# class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
-#     '''
-#     Wrapper for LimeTabularExplainer to use calibrated explainer
-#     '''
-#     def __init__(self,
-#                  training_data,
-#                  mode="classification",
-#                  training_labels=None,
-#                  feature_names=None,
-#                  categorical_features=None,
-#                  discretizer='binaryEntropy',
-#                  **kwargs):
-#         self.calibrated_explainer = None
-#         self.training_data = training_data
-#         self.training_labels = training_labels
-#         self.discretizer = discretizer
-#         self.categorical_features = categorical_features
-#         self.feature_names = feature_names
-#         assert training_labels is not None, "Calibrated Explanations requires training labels"
-
-
-
-#     def explain_instance(self, data_row, classifier, **kwargs):
-#         if self.calibrated_explainer is None:
-#             assert 'predict_proba' in dir(classifier), "The classifier must have a predict_proba method."
-#             self.calibrated_explainer = CalibratedExplainer(classifier, self.training_data, self.training_labels, self.feature_names, self.discretizer, self.categorical_features,)
-#             self.discretizer = self.calibrated_explainer.discretizer
-#         return self.calibrated_explainer(data_row).as_lime()[0]
-    
-    
-    
-# class CalibratedAsShapExplainer(Explainer):
-#     '''
-#     Wrapper for the CalibratedExplainer to be used as a shap explainer.
-#     The masker must contain a data and a target field for the calibration set.
-#     The model must have a predict_proba method.
-#     '''
-#     def __init__(self, model, masker, feature_names=None, **kwargs):
-#         assert ['data','target'] in dir(masker), "The masker must contain a data and a target field for the calibration set."
-#         assert 'predict_proba' in dir(model), "The model must have a predict_proba method."
-#         self.calibrated_explainer = CalibratedExplainer(model, masker.data, masker.labels, feature_names)
-
-
-
-#     def __call__(self, *args, **kwargs):
-#         return self.calibrated_explainer(*args, **kwargs).as_shap()

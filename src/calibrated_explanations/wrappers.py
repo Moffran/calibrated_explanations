@@ -3,23 +3,6 @@ from shap import Explainer
 
 from .core import CalibratedExplainer
 
-
-# def preload_LIME(ce: CalibratedExplainer) -> None:
-#     if not ce.is_LIME_enabled():
-#         ce.lime = LimeTabularExplainer(ce.calX[:1,:], feature_names=ce.feature_names, class_names=['0','1'], mode=ce.mode)
-#         ce.lime_exp = ce.lime.explain_instance(ce.calX[0,:], ce.va_model.predict_proba, num_features=ce.num_features)
-#         ce.is_LIME_enabled(True)
-#     return ce.lime, ce.lime_exp
-    
-# def preload_SHAP(ce: CalibratedExplainer) -> None:
-#     if not ce.is_SHAP_enabled():
-#         f = lambda x: ce.va_model.predict_proba(x)[:,1]
-#         ce.shap = Explainer(f, ce.calX[:1,:], feature_names=ce.feature_names)
-#         ce.shap_exp = ce.shap(ce.calX[0,:].reshape(1,-1))  
-#         ce.is_SHAP_enabled(True)
-#     return ce.shap, ce.shap_exp
-
-
 class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
     '''
     Wrapper for LimeTabularExplainer to use calibrated explainer

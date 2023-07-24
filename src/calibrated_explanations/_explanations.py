@@ -2,7 +2,6 @@ from typing import List, Optional, Union, Tuple, Dict, Callable, Any
 
 import numpy as np
 import copy
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 class CalibratedExplanation:
@@ -334,7 +333,7 @@ class CalibratedExplanation:
 
         self.__make_directory(path+title, save_ext=save_ext)
 
-        for i in tqdm(range(num_instances)) if self.CE.verbose else range(num_instances):
+        for i in range(num_instances):
             factual = factuals[i]
             feature_weights = factual['weight']
             width = np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']), (len(factual['weight'])))
@@ -355,7 +354,7 @@ class CalibratedExplanation:
 
         self.__make_directory(path+title, save_ext=save_ext)
 
-        for i in tqdm(range(num_instances)) if self.CE.verbose else range(num_instances):
+        for i in range(num_instances):
             factual = factuals[i]
             feature_weights = {'predict':factual['weight'], 'low':factual['weight_low'], 'high':factual['weight_high']}
             width = np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']), (len(factual['weight'])))
@@ -371,7 +370,7 @@ class CalibratedExplanation:
         
         self.__make_directory(path+title, save_ext=save_ext)
 
-        for i, instance in tqdm(enumerate(self.x)) if self.CE.verbose else enumerate(self.x):
+        for i, instance in enumerate(self.x):
             counterfactual = counterfactuals[i]
             feature_predict = {'predict': counterfactual['predict'], 'low': counterfactual['predict_low'], 'high': counterfactual['predict_high']}
             feature_weights = np.reshape(counterfactual['weight'], (len(counterfactual['weight'])))

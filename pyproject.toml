@@ -21,7 +21,6 @@ dependencies = [
   'pandas',
   'scikit-learn',
   'shap',
-  'tqdm',
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
