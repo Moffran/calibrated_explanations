@@ -32,7 +32,7 @@ Set-up your `~/.pypirc` as instructed when creating a token:
 
 2. Make sure the build is green on the `main` branch
 
-3. Bump the version number on `pyproject.toml`.
+3. Bump the version number on `pyproject.toml` and in `core.py`.
 
 4. In the project root, clear up your `dist/` directory.
 
