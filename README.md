@@ -77,14 +77,15 @@ Let us explain our test set using the `calibrated_explanations`.
 
 
 ```python
-from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations import CalibratedExplainer, __version__
+print(__version__)
 
 explainer = CalibratedExplainer(rf, X_cal, y_cal)
 
-factual_explanations = explainer(X_test)
-
-# or from version 0.0.8
-factual_explanations = explainer.get_factuals(X_test)
+if __version__ >= "0.0.8":
+    factual_explanations = explainer.get_factuals(X_test)
+else:
+    factual_explanations = explainer(X_test)
 ```
 
 Once we have the explanations, we can plot them using `plot_regular` or `plot_uncertainty`. You can also add and remove conjunctive rules.
@@ -101,11 +102,11 @@ An alternative to factual rules is to extract counterfactual rules.
 From version 0.0.8, `get_counterfactuals` can be called to get counterfactual rules with an appropriate discretizer automatically assigned. An alternative is to first change the discretizer to `entropy` (for classification) and then call the `CalibratedExplainer` object as above. 
 
 ```python
-counterfactual_explanations = explainer.get_counterfactuals(X_test)
-
-# or alternatively
-explainer.set_discretizer('entropy')
-counterfactual_explanations = explainer(X_test)
+if __version__ >= "0.0.8":
+    counterfactual_explanations = explainer.get_counterfactuals(X_test)
+else:
+    explainer.set_discretizer('entropy')
+    counterfactual_explanations = explainer(X_test)
 ```
 
 counterfactuals are visualized using the `plot_counterfactuals`. Adding or removing conjunctions is done as before. 
@@ -146,21 +147,20 @@ Define a `CalibratedExplainer` object using the new model and data. The `mode` p
 ```python
 explainer = CalibratedExplainer(rf, X_cal, y_cal, mode='regression')
 
-# from version 0.0.8, the following is recommended
-factual_explanations = explainer.get_factuals(X_test)
-
-# or alternatively
-factual_explanations = explainer(X_test)
+if __version__ >= '0.0.8':
+    factual_explanations = explainer.get_factuals(X_test)
+else:
+    factual_explanations = explainer(X_test)
 ```
 
 From version 0.0.8, the `get_counterfactuals` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work as for classification.
 
 ```python
-counterfactual_explanations = explainer.get_counterfactuals(X_test)
-
-# or alternatively
-explainer.set_discretizer('decile')
-counterfactual_explanations = explainer(X_test)
+if __version__ >= '0.0.8':
+    counterfactual_explanations = explainer.get_counterfactuals(X_test)
+else:
+    explainer.set_discretizer('decile')
+    counterfactual_explanations = explainer(X_test)
 
 counterfactual_explanations.plot_counterfactuals()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
