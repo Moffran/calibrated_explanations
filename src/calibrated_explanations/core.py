@@ -252,7 +252,31 @@ class CalibratedExplainer:
                 # Changed to 1-p so that high probability means high prediction and vice versa
                 return [1-predict[0]], 1-interval[:,1], 1-interval[:,0], None
 
-
+    def get_factuals(self, 
+                 testX: Any,
+                 y: Optional[List or float] = None, # The same meaning as y has for cps in crepes.
+                 low_high_percentiles: Tuple[float,float] = (5, 95),
+                 ) -> CalibratedExplanation:
+        
+        if 'regression' in self.mode:
+            discretizer = 'binary'
+        else:
+            discretizer = 'binaryEntropy'
+        self.set_discretizer(discretizer)
+        return self(testX, y, low_high_percentiles)
+        
+    def get_counterfactuals(self, 
+                 testX: Any,
+                 y: Optional[List or float] = None, # The same meaning as y has for cps in crepes.
+                 low_high_percentiles: Tuple[float,float] = (5, 95),
+                 ) -> CalibratedExplanation:
+        
+        if 'regression' in self.mode:
+            discretizer = 'decile'
+        else:
+            discretizer = 'entropy'
+        self.set_discretizer(discretizer)
+        return self(testX, y, low_high_percentiles)    
 
     def __call__(self, 
                  testX: Any,
