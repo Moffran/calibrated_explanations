@@ -4,7 +4,7 @@ Calibrated Explanations
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
 [![Build Status for Calibrated Explanations][build-status]][build-log]
 
-Calibrated Explanations is a Python library for the Calibrated Explanations method, initially developed for classification but is now extended for regression.
+'calibrated-explanations' is a Python package for the Calibrated Explanations method, supporting both classification and regression.
 The proposed method is based on Venn-Abers (classification) and Conformal Predictive Systems (regression) and has the following characteristics:
 * Fast, reliable, stable and robust feature importance explanations.
 * Calibration of the underlying model to ensure that predictions reflect reality.
@@ -19,7 +19,7 @@ Install
 
 First, you need a Python environment installed with pip.
 
-Calibrated Explanations can be installed from PyPI:
+'calibrated-explanations' can be installed from PyPI:
 
 	pip install calibrated-explanations
 
@@ -42,7 +42,9 @@ Getting started
 >>> import calibrated_explanations
 ... TODO: write me...
 ```
-
+The notebooks folder contains a number of notebooks illustrating different use cases for 'calibrated_explanations'. The following are commented and should be a good start:
+* [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) 
+* [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) 
 
 Development
 -----------

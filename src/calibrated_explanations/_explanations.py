@@ -573,8 +573,8 @@ class CalibratedExplanation:
         ax1.fill_betweenx(xh, [0], [0], color='k')
         if interval:
             p = predict['predict'][idx]
-            gwl = predict['low'][idx] - p
-            gwh = predict['high'][idx] - p
+            gwl = p - predict['low'][idx]
+            gwh = p - predict['high'][idx]
             
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             ax1.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
@@ -583,18 +583,18 @@ class CalibratedExplanation:
             xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
             mn,mx = 0,0
             if interval:
-                w = feature_weights['predict'][j]
-                wl = feature_weights['low'][j] 
-                wh = feature_weights['high'][j]
+                w = - feature_weights['predict'][j]
+                wl = - feature_weights['low'][j] 
+                wh = - feature_weights['high'][j]
                 wh, wl = np.max([wh, wl]), np.min([wh, wl]) 
-                mn = wh if w < 0 else 0
-                mx = wl if w > 0 else 0
+                mx = wh if w < 0 else 0
+                mn = wl if w > 0 else 0
                 # If uncertainty cover zero, then set to w to avoid solid plotting
                 if wh > 0 and wl < 0:
                     mn = w
                     mx = w
             else:
-                w = feature_weights[j]
+                w = - feature_weights[j]
                 mn = w if w < 0 else 0
                 mx = w if w > 0 else 0
             color = 'b' if w > 0 else 'r'
