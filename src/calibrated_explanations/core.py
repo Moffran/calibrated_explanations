@@ -25,7 +25,7 @@ from ._explanations import CalibratedExplanation
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer 
 from .VennAbers import VennAbers
 
-__version__ = 'v0.0.8'
+__version__ = 'v0.0.9'
 
 class CalibratedExplainer:
     """
