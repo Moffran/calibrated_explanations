@@ -43,13 +43,13 @@ Set-up your `~/.pypirc` as instructed when creating a token:
 5. Build a `dist/` of the latest version.
 
 	```bash
-	python -m build
+	py -m build
 	```
 
 6. Upload your package using twine.
 
 	```bash
-	twine upload --repository testpypi dist/*
+	py -m twine upload --repository testpypi dist/*
 	```
 
 7. Check that the package page was rendered correctly
@@ -84,7 +84,7 @@ Set-up your `~/.pypirc` as instructed when creating a token:
 10. Upload your package to the real PyPI using twine:
 
 	```bash
-	twine upload pypi dist/*
+	py -m twine upload --repository pypi dist/*
 	```
 
 11. check that the project page was rendered correctly in:
