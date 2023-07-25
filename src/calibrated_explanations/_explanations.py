@@ -322,7 +322,27 @@ class CalibratedExplanation:
     
     
     
+    def check_preconditions(self, counterfactuals=False):
+        if counterfactuals:        
+            if 'regression' in self.mode:
+                if self.CE.discretizer != 'decile':
+                    warnings.warn('Counterfactual explanations for regressoin recommend using the decile discretizer. Consider extracting counterfactual explanations using `explainer.get_counterfactuals(test_set)`')
+            else:                
+                if self.CE.discretizer != 'entropy':
+                    warnings.warn('Counterfactual explanations for classification recommend using the entropy discretizer. Consider extracting counterfactual explanations using `explainer.get_counterfactuals(test_set)`')
+
+        else:
+            if 'regression' in self.mode:
+                if self.CE.discretizer != 'binary':
+                    warnings.warn('Factual explanations for regressoin recommend using the decile discretizer. Consider extracting factual explanations using `explainer.get_factuals(test_set)`')
+            else:                
+                if self.CE.discretizer != 'binaryEntropy':
+                    warnings.warn('Factual explanations for classification recommend using the binaryEntropy discretizer. Consider extracting factual explanations using `explainer.get_factuals(test_set)`')
+    
+    
+    
     def plot_regular(self, title="", num_to_show=10, show=False, path='plots/', save_ext=['svg','pdf','png']):
+        self.check_preconditions()
         factuals = self.get_factual_rules()
         predict = self.predict 
         num_features = len(factuals[0]['weight'])
@@ -344,6 +364,7 @@ class CalibratedExplanation:
         
 
     def plot_uncertainty(self, title="", num_to_show=None, show=False, path='plots/', save_ext=['svg','pdf','png']):
+        self.check_preconditions()
         factuals = self.get_factual_rules()
         predict = self.predict 
         num_features = len(factuals[0]['weight'])
@@ -365,6 +386,7 @@ class CalibratedExplanation:
             
             
     def plot_counterfactuals(self, title="", num_to_show=None, show=False, path='plots/', save_ext=['svg','pdf','png']):  
+        self.check_preconditions(counterfactuals=True)
         predict = self.predict 
         counterfactuals = self.get_counterfactual_rules()
         
