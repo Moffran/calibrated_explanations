@@ -108,13 +108,15 @@ else:
     counterfactual_explanations = explainer(X_test)
 ```
 
-counterfactuals are visualized using the `plot_counterfactuals`. Adding or removing conjunctions is done as before. 
+Counterfactuals are visualized using the `plot_counterfactuals`. Adding or removing conjunctions is done as before. 
 
 ```python
 counterfactual_explanations.plot_counterfactuals()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
 counterfactual_explanations.remove_counterfactual_rules().plot_counterfactuals()
 ```
+
+`calibrated_explanations` support multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
 
 Extracting explanations for regression is very similar to how it is done for classification. 
 
@@ -141,7 +143,7 @@ rf = RandomForestRegressor()
 rf.fit(X_prop_train, y_prop_train)
 ```
 
-Define a `CalibratedExplainer` object using the new model and data. The `mode` parameter must be explicitly set to regression.
+Define a `CalibratedExplainer` object using the new model and data. The `mode` parameter must be explicitly set to regression. Regular and uncertainty plots work in the same way as for classification.
 
 ```python
 explainer = CalibratedExplainer(rf, X_cal, y_cal, mode='regression')
@@ -150,9 +152,15 @@ if __version__ >= '0.0.8':
     factual_explanations = explainer.get_factuals(X_test)
 else:
     factual_explanations = explainer(X_test)
+
+factual_explanations.plot_regular()
+factual_explanations.plot_uncertainty()
+
+factual_explanations.add_conjunctive_factual_rules().plot_regular()
+factual_explanations.remove_conjunctive_rules().plot_regular()
 ```
 
-From version 0.0.8, the `get_counterfactuals` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work as for classification.
+From version 0.0.8, the `get_counterfactuals` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work in the same way as for classification.
 
 ```python
 if __version__ >= '0.0.8':
