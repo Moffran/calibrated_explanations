@@ -72,7 +72,7 @@ rf = RandomForestClassifier(n_jobs=-1)
 rf.fit(X_prop_train, y_prop_train)
 ```
 
-Let us explain our test set using the `calibrated_explanations`.
+Lets extract explanations for our test set using the `calibrated_explanations`.
 
 
 ```python
