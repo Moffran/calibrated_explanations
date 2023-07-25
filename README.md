@@ -142,7 +142,7 @@ rf = RandomForestRegressor()
 rf.fit(X_prop_train, y_prop_train)
 ```
 
-Define a `CalibratedExplainer` object using the new model and data. The `mode` parameter must be explicitly set to regression.
+Define a `CalibratedExplainer` object using the new model and data. The `mode` parameter must be explicitly set to regression. Regular and uncertainty plots work in the same way as for classification.
 
 ```python
 explainer = CalibratedExplainer(rf, X_cal, y_cal, mode='regression')
@@ -151,9 +151,15 @@ if __version__ >= '0.0.8':
     factual_explanations = explainer.get_factuals(X_test)
 else:
     factual_explanations = explainer(X_test)
+
+factual_explanations.plot_regular()
+factual_explanations.plot_uncertainty()
+
+factual_explanations.add_conjunctive_factual_rules().plot_regular()
+factual_explanations.remove_conjunctive_rules().plot_regular()
 ```
 
-From version 0.0.8, the `get_counterfactuals` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work as for classification.
+From version 0.0.8, the `get_counterfactuals` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work in the same way as for classification.
 
 ```python
 if __version__ >= '0.0.8':
