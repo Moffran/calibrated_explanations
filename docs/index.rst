@@ -22,5 +22,5 @@ Welcome to Calibrated-explanations's documentation!
     :maxdepth: 1
     
     Getting started <getting_started.md>
-    The calibrated-explanations package <calibrated_explanations>	
+    The calibrated-explanations package <calibrated-explanations>	
     Citing calibrated-explanations <citing.md>
