@@ -206,4 +206,4 @@ If you would like to cite this work, please cite the above paper.
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations
 [docs-log]:     https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest
-[docs-status]:   https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
+[docs-status]:  https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest
