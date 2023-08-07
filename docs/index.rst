@@ -22,8 +22,5 @@ Welcome to Calibrated-explanations's documentation!
     :maxdepth: 1
     
     Getting started <getting_started.rst>
-    The calibrated-explanations package <calibrated_explanations>	  
-    Examples classification <demo_binary_classification.ipynb>
-    Examples multiclass classification <demo_multiclass.ipynb>
-    Examples Regression <demo_regression.ipynb>
+    The calibrated-explanations package <calibrated_explanations>	
     Citing calibrated-explanations <citing.md>
