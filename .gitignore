@@ -6,6 +6,7 @@ dump/
 pickle/
 plots/
 results/
+doc/
 
 
 # Byte-compiled / optimized / DLL files

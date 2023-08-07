@@ -21,6 +21,6 @@ Welcome to Calibrated-explanations's documentation!
 .. toctree::
     :maxdepth: 1
     
-    Getting started <getting_started.rst>
+    Getting started <getting_started.md>
     The calibrated-explanations package <calibrated_explanations>	
     Citing calibrated-explanations <citing.md>
