@@ -1,44 +1,8 @@
-Calibrated Explanations
-=======================
-
-[![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
-[![Build Status for Calibrated Explanations][build-status]][build-log]
-
-'calibrated-explanations' is a Python package for the Calibrated Explanations method, supporting both classification and regression.
-The proposed method is based on Venn-Abers (classification) and Conformal Predictive Systems (regression) and has the following characteristics:
-* Fast, reliable, stable and robust feature importance explanations.
-* Calibration of the underlying model to ensure that predictions reflect reality.
-* Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
-* Rules with straightforward interpretation in relation to the feature weights.
-* Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions achieved.
-* Conjunctional rules conveying joint contribution between features.
-
-
-Install
--------
-
-First, you need a Python environment installed with pip.
-
-'calibrated-explanations' can be installed from PyPI:
-
-	pip install calibrated-explanations
-
-The dependencies are:
-
-* [crepes](https://github.com/henrikbostrom/crepes)
-* [lime](https://github.com/marcotcr/lime)
-* [matplotlib](https://matplotlib.org/)
-* [NumPy](https://numpy.org/)
-* [pandas](https://pandas.pydata.org/)
-* [scikit-learn](https://scikit-learn.org/)
-* [SHAP](https://pypi.org/project/shap/)
-
-
 Getting started
 ---------------
 The notebooks folder contains a number of notebooks illustrating different use cases for 'calibrated_explanations'. The following are commented and should be a good start:
-* [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/docs/demo_binary_classification.ipynb) 
-* [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/docs/demo_regression.ipynb) 
+* [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) 
+* [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) 
 
 Let us illustrate how we may use `calibrated_explanations` to generate explanations from a classifier trained on a dataset from
 [www.openml.org](https://www.openml.org), which we first split into a
@@ -116,7 +80,7 @@ counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterf
 counterfactual_explanations.remove_counterfactual_rules().plot_counterfactuals()
 ```
 
-`calibrated_explanations` support multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/docs/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
+`calibrated_explanations` support multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
 
 Extracting explanations for regression is very similar to how it is done for classification. 
 
@@ -173,34 +137,4 @@ counterfactual_explanations.plot_counterfactuals()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
 counterfactual_explanations.remove_counterfactual_rules().plot_counterfactuals()
 ```
-Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/docs/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/docs/demo_probabilistic_regression.ipynb) notebooks.
-
-
-Development
------------
-
-This project has tests that can be executed using `pytest`.
-Just run the following command from the project root.
-
-```bash
-pytest
-```
-
-
-Further reading
----------------
-
-The calibrated explanations library is based on the paper
-["Calibrated Explanations: with Uncertainty Information and Counterfactuals"](https://arxiv.org/abs/2305.02305)
-by
-[Helena Löfström](https://github.com/Moffran),
-[Tuwe Löfström](https://github.com/tuvelofstrom),
-Ulf Johansson and
-Cecilia Sönströd.
-
-If you would like to cite this work, please cite the above paper.
-
-[build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
-[build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
-[pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
-[calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations
+Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
