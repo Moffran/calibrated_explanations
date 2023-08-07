@@ -3,6 +3,7 @@ Calibrated Explanations
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
 [![Build Status for Calibrated Explanations][build-status]][build-log]
+[![Documentation Status][docs-status]][docs-log]
 
 'calibrated-explanations' is a Python package for the Calibrated Explanations method, supporting both classification and regression.
 The proposed method is based on Venn-Abers (classification) and Conformal Predictive Systems (regression) and has the following characteristics:
@@ -204,3 +205,5 @@ If you would like to cite this work, please cite the above paper.
 [build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations
+[docs-log]:     https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest
+[docs-build]:   https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
