@@ -1,4 +1,4 @@
-'''Calibrated Explanations for Black-Box Predictions (ce)
+"""Calibrated Explanations for Black-Box Predictions (calibrated-explanationse)
 This file contains the code for the calibrated explanations.
 
 The calibrated explanations are based on the paper 
@@ -6,7 +6,7 @@ The calibrated explanations are based on the paper
 
 Calibrated explanations are a way to explain the predictions of a black-box model 
 using Venn Abers predictors (classification) or conformal predictive systems (regression) and perturbations.
-'''
+"""
 
 import numpy as np
 import pandas as pd
@@ -26,82 +26,74 @@ __version__ = 'v0.0.9'
 
 class CalibratedExplainer:
     """
-    Calibrated Explainer for black-box models.
+    The class CalibratedExplainer for black-box models.
 
     """
     def __init__(self, 
                  model, 
                  calX, 
                  calY, 
-                 mode: str = 'classification',
-                 feature_names: Optional[List[str]] = None, 
-                 discretizer: Optional[str] = None, 
-                 categorical_features: Optional[List[int]] = None, 
-                 categorical_labels: Optional[Dict[int, Dict[int, str]]] = None,
-                 class_labels: Optional[Dict[int, str]] = None,
-                 difficultyEstimator: Optional[Callable] = None,
-                 sample_percentiles: List[int] = [25, 50, 75], 
-                 num_neighbors: Union[float, int] = 1.0, 
-                 random_state: int = 42, 
-                 preload_LIME: bool=False, 
-                 preload_SHAP: bool=False,
-                 verbose: bool = False,
+                 mode = 'classification',
+                 feature_names = None, 
+                 discretizer = None, 
+                 categorical_features = None, 
+                 categorical_labels = None,
+                 class_labels = None,
+                 difficultyEstimator = None,
+                 sample_percentiles = [25, 50, 75], 
+                 num_neighbors = 1.0, 
+                 random_state = 42, 
+                 preload_LIME=False, 
+                 preload_SHAP=False,
+                 verbose = False,
                  ) -> None:        
         """
         CalibratedExplainer is a class that can be used to explain the predictions of a black-box 
         model.
 
-        Args:
-            model (a predictive model): 
-                A predictive model that can be used to predict the target variable.
-            calX (same format as training and test input): 
-                The calibration input data for the model.
-            calY (same format as training and test target): 
-                The calibration target data for the model.
-            mode (str, optional): 
-                Possible modes are 'classificaiton' or 'regression'. Defaults to 'classification'.
-            feature_names (Optional[List[str]], optional): 
-                A list of feature names. Must be None or include one str per feature. 
-                Defaults to None.
-            discretizer (Optional[str], optional): 
-                The strategy used for numerical features. Possible discretizers include:
-                'binary': split using the median value, 
-                'binaryEntropy': use a one-layered decision tree to find the best split,
-                'quartile': split using the quartiles, 
-                'decile': split using the deciles, 
-                'entropy': use a three-layered decision tree to find the best splits. 
-                Defaults to 'binary' for regression and 'binaryEntropy' for classification.
-            categorical_features (Optional[List[int]], optional): 
-                A list of indeces for categorical features. Defaults to None.
-            categorical_labels (Optional[Dict[int, Dict[int, str]]], optional): 
-                A dictionary with the feature index as key and a feature dictionary mapping each feature 
-                value (keys) to a feature label (values). Only applicable for classification. 
-                Defaults to None.
-            class_labels (Optional[Dict[int, str]], optional): 
-                A dictionary mapping numerical target values to class names. 
-                Defaults to None.
-            sigma (Optional[Callable], optional):
-
-            sample_percentiles (List[int], optional): 
-                Percentiles used to sample values for evvaluation of numerical features. 
-                Defaults to [25, 50, 75].
-            num_neighbors (Union[float, int], optional): 
-                Enables a local discretizer to be defined using the nearest neighbors in the calibration set. 
-                Values (int) above 1 are interpreted as number of neighbors and float values in the range 
-                (0,1] are interpreted as fraction of calibration instances. 
-                Defaults to 1.0, meaning 100% of the calibration set is always used.
-            random_state (int, optional): 
-                Parameter to adjust the random state. 
-                Defaults to 42.
-            preload_LIME (bool, optional): 
-                If the LIME wrapper is known to be used, it can be preloaded at initialization. 
-                Defaults to False.
-            preload_SHAP (bool, optional): 
-                If the SHAP wrapper is known to be used, it can be preloaded at initialization. 
-                Defaults to False.
-            verbose (bool, optional): 
-                Enable additional printouts during operation. 
-                Defaults to False.
+        Parameters
+        ----------
+        model : a sklearn predictive model
+            A predictive model that can be used to predict the target variable.
+        calX : array-like of shape (n_calibrations_samples, n_features) 
+            The calibration input data for the model.
+        calY : array-like of shape (n_calibrations_samples,)  
+            The calibration target data for the model.
+        mode : a string, default="classification" 
+            Possible modes are 'classificaiton' or 'regression'.
+        feature_names : None or a list of feature names in the shape (n_features,), default=None 
+            A list of feature names. Must be None or include one str per feature. 
+        discretizer : a string, default='binary' if mode="regression" else 'binaryEntropy'  
+            The strategy used for numerical features. Possible discretizers include:
+            'binary': split using the median value, suitable for regular explanations of regression models, 
+            'binaryEntropy': use a one-layered decision tree to find the best split suitable for regular explanations of classification models, 
+            'quartile': split using the quartiles suitable for counterfactual explanations of regression models, 
+            'decile': split using the deciles, 
+            'entropy': use a three-layered decision tree to find the best splits suitable for counterfactual explanations of classification models. 
+        categorical_features : None or an array-like of shape (n_categorical_features,), default=None
+            A list of indeces for categorical features. 
+        categorical_labels : None or a nested dictionary of the shape (n_categorical_features : (n_values : string)), default=None 
+            A dictionary with the feature index as key and a feature dictionary mapping each feature 
+            value (keys) to a feature label (values). 
+        class_labels : None or a dictionary of the shape (n_classes : string), default=None 
+            A dictionary mapping numerical target values to class names. Only applicable for classification.
+        difficultyEstimator : None or a difficultyEstimator object from the crepes package, default=None 
+            A difficultyEstimator object from the crepes package. If None, a normalization is not used. Only used by regression models.
+        sample_percentiles : an array-like of shape (n_percentiles) default=[25, 50, 75].
+            Percentiles used to sample values for evaluation of numerical features.             
+        num_neighbors : either a fraction in the range [0,1) or a fixed integer in the range [1,ncalibration_samples), default=1.0
+            Enables a local discretizer to be defined using the nearest neighbors in the calibration set. 
+            Values (int) above 1 are interpreted as number of neighbors and float values in the range 
+            (0,1] are interpreted as fraction of calibration instances. 
+            Defaults to 1.0, meaning 100% of the calibration set is always used.
+        random_state : an integer, default=42
+            Parameter to adjust the random state. 
+        preload_LIME : bool, default=False
+            If the LIME wrapper is known to be used, it can be preloaded at initialization. 
+        preload_SHAP : bool, default=False 
+            If the SHAP wrapper is known to be used, it can be preloaded at initialization. 
+        verbose : bool, default=False 
+            Enable additional printouts during operation. 
         """
         self.__initialized = False
         if isinstance(calX, pd.DataFrame):
@@ -167,38 +159,43 @@ class CalibratedExplainer:
 
 
     def predict(self, 
-                testX: Any,
-                y: Optional[List or float] = None, # The same meaning as y has for cps in crepes.
-                low_high_percentiles: Tuple[float,float] = (5, 95),
-                classes: Optional[List[int]] = None,
+                testX,
+                y = None, # The same meaning as y has for cps in crepes.
+                low_high_percentiles = (5, 95),
+                classes = None,
                 ):
-        """Predicts the target variable for the test data.
+        """
+        Predicts the target variable for the test data.
 
-        Args:
-            testX: A set of test objects to predict
-            y (Optional[List or float], optional): 
-                The y parameter has the same meaning as y has for ConformalPredictiveSystem in crepes. 
-                Defaults to None.
-            low_high_percentiles (Tuple[float,float], optional): 
-                The low and high percentile used to calculate the interval. 
-                Defaults to (5, 95).
-            classes (Optional[List[int]], optional):
-                The classes predicted for the original instance. None if not multiclass.
+        Parameters
+        ----------
+        testX : A set of test objects to predict
+        y : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+        classes : None or array-like of shape (n_samples,), default=None
+            The classes predicted for the original instance. None if not multiclass or regression.
 
-        Raises:
-            ValueError: The length of the y parameter must be either a constant or the same as the number of 
-                instances in testX.
+        Raises
+        ------
+        ValueError: The length of the y-parameter must be either a constant or the same as the number of 
+            instances in testX.
 
-        Returns:
-            predict: The prediction for the test data. For classification, this is the regularized probability 
-                of the positive class, derived using the intervals from VennAbers. For regression, this is the 
-                median prediction from the ConformalPredictiveSystem.
-            low: The lower bound of the prediction interval. For classification, this is derived using 
-                VennAbers. For regression, this is the lower percentile given as parameter, derived from the 
-                ConformalPredictiveSystem.
-            high: The upper bound of the prediction interval. For classification, this is derived using 
-                VennAbers. For regression, this is the upper percentile given as parameter, derived from the 
-                ConformalPredictiveSystem.
+        Returns
+        -------
+        predict : ndarray of shape (n_samples,)
+            The prediction for the test data. For classification, this is the regularized probability 
+            of the positive class, derived using the intervals from VennAbers. For regression, this is the 
+            median prediction from the ConformalPredictiveSystem.
+        low : ndarray of shape (n_samples,)
+            The lower bound of the prediction interval. For classification, this is derived using 
+            VennAbers. For regression, this is the lower percentile given as parameter, derived from the 
+            ConformalPredictiveSystem.
+        high : ndarray of shape (n_samples,)
+            The upper bound of the prediction interval. For classification, this is derived using 
+            VennAbers. For regression, this is the upper percentile given as parameter, derived from the 
+            ConformalPredictiveSystem.
         """
         assert self.__initialized, "The model must be initialized before calling predict."
         if self.mode == 'classification':
@@ -249,12 +246,34 @@ class CalibratedExplainer:
                 # Changed to 1-p so that high probability means high prediction and vice versa
                 return [1-predict[0]], 1-interval[:,1], 1-interval[:,0], None
 
-    def get_factuals(self, 
-                 testX: Any,
-                 y: Optional[List or float] = None, # The same meaning as y has for cps in crepes.
-                 low_high_percentiles: Tuple[float,float] = (5, 95),
-                 ) -> CalibratedExplanation:
-        
+    def get_factuals(self,
+                 testX,
+                 y = None, 
+                 low_high_percentiles = (5, 95),
+                 ) -> CalibratedExplanation:        
+        """
+        Creates a CalibratedExplanation object for the test data with the discretizer automatically assigned for factual explanations.
+
+        Parameters
+        ----------
+        testX : A set of test objects to predict
+        y : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The y-parameter is only supported for mode='regression'.
+        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+            instances in testX.
+
+        Returns
+        -------
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+            intervals. 
+        """        
         if 'regression' in self.mode:
             discretizer = 'binary'
         else:
@@ -263,11 +282,33 @@ class CalibratedExplainer:
         return self(testX, y, low_high_percentiles)
         
     def get_counterfactuals(self, 
-                 testX: Any,
-                 y: Optional[List or float] = None, # The same meaning as y has for cps in crepes.
-                 low_high_percentiles: Tuple[float,float] = (5, 95),
-                 ) -> CalibratedExplanation:
-        
+                 testX,
+                 y = None, 
+                 low_high_percentiles = (5, 95),
+                 ) -> CalibratedExplanation:        
+        """
+        Creates a CalibratedExplanation object for the test data with the discretizer automatically assigned for counterfactual explanations.
+
+        Parameters
+        ----------
+        testX : A set of test objects to predict
+        y : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The y-parameter is only supported for mode='regression'.
+        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+            instances in testX.
+
+        Returns
+        -------
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+            intervals. 
+        """
         if 'regression' in self.mode:
             discretizer = 'decile'
         else:
@@ -275,31 +316,33 @@ class CalibratedExplainer:
         self.set_discretizer(discretizer)
         return self(testX, y, low_high_percentiles)    
 
-    def __call__(self, 
-                 testX: Any,
-                 y: Optional[List or float] = None, # The same meaning as y has for cps in crepes.
-                 low_high_percentiles: Tuple[float,float] = (5, 95),
-                 ) -> CalibratedExplanation:
-        """Creates a CalibratedExplanation object for the test data.
+    def __call__(self,
+                 testX,
+                 y = None, 
+                 low_high_percentiles = (5, 95),
+                 ) -> CalibratedExplanation:        
+        """
+        Creates a CalibratedExplanation object for the test data with the already assigned discretizer.
 
-        Args:
-            testX: A set of test objects to predict
-            y (Optional[List or float], optional): 
-                The y parameter has the same meaning as y has for ConformalPredictiveSystems in crepes. 
-                Defaults to None.
-            low_high_percentiles (Tuple[float,float], optional): 
-                The low and high percentile used to calculate the interval. 
-                Defaults to (5, 95).
+        Parameters
+        ----------
+        testX : A set of test objects to predict
+        y : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
 
-        Raises:
-            ValueError: The number of features in the test data must be the same as in the calibration data.
-            Warning: The y parameter is only supported for mode='regression'.
-            ValueError: The length of the y parameter must be either a constant or the same as the number of 
-                instances in testX.
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The y-parameter is only supported for mode='regression'.
+        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+            instances in testX.
 
-        Returns:
-            CalibratedExplanations: A CalibratedExplanations object containing the predictions and the 
-                intervals. 
+        Returns
+        -------
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+            intervals. 
         """
         if len(testX.shape) == 1:
             testX = testX.reshape(1, -1)        
@@ -530,7 +573,7 @@ class CalibratedExplainer:
     
     
         
-    def set_mode(self, mode: str, initialize=True) -> None:
+    def set_mode(self, mode, initialize=True) -> None:
         self.__initialized = False
         if mode == 'classification':
             assert 'predict_proba' in dir(self.model), "The model must have a predict_proba method."
