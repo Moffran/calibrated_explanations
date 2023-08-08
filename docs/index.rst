@@ -22,7 +22,7 @@ Welcome to Calibrated-explanations's documentation!
     :maxdepth: 2
     
     Getting started <getting_started.md>
-    The calibrated-explanations package <src/calibrated_explanations>	
+    The calibrated-explanations package <calibrated-explanations>	
     Binary classification <../notebooks/demo_binary_classification.ipynb>
     Multiclass classification <../notebooks/demo_multiclass.ipynb>
     Regression <../notebooks/demo_regression.ipynb>

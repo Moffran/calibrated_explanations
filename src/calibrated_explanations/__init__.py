@@ -3,7 +3,7 @@ Calibrated Explanations (calibrated_explanations)
 
 is a Python package for explaining black-box models.
 
-It is based on the paper "Calibrated Explanations" by Helena Löfström et al.
+It is based on the paper "Calibrated Explanations: with Uncertainty Information and Counterfactuals" by Helena Löfström et al.
 """
 import warnings
 
