@@ -118,7 +118,7 @@ counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterf
 counterfactual_explanations.remove_counterfactual_rules().plot_counterfactuals()
 ```
 
-`calibrated_explanations` support multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
+`calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
 
 Extracting explanations for regression is very similar to how it is done for classification. 
 
