@@ -38,11 +38,11 @@ def load_binary_dataset():
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     test_index = np.array([*range(int(num_to_test/2)), *range(no_of_instances-1, no_of_instances-int(num_to_test/2)-1,-1)])
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)   
-    trainCalX, testX = X[train_index,:], X[test_index,:]
+    traincal_X, testX = X[train_index,:], X[test_index,:]
     trainCalY, testY = y[train_index], y[test_index]
-    # trainCalX,trainCalY = shuffle(trainCalX, trainCalY)
-    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
-    return trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
+    # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
+    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
+    return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
 
 def load_multiclass_dataset():
     dataSet = 'glass'
@@ -93,11 +93,11 @@ def load_multiclass_dataset():
     test_index = np.array(test_idx).flatten()
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)   
-    trainCalX, testX = X[train_index,:], X[test_index,:]
+    traincal_X, testX = X[train_index,:], X[test_index,:]
     trainCalY, testY = y[train_index], y[test_index]
-    # trainCalX,trainCalY = shuffle(trainCalX, trainCalY)
-    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
-    return trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
+    # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
+    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
+    return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
 
 def get_classification_model(model_name, trainX, trainY):
     t1 = DecisionTreeClassifier()
@@ -120,11 +120,11 @@ class TestCalibratedExplainer(unittest.TestCase):
         return True
 
     def test_binary_ce(self):
-        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model, 
-            calX, 
+            cal_X, 
             calY,
             feature_names=feature_names, 
             discretizer='binary', 
@@ -159,11 +159,11 @@ class TestCalibratedExplainer(unittest.TestCase):
 
     @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
-        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
+        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model, 
-            calX, 
+            cal_X, 
             calY,
             feature_names=feature_names, 
             discretizer='binary', 
