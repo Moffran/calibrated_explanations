@@ -58,8 +58,8 @@ def get_regression_model(model, trainX, trainY):
 class TestCalibratedExplainer(unittest.TestCase):
     def assertExplanation(self, exp):
         for i, instance in enumerate(exp.x):
-            boundaries = exp.CE.rule_boundaries(instance)
-            for f in range(exp.CE.num_features):
+            boundaries = exp.calibrated_explainer.rule_boundaries(instance)
+            for f in range(exp.calibrated_explainer.num_features):
                 # assert that instance values are covered by the rule conditions
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         return True
@@ -80,7 +80,7 @@ class TestCalibratedExplainer(unittest.TestCase):
             mode='regression'
         )
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, BinaryDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -111,7 +111,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('quartile')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, QuartileDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, QuartileDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -141,7 +141,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('decile')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, DecileDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -183,10 +183,10 @@ class TestCalibratedExplainer(unittest.TestCase):
             categorical_features=categorical_features, 
             categorical_labels=categorical_labels,
             mode='regression',
-            difficultyEstimator=DifficultyEstimator().fit(X=trainX, y=trainY, scaler=True),
+            difficulty_estimator=DifficultyEstimator().fit(X=trainX, y=trainY, scaler=True),
         )
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, BinaryDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -217,7 +217,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('quartile')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, QuartileDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, QuartileDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -247,7 +247,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('decile')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, DecileDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -289,10 +289,10 @@ class TestCalibratedExplainer(unittest.TestCase):
             categorical_features=categorical_features, 
             categorical_labels=categorical_labels,
             mode='regression',
-            difficultyEstimator=DifficultyEstimator().fit(X=trainX, learner=model, scaler=True),
+            difficulty_estimator=DifficultyEstimator().fit(X=trainX, learner=model, scaler=True),
         )
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, BinaryDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -323,7 +323,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('quartile')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, QuartileDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, QuartileDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -353,7 +353,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('decile')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, DecileDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()

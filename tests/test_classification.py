@@ -115,8 +115,8 @@ def get_classification_model(model_name, trainX, trainY):
 class TestCalibratedExplainer(unittest.TestCase):
     def assertExplanation(self, exp):
         for i, instance in enumerate(exp.x):
-            boundaries = exp.CE.rule_boundaries(instance)
-            for f in range(exp.CE.num_features):
+            boundaries = exp.calibrated_explainer.rule_boundaries(instance)
+            for f in range(exp.calibrated_explainer.num_features):
                 # assert that instance values are covered by the rule conditions
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         return True
@@ -134,7 +134,7 @@ class TestCalibratedExplainer(unittest.TestCase):
             mode='classification',
         )
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, BinaryDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -143,7 +143,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('binaryEntropy')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, BinaryEntropyDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -152,7 +152,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('entropy')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, EntropyDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -173,7 +173,7 @@ class TestCalibratedExplainer(unittest.TestCase):
             mode='classification',
         )
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, BinaryDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -182,7 +182,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('binaryEntropy')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, BinaryEntropyDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -191,7 +191,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         
         cal_exp.set_discretizer('entropy')
         exp = cal_exp(testX)
-        self.assertIsInstance(exp.CE.discretizer, EntropyDiscretizer)
+        self.assertIsInstance(exp.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
