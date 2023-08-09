@@ -9,7 +9,8 @@ Calibrated explanations are a way to explain the predictions of a black-box mode
 using Venn Abers predictors (classification) or 
 conformal predictive systems (regression) and perturbations.
 """
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, line-too-long
+# flake8: noqa: E501
 import copy
 import numpy as np
 import pandas as pd
@@ -24,15 +25,16 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
 from .VennAbers import VennAbers
 
-__version__ = 'v0.0.9'
+__version__ = 'v0.0.10'
+
 
 class CalibratedExplainer:
     """
     The class CalibratedExplainer for black-box models.
 
     """
-    # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
-    # pylint: disable=dangerous-default-value
+     # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
+     # pylint: disable=dangerous-default-value
     def __init__(self,
                  model,
                  cal_X,
@@ -51,7 +53,7 @@ class CalibratedExplainer:
                  preload_shap=False,
                  verbose = False,
                  ) -> None:
-        # pylint: disable=line-too-long
+         # pylint: disable=line-too-long
         """
         CalibratedExplainer is a class that can be used to explain the predictions of a black-box 
         model.
@@ -60,9 +62,9 @@ class CalibratedExplainer:
         ----------
         model : a sklearn predictive model
             A predictive model that can be used to predict the target variable.
-        calX : array-like of shape (n_calibrations_samples, n_features) 
+        cal_X : array-like of shape (n_calibrations_samples, n_features) 
             The calibration input data for the model.
-        calY : array-like of shape (n_calibrations_samples,)  
+        cal_y : array-like of shape (n_calibrations_samples,)  
             The calibration target data for the model.
         mode : a string, default="classification" 
             Possible modes are 'classificaiton' or 'regression'.
@@ -108,16 +110,16 @@ class CalibratedExplainer:
         """
         self.__initialized = False
         if isinstance(cal_X, pd.DataFrame):
-            self.cal_X = cal_X.values # pylint: disable=invalid-name
+            self.cal_X = cal_X.values  # pylint: disable=invalid-name
         else:
             self.cal_X = cal_X
         if isinstance(cal_y, pd.DataFrame):
-            self.cal_y = cal_y.values # pylint: disable=invalid-name
+            self.cal_y = cal_y.values  # pylint: disable=invalid-name
         else:
             self.cal_y = cal_y
 
         self.model = model
-        self.num_features = len(self.cal_X[0,:])
+        self.num_features = len(self.cal_X[0, :])
         self.set_random_state(random_state)
         self.sample_percentiles = sample_percentiles
         self.set_num_neighbors(n_neighbors)
@@ -170,7 +172,7 @@ class CalibratedExplainer:
                 # verbose={self.verbose}\n\t\
 
 
-    # pylint: disable=invalid-name
+     # pylint: disable=invalid-name
     def predict(self,
                 test_X,
                 y = None, # The same meaning as y has for cps in crepes.
@@ -237,7 +239,7 @@ class CalibratedExplainer:
             high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
             sigma_test = self.__get_sigma_test(X=test_X)
-            # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
+             # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
             if y is None:
                 interval = self.interval_model.predict(y_hat=predict, sigmas=sigma_test,
                             lower_percentiles=low,
@@ -250,7 +252,7 @@ class CalibratedExplainer:
             if not np.isscalar(y) and len(y) != len(test_X):
                 raise ValueError("The length of the y parameter must be either a scalar or \
                     the same as the number of instances in testX.")
-            # pylint: disable=unexpected-keyword-arg
+             # pylint: disable=unexpected-keyword-arg
             y_prob = self.interval_model.predict(y_hat=predict, sigmas=sigma_test,
                                                     y = float(y) if np.isscalar(y) else y,)
             # Use the width of the interval from prediction to determine which interval
@@ -388,13 +390,13 @@ class CalibratedExplainer:
         elif 'regression' in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
 
-        calX = self.cal_X
-        calY = self.cal_y
+        cal_X = self.cal_X
+        cal_y = self.cal_y
 
-        feature_weights =  {'predict':[],'low':[],'high':[],}
-        feature_predict =  {'predict':[],'low':[],'high':[],}
-        prediction =  {'predict':[],'low':[],'high':[], 'classes':[]}
-        binned_predict =  {'predict':[],'low':[],'high':[],'current_bin':[],'rule_values':[]}
+        feature_weights =  {'predict': [],'low': [],'high': [],}
+        feature_predict =  {'predict': [],'low': [],'high': [],}
+        prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
+        binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': []}
 
         for i,x in enumerate(testX):
             if y is not None and not np.isscalar(explanation.y):
@@ -409,13 +411,13 @@ class CalibratedExplainer:
                 prediction['classes'].append(1)
 
             if not self.num_neighbors == len(self.cal_y):
-                calX, calY = self.find_local_calibration_data(x)
-                self.set_discretizer(discretizer, calX, calY)
+                cal_X, cal_y = self.find_local_calibration_data(x)
+                self.set_discretizer(discretizer, cal_X, cal_y)
 
             rule_values = {}
             instance_weights = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
             instance_predict = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
-            instance_binned = {'predict':[],'low':[],'high':[],'current_bin':[],'rule_values':[]}
+            instance_binned = {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': []}
             # Get the perturbations
             x_original = copy.deepcopy(x)
             perturbed_original = self.discretize(copy.deepcopy(x).reshape(1,-1))
@@ -440,7 +442,7 @@ class CalibratedExplainer:
                         high_predict[bin_value] = high[0]
                 else:
                     rule_value = []
-                    values = np.array(calX[:,f])
+                    values = np.array(cal_X[:,f])
                     lesser = rule_boundaries[f][0]
                     greater = rule_boundaries[f][1]
                     num_bins = 1
@@ -619,7 +621,7 @@ class CalibratedExplainer:
 
 
 
-    def __constant_sigma(self, X: np.ndarray, learner=None, beta=None) -> np.ndarray: # pylint: disable=unused-argument
+    def __constant_sigma(self, X: np.ndarray, learner=None, beta=None) -> np.ndarray:  # pylint: disable=unused-argument
         return np.ones(X.shape[0])
 
 
@@ -662,8 +664,8 @@ class CalibratedExplainer:
             va = VennAbers(self.cal_X, self.cal_y, self.model)
             self.interval_model = va
         elif 'regression' in self.mode:
-            calY_hat = self.model.predict(self.cal_X)
-            self.residual_cal = self.cal_y - calY_hat
+            cal_y_hat = self.model.predict(self.cal_X)
+            self.residual_cal = self.cal_y - cal_y_hat
             cps = crepes.ConformalPredictiveSystem()
             if self.difficulty_estimator is not None:
                 sigma_cal = self.difficulty_estimator.apply(X=self.cal_X)
@@ -743,7 +745,7 @@ class CalibratedExplainer:
             return 'binary'
 
 
-    # pylint: disable=too-many-branches
+     # pylint: disable=too-many-branches
     def set_discretizer(self, discretizer: str, cal_X=None, cal_y=None) -> None:
         """assign discretizer to the explainer. 
         The discretizer can be either 'quartile', 'decile', 'entropy', 'binary', or 'binaryEntropy'. 
@@ -796,13 +798,13 @@ class CalibratedExplainer:
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
 
-        self.discretized_calX = self.discretize(copy.deepcopy(self.cal_X))
+        self.discretized_cal_X = self.discretize(copy.deepcopy(self.cal_X))
 
         self.feature_values = {}
         self.feature_frequencies = {}
 
         for feature in range(self.cal_X.shape[1]):
-            column = self.discretized_calX[:, feature]
+            column = self.discretized_cal_X[:, feature]
             feature_count = {}
             for item in column:
                 feature_count[item] = feature_count.get(item, 0) + 1
@@ -865,18 +867,18 @@ class CalibratedExplainer:
         """
         if not self.is_lime_enabled():
             if self.mode == 'classification':
-                self.lime = LimeTabularExplainer(self.cal_X[:1,:],
+                self.lime = LimeTabularExplainer(self.cal_X[:1, :],
                                                  feature_names=self.feature_names,
                                                  class_names=['0','1'],
                                                  mode=self.mode)
-                self.lime_exp = self.lime.explain_instance(self.cal_X[0,:],
+                self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
                                                            self.model.predict_proba,
                                                            num_features=self.num_features)
             elif 'regression' in self.mode:
-                self.lime = LimeTabularExplainer(self.cal_X[:1,:],
+                self.lime = LimeTabularExplainer(self.cal_X[:1, :],
                                                  feature_names=self.feature_names,
                                                  mode='regression')
-                self.lime_exp = self.lime.explain_instance(self.cal_X[0,:],
+                self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
                                                            self.model.predict,
                                                            num_features=self.num_features)
             self.is_lime_enabled(True)
@@ -891,12 +893,12 @@ class CalibratedExplainer:
             shap.Explainer: a Explainer object defined for the problem
             shap_exp: a template shap explanation achieved through the __call__ method
         """
-        # pylint: disable=access-member-before-definition
+         # pylint: disable=access-member-before-definition
         if not self.is_shap_enabled() or \
             num_test is not None and self.shap_exp.shape[0] != num_test:
-            f = lambda x: self.predict(x)[0] # pylint: disable=unnecessary-lambda-assignment
-            self.shap = Explainer(f, self.cal_X[:1,:], feature_names=self.feature_names)
-            self.shap_exp = self.shap(self.cal_X[0,:].reshape(1,-1)) \
-                                    if num_test is None else self.shap(self.cal_X[:num_test,:])
+            f = lambda x: self.predict(x)[0]  # pylint: disable=unnecessary-lambda-assignment
+            self.shap = Explainer(f, self.cal_X[:1, :], feature_names=self.feature_names)
+            self.shap_exp = self.shap(self.cal_X[0, :].reshape(1,-1)) \
+                                    if num_test is None else self.shap(self.cal_X[:num_test, :])
             self.is_shap_enabled(True)
         return self.shap, self.shap_exp

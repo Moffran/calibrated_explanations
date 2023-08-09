@@ -1,3 +1,5 @@
+# pylint: disable=missing-docstring, missing-module-docstring, invalid-name, protected-access, too-many-locals, line-too-long
+# flake8: noqa: E501
 from __future__ import absolute_import
 
 import unittest
@@ -16,7 +18,9 @@ from lime.discretize import EntropyDiscretizer, DecileDiscretizer, QuartileDiscr
 from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer # pylint: disable=unused-import
 from crepes.extras import DifficultyEstimator # sigma_knn, sigma_variance, sigma_variance_oob
 
-model = 'RF'
+MODEL = 'RF'
+
+
 def load_regression_dataset():
     dataSet = 'housing.csv'
     delimiter = ';'

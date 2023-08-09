@@ -1,3 +1,5 @@
+# pylint: disable=missing-docstring, missing-module-docstring, invalid-name, protected-access, too-many-locals, line-too-long
+# flake8: noqa: E501
 from __future__ import absolute_import
 
 import unittest
@@ -14,9 +16,9 @@ from lime.discretize import EntropyDiscretizer
 # from shap import Explainer
 
 from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer
-# pylint: disable=missing-docstring, invalid-name, protected-access, too-many-locals
 
-model = 'RF'
+
+MODEL = 'RF'
 def load_binary_dataset():
     dataSet = 'diabetes_full'
     delimiter = ','
@@ -34,11 +36,11 @@ def load_binary_dataset():
     categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
     # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
     idx = np.argsort(y.values).astype(int)
-    X, y = X.values[idx,:], y.values[idx]
+    X, y = X.values[idx, :], y.values[idx]
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     test_index = np.array([*range(int(num_to_test/2)), *range(no_of_instances-1, no_of_instances-int(num_to_test/2)-1,-1)])
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)   
-    traincal_X, testX = X[train_index,:], X[test_index,:]
+    traincal_X, testX = X[train_index, :], X[test_index, :]
     trainCalY, testY = y[train_index], y[test_index]
     # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
     trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
@@ -85,7 +87,7 @@ def load_multiclass_dataset():
     categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
     # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
     idx = np.argsort(y.values).astype(int)
-    X, y = X.values[idx,:], y.values[idx]
+    X, y = X.values[idx, :], y.values[idx]
     test_idx = []
     idx = list(range(no_of_instances))
     for i in range(no_of_classes):
@@ -93,7 +95,7 @@ def load_multiclass_dataset():
     test_index = np.array(test_idx).flatten()
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)   
-    traincal_X, testX = X[train_index,:], X[test_index,:]
+    traincal_X, testX = X[train_index, :], X[test_index, :]
     trainCalY, testY = y[train_index], y[test_index]
     # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
     trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
