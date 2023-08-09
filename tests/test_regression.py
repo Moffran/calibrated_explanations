@@ -13,10 +13,10 @@ from sklearn.model_selection import train_test_split
 # from sklearn.utils import shuffle
 # import matplotlib.pyplot as plt
 from lime.discretize import EntropyDiscretizer, DecileDiscretizer, QuartileDiscretizer # pylint: disable=unused-import
+from crepes.extras import DifficultyEstimator # sigma_knn, sigma_variance, sigma_variance_oob
 # from shap import Explainer
 
 from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer # pylint: disable=unused-import
-from crepes.extras import DifficultyEstimator # sigma_knn, sigma_variance, sigma_variance_oob
 
 MODEL = 'RF'
 
@@ -33,7 +33,7 @@ def load_regression_dataset():
     target = 'median_house_value'
     # target = 'REGRESSION'
     df.dropna(inplace=True)
-    X, y = df.drop(target,axis=1), df[target] 
+    X, y = df.drop(target,axis=1), df[target]
     # normalize target between 0 and 1
     # y = (y - y.min())/(y.max() - y.min())
     columns = df.drop(target,axis=1).columns
@@ -53,7 +53,7 @@ def get_regression_model(model_name, trainX, trainY):
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
     model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
-    model.fit(trainX,trainY)  
+    model.fit(trainX,trainY)
     return model, model_name
 
 
@@ -66,19 +66,19 @@ class TestCalibratedExplainer(unittest.TestCase):
                 # assert that instance values are covered by the rule conditions
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         return True
-    
-    
+
+
     # NOTE: this takes takes about 70s to run
     def test_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
-            model, 
-            calX, 
+            model,
+            calX,
             calY,
-            feature_names=feature_names, 
-            discretizer='binary', 
-            categorical_features=categorical_features, 
+            feature_names=feature_names,
+            discretizer='binary',
+            categorical_features=categorical_features,
             categorical_labels=categorical_labels,
             mode='regression'
         )
@@ -89,29 +89,29 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
-        
+
+
         cal_exp.set_discretizer('quartile')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, QuartileDiscretizer)
@@ -120,28 +120,28 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         cal_exp.set_discretizer('decile')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, DecileDiscretizer)
@@ -149,41 +149,41 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules() 
-          
+        exp.get_factual_rules()
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-    
-    
+
+
     @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     def test_knn_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
-            model, 
-            calX, 
+            model,
+            calX,
             calY,
-            feature_names=feature_names, 
-            discretizer='binary', 
-            categorical_features=categorical_features, 
+            feature_names=feature_names,
+            discretizer='binary',
+            categorical_features=categorical_features,
             categorical_labels=categorical_labels,
             mode='regression',
             difficulty_estimator=DifficultyEstimator().fit(X=trainX, y=trainY, scaler=True),
@@ -195,29 +195,29 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
-        
+
+
         cal_exp.set_discretizer('quartile')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, QuartileDiscretizer)
@@ -226,28 +226,28 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         cal_exp.set_discretizer('decile')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, DecileDiscretizer)
@@ -255,41 +255,41 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules() 
-          
+        exp.get_factual_rules()
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
-        
+
+
     @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     def test_var_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
-            model, 
-            calX, 
+            model,
+            calX,
             calY,
-            feature_names=feature_names, 
-            discretizer='binary', 
-            categorical_features=categorical_features, 
+            feature_names=feature_names,
+            discretizer='binary',
+            categorical_features=categorical_features,
             categorical_labels=categorical_labels,
             mode='regression',
             difficulty_estimator=DifficultyEstimator().fit(X=trainX, learner=model, scaler=True),
@@ -301,29 +301,29 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
-        
+
+
         cal_exp.set_discretizer('quartile')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, QuartileDiscretizer)
@@ -332,28 +332,28 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         cal_exp.set_discretizer('decile')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, DecileDiscretizer)
@@ -361,29 +361,29 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules() 
-          
+        exp.get_factual_rules()
+
         exp = cal_exp(testX, testY)
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         exp = cal_exp(testX,low_high_percentiles=(-np.inf,0.9))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-   
+
 
 
 if __name__ == '__main__':

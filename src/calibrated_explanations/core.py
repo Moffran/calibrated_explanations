@@ -25,7 +25,7 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
 from .VennAbers import VennAbers
 
-__version__ = 'v0.0.10'
+__version__ = 'v0.0.11'
 
 
 class CalibratedExplainer:
@@ -573,14 +573,14 @@ class CalibratedExplainer:
 
 
     def __get_greater_values(self, f: int, greater: float):
-        greater_values = np.percentile(self.cal_X[self.cal_X[:,f] > greater,f], 
+        greater_values = np.percentile(self.cal_X[self.cal_X[:,f] > greater,f],
                                        self.sample_percentiles)
         return greater_values
 
 
 
     def __get_lesser_values(self, f: int, lesser: float):
-        lesser_values = np.percentile(self.cal_X[self.cal_X[:,f] < lesser,f], 
+        lesser_values = np.percentile(self.cal_X[self.cal_X[:,f] < lesser,f],
                                       self.sample_percentiles)
         return lesser_values
 

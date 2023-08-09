@@ -28,7 +28,7 @@ def load_binary_dataset():
     fileName = 'data/' + dataSet + ".csv"
     df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
 
-    X, y = df.drop(target,axis=1), df[target] 
+    X, y = df.drop(target,axis=1), df[target]
     no_of_classes = len(np.unique(y))
     no_of_features = X.shape[1]
     no_of_instances = X.shape[0]
@@ -39,7 +39,7 @@ def load_binary_dataset():
     X, y = X.values[idx, :], y.values[idx]
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     test_index = np.array([*range(int(num_to_test/2)), *range(no_of_instances-1, no_of_instances-int(num_to_test/2)-1,-1)])
-    train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)   
+    train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
     traincal_X, testX = X[train_index, :], X[test_index, :]
     trainCalY, testY = y[train_index], y[test_index]
     # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
@@ -79,7 +79,7 @@ def load_multiclass_dataset():
                     mapping[key] = idx
             df[col] = df[col].map(mapping)
 
-    X, y = df.drop(target,axis=1), df[target] 
+    X, y = df.drop(target,axis=1), df[target]
     columns = X.columns
     no_of_classes = len(np.unique(y))
     no_of_features = X.shape[1]
@@ -94,7 +94,7 @@ def load_multiclass_dataset():
         test_idx.append(np.where(y == i)[0][0:int(num_to_test/no_of_classes)])
     test_index = np.array(test_idx).flatten()
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
-    train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)   
+    train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
     traincal_X, testX = X[train_index, :], X[test_index, :]
     trainCalY, testY = y[train_index], y[test_index]
     # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
@@ -107,7 +107,7 @@ def get_classification_model(model_name, trainX, trainY):
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
     model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
-    model.fit(trainX,trainY)  
+    model.fit(trainX,trainY)
     return model, model_name
 
 
@@ -125,12 +125,12 @@ class TestCalibratedExplainer(unittest.TestCase):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
-            model, 
-            cal_X, 
+            model,
+            cal_X,
             calY,
-            feature_names=feature_names, 
-            discretizer='binary', 
-            categorical_features=categorical_features, 
+            feature_names=feature_names,
+            discretizer='binary',
+            categorical_features=categorical_features,
             mode='classification',
         )
         exp = cal_exp(testX)
@@ -140,7 +140,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
-        
+
         cal_exp.set_discretizer('binaryEntropy')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
@@ -148,8 +148,8 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()    
-        
+        exp.get_factual_rules()
+
         cal_exp.set_discretizer('entropy')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, EntropyDiscretizer)
@@ -157,19 +157,19 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()    
+        exp.get_factual_rules()
 
     @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
-            model, 
-            cal_X, 
+            model,
+            cal_X,
             calY,
-            feature_names=feature_names, 
-            discretizer='binary', 
-            categorical_features=categorical_features, 
+            feature_names=feature_names,
+            discretizer='binary',
+            categorical_features=categorical_features,
             mode='classification',
         )
         exp = cal_exp(testX)
@@ -178,8 +178,8 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()        
-        
+        exp.get_factual_rules()
+
         cal_exp.set_discretizer('binaryEntropy')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
@@ -187,8 +187,8 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()    
-        
+        exp.get_factual_rules()
+
         cal_exp.set_discretizer('entropy')
         exp = cal_exp(testX)
         self.assertIsInstance(exp.calibrated_explainer.discretizer, EntropyDiscretizer)
@@ -196,7 +196,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
         exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()    
+        exp.get_factual_rules()
 
 
 if __name__ == '__main__':
