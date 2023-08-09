@@ -10,10 +10,10 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 # from sklearn.utils import shuffle
 # import matplotlib.pyplot as plt
-from lime.discretize import EntropyDiscretizer, DecileDiscretizer, QuartileDiscretizer
+from lime.discretize import EntropyDiscretizer, DecileDiscretizer, QuartileDiscretizer # pylint: disable=unused-import
 # from shap import Explainer
 
-from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer
+from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer # pylint: disable=unused-import
 from crepes.extras import DifficultyEstimator # sigma_knn, sigma_variance, sigma_variance_oob
 
 model = 'RF'
@@ -35,7 +35,6 @@ def load_regression_dataset():
     columns = df.drop(target,axis=1).columns
     no_of_classes = len(np.unique(y))
     no_of_features = X.shape[1]
-    no_of_instances = X.shape[0]
     categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
     # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
 
@@ -44,12 +43,12 @@ def load_regression_dataset():
     trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=42)
     return trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, columns
 
-def get_regression_model(model, trainX, trainY):
+def get_regression_model(model_name, trainX, trainY):
     t1 = DecisionTreeRegressor()
     r1 = RandomForestRegressor(n_estimators=100)
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
-    model, model_name = model_dict[model] 
+    model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
     model.fit(trainX,trainY)  
     return model, model_name
 
@@ -57,7 +56,7 @@ def get_regression_model(model, trainX, trainY):
 
 class TestCalibratedExplainer(unittest.TestCase):
     def assertExplanation(self, exp):
-        for i, instance in enumerate(exp.test_objects):
+        for _, instance in enumerate(exp.test_objects):
             boundaries = exp.calibrated_explainer.rule_boundaries(instance)
             for f in range(exp.calibrated_explainer.num_features):
                 # assert that instance values are covered by the rule conditions
@@ -67,8 +66,8 @@ class TestCalibratedExplainer(unittest.TestCase):
     
     # NOTE: this takes takes about 70s to run
     def test_regression_ce(self):
-        trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, feature_names = load_regression_dataset()
-        model, model_name = get_regression_model('RF', trainX, trainY)
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model, 
             calX, 
@@ -172,8 +171,8 @@ class TestCalibratedExplainer(unittest.TestCase):
     
     @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     def test_knn_normalized_regression_ce(self):
-        trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, feature_names = load_regression_dataset()
-        model, model_name = get_regression_model('RF', trainX, trainY)
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model, 
             calX, 
@@ -278,8 +277,8 @@ class TestCalibratedExplainer(unittest.TestCase):
         
     @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     def test_var_normalized_regression_ce(self):
-        trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, feature_names = load_regression_dataset()
-        model, model_name = get_regression_model('RF', trainX, trainY)
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model, 
             calX, 

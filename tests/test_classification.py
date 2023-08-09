@@ -14,6 +14,7 @@ from lime.discretize import EntropyDiscretizer
 # from shap import Explainer
 
 from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer
+# pylint: disable=missing-docstring, invalid-name, protected-access, too-many-locals
 
 model = 'RF'
 def load_binary_dataset():
@@ -47,7 +48,6 @@ def load_multiclass_dataset():
     dataSet = 'glass'
     delimiter = ','
     num_to_test = 12
-    model_name = 'RF'
     # print(dataSet)
 
     fileName = 'data/Multiclass/' + dataSet + ".csv"
@@ -66,17 +66,15 @@ def load_multiclass_dataset():
             if col != target:
                 categorical_features.append(c)
                 categorical_labels[c] = dict(zip(range(len(np.unique(df[col]))),np.unique(df[col])))
-            else:
-                target_labels = dict(zip(range(len(np.unique(df[col]))),np.unique(df[col])))
             mapping = dict(zip(np.unique(df[col]), range(len(np.unique(df[col])))))
             if len(mapping) > 5:
                 counts = df[col].value_counts().sort_values(ascending=False)
-                id = 0
+                idx = 0
                 for key, count in counts.items():
                     if count > 5:
-                        id += 1
+                        idx += 1
                         continue
-                    mapping[key] = id
+                    mapping[key] = idx
             df[col] = df[col].map(mapping)
 
     X, y = df.drop(target,axis=1), df[target] 
@@ -106,7 +104,7 @@ def get_classification_model(model_name, trainX, trainY):
     r1 = RandomForestClassifier(n_estimators=100)
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
-    model, model_name = model_dict[model_name] 
+    model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
     model.fit(trainX,trainY)  
     return model, model_name
 
@@ -114,7 +112,7 @@ def get_classification_model(model_name, trainX, trainY):
 
 class TestCalibratedExplainer(unittest.TestCase):
     def assertExplanation(self, exp):
-        for i, instance in enumerate(exp.test_objects):
+        for _, instance in enumerate(exp.test_objects):
             boundaries = exp.calibrated_explainer.rule_boundaries(instance)
             for f in range(exp.calibrated_explainer.num_features):
                 # assert that instance values are covered by the rule conditions
@@ -122,8 +120,8 @@ class TestCalibratedExplainer(unittest.TestCase):
         return True
 
     def test_binary_ce(self):
-        trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, feature_names = load_binary_dataset()
-        model, model_name = get_classification_model('RF', trainX, trainY)
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model, 
             calX, 
@@ -161,8 +159,8 @@ class TestCalibratedExplainer(unittest.TestCase):
 
     @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
-        trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, feature_names = load_multiclass_dataset()
-        model, model_name = get_classification_model('RF', trainX, trainY)
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model, 
             calX, 
