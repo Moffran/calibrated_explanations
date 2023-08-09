@@ -14,9 +14,12 @@ from lime.discretize import EntropyDiscretizer
 # from shap import Explainer
 
 from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer
-# pylint: disable=missing-docstring, invalid-name, protected-access, too-many-locals
+# pylint: disable=missing-docstring, invalid-name, protected-access, too-many-locals, line-too-long
+# flake8: noqa: E501
 
-model = 'RF'
+MODEL_NAME = 'RF'
+
+
 def load_binary_dataset():
     dataSet = 'diabetes_full'
     delimiter = ','
@@ -26,22 +29,22 @@ def load_binary_dataset():
     fileName = 'data/' + dataSet + ".csv"
     df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
 
-    X, y = df.drop(target,axis=1), df[target] 
+    X, y = df.drop(target, axis=1), df[target] 
     no_of_classes = len(np.unique(y))
     no_of_features = X.shape[1]
     no_of_instances = X.shape[0]
     columns = X.columns
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
+    categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:, i])) < 10]
     # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
     idx = np.argsort(y.values).astype(int)
-    X, y = X.values[idx,:], y.values[idx]
+    X, y = X.values[idx, :], y.values[idx]
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
-    test_index = np.array([*range(int(num_to_test/2)), *range(no_of_instances-1, no_of_instances-int(num_to_test/2)-1,-1)])
+    test_index = np.array([*range(int(num_to_test/2)), *range(no_of_instances-1, no_of_instances-int(num_to_test/2)-1, -1)])
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)   
-    traincal_X, testX = X[train_index,:], X[test_index,:]
+    traincal_X, testX = X[train_index, :], X[test_index, :]
     trainCalY, testY = y[train_index], y[test_index]
     # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
-    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
+    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33, random_state=42, stratify=trainCalY)
     return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
 
 def load_multiclass_dataset():
@@ -82,10 +85,10 @@ def load_multiclass_dataset():
     no_of_classes = len(np.unique(y))
     no_of_features = X.shape[1]
     no_of_instances = X.shape[0]
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
+    categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:, i])) < 10]
     # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
     idx = np.argsort(y.values).astype(int)
-    X, y = X.values[idx,:], y.values[idx]
+    X, y = X.values[idx, :], y.values[idx]
     test_idx = []
     idx = list(range(no_of_instances))
     for i in range(no_of_classes):
@@ -93,19 +96,20 @@ def load_multiclass_dataset():
     test_index = np.array(test_idx).flatten()
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)   
-    traincal_X, testX = X[train_index,:], X[test_index,:]
+    traincal_X, testX = X[train_index, :], X[test_index, :]
     trainCalY, testY = y[train_index], y[test_index]
     # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
-    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
+    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33, random_state=42, stratify=trainCalY)
     return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
+
 
 def get_classification_model(model_name, trainX, trainY):
     t1 = DecisionTreeClassifier()
     r1 = RandomForestClassifier(n_estimators=100)
-    model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
+    model_dict = {'RF': (r1, "RF"), 'DT': (t1, "DT")}
 
-    model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
-    model.fit(trainX,trainY)  
+    model, model_name = model_dict[model_name]  
+    model.fit(trainX, trainY)  
     return model, model_name
 
 
@@ -121,7 +125,7 @@ class TestCalibratedExplainer(unittest.TestCase):
 
     def test_binary_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        model, _ = get_classification_model('RF', trainX, trainY)  
         cal_exp = CalibratedExplainer(
             model, 
             cal_X, 
@@ -160,7 +164,7 @@ class TestCalibratedExplainer(unittest.TestCase):
     @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        model, _ = get_classification_model('RF', trainX, trainY)  
         cal_exp = CalibratedExplainer(
             model, 
             cal_X, 

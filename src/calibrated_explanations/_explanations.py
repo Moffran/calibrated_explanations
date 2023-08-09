@@ -1,4 +1,5 @@
-# pylint: disable=too-many-lines, trailing-whitespace
+# pylint: disable=too-many-lines, trailing-whitespace, line-too-long
+# flake8: noqa: E501
 """contains the CalibratedExplanation class created by the CalibratedExplainer class
 """
 import os
@@ -185,21 +186,21 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             return self.conjunctive_regular_rules
         factual_rules = []
         for i in range(len(self.test_objects)):
-            instance = self.test_objects[i,:]
-            factual = {'weight':[],
-                       'weight_low':[],
-                       'weight_high':[],
-                       'predict':[],
-                       'predict_low':[],
-                       'predict_high':[],
-                       'value':[],
-                       'rule':[],
-                       'feature':[],
-                       'feature_value':[],
-                       'classes':[]}
+            instance = self.test_objects[i, :]
+            factual = {'weight': [],
+                       'weight_low': [],
+                       'weight_high': [],
+                       'predict': [],
+                       'predict_low': [],
+                       'predict_high': [],
+                       'value': [],
+                       'rule': [],
+                       'feature': [],
+                       'feature_value': [],
+                       'classes': []}
             factual['classes'].append(self.predict['classes'][i])
             rules = self.define_rules(instance)
-            for f,_ in enumerate(instance): # pylint: disable=invalid-name
+            for f, _ in enumerate(instance): # pylint: disable=invalid-name
                 factual['weight'].append(self.feature_weights['predict'][i][f])
                 factual['weight_low'].append(self.feature_weights['low'][i][f])
                 factual['weight_high'].append(self.feature_weights['high'][i][f])
@@ -233,22 +234,22 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         self.counterfactual_labels = {}
         for i in range(len(self.test_objects)):
             self.counterfactual_labels[i] = {}
-            instance = self.test_objects[i,:]
+            instance = self.test_objects[i, :]
             discretized = self.calibrated_explainer.discretize(deepcopy(instance).reshape(1,-1))[0]
             instance_predict = self.binned['predict'][i]
             instance_low = self.binned['low'][i]
             instance_high = self.binned['high'][i]
-            counterfactual = {'weight':[],
-                              'weight_low':[],
-                              'weight_high':[],
-                              'predict':[],
-                              'predict_low':[],
-                              'predict_high':[],
-                              'value':[],
-                              'rule':[],
-                              'feature':[],
-                              'feature_value':[],
-                              'classes':[]}
+            counterfactual = {'weight': [],
+                              'weight_low': [],
+                              'weight_high': [],
+                              'predict': [],
+                              'predict_low': [],
+                              'predict_high': [],
+                              'value': [],
+                              'rule': [],
+                              'feature': [],
+                              'feature_value': [],
+                              'classes': []}
 
             counterfactual['classes'].append(self.predict['classes'][i])
             rule_boundaries = self.calibrated_explainer.rule_boundaries(instance)
@@ -363,7 +364,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             # pylint: disable=unsubscriptable-object, invalid-name
             y = None if self.test_targets is None else self.test_targets \
                     if np.isscalar(self.test_targets) else self.test_targets[i]
-            x_original = deepcopy(self.test_objects[i,:])
+            x_original = deepcopy(self.test_objects[i, :])
             conjunctive = factual
 
             feature_weights = np.reshape(factual['weight'], (len(factual['weight'])))
@@ -435,7 +436,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             # pylint: disable=unsubscriptable-object, invalid-name
             y = None if self.test_targets is None else self.test_targets \
                                 if np.isscalar(self.test_targets) else self.test_targets[i]
-            x_original = deepcopy(self.test_objects[i,:])
+            x_original = deepcopy(self.test_objects[i, :])
             conjunctive = counterfactual
 
             feature_weights = np.reshape(counterfactual['weight'], (len(counterfactual['weight'])))
@@ -678,7 +679,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         p_h = predict['high'][idx] if predict['high'][idx] != np.inf \
                             else max(self.calibrated_explainer.calY)
         p = predict['predict'][idx]
-        venn_abers={'low_high':[p_l,p_h],'predict':p}
+        venn_abers={'low_high': [p_l,p_h],'predict':p}
         # Fill original Venn Abers interval
         xl = np.linspace(-0.5, x[0], 2)
         xh = np.linspace(x[-1], x[-1]+0.5, 2)
@@ -717,7 +718,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                                              else max(self.calibrated_explainer.calY)
             p = feature_predict['predict'][j]
             xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
-            venn_abers={'low_high':[p_l,p_h],'predict':p}
+            venn_abers={'low_high': [p_l,p_h],'predict':p}
             # Fill each feature impact
             if 'regression' in self.calibrated_explainer.mode:
                 ax1.fill_betweenx(xj, p_l,p_h, color='r', alpha= 0.40)
@@ -944,11 +945,11 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             feature_weights = self.feature_weights['predict'][i]
             features_to_plot = self.__rank_features(feature_weights, 
                         num_to_show=self.calibrated_explainer.num_features)
-            rules = self.define_rules(self.test_objects[i,:])
+            rules = self.define_rules(self.test_objects[i, :])
             for j,f in enumerate(features_to_plot[::-1]): # pylint: disable=invalid-name
                 tmp.local_exp[1][j] = (f, feature_weights[f])
             tmp.domain_mapper.discretized_feature_names = rules
-            tmp.domain_mapper.feature_values = self.test_objects[i,:]
+            tmp.domain_mapper.feature_values = self.test_objects[i, :]
             exp.append(tmp)
         return exp
 
@@ -963,7 +964,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         _, shap_exp = self.calibrated_explainer.preload_SHAP(len(self.test_objects[:,0]))
         for i in range(len(self.test_objects[:,0])):
             shap_exp.base_values[i] = self.predict['predict'][i]
-            for f in range(len(self.test_objects[0,:])):
+            for f in range(len(self.test_objects[0, :])):
                 shap_exp.values[i][f] = -self.feature_weights['predict'][i][f]
         return shap_exp
 

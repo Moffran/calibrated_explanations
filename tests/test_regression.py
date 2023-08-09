@@ -1,3 +1,5 @@
+# pylint: disable=line-too-long, missing-module-docstring, missing-function-docstring
+# flake8: noqa: E501
 from __future__ import absolute_import
 
 import unittest
@@ -13,10 +15,10 @@ from sklearn.model_selection import train_test_split
 from lime.discretize import EntropyDiscretizer, DecileDiscretizer, QuartileDiscretizer # pylint: disable=unused-import
 # from shap import Explainer
 
-from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer # pylint: disable=unused-import
 from crepes.extras import DifficultyEstimator # sigma_knn, sigma_variance, sigma_variance_oob
+from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer # pylint: disable=unused-import
 
-model = 'RF'
+MODEL_NAME = 'RF'
 def load_regression_dataset():
     dataSet = 'housing.csv'
     delimiter = ';'
@@ -48,7 +50,7 @@ def get_regression_model(model_name, trainX, trainY):
     r1 = RandomForestRegressor(n_estimators=100)
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
-    model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
+    model, model_name = model_dict[model_name] 
     model.fit(trainX,trainY)  
     return model, model_name
 
@@ -67,7 +69,7 @@ class TestCalibratedExplainer(unittest.TestCase):
     # NOTE: this takes takes about 70s to run
     def test_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
-        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        model, _ = get_regression_model('RF', trainX, trainY)
         cal_exp = CalibratedExplainer(
             model, 
             calX, 
@@ -172,7 +174,7 @@ class TestCalibratedExplainer(unittest.TestCase):
     @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     def test_knn_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
-        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        model, _ = get_regression_model('RF', trainX, trainY)
         cal_exp = CalibratedExplainer(
             model, 
             calX, 
@@ -278,7 +280,7 @@ class TestCalibratedExplainer(unittest.TestCase):
     @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     def test_var_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
-        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        model, _ = get_regression_model('RF', trainX, trainY) 
         cal_exp = CalibratedExplainer(
             model, 
             calX, 
