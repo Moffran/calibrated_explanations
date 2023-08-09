@@ -57,7 +57,7 @@ def get_regression_model(model, trainX, trainY):
 
 class TestCalibratedExplainer(unittest.TestCase):
     def assertExplanation(self, exp):
-        for i, instance in enumerate(exp.x):
+        for i, instance in enumerate(exp.test_objects):
             boundaries = exp.calibrated_explainer.rule_boundaries(instance)
             for f in range(exp.calibrated_explainer.num_features):
                 # assert that instance values are covered by the rule conditions

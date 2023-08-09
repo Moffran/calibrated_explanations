@@ -286,7 +286,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                             counterfactual['rule'].append(
                                     f'{self.calibrated_explainer.feature_names[f]} = {value}')
                 else:
-                    values = np.array(self.calibrated_explainer.calX[:,f])
+                    values = np.array(self.calibrated_explainer.cal_X[:,f])
                     lesser = rule_boundaries[f][0]
                     greater = rule_boundaries[f][1]
 
