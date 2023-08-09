@@ -23,7 +23,7 @@ from shap import Explainer
 from calibrated_explanations import CalibratedExplanation, VennAbers, BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
 
-__version__ = 'v0.0.11'
+__version__ = 'v0.0.11a'
 
 
 class CalibratedExplainer:
