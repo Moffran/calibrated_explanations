@@ -7,7 +7,7 @@ import warnings
 from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
-from calibrated_explanations import DecileDiscretizer, EntropyDiscretizer, BinaryDiscretizer, BinaryEntropyDiscretizer
+from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, EntropyDiscretizer, DecileDiscretizer
 
 class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
     """

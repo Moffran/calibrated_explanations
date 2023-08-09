@@ -2,7 +2,7 @@
 """This module defines the discretizers used by CalibratedExplainer.
 The discretizers are defined using the same super class as the discretizers from the LIME package.
 """
-from lime.discretize import BaseDiscretizer
+from lime.discretize import BaseDiscretizer, QuartileDiscretizer, DecileDiscretizer, EntropyDiscretizer  # pylint: disable=unused-import, line-too-long
 import sklearn
 import numpy as np
 

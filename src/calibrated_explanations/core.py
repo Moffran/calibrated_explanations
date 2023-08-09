@@ -17,11 +17,13 @@ import pandas as pd
 import sklearn.neighbors as nn
 import crepes
 
-from lime.lime_tabular import LimeTabularExplainer
 from shap import Explainer
+from lime.lime_tabular import LimeTabularExplainer
 
-from calibrated_explanations import CalibratedExplanation, VennAbers, BinaryDiscretizer, BinaryEntropyDiscretizer, \
+from ._explanations import CalibratedExplanation
+from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
+from .VennAbers import VennAbers
 
 __version__ = 'v0.0.11a'
 
