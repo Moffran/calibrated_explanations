@@ -71,6 +71,8 @@ Set-up your `~/.pypirc` as instructed when creating a token:
 
 	Use `pip install --upgrade` if needed to force installation of the latest version.
 
+	Try all the notebooks, to ensure they work.
+
 9. Commit and tag a new [semantic version] on git.
 
 	```bash
