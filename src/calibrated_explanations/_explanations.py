@@ -7,6 +7,7 @@ import warnings
 from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
+from calibrated_explanations import DecileDiscretizer, EntropyDiscretizer, BinaryDiscretizer, BinaryEntropyDiscretizer
 
 class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
     """
@@ -516,27 +517,27 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         """
         if counterfactuals:
             if 'regression' in self.calibrated_explainer.mode:
-                if self.calibrated_explainer.discretizer != 'decile':
-                    warnings.warn('Counterfactual explanations for regressoin recommend using the \
-                                    decile discretizer. Consider extracting counterfactual \
-                                    explanations using `explainer.get_counterfactuals(test_set)`')
+                if not isinstance(self.calibrated_explainer.discretizer, DecileDiscretizer):
+                    warnings.warn('Counterfactual explanations for regressoin recommend using the ' +\
+                                    'decile discretizer. Consider extracting counterfactual ' +\
+                                    'explanations using `explainer.get_counterfactuals(test_set)`')
             else:
-                if self.calibrated_explainer.discretizer != 'entropy':
-                    warnings.warn('Counterfactual explanations for classification recommend using \
-                                    the entropy discretizer. Consider extracting counterfactual \
-                                    explanations using `explainer.get_counterfactuals(test_set)`')
+                if not isinstance(self.calibrated_explainer.discretizer, EntropyDiscretizer):
+                    warnings.warn('Counterfactual explanations for classification recommend using ' +\
+                                    'the entropy discretizer. Consider extracting counterfactual ' +\
+                                    'explanations using `explainer.get_counterfactuals(test_set)`')
 
         else:
             if 'regression' in self.calibrated_explainer.mode:
-                if self.calibrated_explainer.discretizer != 'binary':
-                    warnings.warn('Factual explanations for regressoin recommend using the decile \
-                                    discretizer. Consider extracting factual explanations using \
-                                    `explainer.get_factuals(test_set)`')
+                if not isinstance(self.calibrated_explainer.discretizer, BinaryDiscretizer):
+                    warnings.warn('Factual explanations for regressoin recommend using the binary ' +\
+                                    'discretizer. Consider extracting factual explanations using ' +\
+                                    '`explainer.get_factuals(test_set)`')
             else:
-                if self.calibrated_explainer.discretizer != 'binaryEntropy':
-                    warnings.warn('Factual explanations for classification recommend using the \
-                                    binaryEntropy discretizer. Consider extracting factual \
-                                    explanations using `explainer.get_factuals(test_set)`')
+                if not isinstance(self.calibrated_explainer.discretizer, BinaryEntropyDiscretizer):
+                    warnings.warn('Factual explanations for classification recommend using the ' +\
+                                    'binaryEntropy discretizer. Consider extracting factual ' +\
+                                    'explanations using `explainer.get_factuals(test_set)`')
 
 
     # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals
@@ -675,9 +676,9 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
 
         x = np.linspace(0, num_to_show-1, num_to_show)
         p_l = predict['low'][idx] if predict['low'][idx] != -np.inf \
-                            else min(self.calibrated_explainer.calY)
+                            else min(self.calibrated_explainer.cal_y)
         p_h = predict['high'][idx] if predict['high'][idx] != np.inf \
-                            else max(self.calibrated_explainer.calY)
+                            else max(self.calibrated_explainer.cal_y)
         p = predict['predict'][idx]
         venn_abers={'low_high': [p_l,p_h],'predict':p}
         # Fill original Venn Abers interval
@@ -713,9 +714,9 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
 
         for jx, j in enumerate(features_to_plot):
             p_l = feature_predict['low'][j] if feature_predict['low'][j] != -np.inf \
-                                            else min(self.calibrated_explainer.calY)
+                                            else min(self.calibrated_explainer.cal_y)
             p_h = feature_predict['high'][j] if feature_predict['high'][j] != np.inf \
-                                             else max(self.calibrated_explainer.calY)
+                                             else max(self.calibrated_explainer.cal_y)
             p = feature_predict['predict'][j]
             xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
             venn_abers={'low_high': [p_l,p_h],'predict':p}
@@ -753,8 +754,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             ax1.set_xticks(np.linspace(0, 1, 11))
         elif 'regression' in self.calibrated_explainer.mode:
             ax1.set_xlabel(f'Prediction interval with {self.get_confidence()}% confidence')
-            ax1.set_xlim([min(self.calibrated_explainer.calY),
-                          max(self.calibrated_explainer.calY)])
+            ax1.set_xlim([min(self.calibrated_explainer.cal_y),
+                          max(self.calibrated_explainer.cal_y)])
         else:
             if self.calibrated_explainer.class_labels is not None:
                 if self.calibrated_explainer.is_multiclass():
@@ -804,9 +805,9 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
         p = predict['predict'][idx]
         pl = predict['low'][idx] if predict['low'][idx] != -np.inf \
-                                 else min(self.calibrated_explainer.calY)
+                                 else min(self.calibrated_explainer.cal_y)
         ph = predict['high'][idx] if predict['high'][idx] != np.inf \
-                                  else max(self.calibrated_explainer.calY)
+                                  else max(self.calibrated_explainer.cal_y)
         if self.calibrated_explainer.mode == 'classification':
             ax00.fill_betweenx(xj, 1-p, 1-p, color='b')
             ax00.fill_betweenx(xj, 0, 1-ph, color='b')
@@ -829,7 +830,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         else:     
             ax01.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
             ax01.fill_betweenx(xj, p, p, color='r')
-            ax01.set_xlim([min(self.calibrated_explainer.calY),max(self.calibrated_explainer.calY)])
+            ax01.set_xlim([min(self.calibrated_explainer.cal_y),max(self.calibrated_explainer.cal_y)])
         ax01.set_yticks(range(1))
         
         if 'regression' in self.calibrated_explainer.mode:
@@ -936,8 +937,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             tmp.local_pred = self.predict['predict'][i]
             if 'regression' in self.calibrated_explainer.mode:
                 tmp.predicted_value = self.predict['predict'][i]
-                tmp.min_value = min(self.calibrated_explainer.calY)
-                tmp.max_value = max(self.calibrated_explainer.calY)
+                tmp.min_value = min(self.calibrated_explainer.cal_y)
+                tmp.max_value = max(self.calibrated_explainer.cal_y)
             else:
                 tmp.predict_proba[0], tmp.predict_proba[1] = \
                         1-self.predict['predict'][i], self.predict['predict'][i]

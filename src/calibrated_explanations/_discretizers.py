@@ -1,8 +1,29 @@
-from lime.discretize import BaseDiscretizer, DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer 
+# flake8: noqa: E501
+"""This module defines the discretizers used by CalibratedExplainer.
+The discretizers are defined using the same super class as the discretizers from the LIME package.
+"""
+from lime.discretize import BaseDiscretizer
 import sklearn
 import numpy as np
 
+
 class BinaryDiscretizer(BaseDiscretizer):
+    """a binary discretizer for the CalibratedExplainer
+
+    Args:        
+        data: numpy 2d array
+        categorical_features: list of indices (ints) corresponding to the
+            categorical columns. These features will not be discretized.
+            Everything else will be considered continuous, and will be
+            discretized.
+        categorical_names: map from int to list of names, where
+            categorical_names[x][y] represents the name of the yth value of
+            column x.
+        feature_names: list of names (strings) corresponding to the columns
+            in the training data.
+        data_stats: must have 'means', 'stds', 'mins' and 'maxs', use this
+            if you don't want these values to be computed from data
+    """
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
 
         BaseDiscretizer.__init__(self, data, categorical_features,
@@ -16,15 +37,32 @@ class BinaryDiscretizer(BaseDiscretizer):
             bins.append(qts)
         return bins
 
+
 class BinaryEntropyDiscretizer(BaseDiscretizer):
+    """a binary entropy discretizer for the CalibratedExplainer
+
+    Args:        
+        data: numpy 2d array
+        categorical_features: list of indices (ints) corresponding to the
+            categorical columns. These features will not be discretized.
+            Everything else will be considered continuous, and will be
+            discretized.
+        categorical_names: map from int to list of names, where
+            categorical_names[x][y] represents the name of the yth value of
+            column x.
+        feature_names: list of names (strings) corresponding to the columns
+            in the training data.
+        data_stats: must have 'means', 'stds', 'mins' and 'maxs', use this
+            if you don't want these values to be computed from data
+    """
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
-        if(labels is None):
-            raise ValueError('Labels must be not None when using \
-                             EntropyDiscretizer')
+        if labels is None:
+            raise ValueError('Labels must not be None when using '+\
+                             'BinaryEntropyDiscretizer')
         BaseDiscretizer.__init__(self, data, categorical_features,
                                  feature_names, labels=labels,
                                  random_state=random_state)
-
+    # pylint: disable=invalid-name
     def bins(self, data, labels):
         bins = []
         for feature in self.to_discretize:

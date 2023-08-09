@@ -1,7 +1,12 @@
+"""module containing wrappers for the LIME and SHAP explainers to use the CalibratedExplainer
+"""
+# pylint: disable=invalid-name, line-too-long, super-init-not-called, arguments-differ, unused-argument, too-many-arguments
+# flake8: noqa: E501
 from lime.lime_tabular import LimeTabularExplainer
 from shap import Explainer
 
 from .core import CalibratedExplainer
+
 
 class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
     '''
@@ -29,7 +34,8 @@ class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
             self.calibrated_explainer = CalibratedExplainer(classifier, self.training_data, self.training_labels, self.feature_names, self.discretizer, self.categorical_features,)
             self.discretizer = self.calibrated_explainer.discretizer
         return self.calibrated_explainer(data_row).as_lime()[0]
-    
+
+
 class CalibratedAsShapExplainer(Explainer):
     '''
     Wrapper for the CalibratedExplainer to be used as a shap explainer.
@@ -43,3 +49,4 @@ class CalibratedAsShapExplainer(Explainer):
 
     def __call__(self, *args, **kwargs):
         return self.calibrated_explainer(*args, **kwargs).as_shap()
+    

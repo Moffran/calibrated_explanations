@@ -20,10 +20,8 @@ import crepes
 from lime.lime_tabular import LimeTabularExplainer
 from shap import Explainer
 
-from ._explanations import CalibratedExplanation
-from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
+from calibrated_explanations import CalibratedExplanation, VennAbers, BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
-from .VennAbers import VennAbers
 
 __version__ = 'v0.0.11'
 
@@ -272,6 +270,7 @@ class CalibratedExplainer:
             predict = y_prob
             # Changed to 1-p so that high probability means high prediction and vice versa
             return [1-predict[0]], 1-interval[:,1], 1-interval[:,0], None
+        return None, None, None, None # Should never happen
 
     def get_factuals(self,
                  test_X,

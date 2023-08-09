@@ -1,12 +1,15 @@
 """contains the VennAbers class which is used to calibrate the predictions of a model
 
 """
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, line-too-long
+# flake8: noqa: E501
 import numpy as np
 from sklearn.isotonic import IsotonicRegression
 
+
+
+def VennABERS_by_def(calibration, test):
 # Function copied from https://github.com/ptocca/VennABERS/blob/master/test/VennABERS_test.ipynb
-def VennABERS_by_def(calibration,test):
     """a function to compute the VennABERS score
 
     Args:
