@@ -43,6 +43,7 @@ The notebooks folder contains a number of notebooks illustrating different use c
 * [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) 
 * [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) 
 
+### Classification
 Let us illustrate how we may use `calibrated-explanations` to generate explanations from a classifier trained on a dataset from
 [www.openml.org](https://www.openml.org), which we first split into a
 training and a test set using `train_test_split` from
@@ -75,8 +76,8 @@ rf = RandomForestClassifier(n_jobs=-1)
 rf.fit(X_prop_train, y_prop_train)
 ```
 
+#### Factual Explanations
 Lets extract explanations for our test set using the `calibrated-explanations` package by importing `CalibratedExplainer` from `calibrated_explanations`.
-
 
 ```python
 from calibrated_explanations import CalibratedExplainer, __version__
@@ -100,6 +101,7 @@ factual_explanations.add_conjunctive_factual_rules().plot_regular()
 factual_explanations.remove_conjunctive_rules().plot_regular()
 ```
 
+#### Counterfactual Explanations
 An alternative to factual rules is to extract counterfactual rules. 
 From version 0.0.8, `get_counterfactuals` can be called to get counterfactual rules with an appropriate discretizer automatically assigned. An alternative is to first change the discretizer to `entropy` (for classification) and then call the `CalibratedExplainer` object as above. 
 
@@ -118,9 +120,10 @@ counterfactual_explanations.plot_counterfactuals()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
 counterfactual_explanations.remove_counterfactual_rules().plot_counterfactuals()
 ```
-
+#### Support for multiclass
 `calibrated-explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
 
+### Regression
 Extracting explanations for regression is very similar to how it is done for classification. 
 
 ```python
@@ -146,6 +149,7 @@ rf = RandomForestRegressor()
 rf.fit(X_prop_train, y_prop_train)
 ```
 
+#### Factual Explanations
 Define a `CalibratedExplainer` object using the new model and data. The `mode` parameter must be explicitly set to regression. Regular and uncertainty plots work in the same way as for classification.
 
 ```python
@@ -163,6 +167,7 @@ factual_explanations.add_conjunctive_factual_rules().plot_regular()
 factual_explanations.remove_conjunctive_rules().plot_regular()
 ```
 
+#### Counterfactual Explanations
 From version 0.0.8, the `get_counterfactuals` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work in the same way as for classification.
 
 ```python
@@ -176,6 +181,8 @@ counterfactual_explanations.plot_counterfactuals()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
 counterfactual_explanations.remove_counterfactual_rules().plot_counterfactuals()
 ```
+
+#### Additional Regression Use Cases
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
 
 
