@@ -7,7 +7,7 @@ Calibrated Explanations
 [![Documentation Status](https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest)](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
 
 
-'calibrated-explanations' is a Python package for the Calibrated Explanations method, supporting both classification and regression.
+`calibrated-explanations` is a Python package for the Calibrated Explanations method, supporting both classification and regression.
 The proposed method is based on Venn-Abers (classification) and Conformal Predictive Systems (regression) and has the following characteristics:
 * Fast, reliable, stable and robust feature importance explanations.
 * Calibration of the underlying model to ensure that predictions reflect reality.
@@ -22,7 +22,7 @@ Install
 
 First, you need a Python environment installed with pip.
 
-'calibrated-explanations' can be installed from PyPI:
+`calibrated-explanations` can be installed from PyPI:
 
 	pip install calibrated-explanations
 
@@ -39,11 +39,11 @@ The dependencies are:
 
 Getting started
 ---------------
-The notebooks folder contains a number of notebooks illustrating different use cases for 'calibrated_explanations'. The following are commented and should be a good start:
+The notebooks folder contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The following are commented and should be a good start:
 * [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) 
 * [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) 
 
-Let us illustrate how we may use `calibrated_explanations` to generate explanations from a classifier trained on a dataset from
+Let us illustrate how we may use `calibrated-explanations` to generate explanations from a classifier trained on a dataset from
 [www.openml.org](https://www.openml.org), which we first split into a
 training and a test set using `train_test_split` from
 [sklearn](https://scikit-learn.org), and then further split the
@@ -75,7 +75,7 @@ rf = RandomForestClassifier(n_jobs=-1)
 rf.fit(X_prop_train, y_prop_train)
 ```
 
-Lets extract explanations for our test set using the `calibrated_explanations`.
+Lets extract explanations for our test set using the `calibrated-explanations` package by importing `CalibratedExplainer` from `calibrated_explanations`.
 
 
 ```python
@@ -119,7 +119,7 @@ counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterf
 counterfactual_explanations.remove_counterfactual_rules().plot_counterfactuals()
 ```
 
-`calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
+`calibrated-explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
 
 Extracting explanations for regression is very similar to how it is done for classification. 
 
