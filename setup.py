@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+# pylint: disable=missing-module-docstring
+
+# !/usr/bin/env python3
 #
 # Please see pyproject.toml
 #

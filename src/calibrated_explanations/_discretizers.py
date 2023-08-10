@@ -1,3 +1,4 @@
+# pylint: disable=too-many-arguments
 # flake8: noqa: E501
 """This module defines the discretizers used by CalibratedExplainer.
 The discretizers are defined using the same super class as the discretizers from the LIME package.
@@ -24,6 +25,7 @@ class BinaryDiscretizer(BaseDiscretizer):
         data_stats: must have 'means', 'stds', 'mins' and 'maxs', use this
             if you don't want these values to be computed from data
     """
+
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
 
         BaseDiscretizer.__init__(self, data, categorical_features,

@@ -65,7 +65,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         """
         if np.isinf(self.get_high_percentile()):
             return 100-self.get_low_percentile()
-        elif np.isinf(self.get_low_percentile()):
+        if np.isinf(self.get_low_percentile()):
             return self.get_high_percentile()
         return self.get_high_percentile() - self.get_low_percentile()
 
@@ -223,6 +223,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
 
 
 
+    # pylint: disable=too-many-statements
     def get_counterfactual_rules(self):
         """creates counterfactual rules
 
@@ -346,6 +347,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
 
 
 
+    # pylint: disable=too-many-locals
     def add_conjunctive_factual_rules(self, num_to_include=5):
         """adds conjunctive factual rules
 
@@ -418,6 +420,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
 
 
 
+    # pylint: disable=too-many-locals
     def add_conjunctive_counterfactual_rules(self, num_to_include=5):
         """adds conjunctive counterfactual rules
 
@@ -887,7 +890,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                 max_val = wh if width < 0 else 0
                 min_val = wl if width > 0 else 0
                 # If uncertainty cover zero, then set to w to avoid solid plotting
-                if wh > 0 and wl < 0:
+                if wl < 0 < wh:
                     min_val = width
                     max_val = width
             else:
@@ -898,7 +901,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             ax1.fill_betweenx(xj, min_val, max_val, color=color)
             ax1.fill_betweenx(xj, width, width, color=color)
             if interval:
-                if wh > 0 and wl < 0 and self.calibrated_explainer.mode == 'classification':
+                if wl < 0 < wh and self.calibrated_explainer.mode == 'classification':
                     ax1.fill_betweenx(xj, 0, wl, color='r', alpha=0.2)
                     ax1.fill_betweenx(xj, wh, 0, color='b', alpha=0.2)
                 else:

@@ -84,10 +84,10 @@ class VennAbers:
             if output_interval:
                 return np.asarray(va_proba), low, high, classes
             return np.asarray(va_proba), classes
-        else: # binary
-            if output_interval:
-                return np.asarray(va_proba), low, high
-            return np.asarray(va_proba)
+        # binary
+        if output_interval:
+            return np.asarray(va_proba), low, high
+        return np.asarray(va_proba)
 
     def get_p_value(self, proba, classes=None):
         """return probability for the positive class when binary classification and for the most 

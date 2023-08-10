@@ -1,4 +1,4 @@
-
+# pylint: disable=invalid-name, redefined-builtin, missing-module-docstring
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -10,7 +10,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# pylint: disable=invalid-name, redefined-builtin
+
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../src'))
@@ -31,7 +31,6 @@ version = '0.0.8'
 release = '0.0.8'
 
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -46,8 +45,8 @@ extensions = [
     "numpydoc",
     "nbsphinx",
     "myst_parser",
-#    'jupyter_sphinx'
 ]
+#    'jupyter_sphinx'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

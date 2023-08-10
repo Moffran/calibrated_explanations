@@ -224,7 +224,7 @@ class CalibratedExplainer:
 
             predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True)
             return predict[:,1], low, high, None
-        elif 'regression' in self.mode:
+        if 'regression' in self.mode:
             predict = self.model.predict(test_X)
             assert low_high_percentiles[0] <= low_high_percentiles[1], \
                         "The low percentile must be smaller than (or equal to) the high percentile."
@@ -543,7 +543,7 @@ class CalibratedExplainer:
         Returns:
             bool: True if multiclass
         """
-        return True if self.num_classes > 2 else False
+        return self.num_classes > 2
 
 
 
@@ -630,8 +630,7 @@ class CalibratedExplainer:
     def __get_sigma_test(self, X: np.ndarray) -> np.ndarray:
         if self.difficulty_estimator is None:
             return self.__constant_sigma(X)
-        else:
-            return self.difficulty_estimator.apply(X)
+        return self.difficulty_estimator.apply(X)
 
 
 
@@ -744,6 +743,7 @@ class CalibratedExplainer:
             return 'binaryEntropy'
         if isinstance(self.discretizer, BinaryDiscretizer):
             return 'binary'
+        raise ValueError("The discretizer is not supported.")
 
 
      # pylint: disable=too-many-branches

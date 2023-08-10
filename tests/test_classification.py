@@ -1,4 +1,4 @@
-# pylint: disable=missing-docstring, missing-module-docstring, invalid-name, protected-access, too-many-locals, line-too-long
+# pylint: disable=missing-docstring, missing-module-docstring, invalid-name, protected-access, too-many-locals, line-too-long, duplicate-code
 # flake8: noqa: E501
 from __future__ import absolute_import
 
