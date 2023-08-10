@@ -3,6 +3,7 @@ Calibrated Explanations
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
 [![Build Status for Calibrated Explanations][build-status]][build-log]
+[![Lint Status for Calibrated Explanations][lint-status]][lint-log]
 [![Documentation Status](https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest)](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
 
 
@@ -204,5 +205,7 @@ If you would like to cite this work, please cite the above paper.
 
 [build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
 [build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
+[lint-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/pylint.yml
+[lint-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/pylint.yml/badge.svg
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations
