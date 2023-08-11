@@ -25,7 +25,7 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 
-__version__ = 'v0.0.13b'
+__version__ = 'v0.0.14'
 
 
 class CalibratedExplainer:
@@ -101,9 +101,9 @@ class CalibratedExplainer:
             Defaults to 1.0, meaning 100% of the calibration set is always used.
         random_state : an integer, default=42
             Parameter to adjust the random state. 
-        preload_LIME : bool, default=False
+        preload_lime : bool, default=False
             If the LIME wrapper is known to be used, it can be preloaded at initialization. 
-        preload_SHAP : bool, default=False 
+        preload_shap : bool, default=False 
             If the SHAP wrapper is known to be used, it can be preloaded at initialization. 
         verbose : bool, default=False 
             Enable additional printouts during operation. 
@@ -250,7 +250,7 @@ class CalibratedExplainer:
 
         return None, None, None, None # Should never happen
 
-    def get_factuals(self,
+    def explain_factual(self,
                  test_X,
                  y = None,
                  low_high_percentiles = (5, 95),
@@ -285,7 +285,7 @@ class CalibratedExplainer:
         self.set_discretizer(discretizer)
         return self(test_X, y, low_high_percentiles)
 
-    def get_counterfactuals(self,
+    def explain_counterfactual(self,
                  test_X,
                  y = None,
                  low_high_percentiles = (5, 95),
@@ -362,7 +362,6 @@ class CalibratedExplainer:
             if not np.isscalar(y) and len(y) != len(testX):
                 raise ValueError("The length of the y parameter must be either a constant or the same \
                                 as the number of instances in testX.")
-            explanation.y = y
             explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
@@ -375,9 +374,9 @@ class CalibratedExplainer:
         prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
         binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': []}
 
-        for i,x in enumerate(testX):
-            if y is not None and not np.isscalar(explanation.y):
-                y = float(explanation.y[i])
+        for i, x in enumerate(testX):
+            if y is not None and not np.isscalar(explanation.y_threshold):
+                y = float(explanation.y_threshold[i])
             predict, low, high, predicted_class = self.predict(x.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles)
             prediction['predict'].append(predict[0])
             prediction['low'].append(low[0])
