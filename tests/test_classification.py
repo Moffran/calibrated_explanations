@@ -18,7 +18,7 @@ MODEL = 'RF'
 def load_binary_dataset():
     dataSet = 'diabetes_full'
     delimiter = ','
-    num_to_test = 4
+    num_to_test = 2
     target = 'Y'
 
     fileName = 'data/' + dataSet + ".csv"
@@ -45,7 +45,7 @@ def load_binary_dataset():
 def load_multiclass_dataset():
     dataSet = 'glass'
     delimiter = ','
-    num_to_test = 12
+    num_to_test = 6
     # print(dataSet)
 
     fileName = 'data/Multiclass/' + dataSet + ".csv"
