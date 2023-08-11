@@ -39,7 +39,7 @@ def load_binary_dataset():
     traincal_X, testX = X[train_index, :], X[test_index, :]
     trainCalY, testY = y[train_index], y[test_index]
     # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
-    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
+    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33, random_state=42, stratify=trainCalY)
     return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
 
 def load_multiclass_dataset():

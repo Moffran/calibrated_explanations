@@ -41,9 +41,9 @@ def load_regression_dataset():
     categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
     # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
 
-    trainCalX, testX, trainCalY, testY = train_test_split(X.values, y.values, test_size=num_to_test,random_state=42)
+    trainCalX, testX, trainCalY, testY = train_test_split(X.values, y.values, test_size=num_to_test, random_state=42)
     # trainCalX,trainCalY = shuffle(trainCalX, trainCalY)
-    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=42)
+    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.05, random_state=42)
     return trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, columns
 
 def get_regression_model(model_name, trainX, trainY):
