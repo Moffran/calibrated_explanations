@@ -7,7 +7,7 @@ Löfström, H., Löfström, T., Johansson, U., and Sönströd, C. Calibrated Exp
 Bibtex entry:
 
 ```bibtex
-@InProceedings{calibrated-explanations,
+@misc{calibrated-explanations,
       title = 	      {Calibrated Explanations: with Uncertainty Information and Counterfactuals},
       author =        {L\"ofstr\"om, Helena and L\"ofstr\"om, Tuwe and Johansson, Ulf and S\"onstr\"od, Cecilia},
       year =          {2023},
