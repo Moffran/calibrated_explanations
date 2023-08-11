@@ -283,8 +283,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                         if self.calibrated_explainer.categorical_labels is not None:
                             self.counterfactual_labels[i][len(counterfactual['rule'])] = f
                             counterfactual['rule'].append(
-                                    f'{self.calibrated_explainer.feature_names[f]} = \
-                                    {self.calibrated_explainer.categorical_labels[f][int(value)]}')
+                                    f'{self.calibrated_explainer.feature_names[f]} = '+\
+                                    f'{self.calibrated_explainer.categorical_labels[f][int(value)]}')
                         else:
                             counterfactual['rule'].append(
                                     f'{self.calibrated_explainer.feature_names[f]} = {value}')
@@ -505,42 +505,36 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
 
 
 
-    def remove_counterfactual_rules(self):
-        """removes any conjunctive counterfactual rules"""
-        self._has_counterfactual_rules = False
-        return self
-
-
-
     def check_preconditions(self, counterfactuals=False):
         """checks that the recommended discretizer is used for the type of explanation
 
         Args:
             counterfactuals (bool, optional): if true, the check assumes a counterfactual explanation, otherwise factual explanations are assumed. Defaults to False.
         """
-        if counterfactuals:
-            if 'regression' in self.calibrated_explainer.mode:
-                if not isinstance(self.calibrated_explainer.discretizer, DecileDiscretizer):
-                    warnings.warn('Counterfactual explanations for regressoin recommend using the ' +\
-                                    'decile discretizer. Consider extracting counterfactual ' +\
-                                    'explanations using `explainer.get_counterfactuals(test_set)`')
-            else:
-                if not isinstance(self.calibrated_explainer.discretizer, EntropyDiscretizer):
-                    warnings.warn('Counterfactual explanations for classification recommend using ' +\
-                                    'the entropy discretizer. Consider extracting counterfactual ' +\
-                                    'explanations using `explainer.get_counterfactuals(test_set)`')
+        if self == self.calibrated_explainer.latest_explanation:
+            if counterfactuals:
+                if 'regression' in self.calibrated_explainer.mode:
+                    if not isinstance(self.calibrated_explainer.discretizer, DecileDiscretizer):
+                        warnings.warn('Counterfactual explanations for regressoin recommend using the ' +\
+                                        'decile discretizer. Consider extracting counterfactual ' +\
+                                        'explanations using `explainer.explain_counterfactual(test_set)`')
+                else:
+                    if not isinstance(self.calibrated_explainer.discretizer, EntropyDiscretizer):
+                        warnings.warn('Counterfactual explanations for classification recommend using ' +\
+                                        'the entropy discretizer. Consider extracting counterfactual ' +\
+                                        'explanations using `explainer.explain_counterfactual(test_set)`')
 
-        else:
-            if 'regression' in self.calibrated_explainer.mode:
-                if not isinstance(self.calibrated_explainer.discretizer, BinaryDiscretizer):
-                    warnings.warn('Factual explanations for regressoin recommend using the binary ' +\
-                                    'discretizer. Consider extracting factual explanations using ' +\
-                                    '`explainer.get_factuals(test_set)`')
             else:
-                if not isinstance(self.calibrated_explainer.discretizer, BinaryEntropyDiscretizer):
-                    warnings.warn('Factual explanations for classification recommend using the ' +\
-                                    'binaryEntropy discretizer. Consider extracting factual ' +\
-                                    'explanations using `explainer.get_factuals(test_set)`')
+                if 'regression' in self.calibrated_explainer.mode:
+                    if not isinstance(self.calibrated_explainer.discretizer, BinaryDiscretizer):
+                        warnings.warn('Factual explanations for regressoin recommend using the binary ' +\
+                                        'discretizer. Consider extracting factual explanations using ' +\
+                                        '`explainer.explain_factual(test_set)`')
+                else:
+                    if not isinstance(self.calibrated_explainer.discretizer, BinaryEntropyDiscretizer):
+                        warnings.warn('Factual explanations for classification recommend using the ' +\
+                                        'binaryEntropy discretizer. Consider extracting factual ' +\
+                                        'explanations using `explainer.explain_factual(test_set)`')
 
 
     # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals
@@ -803,7 +797,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         
         ax1 = subfigs[3].add_subplot(111)
 
-        # plot the probabilities
+        # plot the probabilities at the top
         x = np.linspace(0, 1, 2)
         xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
         p = predict['predict'][idx]
@@ -822,15 +816,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             ax01.set_xlim([0,1])
             ax00.set_yticks(range(1))
             ax00.set_xticks([])
-        # elif ('regression' in self.calibrated_explainer.mode and self.is_thresholded()):
-        #     ax00.fill_betweenx(xj, 0, 1-p, color='b')
-        #     ax01.fill_betweenx(xj, 0, p, color='r')
-        #     ax00.set_xlim([0,1])
-        #     ax01.set_xlim([0,1])
-        #     ax00.set_yticks(range(1))
-        #     ax00.set_xticks([])
-            
-        else:     
+        else:  # normal regression
             ax01.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
             ax01.fill_betweenx(xj, p, p, color='r')
             ax01.set_xlim([min(self.calibrated_explainer.cal_y),max(self.calibrated_explainer.cal_y)])
@@ -865,6 +851,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                     ax01.set_yticklabels(labels=['P(y=1)'])
             ax01.set_xlabel('Probability')
         
+        # Plot the base prediction in black/grey
         x = np.linspace(0, num_to_show-1, num_to_show)
         xl = np.linspace(-0.5, x[0], 2)
         xh = np.linspace(x[-1], x[-1]+0.5, 2)
@@ -879,6 +866,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             ax1.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
+        # For each feature, plot the weight
         for jx, j in enumerate(features_to_plot):
             xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
             min_val,max_val = 0,0
@@ -889,17 +877,16 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                 wh, wl = np.max([wh, wl]), np.min([wh, wl])
                 max_val = wh if width < 0 else 0
                 min_val = wl if width > 0 else 0
-                # If uncertainty cover zero, then set to w to avoid solid plotting
+                # If uncertainty cover zero, then set to 0 to avoid solid plotting
                 if wl < 0 < wh:
-                    min_val = width
-                    max_val = width
+                    min_val = 0
+                    max_val = 0
             else:
                 width = feature_weights[j]
                 min_val = width if width < 0 else 0
                 max_val = width if width > 0 else 0
             color = 'b' if width > 0 else 'r'
             ax1.fill_betweenx(xj, min_val, max_val, color=color)
-            ax1.fill_betweenx(xj, width, width, color=color)
             if interval:
                 if wl < 0 < wh and self.calibrated_explainer.mode == 'classification':
                     ax1.fill_betweenx(xj, 0, wl, color='r', alpha=0.2)
@@ -932,7 +919,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         Returns:
             lime explanation object with the same values as the explanation
         """
-        _, lime_exp = self.calibrated_explainer.preload_LIME()
+        _, lime_exp = self.calibrated_explainer.preload_lime()
         exp = []
         for i in range(len(self.test_objects[:,0])):
             tmp = deepcopy(lime_exp)
@@ -965,7 +952,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         Returns:
             shap explanation object with the same values as the explanation
         """
-        _, shap_exp = self.calibrated_explainer.preload_SHAP(len(self.test_objects[:,0]))
+        _, shap_exp = self.calibrated_explainer.preload_shap(len(self.test_objects[:,0]))
         for i in range(len(self.test_objects[:,0])):
             shap_exp.base_values[i] = self.predict['predict'][i]
             for f in range(len(self.test_objects[0, :])):

@@ -124,18 +124,9 @@ class IntervalRegressor:
         y_threshold : float
             The threshold for the probability.
         """
-        cps = crepes.ConformalPredictiveSystem()
-        self.proba_cal = np.zeros((len(self.residual_cal),2))
-        for i, _ in enumerate(self.residual_cal):
-            idx = np.setdiff1d(np.arange(len(self.residual_cal)), i)
-            if self.calibrated_explainer.difficulty_estimator is not None:
-                sigma_cal = self.calibrated_explainer.difficulty_estimator.apply(X=self.cal_X[idx, :])
-                cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal)
-            else:
-                cps.fit(residuals=self.residual_cal[idx])
-            sigma_i = self.calibrated_explainer.get_sigma_test(self.cal_X[i, :].reshape(1, -1))
-            self.proba_cal[i, 1] = cps.predict(y_hat=[self.cal_y_hat[i]],
+        sigmas = self.calibrated_explainer.get_sigma_test(self.cal_X)
+        proba = self.cps.predict(y_hat=self.cal_y_hat,
                                             y=y_threshold,
-                                            sigmas=sigma_i)
-            self.proba_cal[i, 0] = 1 - self.proba_cal[i, 1]
+                                            sigmas=sigmas)
+        self.proba_cal = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
         self.venn_abers = VennAbers(self.proba_cal, (self.cal_y <= self.y_threshold).astype(int), self)
