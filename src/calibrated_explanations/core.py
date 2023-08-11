@@ -52,6 +52,7 @@ class CalibratedExplainer:
                  preload_lime=False,
                  preload_shap=False,
                  verbose = False,
+                 heuristic = True,
                  ) -> None:
          # pylint: disable=line-too-long
         """
@@ -153,6 +154,7 @@ class CalibratedExplainer:
             self.preload_shap()
 
         self.latest_explanation = None
+        self.heuristic = heuristic
 
 
 
@@ -642,7 +644,7 @@ class CalibratedExplainer:
             va = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
             self.interval_model = va
         elif 'regression' in self.mode:
-            self.interval_model = IntervalRegressor(self, self.model, self.cal_X, self.cal_y)
+            self.interval_model = IntervalRegressor(self, self.model, self.cal_X, self.cal_y, self.heuristic)
         self.__initialized = True
 
 

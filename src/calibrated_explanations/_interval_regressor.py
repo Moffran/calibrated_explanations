@@ -12,24 +12,28 @@ class IntervalRegressor:
     """
     Regressor
     """
-    def __init__(self, calibrated_explainer, model, cal_X, cal_y):
+    def __init__(self, calibrated_explainer, model, cal_X, cal_y, heuristic=True):
         """
         Parameters
         ----------
+        calibrated_explainer : CalibratedExplainer
+            The calibrated explainer object used to extract explanations.
         model : object
             A fitted regression model object that has a predict method.
         cal_X : numpy.ndarray
             The instance objects used for calibration.
         cal_y : numpy.ndarray
             The instance targets used for calibration.
+        heuristic : bool, default=True
+            Allow a faster but less exact solution. Consider for larger calibration sets.
         """
         self.calibrated_explainer = calibrated_explainer
         self.model = self
-        self.predictor = model
-        self.cal_X = cal_X
-        self.cal_y = cal_y
-        self.cal_y_hat = self.predictor.predict(cal_X)
-        self.residual_cal = cal_y - self.cal_y_hat
+        self.predictor = model  # can be accessed from calibrated_explainer
+        self.cal_X = cal_X  # can be accessed from calibrated_explainer
+        self.cal_y = cal_y  # can be accessed from calibrated_explainer
+        self.cal_y_hat = self.predictor.predict(cal_X)  # can be calculated through calibrated_explainer
+        self.residual_cal = cal_y - self.cal_y_hat  # can be calculated through calibrated_explainer
         cps = crepes.ConformalPredictiveSystem()
         if self.calibrated_explainer.difficulty_estimator is not None:
             sigma_cal = self.calibrated_explainer.difficulty_estimator.apply(X=cal_X)
@@ -40,6 +44,7 @@ class IntervalRegressor:
         self.venn_abers = None
         self.proba_cal = None
         self.y_threshold = None
+        self.heuristic = heuristic
 
     def predict_probability(self, test_X, y_threshold):
         """
@@ -48,9 +53,9 @@ class IntervalRegressor:
         X : numpy.ndarray
             The instance objects for which to predict the probability.
         """
-        self.assign_threshold(y_threshold)
-        # proba = self.predict_proba(test_X)[:,1]
+        self.y_threshold = y_threshold
         if np.isscalar(self.y_threshold):
+            self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.venn_abers.predict_proba(test_X, output_interval=True)
             return proba[:, 1], low, high, None
 
@@ -104,18 +109,6 @@ class IntervalRegressor:
         proba = self.cps.predict(y_hat=predict, sigmas=sigma_test, y=self.y_threshold)
         return np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
 
-
-    def assign_threshold(self, y_threshold):
-        """
-        Parameters
-        ----------
-        y_threshold : float or numpy.ndarray
-            The threshold for the probability.
-        """
-        self.y_threshold = y_threshold
-        if np.isscalar(self.y_threshold):
-            self.compute_proba_cal(y_threshold)
-
     def compute_proba_cal(self, y_threshold: float):
         """_summary_
 
@@ -124,9 +117,25 @@ class IntervalRegressor:
         y_threshold : float
             The threshold for the probability.
         """
-        sigmas = self.calibrated_explainer.get_sigma_test(self.cal_X)
-        proba = self.cps.predict(y_hat=self.cal_y_hat,
-                                            y=y_threshold,
-                                            sigmas=sigmas)
-        self.proba_cal = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
+        if self.heuristic:  # a less exact but faster solution, suitable for large calibration sets
+            sigmas = self.calibrated_explainer.get_sigma_test(self.cal_X)
+            proba = self.cps.predict(y_hat=self.cal_y_hat,
+                                                y=y_threshold,
+                                                sigmas=sigmas)
+            self.proba_cal = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
+        else:
+            cps = crepes.ConformalPredictiveSystem()
+            self.proba_cal = np.zeros((len(self.residual_cal),2))
+            for i, _ in enumerate(self.residual_cal):
+                idx = np.setdiff1d(np.arange(len(self.residual_cal)), i)
+                if self.calibrated_explainer.difficulty_estimator is not None:
+                    sigma_cal = self.calibrated_explainer.difficulty_estimator.apply(X=self.cal_X[idx, :])
+                    cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal)
+                else:
+                    cps.fit(residuals=self.residual_cal[idx])
+                sigma_i = self.calibrated_explainer.get_sigma_test(self.cal_X[i, :].reshape(1, -1))
+                self.proba_cal[i, 1] = cps.predict(y_hat=[self.cal_y_hat[i]],
+                                                y=y_threshold,
+                                                sigmas=sigma_i)
+                self.proba_cal[i, 0] = 1 - self.proba_cal[i, 1]
         self.venn_abers = VennAbers(self.proba_cal, (self.cal_y <= self.y_threshold).astype(int), self)
