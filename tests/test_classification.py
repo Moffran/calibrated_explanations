@@ -10,12 +10,8 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
-# from sklearn.utils import shuffle
-# import matplotlib.pyplot as plt
-from lime.discretize import EntropyDiscretizer
-# from shap import Explainer
 
-from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, BinaryEntropyDiscretizer
+from calibrated_explanations import CalibratedExplainer, EntropyDiscretizer, BinaryEntropyDiscretizer
 
 
 MODEL = 'RF'
@@ -133,31 +129,19 @@ class TestCalibratedExplainer(unittest.TestCase):
             categorical_features=categorical_features,
             mode='classification',
         )
-        exp = cal_exp(testX)
-        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryDiscretizer)
-        self.assertExplanation(exp)
-        exp.add_conjunctive_counterfactual_rules()
-        exp.get_counterfactual_rules()
-        exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()
+        factual_explanation = cal_exp.explain_factual(testX)
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
+        self.assertExplanation(factual_explanation)
+        factual_explanation.add_conjunctive_factual_rules()
+        factual_explanation.get_factual_rules()
+        self.assertExplanation(factual_explanation)
 
-        cal_exp.set_discretizer('binaryEntropy')
-        exp = cal_exp(testX)
-        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
-        self.assertExplanation(exp)
-        exp.add_conjunctive_counterfactual_rules()
-        exp.get_counterfactual_rules()
-        exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()
-
-        cal_exp.set_discretizer('entropy')
-        exp = cal_exp(testX)
-        self.assertIsInstance(exp.calibrated_explainer.discretizer, EntropyDiscretizer)
-        self.assertExplanation(exp)
-        exp.add_conjunctive_counterfactual_rules()
-        exp.get_counterfactual_rules()
-        exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        counterfactual_explanation.add_conjunctive_counterfactual_rules()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
 
     @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
@@ -168,35 +152,22 @@ class TestCalibratedExplainer(unittest.TestCase):
             cal_X,
             calY,
             feature_names=feature_names,
-            discretizer='binary',
             categorical_features=categorical_features,
             mode='classification',
         )
-        exp = cal_exp(testX)
-        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryDiscretizer)
-        self.assertExplanation(exp)
-        exp.add_conjunctive_counterfactual_rules()
-        exp.get_counterfactual_rules()
-        exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()
+        factual_explanation = cal_exp.explain_factual(testX)
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
+        self.assertExplanation(factual_explanation)
+        factual_explanation.add_conjunctive_factual_rules()
+        factual_explanation.get_factual_rules()
+        self.assertExplanation(factual_explanation)
 
-        cal_exp.set_discretizer('binaryEntropy')
-        exp = cal_exp(testX)
-        self.assertIsInstance(exp.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
-        self.assertExplanation(exp)
-        exp.add_conjunctive_counterfactual_rules()
-        exp.get_counterfactual_rules()
-        exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()
-
-        cal_exp.set_discretizer('entropy')
-        exp = cal_exp(testX)
-        self.assertIsInstance(exp.calibrated_explainer.discretizer, EntropyDiscretizer)
-        self.assertExplanation(exp)
-        exp.add_conjunctive_counterfactual_rules()
-        exp.get_counterfactual_rules()
-        exp.add_conjunctive_factual_rules()
-        exp.get_factual_rules()
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        counterfactual_explanation.add_conjunctive_counterfactual_rules()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
 
 
 if __name__ == '__main__':
