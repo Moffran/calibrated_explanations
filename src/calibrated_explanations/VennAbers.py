@@ -36,8 +36,8 @@ class VennAbers:
     """
     iso = IsotonicRegression(out_of_bounds="clip")
 
-    def __init__(self, cal_X, cal_y, model):
-        self.cprobs = model.predict_proba(cal_X)
+    def __init__(self, cal_probs, cal_y, model):
+        self.cprobs = cal_probs
         self.ctargets = cal_y
         self.model = model
 

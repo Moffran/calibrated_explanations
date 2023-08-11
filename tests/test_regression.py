@@ -128,6 +128,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
 
+        exp = cal_exp(testX, testY[0])
+        self.assertExplanation(exp)
+        exp.add_conjunctive_counterfactual_rules()
+        exp.get_counterfactual_rules()
+        exp.add_conjunctive_factual_rules()
+        exp.get_factual_rules()
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
@@ -203,6 +210,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
 
+        exp = cal_exp(testX, testY[0])
+        self.assertExplanation(exp)
+        exp.add_conjunctive_counterfactual_rules()
+        exp.get_counterfactual_rules()
+        exp.add_conjunctive_factual_rules()
+        exp.get_factual_rules()
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
@@ -234,6 +248,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
 
+        exp = cal_exp(testX, testY[0])
+        self.assertExplanation(exp)
+        exp.add_conjunctive_counterfactual_rules()
+        exp.get_counterfactual_rules()
+        exp.add_conjunctive_factual_rules()
+        exp.get_factual_rules()
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
@@ -258,6 +279,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_factual_rules()
 
         exp = cal_exp(testX, testY)
+        self.assertExplanation(exp)
+        exp.add_conjunctive_counterfactual_rules()
+        exp.get_counterfactual_rules()
+        exp.add_conjunctive_factual_rules()
+        exp.get_factual_rules()
+
+        exp = cal_exp(testX, testY[0])
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()
@@ -309,6 +337,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
 
+        exp = cal_exp(testX, testY[0])
+        self.assertExplanation(exp)
+        exp.add_conjunctive_counterfactual_rules()
+        exp.get_counterfactual_rules()
+        exp.add_conjunctive_factual_rules()
+        exp.get_factual_rules()
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
@@ -340,6 +375,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.add_conjunctive_factual_rules()
         exp.get_factual_rules()
 
+        exp = cal_exp(testX, testY[0])
+        self.assertExplanation(exp)
+        exp.add_conjunctive_counterfactual_rules()
+        exp.get_counterfactual_rules()
+        exp.add_conjunctive_factual_rules()
+        exp.get_factual_rules()
+
         exp = cal_exp(testX,low_high_percentiles=(0.1,np.inf))
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
@@ -364,6 +406,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         exp.get_factual_rules()
 
         exp = cal_exp(testX, testY)
+        self.assertExplanation(exp)
+        exp.add_conjunctive_counterfactual_rules()
+        exp.get_counterfactual_rules()
+        exp.add_conjunctive_factual_rules()
+        exp.get_factual_rules()
+
+        exp = cal_exp(testX, testY[0])
         self.assertExplanation(exp)
         exp.add_conjunctive_counterfactual_rules()
         exp.get_counterfactual_rules()

@@ -15,7 +15,6 @@ import copy
 import numpy as np
 import pandas as pd
 import sklearn.neighbors as nn
-import crepes
 
 from shap import Explainer
 from lime.lime_tabular import LimeTabularExplainer
@@ -24,8 +23,9 @@ from ._explanations import CalibratedExplanation
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
 from .VennAbers import VennAbers
+from ._interval_regressor import IntervalRegressor
 
-__version__ = 'v0.0.13'
+__version__ = 'v0.0.13b'
 
 
 class CalibratedExplainer:
@@ -225,53 +225,29 @@ class CalibratedExplainer:
             predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True)
             return predict[:,1], low, high, None
         if 'regression' in self.mode:
-            predict = self.model.predict(test_X)
-            assert low_high_percentiles[0] <= low_high_percentiles[1], \
-                        "The low percentile must be smaller than (or equal to) the high percentile."
-            assert ((low_high_percentiles[0] > 0 and low_high_percentiles[0] <= 50) and \
-                    (low_high_percentiles[1] >= 50 and low_high_percentiles[1] < 100)) or \
-                    low_high_percentiles[0] == -np.inf or low_high_percentiles[1] == np.inf and \
-                    not (low_high_percentiles[0] == -np.inf and low_high_percentiles[1] == np.inf), \
-                        "The percentiles must be between 0 and 100 (exclusive). \
-                        The lower percentile can be -np.inf and the higher percentile can \
-                        be np.inf (but not at the same time) to allow one-sided intervals."
-            low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
-            high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
-
-            sigma_test = self.__get_sigma_test(X=test_X)
              # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
-            if y is None:
-                interval = self.interval_model.predict(y_hat=predict, sigmas=sigma_test,
-                            lower_percentiles=low,
-                            higher_percentiles=high)
-                predict = (interval[:,1] + interval[:,3]) / 2 # The median
-                return predict, \
-                    interval[:,0] if low_high_percentiles[0] != -np.inf else np.array([min(self.cal_y)]), \
-                    interval[:,2] if low_high_percentiles[1] != np.inf else np.array([max(self.cal_y)]), \
-                    None
+            if y is None: # normal regression
+                assert low_high_percentiles[0] <= low_high_percentiles[1], \
+                            "The low percentile must be smaller than (or equal to) the high percentile."
+                assert ((low_high_percentiles[0] > 0 and low_high_percentiles[0] <= 50) and \
+                        (low_high_percentiles[1] >= 50 and low_high_percentiles[1] < 100)) or \
+                        low_high_percentiles[0] == -np.inf or low_high_percentiles[1] == np.inf and \
+                        not (low_high_percentiles[0] == -np.inf and low_high_percentiles[1] == np.inf), \
+                            "The percentiles must be between 0 and 100 (exclusive). \
+                            The lower percentile can be -np.inf and the higher percentile can \
+                            be np.inf (but not at the same time) to allow one-sided intervals."
+                low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
+                high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
+
+                return self.interval_model.predict_uncertainty(test_X, low_high_percentiles)
+
+            # regression with y condition
             if not np.isscalar(y) and len(y) != len(test_X):
                 raise ValueError("The length of the y parameter must be either a scalar or \
                     the same as the number of instances in testX.")
-             # pylint: disable=unexpected-keyword-arg
-            y_prob = self.interval_model.predict(y_hat=predict, sigmas=sigma_test,
-                                                    y = float(y) if np.isscalar(y) else y,)
-            # Use the width of the interval from prediction to determine which interval
-            # values to use as low and high thresholds for the interval.
-            interval_ = self.interval_model.predict(y_hat=predict, sigmas=sigma_test,
-                        lower_percentiles=low,
-                        higher_percentiles=high)
-            median = (interval_[:,1] + interval_[:,3]) / 2 # The median
-            interval = np.array([np.array([0.0,0.0]) for i in range(test_X.shape[0])])
-            for i,_ in enumerate(test_X):
-                interval[i,0] = self.interval_model.predict(y_hat=[predict[i]],
-                                                            sigmas=sigma_test,
-                                                            y=float(interval_[i,0] - median[i] + y))
-                interval[i,1] = self.interval_model.predict(y_hat=[predict[i]],
-                                                            sigmas=sigma_test,
-                                                            y=float(interval_[i,2] - median[i] + y))
-            predict = y_prob
-            # Changed to 1-p so that high probability means high prediction and vice versa
-            return [1-predict[0]], 1-interval[:,1], 1-interval[:,0], None
+            # pylint: disable=unexpected-keyword-arg
+            return self.interval_model.predict_probability(test_X, y)
+
         return None, None, None, None # Should never happen
 
     def get_factuals(self,
@@ -377,7 +353,7 @@ class CalibratedExplainer:
         if testX.shape[1] != self.cal_X.shape[1]:
             raise ValueError("The number of features in the test data must be the same as in the \
                             calibration data.")
-        explanation = CalibratedExplanation(self, testX)
+        explanation = CalibratedExplanation(self, testX, y)
         discretizer = self.__get_discretizer()
 
         if y is not None:
@@ -627,7 +603,10 @@ class CalibratedExplainer:
 
 
 
-    def __get_sigma_test(self, X: np.ndarray) -> np.ndarray:
+    def get_sigma_test(self, X: np.ndarray) -> np.ndarray:
+        """returns the difficulty (sigma) of the test instances      
+
+        """
         if self.difficulty_estimator is None:
             return self.__constant_sigma(X)
         return self.difficulty_estimator.apply(X)
@@ -661,18 +640,10 @@ class CalibratedExplainer:
 
     def __initialize_interval_model(self) -> None:
         if self.mode == 'classification':
-            va = VennAbers(self.cal_X, self.cal_y, self.model)
+            va = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
             self.interval_model = va
         elif 'regression' in self.mode:
-            cal_y_hat = self.model.predict(self.cal_X)
-            self.residual_cal = self.cal_y - cal_y_hat
-            cps = crepes.ConformalPredictiveSystem()
-            if self.difficulty_estimator is not None:
-                sigma_cal = self.difficulty_estimator.apply(X=self.cal_X)
-                cps.fit(residuals=self.residual_cal, sigmas=sigma_cal)
-            else:
-                cps.fit(residuals=self.residual_cal)
-            self.interval_model = cps
+            self.interval_model = IntervalRegressor(self, self.model, self.cal_X, self.cal_y)
         self.__initialized = True
 
 
