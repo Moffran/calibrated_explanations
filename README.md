@@ -171,6 +171,25 @@ counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterf
 counterfactual_explanations.remove_conjunctive_rules().plot_counterfactuals()
 ```
 
+#### Probabilistic Regression Explanations
+It is possible to create probabilistic explanations for regression, providing the probability that the target value is below the provided threshold (which is 180 000 in the examples below). All methods are the same as for normal regression and classification.
+
+```python
+factual_explanations = explainer.explain_factual(X_test, 180000)
+
+factual_explanations.plot_regular()
+factual_explanations.plot_uncertainty()
+
+factual_explanations.add_conjunctive_factual_rules().plot_regular()
+factual_explanations.remove_conjunctive_rules().plot_regular()
+
+counterfactual_explanations = explainer.explain_counterfactual(X_test, 180000)
+
+counterfactual_explanations.plot_counterfactuals()
+counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
+counterfactual_explanations.remove_conjunctive_rules().plot_counterfactuals()
+```
+
 #### Additional Regression Use Cases
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
 
