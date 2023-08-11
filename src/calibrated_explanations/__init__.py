@@ -13,3 +13,4 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                     EntropyDiscretizer, QuartileDiscretizer, DecileDiscretizer
 from ._explanations import CalibratedExplanation
 from .VennAbers import VennAbers
+from ._interval_regressor import IntervalRegressor

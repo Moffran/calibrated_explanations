@@ -13,10 +13,10 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
     """
     A class for storing and visualizing calibrated explanations.
     """
-    def __init__(self, calibrated_explainer, test_objects) -> None:
+    def __init__(self, calibrated_explainer, test_objects, y_threshold) -> None:
         self.calibrated_explainer = calibrated_explainer
         self.test_objects = test_objects
-        self.test_targets = None
+        self.y_threshold = y_threshold
         self.low_high_percentiles = None
         self._has_conjunctive_counterfactual_rules = False
         self._has_counterfactual_rules = False
@@ -39,9 +39,9 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         """test if the explanation is thresholded
 
         Returns:
-            bool: True if the test_targets is not None
+            bool: True if the y_threshold is not None
         """
-        return self.test_targets is not None
+        return self.y_threshold is not None
 
 
 
@@ -283,8 +283,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                         if self.calibrated_explainer.categorical_labels is not None:
                             self.counterfactual_labels[i][len(counterfactual['rule'])] = f
                             counterfactual['rule'].append(
-                                    f'{self.calibrated_explainer.feature_names[f]} = \
-                                    {self.calibrated_explainer.categorical_labels[f][int(value)]}')
+                                    f'{self.calibrated_explainer.feature_names[f]} = '+\
+                                    f'{self.calibrated_explainer.categorical_labels[f][int(value)]}')
                         else:
                             counterfactual['rule'].append(
                                     f'{self.calibrated_explainer.feature_names[f]} = {value}')
@@ -365,8 +365,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         for i in range(len(self.test_objects)):
             factual = factuals[i]
             # pylint: disable=unsubscriptable-object, invalid-name
-            y = None if self.test_targets is None else self.test_targets \
-                    if np.isscalar(self.test_targets) else self.test_targets[i]
+            y = None if self.y_threshold is None else self.y_threshold \
+                    if np.isscalar(self.y_threshold) else self.y_threshold[i]
             x_original = deepcopy(self.test_objects[i, :])
             conjunctive = factual
 
@@ -438,8 +438,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         for i in range(len(self.test_objects)):
             counterfactual = counterfactuals[i]
             # pylint: disable=unsubscriptable-object, invalid-name
-            y = None if self.test_targets is None else self.test_targets \
-                                if np.isscalar(self.test_targets) else self.test_targets[i]
+            y = None if self.y_threshold is None else self.y_threshold \
+                                if np.isscalar(self.y_threshold) else self.y_threshold[i]
             x_original = deepcopy(self.test_objects[i, :])
             conjunctive = counterfactual
 
@@ -505,42 +505,36 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
 
 
 
-    def remove_counterfactual_rules(self):
-        """removes any conjunctive counterfactual rules"""
-        self._has_counterfactual_rules = False
-        return self
-
-
-
     def check_preconditions(self, counterfactuals=False):
         """checks that the recommended discretizer is used for the type of explanation
 
         Args:
             counterfactuals (bool, optional): if true, the check assumes a counterfactual explanation, otherwise factual explanations are assumed. Defaults to False.
         """
-        if counterfactuals:
-            if 'regression' in self.calibrated_explainer.mode:
-                if not isinstance(self.calibrated_explainer.discretizer, DecileDiscretizer):
-                    warnings.warn('Counterfactual explanations for regressoin recommend using the ' +\
-                                    'decile discretizer. Consider extracting counterfactual ' +\
-                                    'explanations using `explainer.get_counterfactuals(test_set)`')
-            else:
-                if not isinstance(self.calibrated_explainer.discretizer, EntropyDiscretizer):
-                    warnings.warn('Counterfactual explanations for classification recommend using ' +\
-                                    'the entropy discretizer. Consider extracting counterfactual ' +\
-                                    'explanations using `explainer.get_counterfactuals(test_set)`')
+        if self == self.calibrated_explainer.latest_explanation:
+            if counterfactuals:
+                if 'regression' in self.calibrated_explainer.mode:
+                    if not isinstance(self.calibrated_explainer.discretizer, DecileDiscretizer):
+                        warnings.warn('Counterfactual explanations for regressoin recommend using the ' +\
+                                        'decile discretizer. Consider extracting counterfactual ' +\
+                                        'explanations using `explainer.explain_counterfactual(test_set)`')
+                else:
+                    if not isinstance(self.calibrated_explainer.discretizer, EntropyDiscretizer):
+                        warnings.warn('Counterfactual explanations for classification recommend using ' +\
+                                        'the entropy discretizer. Consider extracting counterfactual ' +\
+                                        'explanations using `explainer.explain_counterfactual(test_set)`')
 
-        else:
-            if 'regression' in self.calibrated_explainer.mode:
-                if not isinstance(self.calibrated_explainer.discretizer, BinaryDiscretizer):
-                    warnings.warn('Factual explanations for regressoin recommend using the binary ' +\
-                                    'discretizer. Consider extracting factual explanations using ' +\
-                                    '`explainer.get_factuals(test_set)`')
             else:
-                if not isinstance(self.calibrated_explainer.discretizer, BinaryEntropyDiscretizer):
-                    warnings.warn('Factual explanations for classification recommend using the ' +\
-                                    'binaryEntropy discretizer. Consider extracting factual ' +\
-                                    'explanations using `explainer.get_factuals(test_set)`')
+                if 'regression' in self.calibrated_explainer.mode:
+                    if not isinstance(self.calibrated_explainer.discretizer, BinaryDiscretizer):
+                        warnings.warn('Factual explanations for regressoin recommend using the binary ' +\
+                                        'discretizer. Consider extracting factual explanations using ' +\
+                                        '`explainer.explain_factual(test_set)`')
+                else:
+                    if not isinstance(self.calibrated_explainer.discretizer, BinaryEntropyDiscretizer):
+                        warnings.warn('Factual explanations for classification recommend using the ' +\
+                                        'binaryEntropy discretizer. Consider extracting factual ' +\
+                                        'explanations using `explainer.explain_factual(test_set)`')
 
 
     # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals
@@ -747,12 +741,12 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         ax2.set_ylabel('Instance values')
         if self.is_thresholded():
             # pylint: disable=unsubscriptable-object
-            if np.isscalar(self.test_targets):
-                ax1.set_xlabel(f'Probability of target being above \
-                                    {float(self.test_targets) :.2f}')
+            if np.isscalar(self.y_threshold):
+                ax1.set_xlabel('Probability of target being below '+\
+                                    f'{float(self.y_threshold) :.2f}')
             else:
-                ax1.set_xlabel(f'Probability of target being above \
-                                    {float(self.test_targets[idx]) :.2f}') 
+                ax1.set_xlabel('Probability of target being below '+\
+                                    f'{float(self.y_threshold[idx]) :.2f}') 
             ax1.set_xlim(0,1)
             ax1.set_xticks(np.linspace(0, 1, 11))
         elif 'regression' in self.calibrated_explainer.mode:
@@ -762,11 +756,11 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         else:
             if self.calibrated_explainer.class_labels is not None:
                 if self.calibrated_explainer.is_multiclass():
-                    ax1.set_xlabel(f'Probability for class \
-                                \'{self.calibrated_explainer.class_labels[self.predict["classes"][idx]]}\'') # pylint: disable=line-too-long
+                    ax1.set_xlabel('Probability for class '+\
+                                f'\'{self.calibrated_explainer.class_labels[self.predict["classes"][idx]]}\'') # pylint: disable=line-too-long
                 else:
-                    ax1.set_xlabel(f'Probability for class \
-                                \'{self.calibrated_explainer.class_labels[1]}\'')
+                    ax1.set_xlabel('Probability for class '+\
+                                f'\'{self.calibrated_explainer.class_labels[1]}\'')
             else:
                 if self.calibrated_explainer.is_multiclass():
                     ax1.set_xlabel(f'Probability for class \'{self.predict["classes"][idx]}\'')
@@ -803,7 +797,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         
         ax1 = subfigs[3].add_subplot(111)
 
-        # plot the probabilities
+        # plot the probabilities at the top
         x = np.linspace(0, 1, 2)
         xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
         p = predict['predict'][idx]
@@ -811,7 +805,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                                  else min(self.calibrated_explainer.cal_y)
         ph = predict['high'][idx] if predict['high'][idx] != np.inf \
                                   else max(self.calibrated_explainer.cal_y)
-        if self.calibrated_explainer.mode == 'classification':
+        if self.calibrated_explainer.mode == 'classification' or self.is_thresholded():
             ax00.fill_betweenx(xj, 1-p, 1-p, color='b')
             ax00.fill_betweenx(xj, 0, 1-ph, color='b')
             ax00.fill_betweenx(xj, 1-pl, 1-ph, color='b', alpha=0.2)
@@ -822,15 +816,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             ax01.set_xlim([0,1])
             ax00.set_yticks(range(1))
             ax00.set_xticks([])
-        elif ('regression' in self.calibrated_explainer.mode and self.is_thresholded()):
-            ax00.fill_betweenx(xj, 0, 1-p, color='b')
-            ax01.fill_betweenx(xj, 0, p, color='r')
-            ax00.set_xlim([0,1])
-            ax01.set_xlim([0,1])
-            ax00.set_yticks(range(1))
-            ax00.set_xticks([])
-            
-        else:     
+        else:  # normal regression
             ax01.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
             ax01.fill_betweenx(xj, p, p, color='r')
             ax01.set_xlim([min(self.calibrated_explainer.cal_y),max(self.calibrated_explainer.cal_y)])
@@ -838,12 +824,12 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         
         if 'regression' in self.calibrated_explainer.mode:
             if self.is_thresholded():
-                if np.isscalar(self.test_targets):
-                    ax00.set_yticklabels(labels=[f'P(y<{float(self.test_targets) :.2f})'])
-                    ax01.set_yticklabels(labels=[f'P(y>={float(self.test_targets) :.2f})'])
+                if np.isscalar(self.y_threshold):
+                    ax00.set_yticklabels(labels=[f'P(y>={float(self.y_threshold) :.2f})'])
+                    ax01.set_yticklabels(labels=[f'P(y<{float(self.y_threshold) :.2f})'])
                 else:                    
-                    ax00.set_yticklabels(labels=[f'P(y<{float(self.test_targets[idx]) :.2f})']) # pylint: disable=unsubscriptable-object
-                    ax01.set_yticklabels(labels=[f'P(y>={float(self.test_targets[idx]) :.2f})']) # pylint: disable=unsubscriptable-object
+                    ax00.set_yticklabels(labels=[f'P(y>={float(self.y_threshold[idx]) :.2f})']) # pylint: disable=unsubscriptable-object
+                    ax01.set_yticklabels(labels=[f'P(y<{float(self.y_threshold[idx]) :.2f})']) # pylint: disable=unsubscriptable-object
                 ax01.set_xlabel('Probability')
             else:
                 ax01.set_xlabel(f'Prediction interval with {self.get_confidence()}% confidence')
@@ -865,6 +851,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                     ax01.set_yticklabels(labels=['P(y=1)'])
             ax01.set_xlabel('Probability')
         
+        # Plot the base prediction in black/grey
         x = np.linspace(0, num_to_show-1, num_to_show)
         xl = np.linspace(-0.5, x[0], 2)
         xh = np.linspace(x[-1], x[-1]+0.5, 2)
@@ -873,33 +860,33 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         ax1.fill_betweenx(xh, [0], [0], color='k')
         if interval:
             p = predict['predict'][idx]
-            gwl = p - predict['low'][idx]
-            gwh = p - predict['high'][idx]
+            gwl = predict['low'][idx] - p
+            gwh = predict['high'][idx] - p
             
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             ax1.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
+        # For each feature, plot the weight
         for jx, j in enumerate(features_to_plot):
             xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
             min_val,max_val = 0,0
             if interval:
-                width = - feature_weights['predict'][j]
-                wl = - feature_weights['low'][j]
-                wh = - feature_weights['high'][j]
+                width = feature_weights['predict'][j]
+                wl = feature_weights['low'][j]
+                wh = feature_weights['high'][j]
                 wh, wl = np.max([wh, wl]), np.min([wh, wl])
                 max_val = wh if width < 0 else 0
                 min_val = wl if width > 0 else 0
-                # If uncertainty cover zero, then set to w to avoid solid plotting
+                # If uncertainty cover zero, then set to 0 to avoid solid plotting
                 if wl < 0 < wh:
-                    min_val = width
-                    max_val = width
+                    min_val = 0
+                    max_val = 0
             else:
-                width = - feature_weights[j]
+                width = feature_weights[j]
                 min_val = width if width < 0 else 0
                 max_val = width if width > 0 else 0
             color = 'b' if width > 0 else 'r'
             ax1.fill_betweenx(xj, min_val, max_val, color=color)
-            ax1.fill_betweenx(xj, width, width, color=color)
             if interval:
                 if wl < 0 < wh and self.calibrated_explainer.mode == 'classification':
                     ax1.fill_betweenx(xj, 0, wl, color='r', alpha=0.2)
@@ -932,7 +919,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         Returns:
             lime explanation object with the same values as the explanation
         """
-        _, lime_exp = self.calibrated_explainer.preload_LIME()
+        _, lime_exp = self.calibrated_explainer.preload_lime()
         exp = []
         for i in range(len(self.test_objects[:,0])):
             tmp = deepcopy(lime_exp)
@@ -965,7 +952,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         Returns:
             shap explanation object with the same values as the explanation
         """
-        _, shap_exp = self.calibrated_explainer.preload_SHAP(len(self.test_objects[:,0]))
+        _, shap_exp = self.calibrated_explainer.preload_shap(len(self.test_objects[:,0]))
         for i in range(len(self.test_objects[:,0])):
             shap_exp.base_values[i] = self.predict['predict'][i]
             for f in range(len(self.test_objects[0, :])):
@@ -1022,4 +1009,3 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         color = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
         # Return html color code in #RRGGBB format
         return '#%2x%2x%2x' % tuple(color) # pylint: disable=consider-using-f-string
-    
