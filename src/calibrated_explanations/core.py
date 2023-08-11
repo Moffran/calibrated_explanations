@@ -25,7 +25,7 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 
-__version__ = 'v0.0.14'
+__version__ = 'v0.0.15'
 
 
 class CalibratedExplainer:
