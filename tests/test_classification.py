@@ -143,7 +143,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         counterfactual_explanation.get_counterfactual_rules()
         self.assertExplanation(counterfactual_explanation)
 
-    @unittest.skip('Test passes locally.  Skipping provisionally.')
+    # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name

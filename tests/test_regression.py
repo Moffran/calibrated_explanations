@@ -43,7 +43,7 @@ def load_regression_dataset():
 
     trainCalX, testX, trainCalY, testY = train_test_split(X.values, y.values, test_size=num_to_test, random_state=42)
     # trainCalX,trainCalY = shuffle(trainCalX, trainCalY)
-    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.05, random_state=42)
+    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=500, random_state=42)
     return trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, columns
 
 def get_regression_model(model_name, trainX, trainY):
@@ -152,7 +152,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
 
 
-    @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
+    # @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     def test_knn_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
@@ -238,7 +238,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
 
 
-    @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
+    # @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     def test_var_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
