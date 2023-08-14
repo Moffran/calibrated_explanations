@@ -1,4 +1,4 @@
-"""Calibrated Explanations for Black-Box Predictions (calibrated-explanationse)
+"""Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
 This file contains the code for the calibrated explanations.
 
 The calibrated explanations are based on the paper 
@@ -6,7 +6,7 @@ The calibrated explanations are based on the paper
 by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 
 Calibrated explanations are a way to explain the predictions of a black-box model 
-using Venn Abers predictors (classification) or 
+using Venn-Abers predictors (classification) or 
 conformal predictive systems (regression) and perturbations.
 """
 # pylint: disable=invalid-name, line-too-long
@@ -28,87 +28,111 @@ from ._interval_regressor import IntervalRegressor
 __version__ = 'v0.0.15'
 
 
+# The CalibratedExplainer class is used for explaining machine learning models with calibrated
+# predictions.
 class CalibratedExplainer:
     """
     The class CalibratedExplainer for black-box models.
 
     """
-     # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
-     # pylint: disable=dangerous-default-value
-    def __init__(self,
-                 model,
-                 cal_X,
-                 cal_y,
-                 mode = 'classification',
-                 feature_names = None,
-                 discretizer = None,
-                 categorical_features = None,
-                 categorical_labels = None,
-                 class_labels = None,
-                 difficulty_estimator = None,
-                 sample_percentiles = [25, 50, 75],
-                 n_neighbors = 1.0,
-                 random_state = 42,
-                 preload_lime=False,
-                 preload_shap=False,
-                 verbose = False,
-                 heuristic = True,
-                 ) -> None:
-         # pylint: disable=line-too-long
-        """
-        CalibratedExplainer is a class that can be used to explain the predictions of a black-box 
-        model.
-
+    # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
+    # pylint: disable=dangerous-default-value
+    def __init__(self,        
+                model,
+                cal_X,
+                cal_y,
+                mode = 'classification',
+                feature_names = None,
+                discretizer = None,
+                categorical_features = None,
+                categorical_labels = None,
+                class_labels = None,
+                difficulty_estimator = None,
+                sample_percentiles = [25, 50, 75],
+                n_neighbors = 1.0,
+                random_state = 42,
+                preload_lime=False,
+                preload_shap=False,
+                verbose = False,
+                heuristic = True,
+                ) -> None:
+        # pylint: disable=line-too-long
+        '''The function initializes a CalibratedExplainer object for explaining the predictions of a
+        black-box model.
+        
         Parameters
         ----------
-        model : a sklearn predictive model
-            A predictive model that can be used to predict the target variable.
-        cal_X : array-like of shape (n_calibrations_samples, n_features) 
-            The calibration input data for the model.
-        cal_y : array-like of shape (n_calibrations_samples,)  
-            The calibration target data for the model.
-        mode : a string, default="classification" 
-            Possible modes are 'classificaiton' or 'regression'.
-        feature_names : None or a list of feature names in the shape (n_features,), default=None 
-            A list of feature names. Must be None or include one str per feature. 
-        discretizer : a string, default='binary' if mode="regression" else 'binaryEntropy'  
-            The strategy used for numerical features. Possible discretizers include:
-            'binary': split using the median value, suitable for regular 
-                                explanations of regression models, 
-            'binaryEntropy': use a one-layered decision tree to find the best split suitable 
-                                for regular explanations of classification models, 
-            'quartile': split using the quartiles suitable for counterfactual explanations of 
-                                regression models, 
-            'decile': split using the deciles, 
-            'entropy': use a three-layered decision tree to find the best splits suitable for 
-                                counterfactual explanations of classification models. 
-        categorical_features : None or an array-like of shape (n_categorical_features,), default=None 
-            A list of indeces for categorical features. 
-        categorical_labels : None or a nested dictionary of the shape (n_categorical_features : (n_values : string)), default=None 
-            A dictionary with the feature index as key and a feature dictionary mapping each feature 
-            value (keys) to a feature label (values). 
-        class_labels : None or a dictionary of the shape (n_classes : string), default=None 
-            A dictionary mapping numerical target values to class names. 
-            Only applicable for classification.
-        difficulty_estimator : None or a difficulty_estimator object from the crepes package, default=None 
-            A difficulty_estimator object from the crepes package. 
-            If None, a normalization is not used. Only used by regression models.
-        sample_percentiles : an array-like of shape (n_percentiles) default=[25, 50, 75].
-            Percentiles used to sample values for evaluation of numerical features.             
-        n_neighbors : either a fraction in the range [0,1) or a fixed integer in the range [1,ncalibration_samples), default=1.0
-            Enables a local discretizer to be defined using the nearest neighbors in the calibration set. 
-            Values (int) above 1 are interpreted as number of neighbors and float values in the range 
-            (0,1] are interpreted as fraction of calibration instances. 
-            Defaults to 1.0, meaning 100% of the calibration set is always used.
-        random_state : an integer, default=42
-            Parameter to adjust the random state. 
-        preload_lime : bool, default=False
-            If the LIME wrapper is known to be used, it can be preloaded at initialization. 
-        preload_shap : bool, default=False 
-            If the SHAP wrapper is known to be used, it can be preloaded at initialization. 
-        verbose : bool, default=False 
-            Enable additional printouts during operation. 
-        """
+        model
+            A sklearn predictive model that can be used to predict the target variable.
+        cal_X
+            The calibration input data for the model. It should be an array-like object of shape
+        (n_calibrations_samples, n_features).
+        cal_y
+            The calibration target data for the model. It is an array-like object of shape
+        (n_calibrations_samples,).
+        mode, optional
+            The mode parameter specifies the type of problem being solved. It can be either
+        "classification" or "regression".
+        feature_names
+            A list of feature names for the input data. Each feature name should be a string. If not
+        provided, the feature names will be assigned as "0", "1", "2", etc.
+        discretizer
+            The `discretizer` parameter determines the strategy used for numerical features. It can take
+        the following values: 
+                        'binary': split using the median value, suitable for regular 
+                                    explanations of regression models, 
+                        'binaryEntropy': use a one-layered decision tree to find the best split suitable 
+                                            for regular explanations of classification models, 
+                        'quartile': split using the quartiles suitable for counterfactual explanations of 
+                                            regression models, 
+                        'decile': split using the deciles, 
+                        'entropy': use a three-layered decision tree to find the best splits suitable for 
+                                            counterfactual explanations of classification models. 
+        categorical_features
+            A list of indices for categorical features. These are the features that have discrete values
+        and are not continuous.
+        categorical_labels
+            A nested dictionary that maps the index of categorical features to another dictionary. The
+        inner dictionary maps each feature value to a feature label. This is used for categorical
+        feature encoding in the explanations.
+        class_labels
+            A dictionary mapping numerical target values to class names. This parameter is only applicable
+        for classification models.
+        difficulty_estimator
+            A `DifficultyEstimator` object from the `crepes` package. It is used to estimate the difficulty of
+        explaining a prediction. If None, no difficulty estimation is used. This parameter is only used
+        for regression models.
+        sample_percentiles
+            An array-like object that specifies the percentiles used to sample values for evaluation of
+        numerical features. For example, if `sample_percentiles = [25, 50, 75]`, then the values at the
+        25th, 50th, and 75th percentiles will be sampled
+        n_neighbors
+            The `n_neighbors` parameter is used to define the number of neighbors to consider when creating
+        a local discretizer. It can be either a fraction in the range [0,1) or a fixed integer in the
+        range [1, n_calibration_samples).
+        random_state, optional
+            The random_state parameter is an integer that is used to set the random state for
+        reproducibility. It is used in various parts of the code where randomization is involved, such
+        as sampling values for evaluation of numerical features or initializing the random state for
+        certain operations. By setting a specific random_state value
+        preload_lime, optional
+            A boolean parameter that indicates whether the LIME wrapper should be preloaded at
+        initialization. If set to True, the LIME wrapper will be loaded. If set to False, the LIME
+        wrapper will not be loaded.
+        preload_shap, optional
+            A boolean parameter that indicates whether the SHAP wrapper should be preloaded at
+        initialization. If set to True, the SHAP wrapper will be loaded, otherwise it will not be
+        loaded.
+        verbose, optional
+            A boolean parameter that determines whether additional printouts should be enabled during the
+        operation of the class. If set to True, it will print out additional information during the
+        execution of the code. If set to False, it will not print out any additional information.
+        heuristic, optional
+            A boolean parameter that determines whether to use a heuristic approach in the explanation
+        process. If set to True, the explanation process will use a heuristic algorithm to generate
+        explanations. If set to False, a different algorithm may be used.
+        
+        '''
         self.__initialized = False
         if isinstance(cal_X, pd.DataFrame):
             self.cal_X = cal_X.values  # pylint: disable=invalid-name
@@ -162,7 +186,8 @@ class CalibratedExplainer:
         return f"CalibratedExplainer:\n\t\
                 mode={self.mode}\n\t\
                 discretizer={self.discretizer.__class__}\n\t\
-                model={self.model}"
+                model={self.model}\n\t\
+                {f'difficulty_estimator={self.model}' if self.mode == 'regression' else ''}"
 
                 # feature_names={self.feature_names}\n\t\
                 # categorical_features={self.categorical_features}\n\t\
@@ -174,7 +199,7 @@ class CalibratedExplainer:
                 # verbose={self.verbose}\n\t\
 
 
-     # pylint: disable=invalid-name
+    # pylint: disable=invalid-name
     def predict(self,
                 test_X,
                 y = None, # The same meaning as y has for cps in crepes.
@@ -213,6 +238,8 @@ class CalibratedExplainer:
             The upper bound of the prediction interval. For classification, this is derived using 
             VennAbers. For regression, this is the upper percentile given as parameter, derived from the 
             ConformalPredictiveSystem.
+        classes : ndarray of shape (n_samples,)
+            The classes predicted for the original instance. None if not multiclass or regression.
         """
         assert self.__initialized, "The model must be initialized before calling predict."
         if self.mode == 'classification':
@@ -227,7 +254,7 @@ class CalibratedExplainer:
             predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True)
             return predict[:,1], low, high, None
         if 'regression' in self.mode:
-             # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
+            # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
             if y is None: # normal regression
                 assert low_high_percentiles[0] <= low_high_percentiles[1], \
                             "The low percentile must be smaller than (or equal to) the high percentile."
@@ -644,7 +671,7 @@ class CalibratedExplainer:
             va = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
             self.interval_model = va
         elif 'regression' in self.mode:
-            self.interval_model = IntervalRegressor(self, self.model, self.cal_X, self.cal_y, self.heuristic)
+            self.interval_model = IntervalRegressor(self, self.heuristic)
         self.__initialized = True
 
 
