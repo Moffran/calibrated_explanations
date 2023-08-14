@@ -19,7 +19,7 @@ import sklearn.neighbors as nn
 from shap import Explainer
 from lime.lime_tabular import LimeTabularExplainer
 
-from ._explanations import CalibratedExplanation
+from ._explanations import CalibratedExplanations
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
 from .VennAbers import VennAbers
@@ -283,9 +283,9 @@ class CalibratedExplainer:
                  test_X,
                  y = None,
                  low_high_percentiles = (5, 95),
-                 ) -> CalibratedExplanation:
+                 ) -> CalibratedExplanations:
         """
-        Creates a CalibratedExplanation object for the test data with the discretizer automatically assigned for factual explanations.
+        Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for factual explanations.
 
         Parameters
         ----------
@@ -304,7 +304,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+        CalibratedExplanationss : A CalibratedExplanationss object containing the predictions and the 
             intervals. 
         """
         if 'regression' in self.mode:
@@ -318,9 +318,9 @@ class CalibratedExplainer:
                  test_X,
                  y = None,
                  low_high_percentiles = (5, 95),
-                 ) -> CalibratedExplanation:
+                 ) -> CalibratedExplanations:
         """
-        Creates a CalibratedExplanation object for the test data with the discretizer automatically assigned for counterfactual explanations.
+        Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for counterfactual explanations.
 
         Parameters
         ----------
@@ -339,7 +339,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+        CalibratedExplanationss : A CalibratedExplanationss object containing the predictions and the 
             intervals. 
         """
         if 'regression' in self.mode:
@@ -353,9 +353,9 @@ class CalibratedExplainer:
                  testX,
                  y = None,
                  low_high_percentiles = (5, 95),
-                 ) -> CalibratedExplanation:
+                 ) -> CalibratedExplanations:
         """
-        Creates a CalibratedExplanation object for the test data with the already assigned discretizer.
+        Creates a CalibratedExplanations object for the test data with the already assigned discretizer.
 
         Parameters
         ----------
@@ -374,7 +374,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+        CalibratedExplanationss : A CalibratedExplanationss object containing the predictions and the 
             intervals. 
         """
         if len(testX.shape) == 1:
@@ -382,7 +382,7 @@ class CalibratedExplainer:
         if testX.shape[1] != self.cal_X.shape[1]:
             raise ValueError("The number of features in the test data must be the same as in the \
                             calibration data.")
-        explanation = CalibratedExplanation(self, testX, y)
+        explanation = CalibratedExplanations(self, testX, y)
         discretizer = self.__get_discretizer()
 
         if y is not None:
@@ -820,7 +820,7 @@ class CalibratedExplainer:
         """assigns the latest explanation to the explainer
 
         Args:
-            explanation (CalibratedExplanation): the latest created explanation
+            explanation (CalibratedExplanations): the latest created explanation
         """
         self.latest_explanation = explanation
 
