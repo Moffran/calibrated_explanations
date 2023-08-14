@@ -51,14 +51,14 @@ explainer = CalibratedExplainer(rf, X_cal, y_cal)
 factual_explanations = explainer.explain_factual(X_test)
 ```
 
-Once we have the explanations, we can plot them using `plot_regular` or `plot_uncertainty`. You can also add and remove conjunctive rules.
+Once we have the explanations, we can plot them using `plot_all` or `plot_uncertainty`. You can also add and remove conjunctive rules.
 
 ```python
-factual_explanations.plot_regular()
-factual_explanations.plot_uncertainty()
+factual_explanations.plot_all()
+factual_explanations.plot_all(uncertainty=True)
 
-factual_explanations.add_conjunctive_factual_rules().plot_regular()
-factual_explanations.remove_conjunctive_rules().plot_regular()
+factual_explanations.add_conjunctive_factual_rules().plot_all()
+factual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 An alternative to factual rules is to extract counterfactual rules. 
@@ -113,11 +113,11 @@ explainer = CalibratedExplainer(rf, X_cal, y_cal, mode='regression')
 
 factual_explanations = explainer.explain_factual(X_test)
 
-factual_explanations.plot_regular()
-factual_explanations.plot_uncertainty()
+factual_explanations.plot_all()
+factual_explanations.plot_all(uncertainty=True)
 
-factual_explanations.add_conjunctive_factual_rules().plot_regular()
-factual_explanations.remove_conjunctive_rules().plot_regular()
+factual_explanations.add_conjunctive_factual_rules().plot_all()
+factual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 The `explain_counterfactual` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work in the same way as for classification.

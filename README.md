@@ -91,14 +91,16 @@ explainer = CalibratedExplainer(rf, X_cal, y_cal, feature_names=feature_names)
 factual_explanations = explainer.explain_factual(X_test)
 ```
 
-Once we have the explanations, we can plot them using `plot_regular` or `plot_uncertainty`. You can also add and remove conjunctive rules.
+Once we have the explanations, we can plot all of them using `plot_all`. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. To plot only a single instance, the `plot_factual` function can be called, submitting the index of the test instance to plot. You can also add and remove conjunctive rules.
 
 ```python
-factual_explanations.plot_regular()
-factual_explanations.plot_uncertainty()
+factual_explanations.plot_all()
+factual_explanations.plot_all(uncertainty=True)
 
-factual_explanations.add_conjunctive_factual_rules().plot_regular()
-factual_explanations.remove_conjunctive_rules().plot_regular()
+factual_explanations.plot_factual(0, uncertainty=True)
+
+factual_explanations.add_conjunctive_factual_rules().plot_all()
+factual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 #### Counterfactual Explanations
@@ -109,12 +111,12 @@ An alternative to factual rules is to extract counterfactual rules.
 counterfactual_explanations = explainer.explain_counterfactual(X_test)
 ```
 
-Counterfactuals are visualized using the `plot_counterfactuals`. Adding or removing conjunctions is done as before. 
+Counterfactuals are also visualized using the `plot_all`. Plotting an individual counterfactual explanation is done using `plot_counterfactual`, submitting the index to plot. Adding or removing conjunctions is done as before. 
 
 ```python
-counterfactual_explanations.plot_counterfactuals()
-counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
-counterfactual_explanations.remove_conjunctive_rules().plot_counterfactuals()
+counterfactual_explanations.plot_all()
+counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_all()
+counterfactual_explanations.remove_conjunctive_rules().plot_all()
 ```
 #### Support for multiclass
 `calibrated-explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
@@ -153,11 +155,11 @@ explainer = CalibratedExplainer(rf, X_cal, y_cal, mode='regression')
 
 factual_explanations = explainer.explain_factual(X_test)
 
-factual_explanations.plot_regular()
-factual_explanations.plot_uncertainty()
+factual_explanations.plot_all()
+factual_explanations.plot_all(uncertainty=True)
 
-factual_explanations.add_conjunctive_factual_rules().plot_regular()
-factual_explanations.remove_conjunctive_rules().plot_regular()
+factual_explanations.add_conjunctive_factual_rules().plot_all()
+factual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 #### Counterfactual Explanations
@@ -166,9 +168,11 @@ The `explain_counterfactual` will work exactly the same as for classification. O
 ```python
 counterfactual_explanations = explainer.explain_counterfactual(X_test)
 
-counterfactual_explanations.plot_counterfactuals()
-counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
-counterfactual_explanations.remove_conjunctive_rules().plot_counterfactuals()
+counterfactual_explanations.plot_all()
+counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_all()
+counterfactual_explanations.remove_conjunctive_rules().plot_all()
+
+counterfactual_explanations.plot_counterfactual(0)
 ```
 
 #### Probabilistic Regression Explanations
@@ -177,17 +181,17 @@ It is possible to create probabilistic explanations for regression, providing th
 ```python
 factual_explanations = explainer.explain_factual(X_test, 180000)
 
-factual_explanations.plot_regular()
-factual_explanations.plot_uncertainty()
+factual_explanations.plot_all()
+factual_explanations.plot_all(uncertainty=True)
 
-factual_explanations.add_conjunctive_factual_rules().plot_regular()
-factual_explanations.remove_conjunctive_rules().plot_regular()
+factual_explanations.add_conjunctive_factual_rules().plot_all()
+factual_explanations.remove_conjunctive_rules().plot_all()
 
 counterfactual_explanations = explainer.explain_counterfactual(X_test, 180000)
 
-counterfactual_explanations.plot_counterfactuals()
-counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_counterfactuals()
-counterfactual_explanations.remove_conjunctive_rules().plot_counterfactuals()
+counterfactual_explanations.plot_all()
+counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_all()
+counterfactual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 #### Additional Regression Use Cases
