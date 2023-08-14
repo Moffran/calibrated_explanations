@@ -1,4 +1,4 @@
-# pylint: disable=too-many-lines, trailing-whitespace, line-too-long
+# pylint: disable=too-many-lines, trailing-whitespace, line-too-long, too-many-public-methods
 # flake8: noqa: E501
 """contains the CalibratedExplanations class created by the CalibratedExplainer class
 """
