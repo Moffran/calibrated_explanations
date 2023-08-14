@@ -798,8 +798,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         if interval and (self.is_one_sided()):
             raise Warning('Interval plot is not supported for one-sided explanations.')
 
-        ax_positive = subfigs[1].add_subplot(111)
-        ax_negative = subfigs[0].add_subplot(111)
+        ax_positive = subfigs[0].add_subplot(111)
+        ax_negative = subfigs[1].add_subplot(111)
         
         ax_main = subfigs[3].add_subplot(111)
 
@@ -817,7 +817,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         ax_negative.fill_betweenx(xj, 1-pl, 1-ph, color='b', alpha=0.2)
         ax_negative.set_xlim([0,1])
         ax_negative.set_yticks(range(1))
-        ax_negative.set_xticks([])
+        ax_negative.set_xticks(np.linspace(0,1,6))
         ax_positive.fill_betweenx(xj, p, p, color='r')
         ax_positive.fill_betweenx(xj, 0, pl, color='r')
         ax_positive.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
