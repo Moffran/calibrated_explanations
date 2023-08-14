@@ -25,7 +25,7 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 
-__version__ = 'v0.0.15'
+__version__ = 'v0.0.16'
 
 
 # The CalibratedExplainer class is used for explaining machine learning models with calibrated
@@ -144,6 +144,7 @@ class CalibratedExplainer:
             self.cal_y = cal_y
 
         self.model = model
+        self.heuristic = heuristic
         self.num_features = len(self.cal_X[0, :])
         self.set_random_state(random_state)
         self.sample_percentiles = sample_percentiles
@@ -178,7 +179,6 @@ class CalibratedExplainer:
             self.preload_shap()
 
         self.latest_explanation = None
-        self.heuristic = heuristic
 
 
 
