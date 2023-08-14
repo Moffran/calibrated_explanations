@@ -37,7 +37,7 @@ class CalibratedExplainer:
     """
     # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
     # pylint: disable=dangerous-default-value
-    def __init__(self,        
+    def __init__(self,
                 model,
                 cal_X,
                 cal_y,
