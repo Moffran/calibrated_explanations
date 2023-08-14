@@ -1,6 +1,6 @@
 # pylint: disable=too-many-lines, trailing-whitespace, line-too-long
 # flake8: noqa: E501
-"""contains the CalibratedExplanation class created by the CalibratedExplainer class
+"""contains the CalibratedExplanations class created by the CalibratedExplainer class
 """
 import os
 import warnings
@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, EntropyDiscretizer, DecileDiscretizer
 
-class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
+class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """
     A class for storing and visualizing calibrated explanations.
     """
@@ -20,7 +20,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         self.low_high_percentiles = None
         self._has_conjunctive_counterfactual_rules = False
         self._has_counterfactual_rules = False
-        self._has_conjunctive_regular_rules = False
+        self._has_conjunctive_factual_rules = False
+        self._has_factual_rules = False
         self.binned = None
         self.feature_weights = None
         self.feature_predict = None
@@ -28,9 +29,9 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         self.rules = []
         self.factual_rules = []
         self.counterfactual_rules = []
-        self.conjunctive_regular_rules = []
+        self.conjunctive_factual_rules = []
         self.conjunctive_counterfactual_rules = []
-        self.counterfactuals = []
+        self.counterfactual_rules = []
         self.counterfactual_labels = {}
 
 
@@ -183,31 +184,40 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         Returns:
             List[Dict[str, List]]: a list of dictionaries containing the factual rules, one for each test instance
         """
-        if self._has_conjunctive_regular_rules:
-            return self.conjunctive_regular_rules
+        if self._has_conjunctive_factual_rules:
+            return self.conjunctive_factual_rules
+        if self._has_factual_rules:
+            return self.factual_rules        
+        self._has_factual_rules = False
         factual_rules = []
         for i in range(len(self.test_objects)):
             instance = self.test_objects[i, :]
-            factual = {'weight': [],
-                       'weight_low': [],
-                       'weight_high': [],
-                       'predict': [],
-                       'predict_low': [],
-                       'predict_high': [],
-                       'value': [],
-                       'rule': [],
-                       'feature': [],
-                       'feature_value': [],
-                       'classes': []}
+            factual = {'base_predict': [],
+                        'base_predict_low': [],
+                        'base_predict_high': [],
+                        'predict': [],
+                        'predict_low': [],
+                        'predict_high': [],
+                        'weight': [],
+                        'weight_low': [],
+                        'weight_high': [],
+                        'value': [],
+                        'rule': [],
+                        'feature': [],
+                        'feature_value': [],
+                        'classes': []}
             factual['classes'].append(self.predict['classes'][i])
+            factual['base_predict'].append(self.predict['predict'][i])
+            factual['base_predict_low'].append(self.predict['low'][i])
+            factual['base_predict_high'].append(self.predict['high'][i])
             rules = self.define_rules(instance)
             for f,_ in enumerate(instance): # pylint: disable=invalid-name
-                factual['weight'].append(self.feature_weights['predict'][i][f])
-                factual['weight_low'].append(self.feature_weights['low'][i][f])
-                factual['weight_high'].append(self.feature_weights['high'][i][f])
                 factual['predict'].append(self.feature_predict['predict'][i][f])
                 factual['predict_low'].append(self.feature_predict['low'][i][f])
                 factual['predict_high'].append(self.feature_predict['high'][i][f])
+                factual['weight'].append(self.feature_weights['predict'][i][f])
+                factual['weight_low'].append(self.feature_weights['low'][i][f])
+                factual['weight_high'].append(self.feature_weights['high'][i][f])
                 if f in self.calibrated_explainer.categorical_features:
                     if self.calibrated_explainer.categorical_labels is not None:
                         factual['value'].append(
@@ -219,6 +229,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                 factual['feature_value'].append(self.binned['rule_values'][i][f][0][-1])
             factual_rules.append(factual)
         self.factual_rules = factual_rules
+        self._has_factual_rules = True
         return self.factual_rules
 
 
@@ -232,7 +243,9 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         """
         if self._has_conjunctive_counterfactual_rules:
             return self.conjunctive_counterfactual_rules
-        self.counterfactuals = []
+        if self._has_counterfactual_rules:
+            return self.counterfactual_rules
+        self.counterfactual_rules = []
         self.counterfactual_labels = {}
         for i in range(len(self.test_objects)):
             self.counterfactual_labels[i] = {}
@@ -241,19 +254,25 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
             instance_predict = self.binned['predict'][i]
             instance_low = self.binned['low'][i]
             instance_high = self.binned['high'][i]
-            counterfactual = {'weight': [],
-                              'weight_low': [],
-                              'weight_high': [],
-                              'predict': [],
-                              'predict_low': [],
-                              'predict_high': [],
-                              'value': [],
-                              'rule': [],
-                              'feature': [],
-                              'feature_value': [],
-                              'classes': []}
+            counterfactual = {'base_predict': [],
+                            'base_predict_low': [],
+                            'base_predict_high': [],
+                            'predict': [],
+                            'predict_low': [],
+                            'predict_high': [],
+                            'weight': [],
+                            'weight_low': [],
+                            'weight_high': [],
+                            'value': [],
+                            'rule': [],
+                            'feature': [],
+                            'feature_value': [],
+                            'classes': []}
 
             counterfactual['classes'].append(self.predict['classes'][i])
+            counterfactual['base_predict'].append(self.predict['predict'][i])
+            counterfactual['base_predict_low'].append(self.predict['low'][i])
+            counterfactual['base_predict_high'].append(self.predict['high'][i])
             rule_boundaries = self.calibrated_explainer.rule_boundaries(instance)
             for f,_ in enumerate(instance): # pylint: disable=invalid-name
                 if f in self.calibrated_explainer.categorical_features:
@@ -341,9 +360,9 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                         counterfactual['rule'].append(
                                         f'{self.calibrated_explainer.feature_names[f]} > {greater}')
 
-            self.counterfactuals.append(counterfactual)
+            self.counterfactual_rules.append(counterfactual)
         self._has_counterfactual_rules = True
-        return self.counterfactuals
+        return self.counterfactual_rules
 
 
 
@@ -357,11 +376,11 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         Returns:
             List[Dict[str, List]]: a list of dictionaries containing the factual rules (including conjunctive rules), one for each test instance
         """
-        if self._has_conjunctive_regular_rules:
+        if self._has_conjunctive_factual_rules:
             return self
         factuals = self.get_factual_rules()
-        self._has_conjunctive_regular_rules = False
-        self.conjunctive_regular_rules = []
+        self._has_conjunctive_factual_rules = False
+        self.conjunctive_factual_rules = []
         for i in range(len(self.test_objects)):
             factual = factuals[i]
             # pylint: disable=unsubscriptable-object, invalid-name
@@ -414,8 +433,8 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                     conjunctive['feature'].append((of1,cf1,of2,cf2))
                     conjunctive['feature_value'].append((rule_value1,rule_value2))
                     conjunctive['rule'].append(factual['rule'][cf1]+ ' & \n' +factual['rule'][cf2])
-            self.conjunctive_regular_rules.append(conjunctive)
-        self._has_conjunctive_regular_rules = True
+            self.conjunctive_factual_rules.append(conjunctive)
+        self._has_conjunctive_factual_rules = True
         return self
 
 
@@ -430,10 +449,9 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
         Returns:
             List[Dict[str, List]]: a list of dictionaries containing the counterfactual rules (including conjunctive rules), one for each test instance
         """
-        if self._has_counterfactual_rules:
-            counterfactuals = self.counterfactuals
-        else:
-            counterfactuals = self.get_counterfactual_rules()
+        if self._has_conjunctive_counterfactual_rules:
+            return self
+        counterfactuals = self.get_counterfactual_rules()
         self.conjunctive_counterfactual_rules = []
         for i in range(len(self.test_objects)):
             counterfactual = counterfactuals[i]
@@ -500,7 +518,7 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
     def remove_conjunctive_rules(self):
         """removes any conjunctive factual rules"""
         self._has_conjunctive_counterfactual_rules = False
-        self._has_conjunctive_regular_rules = False
+        self._has_conjunctive_factual_rules = False
         return self
 
 
@@ -671,6 +689,167 @@ class CalibratedExplanation: # pylint: disable=too-many-instance-attributes
                                        features_to_plot, num_to_show=num_to_show_, \
                                         column_names=column_names, title=title, postfix=str(i), \
                                         path=path, show=show, idx=i, save_ext=save_ext)
+
+    def get_explanation(self, instance_index):
+        '''The function `get_explanation` returns either a counterfactual rule or a factual rule based on
+        the value of `self.is_counterfactual()`.
+        
+        Parameters
+        ----------
+        instance_index
+            The `instance_index` parameter is an integer that represents the index of the explanation
+        instance that you want to retrieve. It is used to specify which explanation instance you want to
+        get from either the counterfactual rules or the factual rules.
+        
+        Returns
+        -------
+            The method `get_explanation` returns either a counterfactual rule or a factual rule, depending
+        on the condition `self.is_counterfactual()`. If the condition is true, it returns the
+        counterfactual rule at the specified `instance_index` from the list of counterfactual rules. If
+        the condition is false, it returns the factual rule at the specified `instance_index` from the
+        
+        '''
+        assert isinstance(instance_index, int), "instance_index must be an integer"
+        assert instance_index >= 0, "instance_index must be greater than or equal to 0"
+        assert instance_index < len(self.test_objects), "instance_index must be less than the number of test instances"
+        if self.is_counterfactual():
+            return self.get_counterfactual_rules()[instance_index]
+        else:
+            return self.get_factual_rules()[instance_index]
+
+    def is_counterfactual(self):
+        '''The function checks if the explanations are counterfactuals by checking if the `discretizer` attribute of the `calibrated_explainer` object is an
+        instance of either `DecileDiscretizer` or `EntropyDiscretizer`.
+        
+        Returns
+        -------
+            a boolean value indicating whether the explanations are counterfactuals.        
+        '''        
+        return isinstance(self.calibrated_explainer.discretizer, (DecileDiscretizer, EntropyDiscretizer))
+
+
+    def plot_all(self,
+                n_features_to_show=10,
+                show=False,
+                path='',
+                uncertainty=False):
+        """creates all plots"""
+        is_counterfactual = self.is_counterfactual()
+        self.check_preconditions(counterfactuals=is_counterfactual)
+        for instance_index in range(len(self.test_objects)):
+            if is_counterfactual:
+                self.plot_counterfactual(instance_index, self.get_explanation(instance_index), n_features_to_show, show, path)
+            else:
+                self.plot_factual(instance_index, self.get_explanation(instance_index), n_features_to_show, show, path, uncertainty)
+
+
+
+    def plot_factual(self, instance_index, factual=None, n_features_to_show=10, show=False, full_filename='', uncertainty=False):
+        """creates a plot for a factual explanation"""
+        if factual is None:
+            factual = self.get_explanation(instance_index)
+        self.check_preconditions()
+        predict = self.predict
+        num_features = len(factual['weight'])
+        if n_features_to_show is None:
+            n_features_to_show = num_features
+        n_features_to_show = np.min([num_features, n_features_to_show])
+
+        if len(full_filename) > 0:
+            path = os.path.dirname(full_filename)
+            filename = os.path.basename(full_filename)
+            title, ext = os.path.splitext(filename)
+            self.__make_directory(path+title, save_ext=np.array([ext]))
+            save_ext = [ext]
+        else:
+            path = ''
+            title = ''
+            save_ext = []
+        if uncertainty:            
+            feature_weights = {'predict':factual['weight'],
+                                'low':factual['weight_low'], 
+                                'high':factual['weight_high']}
+        else:
+            feature_weights = factual['weight']
+        width = np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
+                        (len(factual['weight'])))
+        features_to_plot = self.__rank_features(factual['weight'],
+                                                width=width,
+                                                num_to_show=n_features_to_show)
+        column_names = factual['rule']
+        if 'classification' in self.calibrated_explainer.mode or self.is_thresholded():
+            self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
+                        n_features_to_show, column_names, title=title, postfix=str(instance_index), path=path, interval=uncertainty, show=show, idx=instance_index,
+                        save_ext=save_ext)
+        else:                
+            self.__plot_regression(factual['value'], predict, feature_weights, features_to_plot,
+                        n_features_to_show, column_names, title=title, postfix=str(instance_index), path=path, interval=uncertainty, show=show, idx=instance_index,
+                        save_ext=save_ext)
+
+
+    def plot_counterfactual(self, instance_index, counterfactual=None, n_features_to_show=10, show=False, full_filename=''):
+        '''The function `plot_counterfactual` plots a counterfactual explanation for a given instance in a
+        machine learning model.
+        
+        Parameters
+        ----------
+        counterfactual
+            A dictionary containing the counterfactual information, including the predicted value,
+        predicted value range (low and high), feature weights, feature weight range (low and high), and
+        rules.
+        instance_index
+            The index of the instance for which the counterfactual is being plotted.
+        n_features_to_show, optional
+            The parameter `n_features_to_show` determines the number of features to show in the plot. If it
+        is set to `None`, then all the features will be shown. Otherwise, it will show the specified
+        number of features, starting from the most important ones.
+        title
+            The title of the plot. It is an optional parameter and can be left empty if not needed.
+        show, optional
+            The `show` parameter is a boolean flag that determines whether the plot should be displayed or
+        not. If set to `True`, the plot will be displayed. If set to `False`, the plot will not be
+        displayed.
+        path
+            The `path` parameter is used to specify the directory path where the plot of the counterfactual
+        will be saved. If you don't provide a value for `path`, the plot will not be saved and will only
+        be displayed if `show` is set to `True`.
+        
+        '''
+        if counterfactual is None:
+            counterfactual = self.get_explanation(instance_index)
+        self.check_preconditions(counterfactuals=True)      
+        predict = self.predict      
+        if len(full_filename) > 0:
+            path = os.path.dirname(full_filename)
+            filename = os.path.basename(full_filename)
+            title, ext = os.path.splitext(filename)
+            self.__make_directory(path+title, save_ext=np.array([ext]))
+            save_ext = [ext]
+        else:
+            path = ''
+            title = ''
+            save_ext = []
+        feature_predict = {'predict': counterfactual['predict'],
+                            'low': counterfactual['predict_low'], 
+                            'high': counterfactual['predict_high']}
+        feature_weights = np.reshape(counterfactual['weight'],
+                                        (len(counterfactual['weight'])))
+        width = np.reshape(np.array(counterfactual['weight_high']) -
+                            np.array(counterfactual['weight_low']),
+                            (len(counterfactual['weight'])))
+        num_rules = len(counterfactual['rule'])
+        if n_features_to_show is None:
+            n_features_to_show = num_rules
+        num_to_show_ = np.min([num_rules, n_features_to_show])
+        features_to_plot = self.__rank_features(feature_weights,
+                                                width=width,
+                                                num_to_show=num_to_show_)
+        column_names = counterfactual['rule']
+        self.__plot_counterfactual(counterfactual['value'], predict, feature_predict, \
+                                    features_to_plot, num_to_show=num_to_show_, \
+                                    column_names=column_names, title=title, postfix='', \
+                                    path=path, show=show, idx=instance_index, save_ext=save_ext)
+
 
 
     # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
