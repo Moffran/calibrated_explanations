@@ -234,7 +234,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    # pylint: disable=too-many-statements
+    # pylint: disable=too-many-statements, too-many-branches
     def get_counterfactual_rules(self):
         """creates counterfactual rules
 
@@ -714,8 +714,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         assert instance_index < len(self.test_objects), "instance_index must be less than the number of test instances"
         if self.is_counterfactual():
             return self.get_counterfactual_rules()[instance_index]
-        else:
-            return self.get_factual_rules()[instance_index]
+        return self.get_factual_rules()[instance_index]
 
     def is_counterfactual(self):
         '''The function checks if the explanations are counterfactuals by checking if the `discretizer` attribute of the `calibrated_explainer` object is an
