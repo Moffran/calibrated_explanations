@@ -14,7 +14,6 @@ conformal predictive systems (regression) and perturbations.
 import copy
 import numpy as np
 import pandas as pd
-import sklearn.neighbors as nn
 
 from shap import Explainer
 from lime.lime_tabular import LimeTabularExplainer
@@ -43,18 +42,13 @@ class CalibratedExplainer:
                 cal_y,
                 mode = 'classification',
                 feature_names = None,
-                discretizer = None,
                 categorical_features = None,
                 categorical_labels = None,
                 class_labels = None,
                 difficulty_estimator = None,
                 sample_percentiles = [25, 50, 75],
-                n_neighbors = 1.0,
                 random_state = 42,
-                preload_lime=False,
-                preload_shap=False,
                 verbose = False,
-                heuristic = True,
                 ) -> None:
         # pylint: disable=line-too-long
         '''The function initializes a CalibratedExplainer object for explaining the predictions of a
@@ -76,18 +70,6 @@ class CalibratedExplainer:
         feature_names
             A list of feature names for the input data. Each feature name should be a string. If not
         provided, the feature names will be assigned as "0", "1", "2", etc.
-        discretizer
-            The `discretizer` parameter determines the strategy used for numerical features. It can take
-        the following values: 
-                        'binary': split using the median value, suitable for regular 
-                                    explanations of regression models, 
-                        'binaryEntropy': use a one-layered decision tree to find the best split suitable 
-                                            for regular explanations of classification models, 
-                        'quartile': split using the quartiles suitable for counterfactual explanations of 
-                                            regression models, 
-                        'decile': split using the deciles, 
-                        'entropy': use a three-layered decision tree to find the best splits suitable for 
-                                            counterfactual explanations of classification models. 
         categorical_features
             A list of indices for categorical features. These are the features that have discrete values
         and are not continuous.
@@ -107,30 +89,15 @@ class CalibratedExplainer:
         numerical features. For example, if `sample_percentiles = [25, 50, 75]`, then the values at the
         25th, 50th, and 75th percentiles will be sampled
         n_neighbors
-            The `n_neighbors` parameter is used to define the number of neighbors to consider when creating
-        a local discretizer. It can be either a fraction in the range [0,1) or a fixed integer in the
-        range [1, n_calibration_samples).
         random_state, optional
             The random_state parameter is an integer that is used to set the random state for
         reproducibility. It is used in various parts of the code where randomization is involved, such
         as sampling values for evaluation of numerical features or initializing the random state for
         certain operations. By setting a specific random_state value
-        preload_lime, optional
-            A boolean parameter that indicates whether the LIME wrapper should be preloaded at
-        initialization. If set to True, the LIME wrapper will be loaded. If set to False, the LIME
-        wrapper will not be loaded.
-        preload_shap, optional
-            A boolean parameter that indicates whether the SHAP wrapper should be preloaded at
-        initialization. If set to True, the SHAP wrapper will be loaded, otherwise it will not be
-        loaded.
         verbose, optional
             A boolean parameter that determines whether additional printouts should be enabled during the
         operation of the class. If set to True, it will print out additional information during the
         execution of the code. If set to False, it will not print out any additional information.
-        heuristic, optional
-            A boolean parameter that determines whether to use a heuristic approach in the explanation
-        process. If set to True, the explanation process will use a heuristic algorithm to generate
-        explanations. If set to False, a different algorithm may be used.
         
         '''
         self.__initialized = False
@@ -144,11 +111,9 @@ class CalibratedExplainer:
             self.cal_y = cal_y
 
         self.model = model
-        self.heuristic = heuristic
         self.num_features = len(self.cal_X[0, :])
         self.set_random_state(random_state)
         self.sample_percentiles = sample_percentiles
-        self.set_num_neighbors(n_neighbors)
         self.verbose = verbose
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
@@ -167,18 +132,18 @@ class CalibratedExplainer:
         if feature_names is None:
             feature_names = [str(i) for i in range(self.num_features)]
         self.feature_names = list(feature_names)
-
-        self.set_discretizer(discretizer)
-
-        self.__lime_enabled = False
-        if preload_lime:
-            self.preload_lime()
-
-        self.__shap_enabled = False
-        if preload_shap:
-            self.preload_shap()
-
+        
+        self.discretizer = None        
+        self.discretized_cal_X = None
+        self.feature_values = {}
+        self.feature_frequencies = {}
         self.latest_explanation = None
+        self.__shap_enabled = False
+        self.__lime_enabled = False
+        self.lime = None
+        self.lime_exp = None
+        self.shap = None
+        self.shap_exp = None
 
 
 
@@ -383,7 +348,6 @@ class CalibratedExplainer:
             raise ValueError("The number of features in the test data must be the same as in the \
                             calibration data.")
         explanation = CalibratedExplanations(self, testX, y)
-        discretizer = self.__get_discretizer()
 
         if y is not None:
             if not 'regression' in self.mode:
@@ -396,7 +360,6 @@ class CalibratedExplainer:
             explanation.low_high_percentiles = low_high_percentiles
 
         cal_X = self.cal_X
-        cal_y = self.cal_y
 
         feature_weights =  {'predict': [],'low': [],'high': [],}
         feature_predict =  {'predict': [],'low': [],'high': [],}
@@ -414,10 +377,6 @@ class CalibratedExplainer:
                 prediction['classes'].append(predicted_class[0])
             else:
                 prediction['classes'].append(1)
-
-            if not self.num_neighbors == len(self.cal_y):
-                cal_X, cal_y = self.find_local_calibration_data(x)
-                self.set_discretizer(discretizer, cal_X, cal_y)
 
             rule_values = {}
             instance_weights = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
@@ -671,44 +630,8 @@ class CalibratedExplainer:
             va = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
             self.interval_model = va
         elif 'regression' in self.mode:
-            self.interval_model = IntervalRegressor(self, self.heuristic)
+            self.interval_model = IntervalRegressor(self)
         self.__initialized = True
-
-
-
-    def set_num_neighbors(self, n_neighbors) -> None:
-        """Enables a local discretizer to be defined using the nearest neighbors in the calibration set. 
-        Values (int) above 1 are interpreted as number of neighbors and float values in the range 
-        (0,1] are interpreted as fraction of calibration instances. 
-        Defaults to 1.0, meaning 100% of the calibration set is always used.
-
-        Args:
-            n_neighbors (int or float): either a fraction in the range [0,1) or a fixed integer in the range [1,ncalibration_samples), default=1.0
-
-        Raises:
-            ValueError: if n_neighbors < 0
-        """
-        if n_neighbors < 0:
-            raise ValueError("num_neighbors must be positive")
-        if n_neighbors <= 1.0:
-            n_neighbors = int(len(self.cal_X) * n_neighbors)
-        self.num_neighbors = n_neighbors
-
-
-
-    def find_local_calibration_data(self, x):
-        """applies nearest neighbor to find the local calibration data closest to the instance x
-
-        Args:
-            x (n_features,): the test instance to find calibration data for
-
-        Returns:
-            cal_X (n_neighbors,), cal_y (n_neighbors,): returns input and output for the n_neighbors closest calibration instances
-        """
-        nn_model = nn.NearestNeighbors(n_neighbors=self.num_neighbors,
-                                       algorithm='ball_tree').fit(self.cal_X)
-        _, indices = nn_model.kneighbors(x.reshape(1,-1))
-        return self.cal_X[indices[0]], self.cal_y[indices[0]]
 
 
 
@@ -728,21 +651,6 @@ class CalibratedExplainer:
         for f in self.discretizer.to_discretize:
             x[:,f] = [self.discretizer.means[f][int(tmp[i,f])] for i in range(len(x[:,0]))]
         return x
-
-
-
-    def __get_discretizer(self) -> str:
-        if isinstance(self.discretizer, QuartileDiscretizer):
-            return 'quartile'
-        if isinstance(self.discretizer, DecileDiscretizer):
-            return 'decile'
-        if isinstance(self.discretizer, EntropyDiscretizer):
-            return 'entropy'
-        if isinstance(self.discretizer, BinaryEntropyDiscretizer):
-            return 'binaryEntropy'
-        if isinstance(self.discretizer, BinaryDiscretizer):
-            return 'binary'
-        raise ValueError("The discretizer is not supported.")
 
 
      # pylint: disable=too-many-branches
@@ -868,19 +776,19 @@ class CalibratedExplainer:
         if not self.is_lime_enabled():
             if self.mode == 'classification':
                 self.lime = LimeTabularExplainer(self.cal_X[:1, :],
-                                                 feature_names=self.feature_names,
-                                                 class_names=['0','1'],
-                                                 mode=self.mode)
+                                                feature_names=self.feature_names,
+                                                class_names=['0','1'],
+                                                mode=self.mode)
                 self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
-                                                           self.model.predict_proba,
-                                                           num_features=self.num_features)
+                                                            self.model.predict_proba,
+                                                            num_features=self.num_features)
             elif 'regression' in self.mode:
                 self.lime = LimeTabularExplainer(self.cal_X[:1, :],
-                                                 feature_names=self.feature_names,
-                                                 mode='regression')
+                                                feature_names=self.feature_names,
+                                                mode='regression')
                 self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
-                                                           self.model.predict,
-                                                           num_features=self.num_features)
+                                                            self.model.predict,
+                                                            num_features=self.num_features)
             self.is_lime_enabled(True)
         return self.lime, self.lime_exp
 
@@ -893,7 +801,7 @@ class CalibratedExplainer:
             shap.Explainer: a Explainer object defined for the problem
             shap_exp: a template shap explanation achieved through the __call__ method
         """
-         # pylint: disable=access-member-before-definition
+        # pylint: disable=access-member-before-definition
         if not self.is_shap_enabled() or \
             num_test is not None and self.shap_exp.shape[0] != num_test:
             f = lambda x: self.predict(x)[0]  # pylint: disable=unnecessary-lambda-assignment

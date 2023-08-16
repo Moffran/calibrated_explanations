@@ -10,7 +10,7 @@ from .VennAbers import VennAbers
 class IntervalRegressor:
     """The IntervalRegressor class is used for regression analysis on intervals of data.
     """
-    def __init__(self, calibrated_explainer, heuristic=True):
+    def __init__(self, calibrated_explainer):
         '''This function initializes an object with various attributes used for calibration and explanation
         extraction.
         
@@ -28,10 +28,6 @@ class IntervalRegressor:
         cal_y
             The instance targets used for calibration. It is a numpy array that contains the true target
         values for the instances in the calibration set.
-        heuristic, optional
-            A boolean parameter that determines whether to use a faster but less exact solution. If set to
-        True, a faster solution will be used, which is suitable for larger calibration sets. If set to
-        False, a more exact solution will be used, which may be slower.
         
         '''
         self.ce = calibrated_explainer
@@ -48,7 +44,6 @@ class IntervalRegressor:
         self.venn_abers = None
         self.proba_cal = None
         self.y_threshold = None
-        self.heuristic = heuristic
 
     def predict_probability(self, test_X, y_threshold):
         '''The `predict_probability` function takes in a test dataset and a threshold value, and returns
@@ -156,22 +151,15 @@ class IntervalRegressor:
         calibration set for a given threshold value.
         
         '''
-        if self.heuristic:  # a less exact but faster solution, suitable for large calibration sets
-            sigmas = self.ce.get_sigma_test(self.ce.cal_X)
-            proba = self.cps.predict(y_hat=self.cal_y_hat,
-                                                y=y_threshold,
-                                                sigmas=sigmas)
-            self.proba_cal = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
-        else:
-            cps = crepes.ConformalPredictiveSystem()
-            self.proba_cal = np.zeros((len(self.residual_cal),2))
-            for i, _ in enumerate(self.residual_cal):
-                idx = np.setdiff1d(np.arange(len(self.residual_cal)), i)
-                sigma_cal = self.ce.get_sigma_test(self.ce.cal_X[idx, :])
-                cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal)
-                sigma_i = self.ce.get_sigma_test(self.ce.cal_X[i, :].reshape(1, -1))
-                self.proba_cal[i, 1] = cps.predict(y_hat=[self.cal_y_hat[i]],
-                                                y=y_threshold,
-                                                sigmas=sigma_i)
-                self.proba_cal[i, 0] = 1 - self.proba_cal[i, 1]
+        cps = crepes.ConformalPredictiveSystem()
+        self.proba_cal = np.zeros((len(self.residual_cal),2))
+        for i, _ in enumerate(self.residual_cal):
+            idx = np.setdiff1d(np.arange(len(self.residual_cal)), i)
+            sigma_cal = self.ce.get_sigma_test(self.ce.cal_X[idx, :])
+            cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal)
+            sigma_i = self.ce.get_sigma_test(self.ce.cal_X[i, :].reshape(1, -1))
+            self.proba_cal[i, 1] = cps.predict(y_hat=[self.cal_y_hat[i]],
+                                            y=y_threshold,
+                                            sigmas=sigma_i)
+            self.proba_cal[i, 0] = 1 - self.proba_cal[i, 1]
         self.venn_abers = VennAbers(self.proba_cal, (self.ce.cal_y <= self.y_threshold).astype(int), self)
