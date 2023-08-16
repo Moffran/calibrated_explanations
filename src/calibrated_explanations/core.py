@@ -132,8 +132,8 @@ class CalibratedExplainer:
         if feature_names is None:
             feature_names = [str(i) for i in range(self.num_features)]
         self.feature_names = list(feature_names)
-        
-        self.discretizer = None        
+
+        self.discretizer = None
         self.discretized_cal_X = None
         self.feature_values = {}
         self.feature_frequencies = {}
@@ -269,7 +269,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanationss : A CalibratedExplanationss object containing the predictions and the 
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
             intervals. 
         """
         if 'regression' in self.mode:
@@ -304,7 +304,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanationss : A CalibratedExplanationss object containing the predictions and the 
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
             intervals. 
         """
         if 'regression' in self.mode:
@@ -339,7 +339,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanationss : A CalibratedExplanationss object containing the predictions and the 
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
             intervals. 
         """
         if len(testX.shape) == 1:
