@@ -76,7 +76,6 @@ class TestCalibratedExplainer(unittest.TestCase):
             calX,
             calY,
             feature_names=feature_names,
-            discretizer='binary',
             categorical_features=categorical_features,
             categorical_labels=categorical_labels,
             mode='regression'
@@ -161,7 +160,6 @@ class TestCalibratedExplainer(unittest.TestCase):
             calX,
             calY,
             feature_names=feature_names,
-            discretizer='binary',
             categorical_features=categorical_features,
             categorical_labels=categorical_labels,
             mode='regression',

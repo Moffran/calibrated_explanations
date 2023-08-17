@@ -125,7 +125,6 @@ class TestCalibratedExplainer(unittest.TestCase):
             cal_X,
             calY,
             feature_names=feature_names,
-            discretizer='binary',
             categorical_features=categorical_features,
             mode='classification',
         )
