@@ -26,7 +26,7 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 
-__version__ = 'v0.0.18'
+__version__ = 'v0.0.19'
 
 
 # The CalibratedExplainer class is used for explaining machine learning models with calibrated
