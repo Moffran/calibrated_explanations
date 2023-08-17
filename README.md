@@ -100,7 +100,6 @@ factual_explanations.plot_all(uncertainty=True)
 factual_explanations.plot_factual(0, uncertainty=True)
 
 factual_explanations.add_conjunctive_factual_rules().plot_all()
-factual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 #### Counterfactual Explanations
@@ -116,7 +115,6 @@ Counterfactuals are also visualized using the `plot_all`. Plotting an individual
 ```python
 counterfactual_explanations.plot_all()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_all()
-counterfactual_explanations.remove_conjunctive_rules().plot_all()
 ```
 #### Support for multiclass
 `calibrated-explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
@@ -159,7 +157,6 @@ factual_explanations.plot_all()
 factual_explanations.plot_all(uncertainty=True)
 
 factual_explanations.add_conjunctive_factual_rules().plot_all()
-factual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 #### Counterfactual Explanations
@@ -170,7 +167,6 @@ counterfactual_explanations = explainer.explain_counterfactual(X_test)
 
 counterfactual_explanations.plot_all()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_all()
-counterfactual_explanations.remove_conjunctive_rules().plot_all()
 
 counterfactual_explanations.plot_counterfactual(0)
 ```
@@ -185,13 +181,11 @@ factual_explanations.plot_all()
 factual_explanations.plot_all(uncertainty=True)
 
 factual_explanations.add_conjunctive_factual_rules().plot_all()
-factual_explanations.remove_conjunctive_rules().plot_all()
 
 counterfactual_explanations = explainer.explain_counterfactual(X_test, 180000)
 
 counterfactual_explanations.plot_all()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_all()
-counterfactual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 #### Additional Regression Use Cases
