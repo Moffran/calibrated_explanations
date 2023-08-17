@@ -135,8 +135,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             # get the indeces by first sorting on the absolute value of the
             # feature_weight and then on the width
             sorted_indices = [i for i, x in
-                              sorted(enumerate(list(zip(np.abs(feature_weights), -width))),
-                                     key=lambda x: (x[1][0], x[1][1]))]
+                                sorted(enumerate(list(zip(np.abs(feature_weights), -width))),
+                                key=lambda x: (x[1][0], x[1][1]))]
         else:
             sorted_indices = np.argsort(np.abs(feature_weights))
         return sorted_indices[-num_to_show:] # pylint: disable=invalid-unary-operand-type
@@ -155,22 +155,53 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    def predict_conjunctive(self, rule_value1, rule_value2, of1, of2, perturbed, y, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
+    def predict_conjunctive(self, rule_value_set, original_features, perturbed, y, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
                             predicted_class):
         """support function to calculate the prediction for a conjunctive rule
         """
         rule_predict, rule_low, rule_high, rule_count = 0,0,0,0
+        if len(original_features) == 2:
+            of1, of2 = original_features[0], original_features[1]
+            rule_value1, rule_value2 = rule_value_set[0], rule_value_set[1]
+        elif len(original_features) == 3:
+            of1, of2, of3 = original_features[0], original_features[1], original_features[2]
+            rule_value1, rule_value2, rule_value3 = rule_value_set[0], rule_value_set[1], rule_value_set[2]
+        # elif len(original_features) == 4:
+        #     of1, of2, of3, of4 = original_features[0], original_features[1], original_features[2], original_features[3]
+        #     rule_value1, rule_value2, rule_value3, rule_value4 = rule_value_set[0], rule_value_set[1], rule_value_set[2], rule_value_set[3]    
         for value_1 in rule_value1:
             perturbed[of1] = value_1
             for value_2 in rule_value2:
                 perturbed[of2] = value_2
-                p_value, low, high, _ = self.calibrated_explainer.predict(perturbed.reshape(1,-1),
+                if len(original_features) >= 3:
+                    for value_3 in rule_value3:
+                        perturbed[of3] = value_3
+                        # if len(original_features) == 4:
+                        #     for value_4 in rule_value4:
+                        #         perturbed[of4] = value_4
+                        #         p_value, low, high, _ = self.calibrated_explainer.predict(perturbed.reshape(1,-1),
+                        #                             y=y, low_high_percentiles=self.low_high_percentiles,
+                        #                             classes=predicted_class)
+                        #         rule_predict += p_value[0]
+                        #         rule_low += low[0]
+                        #         rule_high += high[0]
+                        #         rule_count += 1
+                        # else:
+                        p_value, low, high, _ = self.calibrated_explainer.predict(perturbed.reshape(1,-1),
                                             y=y, low_high_percentiles=self.low_high_percentiles,
                                             classes=predicted_class)
-                rule_predict += p_value[0]
-                rule_low += low[0]
-                rule_high += high[0]
-                rule_count += 1
+                        rule_predict += p_value[0]
+                        rule_low += low[0]
+                        rule_high += high[0]
+                        rule_count += 1
+                else:
+                    p_value, low, high, _ = self.calibrated_explainer.predict(perturbed.reshape(1,-1),
+                                                y=y, low_high_percentiles=self.low_high_percentiles,
+                                                classes=predicted_class)
+                    rule_predict += p_value[0]
+                    rule_low += low[0]
+                    rule_high += high[0]
+                    rule_count += 1
         rule_predict /= rule_count
         rule_low /= rule_count
         rule_high /= rule_count
@@ -205,8 +236,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                         'rule': [],
                         'feature': [],
                         'feature_value': [],
-                        'classes': []}
-            factual['classes'].append(self.predict['classes'][i])
+                        'classes': None, 
+                        'is_conjunctive': []
+                        }
+            factual['classes'] = self.predict['classes'][i]
             factual['base_predict'].append(self.predict['predict'][i])
             factual['base_predict_low'].append(self.predict['low'][i])
             factual['base_predict_high'].append(self.predict['high'][i])
@@ -227,6 +260,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 factual['rule'].append(rules[f])
                 factual['feature'].append(f)
                 factual['feature_value'].append(self.binned['rule_values'][i][f][0][-1])
+                factual['is_conjunctive'].append(False)
             factual_rules.append(factual)
         self.factual_rules = factual_rules
         self._has_factual_rules = True
@@ -267,9 +301,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                             'rule': [],
                             'feature': [],
                             'feature_value': [],
-                            'classes': []}
+                            'classes': None, 
+                            'is_conjunctive': []
+                            }
 
-            counterfactual['classes'].append(self.predict['classes'][i])
+            counterfactual['classes'] = self.predict['classes'][i]
             counterfactual['base_predict'].append(self.predict['predict'][i])
             counterfactual['base_predict_low'].append(self.predict['low'][i])
             counterfactual['base_predict_high'].append(self.predict['high'][i])
@@ -289,7 +325,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                                 if instance_low[f][value_bin] != -np.inf \
                                                 else instance_low[f][value_bin])
                         counterfactual['weight_high'].append(instance_high[f][value_bin] - \
-                                                             self.predict['predict'][i] \
+                                                            self.predict['predict'][i] \
                                                 if instance_high[f][value_bin] != np.inf \
                                                 else instance_high[f][value_bin])
                         if self.calibrated_explainer.categorical_labels is not None:
@@ -307,6 +343,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                         else:
                             counterfactual['rule'].append(
                                     f'{self.calibrated_explainer.feature_names[f]} = {value}')
+                        counterfactual['is_conjunctive'].append(False)
                 else:
                     values = np.array(self.calibrated_explainer.cal_X[:,f])
                     lesser = rule_boundaries[f][0]
@@ -335,6 +372,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                         self.binned['rule_values'][i][f][0][0])
                         counterfactual['rule'].append(
                                         f'{self.calibrated_explainer.feature_names[f]} < {lesser}')
+                        counterfactual['is_conjunctive'].append(False)
                         value_bin = 1
 
                     if np.any(values > greater):
@@ -349,7 +387,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                         if instance_low[f][value_bin] != -np.inf \
                                         else instance_low[f][value_bin])
                         counterfactual['weight_high'].append(np.mean(instance_high[f][value_bin]) -
-                                                                     self.predict['predict'][i] \
+                                                                    self.predict['predict'][i] \
                                         if instance_high[f][value_bin] != np.inf \
                                         else instance_high[f][value_bin])
                         counterfactual['value'].append(str(np.around(instance[f],decimals=2)))
@@ -359,6 +397,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                         if len(self.binned['rule_values'][i][f][0]) == 3 else 0])
                         counterfactual['rule'].append(
                                         f'{self.calibrated_explainer.feature_names[f]} > {greater}')
+                        counterfactual['is_conjunctive'].append(False)
 
             self.counterfactual_rules.append(counterfactual)
         self._has_counterfactual_rules = True
@@ -366,57 +405,113 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
+    def add_conjunctions(self, num_to_include=5, num_rules_combined=2):
+        """_summary_
+
+        Args:
+            num_to_include (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
+
+        Returns:
+            CalibratedExplanations: Returns the a self reference, to allow for method chaining
+        """
+        if self.is_counterfactual():
+            return self.add_conjunctive_counterfactual_rules(num_to_include, num_rules_combined)
+        return self.add_conjunctive_factual_rules(num_to_include, num_rules_combined)
+
+
+
+    def remove_conjunctions(self):
+        """removes any conjunctive rules"""
+        self._has_conjunctive_counterfactual_rules = False
+        self._has_conjunctive_factual_rules = False
+        return self
+
+
+
     # pylint: disable=too-many-locals
-    def add_conjunctive_factual_rules(self, num_to_include=5):
+    def add_conjunctive_factual_rules(self, num_to_include=5, num_rules_combined=2):
         """adds conjunctive factual rules
 
         Args:
             num_to_include (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
 
         Returns:
-            List[Dict[str, List]]: a list of dictionaries containing the factual rules (including conjunctive rules), one for each test instance
+            CalibratedExplanations: Returns the a self reference, to allow for method chaining
         """
-        if self._has_conjunctive_factual_rules:
+        if num_rules_combined >= 4:
+            raise ValueError('num_rules_combined must be 2 or 3')
+        if num_rules_combined < 2:
             return self
-        factuals = self.get_factual_rules()
+        if not self._has_factual_rules:
+            factuals = deepcopy(self.get_factual_rules())
+        else:
+            factuals = deepcopy(self.factual_rules)
+        if self._has_conjunctive_factual_rules:
+            conjunctives = self.conjunctive_factual_rules
+        else:
+            conjunctives = factuals
         self._has_conjunctive_factual_rules = False
         self.conjunctive_factual_rules = []
         for i in range(len(self.test_objects)):
-            factual = factuals[i]
+            factual = deepcopy(factuals[i])
+            conjunctive = conjunctives[i]
             # pylint: disable=unsubscriptable-object, invalid-name
             y = None if self.y_threshold is None else self.y_threshold \
                     if np.isscalar(self.y_threshold) else self.y_threshold[i]
             x_original = deepcopy(self.test_objects[i, :])
-            conjunctive = factual
 
-            feature_weights = np.reshape(factual['weight'], (len(factual['weight'])))
-            width = np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
-                               (len(factual['weight'])))
             num_rules = len(factual['rule'])
-            predicted_class = factual['classes'][0]
+            predicted_class = factual['classes']
             conjunctive['classes'] = predicted_class
             if num_to_include is None:
                 num_to_include = num_rules
-            features_to_plot = self.__rank_features(feature_weights, width=width,
-                                                    num_to_show=np.min([num_rules, num_to_include]))
+            # top_factuals = self.__rank_features(np.reshape(factual['weight'], (len(factual['weight']))), 
+            #                     width=np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
+            #                     (len(factual['weight']))), num_to_show=np.min([num_rules, num_to_include]))
+            top_conjunctives = self.__rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))), 
+                                width=np.reshape(np.array(conjunctive['weight_high']) - np.array(conjunctive['weight_low']),
+                                (len(conjunctive['weight']))), num_to_show=np.min([num_rules, num_to_include]))
 
-            for j, cf1 in enumerate(features_to_plot): # cf = counterfactual feature
+            covered_features = []
+            covered_combinations = [conjunctive['feature'][i] for i in range(len(conjunctive['rule']))]
+            for _, cf1 in enumerate(factual['feature']): # cf = factual feature
+                covered_features.append(cf1)
                 of1 = factual['feature'][cf1] # of = original feature
                 rule_value1 = factual['feature_value'][cf1] \
                                 if isinstance(factual['feature_value'][cf1], np.ndarray) \
                                 else [factual['feature_value'][cf1]]
-                for cf2 in features_to_plot[j+1:]: # cf = counterfactual feature
-                    of2 = factual['feature'][cf2] # of = original feature
-                    if of1 == of2:
+                for _, cf2 in enumerate(top_conjunctives): # cf = conjunctive feature
+                    if cf2 in covered_features:
                         continue
-                    rule_value2 = factual['feature_value'][cf2] \
-                                    if isinstance(factual['feature_value'][cf2], np.ndarray) \
-                                    else [factual['feature_value'][cf2]]
+                    rule_values = [rule_value1]
+                    original_features = [of1]
+                    if conjunctive['is_conjunctive'][cf2]:
+                        of2 = conjunctive['feature'][cf2]
+                        if of1 in of2:
+                            continue
+                        for of in of2:
+                            original_features.append(of)
+                        for rule_value in conjunctive['feature_value'][cf2]:
+                            rule_values.append(rule_value)
+                    else:
+                        of2 = conjunctive['feature'][cf2] # of = original feature
+                        if of1 == of2:
+                            continue
+                        original_features.append(of2)
+                        rule_values.append(conjunctive['feature_value'][cf2] \
+                                    if isinstance(conjunctive['feature_value'][cf2], np.ndarray) \
+                                    else [conjunctive['feature_value'][cf2]])
+                    skip = False
+                    for ofs in covered_combinations:
+                        if np.all(np.sort(original_features) == ofs):
+                            skip = True
+                            break
+                    if skip:
+                        continue
+                    covered_combinations.append(np.sort(original_features))
 
-                    rule_predict, rule_low, rule_high = self.predict_conjunctive(rule_value1,
-                                                                            rule_value2,
-                                                                            of1,
-                                                                            of2,
+                    rule_predict, rule_low, rule_high = self.predict_conjunctive(rule_values,
+                                                                            original_features,
                                                                             deepcopy(x_original),
                                                                             y,
                                                                             predicted_class)
@@ -429,18 +524,19 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                                     if rule_low != -np.inf else -np.inf)
                     conjunctive['weight_high'].append(rule_high - self.predict['predict'][i] \
                                                     if rule_high != np.inf else np.inf)
-                    conjunctive['value'].append(factual['value'][cf1]+ '\n' +factual['value'][cf2])
-                    conjunctive['feature'].append((of1,cf1,of2,cf2))
-                    conjunctive['feature_value'].append((rule_value1,rule_value2))
-                    conjunctive['rule'].append(factual['rule'][cf1]+ ' & \n' +factual['rule'][cf2])
+                    conjunctive['value'].append(factual['value'][cf1]+ '\n' +conjunctive['value'][cf2])
+                    conjunctive['feature'].append(original_features)
+                    conjunctive['feature_value'].append(rule_values)
+                    conjunctive['rule'].append(factual['rule'][cf1]+ ' & \n' +conjunctive['rule'][cf2])
+                    conjunctive['is_conjunctive'].append(True)
             self.conjunctive_factual_rules.append(conjunctive)
         self._has_conjunctive_factual_rules = True
-        return self
+        return self.add_conjunctive_factual_rules(num_to_include=num_to_include, num_rules_combined=num_rules_combined-1)
 
 
 
     # pylint: disable=too-many-locals
-    def add_conjunctive_counterfactual_rules(self, num_to_include=5):
+    def add_conjunctive_counterfactual_rules(self, num_to_include=5, num_rules_combined=2):
         """adds conjunctive counterfactual rules
 
         Args:
@@ -449,48 +545,82 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         Returns:
             List[Dict[str, List]]: a list of dictionaries containing the counterfactual rules (including conjunctive rules), one for each test instance
         """
+        if num_rules_combined >= 4:
+            raise ValueError('num_rules_combined must be 2 or 3')
+        if num_rules_combined < 2:
+            return self
+        if not self._has_factual_rules:
+            counterfactuals = deepcopy(self.get_counterfactual_rules())
+        else:
+            counterfactuals = deepcopy(self.counterfactual_rules)
+        if self._has_conjunctive_counterfactual_rules:
+            conjunctives = self.conjunctive_counterfactual_rules
+        else:
+            conjunctives = counterfactuals
         if self._has_conjunctive_counterfactual_rules:
             return self
-        counterfactuals = self.get_counterfactual_rules()
+        counterfactuals = deepcopy(self.get_counterfactual_rules())
         self.conjunctive_counterfactual_rules = []
         for i in range(len(self.test_objects)):
-            counterfactual = counterfactuals[i]
+            counterfactual = deepcopy(counterfactuals[i])
+            conjunctive = conjunctives[i]
             # pylint: disable=unsubscriptable-object, invalid-name
             y = None if self.y_threshold is None else self.y_threshold \
                                 if np.isscalar(self.y_threshold) else self.y_threshold[i]
             x_original = deepcopy(self.test_objects[i, :])
-            conjunctive = counterfactual
 
-            feature_weights = np.reshape(counterfactual['weight'], (len(counterfactual['weight'])))
-            width = np.reshape(np.array(counterfactual['weight_high']) -
-                               np.array(counterfactual['weight_low']),
-                               (len(counterfactual['weight'])))
             num_rules = len(counterfactual['rule'])
-            predicted_class = counterfactual['classes'][0]
+            predicted_class = counterfactual['classes']
             conjunctive['classes'] = predicted_class
             if num_to_include is None:
                 num_to_include = num_rules
-            features_to_plot = self.__rank_features(feature_weights,
-                                                    width=width,
-                                                    num_to_show=np.min([num_rules, num_to_include]))
+            # top_factuals = self.__rank_features(np.reshape(factual['weight'], (len(factual['weight']))), 
+            #                     width=np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
+            #                     (len(factual['weight']))), num_to_show=np.min([num_rules, num_to_include]))
+            top_conjunctives = self.__rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))), 
+                                width=np.reshape(np.array(conjunctive['weight_high']) - np.array(conjunctive['weight_low']),
+                                (len(conjunctive['weight']))), num_to_show=np.min([num_rules, num_to_include]))
 
-            for j, cf1 in enumerate(features_to_plot): # cf = counterfactual feature
+            covered_features = []
+            covered_combinations = [conjunctive['feature'][i] for i in range(len(conjunctive['rule']))]
+            for _, cf1 in enumerate(counterfactual['feature']): # cf = factual feature
+                covered_features.append(cf1)
                 of1 = counterfactual['feature'][cf1] # of = original feature
                 rule_value1 = counterfactual['feature_value'][cf1] \
-                        if isinstance(counterfactual['feature_value'][cf1], np.ndarray) \
-                        else [counterfactual['feature_value'][cf1]]
-                for cf2 in features_to_plot[j+1:]: # cf = counterfactual feature
-                    of2 = counterfactual['feature'][cf2] # of = original feature
-                    if of1 == of2:
+                                if isinstance(counterfactual['feature_value'][cf1], np.ndarray) \
+                                else [counterfactual['feature_value'][cf1]]
+                for _, cf2 in enumerate(top_conjunctives): # cf = conjunctive feature
+                    if cf2 in covered_features:
                         continue
-                    rule_value2 = counterfactual['feature_value'][cf2] \
-                            if isinstance(counterfactual['feature_value'][cf2], np.ndarray) \
-                            else [counterfactual['feature_value'][cf2]]
+                    rule_values = [rule_value1]
+                    original_features = [of1]
+                    if conjunctive['is_conjunctive'][cf2]:
+                        of2 = conjunctive['feature'][cf2]
+                        if of1 in of2:
+                            continue
+                        for of in of2:
+                            original_features.append(of)
+                        for rule_value in conjunctive['feature_value'][cf2]:
+                            rule_values.append(rule_value)
+                    else:
+                        of2 = conjunctive['feature'][cf2] # of = original feature
+                        if of1 == of2:
+                            continue
+                        original_features.append(of2)
+                        rule_values.append(conjunctive['feature_value'][cf2] \
+                                    if isinstance(conjunctive['feature_value'][cf2], np.ndarray) \
+                                    else [conjunctive['feature_value'][cf2]])
+                    skip = False
+                    for ofs in covered_combinations:
+                        if np.all(np.sort(original_features) == ofs):
+                            skip = True
+                            break
+                    if skip:
+                        continue
+                    covered_combinations.append(np.sort(original_features))
 
-                    rule_predict, rule_low, rule_high = self.predict_conjunctive(rule_value1,
-                                                                            rule_value2,
-                                                                            of1,
-                                                                            of2,
+                    rule_predict, rule_low, rule_high = self.predict_conjunctive(rule_values,
+                                                                            original_features,
                                                                             deepcopy(x_original),
                                                                             y,
                                                                             predicted_class)
@@ -504,22 +634,15 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                     conjunctive['weight_high'].append(rule_high - self.predict['predict'][i] \
                             if rule_high != np.inf else np.inf)
                     conjunctive['value'].append(counterfactual['value'][cf1] + '\n' + \
-                                                counterfactual['value'][cf2])
-                    conjunctive['feature'].append((of1,cf1,of2,cf2))
-                    conjunctive['feature_value'].append((rule_value1,rule_value2))
+                                                conjunctive['value'][cf2])
+                    conjunctive['feature'].append(original_features)
+                    conjunctive['feature_value'].append(rule_values)
                     conjunctive['rule'].append(counterfactual['rule'][cf1] + ' & \n' + \
-                                               counterfactual['rule'][cf2])
+                                                conjunctive['rule'][cf2])
+                    conjunctive['is_conjunctive'].append(True)
             self.conjunctive_counterfactual_rules.append(conjunctive)
         self._has_conjunctive_counterfactual_rules = True
-        return self
-
-
-
-    def remove_conjunctive_rules(self):
-        """removes any conjunctive factual rules"""
-        self._has_conjunctive_counterfactual_rules = False
-        self._has_conjunctive_factual_rules = False
-        return self
+        return self.add_conjunctive_counterfactual_rules(num_to_include=num_to_include, num_rules_combined=num_rules_combined-1)
 
 
 
@@ -557,7 +680,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
     # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals
     def plot_regular(self, title="", n_features_to_show=10, show=False,
-                     path='plots/', save_ext=['svg','pdf','png']):
+                    path='plots/', save_ext=['svg','pdf','png']):
         """creates regular plots for factual explanations
 
         Args:
@@ -647,11 +770,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
     # pylint: disable=dangerous-default-value
     def plot_counterfactuals(self,
-                             title="",
-                             n_features_to_show=10,
-                             show=False,
-                             path='plots/',
-                             save_ext=['svg','pdf','png']):
+                            title="",
+                            n_features_to_show=10,
+                            show=False,
+                            path='plots/',
+                            save_ext=['svg','pdf','png']):
         """creates plots for counterfactual explanations
 
         Args:
@@ -670,13 +793,13 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         for i, _ in enumerate(self.test_objects):
             counterfactual = counterfactuals[i]
             feature_predict = {'predict': counterfactual['predict'],
-                               'low': counterfactual['predict_low'], 
-                               'high': counterfactual['predict_high']}
+                                'low': counterfactual['predict_low'], 
+                                'high': counterfactual['predict_high']}
             feature_weights = np.reshape(counterfactual['weight'],
-                                         (len(counterfactual['weight'])))
+                                        (len(counterfactual['weight'])))
             width = np.reshape(np.array(counterfactual['weight_high']) -
-                               np.array(counterfactual['weight_low']),
-                               (len(counterfactual['weight'])))
+                                np.array(counterfactual['weight_low']),
+                                (len(counterfactual['weight'])))
             num_rules = len(counterfactual['rule'])
             if n_features_to_show is None:
                 n_features_to_show = num_rules
@@ -686,7 +809,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                                     num_to_show=num_to_show_)
             column_names = counterfactual['rule']
             self.__plot_counterfactual(counterfactual['value'], predict, feature_predict, \
-                                       features_to_plot, num_to_show=num_to_show_, \
+                                        features_to_plot, num_to_show=num_to_show_, \
                                         column_names=column_names, title=title, postfix=str(i), \
                                         path=path, show=show, idx=i, save_ext=save_ext)
 
