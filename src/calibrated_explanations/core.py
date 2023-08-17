@@ -18,6 +18,7 @@ import pandas as pd
 from shap import Explainer
 from lime.lime_tabular import LimeTabularExplainer
 from sklearn.utils.validation import check_is_fitted
+from sklearn.exceptions import NotFittedError
 
 from ._explanations import CalibratedExplanations
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
@@ -817,11 +818,3 @@ class CalibratedExplainer:
                                     if num_test is None else self.shap(self.cal_X[:num_test, :])
             self.is_shap_enabled(True)
         return self.shap, self.shap_exp
-
-
-class NotFittedError(Exception):
-    '''Exception class to raise if estimator is used before fitting
-    '''
-    def __init__(self, message="This model is not fitted yet. Call the 'fit' method before using."):
-        self.message = message
-        super().__init__(self.message)
