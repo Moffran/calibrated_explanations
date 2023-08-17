@@ -110,7 +110,7 @@ class CalibratedExplainer:
             self.cal_y = cal_y.values  # pylint: disable=invalid-name
         else:
             self.cal_y = cal_y
-            
+
         check_is_fitted(model)
         self.model = model
         self.num_features = len(self.cal_X[0, :])
@@ -818,8 +818,10 @@ class CalibratedExplainer:
             self.is_shap_enabled(True)
         return self.shap, self.shap_exp
 
+
 class NotFittedError(Exception):
+    '''Exception class to raise if estimator is used before fitting
+    '''
     def __init__(self, message="This model is not fitted yet. Call the 'fit' method before using."):
         self.message = message
         super().__init__(self.message)
-

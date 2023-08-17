@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.exceptions import NotFittedError
-from crepes.extras import DifficultyEstimator 
+from crepes.extras import DifficultyEstimator
 
 from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, DecileDiscretizer # pylint: disable=unused-import
 import calibrated_explanations as ce
@@ -39,7 +39,7 @@ def load_regression_dataset():
     # no_of_features = X.shape[1]
     # categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
     # # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
-    
+
     dataset = 'abalone.txt'
     ds = pd.read_csv('data/reg/' + dataset)
     X = ds.drop('REGRESSION', axis=1).values
@@ -48,7 +48,7 @@ def load_regression_dataset():
     no_of_classes = None
     no_of_features = X.shape[1]
     categorical_features = [i for i in range(no_of_features) if len(np.unique(X[:,i])) < 10]
-    categorical_labels = None    
+    categorical_labels = None
     columns = ds.drop('REGRESSION', axis=1).columns
 
     trainCalX, testX, trainCalY, testY = train_test_split(X, y, test_size=num_to_test, random_state=42)
@@ -86,7 +86,7 @@ class TestCalibratedExplainer(unittest.TestCase):
             cal_exp.set_difficulty_estimator(DifficultyEstimator())
 
 
-    # NOTE: this takes takes about 70s to run    
+    # NOTE: this takes takes about 70s to run
     # @unittest.skip('Skipping provisionally.')
     def test_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
