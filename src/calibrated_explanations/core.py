@@ -627,10 +627,15 @@ class CalibratedExplainer:
 
     def __initialize_interval_model(self) -> None:
         if self.mode == 'classification':
-            va = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
-            self.interval_model = va
+            try:
+                self.interval_model = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
+            except ValueError as e:
+                raise ValueError("The model must be fitted and have a predict_proba method.") from e
         elif 'regression' in self.mode:
-            self.interval_model = IntervalRegressor(self)
+            try:
+                self.interval_model = IntervalRegressor(self)
+            except ValueError as e:
+                raise ValueError("The model must be fitted and have a predict method.") from e
         self.__initialized = True
 
 
