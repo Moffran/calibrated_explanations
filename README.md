@@ -159,7 +159,6 @@ factual_explanations.plot_all()
 factual_explanations.plot_all(uncertainty=True)
 
 factual_explanations.add_conjunctive_factual_rules().plot_all()
-factual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 #### Counterfactual Explanations
@@ -170,7 +169,6 @@ counterfactual_explanations = explainer.explain_counterfactual(X_test)
 
 counterfactual_explanations.plot_all()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_all()
-counterfactual_explanations.remove_conjunctive_rules().plot_all()
 
 counterfactual_explanations.plot_counterfactual(0)
 ```
@@ -185,13 +183,11 @@ factual_explanations.plot_all()
 factual_explanations.plot_all(uncertainty=True)
 
 factual_explanations.add_conjunctive_factual_rules().plot_all()
-factual_explanations.remove_conjunctive_rules().plot_all()
 
 counterfactual_explanations = explainer.explain_counterfactual(X_test, 180000)
 
 counterfactual_explanations.plot_all()
 counterfactual_explanations.add_conjunctive_counterfactual_rules().plot_all()
-counterfactual_explanations.remove_conjunctive_rules().plot_all()
 ```
 
 #### Additional Regression Use Cases
