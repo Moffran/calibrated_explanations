@@ -36,7 +36,7 @@ class IntervalRegressor:
         self.residual_cal = self.ce.cal_y - self.cal_y_hat  # can be calculated through calibrated_explainer
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
-            sigma_cal = self.ce.difficulty_estimator.apply(X=self.ce.cal_X)
+            sigma_cal = self.ce.get_sigma_test(X=self.ce.cal_X)
             cps.fit(residuals=self.residual_cal, sigmas=sigma_cal)
         else:
             cps.fit(residuals=self.residual_cal)
