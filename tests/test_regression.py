@@ -21,7 +21,7 @@ MODEL = 'RF'
 def load_regression_dataset():
     # dataSet = 'housing.csv'
     # delimiter = ';'
-    num_to_test = 2
+    num_to_test = 1
     # categorical_labels = {8: {0: 'INLAND', 1: 'NEAR BAY', 2: '<1H OCEAN', 3: 'NEAR OCEAN', 4: 'ISLAND'}}
 
     # fileName = 'data/reg/' + dataSet
