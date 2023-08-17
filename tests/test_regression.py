@@ -256,7 +256,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
 
 
-    # @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
+    @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
     # @unittest.skip('Skipping provisionally.')
     def test_var_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
