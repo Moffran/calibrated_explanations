@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.exceptions import NotFittedError
 
 from calibrated_explanations import CalibratedExplainer, EntropyDiscretizer, BinaryEntropyDiscretizer
 
@@ -117,6 +118,12 @@ class TestCalibratedExplainer(unittest.TestCase):
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         return True
 
+    def test_failure(self):
+        _, _, cal_X, calY, _, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        with pytest.raises(NotFittedError):
+            CalibratedExplainer(RandomForestClassifier(), cal_X, calY, feature_names=feature_names, categorical_features=categorical_features, mode='classification')
+
+    # @unittest.skip('Skipping provisionally.')
     def test_binary_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name

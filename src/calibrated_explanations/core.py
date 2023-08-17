@@ -17,6 +17,7 @@ import pandas as pd
 
 from shap import Explainer
 from lime.lime_tabular import LimeTabularExplainer
+from sklearn.utils.validation import check_is_fitted
 
 from ._explanations import CalibratedExplanations
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
@@ -109,7 +110,8 @@ class CalibratedExplainer:
             self.cal_y = cal_y.values  # pylint: disable=invalid-name
         else:
             self.cal_y = cal_y
-
+            
+        check_is_fitted(model)
         self.model = model
         self.num_features = len(self.cal_X[0, :])
         self.set_random_state(random_state)
@@ -579,6 +581,12 @@ class CalibratedExplainer:
         """
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
+        if difficulty_estimator is not None:
+            try:
+                if not difficulty_estimator.fitted:
+                    raise NotFittedError("The difficulty estimator is not fitted. Please fit the estimator first.")
+            except AttributeError as e:
+                raise NotFittedError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
         # initialize the model with the new sigma
         if initialize:
             self.__initialize_interval_model()
@@ -627,15 +635,9 @@ class CalibratedExplainer:
 
     def __initialize_interval_model(self) -> None:
         if self.mode == 'classification':
-            try:
-                self.interval_model = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
-            except ValueError as e:
-                raise ValueError("The model must be fitted and have a predict_proba method.") from e
+            self.interval_model = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
         elif 'regression' in self.mode:
-            try:
-                self.interval_model = IntervalRegressor(self)
-            except ValueError as e:
-                raise ValueError("The model must be fitted and have a predict method.") from e
+            self.interval_model = IntervalRegressor(self)
         self.__initialized = True
 
 
@@ -815,3 +817,9 @@ class CalibratedExplainer:
                                     if num_test is None else self.shap(self.cal_X[:num_test, :])
             self.is_shap_enabled(True)
         return self.shap, self.shap_exp
+
+class NotFittedError(Exception):
+    def __init__(self, message="This model is not fitted yet. Call the 'fit' method before using."):
+        self.message = message
+        super().__init__(self.message)
+
