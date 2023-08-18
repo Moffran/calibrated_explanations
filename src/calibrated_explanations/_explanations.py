@@ -405,18 +405,19 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    def add_conjunctions(self, num_to_include=5, num_rules_combined=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """_summary_
 
         Args:
-            num_to_include (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
+            n_top_features (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
+            max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
 
         Returns:
-            CalibratedExplanations: Returns the a self reference, to allow for method chaining
+            CalibratedExplanations: Returns a self reference, to allow for method chaining
         """
         if self.is_counterfactual():
-            return self.add_conjunctive_counterfactual_rules(num_to_include, num_rules_combined)
-        return self.add_conjunctive_factual_rules(num_to_include, num_rules_combined)
+            return self.add_conjunctive_counterfactual_rules(n_top_features, max_rule_size)
+        return self.add_conjunctive_factual_rules(n_top_features, max_rule_size)
 
 
 
@@ -429,18 +430,19 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=too-many-locals
-    def add_conjunctive_factual_rules(self, num_to_include=5, num_rules_combined=2):
+    def add_conjunctive_factual_rules(self, n_top_features=5, max_rule_size=2):
         """adds conjunctive factual rules
 
         Args:
-            num_to_include (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
+            n_top_features (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
+            max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
 
         Returns:
-            CalibratedExplanations: Returns the a self reference, to allow for method chaining
+            CalibratedExplanations: Returns a self reference, to allow for method chaining
         """
-        if num_rules_combined >= 4:
-            raise ValueError('num_rules_combined must be 2 or 3')
-        if num_rules_combined < 2:
+        if max_rule_size >= 4:
+            raise ValueError('max_rule_size must be 2 or 3')
+        if max_rule_size < 2:
             return self
         if not self._has_factual_rules:
             factuals = deepcopy(self.get_factual_rules())
@@ -463,14 +465,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             num_rules = len(factual['rule'])
             predicted_class = factual['classes']
             conjunctive['classes'] = predicted_class
-            if num_to_include is None:
-                num_to_include = num_rules
+            if n_top_features is None:
+                n_top_features = num_rules
             # top_factuals = self.__rank_features(np.reshape(factual['weight'], (len(factual['weight']))), 
             #                     width=np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
-            #                     (len(factual['weight']))), num_to_show=np.min([num_rules, num_to_include]))
+            #                     (len(factual['weight']))), num_to_show=np.min([num_rules, n_top_features]))
             top_conjunctives = self.__rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))), 
                                 width=np.reshape(np.array(conjunctive['weight_high']) - np.array(conjunctive['weight_low']),
-                                (len(conjunctive['weight']))), num_to_show=np.min([num_rules, num_to_include]))
+                                (len(conjunctive['weight']))), num_to_show=np.min([num_rules, n_top_features]))
 
             covered_features = []
             covered_combinations = [conjunctive['feature'][i] for i in range(len(conjunctive['rule']))]
@@ -531,23 +533,24 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                     conjunctive['is_conjunctive'].append(True)
             self.conjunctive_factual_rules.append(conjunctive)
         self._has_conjunctive_factual_rules = True
-        return self.add_conjunctive_factual_rules(num_to_include=num_to_include, num_rules_combined=num_rules_combined-1)
+        return self.add_conjunctive_factual_rules(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
 
 
     # pylint: disable=too-many-locals
-    def add_conjunctive_counterfactual_rules(self, num_to_include=5, num_rules_combined=2):
+    def add_conjunctive_counterfactual_rules(self, n_top_features=5, max_rule_size=2):
         """adds conjunctive counterfactual rules
 
         Args:
-            num_to_include (int, optional): the number of most important counterfactual rules to try to combine into conjunctive rules. Defaults to 5.
+            n_top_features (int, optional): the number of most important counterfactual rules to try to combine into conjunctive rules. Defaults to 5.
+            max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
 
         Returns:
-            List[Dict[str, List]]: a list of dictionaries containing the counterfactual rules (including conjunctive rules), one for each test instance
+            CalibratedExplanations: Returns a self reference, to allow for method chaining
         """
-        if num_rules_combined >= 4:
-            raise ValueError('num_rules_combined must be 2 or 3')
-        if num_rules_combined < 2:
+        if max_rule_size >= 4:
+            raise ValueError('max_rule_size must be 2 or 3')
+        if max_rule_size < 2:
             return self
         if not self._has_factual_rules:
             counterfactuals = deepcopy(self.get_counterfactual_rules())
@@ -572,14 +575,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             num_rules = len(counterfactual['rule'])
             predicted_class = counterfactual['classes']
             conjunctive['classes'] = predicted_class
-            if num_to_include is None:
-                num_to_include = num_rules
+            if n_top_features is None:
+                n_top_features = num_rules
             # top_factuals = self.__rank_features(np.reshape(factual['weight'], (len(factual['weight']))), 
             #                     width=np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
-            #                     (len(factual['weight']))), num_to_show=np.min([num_rules, num_to_include]))
+            #                     (len(factual['weight']))), num_to_show=np.min([num_rules, n_top_features]))
             top_conjunctives = self.__rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))), 
                                 width=np.reshape(np.array(conjunctive['weight_high']) - np.array(conjunctive['weight_low']),
-                                (len(conjunctive['weight']))), num_to_show=np.min([num_rules, num_to_include]))
+                                (len(conjunctive['weight']))), num_to_show=np.min([num_rules, n_top_features]))
 
             covered_features = []
             covered_combinations = [conjunctive['feature'][i] for i in range(len(conjunctive['rule']))]
@@ -642,7 +645,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                     conjunctive['is_conjunctive'].append(True)
             self.conjunctive_counterfactual_rules.append(conjunctive)
         self._has_conjunctive_counterfactual_rules = True
-        return self.add_conjunctive_counterfactual_rules(num_to_include=num_to_include, num_rules_combined=num_rules_combined-1)
+        return self.add_conjunctive_counterfactual_rules(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
 
 
