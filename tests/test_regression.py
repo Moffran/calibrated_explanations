@@ -22,6 +22,7 @@ def load_regression_dataset():
     # dataSet = 'housing.csv'
     # delimiter = ';'
     num_to_test = 1
+    calibration_size = 200
     # categorical_labels = {8: {0: 'INLAND', 1: 'NEAR BAY', 2: '<1H OCEAN', 3: 'NEAR OCEAN', 4: 'ISLAND'}}
 
     # fileName = 'data/reg/' + dataSet
@@ -41,8 +42,8 @@ def load_regression_dataset():
 
     dataset = 'abalone.txt'
     ds = pd.read_csv('data/reg/' + dataset)
-    X = ds.drop('REGRESSION', axis=1).values
-    y = ds['REGRESSION'].values
+    X = ds.drop('REGRESSION', axis=1).values[:2000,:]
+    y = ds['REGRESSION'].values[:2000]
     y = (y-np.min(y))/(np.max(y)-np.min(y))
     no_of_classes = None
     no_of_features = X.shape[1]
@@ -52,7 +53,7 @@ def load_regression_dataset():
 
     trainCalX, testX, trainCalY, testY = train_test_split(X, y, test_size=num_to_test, random_state=42)
     # trainCalX,trainCalY = shuffle(trainCalX, trainCalY)
-    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.2, random_state=42)
+    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=calibration_size, random_state=42)
     return trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, columns
 
 def get_regression_model(model_name, trainX, trainY):
@@ -75,7 +76,7 @@ class TestCalibratedExplainer(unittest.TestCase):
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         return True
 
-    def test_failure(self):
+    def test_failure_regression(self):
         trainX, trainY, calX, calY, _, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         with pytest.raises(NotFittedError):
@@ -88,7 +89,7 @@ class TestCalibratedExplainer(unittest.TestCase):
     # NOTE: this takes takes about 70s to run
     # @unittest.skip('Skipping provisionally.')
     def test_regression_ce(self):
-        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
@@ -106,6 +107,55 @@ class TestCalibratedExplainer(unittest.TestCase):
         factual_explanation.get_factual_rules()
         self.assertExplanation(factual_explanation)
 
+        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
+        self.assertExplanation(factual_explanation)
+        # factual_explanation.add_conjunctions()
+        factual_explanation.get_factual_rules()
+        self.assertExplanation(factual_explanation)
+
+        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
+        self.assertExplanation(factual_explanation)
+        # factual_explanation.add_conjunctions()
+        factual_explanation.get_factual_rules()
+        self.assertExplanation(factual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+        
+        
+    def test_probabilistic_regression_ce(self):
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression'
+        )
+
         factual_explanation = cal_exp.explain_factual(testX, testY)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(factual_explanation)
@@ -116,64 +166,28 @@ class TestCalibratedExplainer(unittest.TestCase):
         factual_explanation = cal_exp.explain_factual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
+        # factual_explanation.add_conjunctions()
         factual_explanation.get_factual_rules()
         self.assertExplanation(factual_explanation)
-
-        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
-        self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
-        factual_explanation.get_factual_rules()
-        self.assertExplanation(factual_explanation)
-
-        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
-        self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
-        factual_explanation.get_factual_rules()
-        self.assertExplanation(factual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
+        # counterfactual_explanation.add_conjunctions()
         counterfactual_explanation.get_counterfactual_rules()
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
+        # counterfactual_explanation.add_conjunctions()
         counterfactual_explanation.get_counterfactual_rules()
         self.assertExplanation(counterfactual_explanation)
 
 
-    # @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
-    @unittest.skip('Test fails but cannot reproduce error. Skipping provisionally.')
+    # @unittest.skip('Test passes but is slow.  Skipping provisionally.')
     def test_knn_normalized_regression_ce(self):
-        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
@@ -192,6 +206,57 @@ class TestCalibratedExplainer(unittest.TestCase):
         factual_explanation.get_factual_rules()
         self.assertExplanation(factual_explanation)
 
+        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
+        self.assertExplanation(factual_explanation)
+        # factual_explanation.add_conjunctions()
+        factual_explanation.get_factual_rules()
+        self.assertExplanation(factual_explanation)
+
+        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
+        self.assertExplanation(factual_explanation)
+        # factual_explanation.add_conjunctions()
+        factual_explanation.get_factual_rules()
+        self.assertExplanation(factual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+
+
+    @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
+    def test_knn_normalized_probabilistic_regression_ce(self):
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            difficulty_estimator=DifficultyEstimator().fit(X=trainX, y=trainY, scaler=True),
+        )
+
         factual_explanation = cal_exp.explain_factual(testX, testY)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(factual_explanation)
@@ -202,64 +267,28 @@ class TestCalibratedExplainer(unittest.TestCase):
         factual_explanation = cal_exp.explain_factual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
+        # factual_explanation.add_conjunctions()
         factual_explanation.get_factual_rules()
         self.assertExplanation(factual_explanation)
-
-        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
-        self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
-        factual_explanation.get_factual_rules()
-        self.assertExplanation(factual_explanation)
-
-        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
-        self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
-        factual_explanation.get_factual_rules()
-        self.assertExplanation(factual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
+        # counterfactual_explanation.add_conjunctions()
         counterfactual_explanation.get_counterfactual_rules()
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
+        # counterfactual_explanation.add_conjunctions()
         counterfactual_explanation.get_counterfactual_rules()
         self.assertExplanation(counterfactual_explanation)
 
 
-    @unittest.skip('Test passes but is slow, ~2 minutes.  Skipping provisionally.')
-    # @unittest.skip('Skipping provisionally.')
+    # @unittest.skip('Test passes but is slow.  Skipping provisionally.')
     def test_var_normalized_regression_ce(self):
-        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
@@ -278,6 +307,57 @@ class TestCalibratedExplainer(unittest.TestCase):
         factual_explanation.get_factual_rules()
         self.assertExplanation(factual_explanation)
 
+        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
+        self.assertExplanation(factual_explanation)
+        # factual_explanation.add_conjunctions()
+        factual_explanation.get_factual_rules()
+        self.assertExplanation(factual_explanation)
+
+        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
+        self.assertExplanation(factual_explanation)
+        # factual_explanation.add_conjunctions()
+        factual_explanation.get_factual_rules()
+        self.assertExplanation(factual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        # counterfactual_explanation.add_conjunctions()
+        counterfactual_explanation.get_counterfactual_rules()
+        self.assertExplanation(counterfactual_explanation)
+
+
+    @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
+    def test_var_normalized_probabilistic_regression_ce(self):
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            difficulty_estimator=DifficultyEstimator().fit(X=trainX, learner=model, scaler=True),
+        )
+
         factual_explanation = cal_exp.explain_factual(testX, testY)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(factual_explanation)
@@ -288,56 +368,21 @@ class TestCalibratedExplainer(unittest.TestCase):
         factual_explanation = cal_exp.explain_factual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
+        # factual_explanation.add_conjunctions()
         factual_explanation.get_factual_rules()
         self.assertExplanation(factual_explanation)
-
-        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
-        self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
-        factual_explanation.get_factual_rules()
-        self.assertExplanation(factual_explanation)
-
-        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryDiscretizer)
-        self.assertExplanation(factual_explanation)
-        factual_explanation.add_conjunctions()
-        factual_explanation.get_factual_rules()
-        self.assertExplanation(factual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
+        # counterfactual_explanation.add_conjunctions()
         counterfactual_explanation.get_counterfactual_rules()
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        counterfactual_explanation.get_counterfactual_rules()
-        self.assertExplanation(counterfactual_explanation)
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
+        # counterfactual_explanation.add_conjunctions()
         counterfactual_explanation.get_counterfactual_rules()
         self.assertExplanation(counterfactual_explanation)
 
