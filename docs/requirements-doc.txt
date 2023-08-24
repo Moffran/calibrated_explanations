@@ -1,10 +1,10 @@
-sphinx
 crepes
-sphinx_rtd_theme
-numpy
-pandas
-scikit-learn
-numpydoc
-nbsphinx
 myst_parser
+nbsphinx
+numpy
+numpydoc
+pandas
 pydata_sphinx_theme
+scikit-learn
+sphinx
+sphinx_rtd_theme
