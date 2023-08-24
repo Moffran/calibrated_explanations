@@ -388,7 +388,7 @@ class CalibratedExplainer:
             # Get the perturbations
             x_original = copy.deepcopy(x)
             perturbed_original = self._discretize(copy.deepcopy(x).reshape(1,-1))
-            rule_boundaries = self._rule_boundaries(x_original, perturbed_original)
+            rule_boundaries = self.rule_boundaries(x_original, perturbed_original)
             for f in range(x.shape[0]): # For each feature
                 perturbed = copy.deepcopy(x)
 
@@ -513,16 +513,16 @@ class CalibratedExplainer:
 
 
 
-    def _rule_boundaries(self, instance, perturbed_instance=None):
-        # """extracts the rule boundaries for the instance
+    def rule_boundaries(self, instance, perturbed_instance=None):
+        """extracts the rule boundaries for the instance
 
-        # Args:
-        #     instance (n_features,): the instance to extract boundaries for
-        #     perturbed_instance ((n_features,), optional): a discretized version of instance. Defaults to None.
+        Args:
+            instance (n_features,): the instance to extract boundaries for
+            perturbed_instance ((n_features,), optional): a discretized version of instance. Defaults to None.
 
-        # Returns:
-        #     (n_features, 2): min and max values for each feature
-        # """
+        Returns:
+            (n_features, 2): min and max values for each feature
+        """
         min_max = []
         if perturbed_instance is None:
             perturbed_instance = self._discretize(instance.reshape(1,-1))

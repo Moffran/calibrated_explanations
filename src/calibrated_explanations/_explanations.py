@@ -309,7 +309,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             counterfactual['base_predict'].append(self.predict['predict'][i])
             counterfactual['base_predict_low'].append(self.predict['low'][i])
             counterfactual['base_predict_high'].append(self.predict['high'][i])
-            rule_boundaries = self.calibrated_explainer._rule_boundaries(instance) # pylint: disable=protected-access
+            rule_boundaries = self.calibrated_explainer.rule_boundaries(instance)
             for f,_ in enumerate(instance): # pylint: disable=invalid-name
                 if f in self.calibrated_explainer.categorical_features:
                     values = np.array(self.calibrated_explainer.feature_values[f])
