@@ -19,28 +19,10 @@ MODEL = 'RF'
 
 
 def load_regression_dataset():
-    # dataSet = 'housing.csv'
-    # delimiter = ';'
     num_to_test = 1
     calibration_size = 200
-    # categorical_labels = {8: {0: 'INLAND', 1: 'NEAR BAY', 2: '<1H OCEAN', 3: 'NEAR OCEAN', 4: 'ISLAND'}}
-
-    # fileName = 'data/reg/' + dataSet
-    # df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
-
-    # target = 'median_house_value'
-    # # target = 'REGRESSION'
-    # df.dropna(inplace=True)
-    # X, y = df.drop(target,axis=1), df[target]
-    # # normalize target between 0 and 1
-    # # y = (y - y.min())/(y.max() - y.min())
-    # columns = df.drop(target,axis=1).columns
-    # no_of_classes = len(np.unique(y))
-    # no_of_features = X.shape[1]
-    # categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
-    # # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
-
     dataset = 'abalone.txt'
+
     ds = pd.read_csv('data/reg/' + dataset)
     X = ds.drop('REGRESSION', axis=1).values[:2000,:]
     y = ds['REGRESSION'].values[:2000]
@@ -55,6 +37,7 @@ def load_regression_dataset():
     # trainCalX,trainCalY = shuffle(trainCalX, trainCalY)
     trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=calibration_size, random_state=42)
     return trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, columns
+
 
 def get_regression_model(model_name, trainX, trainY):
     t1 = DecisionTreeRegressor()
@@ -141,8 +124,8 @@ class TestCalibratedExplainer(unittest.TestCase):
         # counterfactual_explanation.add_conjunctions()
         counterfactual_explanation.get_counterfactual_rules()
         self.assertExplanation(counterfactual_explanation)
-        
-        
+
+
     def test_probabilistic_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
