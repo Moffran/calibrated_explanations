@@ -202,6 +202,15 @@ Just run the following command from the project root.
 pytest
 ```
 
+To build the Sphinx documentation,
+run the following command in the project root:
+
+```bash
+sphinx-build docs docs/_build
+```
+
+Then open the `docs/_build/index.html` file on your web browser.
+
 
 Further reading
 ---------------
