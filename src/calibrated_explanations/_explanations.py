@@ -1346,9 +1346,9 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         """transforms the explanation into a lime explanation object
 
         Returns:
-            lime explanation object with the same values as the explanation
+            list of lime.Explanation : list of lime explanation objects with the same values as the CalibratedExplanations
         """
-        _, lime_exp = self.calibrated_explainer.preload_lime()
+        _, lime_exp = self.calibrated_explainer._preload_lime() # pylint: disable=protected-access
         exp = []
         for i in range(len(self.test_objects[:,0])):
             tmp = deepcopy(lime_exp)
@@ -1379,9 +1379,9 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         """transforms the explanation into a shap explanation object
 
         Returns:
-            shap explanation object with the same values as the explanation
+            shap.Explanation : shap explanation object with the same values as the explanation
         """
-        _, shap_exp = self.calibrated_explainer.preload_shap(len(self.test_objects[:,0]))
+        _, shap_exp = self.calibrated_explainer._preload_shap(len(self.test_objects[:,0])) # pylint: disable=protected-access
         for i in range(len(self.test_objects[:,0])):
             shap_exp.base_values[i] = self.predict['predict'][i]
             for f in range(len(self.test_objects[0, :])):
