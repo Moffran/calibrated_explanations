@@ -153,7 +153,7 @@ class IntervalRegressor:
         '''
         # A less exact but faster solution, suitable when difficulty_estimator is assigned.
         # Activated temporarily
-        if self.ce.difficulty_estimator is not None:  
+        if self.ce.difficulty_estimator is not None:
             sigmas = self.ce.get_sigma_test(self.ce.cal_X)
             proba = self.cps.predict(y_hat=self.cal_y_hat,
                                                 y=y_threshold,
