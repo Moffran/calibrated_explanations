@@ -58,48 +58,48 @@ class CalibratedExplainer:
         
         Parameters
         ----------
-        model
+        model : predictive model
             A sklearn predictive model that can be used to predict the target variable.
-        cal_X
-            The calibration input data for the model. It should be an array-like object of shape
-        (n_calibrations_samples, n_features).
-        cal_y
-            The calibration target data for the model. It is an array-like object of shape
-        (n_calibrations_samples,).
-        mode, optional
-            The mode parameter specifies the type of problem being solved. It can be either
-        "classification" or "regression".
-        feature_names
+        cal_X : array-like of shape (n_calibrations_samples, n_features)
+            The calibration input data for the model. It should be an array-like object of shape.
+        cal_y : array-like of shape (n_calibrations_samples,)
+            The calibration target data for the model. It is an array-like object of shape.
+        mode : str equal to "classification" or "regression", default="classification"
+            The mode parameter specifies the type of problem being solved.
+        feature_names : list of str, default=None
             A list of feature names for the input data. Each feature name should be a string. If not
-        provided, the feature names will be assigned as "0", "1", "2", etc.
-        categorical_features
+            provided, the feature names will be assigned as "0", "1", "2", etc.
+        categorical_features : list of int, default=None
             A list of indices for categorical features. These are the features that have discrete values
-        and are not continuous.
-        categorical_labels
+            and are not continuous.
+        categorical_labels : dict(int, dict(int, str)), default=None
             A nested dictionary that maps the index of categorical features to another dictionary. The
-        inner dictionary maps each feature value to a feature label. This is used for categorical
-        feature encoding in the explanations.
-        class_labels
+            inner dictionary maps each feature value to a feature label. This is used for categorical
+            feature encoding in the explanations.
+        class_labels : dict(int, str), default=None
             A dictionary mapping numerical target values to class names. This parameter is only applicable
-        for classification models.
-        difficulty_estimator
+            for classification models.
+        difficulty_estimator : DifficultyEstimator, default=None
             A `DifficultyEstimator` object from the `crepes` package. It is used to estimate the difficulty of
-        explaining a prediction. If None, no difficulty estimation is used. This parameter is only used
-        for regression models.
-        sample_percentiles
+            explaining a prediction. If None, no difficulty estimation is used. This parameter is only used
+            for regression models.
+        sample_percentiles : list of int, default=[25, 50, 75]
             An array-like object that specifies the percentiles used to sample values for evaluation of
-        numerical features. For example, if `sample_percentiles = [25, 50, 75]`, then the values at the
-        25th, 50th, and 75th percentiles will be sampled
-        n_neighbors
-        random_state, optional
+            numerical features. For example, if `sample_percentiles = [25, 50, 75]`, then the values at the
+            25th, 50th, and 75th percentiles will be sampled
+        random_state : int, default=42
             The random_state parameter is an integer that is used to set the random state for
-        reproducibility. It is used in various parts of the code where randomization is involved, such
-        as sampling values for evaluation of numerical features or initializing the random state for
-        certain operations. By setting a specific random_state value
-        verbose, optional
+            reproducibility. It is used in various parts of the code where randomization is involved, such
+            as sampling values for evaluation of numerical features or initializing the random state for
+            certain operations. By setting a specific random_state value
+        verbose : bool, default=False
             A boolean parameter that determines whether additional printouts should be enabled during the
-        operation of the class. If set to True, it will print out additional information during the
-        execution of the code. If set to False, it will not print out any additional information.
+            operation of the class. If set to True, it will print out additional information during the
+            execution of the code. If set to False, it will not print out any additional information.
+        
+        Return
+        ------
+        CalibratedExplainer : A CalibratedExplainer object that can be used to explain predictions from a predictive model.
         
         '''
         self.__initialized = False
