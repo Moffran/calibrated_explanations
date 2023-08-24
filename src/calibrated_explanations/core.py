@@ -181,7 +181,7 @@ class CalibratedExplainer:
         # ----------
         # testX : A set of test objects to predict
         # y : float, int or array-like of shape (n_samples,), default=None
-        #     values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        #     values for which p-values should be returned. Only used for probabilistic explanations for regression.
         # low_high_percentiles : a tuple of floats, default=(5, 95)
         #     The low and high percentile used to calculate the interval. Applicable to regression.
         # classes : None or array-like of shape (n_samples,), default=None
@@ -189,22 +189,22 @@ class CalibratedExplainer:
 
         # Raises
         # ------
-        # ValueError: The length of the y-parameter must be either a constant or the same as the number of 
+        # ValueError: The length of the y-parameter must be either a constant or the same as the number of
         #     instances in testX.
 
         # Returns
         # -------
         # predict : ndarray of shape (n_samples,)
-        #     The prediction for the test data. For classification, this is the regularized probability 
-        #     of the positive class, derived using the intervals from VennAbers. For regression, this is the 
+        #     The prediction for the test data. For classification, this is the regularized probability
+        #     of the positive class, derived using the intervals from VennAbers. For regression, this is the
         #     median prediction from the ConformalPredictiveSystem.
         # low : ndarray of shape (n_samples,)
-        #     The lower bound of the prediction interval. For classification, this is derived using 
-        #     VennAbers. For regression, this is the lower percentile given as parameter, derived from the 
+        #     The lower bound of the prediction interval. For classification, this is derived using
+        #     VennAbers. For regression, this is the lower percentile given as parameter, derived from the
         #     ConformalPredictiveSystem.
         # high : ndarray of shape (n_samples,)
-        #     The upper bound of the prediction interval. For classification, this is derived using 
-        #     VennAbers. For regression, this is the upper percentile given as parameter, derived from the 
+        #     The upper bound of the prediction interval. For classification, this is derived using
+        #     VennAbers. For regression, this is the upper percentile given as parameter, derived from the
         #     ConformalPredictiveSystem.
         # classes : ndarray of shape (n_samples,)
         #     The classes predicted for the original instance. None if not multiclass or regression.
@@ -248,10 +248,10 @@ class CalibratedExplainer:
         return None, None, None, None # Should never happen
 
     def explain_factual(self,
-                 test_X,
-                 y = None,
-                 low_high_percentiles = (5, 95),
-                 ) -> CalibratedExplanations:
+                        test_X,
+                        y = None,
+                        low_high_percentiles = (5, 95),
+                        ) -> CalibratedExplanations:
         """
         Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for factual explanations.
 
@@ -283,10 +283,10 @@ class CalibratedExplainer:
         return self(test_X, y, low_high_percentiles)
 
     def explain_counterfactual(self,
-                 test_X,
-                 y = None,
-                 low_high_percentiles = (5, 95),
-                 ) -> CalibratedExplanations:
+                                test_X,
+                                y = None,
+                                low_high_percentiles = (5, 95),
+                                ) -> CalibratedExplanations:
         """
         Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for counterfactual explanations.
 
@@ -318,10 +318,10 @@ class CalibratedExplainer:
         return self(test_X, y, low_high_percentiles)
 
     def __call__(self,
-                 testX,
-                 y = None,
-                 low_high_percentiles = (5, 95),
-                 ) -> CalibratedExplanations:
+                testX,
+                y = None,
+                low_high_percentiles = (5, 95),
+                ) -> CalibratedExplanations:
         # """
         # Creates a CalibratedExplanations object for the test data with the already assigned discretizer.
 
@@ -329,7 +329,7 @@ class CalibratedExplainer:
         # ----------
         # testX : A set of test objects to predict
         # y : float, int or array-like of shape (n_samples,), default=None
-        #     values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        #     values for which p-values should be returned. Only used for probabilistic explanations for regression.
         # low_high_percentiles : a tuple of floats, default=(5, 95)
         #     The low and high percentile used to calculate the interval. Applicable to regression.
 
@@ -337,13 +337,13 @@ class CalibratedExplainer:
         # ------
         # ValueError: The number of features in the test data must be the same as in the calibration data.
         # Warning: The y-parameter is only supported for mode='regression'.
-        # ValueError: The length of the y parameter must be either a constant or the same as the number of 
+        # ValueError: The length of the y parameter must be either a constant or the same as the number of
         #     instances in testX.
 
         # Returns
         # -------
-        # CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
-        #     intervals. 
+        # CalibratedExplanations : A CalibratedExplanations object containing the predictions and the
+        #     intervals.
         # """
         if len(testX.shape) == 1:
             testX = testX.reshape(1, -1)
@@ -572,14 +572,14 @@ class CalibratedExplainer:
 
 
     def set_difficulty_estimator(self, difficulty_estimator, initialize=True) -> None:
-        # """assigns a difficulty estimator for regression. For further information, 
-        # see the documentation for the difficulty estimator or refer to the crepes package 
-        # for further information.
+        """assigns a difficulty estimator for regression. For further information, 
+        see the documentation for the difficulty estimator or refer to the crepes package 
+        for further information.
 
-        # Args:
-        #     difficulty_estimator (crepes.extras.DifficultyEstimator): A DifficultyEstimator object from the crepes package
-        #     initialize (bool, optional): If true, then the interval model is initialized once done. Defaults to True.
-        # """
+        Args:
+            difficulty_estimator (crepes.extras.DifficultyEstimator): A DifficultyEstimator object from the crepes package
+            initialize (bool, optional): If true, then the interval model is initialized once done. Defaults to True.
+        """
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
         if difficulty_estimator is not None:
@@ -600,7 +600,7 @@ class CalibratedExplainer:
 
 
     def _get_sigma_test(self, X: np.ndarray) -> np.ndarray:
-        # """returns the difficulty (sigma) of the test instances      
+        # """returns the difficulty (sigma) of the test instances
 
         # """
         if self.difficulty_estimator is None:
@@ -661,7 +661,7 @@ class CalibratedExplainer:
         return x
 
 
-     # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches
     def set_discretizer(self, discretizer: str, cal_X=None, cal_y=None) -> None:
         """assign discretizer to the explainer. 
         The discretizer can be either 'quartile', 'decile', 'entropy', 'binary', or 'binaryEntropy'. 
@@ -743,7 +743,7 @@ class CalibratedExplainer:
 
 
     def _is_lime_enabled(self, is_enabled=None) -> bool:
-        # """returns whether lime export is enabled. 
+        # """returns whether lime export is enabled.
         # If is_enabled is not None, then the lime export is enabled/disabled according to the value of is_enabled.
 
         # Args:
@@ -759,7 +759,7 @@ class CalibratedExplainer:
 
 
     def _is_shap_enabled(self, is_enabled=None) -> bool:
-        # """returns whether shap export is enabled. 
+        # """returns whether shap export is enabled.
         # If is_enabled is not None, then the shap export is enabled/disabled according to the value of is_enabled.
 
         # Args:
