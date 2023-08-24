@@ -53,7 +53,7 @@ class CalibratedExplainer:
                 verbose = False,
                 ) -> None:
         # pylint: disable=line-too-long
-        '''The function initializes a CalibratedExplainer object for explaining the predictions of a
+        '''Constructor for the CalibratedExplainer object for explaining the predictions of a
         black-box model.
         
         Parameters
@@ -120,7 +120,7 @@ class CalibratedExplainer:
         self.verbose = verbose
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
-        self.set_mode(str.lower(mode), initialize=False)
+        self.__set_mode(str.lower(mode), initialize=False)
         self.__initialize_interval_model()
 
         self.categorical_labels = categorical_labels
@@ -168,50 +168,50 @@ class CalibratedExplainer:
 
 
     # pylint: disable=invalid-name
-    def predict(self,
+    def _predict(self,
                 test_X,
                 y = None, # The same meaning as y has for cps in crepes.
                 low_high_percentiles = (5, 95),
                 classes = None,
                 ):
-        """
-        Predicts the target variable for the test data.
+        # """
+        # Predicts the target variable for the test data.
 
-        Parameters
-        ----------
-        testX : A set of test objects to predict
-        y : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
-        low_high_percentiles : a tuple of floats, default=(5, 95)
-            The low and high percentile used to calculate the interval. Applicable to regression.
-        classes : None or array-like of shape (n_samples,), default=None
-            The classes predicted for the original instance. None if not multiclass or regression.
+        # Parameters
+        # ----------
+        # testX : A set of test objects to predict
+        # y : float, int or array-like of shape (n_samples,), default=None
+        #     values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        # low_high_percentiles : a tuple of floats, default=(5, 95)
+        #     The low and high percentile used to calculate the interval. Applicable to regression.
+        # classes : None or array-like of shape (n_samples,), default=None
+        #     The classes predicted for the original instance. None if not multiclass or regression.
 
-        Raises
-        ------
-        ValueError: The length of the y-parameter must be either a constant or the same as the number of 
-            instances in testX.
+        # Raises
+        # ------
+        # ValueError: The length of the y-parameter must be either a constant or the same as the number of 
+        #     instances in testX.
 
-        Returns
-        -------
-        predict : ndarray of shape (n_samples,)
-            The prediction for the test data. For classification, this is the regularized probability 
-            of the positive class, derived using the intervals from VennAbers. For regression, this is the 
-            median prediction from the ConformalPredictiveSystem.
-        low : ndarray of shape (n_samples,)
-            The lower bound of the prediction interval. For classification, this is derived using 
-            VennAbers. For regression, this is the lower percentile given as parameter, derived from the 
-            ConformalPredictiveSystem.
-        high : ndarray of shape (n_samples,)
-            The upper bound of the prediction interval. For classification, this is derived using 
-            VennAbers. For regression, this is the upper percentile given as parameter, derived from the 
-            ConformalPredictiveSystem.
-        classes : ndarray of shape (n_samples,)
-            The classes predicted for the original instance. None if not multiclass or regression.
-        """
+        # Returns
+        # -------
+        # predict : ndarray of shape (n_samples,)
+        #     The prediction for the test data. For classification, this is the regularized probability 
+        #     of the positive class, derived using the intervals from VennAbers. For regression, this is the 
+        #     median prediction from the ConformalPredictiveSystem.
+        # low : ndarray of shape (n_samples,)
+        #     The lower bound of the prediction interval. For classification, this is derived using 
+        #     VennAbers. For regression, this is the lower percentile given as parameter, derived from the 
+        #     ConformalPredictiveSystem.
+        # high : ndarray of shape (n_samples,)
+        #     The upper bound of the prediction interval. For classification, this is derived using 
+        #     VennAbers. For regression, this is the upper percentile given as parameter, derived from the 
+        #     ConformalPredictiveSystem.
+        # classes : ndarray of shape (n_samples,)
+        #     The classes predicted for the original instance. None if not multiclass or regression.
+        # """
         assert self.__initialized, "The model must be initialized before calling predict."
         if self.mode == 'classification':
-            if self.is_multiclass():
+            if self._is_multiclass():
                 predict, low, high, new_classes = self.interval_model.predict_proba(test_X,
                                                                                     output_interval=True,
                                                                                     classes=classes)
@@ -322,29 +322,29 @@ class CalibratedExplainer:
                  y = None,
                  low_high_percentiles = (5, 95),
                  ) -> CalibratedExplanations:
-        """
-        Creates a CalibratedExplanations object for the test data with the already assigned discretizer.
+        # """
+        # Creates a CalibratedExplanations object for the test data with the already assigned discretizer.
 
-        Parameters
-        ----------
-        testX : A set of test objects to predict
-        y : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
-        low_high_percentiles : a tuple of floats, default=(5, 95)
-            The low and high percentile used to calculate the interval. Applicable to regression.
+        # Parameters
+        # ----------
+        # testX : A set of test objects to predict
+        # y : float, int or array-like of shape (n_samples,), default=None
+        #     values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        # low_high_percentiles : a tuple of floats, default=(5, 95)
+        #     The low and high percentile used to calculate the interval. Applicable to regression.
 
-        Raises
-        ------
-        ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The y-parameter is only supported for mode='regression'.
-        ValueError: The length of the y parameter must be either a constant or the same as the number of 
-            instances in testX.
+        # Raises
+        # ------
+        # ValueError: The number of features in the test data must be the same as in the calibration data.
+        # Warning: The y-parameter is only supported for mode='regression'.
+        # ValueError: The length of the y parameter must be either a constant or the same as the number of 
+        #     instances in testX.
 
-        Returns
-        -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
-            intervals. 
-        """
+        # Returns
+        # -------
+        # CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+        #     intervals. 
+        # """
         if len(testX.shape) == 1:
             testX = testX.reshape(1, -1)
         if testX.shape[1] != self.cal_X.shape[1]:
@@ -372,11 +372,11 @@ class CalibratedExplainer:
         for i, x in enumerate(testX):
             if y is not None and not np.isscalar(explanation.y_threshold):
                 y = float(explanation.y_threshold[i])
-            predict, low, high, predicted_class = self.predict(x.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles)
+            predict, low, high, predicted_class = self._predict(x.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles)
             prediction['predict'].append(predict[0])
             prediction['low'].append(low[0])
             prediction['high'].append(high[0])
-            if self.is_multiclass():
+            if self._is_multiclass():
                 prediction['classes'].append(predicted_class[0])
             else:
                 prediction['classes'].append(1)
@@ -387,8 +387,8 @@ class CalibratedExplainer:
             instance_binned = {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': []}
             # Get the perturbations
             x_original = copy.deepcopy(x)
-            perturbed_original = self.discretize(copy.deepcopy(x).reshape(1,-1))
-            rule_boundaries = self.rule_boundaries(x_original, perturbed_original)
+            perturbed_original = self._discretize(copy.deepcopy(x).reshape(1,-1))
+            rule_boundaries = self._rule_boundaries(x_original, perturbed_original)
             for f in range(x.shape[0]): # For each feature
                 perturbed = copy.deepcopy(x)
 
@@ -403,7 +403,7 @@ class CalibratedExplainer:
                             current_bin = bin_value  # If the discretized value is the same as the original, skip it
 
                         perturbed[f] = value
-                        predict, low, high, _ = self.predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
                         average_predict[bin_value] = predict[0]
                         low_predict[bin_value] = low[0]
                         high_predict[bin_value] = high[0]
@@ -423,7 +423,7 @@ class CalibratedExplainer:
                         rule_value.append(lesser_values)
                         for value in lesser_values:
                             perturbed[f] = value
-                            predict, low, high, _ = self.predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
                             average_predict[bin_value] += predict[0]
                             low_predict[bin_value] += low[0]
                             high_predict[bin_value] += high[0]
@@ -436,7 +436,7 @@ class CalibratedExplainer:
                         rule_value.append(greater_values)
                         for value in greater_values:
                             perturbed[f] = value
-                            predict, low, high, _ = self.predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
                             average_predict[bin_value] += predict[0]
                             low_predict[bin_value] += low[0]
                             high_predict[bin_value] += high[0]
@@ -449,7 +449,7 @@ class CalibratedExplainer:
                     rule_value.append(covered_values)
                     for value in covered_values:
                         perturbed[f] = value
-                        predict, low, high, _ = self.predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
                         average_predict[bin_value] += predict[0]
                         low_predict[bin_value] += low[0]
                         high_predict[bin_value] += high[0]
@@ -498,34 +498,34 @@ class CalibratedExplainer:
             feature_predict['low'].append(instance_predict['low'])
             feature_predict['high'].append(instance_predict['high'])
 
-        explanation.finalize(binned_predict, feature_weights, feature_predict, prediction)
+        explanation._finalize(binned_predict, feature_weights, feature_predict, prediction)
         return explanation
 
 
 
-    def is_multiclass(self):
-        """test if it is a multiclass problem
+    def _is_multiclass(self):
+        # """test if it is a multiclass problem
 
-        Returns:
-            bool: True if multiclass
-        """
+        # Returns:
+        #     bool: True if multiclass
+        # """
         return self.num_classes > 2
 
 
 
-    def rule_boundaries(self, instance, perturbed_instance=None):
-        """extracts the rule boundaries for the instance
+    def _rule_boundaries(self, instance, perturbed_instance=None):
+        # """extracts the rule boundaries for the instance
 
-        Args:
-            instance (n_features,): the instance to extract boundaries for
-            perturbed_instance ((n_features,), optional): a discretized version of instance. Defaults to None.
+        # Args:
+        #     instance (n_features,): the instance to extract boundaries for
+        #     perturbed_instance ((n_features,), optional): a discretized version of instance. Defaults to None.
 
-        Returns:
-            (n_features, 2): min and max values for each feature
-        """
+        # Returns:
+        #     (n_features, 2): min and max values for each feature
+        # """
         min_max = []
         if perturbed_instance is None:
-            perturbed_instance = self.discretize(instance.reshape(1,-1))
+            perturbed_instance = self._discretize(instance.reshape(1,-1))
         for f in range(self.num_features):
             if f in self.categorical_features:
                 min_max.append([instance[f], instance[f]])
@@ -572,14 +572,14 @@ class CalibratedExplainer:
 
 
     def set_difficulty_estimator(self, difficulty_estimator, initialize=True) -> None:
-        """assigns a difficulty estimator for regression. For further information, 
-        see the documentation for the difficulty estimator or refer to the crepes package 
-        for further information.
+        # """assigns a difficulty estimator for regression. For further information, 
+        # see the documentation for the difficulty estimator or refer to the crepes package 
+        # for further information.
 
-        Args:
-            difficulty_estimator (crepes.extras.DifficultyEstimator): A DifficultyEstimator object from the crepes package
-            initialize (bool, optional): If true, then the interval model is initialized once done. Defaults to True.
-        """
+        # Args:
+        #     difficulty_estimator (crepes.extras.DifficultyEstimator): A DifficultyEstimator object from the crepes package
+        #     initialize (bool, optional): If true, then the interval model is initialized once done. Defaults to True.
+        # """
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
         if difficulty_estimator is not None:
@@ -599,26 +599,26 @@ class CalibratedExplainer:
 
 
 
-    def get_sigma_test(self, X: np.ndarray) -> np.ndarray:
-        """returns the difficulty (sigma) of the test instances      
+    def _get_sigma_test(self, X: np.ndarray) -> np.ndarray:
+        # """returns the difficulty (sigma) of the test instances      
 
-        """
+        # """
         if self.difficulty_estimator is None:
             return self.__constant_sigma(X)
         return self.difficulty_estimator.apply(X)
 
 
 
-    def set_mode(self, mode, initialize=True) -> None:
-        """assign the mode of the explainer. The mode can be either 'classification' or 'regression'.
+    def __set_mode(self, mode, initialize=True) -> None:
+        # """assign the mode of the explainer. The mode can be either 'classification' or 'regression'.
 
-        Args:
-            mode (str): The mode can be either 'classification' or 'regression'.
-            initialize (bool, optional): If true, then the interval model is initialized once done. Defaults to True.
+        # Args:
+        #     mode (str): The mode can be either 'classification' or 'regression'.
+        #     initialize (bool, optional): If true, then the interval model is initialized once done. Defaults to True.
 
-        Raises:
-            ValueError: The mode can be either 'classification' or 'regression'.
-        """
+        # Raises:
+        #     ValueError: The mode can be either 'classification' or 'regression'.
+        # """
         self.__initialized = False
         if mode == 'classification':
             assert 'predict_proba' in dir(self.model), "The model must have a predict_proba method."
@@ -643,15 +643,15 @@ class CalibratedExplainer:
 
 
 
-    def discretize(self, x):
-        """applies the discretizer to the test instance x
+    def _discretize(self, x):
+        # """applies the discretizer to the test instance x
 
-        Args:
-            x (n_features,): the test instance to discretize
+        # Args:
+        #     x (n_features,): the test instance to discretize
 
-        Returns:
-            (n_features,): a perturbed test instance
-        """
+        # Returns:
+        #     (n_features,): a perturbed test instance
+        # """
         if len(np.shape(x)) == 1:
             x = np.array(x)
         x.dtype = float
@@ -714,7 +714,7 @@ class CalibratedExplainer:
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
 
-        self.discretized_cal_X = self.discretize(copy.deepcopy(self.cal_X))
+        self.discretized_cal_X = self._discretize(copy.deepcopy(self.cal_X))
 
         self.feature_values = {}
         self.feature_frequencies = {}
@@ -732,56 +732,56 @@ class CalibratedExplainer:
 
 
 
-    def set_latest_explanation(self, explanation) -> None:
-        """assigns the latest explanation to the explainer
+    def _set_latest_explanation(self, explanation) -> None:
+        # """assigns the latest explanation to the explainer
 
-        Args:
-            explanation (CalibratedExplanations): the latest created explanation
-        """
+        # Args:
+        #     explanation (CalibratedExplanations): the latest created explanation
+        # """
         self.latest_explanation = explanation
 
 
 
-    def is_lime_enabled(self, is_enabled=None) -> bool:
-        """returns whether lime export is enabled. 
-        If is_enabled is not None, then the lime export is enabled/disabled according to the value of is_enabled.
+    def _is_lime_enabled(self, is_enabled=None) -> bool:
+        # """returns whether lime export is enabled. 
+        # If is_enabled is not None, then the lime export is enabled/disabled according to the value of is_enabled.
 
-        Args:
-            is_enabled (bool, optional): is used to assign whether lime export is enabled or not. Defaults to None.
+        # Args:
+        #     is_enabled (bool, optional): is used to assign whether lime export is enabled or not. Defaults to None.
 
-        Returns:
-            bool: returns whether lime export is enabled
-        """
+        # Returns:
+        #     bool: returns whether lime export is enabled
+        # """
         if is_enabled is not None:
             self.__lime_enabled = is_enabled
         return self.__lime_enabled
 
 
 
-    def is_shap_enabled(self, is_enabled=None) -> bool:
-        """returns whether shap export is enabled. 
-        If is_enabled is not None, then the shap export is enabled/disabled according to the value of is_enabled.
+    def _is_shap_enabled(self, is_enabled=None) -> bool:
+        # """returns whether shap export is enabled. 
+        # If is_enabled is not None, then the shap export is enabled/disabled according to the value of is_enabled.
 
-        Args:
-            is_enabled (bool, optional): is used to assign whether shap export is enabled or not. Defaults to None.
+        # Args:
+        #     is_enabled (bool, optional): is used to assign whether shap export is enabled or not. Defaults to None.
 
-        Returns:
-            bool: returns whether shap export is enabled
-        """
+        # Returns:
+        #     bool: returns whether shap export is enabled
+        # """
         if is_enabled is not None:
             self.__shap_enabled = is_enabled
         return self.__shap_enabled
 
 
 
-    def preload_lime(self) -> None:
-        """creates a lime structure for the explainer
+    def _preload_lime(self) -> None:
+        # """creates a lime structure for the explainer
 
-        Returns:
-            LimeTabularExplainer: a LimeTabularExplainer object defined for the problem
-            lime_exp: a template lime explanation achieved through the explain_instance method
-        """
-        if not self.is_lime_enabled():
+        # Returns:
+        #     LimeTabularExplainer: a LimeTabularExplainer object defined for the problem
+        #     lime_exp: a template lime explanation achieved through the explain_instance method
+        # """
+        if not self._is_lime_enabled():
             if self.mode == 'classification':
                 self.lime = LimeTabularExplainer(self.cal_X[:1, :],
                                                 feature_names=self.feature_names,
@@ -797,24 +797,24 @@ class CalibratedExplainer:
                 self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
                                                             self.model.predict,
                                                             num_features=self.num_features)
-            self.is_lime_enabled(True)
+            self._is_lime_enabled(True)
         return self.lime, self.lime_exp
 
 
 
-    def preload_shap(self, num_test=None) -> None:
-        """creates a shap structure for the explainer
+    def _preload_shap(self, num_test=None) -> None:
+        # """creates a shap structure for the explainer
 
-        Returns:
-            shap.Explainer: a Explainer object defined for the problem
-            shap_exp: a template shap explanation achieved through the __call__ method
-        """
+        # Returns:
+        #     shap.Explainer: a Explainer object defined for the problem
+        #     shap_exp: a template shap explanation achieved through the __call__ method
+        # """
         # pylint: disable=access-member-before-definition
-        if not self.is_shap_enabled() or \
+        if not self._is_shap_enabled() or \
             num_test is not None and self.shap_exp.shape[0] != num_test:
-            f = lambda x: self.predict(x)[0]  # pylint: disable=unnecessary-lambda-assignment
+            f = lambda x: self._predict(x)[0]  # pylint: disable=unnecessary-lambda-assignment
             self.shap = Explainer(f, self.cal_X[:1, :], feature_names=self.feature_names)
             self.shap_exp = self.shap(self.cal_X[0, :].reshape(1,-1)) \
                                     if num_test is None else self.shap(self.cal_X[:num_test, :])
-            self.is_shap_enabled(True)
+            self._is_shap_enabled(True)
         return self.shap, self.shap_exp

@@ -36,22 +36,22 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    def is_thresholded(self) -> bool:
-        """test if the explanation is thresholded
+    def _is_thresholded(self) -> bool:
+        # """test if the explanation is thresholded
 
-        Returns:
-            bool: True if the y_threshold is not None
-        """
+        # Returns:
+        #     bool: True if the y_threshold is not None
+        # """
         return self.y_threshold is not None
 
 
 
-    def is_one_sided(self) -> bool:
-        """test if a regression explanation is one-sided
+    def _is_one_sided(self) -> bool:
+        # """test if a regression explanation is one-sided
 
-        Returns:
-            bool: True if one of the low or high percentiles is infinite
-        """
+        # Returns:
+        #     bool: True if one of the low or high percentiles is infinite
+        # """
         if self.low_high_percentiles is None:
             return False
         return np.isinf(self.get_low_percentile()) or np.isinf(self.get_high_percentile())
@@ -87,26 +87,26 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    def finalize(self, binned, feature_weights, feature_predict, prediction) -> None:
-        """finalize the explanation by adding the binned data and the feature weights
-        """
+    def _finalize(self, binned, feature_weights, feature_predict, prediction) -> None:
+        # """finalize the explanation by adding the binned data and the feature weights
+        # """
         self.binned = binned
         self.feature_weights = feature_weights
         self.feature_predict = feature_predict
         self.predict = prediction
-        self.calibrated_explainer.set_latest_explanation(self)
+        self.calibrated_explainer._set_latest_explanation(self) # pylint: disable=protected-access
 
 
 
-    def define_rules(self, instance):
-        """defines the rule conditions for an instance
+    def _define_rules(self, instance):
+        # """defines the rule conditions for an instance
 
-        Args:
-            instance (n_features,): a test instance
+        # Args:
+        #     instance (n_features,): a test instance
 
-        Returns:
-            list[str]: a list of conditioins for each feature in the instance
-        """
+        # Returns:
+        #     list[str]: a list of conditioins for each feature in the instance
+        # """
         self.rules = []
         # pylint: disable=invalid-name
         x = self.calibrated_explainer.discretizer.discretize(instance)
@@ -144,8 +144,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     def __make_directory(self, path: str, save_ext=None) -> None:
-        """ create directory if it does not exist
-        """
+        # """ create directory if it does not exist
+        # """
         if save_ext is not None and len(save_ext) == 0:
             return
         if not os.path.isdir('plots'):
@@ -155,10 +155,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    def predict_conjunctive(self, rule_value_set, original_features, perturbed, y, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
+    def _predict_conjunctive(self, rule_value_set, original_features, perturbed, y, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
                             predicted_class):
-        """support function to calculate the prediction for a conjunctive rule
-        """
+        # """support function to calculate the prediction for a conjunctive rule
+        # """
         rule_predict, rule_low, rule_high, rule_count = 0,0,0,0
         if len(original_features) == 2:
             of1, of2 = original_features[0], original_features[1]
@@ -186,16 +186,16 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                         #         rule_low += low[0]
                         #         rule_high += high[0]
                         #         rule_count += 1
-                        # else:
-                        p_value, low, high, _ = self.calibrated_explainer.predict(perturbed.reshape(1,-1),
+                        # else:                       
+                        p_value, low, high, _ = self.calibrated_explainer._predict(perturbed.reshape(1,-1), # pylint: disable=protected-access
                                             y=y, low_high_percentiles=self.low_high_percentiles,
                                             classes=predicted_class)
                         rule_predict += p_value[0]
                         rule_low += low[0]
                         rule_high += high[0]
                         rule_count += 1
-                else:
-                    p_value, low, high, _ = self.calibrated_explainer.predict(perturbed.reshape(1,-1),
+                else:                    
+                    p_value, low, high, _ = self.calibrated_explainer._predict(perturbed.reshape(1,-1), # pylint: disable=protected-access
                                                 y=y, low_high_percentiles=self.low_high_percentiles,
                                                 classes=predicted_class)
                     rule_predict += p_value[0]
@@ -209,12 +209,12 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    def get_factual_rules(self):
-        """creates factual rules
+    def _get_factual_rules(self):
+        # """creates factual rules
 
-        Returns:
-            List[Dict[str, List]]: a list of dictionaries containing the factual rules, one for each test instance
-        """
+        # Returns:
+        #     List[Dict[str, List]]: a list of dictionaries containing the factual rules, one for each test instance
+        # """
         if self._has_conjunctive_factual_rules:
             return self.conjunctive_factual_rules
         if self._has_factual_rules:
@@ -243,7 +243,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             factual['base_predict'].append(self.predict['predict'][i])
             factual['base_predict_low'].append(self.predict['low'][i])
             factual['base_predict_high'].append(self.predict['high'][i])
-            rules = self.define_rules(instance)
+            rules = self._define_rules(instance)
             for f,_ in enumerate(instance): # pylint: disable=invalid-name
                 factual['predict'].append(self.feature_predict['predict'][i][f])
                 factual['predict_low'].append(self.feature_predict['low'][i][f])
@@ -269,12 +269,12 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=too-many-statements, too-many-branches
-    def get_counterfactual_rules(self):
-        """creates counterfactual rules
+    def _get_counterfactual_rules(self):
+        # """creates counterfactual rules
 
-        Returns:
-            List[Dict[str, List]]: a list of dictionaries containing the counterfactual rules, one for each test instance
-        """
+        # Returns:
+        #     List[Dict[str, List]]: a list of dictionaries containing the counterfactual rules, one for each test instance
+        # """
         if self._has_conjunctive_counterfactual_rules:
             return self.conjunctive_counterfactual_rules
         if self._has_counterfactual_rules:
@@ -284,7 +284,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         for i in range(len(self.test_objects)):
             self.counterfactual_labels[i] = {}
             instance = self.test_objects[i, :]
-            discretized = self.calibrated_explainer.discretize(deepcopy(instance).reshape(1,-1))[0]
+            discretized = self.calibrated_explainer._discretize(deepcopy(instance).reshape(1,-1))[0] # pylint: disable=protected-access
             instance_predict = self.binned['predict'][i]
             instance_low = self.binned['low'][i]
             instance_high = self.binned['high'][i]
@@ -309,7 +309,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             counterfactual['base_predict'].append(self.predict['predict'][i])
             counterfactual['base_predict_low'].append(self.predict['low'][i])
             counterfactual['base_predict_high'].append(self.predict['high'][i])
-            rule_boundaries = self.calibrated_explainer.rule_boundaries(instance)
+            rule_boundaries = self.calibrated_explainer._rule_boundaries(instance) # pylint: disable=protected-access
             for f,_ in enumerate(instance): # pylint: disable=invalid-name
                 if f in self.calibrated_explainer.categorical_features:
                     values = np.array(self.calibrated_explainer.feature_values[f])
@@ -415,9 +415,9 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         Returns:
             CalibratedExplanations: Returns a self reference, to allow for method chaining
         """
-        if self.is_counterfactual():
-            return self.add_conjunctive_counterfactual_rules(n_top_features, max_rule_size)
-        return self.add_conjunctive_factual_rules(n_top_features, max_rule_size)
+        if self._is_counterfactual():
+            return self._add_conjunctive_counterfactual_rules(n_top_features, max_rule_size)
+        return self._add_conjunctive_factual_rules(n_top_features, max_rule_size)
 
 
 
@@ -430,22 +430,22 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=too-many-locals
-    def add_conjunctive_factual_rules(self, n_top_features=5, max_rule_size=2):
-        """adds conjunctive factual rules
+    def _add_conjunctive_factual_rules(self, n_top_features=5, max_rule_size=2):
+        # """adds conjunctive factual rules
 
-        Args:
-            n_top_features (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
-            max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
+        # Args:
+        #     n_top_features (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
+        #     max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
 
-        Returns:
-            CalibratedExplanations: Returns a self reference, to allow for method chaining
-        """
+        # Returns:
+        #     CalibratedExplanations: Returns a self reference, to allow for method chaining
+        # """
         if max_rule_size >= 4:
             raise ValueError('max_rule_size must be 2 or 3')
         if max_rule_size < 2:
             return self
         if not self._has_factual_rules:
-            factuals = deepcopy(self.get_factual_rules())
+            factuals = deepcopy(self._get_factual_rules())
         else:
             factuals = deepcopy(self.factual_rules)
         if self._has_conjunctive_factual_rules:
@@ -512,7 +512,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                         continue
                     covered_combinations.append(np.sort(original_features))
 
-                    rule_predict, rule_low, rule_high = self.predict_conjunctive(rule_values,
+                    rule_predict, rule_low, rule_high = self._predict_conjunctive(rule_values,
                                                                             original_features,
                                                                             deepcopy(x_original),
                                                                             y,
@@ -533,27 +533,27 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                     conjunctive['is_conjunctive'].append(True)
             self.conjunctive_factual_rules.append(conjunctive)
         self._has_conjunctive_factual_rules = True
-        return self.add_conjunctive_factual_rules(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
+        return self._add_conjunctive_factual_rules(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
 
 
     # pylint: disable=too-many-locals
-    def add_conjunctive_counterfactual_rules(self, n_top_features=5, max_rule_size=2):
-        """adds conjunctive counterfactual rules
+    def _add_conjunctive_counterfactual_rules(self, n_top_features=5, max_rule_size=2):
+        # """adds conjunctive counterfactual rules
 
-        Args:
-            n_top_features (int, optional): the number of most important counterfactual rules to try to combine into conjunctive rules. Defaults to 5.
-            max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
+        # Args:
+        #     n_top_features (int, optional): the number of most important counterfactual rules to try to combine into conjunctive rules. Defaults to 5.
+        #     max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
 
-        Returns:
-            CalibratedExplanations: Returns a self reference, to allow for method chaining
-        """
+        # Returns:
+        #     CalibratedExplanations: Returns a self reference, to allow for method chaining
+        # """
         if max_rule_size >= 4:
             raise ValueError('max_rule_size must be 2 or 3')
         if max_rule_size < 2:
             return self
         if not self._has_factual_rules:
-            counterfactuals = deepcopy(self.get_counterfactual_rules())
+            counterfactuals = deepcopy(self._get_counterfactual_rules())
         else:
             counterfactuals = deepcopy(self.counterfactual_rules)
         if self._has_conjunctive_counterfactual_rules:
@@ -562,7 +562,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             conjunctives = counterfactuals
         if self._has_conjunctive_counterfactual_rules:
             return self
-        counterfactuals = deepcopy(self.get_counterfactual_rules())
+        counterfactuals = deepcopy(self._get_counterfactual_rules())
         self.conjunctive_counterfactual_rules = []
         for i in range(len(self.test_objects)):
             counterfactual = deepcopy(counterfactuals[i])
@@ -622,7 +622,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                         continue
                     covered_combinations.append(np.sort(original_features))
 
-                    rule_predict, rule_low, rule_high = self.predict_conjunctive(rule_values,
+                    rule_predict, rule_low, rule_high = self._predict_conjunctive(rule_values,
                                                                             original_features,
                                                                             deepcopy(x_original),
                                                                             y,
@@ -645,21 +645,21 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                     conjunctive['is_conjunctive'].append(True)
             self.conjunctive_counterfactual_rules.append(conjunctive)
         self._has_conjunctive_counterfactual_rules = True
-        return self.add_conjunctive_counterfactual_rules(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
+        return self._add_conjunctive_counterfactual_rules(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
 
 
-    def check_preconditions(self, counterfactuals=False):
-        """checks that the recommended discretizer is used for the type of explanation
+    def _check_preconditions(self, counterfactuals=False):
+        # """checks that the recommended discretizer is used for the type of explanation
 
-        Args:
-            counterfactuals (bool, optional): if true, the check assumes a counterfactual explanation, otherwise factual explanations are assumed. Defaults to False.
-        """
+        # Args:
+        #     counterfactuals (bool, optional): if true, the check assumes a counterfactual explanation, otherwise factual explanations are assumed. Defaults to False.
+        # """
         if self == self.calibrated_explainer.latest_explanation:
             if counterfactuals:
                 if 'regression' in self.calibrated_explainer.mode:
                     if not isinstance(self.calibrated_explainer.discretizer, DecileDiscretizer):
-                        warnings.warn('Counterfactual explanations for regressoin recommend using the ' +\
+                        warnings.warn('Counterfactual explanations for regression recommend using the ' +\
                                         'decile discretizer. Consider extracting counterfactual ' +\
                                         'explanations using `explainer.explain_counterfactual(test_set)`')
                 else:
@@ -671,7 +671,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             else:
                 if 'regression' in self.calibrated_explainer.mode:
                     if not isinstance(self.calibrated_explainer.discretizer, BinaryDiscretizer):
-                        warnings.warn('Factual explanations for regressoin recommend using the binary ' +\
+                        warnings.warn('Factual explanations for regression recommend using the binary ' +\
                                         'discretizer. Consider extracting factual explanations using ' +\
                                         '`explainer.explain_factual(test_set)`')
                 else:
@@ -682,19 +682,19 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals
-    def plot_regular(self, title="", n_features_to_show=10, show=False,
+    def _plot_regular(self, title="", n_features_to_show=10, show=False,
                     path='plots/', save_ext=['svg','pdf','png']):
-        """creates regular plots for factual explanations
+        # """creates regular plots for factual explanations
 
-        Args:
-            title (str, optional): The title of each plot. Defaults to "".
-            n_features_to_show (int, optional): number of features to include in the plot. None == all features. Defaults to 10.
-            show (bool, optional): determines whether created plots are shown, to avoid showing plots that are saved to disk. Defaults to False.
-            path (str, optional): path to saving location. Defaults to 'plots/'.
-            save_ext (list, optional): the file formats used to save plots to disk. Defaults to ['svg','pdf','png'].
-        """
-        self.check_preconditions()
-        factuals = self.get_factual_rules()
+        # Args:
+        #     title (str, optional): The title of each plot. Defaults to "".
+        #     n_features_to_show (int, optional): number of features to include in the plot. None == all features. Defaults to 10.
+        #     show (bool, optional): determines whether created plots are shown, to avoid showing plots that are saved to disk. Defaults to False.
+        #     path (str, optional): path to saving location. Defaults to 'plots/'.
+        #     save_ext (list, optional): the file formats used to save plots to disk. Defaults to ['svg','pdf','png'].
+        # """
+        self._check_preconditions()
+        factuals = self._get_factual_rules()
         predict = self.predict
         num_features = len(factuals[0]['weight'])
         num_instances = len(factuals)
@@ -713,7 +713,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                                     width=width,
                                                     num_to_show=n_features_to_show)
             column_names = factual['rule']
-            if 'classification' in self.calibrated_explainer.mode or self.is_thresholded():
+            if 'classification' in self.calibrated_explainer.mode or self._is_thresholded():
                 self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
                             n_features_to_show, column_names, title, str(i), path, show, idx=i,
                             save_ext=save_ext)
@@ -724,23 +724,23 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=dangerous-default-value
-    def plot_uncertainty(self,
+    def _plot_uncertainty(self,
                         title="",
                         n_features_to_show=10,
                         show=False,
                         path='plots/',
                         save_ext=['svg','pdf','png']):
-        """creates uncertainty plots for factual explanations
+        # """creates uncertainty plots for factual explanations
 
-        Args:
-            title (str, optional): The title of each plot. Defaults to "".
-            n_features_to_show (int, optional): number of features to include in the plot. None == all features. Defaults to 10.
-            show (bool, optional): determines whether created plots are shown, to avoid showing plots that are saved to disk. Defaults to False.
-            path (str, optional): path to saving location. Defaults to 'plots/'.
-            save_ext (list, optional): the file formats used to save plots to disk. Defaults to ['svg','pdf','png'].
-        """
-        self.check_preconditions()
-        factuals = self.get_factual_rules()
+        # Args:
+        #     title (str, optional): The title of each plot. Defaults to "".
+        #     n_features_to_show (int, optional): number of features to include in the plot. None == all features. Defaults to 10.
+        #     show (bool, optional): determines whether created plots are shown, to avoid showing plots that are saved to disk. Defaults to False.
+        #     path (str, optional): path to saving location. Defaults to 'plots/'.
+        #     save_ext (list, optional): the file formats used to save plots to disk. Defaults to ['svg','pdf','png'].
+        # """
+        self._check_preconditions()
+        factuals = self._get_factual_rules()
         predict = self.predict
         num_features = len(factuals[0]['weight'])
         num_instances = len(factuals)
@@ -761,7 +761,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                                     width=width,
                                                     num_to_show=n_features_to_show)
             column_names = factual['rule']
-            if 'classification' in self.calibrated_explainer.mode or self.is_thresholded():
+            if 'classification' in self.calibrated_explainer.mode or self._is_thresholded():
                 self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
                                 n_features_to_show, column_names, title, str(i), path, show,
                                 interval=True, idx=i, save_ext=save_ext)
@@ -772,24 +772,24 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=dangerous-default-value
-    def plot_counterfactuals(self,
+    def _plot_counterfactuals(self,
                             title="",
                             n_features_to_show=10,
                             show=False,
                             path='plots/',
                             save_ext=['svg','pdf','png']):
-        """creates plots for counterfactual explanations
+        # """creates plots for counterfactual explanations
 
-        Args:
-            title (str, optional): The title of each plot. Defaults to "".
-            n_features_to_show (int, optional): number of features to include in the plot. None == all features. Defaults to 10.
-            show (bool, optional): determines whether created plots are shown, to avoid showing plots that are saved to disk. Defaults to False.
-            path (str, optional): path to saving location. Defaults to 'plots/'.
-            save_ext (list, optional): the file formats used to save plots to disk. Defaults to ['svg','pdf','png'].
-        """
-        self.check_preconditions(counterfactuals=True)
+        # Args:
+        #     title (str, optional): The title of each plot. Defaults to "".
+        #     n_features_to_show (int, optional): number of features to include in the plot. None == all features. Defaults to 10.
+        #     show (bool, optional): determines whether created plots are shown, to avoid showing plots that are saved to disk. Defaults to False.
+        #     path (str, optional): path to saving location. Defaults to 'plots/'.
+        #     save_ext (list, optional): the file formats used to save plots to disk. Defaults to ['svg','pdf','png'].
+        # """
+        self._check_preconditions(counterfactuals=True)
         predict = self.predict
-        counterfactuals = self.get_counterfactual_rules()
+        counterfactuals = self._get_counterfactual_rules()
 
         self.__make_directory(path+title, save_ext=save_ext)
 
@@ -818,7 +818,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
     def get_explanation(self, instance_index):
         '''The function `get_explanation` returns either a counterfactual rule or a factual rule based on
-        the value of `self.is_counterfactual()`.
+        the value of `self._is_counterfactual()`.
         
         Parameters
         ----------
@@ -830,7 +830,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         Returns
         -------
             The method `get_explanation` returns either a counterfactual rule or a factual rule, depending
-        on the condition `self.is_counterfactual()`. If the condition is true, it returns the
+        on the condition `self._is_counterfactual()`. If the condition is true, it returns the
         counterfactual rule at the specified `instance_index` from the list of counterfactual rules. If
         the condition is false, it returns the factual rule at the specified `instance_index` from the
         
@@ -838,18 +838,18 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         assert isinstance(instance_index, int), "instance_index must be an integer"
         assert instance_index >= 0, "instance_index must be greater than or equal to 0"
         assert instance_index < len(self.test_objects), "instance_index must be less than the number of test instances"
-        if self.is_counterfactual():
-            return self.get_counterfactual_rules()[instance_index]
-        return self.get_factual_rules()[instance_index]
+        if self._is_counterfactual():
+            return self._get_counterfactual_rules()[instance_index]
+        return self._get_factual_rules()[instance_index]
 
-    def is_counterfactual(self):
-        '''The function checks if the explanations are counterfactuals by checking if the `discretizer` attribute of the `calibrated_explainer` object is an
-        instance of either `DecileDiscretizer` or `EntropyDiscretizer`.
+    def _is_counterfactual(self):
+        # '''The function checks if the explanations are counterfactuals by checking if the `discretizer` attribute of the `calibrated_explainer` object is an
+        # instance of either `DecileDiscretizer` or `EntropyDiscretizer`.
         
-        Returns
-        -------
-            a boolean value indicating whether the explanations are counterfactuals.        
-        '''        
+        # Returns
+        # -------
+        #     a boolean value indicating whether the explanations are counterfactuals.        
+        # '''        
         return isinstance(self.calibrated_explainer.discretizer, (DecileDiscretizer, EntropyDiscretizer))
 
 
@@ -858,22 +858,70 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 show=False,
                 path='',
                 uncertainty=False):
-        """creates all plots"""
-        is_counterfactual = self.is_counterfactual()
-        self.check_preconditions(counterfactuals=is_counterfactual)
+        '''The function `plot_all` plots either counterfactual or factual explanations for a given
+        instance, with the option to show or save the plots.
+        
+        Parameters
+        ----------
+        n_features_to_show, optional
+            The parameter "n_features_to_show" determines the number of top features to display in the
+            plot. It specifies how many of the most important features should be shown in the plot.
+        show, optional
+            The "show" parameter determines whether the plots should be displayed immediately after they
+            are generated. If set to True, the plots will be shown; if set to False, the plots will not be
+            shown.
+        path, optional
+            The `path` parameter is the directory path where the plots will be saved. If you don't provide
+            a value for `path`, the plots will not be saved and will only be displayed if `show` is set to
+            `True`.
+        uncertainty, optional
+            The "uncertainty" parameter is a boolean flag that determines whether to include uncertainty
+            information in the plots. If set to True, the plots will show uncertainty measures, if
+            available, along with the explanations. If set to False, the plots will only show the
+            explanations without uncertainty information.
+        
+        '''
+        is_counterfactual = self._is_counterfactual()
+        self._check_preconditions(counterfactuals=is_counterfactual)
         for instance_index in range(len(self.test_objects)):
             if is_counterfactual:
-                self.plot_counterfactual(instance_index, self.get_explanation(instance_index), n_features_to_show, show, path)
+                self.plot_counterfactual(instance_index, n_features_to_show, show, path)
             else:
-                self.plot_factual(instance_index, self.get_explanation(instance_index), n_features_to_show, show, path, uncertainty)
+                self.plot_factual(instance_index, n_features_to_show, show, path, uncertainty)
 
 
 
-    def plot_factual(self, instance_index, factual=None, n_features_to_show=10, show=False, full_filename='', uncertainty=False):
-        """creates a plot for a factual explanation"""
-        if factual is None:
-            factual = self.get_explanation(instance_index)
-        self.check_preconditions()
+    def plot_factual(self, instance_index, n_features_to_show=10, show=False, full_filename='', uncertainty=False):
+        '''This function plots the factual explanation for a given instance using either probabilistic or
+        regression plots.
+        
+        Parameters
+        ----------
+        instance_index : int
+            The index of the instance for which you want to plot the factual explanation.
+        factual
+            The `factual` parameter is a dictionary that contains the explanation for a specific instance.
+            It includes the following keys:
+        n_features_to_show, optional
+            The `n_features_to_show` parameter determines the number of top features to display in the
+            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
+            number of features, up to the total number of features available.
+        show, optional
+            A boolean parameter that determines whether the plot should be displayed or not. If set to
+            True, the plot will be displayed. If set to False, the plot will not be displayed.
+        full_filename
+            The full_filename parameter is a string that represents the full path and filename of the plot
+            image file that will be saved. If this parameter is not provided or is an empty string, the plot
+            will not be saved as an image file.
+        uncertainty, optional
+            The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
+        intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
+        range of possible feature weights based on the lower and upper bounds of the uncertainty
+        intervals. If `uncertainty
+        
+        '''
+        factual = self.get_explanation(instance_index)
+        self._check_preconditions()
         predict = self.predict
         num_features = len(factual['weight'])
         if n_features_to_show is None:
@@ -902,7 +950,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                                 width=width,
                                                 num_to_show=n_features_to_show)
         column_names = factual['rule']
-        if 'classification' in self.calibrated_explainer.mode or self.is_thresholded():
+        if 'classification' in self.calibrated_explainer.mode or self._is_thresholded():
             self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
                         n_features_to_show, column_names, title=title, postfix=str(instance_index), path=path, interval=uncertainty, show=show, idx=instance_index,
                         save_ext=save_ext)
@@ -912,37 +960,29 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                         save_ext=save_ext)
 
 
-    def plot_counterfactual(self, instance_index, counterfactual=None, n_features_to_show=10, show=False, full_filename=''):
-        '''The function `plot_counterfactual` plots a counterfactual explanation for a given instance in a
-        machine learning model.
+    def plot_counterfactual(self, instance_index, n_features_to_show=10, show=False, full_filename=''):        
+        '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
+        a dataset.
         
         Parameters
         ----------
-        counterfactual
-            A dictionary containing the counterfactual information, including the predicted value,
-        predicted value range (low and high), feature weights, feature weight range (low and high), and
-        rules.
         instance_index
-            The index of the instance for which the counterfactual is being plotted.
+            The index of the instance for which you want to plot the counterfactual explanation.
         n_features_to_show, optional
-            The parameter `n_features_to_show` determines the number of features to show in the plot. If it
-        is set to `None`, then all the features will be shown. Otherwise, it will show the specified
-        number of features, starting from the most important ones.
-        title
-            The title of the plot. It is an optional parameter and can be left empty if not needed.
+            The parameter "n_features_to_show" determines the number of features to show in the plot. It
+            specifies how many of the top-ranked features based on their weights and widths should be
+            displayed in the plot.
         show, optional
-            The `show` parameter is a boolean flag that determines whether the plot should be displayed or
-        not. If set to `True`, the plot will be displayed. If set to `False`, the plot will not be
-        displayed.
-        path
-            The `path` parameter is used to specify the directory path where the plot of the counterfactual
-        will be saved. If you don't provide a value for `path`, the plot will not be saved and will only
-        be displayed if `show` is set to `True`.
+            A boolean parameter that determines whether or not to display the plot. If set to True, the
+            plot will be displayed. If set to False, the plot will not be displayed.
+        full_filename
+            The full_filename parameter is a string that represents the full path and filename of the plot
+            image file that will be saved. If this parameter is not provided or an empty string is passed,
+            the plot will not be saved as an image file.
         
         '''
-        if counterfactual is None:
-            counterfactual = self.get_explanation(instance_index)
-        self.check_preconditions(counterfactuals=True)      
+        counterfactual = self.get_explanation(instance_index)
+        self._check_preconditions(counterfactuals=True)      
         predict = self.predict      
         if len(full_filename) > 0:
             path = os.path.dirname(full_filename)
@@ -1053,7 +1093,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
         ax_main_twin.set_ylim(-0.5,x[-1]+0.5)
         ax_main_twin.set_ylabel('Instance values')
-        if self.is_thresholded():
+        if self._is_thresholded():
             # pylint: disable=unsubscriptable-object
             if np.isscalar(self.y_threshold):
                 ax_main.set_xlabel('Probability of target being below '+\
@@ -1069,14 +1109,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                         max(self.calibrated_explainer.cal_y)])
         else:
             if self.calibrated_explainer.class_labels is not None:
-                if self.calibrated_explainer.is_multiclass():
+                if self.calibrated_explainer._is_multiclass(): # pylint: disable=protected-access
                     ax_main.set_xlabel('Probability for class '+\
                                 f'\'{self.calibrated_explainer.class_labels[self.predict["classes"][idx]]}\'') # pylint: disable=line-too-long
                 else:
                     ax_main.set_xlabel('Probability for class '+\
                                 f'\'{self.calibrated_explainer.class_labels[1]}\'')
             else:
-                if self.calibrated_explainer.is_multiclass():
+                if self.calibrated_explainer._is_multiclass(): # pylint: disable=protected-access
                     ax_main.set_xlabel(f'Probability for class \'{self.predict["classes"][idx]}\'')
                 else:
                     ax_main.set_xlabel('Probability for the positive class')
@@ -1099,7 +1139,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         fig = plt.figure(figsize=(10,num_to_show*.5+2))
         subfigs = fig.subfigures(4, 1, height_ratios=[1, 1, 1, num_to_show+2])
 
-        if interval and (self.is_one_sided()):
+        if interval and (self._is_one_sided()):
             raise Warning('Interval plot is not supported for one-sided explanations.')
 
         ax_positive = subfigs[0].add_subplot(111)
@@ -1129,7 +1169,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         ax_positive.set_yticks(range(1))
         ax_positive.set_xticks([])
 
-        if self.is_thresholded():
+        if self._is_thresholded():
             if np.isscalar(self.y_threshold):
                 ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})'])
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})'])
@@ -1138,14 +1178,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold[idx]) :.2f})']) # pylint: disable=unsubscriptable-object
         else:
             if self.calibrated_explainer.class_labels is not None:
-                if self.calibrated_explainer.is_multiclass():
+                if self.calibrated_explainer._is_multiclass(): # pylint: disable=protected-access
                     ax_negative.set_yticklabels(labels=[f'P(y!={self.calibrated_explainer.class_labels[self.predict["classes"][idx]]})']) # pylint: disable=line-too-long
                     ax_positive.set_yticklabels(labels=[f'P(y={self.calibrated_explainer.class_labels[self.predict["classes"][idx]]})']) # pylint: disable=line-too-long
                 else:
                     ax_negative.set_yticklabels(labels=[f'P(y={self.calibrated_explainer.class_labels[0]})']) # pylint: disable=line-too-long
                     ax_positive.set_yticklabels(labels=[f'P(y={self.calibrated_explainer.class_labels[1]})']) # pylint: disable=line-too-long
             else: 
-                if self.calibrated_explainer.is_multiclass():                
+                if self.calibrated_explainer._is_multiclass(): # pylint: disable=protected-access
                     ax_negative.set_yticklabels(labels=[f'P(y!={self.predict["classes"][idx]})'])
                     ax_positive.set_yticklabels(labels=[f'P(y={self.predict["classes"][idx]})'])
                 else:
@@ -1224,7 +1264,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         fig = plt.figure(figsize=(10,num_to_show*.5+2))
         subfigs = fig.subfigures(2, 1, height_ratios=[1, num_to_show+2])
 
-        if interval and (self.is_one_sided()):
+        if interval and (self._is_one_sided()):
             raise Warning('Interval plot is not supported for one-sided explanations.')
 
         ax_regression = subfigs[0].add_subplot(111)        
@@ -1328,7 +1368,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             feature_weights = self.feature_weights['predict'][i]
             features_to_plot = self.__rank_features(feature_weights, 
                         num_to_show=self.calibrated_explainer.num_features)
-            rules = self.define_rules(self.test_objects[i, :])
+            rules = self._define_rules(self.test_objects[i, :])
             for j,f in enumerate(features_to_plot[::-1]): # pylint: disable=invalid-name
                 tmp.local_exp[1][j] = (f, feature_weights[f])
             tmp.domain_mapper.discretized_feature_names = rules

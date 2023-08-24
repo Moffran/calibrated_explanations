@@ -36,7 +36,7 @@ class IntervalRegressor:
         self.residual_cal = self.ce.cal_y - self.cal_y_hat  # can be calculated through calibrated_explainer
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
-            sigma_cal = self.ce.get_sigma_test(X=self.ce.cal_X)
+            sigma_cal = self.ce._get_sigma_test(X=self.ce.cal_X)
             cps.fit(residuals=self.residual_cal, sigmas=sigma_cal)
         else:
             cps.fit(residuals=self.residual_cal)
@@ -104,7 +104,7 @@ class IntervalRegressor:
         '''
         test_y_hat = self.ce.model.predict(test_X)
 
-        sigma_test = self.ce.get_sigma_test(X=test_X)
+        sigma_test = self.ce._get_sigma_test(X=test_X)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
         high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
@@ -136,7 +136,7 @@ class IntervalRegressor:
         '''
         test_y_hat = self.ce.model.predict(test_X)
 
-        sigma_test = self.ce.get_sigma_test(X=test_X)
+        sigma_test = self.ce._get_sigma_test(X=test_X)  # pylint: disable=protected-access
         proba = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test, y=self.y_threshold)
         return np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
 
@@ -154,7 +154,7 @@ class IntervalRegressor:
         # A less exact but faster solution, suitable when difficulty_estimator is assigned.
         # Activated temporarily
         if self.ce.difficulty_estimator is not None:
-            sigmas = self.ce.get_sigma_test(self.ce.cal_X)
+            sigmas = self.ce._get_sigma_test(self.ce.cal_X)  # pylint: disable=protected-access
             proba = self.cps.predict(y_hat=self.cal_y_hat,
                                                 y=y_threshold,
                                                 sigmas=sigmas)
@@ -164,9 +164,9 @@ class IntervalRegressor:
             self.proba_cal = np.zeros((len(self.residual_cal),2))
             for i, _ in enumerate(self.residual_cal):
                 idx = np.setdiff1d(np.arange(len(self.residual_cal)), i)
-                sigma_cal = self.ce.get_sigma_test(self.ce.cal_X[idx, :])
+                sigma_cal = self.ce._get_sigma_test(self.ce.cal_X[idx, :])  # pylint: disable=protected-access
                 cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal)
-                sigma_i = self.ce.get_sigma_test(self.ce.cal_X[i, :].reshape(1, -1))
+                sigma_i = self.ce._get_sigma_test(self.ce.cal_X[i, :].reshape(1, -1))  # pylint: disable=protected-access
                 self.proba_cal[i, 1] = cps.predict(y_hat=[self.cal_y_hat[i]],
                                                 y=y_threshold,
                                                 sigmas=sigma_i)
