@@ -202,6 +202,27 @@ Just run the following command from the project root.
 pytest
 ```
 
+To build the Sphinx documentation,
+run the following command in the project root:
+
+```bash
+sphinx-build docs docs/_build
+```
+
+Then open the `docs/_build/index.html` file on your web browser.
+
+[calibrated-explanations documentation on readthedocs]: https://calibrated-explanations.readthedocs.io/
+
+The [calibrated-explanations documentation on readthedocs] is automatically
+updated form GitHub's main branch.
+If there is an issue with the documentation build there,
+the [build tab](https://readthedocs.org/projects/calibrated-explanations/builds/)
+of the [project page](https://readthedocs.org/projects/calibrated-explanations/)
+should have the logs.
+
+To make a new release on PyPI,
+just follow the [release guide](docs/release.md).
+
 
 Further reading
 ---------------

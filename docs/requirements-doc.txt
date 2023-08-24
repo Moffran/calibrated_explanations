@@ -1,10 +1,14 @@
-sphinx
-crepes
-sphinx_rtd_theme
-numpy
-pandas
-scikit-learn
-numpydoc
-nbsphinx
+crepes >= 0.6.0
+ipython
+lime >= 0.2.0.1
+matplotlib >= 3.4
 myst_parser
+nbsphinx
+numpy >= 1.20
+numpydoc
+pandas >= 1.1.5
 pydata_sphinx_theme
+scikit-learn >= 0.24.1
+shap >= 0.41.0
+sphinx
+sphinx_rtd_theme

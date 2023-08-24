@@ -23,7 +23,5 @@ Welcome to Calibrated-explanations's documentation!
     
     Getting started <getting_started.md>
     The calibrated-explanations package <calibrated_explanations>	
-    Binary classification <demo_binary_classification.ipynb>
-    Multiclass classification <demo_multiclass.ipynb>
-    Regression <demo_regression.ipynb>
+    Releasing calibrated-explanations <release.md>
     Citing calibrated-explanations <citing.md>
