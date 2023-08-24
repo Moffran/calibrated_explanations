@@ -23,5 +23,4 @@ Welcome to Calibrated-explanations's documentation!
     
     Getting started <getting_started.md>
     The calibrated-explanations package <calibrated_explanations>	
-    Releasing calibrated-explanations <release.md>
     Citing calibrated-explanations <citing.md>
