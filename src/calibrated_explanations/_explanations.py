@@ -899,25 +899,22 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         ----------
         instance_index : int
             The index of the instance for which you want to plot the factual explanation.
-        factual
-            The `factual` parameter is a dictionary that contains the explanation for a specific instance.
-            It includes the following keys:
-        n_features_to_show, optional
+        n_features_to_show : int, default=10
             The `n_features_to_show` parameter determines the number of top features to display in the
             plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
             number of features, up to the total number of features available.
-        show, optional
+        show : bool, default=False
             A boolean parameter that determines whether the plot should be displayed or not. If set to
             True, the plot will be displayed. If set to False, the plot will not be displayed.
-        full_filename
+        full_filename : str, default=''
             The full_filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file.
-        uncertainty, optional
+        uncertainty : bool, default=False
             The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
-        intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
-        range of possible feature weights based on the lower and upper bounds of the uncertainty
-        intervals. If `uncertainty
+            intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
+            range of possible feature weights based on the lower and upper bounds of the uncertainty
+            intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
         
         '''
         factual = self.get_explanation(instance_index)
@@ -966,19 +963,19 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         Parameters
         ----------
-        instance_index
+        instance_index : int
             The index of the instance for which you want to plot the counterfactual explanation.
-        n_features_to_show, optional
-            The parameter "n_features_to_show" determines the number of features to show in the plot. It
-            specifies how many of the top-ranked features based on their weights and widths should be
-            displayed in the plot.
-        show, optional
-            A boolean parameter that determines whether or not to display the plot. If set to True, the
-            plot will be displayed. If set to False, the plot will not be displayed.
-        full_filename
+        n_features_to_show : int, default=10
+            The `n_features_to_show` parameter determines the number of top features to display in the
+            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
+            number of features, up to the total number of features available.
+        show : bool, default=False
+            A boolean parameter that determines whether the plot should be displayed or not. If set to
+            True, the plot will be displayed. If set to False, the plot will not be displayed.
+        full_filename : str, default=''
             The full_filename parameter is a string that represents the full path and filename of the plot
-            image file that will be saved. If this parameter is not provided or an empty string is passed,
-            the plot will not be saved as an image file.
+            image file that will be saved. If this parameter is not provided or is an empty string, the plot
+            will not be saved as an image file.
         
         '''
         counterfactual = self.get_explanation(instance_index)
