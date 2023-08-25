@@ -222,7 +222,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         self._has_factual_rules = False
         factual_rules = []
         for i in range(len(self.test_objects)):
-            instance = self.test_objects[i, :]
+            instance = deepcopy(self.test_objects[i, :])
             factual = {'base_predict': [],
                         'base_predict_low': [],
                         'base_predict_high': [],
@@ -283,7 +283,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         self.counterfactual_labels = {}
         for i in range(len(self.test_objects)):
             self.counterfactual_labels[i] = {}
-            instance = self.test_objects[i, :]
+            instance = deepcopy(self.test_objects[i, :])
             discretized = self.calibrated_explainer._discretize(deepcopy(instance).reshape(1,-1))[0] # pylint: disable=protected-access
             instance_predict = self.binned['predict'][i]
             instance_low = self.binned['low'][i]
@@ -309,7 +309,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             counterfactual['base_predict'].append(self.predict['predict'][i])
             counterfactual['base_predict_low'].append(self.predict['low'][i])
             counterfactual['base_predict_high'].append(self.predict['high'][i])
-            rule_boundaries = self.calibrated_explainer.rule_boundaries(instance)
+            rule_boundaries = self.calibrated_explainer.rule_boundaries(deepcopy(instance))
             for f,_ in enumerate(instance): # pylint: disable=invalid-name
                 if f in self.calibrated_explainer.categorical_features:
                     values = np.array(self.calibrated_explainer.feature_values[f])
