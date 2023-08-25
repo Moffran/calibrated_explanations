@@ -1293,8 +1293,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         ax_main.fill_betweenx(xh, [0], [0], color='k')
         if interval:            
             p = predict['predict'][idx]
-            gwl = p - predict['low'][idx]
-            gwh = p - predict['high'][idx]
+            gwl = predict['low'][idx] - p
+            gwh = predict['high'][idx] - p
             
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
@@ -1304,9 +1304,9 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
             min_val,max_val = 0,0
             if interval:
-                width = - feature_weights['predict'][j]
-                wl = - feature_weights['low'][j]
-                wh = - feature_weights['high'][j]
+                width = feature_weights['predict'][j]
+                wl = feature_weights['low'][j]
+                wh = feature_weights['high'][j]
                 wh, wl = np.max([wh, wl]), np.min([wh, wl])
                 max_val = wh if width < 0 else 0
                 min_val = wl if width > 0 else 0
@@ -1315,7 +1315,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                     min_val = 0
                     max_val = 0
             else:                
-                width = - feature_weights[j]
+                width = feature_weights[j]
                 min_val = width if width < 0 else 0
                 max_val = width if width > 0 else 0
             color = 'b' if width > 0 else 'r'
