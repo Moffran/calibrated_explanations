@@ -6,6 +6,7 @@ Calibrated Explanations
 [![Lint Status for Calibrated Explanations][lint-status]][lint-log]
 [![Documentation Status](https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest)](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
 [![License](https://badgen.net/github/license/moffran/calibrated_explanations)](https://github.com/moffran/calibrated_explanations/blob/main/LICENSE)
+[![Downloads](https://static.pepy.tech/badge/calibrated-explanations)](https://pepy.tech/project/calibrated-explanations)
 
 
 `calibrated-explanations` is a Python package for the Calibrated Explanations method, supporting both classification and regression.
