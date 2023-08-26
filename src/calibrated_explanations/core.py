@@ -1,5 +1,4 @@
 """Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
-This file contains the code for the calibrated explanations.
 
 The calibrated explanations are based on the paper 
 "Calibrated Explanations for Black-Box Predictions" 
@@ -7,7 +6,7 @@ by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 
 Calibrated explanations are a way to explain the predictions of a black-box model 
 using Venn-Abers predictors (classification) or 
-conformal predictive systems (regression) and perturbations.
+conformal predictive systems (regression).
 """
 # pylint: disable=invalid-name, line-too-long
 # flake8: noqa: E501
@@ -26,15 +25,21 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 
-__version__ = 'v0.0.20'
+__version__ = 'v0.0.22'
 
 
-# The CalibratedExplainer class is used for explaining machine learning models with calibrated
-# predictions.
+
 class CalibratedExplainer:
-    """
-    The class CalibratedExplainer for black-box models.
+    """The CalibratedExplainer class is used for explaining machine learning models with calibrated
+    predictions.
 
+    The calibrated explanations are based on the paper 
+    "Calibrated Explanations for Black-Box Predictions" 
+    by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
+
+    Calibrated explanations provides a way to explain the predictions of a black-box model 
+    using Venn-Abers predictors (classification) or 
+    conformal predictive systems (regression).
     """
     # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
     # pylint: disable=dangerous-default-value
@@ -59,11 +64,11 @@ class CalibratedExplainer:
         Parameters
         ----------
         model : predictive model
-            A sklearn predictive model that can be used to predict the target variable.
+            A predictive model that can be used to predict the target variable. The model must be fitted and have a prodict_proba method (for classification) or a predict method (for regression).
         cal_X : array-like of shape (n_calibrations_samples, n_features)
-            The calibration input data for the model. It should be an array-like object of shape.
+            The calibration input data for the model.
         cal_y : array-like of shape (n_calibrations_samples,)
-            The calibration target data for the model. It is an array-like object of shape.
+            The calibration target data for the model.
         mode : str equal to "classification" or "regression", default="classification"
             The mode parameter specifies the type of problem being solved.
         feature_names : list of str, default=None
@@ -75,10 +80,10 @@ class CalibratedExplainer:
         categorical_labels : dict(int, dict(int, str)), default=None
             A nested dictionary that maps the index of categorical features to another dictionary. The
             inner dictionary maps each feature value to a feature label. This is used for categorical
-            feature encoding in the explanations.
+            feature encoding in the explanations. If None, the feature values will be used as labels.
         class_labels : dict(int, str), default=None
             A dictionary mapping numerical target values to class names. This parameter is only applicable
-            for classification models.
+            for classification models. If None, the numerical target values will be used as labels.
         difficulty_estimator : DifficultyEstimator, default=None
             A `DifficultyEstimator` object from the `crepes` package. It is used to estimate the difficulty of
             explaining a prediction. If None, no difficulty estimation is used. This parameter is only used
@@ -86,12 +91,13 @@ class CalibratedExplainer:
         sample_percentiles : list of int, default=[25, 50, 75]
             An array-like object that specifies the percentiles used to sample values for evaluation of
             numerical features. For example, if `sample_percentiles = [25, 50, 75]`, then the values at the
-            25th, 50th, and 75th percentiles will be sampled
+            25th, 50th, and 75th percentiles within each discretized group will be sampled from the calibration 
+            data for each numerical feature.
         random_state : int, default=42
             The random_state parameter is an integer that is used to set the random state for
             reproducibility. It is used in various parts of the code where randomization is involved, such
             as sampling values for evaluation of numerical features or initializing the random state for
-            certain operations. By setting a specific random_state value
+            certain operations.
         verbose : bool, default=False
             A boolean parameter that determines whether additional printouts should be enabled during the
             operation of the class. If set to True, it will print out additional information during the
@@ -322,29 +328,11 @@ class CalibratedExplainer:
                 y = None,
                 low_high_percentiles = (5, 95),
                 ) -> CalibratedExplanations:
-        # """
-        # Creates a CalibratedExplanations object for the test data with the already assigned discretizer.
-
-        # Parameters
-        # ----------
-        # testX : A set of test objects to predict
-        # y : float, int or array-like of shape (n_samples,), default=None
-        #     values for which p-values should be returned. Only used for probabilistic explanations for regression.
-        # low_high_percentiles : a tuple of floats, default=(5, 95)
-        #     The low and high percentile used to calculate the interval. Applicable to regression.
-
-        # Raises
-        # ------
-        # ValueError: The number of features in the test data must be the same as in the calibration data.
-        # Warning: The y-parameter is only supported for mode='regression'.
-        # ValueError: The length of the y parameter must be either a constant or the same as the number of
-        #     instances in testX.
-
-        # Returns
-        # -------
-        # CalibratedExplanations : A CalibratedExplanations object containing the predictions and the
-        #     intervals.
-        # """
+        """
+        Calling self as a function creates a CalibratedExplanations object for the test data with the 
+        already assigned discretizer. Called by the `explain_factual` and `explain_counterfactual` methods. 
+        See their documentation for further information.
+        """
         if len(testX.shape) == 1:
             testX = testX.reshape(1, -1)
         if testX.shape[1] != self.cal_X.shape[1]:

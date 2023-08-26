@@ -21,6 +21,7 @@ class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
                  discretizer='binaryEntropy',
                  **kwargs):
         self.calibrated_explainer = None
+        self.mode = mode
         self.training_data = training_data
         self.training_labels = training_labels
         self.discretizer = discretizer
@@ -30,10 +31,14 @@ class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
 
     def explain_instance(self, data_row, classifier, **kwargs):
         if self.calibrated_explainer is None:
-            assert 'predict_proba' in dir(classifier), "The classifier must have a predict_proba method."
-            self.calibrated_explainer = CalibratedExplainer(classifier, self.training_data, self.training_labels, self.feature_names, self.discretizer, self.categorical_features,)
-            self.discretizer = self.calibrated_explainer.discretizer
-        return self.calibrated_explainer(data_row).as_lime()[0]
+            if self.mode == "classification":
+                assert 'predict_proba' in dir(classifier), "The classifier must have a predict_proba method."
+            else:
+                assert 'predict' in dir(classifier), "The classifier must have a predict method."
+            self.calibrated_explainer = CalibratedExplainer(classifier, self.training_data, self.training_labels, feature_names=self.feature_names, categorical_features=self.categorical_features, mode=self.mode)            
+        explanation = self.calibrated_explainer.explain_factual(data_row).as_lime()[0]
+        self.discretizer = self.calibrated_explainer.discretizer
+        return explanation
 
 
 class CalibratedAsShapExplainer(Explainer):
@@ -42,11 +47,14 @@ class CalibratedAsShapExplainer(Explainer):
     The masker must contain a data and a target field for the calibration set.
     The model must have a predict_proba method.
     '''
-    def __init__(self, model, masker, feature_names=None, **kwargs):
-        assert ['data','target'] in dir(masker), "The masker must contain a data and a target field for the calibration set."
-        assert 'predict_proba' in dir(model), "The model must have a predict_proba method."
-        self.calibrated_explainer = CalibratedExplainer(model, masker.data, masker.labels, feature_names)
+    def __init__(self, model, calibration, feature_names=None, mode="classification", **kwargs):
+        assert 'data' in calibration and 'target' in calibration, "The calibration must contain a data and a target field for the calibration set."
+        if mode == "classification":
+            assert 'predict_proba' in dir(model), "The classifier must have a predict_proba method."
+        else:
+            assert 'predict' in dir(model), "The classifier must have a predict method."
+        self.calibrated_explainer = CalibratedExplainer(model, calibration['data'], calibration['target'], feature_names=feature_names, mode=mode)
 
     def __call__(self, *args, **kwargs):
-        return self.calibrated_explainer(*args, **kwargs).as_shap()
+        return self.calibrated_explainer.explain_factual(*args, **kwargs).as_shap()
     
