@@ -35,7 +35,7 @@ class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
                 assert 'predict_proba' in dir(classifier), "The classifier must have a predict_proba method."
             else:
                 assert 'predict' in dir(classifier), "The classifier must have a predict method."
-            self.calibrated_explainer = CalibratedExplainer(classifier, self.training_data, self.training_labels, feature_names=self.feature_names, categorical_features=self.categorical_features, mode=self.mode)            
+            self.calibrated_explainer = CalibratedExplainer(classifier, self.training_data, self.training_labels, feature_names=self.feature_names, categorical_features=self.categorical_features, mode=self.mode)
         explanation = self.calibrated_explainer.explain_factual(data_row).as_lime()[0]
         self.discretizer = self.calibrated_explainer.discretizer
         return explanation
