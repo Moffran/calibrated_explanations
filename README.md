@@ -38,6 +38,10 @@ The dependencies are:
 * [scikit-learn](https://scikit-learn.org/)
 * [SHAP](https://pypi.org/project/shap/)
 
+Documentation
+-------------
+For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
+
 
 Getting started
 ---------------
