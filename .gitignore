@@ -10,6 +10,8 @@ doc/
 evaluation/
 prof/
 
+calibrated-explanations/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

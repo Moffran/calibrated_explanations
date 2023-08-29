@@ -25,7 +25,7 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 
-__version__ = 'v0.0.22'
+__version__ = 'v0.0.24'
 
 
 
@@ -340,15 +340,17 @@ class CalibratedExplainer:
                             calibration data.")
         explanation = CalibratedExplanations(self, testX, y)
 
+        is_probabalistic = True # classification or when threshold y is used for regression
         if y is not None:
             if not 'regression' in self.mode:
                 raise Warning("The y parameter is only supported for mode='regression'.")
             if not np.isscalar(y) and len(y) != len(testX):
                 raise ValueError("The length of the y parameter must be either a constant or the same \
                                 as the number of instances in testX.")
-            explanation.low_high_percentiles = low_high_percentiles
+            # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
+            is_probabalistic = False
 
         cal_X = self.cal_X
 
@@ -456,21 +458,21 @@ class CalibratedExplainer:
 
                 # Handle the situation where the current bin is the only bin
                 if len(uncovered) == 0:
-                    instance_weights['predict'][f] = 0
-                    instance_weights['low'][f] = 0
-                    instance_weights['high'][f] = 0
-
                     instance_predict['predict'][f] = 0
                     instance_predict['low'][f] = 0
                     instance_predict['high'][f] = 0
+                    
+                    instance_weights['predict'][f] = 0
+                    instance_weights['low'][f] = 0
+                    instance_weights['high'][f] = 0
                 else:
-                    instance_weights['predict'][f] = np.mean(average_predict[uncovered]) - prediction['predict'][-1]
-                    instance_weights['low'][f] = np.mean(low_predict[uncovered]) - prediction['predict'][-1]
-                    instance_weights['high'][f] = np.mean(high_predict[uncovered]) - prediction['predict'][-1]
-
                     instance_predict['predict'][f] = np.mean(average_predict[uncovered])
                     instance_predict['low'][f] = np.mean(low_predict[uncovered])
                     instance_predict['high'][f] = np.mean(high_predict[uncovered])
+                    
+                    instance_weights['predict'][f] = self._assign_weight(instance_predict['predict'][f], prediction['predict'][-1], is_probabalistic)
+                    instance_weights['low'][f] = self._assign_weight(instance_predict['low'][f], prediction['predict'][-1], is_probabalistic)
+                    instance_weights['high'][f] = self._assign_weight(instance_predict['high'][f], prediction['predict'][-1], is_probabalistic)
 
             binned_predict['predict'].append(instance_binned['predict'])
             binned_predict['low'].append(instance_binned['low'])
@@ -488,6 +490,13 @@ class CalibratedExplainer:
 
         explanation._finalize(binned_predict, feature_weights, feature_predict, prediction)
         return explanation
+    
+    
+    
+    def _assign_weight(self, instance_predict, prediction, is_probabilistic):
+        if is_probabilistic:
+            return instance_predict - prediction
+        return prediction - instance_predict # standard regression
 
 
 

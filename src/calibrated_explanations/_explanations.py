@@ -150,8 +150,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             return
         if not os.path.isdir('plots'):
             os.mkdir('plots')
-        if not os.path.isdir(path):
-            os.mkdir(path)
+        if not os.path.isdir('plots/'+path):
+            os.mkdir('plots/'+path)
 
 
 
@@ -702,7 +702,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             n_features_to_show = num_features
         n_features_to_show = np.min([num_features, n_features_to_show])
 
-        self.__make_directory(path+title, save_ext=save_ext)
+        self.__make_directory(title, save_ext=save_ext)
 
         for i in range(num_instances):
             factual = factuals[i]
@@ -748,7 +748,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             n_features_to_show = num_features
         n_features_to_show = np.min([num_features, n_features_to_show])
 
-        self.__make_directory(path+title, save_ext=save_ext)
+        self.__make_directory(title, save_ext=save_ext)
 
         for i in range(num_instances):
             factual = factuals[i]
@@ -791,7 +791,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         predict = self.predict
         counterfactuals = self._get_counterfactual_rules()
 
-        self.__make_directory(path+title, save_ext=save_ext)
+        self.__make_directory(title, save_ext=save_ext)
 
         for i, _ in enumerate(self.test_objects):
             counterfactual = counterfactuals[i]
@@ -926,10 +926,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         n_features_to_show = np.min([num_features, n_features_to_show])
 
         if len(full_filename) > 0:
-            path = os.path.dirname(full_filename)
+            path = os.path.dirname(full_filename) + '/'
             filename = os.path.basename(full_filename)
             title, ext = os.path.splitext(filename)
-            self.__make_directory(path+title, save_ext=np.array([ext]))
+            self.__make_directory(title, save_ext=np.array([ext]))
             save_ext = [ext]
         else:
             path = ''
@@ -982,10 +982,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         self._check_preconditions(counterfactuals=True)      
         predict = self.predict      
         if len(full_filename) > 0:
-            path = os.path.dirname(full_filename)
+            path = os.path.dirname(full_filename) + '/'
             filename = os.path.basename(full_filename)
             title, ext = os.path.splitext(filename)
-            self.__make_directory(path+title, save_ext=np.array([ext]))
+            self.__make_directory(title, save_ext=np.array([ext]))
             save_ext = [ext]
         else:
             path = ''
@@ -1009,7 +1009,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         column_names = counterfactual['rule']
         self.__plot_counterfactual(counterfactual['value'], predict, feature_predict, \
                                     features_to_plot, num_to_show=num_to_show_, \
-                                    column_names=column_names, title=title, postfix='', \
+                                    column_names=column_names, title=title, postfix=str(instance_index), \
                                     path=path, show=show, idx=instance_index, save_ext=save_ext)
 
 
