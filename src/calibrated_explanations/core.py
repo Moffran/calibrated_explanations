@@ -340,7 +340,7 @@ class CalibratedExplainer:
                             calibration data.")
         explanation = CalibratedExplanations(self, testX, y)
 
-        is_probabalistic = True # classification or when threshold y is used for regression
+        is_probabilistic = True # classification or when threshold y is used for regression
         if y is not None:
             if not 'regression' in self.mode:
                 raise Warning("The y parameter is only supported for mode='regression'.")
@@ -350,7 +350,7 @@ class CalibratedExplainer:
             # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
-            is_probabalistic = False
+            is_probabilistic = False
 
         cal_X = self.cal_X
 
@@ -461,7 +461,7 @@ class CalibratedExplainer:
                     instance_predict['predict'][f] = 0
                     instance_predict['low'][f] = 0
                     instance_predict['high'][f] = 0
-                    
+
                     instance_weights['predict'][f] = 0
                     instance_weights['low'][f] = 0
                     instance_weights['high'][f] = 0
@@ -469,10 +469,10 @@ class CalibratedExplainer:
                     instance_predict['predict'][f] = np.mean(average_predict[uncovered])
                     instance_predict['low'][f] = np.mean(low_predict[uncovered])
                     instance_predict['high'][f] = np.mean(high_predict[uncovered])
-                    
-                    instance_weights['predict'][f] = self._assign_weight(instance_predict['predict'][f], prediction['predict'][-1], is_probabalistic)
-                    instance_weights['low'][f] = self._assign_weight(instance_predict['low'][f], prediction['predict'][-1], is_probabalistic)
-                    instance_weights['high'][f] = self._assign_weight(instance_predict['high'][f], prediction['predict'][-1], is_probabalistic)
+
+                    instance_weights['predict'][f] = self._assign_weight(instance_predict['predict'][f], prediction['predict'][-1], is_probabilistic)
+                    instance_weights['low'][f] = self._assign_weight(instance_predict['low'][f], prediction['predict'][-1], is_probabilistic)
+                    instance_weights['high'][f] = self._assign_weight(instance_predict['high'][f], prediction['predict'][-1], is_probabilistic)
 
             binned_predict['predict'].append(instance_binned['predict'])
             binned_predict['low'].append(instance_binned['low'])
@@ -490,9 +490,9 @@ class CalibratedExplainer:
 
         explanation._finalize(binned_predict, feature_weights, feature_predict, prediction)
         return explanation
-    
-    
-    
+
+
+
     def _assign_weight(self, instance_predict, prediction, is_probabilistic):
         if is_probabilistic:
             return instance_predict - prediction
