@@ -2,6 +2,7 @@ Calibrated Explanations
 =======================
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/calibrated-explanations.svg)](https://anaconda.org/conda-forge/calibrated-explanations)
 [![Build Status for Calibrated Explanations][build-status]][build-log]
 [![Lint Status for Calibrated Explanations][lint-status]][lint-log]
 [![Documentation Status](https://readthedocs.org/projects/calibrated-explanations/badge/?version=latest)](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
@@ -18,15 +19,24 @@ The proposed method is based on Venn-Abers (classification) and Conformal Predic
 * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions achieved.
 * Conjunctional rules conveying joint contribution between features.
 
+Documentation
+-------------
+For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
 
 Install
 -------
 
-First, you need a Python environment installed with pip.
+First, you need a Python environment.
 
-`calibrated-explanations` can be installed from PyPI:
+Then `calibrated-explanations` can be installed from PyPI:
 
 	pip install calibrated-explanations
+
+or from conda-forge:
+	
+ 	conda install -c conda-forge calibrated-explanations
+
+or by following further instructions at [conda-forge](https://github.com/conda-forge/calibrated-explanations-feedstock#installing-calibrated-explanations).
 
 The dependencies are:
 
@@ -37,10 +47,6 @@ The dependencies are:
 * [pandas](https://pandas.pydata.org/)
 * [scikit-learn](https://scikit-learn.org/)
 * [SHAP](https://pypi.org/project/shap/)
-
-Documentation
--------------
-For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
 
 
 Getting started
@@ -231,16 +237,22 @@ just follow the [release guide](docs/release.md).
 
 Further reading
 ---------------
+If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite the following paper:
 
-The calibrated explanations library is based on the paper
-["Calibrated Explanations: with Uncertainty Information and Counterfactuals"](https://arxiv.org/abs/2305.02305)
-by
-[Helena Löfström](https://github.com/Moffran),
-[Tuwe Löfström](https://github.com/tuvelofstrom),
-Ulf Johansson and
-Cecilia Sönströd.
+[Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., and Sönströd, C. ["Calibrated Explanations: with Uncertainty Information and Counterfactuals"](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
 
-If you would like to cite this work, please cite the above paper.
+Bibtex entry:
+
+```bibtex
+@misc{calibrated-explanations,
+      title = 	      {Calibrated Explanations: with Uncertainty Information and Counterfactuals},
+      author =        {L\"ofstr\"om, Helena and L\"ofstr\"om, Tuwe and Johansson, Ulf and S\"onstr\"od, Cecilia},
+      year =          {2023},
+      eprint =        {2305.02305},
+      archivePrefix = {arXiv},
+      primaryClass =  {cs.AI}
+}
+```
 
 [build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
 [build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
