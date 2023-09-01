@@ -19,7 +19,7 @@ The proposed method is based on Venn-Abers (classification) and Conformal Predic
 * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions achieved.
 * Conjunctional rules conveying joint contribution between features.
 
-Below is an example of a counterfactual explanation for an instance of the Diabetes dataset (positive class means having diabetes).
+Below is an example of a counterfactual explanation for an instance of the Diabetes dataset (positive class means having diabetes). The light blue area in the background is representing the calibrated probability interval (for the positive class) of the underlying model, as indicated by Venn-Abers. The darker blue bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition. 
 ![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")
 
 
