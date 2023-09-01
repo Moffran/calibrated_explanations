@@ -19,8 +19,8 @@ The proposed method is based on Venn-Abers (classification) and Conformal Predic
 * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions achieved.
 * Conjunctional rules conveying joint contribution between features.
 
-Below is an example of a counterfactual explanation for an instance of the vote dataset.
-![Counterfactual explanation for Vote](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_vote.png "Counterfactual explanation for Vote")
+Below is an example of a counterfactual explanation for an instance of the Diabetes dataset.
+![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")
 
 
 Documentation
