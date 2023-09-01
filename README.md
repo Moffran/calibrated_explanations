@@ -27,11 +27,11 @@ Further reading
 ---------------
 The `calibrated-explanations` method for classification is introduced in the paper:
 
-[Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., and Sönströd, C. [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
+[Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
 
 The extensions for regression are introduced in the paper:
 
-[Löfström, T.](https://github.com/tuvelofstrom), [Löfström, H.](https://github.com/Moffran), Johansson, U., Sönströd, C., and [Matela, R.](https://github.com/rudymatela) [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245.
+[Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245.
 
 The paper that originated the idea of `calibrated-explanations` is:
 
@@ -188,7 +188,7 @@ Default, the confidence interval is set to a symmetric interval of 90% (defined 
 
 ```python
 lower_bounded_explanations = explainer.explain_factual(X_test, low_high_percentiles=(5,np.inf))
-unsymmetric_explanations = explainer.explain_factual(X_test, low_high_percentiles=(5,75))
+asymmetric_explanations = explainer.explain_factual(X_test, low_high_percentiles=(5,75))
 ```
 
 #### Counterfactual Explanations
@@ -222,7 +222,7 @@ counterfactual_explanations.add_conjunctions().plot_all()
 ```
 
 #### Additional Regression Use Cases
-Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
+Regression offers many more options and to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
 
 
 Development
@@ -261,9 +261,9 @@ Citing
 ------
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
 
-* [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., and Sönströd, C. [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
+* [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
 
-* [Löfström, T.](https://github.com/tuvelofstrom), [Löfström, H.](https://github.com/Moffran), Johansson, U., Sönströd, C., and [Matela, R.](https://github.com/rudymatela) [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245.
+* [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245.
 
 Bibtex entry for the original paper:
 
