@@ -19,10 +19,28 @@ The proposed method is based on Venn-Abers (classification) and Conformal Predic
 * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions achieved.
 * Conjunctional rules conveying joint contribution between features.
 
+Below is an example of a counterfactual explanation for an instance of the Diabetes dataset (positive class means having diabetes). The light blue area in the background is representing the calibrated probability interval (for the positive class) of the underlying model, as indicated by Venn-Abers. The darker blue bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition. 
+![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")
+
+
 Documentation
 -------------
 For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
 
+Further reading
+---------------
+The `calibrated-explanations` method for classification is introduced in the paper:
+
+[Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
+
+The extensions for regression are introduced in the paper:
+
+[Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245.
+
+The paper that originated the idea of `calibrated-explanations` is:
+
+[Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18.
+  
 Install
 -------
 
@@ -111,11 +129,12 @@ factual_explanations.plot_all(uncertainty=True)
 factual_explanations.plot_factual(0, uncertainty=True)
 
 factual_explanations.add_conjunctions().plot_all()
+factual_explanations.remove_conjunctions().plot_all()
 ```
 
 #### Counterfactual Explanations
 An alternative to factual rules is to extract counterfactual rules. 
-`explain_counterfactual` can be called to get counterfactual rules with an appropriate discretizer automatically assigned. An alternative is to first change the discretizer to `entropy` (for classification) and then call the `CalibratedExplainer` object as above. 
+`explain_counterfactual` can be called to get counterfactual rules with an appropriate discretizer automatically assigned.  
 
 ```python
 counterfactual_explanations = explainer.explain_counterfactual(X_test)
@@ -169,6 +188,12 @@ factual_explanations.plot_all(uncertainty=True)
 
 factual_explanations.add_conjunctions().plot_all()
 ```
+Default, the confidence interval is set to a symmetric interval of 90% (defined as `low_high_percentiles=(5,95)`). The intervals can cover any user specified interval, including one-sided intervals. To define a one-sided upper-bounded 90% interval, set `low_high_percentiles=(-np.inf,90)`, and to define a one-sided lower-bounded 95% interval, set `low_high_percentiles=(5,np.inf)`. Percentiles can also be set to any other values in the range [0,100] (exclusive), and intervals do not have to be symmetric. 
+
+```python
+lower_bounded_explanations = explainer.explain_factual(X_test, low_high_percentiles=(5,np.inf))
+asymmetric_explanations = explainer.explain_factual(X_test, low_high_percentiles=(5,75))
+```
 
 #### Counterfactual Explanations
 The `explain_counterfactual` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work in the same way as for classification.
@@ -181,6 +206,7 @@ counterfactual_explanations.add_conjunctions().plot_all()
 
 counterfactual_explanations.plot_counterfactual(0)
 ```
+The parameter `low_high_percentiles` works in the same way as for factual explanations. 
 
 #### Probabilistic Regression Explanations
 It is possible to create probabilistic explanations for regression, providing the probability that the target value is below the provided threshold (which is 180 000 in the examples below). All methods are the same as for normal regression and classification.
@@ -200,7 +226,7 @@ counterfactual_explanations.add_conjunctions().plot_all()
 ```
 
 #### Additional Regression Use Cases
-Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
+Regression offers many more options and to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
 
 
 Development
@@ -235,22 +261,36 @@ To make a new release on PyPI,
 just follow the [release guide](docs/release.md).
 
 
-Further reading
----------------
-If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite the following paper:
+Citing
+------
+If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
 
-[Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., and Sönströd, C. ["Calibrated Explanations: with Uncertainty Information and Counterfactuals"](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
+* [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
 
-Bibtex entry:
+* [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245.
+
+Bibtex entry for the original paper:
 
 ```bibtex
 @misc{calibrated-explanations,
       title = 	      {Calibrated Explanations: with Uncertainty Information and Counterfactuals},
-      author =        {L\"ofstr\"om, Helena and L\"ofstr\"om, Tuwe and Johansson, Ulf and S\"onstr\"od, Cecilia},
-      year =          {2023},
-      eprint =        {2305.02305},
-      archivePrefix = {arXiv},
-      primaryClass =  {cs.AI}
+      author =          {L\"ofstr\"om, Helena and L\"ofstr\"om, Tuwe and Johansson, Ulf and S\"onstr\"od, Cecilia},
+      year =            {2023},
+      eprint =          {2305.02305},
+      archivePrefix =   {arXiv},
+      primaryClass =    {cs.AI}
+}
+```
+Bibtex entry for the regression paper:
+
+```bibtex
+@misc{cal-expl-regression,
+      title = 	      {Calibrated Explanations for Regression},
+      author =          {L\"ofstr\"om, Tuwe and L\"ofstr\"om, Helena and Johansson, Ulf and S\"onstr\"od, Cecilia and Matela, Rudy},
+      year =            {2023},
+      eprint =          {2308.16245},
+      archivePrefix =   {arXiv},
+      primaryClass =    {cs.LG}
 }
 ```
 
