@@ -77,11 +77,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     def _finalize(self, binned, feature_weights, feature_predict, prediction) -> None:
         # """finalize the explanation by adding the binned data and the feature weights
         # """
-        for i, _ in enumerate(self.test_objects):
+        for i, instance in enumerate(self.test_objects):
             if self._is_counterfactual():
-                explanation = CounterfactualExplanation(self, i, self.test_objects[i], binned, feature_weights, feature_predict, prediction, self.y_threshold)
+                explanation = CounterfactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold)
             else:
-                explanation = FactualExplanation(self, i, self.test_objects[i], binned, feature_weights, feature_predict, prediction, self.y_threshold)
+                explanation = FactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold)
             self.explanations.append(explanation)
         self.calibrated_explainer._set_latest_explanation(self) # pylint: disable=protected-access
         
@@ -540,7 +540,7 @@ class FactualExplanation(CalibratedExplanation):
     A class for storing and visualizing factual explanations.
     '''
     def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None):
-        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
+        super(CalibratedExplanation, self).__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
         self._check_preconditions()
         self._get_rules()
 
@@ -613,7 +613,7 @@ class FactualExplanation(CalibratedExplanation):
 
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
-    def _add_conjunctions(self, n_top_features=5, max_rule_size=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         # """adds conjunctive factual rules
 
         # Args:
@@ -715,7 +715,7 @@ class FactualExplanation(CalibratedExplanation):
                 conjunctive['is_conjunctive'].append(True)
         self.conjunctive_rules = conjunctive
         self._has_conjunctive_rules = True
-        return self._add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
+        return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
 
     def plot_factual(self, n_features_to_show=None, show=False, full_filename='', uncertainty=False):
@@ -1017,7 +1017,7 @@ class CounterfactualExplanation(CalibratedExplanation):
     `CalibratedExplanation` and inherits all its properties and methods. 
     '''
     def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None):
-        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
+        super(CalibratedExplanation, self).__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
         self._check_preconditions()
         self._get_rules()
         
@@ -1169,7 +1169,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         return self.rules
 
     # pylint: disable=too-many-locals
-    def _add_conjunctions(self, n_top_features=5, max_rule_size=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         # """adds conjunctive counterfactual rules
 
         # Args:
@@ -1275,7 +1275,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                 conjunctive['is_conjunctive'].append(True)
         self.conjunctive_rules = conjunctive
         self._has_conjunctive_rules = True
-        return self._add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
+        return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
     # pylint: disable=consider-iterating-dictionary
     def plot_explanation(self, n_features_to_show=None, **kwargs):     
