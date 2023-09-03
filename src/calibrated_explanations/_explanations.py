@@ -124,6 +124,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         # if self._is_counterfactual():
         #     return self._add_conjunctive_counterfactual_rules(n_top_features, max_rule_size)
         # return self._add_conjunctive_factual_rules(n_top_features, max_rule_size)
+        return self
 
 
 
@@ -197,7 +198,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         for explanation in self.explanations:
-            explanation.plot_explanation(n_features_to_show, show, path, uncertainty)
+            explanation.plot_explanation(n_features_to_show=n_features_to_show, show=show, path=path, uncertainty=uncertainty)
 
 
 
@@ -228,7 +229,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         factual = self.get_explanation(instance_index)
-        factual.plot_factual(n_features_to_show, show, full_filename, uncertainty)
+        factual.plot_factual(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename, uncertainty=uncertainty)
 
 
     def plot_counterfactual(self, instance_index, n_features_to_show=10, show=False, full_filename=''):        
@@ -253,7 +254,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         counterfactual = self.get_explanation(instance_index)
-        counterfactual.plot_explanation(n_features_to_show, show, full_filename)
+        counterfactual.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename)
         
         
 
@@ -314,11 +315,21 @@ class CalibratedExplanation(ABC):
         self.calibrated_explanations = calibrated_explanations
         self.instance_index = instance_index
         self.test_object = test_object
-        self.binned = binned
-        self.feature_weights = feature_weights
-        self.feature_predict = feature_predict
-        self.prediction = prediction
-        self.y_threshold=y_threshold
+        self.binned = {}
+        self.feature_weights = {}
+        self.feature_predict = {}
+        self.prediction = {}
+        for key in binned.keys():
+            self.binned[key] = deepcopy(binned[key][instance_index])
+        for key in feature_weights.keys():
+            self.feature_weights[key] = deepcopy(feature_weights[key][instance_index])
+            self.feature_predict[key] = deepcopy(feature_predict[key][instance_index])
+        for key in prediction.keys():
+            self.prediction[key] = deepcopy(prediction[key][instance_index])
+        self.y_threshold=y_threshold if np.isscalar(y_threshold) else \
+                            None if y_threshold is None else \
+                            y_threshold[instance_index] 
+
         self.conditions = []
         self.rules = []
         self.conjunctive_rules = []
@@ -471,56 +482,6 @@ class CalibratedExplanation(ABC):
         rule_high /= rule_count
         return rule_predict, rule_low, rule_high
 
-    # pylint: disable=invalid-name
-    def __color_brew(self, n):
-        color_list = []
-
-        # Initialize saturation & value; calculate chroma & value shift
-        s, v = 0.75, 0.9
-        c = s * v
-        m = v - c
-
-        # for h in np.arange(25, 385, 360. / n).astype(int):
-        for h in np.arange(5, 385, 490. / n).astype(int):
-            # Calculate some intermediate values
-            h_bar = h / 60.
-            x = c * (1 - abs((h_bar % 2) - 1))
-            # Initialize RGB with same hue & chroma as our color
-            rgb = [(c, x, 0),
-                (x, c, 0),
-                (0, c, x),
-                (0, x, c),
-                (x, 0, c),
-                (c, 0, x),
-                (c, x, 0)]
-            r, g, b = rgb[int(h_bar)]
-            # Shift the initial RGB values to match value and store
-            rgb = [(int(255 * (r + m))),
-                (int(255 * (g + m))),
-                (int(255 * (b + m)))]
-            color_list.append(rgb)
-        color_list.reverse()
-        return color_list
-
-
-
-    def __get_fill_color(self, venn_abers, reduction=1): # pylint: disable=unused-private-member
-        colors = self.__color_brew(2)
-        winner_class = int(venn_abers['predict']>= 0.5)
-        color = colors[winner_class]
-
-        alpha = venn_abers['predict'] if winner_class==1 else 1-venn_abers['predict']
-        alpha = ((alpha - 0.5) / (1 - 0.5)) * (1-.25) + .25 # normalize values to the range [.25,1]
-        if reduction != 1:
-            alpha = reduction
-
-        # unpack numpy scalars
-        alpha = float(alpha)
-        # compute the color as alpha against white
-        color = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
-        # Return html color code in #RRGGBB format
-        return '#%2x%2x%2x' % tuple(color) # pylint: disable=consider-using-f-string
-
     # Should be in a utils file
     def __make_directory(self, path: str, save_ext=None) -> None: # pylint: disable=unused-private-member
         # """ create directory if it does not exist
@@ -540,7 +501,7 @@ class FactualExplanation(CalibratedExplanation):
     A class for storing and visualizing factual explanations.
     '''
     def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None):
-        super(CalibratedExplanation, self).__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
+        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
         self._check_preconditions()
         self._get_rules()
 
@@ -567,7 +528,7 @@ class FactualExplanation(CalibratedExplanation):
         if self._has_rules:
             return self.rules        
         self._has_rules = False
-        # for i in range(len(self.test_objects)):
+        i = self.instance_index
         instance = deepcopy(self.test_object)
         factual = {'base_predict': [],
                     'base_predict_low': [],
@@ -634,10 +595,10 @@ class FactualExplanation(CalibratedExplanation):
         if self._has_conjunctive_rules:
             conjunctive = self.conjunctive_rules
         else:
-            conjunctive = factual
+            conjunctive = deepcopy(factual)
         self._has_conjunctive_rules = False
         self.conjunctive_rules = []
-        # for i in range(len(self.test_objects)):
+        i =self.instance_index
         #     factual = deepcopy(factuals[i])
         # conjunctive = conjunctives[i]
         # pylint: disable=unsubscriptable-object, invalid-name
@@ -756,7 +717,7 @@ class FactualExplanation(CalibratedExplanation):
         uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs.keys() else False
         
         
-        factual = self.rules #get_explanation(instance_index)
+        factual = self._get_rules() #get_explanation(instance_index)
         self._check_preconditions()
         predict = self.prediction
         num_features = len(factual['weight'])
@@ -816,10 +777,10 @@ class FactualExplanation(CalibratedExplanation):
         # plot the probabilities at the top
         x = np.linspace(0, 1, 2)
         xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
-        p = predict['predict'][idx]
-        pl = predict['low'][idx] if predict['low'][idx] != -np.inf \
+        p = predict['predict']
+        pl = predict['low'] if predict['low'] != -np.inf \
                                 else min(self._get_explainer().cal_y)
-        ph = predict['high'][idx] if predict['high'][idx] != np.inf \
+        ph = predict['high'] if predict['high'] != np.inf \
                                 else max(self._get_explainer().cal_y)
 
         ax_negative.fill_betweenx(xj, 1-p, 1-p, color='b')
@@ -1017,7 +978,7 @@ class CounterfactualExplanation(CalibratedExplanation):
     `CalibratedExplanation` and inherits all its properties and methods. 
     '''
     def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None):
-        super(CalibratedExplanation, self).__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
+        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
         self._check_preconditions()
         self._get_rules()
         
@@ -1046,7 +1007,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             return self.rules
         self.rules = []
         self.labels = {} # pylint: disable=attribute-defined-outside-init
-        # for i in range(len(self.test_objects)):
+        i = self.instance_index
         # self.labels[i] = {}
         instance = deepcopy(self.test_object)
         discretized = self._get_explainer()._discretize(deepcopy(instance).reshape(1,-1))[0] # pylint: disable=protected-access
@@ -1190,7 +1151,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         if self._has_conjunctive_rules:
             conjunctive = self.conjunctive_rules
         else:
-            conjunctive = counterfactual
+            conjunctive = deepcopy(counterfactual)
         if self._has_conjunctive_rules:
             return self
         # counterfactuals = deepcopy(self._get_counterfactual_rules())
@@ -1302,7 +1263,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         show = kwargs['show'] if 'show' in kwargs.keys() else False
         full_filename = kwargs['full_filename'] if 'full_filename' in kwargs.keys() else ''
 
-        counterfactual = self.rules #get_explanation(instance_index)
+        counterfactual = self._get_rules() #get_explanation(instance_index)
         self._check_preconditions()      
         predict = self.prediction
         if len(full_filename) > 0:
@@ -1449,3 +1410,56 @@ class CounterfactualExplanation(CalibratedExplanation):
             fig.savefig(path + title + '/' + title + '_' + postfix +'.'+ext, bbox_inches='tight')
         if show:
             fig.show()
+
+
+
+
+    # pylint: disable=invalid-name
+    def __color_brew(self, n):
+        color_list = []
+
+        # Initialize saturation & value; calculate chroma & value shift
+        s, v = 0.75, 0.9
+        c = s * v
+        m = v - c
+
+        # for h in np.arange(25, 385, 360. / n).astype(int):
+        for h in np.arange(5, 385, 490. / n).astype(int):
+            # Calculate some intermediate values
+            h_bar = h / 60.
+            x = c * (1 - abs((h_bar % 2) - 1))
+            # Initialize RGB with same hue & chroma as our color
+            rgb = [(c, x, 0),
+                (x, c, 0),
+                (0, c, x),
+                (0, x, c),
+                (x, 0, c),
+                (c, 0, x),
+                (c, x, 0)]
+            r, g, b = rgb[int(h_bar)]
+            # Shift the initial RGB values to match value and store
+            rgb = [(int(255 * (r + m))),
+                (int(255 * (g + m))),
+                (int(255 * (b + m)))]
+            color_list.append(rgb)
+        color_list.reverse()
+        return color_list
+
+
+
+    def __get_fill_color(self, venn_abers, reduction=1): # pylint: disable=unused-private-member
+        colors = self.__color_brew(2)
+        winner_class = int(venn_abers['predict']>= 0.5)
+        color = colors[winner_class]
+
+        alpha = venn_abers['predict'] if winner_class==1 else 1-venn_abers['predict']
+        alpha = ((alpha - 0.5) / (1 - 0.5)) * (1-.25) + .25 # normalize values to the range [.25,1]
+        if reduction != 1:
+            alpha = reduction
+
+        # unpack numpy scalars
+        alpha = float(alpha)
+        # compute the color as alpha against white
+        color = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
+        # Return html color code in #RRGGBB format
+        return '#%2x%2x%2x' % tuple(color) # pylint: disable=consider-using-f-string
