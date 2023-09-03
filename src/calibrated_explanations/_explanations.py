@@ -1239,7 +1239,14 @@ class CounterfactualExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
     # pylint: disable=consider-iterating-dictionary
-    def plot_explanation(self, n_features_to_show=None, **kwargs):     
+    def plot_counterfactual(self, n_features_to_show=None, show=False, full_filename=''):
+        '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
+        a dataset.
+        '''
+        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename)
+        
+    # pylint: disable=consider-iterating-dictionary
+    def plot_explanation(self, n_features_to_show=None, **kwargs):
         '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
         a dataset.
         
