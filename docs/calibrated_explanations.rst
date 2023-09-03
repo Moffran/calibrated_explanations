@@ -8,7 +8,6 @@ The calibrated-explanations package
       
 .. autoclass:: CalibratedExplanations
    :members: 
-   :members: 
       
 .. autoclass:: CalibratedExplanation
    :members: 
