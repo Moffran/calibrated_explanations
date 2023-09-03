@@ -528,7 +528,7 @@ class FactualExplanation(CalibratedExplanation):
         if self._has_rules:
             return self.rules        
         self._has_rules = False
-        i = self.instance_index
+        # i = self.instance_index
         instance = deepcopy(self.test_object)
         factual = {'base_predict': [],
                     'base_predict_low': [],
@@ -1007,7 +1007,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             return self.rules
         self.rules = []
         self.labels = {} # pylint: disable=attribute-defined-outside-init
-        i = self.instance_index
+        # i = self.instance_index
         # self.labels[i] = {}
         instance = deepcopy(self.test_object)
         discretized = self._get_explainer()._discretize(deepcopy(instance).reshape(1,-1))[0] # pylint: disable=protected-access
