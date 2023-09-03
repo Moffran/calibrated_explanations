@@ -201,7 +201,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             explanation.plot_explanation(n_features_to_show=n_features_to_show, show=show, path=path, uncertainty=uncertainty)
 
 
-
+    # pylint: disable=too-many-arguments
     def plot_factual(self, instance_index, n_features_to_show=10, show=False, full_filename='', uncertainty=False):
         '''This function plots the factual explanation for a given instance using either probabilistic or
         regression plots.
@@ -259,52 +259,52 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
 
 
+    # pylint: disable=protected-access
+    def as_lime(self):
+        """transforms the explanation into a lime explanation object
 
-    # def as_lime(self):
-    #     """transforms the explanation into a lime explanation object
+        Returns:
+            list of lime.Explanation : list of lime explanation objects with the same values as the CalibratedExplanations
+        """
+        _, lime_exp = self.calibrated_explainer._preload_lime() # pylint: disable=protected-access
+        exp = []
+        for explanation in self.explanations: #range(len(self.test_objects[:,0])):
+            tmp = deepcopy(lime_exp)
+            tmp.intercept[1] = 0
+            tmp.local_pred = explanation.prediction['predict']
+            if 'regression' in self.calibrated_explainer.mode:
+                tmp.predicted_value = explanation.prediction['predict']
+                tmp.min_value = min(self.calibrated_explainer.cal_y)
+                tmp.max_value = max(self.calibrated_explainer.cal_y)
+            else:
+                tmp.predict_proba[0], tmp.predict_proba[1] = \
+                        1-explanation.prediction['predict'], explanation.prediction['predict']
 
-    #     Returns:
-    #         list of lime.Explanation : list of lime explanation objects with the same values as the CalibratedExplanations
-    #     """
-    #     _, lime_exp = self.calibrated_explainer._preload_lime() # pylint: disable=protected-access
-    #     exp = []
-    #     for i in range(len(self.test_objects[:,0])):
-    #         tmp = deepcopy(lime_exp)
-    #         tmp.intercept[1] = 0
-    #         tmp.local_pred = self.predict['predict'][i]
-    #         if 'regression' in self.calibrated_explainer.mode:
-    #             tmp.predicted_value = self.predict['predict'][i]
-    #             tmp.min_value = min(self.calibrated_explainer.cal_y)
-    #             tmp.max_value = max(self.calibrated_explainer.cal_y)
-    #         else:
-    #             tmp.predict_proba[0], tmp.predict_proba[1] = \
-    #                     1-self.predict['predict'][i], self.predict['predict'][i]
-
-    #         feature_weights = self.feature_weights['predict'][i]
-    #         features_to_plot = self.__rank_features(feature_weights, 
-    #                     num_to_show=self.calibrated_explainer.num_features)
-    #         rules = self._define_conditions(self.test_objects[i, :])
-    #         for j,f in enumerate(features_to_plot[::-1]): # pylint: disable=invalid-name
-    #             tmp.local_exp[1][j] = (f, feature_weights[f])
-    #         tmp.domain_mapper.discretized_feature_names = rules
-    #         tmp.domain_mapper.feature_values = self.test_objects[i, :]
-    #         exp.append(tmp)
-    #     return exp
+            feature_weights = explanation.feature_weights['predict']
+            features_to_plot = explanation._rank_features(feature_weights, 
+                        num_to_show=self.calibrated_explainer.num_features)
+            rules = explanation._define_conditions()
+            for j,f in enumerate(features_to_plot[::-1]): # pylint: disable=invalid-name
+                tmp.local_exp[1][j] = (f, feature_weights[f])
+            tmp.domain_mapper.discretized_feature_names = rules
+            tmp.domain_mapper.feature_values = explanation.test_object
+            exp.append(tmp)
+        return exp
 
 
 
-    # def as_shap(self):
-    #     """transforms the explanation into a shap explanation object
+    def as_shap(self):
+        """transforms the explanation into a shap explanation object
 
-    #     Returns:
-    #         shap.Explanation : shap explanation object with the same values as the explanation
-    #     """
-    #     _, shap_exp = self.calibrated_explainer._preload_shap(len(self.test_objects[:,0])) # pylint: disable=protected-access
-    #     for i in range(len(self.test_objects[:,0])):
-    #         shap_exp.base_values[i] = self.predict['predict'][i]
-    #         for f in range(len(self.test_objects[0, :])):
-    #             shap_exp.values[i][f] = -self.feature_weights['predict'][i][f]
-    #     return shap_exp
+        Returns:
+            shap.Explanation : shap explanation object with the same values as the explanation
+        """
+        _, shap_exp = self.calibrated_explainer._preload_shap(len(self.test_objects[:,0])) # pylint: disable=protected-access
+        for i, explanation in enumerate(self.explanations): #range(len(self.test_objects[:,0])):
+            shap_exp.base_values[i] = explanation.prediction['predict']
+            for f in range(len(self.test_objects[0, :])):
+                shap_exp.values[i][f] = -explanation.feature_weights['predict'][f]
+        return shap_exp
         
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class CalibratedExplanation(ABC):
