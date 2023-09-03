@@ -911,7 +911,7 @@ class FactualExplanation(CalibratedExplanation):
         ax_regression.set_xlim([min(self._get_explainer().cal_y),max(self._get_explainer().cal_y)])
         ax_regression.set_yticks(range(1))
 
-        ax_regression.set_xlabel(f'Prediction interval with {self._get_explainer().get_confidence()}% confidence')
+        ax_regression.set_xlabel(f'Prediction interval with {self.calibrated_explanations.get_confidence()}% confidence')
         ax_regression.set_yticklabels(labels=['Median prediction'])
 
         # Plot the base prediction in black/grey
@@ -1393,7 +1393,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             ax_main.set_xlim(0,1)
             ax_main.set_xticks(np.linspace(0, 1, 11))
         elif 'regression' in self._get_explainer().mode:
-            ax_main.set_xlabel(f'Prediction interval with {self._get_explainer().get_confidence()}% confidence')
+            ax_main.set_xlabel(f'Prediction interval with {self.calibrated_explanations.get_confidence()}% confidence')
             ax_main.set_xlim([min(self._get_explainer().cal_y),
                         max(self._get_explainer().cal_y)])
         else:
