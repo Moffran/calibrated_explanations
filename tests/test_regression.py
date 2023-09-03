@@ -98,15 +98,15 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
 
@@ -134,11 +134,11 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
 
@@ -171,15 +171,15 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
 
@@ -209,11 +209,11 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
 
@@ -246,15 +246,15 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
 
@@ -284,11 +284,11 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
-        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, DecileDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
 
