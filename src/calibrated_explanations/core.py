@@ -12,7 +12,6 @@ conformal predictive systems (regression).
 # flake8: noqa: E501
 import copy
 import numpy as np
-import pandas as pd
 
 from shap import Explainer
 from lime.lime_tabular import LimeTabularExplainer
@@ -24,6 +23,7 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
+from .utils import safe_isinstance
 
 __version__ = 'v0.0.24'
 
@@ -109,11 +109,11 @@ class CalibratedExplainer:
         
         '''
         self.__initialized = False
-        if isinstance(cal_X, pd.DataFrame):
+        if safe_isinstance(cal_X, "pandas.core.frame.DataFrame"):
             self.cal_X = cal_X.values  # pylint: disable=invalid-name
         else:
             self.cal_X = cal_X
-        if isinstance(cal_y, pd.DataFrame):
+        if safe_isinstance(cal_y, "pandas.core.frame.DataFrame"):
             self.cal_y = cal_y.values  # pylint: disable=invalid-name
         else:
             self.cal_y = cal_y
