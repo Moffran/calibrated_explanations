@@ -123,9 +123,6 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         for explanation in self.explanations:
             explanation.remove_conjunctions()
             explanation.add_conjunctions(n_top_features, max_rule_size)
-        # if self._is_counterfactual():
-        #     return self._add_conjunctive_counterfactual_rules(n_top_features, max_rule_size)
-        # return self._add_conjunctive_factual_rules(n_top_features, max_rule_size)
         return self
 
 
@@ -456,7 +453,7 @@ class CalibratedExplanation(ABC):
                         # if len(original_features) == 4:
                         #     for value_4 in rule_value4:
                         #         perturbed[of4] = value_4
-                        #         p_value, low, high, _ = self.calibrated_explainer.predict(perturbed.reshape(1,-1),
+                        #         p_value, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1),
                         #                             y=y, low_high_percentiles=self.low_high_percentiles,
                         #                             classes=predicted_class)
                         #         rule_predict += p_value[0]
@@ -590,8 +587,6 @@ class FactualExplanation(CalibratedExplanation):
         self._has_conjunctive_rules = False
         self.conjunctive_rules = []
         i =self.instance_index
-        #     factual = deepcopy(factuals[i])
-        # conjunctive = conjunctives[i]
         # pylint: disable=unsubscriptable-object, invalid-name
         y = None if self.y_threshold is None else self.y_threshold
         x_original = deepcopy(self.test_object)
@@ -601,9 +596,6 @@ class FactualExplanation(CalibratedExplanation):
         conjunctive['classes'] = predicted_class
         if n_top_features is None:
             n_top_features = num_rules
-        # top_factuals = self.__rank_features(np.reshape(factual['weight'], (len(factual['weight']))), 
-        #                     width=np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
-        #                     (len(factual['weight']))), num_to_show=np.min([num_rules, n_top_features]))
         top_conjunctives = self._rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))), 
                             width=np.reshape(np.array(conjunctive['weight_high']) - np.array(conjunctive['weight_low']),
                             (len(conjunctive['weight']))), num_to_show=np.min([num_rules, n_top_features]))
@@ -998,8 +990,6 @@ class CounterfactualExplanation(CalibratedExplanation):
             return self.rules
         self.rules = []
         self.labels = {} # pylint: disable=attribute-defined-outside-init
-        # i = self.instance_index
-        # self.labels[i] = {}
         instance = deepcopy(self.test_object)
         discretized = self._get_explainer()._discretize(deepcopy(instance).reshape(1,-1))[0] # pylint: disable=protected-access
         instance_predict = self.binned['predict']
@@ -1145,11 +1135,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             conjunctive = deepcopy(counterfactual)
         if self._has_conjunctive_rules:
             return self
-        # counterfactuals = deepcopy(self._get_counterfactual_rules())
         self.conjunctive_rules = []
-        # for i in range(len(self.test_objects)):
-        #     counterfactual = deepcopy(counterfactuals[i])
-        # conjunctive = conjunctives[i]
         # pylint: disable=unsubscriptable-object, invalid-name
         y = None if self.y_threshold is None else self.y_threshold 
         x_original = deepcopy(self.test_object)
@@ -1159,9 +1145,6 @@ class CounterfactualExplanation(CalibratedExplanation):
         conjunctive['classes'] = predicted_class
         if n_top_features is None:
             n_top_features = num_rules
-        # top_factuals = self.__rank_features(np.reshape(factual['weight'], (len(factual['weight']))), 
-        #                     width=np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
-        #                     (len(factual['weight']))), num_to_show=np.min([num_rules, n_top_features]))
         top_conjunctives = self._rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))), 
                             width=np.reshape(np.array(conjunctive['weight_high']) - np.array(conjunctive['weight_low']),
                             (len(conjunctive['weight']))), num_to_show=np.min([num_rules, n_top_features]))
