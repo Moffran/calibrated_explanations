@@ -200,6 +200,37 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             explanation.plot_explanation(n_features_to_show=n_features_to_show, show=show, path=path, uncertainty=uncertainty)
 
 
+
+    # pylint: disable=too-many-arguments
+    def plot_explanation(self, instance_index, n_features_to_show=10, show=False, full_filename='', uncertainty=False):
+        '''This function plots the explanation for a given instance using either factual or
+        counterfactual plots.
+        
+        Parameters
+        ----------
+        instance_index : int
+            The index of the instance for which you want to plot the  explanation.
+        n_features_to_show : int, default=10
+            The `n_features_to_show` parameter determines the number of top features to display in the
+            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
+            number of features, up to the total number of features available.
+        show : bool, default=False
+            A boolean parameter that determines whether the plot should be displayed or not. If set to
+            True, the plot will be displayed. If set to False, the plot will not be displayed.
+        full_filename : str, default=''
+            The full_filename parameter is a string that represents the full path and filename of the plot
+            image file that will be saved. If this parameter is not provided or is an empty string, the plot
+            will not be saved as an image file.
+        uncertainty : bool, default=False
+            Only applicable if factual explanation. The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
+            intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
+            range of possible feature weights based on the lower and upper bounds of the uncertainty
+            intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
+        
+        '''
+        factual = self.get_explanation(instance_index)
+        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename, uncertainty=uncertainty)
+
     # pylint: disable=too-many-arguments
     def plot_factual(self, instance_index, n_features_to_show=10, show=False, full_filename='', uncertainty=False):
         '''This function plots the factual explanation for a given instance using either probabilistic or
@@ -228,7 +259,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         factual = self.get_explanation(instance_index)
-        factual.plot_factual(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename, uncertainty=uncertainty)
+        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename, uncertainty=uncertainty)
 
 
     def plot_counterfactual(self, instance_index, n_features_to_show=10, show=False, full_filename=''):        
@@ -254,8 +285,6 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         '''
         counterfactual = self.get_explanation(instance_index)
         counterfactual.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename)
-        
-        
 
 
     # pylint: disable=protected-access

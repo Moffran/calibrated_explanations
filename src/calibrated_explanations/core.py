@@ -25,7 +25,7 @@ from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils import safe_isinstance
 
-__version__ = 'v0.0.24'
+__version__ = 'v0.1.0'
 
 
 

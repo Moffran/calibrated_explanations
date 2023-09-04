@@ -28,7 +28,7 @@ author = 'Helena Löfström, Tuwe Löfström'
 version = '0.0'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.24'
+release = '0.1.0'
 
 
 # -- General configuration ---------------------------------------------------
