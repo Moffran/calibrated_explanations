@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, EntropyDiscretizer, DecileDiscretizer
+from.utils import make_directory
 
 class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """
@@ -120,6 +121,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             CalibratedExplanations: Returns a self reference, to allow for method chaining
         """
         for explanation in self.explanations:
+            explanation.remove_conjunctions()
             explanation.add_conjunctions(n_top_features, max_rule_size)
         # if self._is_counterfactual():
         #     return self._add_conjunctive_counterfactual_rules(n_top_features, max_rule_size)
@@ -482,17 +484,6 @@ class CalibratedExplanation(ABC):
         rule_high /= rule_count
         return rule_predict, rule_low, rule_high
 
-    # Should be in a utils file
-    def __make_directory(self, path: str, save_ext=None) -> None: # pylint: disable=unused-private-member
-        # """ create directory if it does not exist
-        # """
-        if save_ext is not None and len(save_ext) == 0:
-            return
-        if not os.path.isdir('plots'):
-            os.mkdir('plots')
-        if not os.path.isdir('plots/'+path):
-            os.mkdir('plots/'+path)
-
 
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
@@ -729,7 +720,7 @@ class FactualExplanation(CalibratedExplanation):
             path = os.path.dirname(full_filename) + '/'
             filename = os.path.basename(full_filename)
             title, ext = os.path.splitext(filename)
-            self.__make_directory(title, save_ext=np.array([ext]))
+            make_directory(title, save_ext=np.array([ext]))
             save_ext = [ext]
         else:
             path = ''
@@ -1277,7 +1268,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             path = os.path.dirname(full_filename) + '/'
             filename = os.path.basename(full_filename)
             title, ext = os.path.splitext(filename)
-            self.__make_directory(title, save_ext=np.array([ext]))
+            make_directory(title, save_ext=np.array([ext]))
             save_ext = [ext]
         else:
             path = ''
