@@ -4,6 +4,9 @@
 ### Fixes
 
 ## [v0.1.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.1.0) - 2023-09-04
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.0.2...v0.1.0)
+
 ### Features
 
 - **Performance**: Fast, reliable, stable and robust feature importance explanations.
