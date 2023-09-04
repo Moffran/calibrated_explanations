@@ -50,13 +50,13 @@ explainer = CalibratedExplainer(rf, X_cal, y_cal, feature_names=feature_names)
 factual_explanations = explainer.explain_factual(X_test)
 ```
 
-Once we have the explanations, we can plot all of them using `plot_all`. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. To plot only a single instance, the `plot_factual` function can be called, submitting the index of the test instance to plot. You can also add and remove conjunctive rules.
+Once we have the explanations, we can plot all of them using `plot_all`. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. To plot only a single instance, the `plot_explanation` function can be called, submitting the index of the test instance to plot. You can also add and remove conjunctive rules.
 
 ```python
 factual_explanations.plot_all()
 factual_explanations.plot_all(uncertainty=True)
 
-factual_explanations.plot_factual(0, uncertainty=True)
+factual_explanations.plot_explanation(0, uncertainty=True)
 
 factual_explanations.add_conjunctions().plot_all()
 ```
@@ -69,7 +69,7 @@ An alternative to factual rules is to extract counterfactual rules.
 counterfactual_explanations = explainer.explain_counterfactual(X_test)
 ```
 
-Counterfactuals are also visualized using the `plot_all`. Plotting an individual counterfactual explanation is done using `plot_counterfactual`, submitting the index to plot. Adding or removing conjunctions is done as before. 
+Counterfactuals are also visualized using the `plot_all`. Plotting an individual counterfactual explanation is done using `plot_explanation`, submitting the index to plot. Adding or removing conjunctions is done as before. 
 
 ```python
 counterfactual_explanations.plot_all()
@@ -127,7 +127,7 @@ counterfactual_explanations = explainer.explain_counterfactual(X_test)
 counterfactual_explanations.plot_all()
 counterfactual_explanations.add_conjunctions().plot_all()
 
-counterfactual_explanations.plot_counterfactual(0)
+counterfactual_explanations.plot_explanation(0)
 ```
 
 ### Probabilistic Regression Explanations
