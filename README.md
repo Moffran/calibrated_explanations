@@ -22,7 +22,6 @@ Below is an example of a counterfactual explanation for an instance of the Diabe
 
 ![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")
 
-- [Calibrated Explanations](#calibrated-explanations)
   - [Getting started](#getting-started)
     - [Classification](#classification)
       - [Factual Explanations](#factual-explanations)
