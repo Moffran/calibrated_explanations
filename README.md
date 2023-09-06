@@ -176,7 +176,7 @@ asymmetric_explanations = explainer.explain_factual(X_test, low_high_percentiles
 ```
 
 #### Counterfactual Explanations
-The `explain_counterfactual` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work in the same way as for classification.
+The `explain_counterfactual` will work exactly the same as for classification. Counterfactual plots work in the same way as for classification.
 
 ```python
 counterfactual_explanations = explainer.explain_counterfactual(X_test)
