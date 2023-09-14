@@ -6,8 +6,6 @@
 import numpy as np
 import venn_abers as va
 
-
-
 class VennAbers:
     """a class to calibrate the predictions of a model using the VennABERS method
     """
