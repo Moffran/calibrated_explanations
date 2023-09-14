@@ -64,7 +64,7 @@ class CalibratedExplainer:
         Parameters
         ----------
         model : predictive model
-            A predictive model that can be used to predict the target variable. The model must be fitted and have a prodict_proba method (for classification) or a predict method (for regression).
+            A predictive model that can be used to predict the target variable. The model must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
         cal_X : array-like of shape (n_calibrations_samples, n_features)
             The calibration input data for the model.
         cal_y : array-like of shape (n_calibrations_samples,)
