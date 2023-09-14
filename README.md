@@ -229,6 +229,7 @@ or by following further instructions at [conda-forge](https://github.com/conda-f
 The dependencies are:
 
 * [crepes](https://github.com/henrikbostrom/crepes)
+* [venn-abers](https://github.com/ip200/venn-abers)
 * [lime](https://github.com/marcotcr/lime)
 * [matplotlib](https://matplotlib.org/)
 * [NumPy](https://numpy.org/)
