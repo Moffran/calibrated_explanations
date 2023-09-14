@@ -776,7 +776,7 @@ class FactualExplanation(CalibratedExplanation):
         if interval is True:
             assert idx is not None
         fig = plt.figure(figsize=(10,num_to_show*.5+2))
-        subfigs = fig.subfigures(4, 1, height_ratios=[1, 1, 1, num_to_show+2])
+        subfigs = fig.subfigures(3, 1, height_ratios=[1, 1, num_to_show+2])
 
         if interval and (self._is_one_sided()):
             raise Warning('Interval plot is not supported for one-sided explanations.')
@@ -784,7 +784,7 @@ class FactualExplanation(CalibratedExplanation):
         ax_positive = subfigs[0].add_subplot(111)
         ax_negative = subfigs[1].add_subplot(111)
         
-        ax_main = subfigs[3].add_subplot(111)
+        ax_main = subfigs[2].add_subplot(111)
 
         # plot the probabilities at the top
         x = np.linspace(0, 1, 2)
@@ -1107,7 +1107,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                     counterfactual['feature_value'].append(
                                     self.binned['rule_values'][f][0][0])
                     counterfactual['rule'].append(
-                                    f'{self._get_explainer().feature_names[f]} < {lesser}')
+                                    f'{self._get_explainer().feature_names[f]} < {lesser:.2f}')
                     counterfactual['is_conjunctive'].append(False)
                     value_bin = 1
 
@@ -1132,7 +1132,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                                     self.binned['rule_values'][f][0][1 \
                                     if len(self.binned['rule_values'][f][0]) == 3 else 0])
                     counterfactual['rule'].append(
-                                    f'{self._get_explainer().feature_names[f]} > {greater}')
+                                    f'{self._get_explainer().feature_names[f]} > {greater:.2f}')
                     counterfactual['is_conjunctive'].append(False)
 
         self.rules = counterfactual

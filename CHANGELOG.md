@@ -1,8 +1,15 @@
 # Changelog
+
 ## [Unreleased]
 ### Features
 ### Fixes
-
+## [v0.1.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.1.1) - 2023-09-14
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.1.0...v0.1.1)
+### Features
+- Exchanged the slow `VennABERS_by_def` function for the `VennAbers` class in the `venn-abers` package.
+### Fixes
+- Low and high weights are correctly assigned, so that low < high is always the case.
+- Adjusted the number of decimals in counterfactual rules to 2.
 ## [v0.1.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.1.0) - 2023-09-04
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.0.2...v0.1.0)

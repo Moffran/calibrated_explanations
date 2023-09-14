@@ -25,7 +25,7 @@ from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils import safe_isinstance
 
-__version__ = 'v0.1.0'
+__version__ = 'v0.1.1'
 
 
 
@@ -471,8 +471,10 @@ class CalibratedExplainer:
                     instance_predict['high'][f] = np.mean(high_predict[uncovered])
 
                     instance_weights['predict'][f] = self._assign_weight(instance_predict['predict'][f], prediction['predict'][-1], is_probabilistic)
-                    instance_weights['low'][f] = self._assign_weight(instance_predict['low'][f], prediction['predict'][-1], is_probabilistic)
-                    instance_weights['high'][f] = self._assign_weight(instance_predict['high'][f], prediction['predict'][-1], is_probabilistic)
+                    tmp_low = self._assign_weight(instance_predict['low'][f], prediction['predict'][-1], is_probabilistic)
+                    tmp_high = self._assign_weight(instance_predict['high'][f], prediction['predict'][-1], is_probabilistic)
+                    instance_weights['low'][f] = np.min([tmp_low, tmp_high])
+                    instance_weights['high'][f] = np.max([tmp_low, tmp_high])
 
             binned_predict['predict'].append(instance_binned['predict'])
             binned_predict['low'].append(instance_binned['low'])

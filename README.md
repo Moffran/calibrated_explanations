@@ -22,6 +22,7 @@ Below is an example of a counterfactual explanation for an instance of the Diabe
 
 ![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")
 
+- [Calibrated Explanations](#calibrated-explanations)
   - [Getting started](#getting-started)
     - [Classification](#classification)
       - [Factual Explanations](#factual-explanations)
@@ -318,11 +319,11 @@ This research is funded by the Swedish Knowledge Foundation together with indust
 
 [Rudy Matela](https://github.com/rudymatela) has been our git guru and has helped us with the release process.
 
-We have used code from [Paulo Toccaceli](https://github.com/ptocca)s implementation of [Venn-Abers](https://github.com/ptocca/VennABERS). We do not use the fast version yet but will likely add it in the future.
+We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` classes from [Henrik Boström](https://github.com/henrikbostrom)s [crepes](https://github.com/henrikbostrom/crepes) package to provide support for regression.
 
-We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` classes from [Henrik Boström](https://github.com/henrikbostrom)s [crepes](https://github.com/henrikbostrom/crepes) to provide support for regression.
+We have used the `VennAbers` class from [Ivan Petej](https://github.com/ip200)s [venn-abers](https://github.com/ip200/venn-abers) package to provide support for probabilistic explanations (both classification and probabilistic regression). 
 
-We have used code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) for the `Disccretizer` class.
+We have used code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Disccretizer` class.
 
 [build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
 [build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
