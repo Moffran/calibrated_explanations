@@ -15,7 +15,7 @@ The proposed method is based on Venn-Abers (classification) and Conformal Predic
 * Calibration of the underlying model to ensure that predictions reflect reality.
 * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
 * Rules with straightforward interpretation in relation to the feature weights.
-* Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions achieved.
+* Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions.
 * Conjunctional rules conveying joint contribution between features.
 
 Below is an example of a counterfactual explanation for an instance of the Diabetes dataset (positive class means having diabetes). The light blue area in the background is representing the calibrated probability interval (for the positive class) of the underlying model, as indicated by Venn-Abers. The darker blue bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
@@ -177,7 +177,7 @@ asymmetric_explanations = explainer.explain_factual(X_test, low_high_percentiles
 ```
 
 #### Counterfactual Explanations
-The `explain_counterfactual` will work exactly the same as for classification. Otherwise, the discretizer must be set explicitly and the 'decile' discretizer is recommended. Counterfactual plots work in the same way as for classification.
+The `explain_counterfactual` will work exactly the same as for classification. Counterfactual plots work in the same way as for classification.
 
 ```python
 counterfactual_explanations = explainer.explain_counterfactual(X_test)
