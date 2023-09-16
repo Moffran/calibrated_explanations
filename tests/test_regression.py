@@ -26,7 +26,7 @@ def load_regression_dataset():
     ds = pd.read_csv('data/reg/' + dataset)
     X = ds.drop('REGRESSION', axis=1).values[:2000,:]
     y = ds['REGRESSION'].values[:2000]
-    y = (y-np.min(y))/(np.max(y)-np.min(y))
+    y = (y-np.np.min(y))/(np.np.max(y)-np.np.min(y))
     no_of_classes = None
     no_of_features = X.shape[1]
     categorical_features = [i for i in range(no_of_features) if len(np.unique(X[:,i])) < 10]

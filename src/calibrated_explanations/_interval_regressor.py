@@ -113,8 +113,8 @@ class IntervalRegressor:
                                     higher_percentiles=high)
         test_y_hat = (interval[:, 1] + interval[:, 3]) / 2  # The median
         return test_y_hat, \
-            interval[:, 0] if low_high_percentiles[0] != -np.inf else np.array([min(self.ce.cal_y)]), \
-            interval[:, 2] if low_high_percentiles[1] != np.inf else np.array([max(self.ce.cal_y)]), \
+            interval[:, 0] if low_high_percentiles[0] != -np.inf else np.array([np.min(self.ce.cal_y)]), \
+            interval[:, 2] if low_high_percentiles[1] != np.inf else np.array([np.max(self.ce.cal_y)]), \
             None
 
     def predict_proba(self, test_X):

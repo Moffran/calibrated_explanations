@@ -68,7 +68,7 @@ class VennAbers:
         probable class otherwise
         """
         if classes is None:
-            return proba, np.argmax(proba, axis=1)
+            return proba, np.argnp.max(proba, axis=1)
         proba_2 = np.zeros((proba.shape[0], 2))
         proba_2[:,1] = proba[:,classes]
         proba_2[:,0] = 1 - proba[:,classes]
