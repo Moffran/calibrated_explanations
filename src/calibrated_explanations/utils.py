@@ -4,8 +4,6 @@ Author: Tuwe Löfström
 '''
 import os
 import sys
-import numbers
-import numpy as np
 from inspect import isclass
 
 def make_directory(path: str, save_ext=None) -> None: # pylint: disable=unused-private-member
@@ -159,30 +157,3 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         if sklearn:
             raise sklearn.utils.validation.NotFittedError(msg % {"name": type(estimator).__name__})
         raise RuntimeError(msg % {"name": type(estimator).__name__})
-
-# copied from sklearn.utils.validation.check_random_state
-def check_random_state(seed):
-    """Turn seed into a np.random.RandomState instance.
-
-    Parameters
-    ----------
-    seed : None, int or instance of RandomState
-        If seed is None, return the RandomState singleton used by np.random.
-        If seed is an int, return a new RandomState instance seeded with seed.
-        If seed is already a RandomState instance, return it.
-        Otherwise raise ValueError.
-
-    Returns
-    -------
-    :class:`numpy:numpy.random.RandomState`
-        The random state object based on `seed` parameter.
-    """
-    if seed is None or seed is np.random:
-        return np.random.mtrand._rand
-    if isinstance(seed, numbers.Integral):
-        return np.random.RandomState(seed)
-    if isinstance(seed, np.random.RandomState):
-        return seed
-    raise ValueError(
-        "%r cannot be used to seed a numpy.random.RandomState instance" % seed
-    )
