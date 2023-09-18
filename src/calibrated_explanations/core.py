@@ -494,7 +494,7 @@ class CalibratedExplainer:
 
     def _assign_weight(self, instance_predict, prediction, is_probabilistic):
         if is_probabilistic:
-            return instance_predict - prediction
+            return prediction - instance_predict # probabilistic regression
         return prediction - instance_predict # standard regression
 
 

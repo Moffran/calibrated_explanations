@@ -288,7 +288,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=protected-access
-    def as_lime(self):
+    def as_lime(self, num_features=None):
         """transforms the explanation into a lime explanation object
 
         Returns:
@@ -309,11 +309,15 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                         1-explanation.prediction['predict'], explanation.prediction['predict']
 
             feature_weights = explanation.feature_weights['predict']
+            num_to_show = num_features if num_features is not None else \
+                self.calibrated_explainer.num_features
             features_to_plot = explanation._rank_features(feature_weights, 
-                        num_to_show=self.calibrated_explainer.num_features)
+                        num_to_show=num_to_show)
             rules = explanation._define_conditions()
             for j,f in enumerate(features_to_plot[::-1]): # pylint: disable=invalid-name
                 tmp.local_exp[1][j] = (f, feature_weights[f])
+            del(tmp.local_exp[1][num_to_show:])
+            del(tmp.local_exp[0][num_to_show:])
             tmp.domain_mapper.discretized_feature_names = rules
             tmp.domain_mapper.feature_values = explanation.test_object
             exp.append(tmp)
