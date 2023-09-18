@@ -41,7 +41,7 @@ class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
         self.discretizer = self.calibrated_explainer.discretizer
         return explanation
 
-
+# pylint: disable=too-few-public-methods
 class CalibratedAsShapExplainer(shap.Explainer):
     '''
     Wrapper for the CalibratedExplainer to be used as a shap explainer.
