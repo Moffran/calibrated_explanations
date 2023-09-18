@@ -14,7 +14,6 @@ from sklearn.exceptions import NotFittedError
 from crepes.extras import DifficultyEstimator
 
 from calibrated_explanations import CalibratedExplainer, BinaryDiscretizer, DecileDiscretizer # pylint: disable=unused-import
-from calibrated_explanations import NotFittedError as NFError
 
 MODEL = 'RF'
 
@@ -66,7 +65,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         with pytest.raises(NotFittedError):
             CalibratedExplainer(RandomForestRegressor(), calX, calY, feature_names=feature_names, categorical_features=categorical_features, categorical_labels=categorical_labels, mode='regression')
         cal_exp = CalibratedExplainer(model, calX, calY, feature_names=feature_names, categorical_features=categorical_features, mode='regression')
-        with pytest.raises(NFError):
+        with pytest.raises(NotFittedError):
             cal_exp.set_difficulty_estimator(DifficultyEstimator())
 
 
