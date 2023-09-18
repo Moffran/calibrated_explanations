@@ -15,3 +15,4 @@ from ._explanations import CalibratedExplanations, CalibratedExplanation, \
                     FactualExplanation, CounterfactualExplanation
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
+from .utils import NotFittedError

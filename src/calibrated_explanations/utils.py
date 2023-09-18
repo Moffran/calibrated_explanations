@@ -79,7 +79,7 @@ def safe_import(module_name):
         imported_module = __import__(module_name)
         return imported_module
     except ImportError:
-        print(f"The required module '{module_name}' is not installed. Please install it using 'pip install {module_name}' or another method.")
+        print(f"The required module '{module_name}' is not installed. Please install it using 'pip install {module_name}' or another method.") # pylint: disable=line-too-long
         # You can also raise an exception or take other appropriate actions here
         return None
 
@@ -131,7 +131,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         If the attributes are not found.
     """
     if isclass(estimator):
-        raise TypeError("{} is a class, not an instance.".format(estimator))
+        raise TypeError(f"{estimator} is a class, not an instance.")
     if msg is None:
         msg = (
             "This %(name)s instance is not fitted yet. Call 'fit' with "
@@ -139,7 +139,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         )
 
     if not hasattr(estimator, "fit"):
-        raise TypeError("%s is not an estimator instance." % (estimator))
+        raise TypeError(f"{estimator} is not an estimator instance.")
 
     if attributes is not None:
         if not isinstance(attributes, (list, tuple)):

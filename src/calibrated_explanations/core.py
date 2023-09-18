@@ -770,7 +770,7 @@ class CalibratedExplainer:
 
 
 
-    def _preload_lime(self) -> None:
+    def _preload_lime(self):
         # """creates a lime structure for the explainer
 
         # Returns:
@@ -798,7 +798,7 @@ class CalibratedExplainer:
 
 
 
-    def _preload_shap(self, num_test=None) -> None:
+    def _preload_shap(self, num_test=None):
         # """creates a shap structure for the explainer
 
         # Returns:
@@ -806,7 +806,6 @@ class CalibratedExplainer:
         #     shap_exp: a template shap explanation achieved through the __call__ method
         # """
         # pylint: disable=access-member-before-definition
-        
         shap = safe_import("shap")
         if shap:
             if not self._is_shap_enabled() or \
@@ -817,3 +816,4 @@ class CalibratedExplainer:
                                         if num_test is None else self.shap(self.cal_X[:num_test, :])
                 self._is_shap_enabled(True)
             return self.shap, self.shap_exp
+        return None, None
