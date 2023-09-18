@@ -4,12 +4,20 @@
 """
 import os
 import warnings
+import json
+import string
 from copy import deepcopy
 from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, EntropyDiscretizer, DecileDiscretizer
-from.utils import make_directory
+from.utils import make_directory, check_random_state
+
+def id_generator(size=15, random_state=None):
+    """Helper function to generate random div ids. This is useful for embedding
+    HTML into ipython notebooks."""
+    chars = list(string.ascii_uppercase + string.digits)
+    return ''.join(random_state.choice(chars, size, replace=True))
 
 class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """
@@ -21,7 +29,20 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         self.y_threshold = y_threshold
         self.low_high_percentiles = None
         self.explanations = []
+        self.start_index = 0
+        self.current_index = self.start_index
+        self.end_index = len(test_objects[:,0])
 
+    def __iter__(self):
+        self.current_index = self.start_index
+        return self
+    
+    def __next__(self):
+        if self.current_index >= self.end_index:
+            raise StopIteration
+        result = self.get_explanation(self.current_index)
+        self.current_index += 1
+        return result
 
 
     def _is_thresholded(self) -> bool:
@@ -317,7 +338,6 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             for j,f in enumerate(features_to_plot[::-1]): # pylint: disable=invalid-name
                 tmp.local_exp[1][j] = (f, feature_weights[f])
             del(tmp.local_exp[1][num_to_show:])
-            del(tmp.local_exp[0][num_to_show:])
             tmp.domain_mapper.discretized_feature_names = rules
             tmp.domain_mapper.feature_values = explanation.test_object
             exp.append(tmp)
@@ -427,7 +447,6 @@ class CalibratedExplanation(ABC):
     def _get_rules(self):
         pass    
 
-
     def remove_conjunctions(self):
         """removes any conjunctive rules"""
         self._has_conjunctive_rules = False
@@ -460,7 +479,8 @@ class CalibratedExplanation(ABC):
                 rule = self._get_explainer().discretizer.names[f][int(x[f])]
             self.conditions.append(rule)
         return self.conditions
-
+    
+    
 
     def _predict_conjunctive(self, rule_value_set, original_features, perturbed, y, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
                             predicted_class):
@@ -472,10 +492,7 @@ class CalibratedExplanation(ABC):
             rule_value1, rule_value2 = rule_value_set[0], rule_value_set[1]
         elif len(original_features) == 3:
             of1, of2, of3 = original_features[0], original_features[1], original_features[2]
-            rule_value1, rule_value2, rule_value3 = rule_value_set[0], rule_value_set[1], rule_value_set[2]
-        # elif len(original_features) == 4:
-        #     of1, of2, of3, of4 = original_features[0], original_features[1], original_features[2], original_features[3]
-        #     rule_value1, rule_value2, rule_value3, rule_value4 = rule_value_set[0], rule_value_set[1], rule_value_set[2], rule_value_set[3]    
+            rule_value1, rule_value2, rule_value3 = rule_value_set[0], rule_value_set[1], rule_value_set[2]  
         for value_1 in rule_value1:
             perturbed[of1] = value_1
             for value_2 in rule_value2:
@@ -483,17 +500,6 @@ class CalibratedExplanation(ABC):
                 if len(original_features) >= 3:
                     for value_3 in rule_value3:
                         perturbed[of3] = value_3
-                        # if len(original_features) == 4:
-                        #     for value_4 in rule_value4:
-                        #         perturbed[of4] = value_4
-                        #         p_value, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1),
-                        #                             y=y, low_high_percentiles=self.low_high_percentiles,
-                        #                             classes=predicted_class)
-                        #         rule_predict += p_value[0]
-                        #         rule_low += low[0]
-                        #         rule_high += high[0]
-                        #         rule_count += 1
-                        # else:                       
                         p_value, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), # pylint: disable=protected-access
                                             y=y, low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
                                             classes=predicted_class)
@@ -514,7 +520,185 @@ class CalibratedExplanation(ABC):
         rule_high /= rule_count
         return rule_predict, rule_low, rule_high
 
+    def show_in_notebook(self,
+                        labels=None,
+                        predict_proba=True,
+                        show_predicted_value=True,
+                        uncertainty=False,
+                        **kwargs):
+        """Shows html explanation in ipython notebook.
 
+        See as_html() for parameters.
+        This will throw an error if you don't have IPython installed"""
+
+        from IPython.core.display import display, HTML
+        display(HTML(self.as_html(labels=labels,
+                                predict_proba=predict_proba,
+                                show_predicted_value=show_predicted_value,
+                                uncertainty=uncertainty,
+                                **kwargs)))
+
+    def save_to_file(self,
+                    file_path,
+                    labels=None,
+                    predict_proba=True,
+                    show_predicted_value=True,
+                    uncertainty=False,
+                    **kwargs):
+        """Saves html explanation to file. .
+
+        Params:
+            file_path: file to save explanations to
+
+        See as_html() for additional parameters.
+
+        """
+        file_ = open(file_path, 'w', encoding='utf8')
+        file_.write(self.as_html(labels=labels,
+                                predict_proba=predict_proba,
+                                show_predicted_value=show_predicted_value,
+                                uncertainty=uncertainty,
+                                **kwargs))
+        file_.close()
+
+    def as_list(self, uncertainty=False):
+        '''produces a list of tuples with the feature conditions and weights
+        '''
+        rule_list = []
+        rules = self._get_rules()
+        width = np.reshape(np.array(rules['weight_high']) - np.array(rules['weight_low']),
+                        (len(rules['weight'])))
+        feature_ranks = self._rank_features(rules['weight'],
+                                                width=width)
+        for i in feature_ranks:
+            rule_list.insert(0,(rules['rule'][i], rules['weight'][i] if uncertainty else (rules['weight'][i], rules['weight_low'][i], rules['weight_high'][i])))
+        return rule_list
+
+    # pylint: disable=consider-using-f-string, redundant-u-string-prefix, unused-argument
+    def as_html(self,
+                labels=None,
+                predict_proba=True,
+                show_predicted_value=True,
+                uncertainty=False,
+                **kwargs):
+        """Returns the explanation as an html page.
+
+        Args:
+            labels: desired labels to show explanations for (as barcharts).
+                If you ask for a label for which an explanation wasn't
+                computed, will throw an exception. If None, will show
+                explanations for all available labels. (only used for classification)
+            predict_proba: if true, add  barchart with prediction probabilities
+                for the top classes. (only used for classification)
+            show_predicted_value: if true, add  barchart with expected value
+                (only used for regression)
+            kwargs: keyword arguments, passed to domain_mapper
+
+        Returns:
+            code for an html page, including javascript includes.
+        """
+
+        def jsonize(x):
+            return json.dumps(x, ensure_ascii=False)
+
+        if labels is None and self._get_explainer().mode == "classification":
+            labels = [self.prediction["classes"]]
+
+        this_dir, _ = os.path.split(__file__)
+        bundle = open(os.path.join(this_dir, 'bundle.js'),
+                        encoding="utf8").read()
+
+        out = u'''<html>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8">
+        <head><script>%s </script></head><body>''' % bundle
+        random_id = id_generator(size=15, random_state=check_random_state(self._get_explainer().random_state))
+        out += u'''
+        <div class="lime top_div" id="top_div%s"></div>
+        ''' % random_id
+
+        predict_proba_js = ''
+        if self._get_explainer().mode == "classification" and predict_proba:
+            predict_proba_js = u'''
+            var pp_div = top_div.append('div')
+                                .classed('lime predict_proba', true);
+            var pp_svg = pp_div.append('svg').style('width', '100%%');
+            var pp = new lime.PredictProba(pp_svg, %s, %s);
+            ''' % (jsonize([str(x) for x in [self.prediction["classes"]]]),
+                    jsonize(list([self.prediction["predict"]])))
+
+        predict_value_js = ''
+        if self._get_explainer().mode == "regression" and show_predicted_value:
+            # reference self.predicted_value
+            # (svg, predicted_value, min_value, max_value)
+            predict_value_js = u'''
+                    var pp_div = top_div.append('div')
+                                        .classed('lime predicted_value', true);
+                    var pp_svg = pp_div.append('svg').style('width', '100%%');
+                    var pp = new lime.PredictedValue(pp_svg, %s, %s, %s);
+                    ''' % (jsonize(float(self.prediction["predict"])),
+                            jsonize(float(np.min(self._get_explainer().calY))),
+                            jsonize(float(np.max(self._get_explainer().calY))))
+
+        class_names = []
+        if self._get_explainer().class_labels is not None:
+            if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                class_names.append(f'not {self._get_explainer().class_labels[self.prediction["classes"]]}') # pylint: disable=line-too-long
+                class_names.append(f'{self._get_explainer().class_labels[self.prediction["classes"]]}') # pylint: disable=line-too-long
+            else:
+                class_names.append(f'{self._get_explainer().class_labels[0]}') # pylint: disable=line-too-long
+                class_names.append(f'{self._get_explainer().class_labels[1]}') # pylint: disable=line-too-long
+        else: 
+            if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                class_names.append(f'not {self.prediction["classes"]}')
+                class_names.append(f'{self.prediction["classes"]}')
+            else:
+                class_names.append('0')
+                class_names.append('1')
+
+        exp_js = '''var exp_div;
+            var exp = new lime.Explanation(%s);
+        ''' % (jsonize([str(x) for x in class_names]))
+
+        if self._get_explainer().mode == "classification":
+            for label in labels:
+                exp = jsonize(self.as_list(label))
+                exp_js += u'''
+                exp_div = top_div.append('div').classed('calibrated explanation', true);
+                exp.show(%s, %d, exp_div);
+                ''' % (exp, label)
+        else:
+            exp = jsonize(self.as_list())
+            exp_js += u'''
+            exp_div = top_div.append('div').classed('calibrated explanation', true);
+            exp.show(%s, %s, exp_div);
+            ''' % (exp, 1)
+
+        raw_js = '''var raw_div = top_div.append('div');'''
+
+        # rules = self._get_rules()
+        # if self._get_explainer().mode == "classification":
+        #     html_data = [(f, rules['weight'][f]) for f,_ in enumerate(self.test_object)]
+        # else:
+        #     html_data = [(f, rules['weight'][f]) for f,_ in enumerate(self.test_object)]
+
+        # raw_js += self.domain_mapper.visualize_instance_html(
+        #         html_data,
+        #         labels[0] if self.mode == "classification" else self.dummy_label,
+        #         'raw_div',
+        #         'exp',
+        #         **kwargs)
+        out += u'''
+        <script>
+        var top_div = d3.select('#top_div%s').classed('lime top_div', true);
+        %s
+        %s
+        %s
+        %s
+        </script>
+        ''' % (random_id, predict_proba_js, predict_value_js, exp_js, raw_js)
+        out += u'</body></html>'
+
+        return out
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class FactualExplanation(CalibratedExplanation):
@@ -845,8 +1029,8 @@ class FactualExplanation(CalibratedExplanation):
         ax_main.fill_betweenx(xh, [0], [0], color='k')
         if interval:           
             p = predict['predict']
-            gwl = predict['low'] - p
-            gwh = predict['high'] - p
+            gwl = p - predict['low']
+            gwh = p - predict['high']
             
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
@@ -870,12 +1054,12 @@ class FactualExplanation(CalibratedExplanation):
                 width = feature_weights[j]
                 min_val = width if width < 0 else 0
                 max_val = width if width > 0 else 0
-            color = 'b' if width > 0 else 'r'
+            color = 'r' if width > 0 else 'b'
             ax_main.fill_betweenx(xj, min_val, max_val, color=color)
             if interval:
                 if wl < 0 < wh and self._get_explainer().mode == 'classification':
-                    ax_main.fill_betweenx(xj, 0, wl, color='r', alpha=0.2)
-                    ax_main.fill_betweenx(xj, wh, 0, color='b', alpha=0.2)
+                    ax_main.fill_betweenx(xj, 0, wl, color='b', alpha=0.2)
+                    ax_main.fill_betweenx(xj, wh, 0, color='r', alpha=0.2)
                 else:
                     ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
 
