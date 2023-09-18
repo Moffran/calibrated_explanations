@@ -20,7 +20,7 @@ from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
-from .utils import safe_isinstance, safe_import, check_is_fitted, NotFittedError
+from .utils import safe_isinstance, safe_import, check_is_fitted
 
 __version__ = 'v0.1.1'
 
@@ -579,12 +579,19 @@ class CalibratedExplainer:
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
         if difficulty_estimator is not None:
-            try:
-                if not difficulty_estimator.fitted:
-                    raise NotFittedError("The difficulty estimator is not fitted. Please fit the estimator first.")
-            except AttributeError as e:
-                raise NotFittedError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
-        # initialize the model with the new sigma
+            sklearn = safe_import('sklearn')
+            if sklearn:
+                try:
+                    if not difficulty_estimator.fitted:
+                        raise sklearn.utils.validation.NotFittedError("The difficulty estimator is not fitted. Please fit the estimator first.")
+                except AttributeError as e:
+                    raise sklearn.utils.validation.NotFittedError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
+            else:
+                try:
+                    if not difficulty_estimator.fitted:
+                        raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.")
+                except AttributeError as e:
+                    raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
         if initialize:
             self.__initialize_interval_model()
 
