@@ -3,7 +3,9 @@
 ## [Unreleased]
 ### Features
 ### Fixes
-- Removed the dependency on `shap` and `scikit-learn`.
+- Removed the dependency on `shap` and `scikit-learn` and closed issue #8.
+- Added [LIME_comparison](https://github.com/Moffran/calibrated_explanations/notebooks/LIME_comparison.ipynb) to the notebooks folder. 
+- Updated the weights to match LIME's weights (to ensure that a positive weight has the same meaning in both). 
 
 ## [v0.1.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.1.1) - 2023-09-14
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.1.0...v0.1.1)
