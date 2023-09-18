@@ -14,13 +14,13 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
   'crepes',
+  'venn-abers',
   'ipython',
   'lime',
   'matplotlib',
   'numpy',
   'pandas',
   'scikit-learn',
-  'shap',
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",

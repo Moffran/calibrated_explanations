@@ -7,8 +7,6 @@ nbsphinx
 numpy >= 1.20
 numpydoc
 pydata_sphinx_theme
-scikit-learn >= 0.24.1
-shap >= 0.41.0
 sphinx
 sphinx_rtd_theme
 venn-abers

@@ -233,8 +233,6 @@ The dependencies are:
 * [lime](https://github.com/marcotcr/lime)
 * [matplotlib](https://matplotlib.org/)
 * [NumPy](https://numpy.org/)
-* [scikit-learn](https://scikit-learn.org/)
-* [shap](https://pypi.org/project/shap/)
 
 
 Development

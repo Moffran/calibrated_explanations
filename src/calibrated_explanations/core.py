@@ -13,17 +13,14 @@ conformal predictive systems (regression).
 import copy
 import numpy as np
 
-from shap import Explainer
 from lime.lime_tabular import LimeTabularExplainer
-from sklearn.utils.validation import check_is_fitted
-from sklearn.exceptions import NotFittedError
 
 from ._explanations import CalibratedExplanations
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
                 DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
-from .utils import safe_isinstance
+from .utils import safe_isinstance, safe_import, check_is_fitted, NotFittedError
 
 __version__ = 'v0.1.1'
 
@@ -809,11 +806,14 @@ class CalibratedExplainer:
         #     shap_exp: a template shap explanation achieved through the __call__ method
         # """
         # pylint: disable=access-member-before-definition
-        if not self._is_shap_enabled() or \
-            num_test is not None and self.shap_exp.shape[0] != num_test:
-            f = lambda x: self._predict(x)[0]  # pylint: disable=unnecessary-lambda-assignment
-            self.shap = Explainer(f, self.cal_X[:1, :], feature_names=self.feature_names)
-            self.shap_exp = self.shap(self.cal_X[0, :].reshape(1,-1)) \
-                                    if num_test is None else self.shap(self.cal_X[:num_test, :])
-            self._is_shap_enabled(True)
-        return self.shap, self.shap_exp
+        
+        shap = safe_import("shap")
+        if shap:
+            if not self._is_shap_enabled() or \
+                num_test is not None and self.shap_exp.shape[0] != num_test:
+                f = lambda x: self._predict(x)[0]  # pylint: disable=unnecessary-lambda-assignment
+                self.shap = shap.Explainer(f, self.cal_X[:1, :], feature_names=self.feature_names)
+                self.shap_exp = self.shap(self.cal_X[0, :].reshape(1,-1)) \
+                                        if num_test is None else self.shap(self.cal_X[:num_test, :])
+                self._is_shap_enabled(True)
+            return self.shap, self.shap_exp

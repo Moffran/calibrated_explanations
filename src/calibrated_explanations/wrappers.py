@@ -3,10 +3,11 @@
 # pylint: disable=invalid-name, line-too-long, super-init-not-called, arguments-differ, unused-argument, too-many-arguments
 # flake8: noqa: E501
 from lime.lime_tabular import LimeTabularExplainer
-from shap import Explainer
 
 from .core import CalibratedExplainer
+from .utils import safe_import
 
+shap = safe_import('shap')
 
 class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
     '''
@@ -41,7 +42,7 @@ class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
         return explanation
 
 
-class CalibratedAsShapExplainer(Explainer):
+class CalibratedAsShapExplainer(shap.Explainer):
     '''
     Wrapper for the CalibratedExplainer to be used as a shap explainer.
     The masker must contain a data and a target field for the calibration set.
