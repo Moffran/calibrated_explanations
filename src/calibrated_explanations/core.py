@@ -11,6 +11,7 @@ conformal predictive systems (regression).
 # pylint: disable=invalid-name, line-too-long
 # flake8: noqa: E501
 import copy
+import warnings
 import numpy as np
 
 from lime.lime_tabular import LimeTabularExplainer
@@ -158,7 +159,7 @@ class CalibratedExplainer:
                 mode={self.mode}\n\t\
                 discretizer={self.discretizer.__class__}\n\t\
                 model={self.model}\n\t\
-                {f'difficulty_estimator={self.model}' if self.mode == 'regression' else ''}"
+                {f'difficulty_estimator={self.difficulty_estimator}' if self.mode == 'regression' else ''}"
 
                 # feature_names={self.feature_names}\n\t\
                 # categorical_features={self.categorical_features}\n\t\
@@ -824,3 +825,171 @@ class CalibratedExplainer:
                 self._is_shap_enabled(True)
             return self.shap, self.shap_exp
         return None, None
+
+class WrapCalibratedExplainer():
+    """A wrapper class for the CalibratedExplainer. It allows to fit, calibrate, and explain the model.
+    """
+    def __init__(self, learner):
+        self.learner = learner
+        self.explainer = None
+        self.calibrated = False
+        self.fitted = False
+
+    def __repr__(self):
+        if self.fitted:
+            if self.calibrated:
+                return (f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, "
+                    f"calibrated=True, explainer={self.explainer})")
+            return f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, calibrated=False)"
+        return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
+
+    def fit(self, X_proper_train, y_proper_train, **kwargs):
+        '''Fits the learner to the proper training data.
+        '''
+        self.learner.fit(X_proper_train, y_proper_train, **kwargs)
+        self.fitted = True
+        return self
+
+    def calibrate(self, X_calibration, y_calibration, **kwargs):
+        '''
+        Calibrates the learner to the calibration data.
+        '''
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted before calibration.")
+        if 'predict_proba' in dir(self.learner):
+            self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, mode='classification', **kwargs)
+        else:
+            self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, mode='regression', **kwargs)
+        self.calibrated = True
+        return self
+
+    def explain_factual(self, X_test, **kwargs):
+        """
+        Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for factual explanations.
+
+        Parameters
+        ----------
+        testX : A set of test objects to predict
+        y : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The y-parameter is only supported for mode='regression'.
+        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+            instances in testX.
+
+        Returns
+        -------
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+            intervals. 
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+        return self.explainer.explain_factual(X_test, **kwargs)
+
+    def explain_counterfactual(self, X_test, **kwargs):
+        """
+        Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for counterfactual explanations.
+
+        Parameters
+        ----------
+        testX : A set of test objects to predict
+        y : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The y-parameter is only supported for mode='regression'.
+        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+            instances in testX.
+
+        Returns
+        -------
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+            intervals. 
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+        return self.explainer.explain_counterfactual(X_test, **kwargs)
+
+    def predict(self, X_test, uq_interval=False, **kwargs):
+        """
+        A predict function that outputs a calibrated prediction. If the explainer is not calibrated, then the
+        prediction is not calibrated either.
+
+        Parameters
+        ----------
+        X_test : A set of test objects to predict
+        uq_interval : bool, default=False
+            If true, then the prediction interval is returned as well. 
+        y : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to standard regression.
+
+        Raises
+        ------
+        RuntimeError: If the learner is not fitted before predicting.
+
+        Returns
+        -------
+        calibrated prediction : 
+            If regression, then the calibrated prediction is the median of the conformal predictive system.
+            If classification, then the calibrated prediction is the class with the highest calibrated probability.
+        (low, high) : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting.")
+        if not self.calibrated:
+            warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
+            return self.learner.predict(X_test)
+        predict, low, high, new_classes = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
+        if self.explainer.mode in 'regression':
+            if uq_interval:
+                return predict, (low, high)
+            return predict
+        if uq_interval:
+            return new_classes, (low, high)
+        return new_classes
+
+    def predict_proba(self, X_test, uq_interval=False):
+        """
+        A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
+        prediction is not calibrated either.
+        
+        Parameters
+        ----------
+        X_test : A set of test objects to predict
+        uq_interval : bool, default=False
+            If true, then the prediction interval is returned as well. 
+
+        Raises
+        ------
+        RuntimeError: If the learner is not fitted before predicting.
+
+        Returns
+        -------
+        calibrated probability : 
+            The calibrated probability of the positive class (or the predicted class for multiclass).
+        (low, high) : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting probabilities.")
+        if not self.calibrated:
+            warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
+            return self.learner.predict_proba(X_test)
+        predict, low, high, _ = self.explainer._predict(X_test) # pylint: disable=protected-access
+        if uq_interval:
+            return predict, (low, high)
+        return predict

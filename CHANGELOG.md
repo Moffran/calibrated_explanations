@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Features
+- Added a `WrapCalibratedExplainer` class which can be used for both classificaiton and regression.  
 ### Fixes
 - Removed the dependency on `shap` and `scikit-learn` and closed issue #8.
 - Added [LIME_comparison](https://github.com/Moffran/calibrated_explanations/notebooks/LIME_comparison.ipynb) to the notebooks folder. 
