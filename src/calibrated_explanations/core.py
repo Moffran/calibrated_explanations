@@ -8,7 +8,7 @@ Calibrated explanations are a way to explain the predictions of a black-box mode
 using Venn-Abers predictors (classification) or 
 conformal predictive systems (regression).
 """
-# pylint: disable=invalid-name, line-too-long
+# pylint: disable=invalid-name, line-too-long, too-many-lines
 # flake8: noqa: E501
 import copy
 import warnings
@@ -23,7 +23,7 @@ from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils import safe_isinstance, safe_import, check_is_fitted
 
-__version__ = 'v0.1.1'
+__version__ = 'v0.2.0a'
 
 
 
@@ -982,7 +982,7 @@ class WrapCalibratedExplainer():
             return self.learner.predict(X_test)
         if self.explainer.mode in 'regression':
             predict, low, high, _ = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
-            if 'threshold' in kwargs.keys():
+            if 'threshold' in kwargs.keys(): # pylint: disable=consider-iterating-dictionary
                 threshold = kwargs['threshold']
                 if np.isscalar(threshold):
                     new_classes = [f'y_hat <= {threshold}' if predict[i] >= 0.5 else f'y_hat > {threshold}' for i in range(len(predict))]
