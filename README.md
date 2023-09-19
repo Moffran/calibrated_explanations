@@ -1,4 +1,4 @@
-Calibrated Explanations
+Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest))
 =======================
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
@@ -20,9 +20,9 @@ The proposed method is based on Venn-Abers (classification) and Conformal Predic
 
 Below is an example of a counterfactual explanation for an instance of the Diabetes dataset (positive class means having diabetes). The light blue area in the background is representing the calibrated probability interval (for the positive class) of the underlying model, as indicated by Venn-Abers. The darker blue bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 
-![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")
+[![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
 
-- [Calibrated Explanations](#calibrated-explanations)
+- [Calibrated Explanations (Documentation)](#calibrated-explanations-documentation)
   - [Getting started](#getting-started)
     - [Classification](#classification)
       - [Factual Explanations](#factual-explanations)
@@ -209,8 +209,8 @@ counterfactual_explanations.add_conjunctions().plot_all()
 #### Additional Regression Use Cases
 Regression offers many more options and to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
 
+[Top](#calibrated-explanations-documentation)
 
-  
 Install
 -------
 
@@ -233,7 +233,8 @@ The dependencies are:
 * [lime](https://github.com/marcotcr/lime)
 * [matplotlib](https://matplotlib.org/)
 * [NumPy](https://numpy.org/)
-
+  
+[Top](#calibrated-explanations-documentation)
 
 Development
 -----------
@@ -265,11 +266,15 @@ should have the logs.
 
 To make a new release on PyPI,
 just follow the [release guide](docs/release.md).
+  
+[Top](#calibrated-explanations-documentation)
 
 
 Documentation
 -------------
 For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
+  
+[Top](#calibrated-explanations-documentation)
 
 Further reading and citing
 --------------------------
@@ -311,6 +316,8 @@ Bibtex entry for the regression paper:
       primaryClass =    {cs.LG}
 }
 ```
+  
+[Top](#calibrated-explanations-documentation)
 
 Acknowledgements
 ----------------
@@ -323,6 +330,8 @@ We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` clas
 We have used the `VennAbers` class from [Ivan Petej](https://github.com/ip200)s [venn-abers](https://github.com/ip200/venn-abers) package to provide support for probabilistic explanations (both classification and probabilistic regression). 
 
 We have used code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Disccretizer` class.
+  
+[Top](#calibrated-explanations-documentation)
 
 [build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
 [build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
