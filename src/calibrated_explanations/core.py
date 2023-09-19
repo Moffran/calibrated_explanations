@@ -174,7 +174,7 @@ class CalibratedExplainer:
     # pylint: disable=invalid-name
     def _predict(self,
                 test_X,
-                y = None, # The same meaning as y has for cps in crepes.
+                threshold = None, # The same meaning as threshold has for cps in crepes.
                 low_high_percentiles = (5, 95),
                 classes = None,
                 ):
@@ -184,7 +184,7 @@ class CalibratedExplainer:
         # Parameters
         # ----------
         # testX : A set of test objects to predict
-        # y : float, int or array-like of shape (n_samples,), default=None
+        # threshold : float, int or array-like of shape (n_samples,), default=None
         #     values for which p-values should be returned. Only used for probabilistic explanations for regression.
         # low_high_percentiles : a tuple of floats, default=(5, 95)
         #     The low and high percentile used to calculate the interval. Applicable to regression.
@@ -193,7 +193,7 @@ class CalibratedExplainer:
 
         # Raises
         # ------
-        # ValueError: The length of the y-parameter must be either a constant or the same as the number of
+        # ValueError: The length of the threshold-parameter must be either a constant or the same as the number of
         #     instances in testX.
 
         # Returns
@@ -227,7 +227,7 @@ class CalibratedExplainer:
             return predict[:,1], low, high, None
         if 'regression' in self.mode:
             # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
-            if y is None: # normal regression
+            if threshold is None: # normal regression
                 assert low_high_percentiles[0] <= low_high_percentiles[1], \
                             "The low percentile must be smaller than (or equal to) the high percentile."
                 assert ((low_high_percentiles[0] > 0 and low_high_percentiles[0] <= 50) and \
@@ -242,18 +242,18 @@ class CalibratedExplainer:
 
                 return self.interval_model.predict_uncertainty(test_X, low_high_percentiles)
 
-            # regression with y condition
-            if not np.isscalar(y) and len(y) != len(test_X):
-                raise ValueError("The length of the y parameter must be either a scalar or \
+            # regression with threshold condition
+            if not np.isscalar(threshold) and len(threshold) != len(test_X):
+                raise ValueError("The length of the threshold parameter must be either a scalar or \
                     the same as the number of instances in testX.")
             # pylint: disable=unexpected-keyword-arg
-            return self.interval_model.predict_probability(test_X, y)
+            return self.interval_model.predict_probability(test_X, threshold)
 
         return None, None, None, None # Should never happen
 
     def explain_factual(self,
                         test_X,
-                        y = None,
+                        threshold = None,
                         low_high_percentiles = (5, 95),
                         ) -> CalibratedExplanations:
         """
@@ -262,7 +262,7 @@ class CalibratedExplainer:
         Parameters
         ----------
         testX : A set of test objects to predict
-        y : float, int or array-like of shape (n_samples,), default=None
+        threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression. 
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
@@ -270,8 +270,8 @@ class CalibratedExplainer:
         Raises
         ------
         ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The y-parameter is only supported for mode='regression'.
-        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+        Warning: The threshold-parameter is only supported for mode='regression'.
+        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
             instances in testX.
 
         Returns
@@ -284,11 +284,11 @@ class CalibratedExplainer:
         else:
             discretizer = 'binaryEntropy'
         self.set_discretizer(discretizer)
-        return self(test_X, y, low_high_percentiles)
+        return self(test_X, threshold, low_high_percentiles)
 
     def explain_counterfactual(self,
                                 test_X,
-                                y = None,
+                                threshold = None,
                                 low_high_percentiles = (5, 95),
                                 ) -> CalibratedExplanations:
         """
@@ -297,7 +297,7 @@ class CalibratedExplainer:
         Parameters
         ----------
         testX : A set of test objects to predict
-        y : float, int or array-like of shape (n_samples,), default=None
+        threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression. 
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
@@ -305,8 +305,8 @@ class CalibratedExplainer:
         Raises
         ------
         ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The y-parameter is only supported for mode='regression'.
-        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+        Warning: The threshold-parameter is only supported for mode='regression'.
+        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
             instances in testX.
 
         Returns
@@ -319,11 +319,11 @@ class CalibratedExplainer:
         else:
             discretizer = 'entropy'
         self.set_discretizer(discretizer)
-        return self(test_X, y, low_high_percentiles)
+        return self(test_X, threshold, low_high_percentiles)
 
     def __call__(self,
                 testX,
-                y = None,
+                threshold = None,
                 low_high_percentiles = (5, 95),
                 ) -> CalibratedExplanations:
         """
@@ -336,14 +336,14 @@ class CalibratedExplainer:
         if testX.shape[1] != self.cal_X.shape[1]:
             raise ValueError("The number of features in the test data must be the same as in the \
                             calibration data.")
-        explanation = CalibratedExplanations(self, testX, y)
+        explanation = CalibratedExplanations(self, testX, threshold)
 
-        is_probabilistic = True # classification or when threshold y is used for regression
-        if y is not None:
+        is_probabilistic = True # classification or when threshold is used for regression
+        if threshold is not None:
             if not 'regression' in self.mode:
-                raise Warning("The y parameter is only supported for mode='regression'.")
-            if not np.isscalar(y) and len(y) != len(testX):
-                raise ValueError("The length of the y parameter must be either a constant or the same \
+                raise Warning("The threshold parameter is only supported for mode='regression'.")
+            if not np.isscalar(threshold) and len(threshold) != len(testX):
+                raise ValueError("The length of the threshold parameter must be either a constant or the same \
                                 as the number of instances in testX.")
             # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
@@ -358,9 +358,9 @@ class CalibratedExplainer:
         binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': []}
 
         for i, x in enumerate(testX):
-            if y is not None and not np.isscalar(explanation.y_threshold):
-                y = float(explanation.y_threshold[i])
-            predict, low, high, predicted_class = self._predict(x.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles)
+            if threshold is not None and not np.isscalar(explanation.y_threshold):
+                threshold = float(explanation.y_threshold[i])
+            predict, low, high, predicted_class = self._predict(x.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles)
             prediction['predict'].append(predict[0])
             prediction['low'].append(low[0])
             prediction['high'].append(high[0])
@@ -391,7 +391,7 @@ class CalibratedExplainer:
                             current_bin = bin_value  # If the discretized value is the same as the original, skip it
 
                         perturbed[f] = value
-                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class)
                         average_predict[bin_value] = predict[0]
                         low_predict[bin_value] = low[0]
                         high_predict[bin_value] = high[0]
@@ -411,7 +411,7 @@ class CalibratedExplainer:
                         rule_value.append(lesser_values)
                         for value in lesser_values:
                             perturbed[f] = value
-                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class)
                             average_predict[bin_value] += predict[0]
                             low_predict[bin_value] += low[0]
                             high_predict[bin_value] += high[0]
@@ -424,7 +424,7 @@ class CalibratedExplainer:
                         rule_value.append(greater_values)
                         for value in greater_values:
                             perturbed[f] = value
-                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class)
                             average_predict[bin_value] += predict[0]
                             low_predict[bin_value] += low[0]
                             high_predict[bin_value] += high[0]
@@ -437,7 +437,7 @@ class CalibratedExplainer:
                     rule_value.append(covered_values)
                     for value in covered_values:
                         perturbed[f] = value
-                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), y=y, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class)
                         average_predict[bin_value] += predict[0]
                         low_predict[bin_value] += low[0]
                         high_predict[bin_value] += high[0]
@@ -844,7 +844,18 @@ class WrapCalibratedExplainer():
         return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
 
     def fit(self, X_proper_train, y_proper_train, **kwargs):
-        '''Fits the learner to the proper training data.
+        '''
+        Fits the learner to the proper training data.
+        
+        Parameters
+        ----------
+        X_proper_train : A set of proper training objects to fit the learner to
+        y_proper_train : The true labels of the proper training objects
+        **kwargs : Keyword arguments to be passed to the learner's fit method
+        
+        Returns
+        -------
+        WrapCalibratedExplainer : The WrapCalibratedExplainer object with the fitted learner.
         '''
         self.learner.fit(X_proper_train, y_proper_train, **kwargs)
         self.fitted = True
@@ -853,6 +864,20 @@ class WrapCalibratedExplainer():
     def calibrate(self, X_calibration, y_calibration, **kwargs):
         '''
         Calibrates the learner to the calibration data.
+        
+        Parameters
+        ----------
+        X_calibration : A set of calibration objects to predict
+        y_calibration : The true labels of the calibration objects
+        **kwargs : Keyword arguments to be passed to the CalibratedExplainer's __init__ method
+        
+        Raises
+        ------
+        RuntimeError: If the learner is not fitted before calibration.
+        
+        Returns
+        -------
+        WrapCalibratedExplainer : The WrapCalibratedExplainer object with the calibrated explainer.
         '''
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before calibration.")
@@ -870,7 +895,7 @@ class WrapCalibratedExplainer():
         Parameters
         ----------
         testX : A set of test objects to predict
-        y : float, int or array-like of shape (n_samples,), default=None
+        threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression. 
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
@@ -878,8 +903,8 @@ class WrapCalibratedExplainer():
         Raises
         ------
         ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The y-parameter is only supported for mode='regression'.
-        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+        Warning: The threshold-parameter is only supported for mode='regression'.
+        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
             instances in testX.
 
         Returns
@@ -900,7 +925,7 @@ class WrapCalibratedExplainer():
         Parameters
         ----------
         testX : A set of test objects to predict
-        y : float, int or array-like of shape (n_samples,), default=None
+        threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression. 
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
@@ -908,8 +933,8 @@ class WrapCalibratedExplainer():
         Raises
         ------
         ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The y-parameter is only supported for mode='regression'.
-        ValueError: The length of the y parameter must be either a constant or the same as the number of 
+        Warning: The threshold-parameter is only supported for mode='regression'.
+        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
             instances in testX.
 
         Returns
@@ -923,6 +948,7 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
         return self.explainer.explain_counterfactual(X_test, **kwargs)
 
+    # pylint: disable=too-many-return-statements
     def predict(self, X_test, uq_interval=False, **kwargs):
         """
         A predict function that outputs a calibrated prediction. If the explainer is not calibrated, then the
@@ -933,7 +959,7 @@ class WrapCalibratedExplainer():
         X_test : A set of test objects to predict
         uq_interval : bool, default=False
             If true, then the prediction interval is returned as well. 
-        y : float, int or array-like of shape (n_samples,), default=None
+        threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression. 
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to standard regression.
@@ -954,16 +980,26 @@ class WrapCalibratedExplainer():
         if not self.calibrated:
             warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
             return self.learner.predict(X_test)
-        predict, low, high, new_classes = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
         if self.explainer.mode in 'regression':
+            predict, low, high, _ = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
+            if 'threshold' in kwargs.keys():
+                threshold = kwargs['threshold']
+                if np.isscalar(threshold):
+                    new_classes = [f'y_hat < {threshold}' if predict[i] >= 0.5 else f'y_hat >= {threshold}' for i in range(len(predict))]
+                else:
+                    new_classes = [f'y_hat < {threshold[i]}' if predict[i] >= 0.5 else f'y_hat >= {threshold[i]}' for i in range(len(predict))]
+                if uq_interval:
+                    return new_classes, (low, high)
+                return new_classes
             if uq_interval:
                 return predict, (low, high)
             return predict
+        _, low, high, new_classes = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
         if uq_interval:
             return new_classes, (low, high)
         return new_classes
 
-    def predict_proba(self, X_test, uq_interval=False):
+    def predict_proba(self, X_test, uq_interval=False, threshold=None):
         """
         A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
         prediction is not calibrated either.
@@ -972,7 +1008,9 @@ class WrapCalibratedExplainer():
         ----------
         X_test : A set of test objects to predict
         uq_interval : bool, default=False
-            If true, then the prediction interval is returned as well. 
+            If true, then the prediction interval is returned as well.
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            Threshold values used with regression to get probability of being below the threshold. Only applicable to regression.
 
         Raises
         ------
@@ -986,10 +1024,18 @@ class WrapCalibratedExplainer():
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting probabilities.")
+        if 'predict_proba' not in dir(self.learner):
+            if threshold is None:
+                raise ValueError("The threshold parameter must be specified for regression.")
+            if not self.calibrated:
+                raise RuntimeError("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities for regression.")
         if not self.calibrated:
             warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
             return self.learner.predict_proba(X_test)
-        predict, low, high, _ = self.explainer._predict(X_test) # pylint: disable=protected-access
+        predict, low, high, _ = self.explainer._predict(X_test, threshold=threshold) # pylint: disable=protected-access
+        proba = np.zeros((predict.shape[0],2))
+        proba[:,1] = predict
+        proba[:,0] = 1 - predict
         if uq_interval:
-            return predict, (low, high)
-        return predict
+            return proba, (low, high)
+        return proba

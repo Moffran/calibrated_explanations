@@ -474,7 +474,7 @@ class CalibratedExplanation(ABC):
     
     
 
-    def _predict_conjunctive(self, rule_value_set, original_features, perturbed, y, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
+    def _predict_conjunctive(self, rule_value_set, original_features, perturbed, threshold, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
                             predicted_class):
         # """support function to calculate the prediction for a conjunctive rule
         # """
@@ -493,7 +493,7 @@ class CalibratedExplanation(ABC):
                     for value_3 in rule_value3:
                         perturbed[of3] = value_3
                         p_value, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), # pylint: disable=protected-access
-                                            y=y, low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
+                                            threshold=threshold, low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
                                             classes=predicted_class)
                         rule_predict += p_value[0]
                         rule_low += low[0]
@@ -501,7 +501,7 @@ class CalibratedExplanation(ABC):
                         rule_count += 1
                 else:                    
                     p_value, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), # pylint: disable=protected-access
-                                                y=y, low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
+                                                threshold=threshold, low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
                                                 classes=predicted_class)
                     rule_predict += p_value[0]
                     rule_low += low[0]
@@ -618,7 +618,7 @@ class FactualExplanation(CalibratedExplanation):
         self.conjunctive_rules = []
         i =self.instance_index
         # pylint: disable=unsubscriptable-object, invalid-name
-        y = None if self.y_threshold is None else self.y_threshold
+        threshold = None if self.y_threshold is None else self.y_threshold
         x_original = deepcopy(self.test_object)
 
         num_rules = len(factual['rule'])
@@ -671,7 +671,7 @@ class FactualExplanation(CalibratedExplanation):
                 rule_predict, rule_low, rule_high = self._predict_conjunctive(rule_values,
                                                                         original_features,
                                                                         deepcopy(x_original),
-                                                                        y,
+                                                                        threshold,
                                                                         predicted_class)
 
                 conjunctive['predict'].append(rule_predict)
@@ -733,10 +733,10 @@ class FactualExplanation(CalibratedExplanation):
         factual = self._get_rules() #get_explanation(instance_index)
         self._check_preconditions()
         predict = self.prediction
-        num_features = len(factual['weight'])
+        num_features_to_show = len(factual['weight'])
         if n_features_to_show is None:
-            n_features_to_show = num_features
-        n_features_to_show = np.min([num_features, n_features_to_show])
+            n_features_to_show = num_features_to_show
+        n_features_to_show = np.min([num_features_to_show, n_features_to_show])
 
         if len(full_filename) > 0:
             path = os.path.dirname(full_filename) + '/'
@@ -1167,7 +1167,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             return self
         self.conjunctive_rules = []
         # pylint: disable=unsubscriptable-object, invalid-name
-        y = None if self.y_threshold is None else self.y_threshold 
+        threshold = None if self.y_threshold is None else self.y_threshold 
         x_original = deepcopy(self.test_object)
 
         num_rules = len(counterfactual['rule'])
@@ -1220,7 +1220,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                 rule_predict, rule_low, rule_high = self._predict_conjunctive(rule_values,
                                                                         original_features,
                                                                         deepcopy(x_original),
-                                                                        y,
+                                                                        threshold,
                                                                         predicted_class)
 
                 conjunctive['predict'].append(rule_predict)

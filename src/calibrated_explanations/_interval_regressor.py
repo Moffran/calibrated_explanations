@@ -44,6 +44,7 @@ class IntervalRegressor:
         self.venn_abers = None
         self.proba_cal = None
         self.y_threshold = None
+        self.current_y_threshold = None
 
     def predict_probability(self, test_X, y_threshold):
         '''The `predict_probability` function takes in a test dataset and a threshold value, and returns
@@ -67,17 +68,19 @@ class IntervalRegressor:
         '''
         self.y_threshold = y_threshold
         if np.isscalar(self.y_threshold):
+            self.current_y_threshold = self.y_threshold
             self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.venn_abers.predict_proba(test_X, output_interval=True)
             return proba[:, 1], low, high, None
 
-        interval = np.array([np.array([0.0, 0.0]) for i in range(test_X.shape[0])])
+        interval = np.zeros((test_X.shape[0],2))
         proba = np.zeros(test_X.shape[0])
         for i, _ in enumerate(proba):
+            self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
-            p, low, high = self.venn_abers.predict_proba(test_X[i, :].reshape(-1, 1), output_interval=True)
-            proba[i] = p[1]
-            interval[i, :] = np.array([low, high])
+            p, low, high = self.venn_abers.predict_proba(test_X[i, :].reshape(1, -1), output_interval=True)
+            proba[i] = p[:,1]
+            interval[i, :] = np.array([low[0], high[0]])
         return proba, interval[:, 0], interval[:, 1], None
 
     def predict_uncertainty(self, test_X, low_high_percentiles):
@@ -137,7 +140,7 @@ class IntervalRegressor:
         test_y_hat = self.ce.model.predict(test_X)
 
         sigma_test = self.ce._get_sigma_test(X=test_X)  # pylint: disable=protected-access
-        proba = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test, y=self.y_threshold)
+        proba = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test, y=self.current_y_threshold)
         return np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
 
     def compute_proba_cal(self, y_threshold: float):
@@ -171,4 +174,4 @@ class IntervalRegressor:
                                                 y=y_threshold,
                                                 sigmas=sigma_i)
                 self.proba_cal[i, 0] = 1 - self.proba_cal[i, 1]
-        self.venn_abers = VennAbers(self.proba_cal, (self.ce.cal_y <= self.y_threshold).astype(int), self)
+        self.venn_abers = VennAbers(self.proba_cal, (self.ce.cal_y <= y_threshold).astype(int), self)
