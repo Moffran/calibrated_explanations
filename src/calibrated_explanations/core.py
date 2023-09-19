@@ -985,9 +985,9 @@ class WrapCalibratedExplainer():
             if 'threshold' in kwargs.keys():
                 threshold = kwargs['threshold']
                 if np.isscalar(threshold):
-                    new_classes = [f'y_hat < {threshold}' if predict[i] >= 0.5 else f'y_hat >= {threshold}' for i in range(len(predict))]
+                    new_classes = [f'y_hat <= {threshold}' if predict[i] >= 0.5 else f'y_hat > {threshold}' for i in range(len(predict))]
                 else:
-                    new_classes = [f'y_hat < {threshold[i]}' if predict[i] >= 0.5 else f'y_hat >= {threshold[i]}' for i in range(len(predict))]
+                    new_classes = [f'y_hat <= {threshold[i]}' if predict[i] >= 0.5 else f'y_hat > {threshold[i]}' for i in range(len(predict))]
                 if uq_interval:
                     return new_classes, (low, high)
                 return new_classes
