@@ -5,6 +5,9 @@ The calibrated-explanations package
 
 .. autoclass:: CalibratedExplainer
    :members: 
+
+.. autoclass:: WrapCalibratedExplainer
+   :members: 
       
 .. autoclass:: CalibratedExplanations
    :members: 

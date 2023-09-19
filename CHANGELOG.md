@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 ### Features
+### Fixes
+
+## [v0.2.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.0) - 2023-09-19
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.1.1...v0.2.0)
+### Features
 - Added a `WrapCalibratedExplainer` class which can be used for both classificaiton and regression.
 - Added [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) to the notebooks folder.
 - Added [LIME_comparison](https://github.com/Moffran/calibrated_explanations/notebooks/LIME_comparison.ipynb) to the notebooks folder. 
