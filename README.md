@@ -22,7 +22,6 @@ Below is an example of a counterfactual explanation for an instance of the Diabe
 
 [![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
 
-- [Calibrated Explanations (Documentation)](#calibrated-explanations-documentation)
   - [Getting started](#getting-started)
     - [Classification](#classification)
       - [Factual Explanations](#factual-explanations)
@@ -330,6 +329,8 @@ We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` clas
 We have used the `VennAbers` class from [Ivan Petej](https://github.com/ip200)s [venn-abers](https://github.com/ip200/venn-abers) package to provide support for probabilistic explanations (both classification and probabilistic regression). 
 
 We have used code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Disccretizer` class.
+
+The `check_is_fitted` and `safe_instance` functions in `calibrated_explanations.utils` are copied from `sklearn` and `shap`.  
   
 [Top](#calibrated-explanations-documentation)
 
