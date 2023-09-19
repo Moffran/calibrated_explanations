@@ -2,10 +2,11 @@
 
 ## [Unreleased]
 ### Features
-- Added a `WrapCalibratedExplainer` class which can be used for both classificaiton and regression.  
+- Added a `WrapCalibratedExplainer` class which can be used for both classificaiton and regression.
+- Added [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) to the notebooks folder.
+- Added [LIME_comparison](https://github.com/Moffran/calibrated_explanations/notebooks/LIME_comparison.ipynb) to the notebooks folder. 
 ### Fixes
 - Removed the dependency on `shap` and `scikit-learn` and closed issue #8.
-- Added [LIME_comparison](https://github.com/Moffran/calibrated_explanations/notebooks/LIME_comparison.ipynb) to the notebooks folder. 
 - Updated the weights to match LIME's weights (to ensure that a positive weight has the same meaning in both). 
 
 ## [v0.1.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.1.1) - 2023-09-14
