@@ -5,9 +5,6 @@
 from lime.lime_tabular import LimeTabularExplainer
 
 from .core import CalibratedExplainer
-from .utils import safe_import
-
-shap = safe_import('shap')
 
 class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
     '''
@@ -40,22 +37,3 @@ class CalibratedAsLimeTabularExplainer(LimeTabularExplainer):
         explanation = self.calibrated_explainer.explain_factual(data_row).as_lime()[0]
         self.discretizer = self.calibrated_explainer.discretizer
         return explanation
-
-# pylint: disable=too-few-public-methods
-class CalibratedAsShapExplainer(shap.Explainer):
-    '''
-    Wrapper for the CalibratedExplainer to be used as a shap explainer.
-    The masker must contain a data and a target field for the calibration set.
-    The model must have a predict_proba method.
-    '''
-    def __init__(self, model, calibration, feature_names=None, mode="classification", **kwargs):
-        assert 'data' in calibration and 'target' in calibration, "The calibration must contain a data and a target field for the calibration set."
-        if mode == "classification":
-            assert 'predict_proba' in dir(model), "The classifier must have a predict_proba method."
-        else:
-            assert 'predict' in dir(model), "The classifier must have a predict method."
-        self.calibrated_explainer = CalibratedExplainer(model, calibration['data'], calibration['target'], feature_names=feature_names, mode=mode)
-
-    def __call__(self, *args, **kwargs):
-        return self.calibrated_explainer.explain_factual(*args, **kwargs).as_shap()
-    
