@@ -14,7 +14,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install -i https://test.pypi.org/simple/ calibrated-explanations
+          pip install calibrated-explanations
           pip install pytest
       - name: Run tests
         run: pytest
