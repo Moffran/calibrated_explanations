@@ -42,8 +42,8 @@ Below is an example of a counterfactual explanation for an instance of the Diabe
 Getting started
 ---------------
 The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The following are commented and should be a good start:
-* [quickstart](https://github.com/Moffran/calibrated_explanations/blob/v0.2.1/notebooks/quickstart.ipynb)  (similar to this Getting Started)
-* [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/v0.2.1/notebooks/quickstart_wrap.ipynb) (similar to this Getting Started, but with a wrapper class for easier use)
+* [quickstart](https://github.com/Moffran/calibrated_explanations/blob/v0.2.1/notebooks/quickstart.ipynb)  - similar to this Getting Started
+* [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/v0.2.1/notebooks/quickstart_wrap.ipynb) - similar to this Getting Started, but with a wrapper class for easier use
 * [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) 
 * [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb)
 * [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb)
