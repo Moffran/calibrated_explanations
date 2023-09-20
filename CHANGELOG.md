@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Features
 ### Fixes
+The helper class `CalibratedAsShapExplainer` has been removed. The `as_shap` function is still working.
 
 ## [v0.2.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.0) - 2023-09-19
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.1.1...v0.2.0)
