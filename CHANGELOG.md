@@ -3,7 +3,11 @@
 ## [Unreleased]
 ### Features
 ### Fixes
-The wrapper file with helper classes `CalibratedAsShapExplainer` `CalibratedAsLimeTabularExplanainer` has been removed. The `as_shap` and `as_lime` functions are still working.
+
+## [v0.2.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.1) - 2023-09-20
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.0...v0.2.1)
+### Fixes
+The wrapper file with helper classes `CalibratedAsShapExplainer` and `CalibratedAsLimeTabularExplanainer` has been removed. The `as_shap` and `as_lime` functions are still working.
 
 ## [v0.2.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.0) - 2023-09-19
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.1.1...v0.2.0)
