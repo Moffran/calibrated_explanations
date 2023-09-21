@@ -70,7 +70,7 @@ class TestCalibratedExplainer(unittest.TestCase):
 
 
     # NOTE: this takes takes about 70s to run
-    @unittest.skip('Test fails online but passes locally. Skipping provisionally.')
+    # @unittest.skip('Test fails online but passes locally. Skipping provisionally.')
     def test_regression_ce(self):
         trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
@@ -142,7 +142,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
 
 
-    @unittest.skip('Test fails online but passes locally. Skipping provisionally.')
+    # @unittest.skip('Test fails online but passes locally. Skipping provisionally.')
     def test_knn_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
@@ -183,7 +183,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
 
 
-    @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
+    # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
     def test_knn_normalized_probabilistic_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
@@ -217,7 +217,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
 
 
-    @unittest.skip('Test fails online but passes locally. Skipping provisionally.')
+    # @unittest.skip('Test fails online but passes locally. Skipping provisionally.')
     def test_var_normalized_regression_ce(self):
         trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
@@ -258,7 +258,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
 
 
-    @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
+    # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
     def test_var_normalized_probabilistic_regression_ce(self):
         trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
