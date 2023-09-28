@@ -192,7 +192,7 @@ counterfactual_explanations.plot_explanation(0)
 The parameter `low_high_percentiles` works in the same way as for factual explanations. 
 
 #### Probabilistic Regression Explanations
-It is possible to create probabilistic explanations for regression, providing the probability that the target value is below the provided threshold (which is 180 000 in the examples below). All methods are the same as for normal regression and classification.
+It is possible to create probabilistic explanations for regression, providing the probability that the target value is below the provided threshold (which is 180 000 in the examples below). All methods are the same as for normal regression and classification, except that the `explain_factual` and `explain_counterfactual` methods need the additional threshold value (here 180 000).
 
 ```python
 factual_explanations = explainer.explain_factual(X_test, 180000)
