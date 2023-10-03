@@ -570,9 +570,7 @@ class FactualExplanation(CalibratedExplanation):
         factual['base_predict_high'].append(self.prediction['high'])
         rules = self._define_conditions()
         for f,_ in enumerate(instance): # pylint: disable=invalid-name
-            if self.prediction['predict'] == self.feature_predict['predict'][f] and \
-                self.prediction['low'] == self.feature_predict['low'][f] and \
-                    self.prediction['high'] == self.feature_predict['high'][f]:
+            if self.prediction['predict'] == self.feature_predict['predict'][f]:
                 continue
             factual['predict'].append(self.feature_predict['predict'][f])
             factual['predict_low'].append(self.feature_predict['low'][f])
@@ -948,7 +946,7 @@ class FactualExplanation(CalibratedExplanation):
             gwh = p - predict['high']
             
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
-            ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
+            # ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
             x_min, x_max = gwl,gwh
         # For each feature, plot the weight
@@ -987,7 +985,7 @@ class FactualExplanation(CalibratedExplanation):
         ax_main.set_ylim(-0.5,x[-1]+0.5)
         ax_main.set_ylabel('Rules')
         ax_main.set_xlabel('Feature weights')
-        ax_main.set_xlim(x_max, x_min)
+        ax_main.set_xlim(x_min, x_max)
         ax_main_twin = ax_main.twinx()
         ax_main_twin.set_yticks(range(num_to_show))
         ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
@@ -1068,9 +1066,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                 values = np.array(self._get_explainer().feature_values[f])
                 values = np.delete(values, values == discretized[f])
                 for value_bin, value in enumerate(values):
-                    if self.prediction['predict'] == instance_predict[f][value_bin] and \
-                        self.prediction['low'] == instance_low[f][value_bin] and \
-                            self.prediction['high'] == instance_high[f][value_bin]:
+                    if self.prediction['predict'] == instance_predict[f][value_bin]:
                         continue
                     counterfactual['predict'].append(instance_predict[f][value_bin])
                     counterfactual['predict_low'].append(instance_low[f][value_bin])
@@ -1108,9 +1104,7 @@ class CounterfactualExplanation(CalibratedExplanation):
 
                 value_bin = 0
                 if np.any(values < lesser):
-                    if self.prediction['predict'] == np.mean(instance_predict[f][value_bin]) and \
-                        self.prediction['low'] == np.mean(instance_low[f][value_bin]) and \
-                            self.prediction['high'] == np.mean(instance_high[f][value_bin]):
+                    if self.prediction['predict'] == np.mean(instance_predict[f][value_bin]):
                         continue
                     counterfactual['predict'].append(np.mean(instance_predict[f][value_bin]))
                     counterfactual['predict_low'].append(np.mean(instance_low[f][value_bin]))
@@ -1137,9 +1131,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                     value_bin = 1
 
                 if np.any(values > greater):
-                    if self.prediction['predict'] == np.mean(instance_predict[f][value_bin]) and \
-                        self.prediction['low'] == np.mean(instance_low[f][value_bin]) and \
-                            self.prediction['high'] == np.mean(instance_high[f][value_bin]):
+                    if self.prediction['predict'] == np.mean(instance_predict[f][value_bin]):
                         continue
                     counterfactual['predict'].append(np.mean(instance_predict[f][value_bin]))
                     counterfactual['predict_low'].append(np.mean(instance_low[f][value_bin]))

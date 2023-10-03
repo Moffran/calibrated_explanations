@@ -4,6 +4,11 @@
 ### Features
 ### Fixes
 
+## [v0.2.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.2) - 2023-10-03
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.1...v0.2.2)
+### Fixes
+Smaller adjustments and fixes.
+
 ## [v0.2.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.1) - 2023-09-20
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.0...v0.2.1)
 ### Fixes
