@@ -331,6 +331,8 @@ class CalibratedExplainer:
         already assigned discretizer. Called by the `explain_factual` and `explain_counterfactual` methods. 
         See their documentation for further information.
         """
+        if safe_isinstance(testX, "pandas.core.frame.DataFrame"):
+            testX = testX.values  # pylint: disable=invalid-name
         if len(testX.shape) == 1:
             testX = testX.reshape(1, -1)
         if testX.shape[1] != self.cal_X.shape[1]:
@@ -909,7 +911,8 @@ class WrapCalibratedExplainer():
 
         Returns
         -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the intervals. 
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+            intervals. 
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
@@ -938,7 +941,8 @@ class WrapCalibratedExplainer():
 
         Returns
         -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the intervals. 
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+            intervals. 
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
@@ -964,13 +968,14 @@ class WrapCalibratedExplainer():
 
         Raises
         ------
-        RuntimeError : If the learner is not fitted before predicting.
+        RuntimeError: If the learner is not fitted before predicting.
 
         Returns
         -------
-        calibrated_prediction :  If regression, then the calibrated prediction is the median of the conformal predictive system.
+        calibrated prediction : 
+            If regression, then the calibrated prediction is the median of the conformal predictive system.
             If classification, then the calibrated prediction is the class with the highest calibrated probability.
-        uncertainty_interval : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
+        (low, high) : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting.")
@@ -1015,8 +1020,9 @@ class WrapCalibratedExplainer():
 
         Returns
         -------
-        calibrated_probability : The calibrated probability of the positive class (or the predicted class for multiclass).
-        uncertainty_interval : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
+        calibrated probability : 
+            The calibrated probability of the positive class (or the predicted class for multiclass).
+        (low, high) : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting probabilities.")

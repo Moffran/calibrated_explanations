@@ -570,6 +570,10 @@ class FactualExplanation(CalibratedExplanation):
         factual['base_predict_high'].append(self.prediction['high'])
         rules = self._define_conditions()
         for f,_ in enumerate(instance): # pylint: disable=invalid-name
+            if self.prediction['predict'] == self.feature_predict['predict'][f] and \
+                self.prediction['low'] == self.feature_predict['low'][f] and \
+                    self.prediction['high'] == self.feature_predict['high'][f]:
+                continue
             factual['predict'].append(self.feature_predict['predict'][f])
             factual['predict_low'].append(self.feature_predict['low'][f])
             factual['predict_high'].append(self.feature_predict['high'][f])
@@ -592,7 +596,7 @@ class FactualExplanation(CalibratedExplanation):
 
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
-    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2, prune=True):
         # """adds conjunctive factual rules
 
         # Args:
@@ -632,12 +636,12 @@ class FactualExplanation(CalibratedExplanation):
 
         covered_features = []
         covered_combinations = [conjunctive['feature'][i] for i in range(len(conjunctive['rule']))]
-        for _, cf1 in enumerate(factual['feature']): # cf = factual feature
+        for f1, cf1 in enumerate(factual['feature']): # cf = factual feature
             covered_features.append(cf1)
-            of1 = factual['feature'][cf1] # of = original feature
-            rule_value1 = factual['feature_value'][cf1] \
-                            if isinstance(factual['feature_value'][cf1], np.ndarray) \
-                            else [factual['feature_value'][cf1]]
+            of1 = factual['feature'][f1] # of = original feature
+            rule_value1 = factual['feature_value'][f1] \
+                            if isinstance(factual['feature_value'][f1], np.ndarray) \
+                            else [factual['feature_value'][f1]]
             for _, cf2 in enumerate(top_conjunctives): # cf = conjunctive feature
                 if cf2 in covered_features:
                     continue
@@ -682,11 +686,14 @@ class FactualExplanation(CalibratedExplanation):
                                                 if rule_low != -np.inf else -np.inf)
                 conjunctive['weight_high'].append(rule_high - self.prediction['predict'] \
                                                 if rule_high != np.inf else np.inf)
-                conjunctive['value'].append(factual['value'][cf1]+ '\n' +conjunctive['value'][cf2])
+                conjunctive['value'].append(factual['value'][f1]+ '\n' +conjunctive['value'][cf2])
                 conjunctive['feature'].append(original_features)
                 conjunctive['feature_value'].append(rule_values)
-                conjunctive['rule'].append(factual['rule'][cf1]+ ' & \n' +conjunctive['rule'][cf2])
-                conjunctive['is_conjunctive'].append(True)
+                conjunctive['rule'].append(factual['rule'][f1]+ ' & \n' +conjunctive['rule'][cf2])
+                if prune:
+                    conjunctive['is_conjunctive'].append(True)
+                else:
+                    conjunctive['is_conjunctive'].append(True)
         self.conjunctive_rules = conjunctive
         self._has_conjunctive_rules = True
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
@@ -842,8 +849,8 @@ class FactualExplanation(CalibratedExplanation):
         ax_main.fill_betweenx(xh, [0], [0], color='k')
         if interval:           
             p = predict['predict']
-            gwl = p - predict['low']
-            gwh = p - predict['high']
+            gwl = predict['low'] - p
+            gwh = predict['high'] - p
             
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
@@ -921,7 +928,7 @@ class FactualExplanation(CalibratedExplanation):
         
         ax_regression.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
         ax_regression.fill_betweenx(xj, p, p, color='r')
-        ax_regression.set_xlim([np.min(self._get_explainer().cal_y),np.max(self._get_explainer().cal_y)])
+        ax_regression.set_xlim([np.min([pl, np.min(self._get_explainer().cal_y)]),np.max([ph, np.max(self._get_explainer().cal_y)])])
         ax_regression.set_yticks(range(1))
 
         ax_regression.set_xlabel(f'Prediction interval with {self.calibrated_explanations.get_confidence()}% confidence')
@@ -934,14 +941,16 @@ class FactualExplanation(CalibratedExplanation):
         ax_main.fill_betweenx(x, [0], [0], color='k')
         ax_main.fill_betweenx(xl, [0], [0], color='k')
         ax_main.fill_betweenx(xh, [0], [0], color='k')
+        x_min, x_max = 0,0
         if interval:            
             p = predict['predict']
-            gwl = predict['low'] - p
-            gwh = predict['high'] - p
+            gwl = p - predict['low']
+            gwh = p - predict['high']
             
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
+            x_min, x_max = gwl,gwh
         # For each feature, plot the weight
         for jx, j in enumerate(features_to_plot):
             xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
@@ -965,6 +974,12 @@ class FactualExplanation(CalibratedExplanation):
             ax_main.fill_betweenx(xj, min_val, max_val, color=color)
             if interval:
                 ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
+                
+                x_min = np.min([x_min, min_val, max_val, wl, wh])
+                x_max = np.max([x_max, min_val, max_val, wl, wh])
+            else:
+                x_min = np.min([x_min, min_val, max_val])
+                x_max = np.max([x_max, min_val, max_val])
 
         ax_main.set_yticks(range(num_to_show))
         ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
@@ -972,6 +987,7 @@ class FactualExplanation(CalibratedExplanation):
         ax_main.set_ylim(-0.5,x[-1]+0.5)
         ax_main.set_ylabel('Rules')
         ax_main.set_xlabel('Feature weights')
+        ax_main.set_xlim(x_max, x_min)
         ax_main_twin = ax_main.twinx()
         ax_main_twin.set_yticks(range(num_to_show))
         ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
@@ -1052,6 +1068,10 @@ class CounterfactualExplanation(CalibratedExplanation):
                 values = np.array(self._get_explainer().feature_values[f])
                 values = np.delete(values, values == discretized[f])
                 for value_bin, value in enumerate(values):
+                    if self.prediction['predict'] == instance_predict[f][value_bin] and \
+                        self.prediction['low'] == instance_low[f][value_bin] and \
+                            self.prediction['high'] == instance_high[f][value_bin]:
+                        continue
                     counterfactual['predict'].append(instance_predict[f][value_bin])
                     counterfactual['predict_low'].append(instance_low[f][value_bin])
                     counterfactual['predict_high'].append(instance_high[f][value_bin])
@@ -1088,6 +1108,10 @@ class CounterfactualExplanation(CalibratedExplanation):
 
                 value_bin = 0
                 if np.any(values < lesser):
+                    if self.prediction['predict'] == np.mean(instance_predict[f][value_bin]) and \
+                        self.prediction['low'] == np.mean(instance_low[f][value_bin]) and \
+                            self.prediction['high'] == np.mean(instance_high[f][value_bin]):
+                        continue
                     counterfactual['predict'].append(np.mean(instance_predict[f][value_bin]))
                     counterfactual['predict_low'].append(np.mean(instance_low[f][value_bin]))
                     counterfactual['predict_high'].append(np.mean(instance_high[f][value_bin]))
@@ -1113,6 +1137,10 @@ class CounterfactualExplanation(CalibratedExplanation):
                     value_bin = 1
 
                 if np.any(values > greater):
+                    if self.prediction['predict'] == np.mean(instance_predict[f][value_bin]) and \
+                        self.prediction['low'] == np.mean(instance_low[f][value_bin]) and \
+                            self.prediction['high'] == np.mean(instance_high[f][value_bin]):
+                        continue
                     counterfactual['predict'].append(np.mean(instance_predict[f][value_bin]))
                     counterfactual['predict_low'].append(np.mean(instance_low[f][value_bin]))
                     counterfactual['predict_high'].append(np.mean(instance_high[f][value_bin]))
@@ -1181,12 +1209,12 @@ class CounterfactualExplanation(CalibratedExplanation):
 
         covered_features = []
         covered_combinations = [conjunctive['feature'][i] for i in range(len(conjunctive['rule']))]
-        for _, cf1 in enumerate(counterfactual['feature']): # cf = factual feature
+        for f1, cf1 in enumerate(counterfactual['feature']): # cf = factual feature
             covered_features.append(cf1)
-            of1 = counterfactual['feature'][cf1] # of = original feature
-            rule_value1 = counterfactual['feature_value'][cf1] \
-                            if isinstance(counterfactual['feature_value'][cf1], np.ndarray) \
-                            else [counterfactual['feature_value'][cf1]]
+            of1 = counterfactual['feature'][f1] # of = original feature
+            rule_value1 = counterfactual['feature_value'][f1] \
+                            if isinstance(counterfactual['feature_value'][f1], np.ndarray) \
+                            else [counterfactual['feature_value'][f1]]
             for _, cf2 in enumerate(top_conjunctives): # cf = conjunctive feature
                 if cf2 in covered_features:
                     continue
@@ -1222,7 +1250,6 @@ class CounterfactualExplanation(CalibratedExplanation):
                                                                         deepcopy(x_original),
                                                                         threshold,
                                                                         predicted_class)
-
                 conjunctive['predict'].append(rule_predict)
                 conjunctive['predict_low'].append(rule_low)
                 conjunctive['predict_high'].append(rule_high)
@@ -1231,11 +1258,11 @@ class CounterfactualExplanation(CalibratedExplanation):
                         if rule_low != -np.inf else -np.inf)
                 conjunctive['weight_high'].append(rule_high - self.prediction['predict'] \
                         if rule_high != np.inf else np.inf)
-                conjunctive['value'].append(counterfactual['value'][cf1] + '\n' + \
+                conjunctive['value'].append(counterfactual['value'][f1] + '\n' + \
                                             conjunctive['value'][cf2])
                 conjunctive['feature'].append(original_features)
                 conjunctive['feature_value'].append(rule_values)
-                conjunctive['rule'].append(counterfactual['rule'][cf1] + ' & \n' + \
+                conjunctive['rule'].append(counterfactual['rule'][f1] + ' & \n' + \
                                             conjunctive['rule'][cf2])
                 conjunctive['is_conjunctive'].append(True)
         self.conjunctive_rules = conjunctive
