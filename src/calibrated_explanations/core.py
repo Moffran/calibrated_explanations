@@ -422,7 +422,7 @@ class CalibratedExplainer:
                         high_predict[bin_value] = high_predict[bin_value]/len(lesser_values)
                         bin_value += 1
                     if np.any(values > greater):
-                        greater_values = self.__get_greater_values(f, greater)
+                        greater_values = np.unique(self.__get_greater_values(f, greater))
                         rule_value.append(greater_values)
                         for value in greater_values:
                             perturbed[f] = value
