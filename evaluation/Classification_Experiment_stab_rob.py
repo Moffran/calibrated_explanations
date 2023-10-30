@@ -16,25 +16,6 @@ from sklearn.model_selection import train_test_split
 from venn_abers import VennAbers
 from calibrated_explanations import CalibratedExplainer
 
-
-# pylint: disable=invalid-name, missing-function-docstring, unused-argument
-def bin_total(y_true, y_prob, n_bins):
-    bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
-    binids = np.digitize(y_prob, bins) - 1
-    return np.bincount(binids, minlength=len(bins))
-
-# pylint: disable=missing-function-docstring
-def ece(y_true, y_prob, fop, mpv, n_bins=10):
-    bins = bin_total(y_true, y_prob, n_bins)
-    bins = bins[bins != 0]
-    w = bins / np.sum(bins)
-    return np.sum(w * abs(fop - mpv))
-
-def clip(val, min_=0, max_=1):
-    if len(val) == 1:
-        return min_ if val < min_ else max_ if val > max_ else val
-    return [min_ if v < min_ else max_ if v > max_ else v for v in val]
-
 # -------------------------------------------------------
 
 def debug_print(message, debug=True):
@@ -43,9 +24,7 @@ def debug_print(message, debug=True):
 
 # ------------------------------------------------------
 
-test_size = 20 # Antal foldar ändrade från 10
-number_of_bins = 10
-eval_matrix = []
+test_size = 20 # number of test samples per dataset
 is_debug = True
 num_rep = 30
 
@@ -70,7 +49,7 @@ for dataset in klara:
     print(dataSet)
     fileName = 'data/' + dataSet + ".csv"
     df = pd.read_csv(fileName, delimiter=';')
-    Xn, y = df.drop('Y',axis=1), df['Y'] # Dela upp datamängden i inputattribut och targetattribut
+    Xn, y = df.drop('Y',axis=1), df['Y'] 
 
     no_of_classes = len(np.unique(y))
     no_of_features = Xn.shape[1]
@@ -78,7 +57,7 @@ for dataset in klara:
 
     t1 = DecisionTreeClassifier(min_weight_fraction_leaf=0.15) # Changed from min_leaf=4
     t2 = DecisionTreeClassifier(min_weight_fraction_leaf=0.15)
-    s1 = SVC(probability=True) # Skala även input
+    s1 = SVC(probability=True) 
     s2 = SVC(probability=True)
     r1 = RandomForestClassifier(n_estimators=100)
     r2 = RandomForestClassifier(n_estimators=100)
@@ -110,7 +89,6 @@ for dataset in klara:
             calibrators['va']['model'].fit(c2.predict_proba(calX), calY)
         calibrators['data'] = {'trainX':trainX,'trainY':trainY,'calX':calX,'calY':calY,'testX':testX,'testY':testY,}
 
-        # debug_print(dataSet + ' ' + alg , is_debug)
         np.random.seed(1337)
         categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
 
