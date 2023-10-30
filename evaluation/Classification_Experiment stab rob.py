@@ -167,10 +167,10 @@ for dataset in klara:
         while i < num_rep:
             np.random.seed(i)
             if alg == 'xGB':
-                c2 = xgb.XGBClassifier(objective='binary:logistic',use_label_encoder=False,eval_metric='logloss')
+                c2 = xgb.XGBClassifier(objective='binary:logistic',use_label_encoder=False,eval_metric='logloss', random_state=i)
             else:
-                c2 = RandomForestClassifier(n_estimators=100)
-            trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=42)
+                c2 = RandomForestClassifier(n_estimators=100, random_state=i)
+            trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=i)
             
             c2.fit(trainX,trainY)
             ce = CalibratedExplainer(c2, calX, calY, \
