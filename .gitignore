@@ -7,7 +7,7 @@ pickle/
 plots/
 results/
 doc/
-evaluation/
+evaluation/secret/
 prof/
 
 calibrated-explanations/
