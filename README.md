@@ -216,9 +216,9 @@ Regression offers many more options and to learn more about them, see the [demo_
 Install
 -------
 
-First, you need a Python environment.
+`calibrated-explanations` is implemented in Python, so you need a Python environment.
 
-Then `calibrated-explanations` can be installed from PyPI:
+Install `calibrated-explanations` from PyPI:
 
 	pip install calibrated-explanations
 
