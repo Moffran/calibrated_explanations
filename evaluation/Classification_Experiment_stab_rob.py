@@ -17,7 +17,7 @@ from venn_abers import VennAbers
 from calibrated_explanations import CalibratedExplainer
 
 # -------------------------------------------------------
-
+# pylint: disable=invalid-name, missing-function-docstring
 def debug_print(message, debug=True):
     if debug:
         print(message)
@@ -49,7 +49,7 @@ for dataset in klara:
     print(dataSet)
     fileName = 'data/' + dataSet + ".csv"
     df = pd.read_csv(fileName, delimiter=';')
-    Xn, y = df.drop('Y',axis=1), df['Y'] 
+    Xn, y = df.drop('Y',axis=1), df['Y']
 
     no_of_classes = len(np.unique(y))
     no_of_features = Xn.shape[1]
@@ -57,7 +57,7 @@ for dataset in klara:
 
     t1 = DecisionTreeClassifier(min_weight_fraction_leaf=0.15) # Changed from min_leaf=4
     t2 = DecisionTreeClassifier(min_weight_fraction_leaf=0.15)
-    s1 = SVC(probability=True) 
+    s1 = SVC(probability=True)
     s2 = SVC(probability=True)
     r1 = RandomForestClassifier(n_estimators=100)
     r2 = RandomForestClassifier(n_estimators=100)
@@ -168,7 +168,9 @@ for dataset in klara:
 
     toc_data = time.time()
     debug_print(dataSet + ': ' +str(toc_data-tic_data),is_debug )
-    pickle.dump(results, open('evaluation/results_stab_rob.pkl', 'wb'))
+    with open('evaluation/results_stab_rob.pkl', 'wb') as f:
+        pickle.dump(results, f)
+    # pickle.dump(results, open('evaluation/results_stab_rob.pkl', 'wb'))
 
 toc_all = time.time()
 debug_print(str(toc_data-tic_data),is_debug )

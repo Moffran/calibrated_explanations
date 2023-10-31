@@ -21,6 +21,7 @@ jobs:
         pip install calibrated-explanations
         pip install pytest
         pip install pylint
+        pip install xgboost
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
