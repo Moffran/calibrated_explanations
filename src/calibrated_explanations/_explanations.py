@@ -582,6 +582,8 @@ class FactualExplanation(CalibratedExplanation):
                 if self._get_explainer().categorical_labels is not None:
                     factual['value'].append(
                         self._get_explainer().categorical_labels[f][int(instance[f])])
+                else:
+                    factual['value'].append(str(instance[f]))
             else:
                 factual['value'].append(str(np.around(instance[f],decimals=2)))
             factual['rule'].append(rules[f])
