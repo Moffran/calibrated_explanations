@@ -2,7 +2,13 @@
 
 ## [Unreleased]
 ### Features
+- Added an evaluation folder with scripts and notebooks for evaluating the performance of the method.
+  - One evaluation focuses on stability and robustness of the method: see [Classification_Experiment_stab_rob.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_stab_rob.py) and [Classification_Analysis_stab_rob.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_stab_rob.ipynb) for running and evaluating the experiment.
+  - One evaluation focuses on how different parameters affect the method regarding time and robustness: see [Classification_Experiment_Ablation.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_Ablation.py) and [Classification_Analysis_Ablation.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_Ablation.ipynb) for running and evaluating the experiment.
+
 ### Fixes
+- Fix in `CalibratedExplainer` to ensure that greater-than works identical as less-than.
+- Bugfix in `FactualExplanation._get_rules()` which caused an error when categorical labels where missing.
 
 ## [v0.2.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.2) - 2023-10-03
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.1...v0.2.2)
