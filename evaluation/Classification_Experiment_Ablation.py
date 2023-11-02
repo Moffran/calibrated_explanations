@@ -75,14 +75,13 @@ for dataset in klara:
         tic_algorithm = time.time()
         debug_print(dataSet+' '+alg)
         results[dataSet][alg] = {}
-        
+
         trainCalX, testX, trainCalY, testY = train_test_split(X.values, y.values, test_size=test_size,random_state=42)
         trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=np.max(calibration_sizes),random_state=42)
 
         c2.fit(trainX,trainY)
         categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
 
-        
         ablation =  {'ce':{}, 'cce':{}, 'proba':{}, }
         abl_timer = {'ce':{}, 'cce':{}, }
 
