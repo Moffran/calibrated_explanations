@@ -18,9 +18,9 @@ The proposed method is based on Venn-Abers (classification) and Conformal Predic
 * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions.
 * Conjunctional rules conveying joint contribution between features.
 
-Below is an example of a counterfactual explanation for an instance of the Diabetes dataset (positive class means having diabetes). The light blue area in the background is representing the calibrated probability interval (for the positive class) of the underlying model, as indicated by Venn-Abers. The darker blue bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
+Below is an example of a probabilistic counterfactual explanation for an instance of the California Housing dataset (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 
-[![Counterfactual explanation for Diabetes](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_diabetes.png "Counterfactual explanation for Diabetes")](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
+[![Probabilistic counterfactual explanation for California Housing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.png "Probabilistic counterfactual explanation for California Housing")](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
 
 - [Calibrated Explanations (Documentation)](#calibrated-explanations-documentation)
   - [Getting started](#getting-started)
