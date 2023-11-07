@@ -357,7 +357,7 @@ class CalibratedExplainer:
         feature_weights =  {'predict': [],'low': [],'high': [],}
         feature_predict =  {'predict': [],'low': [],'high': [],}
         prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
-        binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': []}
+        binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': []}
 
         for i, x in enumerate(testX):
             if threshold is not None and not np.isscalar(explanation.y_threshold):
@@ -374,7 +374,7 @@ class CalibratedExplainer:
             rule_values = {}
             instance_weights = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
             instance_predict = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
-            instance_binned = {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': []}
+            instance_binned = {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': []}
             # Get the perturbations
             x_original = copy.deepcopy(x)
             perturbed_original = self._discretize(copy.deepcopy(x).reshape(1,-1))
@@ -386,7 +386,7 @@ class CalibratedExplainer:
                 if f in self.categorical_features:
                     values = self.feature_values[f]
                     rule_value = values
-                    average_predict, low_predict, high_predict = np.zeros(len(values)),np.zeros(len(values)),np.zeros(len(values))
+                    average_predict, low_predict, high_predict, counts = np.zeros(len(values)),np.zeros(len(values)),np.zeros(len(values)),np.zeros(len(values))
                     for bin_value, value in enumerate(values):  # For each bin (i.e. discretized value) in the values array...
                         perturbed[f] = perturbed_original[0,f] # Assign the original discretized value to ensure similarity to value
                         if perturbed[f] == value:
@@ -397,6 +397,7 @@ class CalibratedExplainer:
                         average_predict[bin_value] = predict[0]
                         low_predict[bin_value] = low[0]
                         high_predict[bin_value] = high[0]
+                        counts[bin_value] = len(np.where(cal_X[:,f] == value)[0])
                 else:
                     rule_value = []
                     values = np.array(cal_X[:,f])
@@ -405,7 +406,7 @@ class CalibratedExplainer:
                     num_bins = 1
                     num_bins += int(np.any(values > greater))
                     num_bins += int(np.any(values < lesser))
-                    average_predict, low_predict, high_predict = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
+                    average_predict, low_predict, high_predict, counts = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
 
                     bin_value = 0
                     if np.any(values < lesser):
@@ -420,6 +421,7 @@ class CalibratedExplainer:
                         average_predict[bin_value] = average_predict[bin_value]/len(lesser_values)
                         low_predict[bin_value] = low_predict[bin_value]/len(lesser_values)
                         high_predict[bin_value] = high_predict[bin_value]/len(lesser_values)
+                        counts[bin_value] = len(np.where(cal_X[:,f] < lesser)[0])
                         bin_value += 1
                     if np.any(values > greater):
                         greater_values = np.unique(self.__get_greater_values(f, greater))
@@ -433,6 +435,7 @@ class CalibratedExplainer:
                         average_predict[bin_value] = average_predict[bin_value]/len(greater_values)
                         low_predict[bin_value] = low_predict[bin_value]/len(greater_values)
                         high_predict[bin_value] = high_predict[bin_value]/len(greater_values)
+                        counts[bin_value] = len(np.where(cal_X[:,f] > greater)[0])
                         bin_value += 1
 
                     covered_values = self.__get_covered_values(f, lesser, greater)
@@ -446,15 +449,20 @@ class CalibratedExplainer:
                     average_predict[bin_value] = average_predict[bin_value]/len(covered_values)
                     low_predict[bin_value] = low_predict[bin_value]/len(covered_values)
                     high_predict[bin_value] = high_predict[bin_value]/len(covered_values)
+                    counts[bin_value] = len(np.where((cal_X[:,f] >= lesser) & (cal_X[:,f] <= greater))[0])
                     current_bin = bin_value
 
                 rule_values[f] = (rule_value, x_original[f], perturbed_original[0,f])
                 uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
+                
+                counts[current_bin] = 0
+                counts = counts/np.sum(counts)
 
                 instance_binned['predict'].append(average_predict)
                 instance_binned['low'].append(low_predict)
                 instance_binned['high'].append(high_predict)
                 instance_binned['current_bin'].append(current_bin)
+                instance_binned['counts'].append(counts)
 
                 # Handle the situation where the current bin is the only bin
                 if len(uncovered) == 0:
@@ -466,6 +474,10 @@ class CalibratedExplainer:
                     instance_weights['low'][f] = 0
                     instance_weights['high'][f] = 0
                 else:
+                    # Calculate the weighted average (only makes a difference for categorical features)
+                    # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*counts[uncovered])
+                    # instance_predict['low'][f] = np.sum(low_predict[uncovered]*counts[uncovered])
+                    # instance_predict['high'][f] = np.sum(high_predict[uncovered]*counts[uncovered])
                     instance_predict['predict'][f] = np.mean(average_predict[uncovered])
                     instance_predict['low'][f] = np.mean(low_predict[uncovered])
                     instance_predict['high'][f] = np.mean(high_predict[uncovered])
@@ -481,6 +493,7 @@ class CalibratedExplainer:
             binned_predict['high'].append(instance_binned['high'])
             binned_predict['current_bin'].append(instance_binned['current_bin'])
             binned_predict['rule_values'].append(rule_values)
+            binned_predict['counts'].append(instance_binned['counts'])
 
             feature_weights['predict'].append(instance_weights['predict'])
             feature_weights['low'].append(instance_weights['low'])
