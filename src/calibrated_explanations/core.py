@@ -357,7 +357,7 @@ class CalibratedExplainer:
         feature_weights =  {'predict': [],'low': [],'high': [],}
         feature_predict =  {'predict': [],'low': [],'high': [],}
         prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
-        binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': []}
+        binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': [], 'fractions': []}
 
         for i, x in enumerate(testX):
             if threshold is not None and not np.isscalar(explanation.y_threshold):
@@ -374,7 +374,7 @@ class CalibratedExplainer:
             rule_values = {}
             instance_weights = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
             instance_predict = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
-            instance_binned = {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': []}
+            instance_binned = {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': [], 'fractions': []}
             # Get the perturbations
             x_original = copy.deepcopy(x)
             perturbed_original = self._discretize(copy.deepcopy(x).reshape(1,-1))
@@ -454,15 +454,15 @@ class CalibratedExplainer:
 
                 rule_values[f] = (rule_value, x_original[f], perturbed_original[0,f])
                 uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
-                
-                counts[current_bin] = 0
-                counts = counts/np.sum(counts)
+
+                fractions = counts[uncovered]/np.sum(counts[uncovered])
 
                 instance_binned['predict'].append(average_predict)
                 instance_binned['low'].append(low_predict)
                 instance_binned['high'].append(high_predict)
                 instance_binned['current_bin'].append(current_bin)
                 instance_binned['counts'].append(counts)
+                instance_binned['fractions'].append(fractions)
 
                 # Handle the situation where the current bin is the only bin
                 if len(uncovered) == 0:
@@ -475,9 +475,9 @@ class CalibratedExplainer:
                     instance_weights['high'][f] = 0
                 else:
                     # Calculate the weighted average (only makes a difference for categorical features)
-                    # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*counts[uncovered])
-                    # instance_predict['low'][f] = np.sum(low_predict[uncovered]*counts[uncovered])
-                    # instance_predict['high'][f] = np.sum(high_predict[uncovered]*counts[uncovered])
+                    # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*fractions[uncovered])
+                    # instance_predict['low'][f] = np.sum(low_predict[uncovered]*fractions[uncovered])
+                    # instance_predict['high'][f] = np.sum(high_predict[uncovered]*fractions[uncovered])
                     instance_predict['predict'][f] = np.mean(average_predict[uncovered])
                     instance_predict['low'][f] = np.mean(low_predict[uncovered])
                     instance_predict['high'][f] = np.mean(high_predict[uncovered])
@@ -494,6 +494,7 @@ class CalibratedExplainer:
             binned_predict['current_bin'].append(instance_binned['current_bin'])
             binned_predict['rule_values'].append(rule_values)
             binned_predict['counts'].append(instance_binned['counts'])
+            binned_predict['fractions'].append(instance_binned['fractions'])
 
             feature_weights['predict'].append(instance_weights['predict'])
             feature_weights['low'].append(instance_weights['low'])
