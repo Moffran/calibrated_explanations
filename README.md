@@ -9,8 +9,8 @@ Calibrated Explanations ([Documentation](https://calibrated-explanations.readthe
 [![License](https://badgen.net/github/license/moffran/calibrated_explanations)](https://github.com/moffran/calibrated_explanations/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/calibrated-explanations)](https://pepy.tech/project/calibrated-explanations)
 
-`calibrated-explanations` is a Python package for the Calibrated Explanations method, supporting both classification and regression.
-The proposed method is based on Venn-Abers (classification) and Conformal Predictive Systems (regression) and has the following characteristics:
+`calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both classification and regression.
+The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
 * Fast, reliable, stable and robust feature importance explanations.
 * Calibration of the underlying model to ensure that predictions reflect reality.
 * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
