@@ -1,8 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.3...main)
 ### Features
 - Updated to version 1.4.1 of venn_abers. Added `precision=4` to the fitting of the venn_abers model to increase speed. 
+- Preparation for weighted categorical rules implemented but not yet activated.
 ### Fixes
 - Filtered out extreme target values in the quickstart notebook to make the regression examples more realistic. 
 
