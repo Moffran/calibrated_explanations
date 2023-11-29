@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 ### Features
+- Updated to version 1.4.1 of venn_abers. Added `precision=4` to the fitting of the venn_abers model to increase speed. 
 ### Fixes
+- Filtered out extreme target values in the quickstart notebook to make the regression examples more realistic. 
 
 ## [v0.2.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.3) - 2023-11-04
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.2...v0.2.3)

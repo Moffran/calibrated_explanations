@@ -15,7 +15,7 @@ class VennAbers:
         self.model = model
         self.va = va.VennAbers()
         cprobs, predict = self.get_p_value(self.cprobs)
-        self.va.fit(cprobs, np.multiply(predict == self.ctargets, 1) if self.is_multiclass() else self.ctargets)
+        self.va.fit(cprobs, np.multiply(predict == self.ctargets, 1) if self.is_multiclass() else self.ctargets, precision=4)
 
     def predict(self, test_X):
         """a function to predict the class of the test samples
