@@ -34,7 +34,7 @@ num_rep = 30
 
 descriptors = ['uncal','va',]#,'va'
 Descriptors = {'uncal':'Uncal','va': 'VA'}
-models = ['xGB'] # ['xGB','RF','DT','SVM',] # 'NN',
+models = ['xGB','RF'] # ['xGB','RF','DT','SVM',] # 'NN',
 
 # pylint: disable=line-too-long
 datasets = {1:"pc1req",2:"haberman",3:"hepati",4:"transfusion",5:"spect",6:"heartS",7:"heartH",8:"heartC",9:"je4243",10:"vote",11:"kc2",12:"wbc",
@@ -99,10 +99,10 @@ for dataset in klara:
         ce = CalibratedExplainer(calibrators['uncal']['model'], calX, calY, \
             feature_names=df.columns, categorical_features=categorical_features)
 
-        stability =  {'ce':[], 'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
-        stab_timer = {'ce':[], 'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
-        robustness = {'ce':[], 'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[], 'proba':[], 'proba_va':[]}
-        rob_timer =  {'ce':[], 'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        stability =  {'ce':[], 'cce':[], 'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        stab_timer = {'ce':[], 'cce':[], 'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        robustness = {'ce':[], 'cce':[], 'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[], 'proba':[], 'proba_va':[]}
+        rob_timer =  {'ce':[], 'cce':[], 'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
         i = 0
         while i < num_rep:
             try:
@@ -110,11 +110,19 @@ for dataset in klara:
 
                 ce.set_random_state(i)
                 tic = time.time()
-                factual_explanations = ce.explain_factual(testX)
+                explanations = ce.explain_counterfactual(testX)
                 ct = time.time()-tic
                 stab_timer['ce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
-                stability['ce'].append([f.feature_weights for f in factual_explanations])
+                stability['ce'].append([f.feature_weights for f in explanations])
+
+                ce.set_random_state(i)
+                tic = time.time()
+                explanations = ce.explain_factual(testX)
+                ct = time.time()-tic
+                stab_timer['cce'].append(ct)
+                # print(f'{ct:.1f}',end='\t')
+                stability['cce'].append([f.feature_weights for f in explanations])
 
                 lime = LimeTabularExplainer(calX, feature_names=df.columns, random_state=i)
                 model = calibrators['uncal']['model']
@@ -202,11 +210,19 @@ for dataset in klara:
                 # print(f'{i}:',end='\t')
                 # ce.set_random_state(i)
                 tic = time.time()
-                factual_explanations = ce.explain_factual(testX)
+                explanations = ce.explain_factual(testX)
                 ct = time.time()-tic
                 rob_timer['ce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
-                robustness['ce'].append([f.feature_weights for f in factual_explanations])
+                robustness['ce'].append([f.feature_weights for f in explanations])
+                
+                # ce.set_random_state(i)
+                tic = time.time()
+                explanations = ce.explain_counterfactual(testX)
+                ct = time.time()-tic
+                rob_timer['cce'].append(ct)
+                # print(f'{ct:.1f}',end='\t')
+                robustness['cce'].append([f.feature_weights for f in explanations])
 
                 lime = LimeTabularExplainer(calX, feature_names=df.columns)
                 model = calibrators['uncal']['model']
