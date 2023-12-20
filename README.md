@@ -21,24 +21,7 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
 Below is an example of a probabilistic counterfactual explanation for an instance of the California Housing dataset (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 
 [![Probabilistic counterfactual explanation for California Housing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg "Probabilistic counterfactual explanation for California Housing")](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
-
-- [Calibrated Explanations (Documentation)](#calibrated-explanations-documentation)
-  - [Getting started](#getting-started)
-    - [Classification](#classification)
-      - [Factual Explanations](#factual-explanations)
-      - [Counterfactual Explanations](#counterfactual-explanations)
-      - [Support for multiclass](#support-for-multiclass)
-    - [Regression](#regression)
-      - [Factual Explanations](#factual-explanations-1)
-      - [Counterfactual Explanations](#counterfactual-explanations-1)
-      - [Probabilistic Regression Explanations](#probabilistic-regression-explanations)
-      - [Additional Regression Use Cases](#additional-regression-use-cases)
-  - [Install](#install)
-  - [Development](#development)
-  - [Documentation](#documentation)
-  - [Further reading and citing](#further-reading-and-citing)
-  - [Acknowledgements](#acknowledgements)
-  
+ 
 Getting started
 ---------------
 The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The following are commented and should be a good start:
