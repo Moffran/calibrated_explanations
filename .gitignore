@@ -1,5 +1,6 @@
 *.pdf
 *.svg
+evaluation/results_sota.pkl
 # *.png
 .vscode/
 dump/
