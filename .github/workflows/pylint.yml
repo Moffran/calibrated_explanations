@@ -22,6 +22,7 @@ jobs:
         pip install pytest
         pip install pylint
         pip install xgboost
+        pip install shap
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
