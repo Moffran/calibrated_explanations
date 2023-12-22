@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name, line-too-long, duplicate-code
+# pylint: disable=invalid-name, line-too-long, duplicate-code, cell-var-from-loop, consider-using-enumerate, missing-function-docstring
 """
 Experiment used in the introductory paper to evaluate the stability and robustness of the explanations
 """
@@ -14,9 +14,9 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from venn_abers import VennAbers
-from calibrated_explanations import CalibratedExplainer
 from shap import Explainer # version 0.44.0
 from lime.lime_tabular import LimeTabularExplainer # version 0.2.0.1
+from calibrated_explanations import CalibratedExplainer
 
 
 
@@ -167,7 +167,7 @@ for dataset in klara:
                 ct = time.time()-tic
                 stab_timer['shap'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
-                stability['shap'].append(explanations.values)
+                stability['shap'].append(explanations.values) # pylint: disable=no-member
 
                 shap_va = Explainer(lambda x: calibrators['va']['model'].predict_proba(x)[0][:,1], calX, \
                     feature_names=df.columns)
@@ -177,7 +177,7 @@ for dataset in klara:
                 ct = time.time()-tic
                 stab_timer['shap_va'].append(ct)
                 # print(f'{ct:.1f}')
-                stability['shap_va'].append(explanations.values)
+                stability['shap_va'].append(explanations.values) # pylint: disable=no-member
 
                 i = i + 1
             except Exception as e: # pylint: disable=broad-exception-caught
@@ -215,7 +215,7 @@ for dataset in klara:
                 rob_timer['ce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
                 robustness['ce'].append([f.feature_weights for f in explanations])
-                
+
                 # ce.set_random_state(i)
                 tic = time.time()
                 explanations = ce.explain_counterfactual(testX)
@@ -267,7 +267,7 @@ for dataset in klara:
                 ct = time.time()-tic
                 rob_timer['shap'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
-                robustness['shap'].append(explanations.values)
+                robustness['shap'].append(explanations.values) # pylint: disable=no-member
 
                 shap_va = Explainer(lambda x: calibrators['va']['model'].predict_proba(x)[0][:,1], calX, \
                     feature_names=df.columns)
@@ -277,7 +277,7 @@ for dataset in klara:
                 ct = time.time()-tic
                 rob_timer['shap_va'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
-                robustness['shap_va'].append(explanations.values)
+                robustness['shap_va'].append(explanations.values) # pylint: disable=no-member
 
 
                 i += 1
