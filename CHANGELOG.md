@@ -5,7 +5,7 @@
 ### Features
 - Updated to version 1.4.1 of venn_abers. Added `precision=4` to the fitting of the venn_abers model to increase speed. 
 - Preparation for weighted categorical rules implemented but not yet activated. 
-- Added a state-of-the-art comparison with scripts and notebooks for evaluating the performance of the method: see [Classification_Experiment_sota.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_sota.py) and [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) for running and evaluating the experiment.
+- Added a state-of-the-art comparison with scripts and notebooks for evaluating the performance of the method in comparison with `LIME` and `SHAP`: see [Classification_Experiment_sota.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_sota.py) and [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) for running and evaluating the experiment.
 ### Fixes
 - Filtered out extreme target values in the quickstart notebook to make the regression examples more realistic. 
 
