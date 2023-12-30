@@ -184,7 +184,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     def plot_all(self,
                 n_features_to_show=10,
                 show=False,
-                path='',
+                filename='',
                 uncertainty=False):
         '''The function `plot_all` plots either counterfactual or factual explanations for a given
         instance, with the option to show or save the plots.
@@ -198,10 +198,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             The "show" parameter determines whether the plots should be displayed immediately after they
             are generated. If set to True, the plots will be shown; if set to False, the plots will not be
             shown.
-        path, optional
-            The `path` parameter is the directory path where the plots will be saved. If you don't provide
-            a value for `path`, the plots will not be saved and will only be displayed if `show` is set to
-            `True`.
+        filename : str, default=''
+            The filename parameter is a string that represents the full path and filename of the plot
+            image file that will be saved. If this parameter is not provided or is an empty string, the plot
+            will not be saved as an image file. The index of each explanation will be appended to the
+            filename (e.g. filename0.png, filename1.png, etc.).
         uncertainty, optional
             The "uncertainty" parameter is a boolean flag that determines whether to include uncertainty
             information in the plots. If set to True, the plots will show uncertainty measures, if
@@ -209,13 +210,20 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             explanations without uncertainty information. Only applicable to factual explanations.
         
         '''
-        for explanation in self.explanations:
-            explanation.plot_explanation(n_features_to_show=n_features_to_show, show=show, path=path, uncertainty=uncertainty)
+        if len(filename) > 0:
+            path = os.path.dirname(filename) + '/'
+            filename = os.path.basename(filename)
+            title, ext = os.path.splitext(filename)
+            make_directory(path, save_ext=np.array([ext]))
+        for index, explanation in enumerate(self.explanations):
+            if len(filename) > 0:
+                filename = path + title + str(index) + ext
+            explanation.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty)
 
 
 
     # pylint: disable=too-many-arguments
-    def plot_explanation(self, instance_index, n_features_to_show=10, show=False, full_filename='', uncertainty=False):
+    def plot_explanation(self, instance_index, n_features_to_show=10, show=False, filename='', uncertainty=False):
         '''This function plots the explanation for a given instance using either factual or
         counterfactual plots.
         
@@ -230,8 +238,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         show : bool, default=False
             A boolean parameter that determines whether the plot should be displayed or not. If set to
             True, the plot will be displayed. If set to False, the plot will not be displayed.
-        full_filename : str, default=''
-            The full_filename parameter is a string that represents the full path and filename of the plot
+        filename : str, default=''
+            The filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file.
         uncertainty : bool, default=False
@@ -242,10 +250,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         factual = self.get_explanation(instance_index)
-        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename, uncertainty=uncertainty)
+        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty)
 
     # pylint: disable=too-many-arguments
-    def plot_factual(self, instance_index, n_features_to_show=10, show=False, full_filename='', uncertainty=False):
+    def plot_factual(self, instance_index, n_features_to_show=10, show=False, filename='', uncertainty=False):
         '''This function plots the factual explanation for a given instance using either probabilistic or
         regression plots.
         
@@ -260,8 +268,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         show : bool, default=False
             A boolean parameter that determines whether the plot should be displayed or not. If set to
             True, the plot will be displayed. If set to False, the plot will not be displayed.
-        full_filename : str, default=''
-            The full_filename parameter is a string that represents the full path and filename of the plot
+        filename : str, default=''
+            The filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file.
         uncertainty : bool, default=False
@@ -272,10 +280,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         factual = self.get_explanation(instance_index)
-        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename, uncertainty=uncertainty)
+        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty)
 
 
-    def plot_counterfactual(self, instance_index, n_features_to_show=10, show=False, full_filename=''):        
+    def plot_counterfactual(self, instance_index, n_features_to_show=10, show=False, filename=''):        
         '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
         a dataset.
         
@@ -290,14 +298,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         show : bool, default=False
             A boolean parameter that determines whether the plot should be displayed or not. If set to
             True, the plot will be displayed. If set to False, the plot will not be displayed.
-        full_filename : str, default=''
-            The full_filename parameter is a string that represents the full path and filename of the plot
+        filename : str, default=''
+            The filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file.
         
         '''
         counterfactual = self.get_explanation(instance_index)
-        counterfactual.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename)
+        counterfactual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename)
 
 
     # pylint: disable=protected-access
@@ -699,11 +707,11 @@ class FactualExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
 
-    def plot_factual(self, n_features_to_show=None, show=False, full_filename='', uncertainty=False):
+    def plot_factual(self, n_features_to_show=None, show=False, filename='', uncertainty=False):
         '''The function `plot_factual` plots the factual explanation for a given instance using either
         probabilistic or regression plots.
         '''
-        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename, uncertainty=uncertainty)
+        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty)
 
     # pylint: disable=consider-iterating-dictionary
     def plot_explanation(self, n_features_to_show=None, **kwargs):
@@ -721,8 +729,8 @@ class FactualExplanation(CalibratedExplanation):
         show : bool, default=False
             A boolean parameter that determines whether the plot should be displayed or not. If set to
             True, the plot will be displayed. If set to False, the plot will not be displayed.
-        full_filename : str, default=''
-            The full_filename parameter is a string that represents the full path and filename of the plot
+        filename : str, default=''
+            The filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file.
         uncertainty : bool, default=False
@@ -733,7 +741,7 @@ class FactualExplanation(CalibratedExplanation):
         
         '''
         show = kwargs['show'] if 'show' in kwargs.keys() else False
-        full_filename = kwargs['full_filename'] if 'full_filename' in kwargs.keys() else ''
+        filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
         uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs.keys() else False
         
         
@@ -745,11 +753,11 @@ class FactualExplanation(CalibratedExplanation):
             n_features_to_show = num_features_to_show
         n_features_to_show = np.min([num_features_to_show, n_features_to_show])
 
-        if len(full_filename) > 0:
-            path = os.path.dirname(full_filename) + '/'
-            filename = os.path.basename(full_filename)
+        if len(filename) > 0:
+            path = os.path.dirname(filename) + '/'
+            filename = os.path.basename(filename)
             title, ext = os.path.splitext(filename)
-            make_directory(title, save_ext=np.array([ext]))
+            make_directory(path, save_ext=np.array([ext]))
             save_ext = [ext]
         else:
             path = ''
@@ -769,16 +777,16 @@ class FactualExplanation(CalibratedExplanation):
         column_names = factual['rule']
         if 'classification' in self._get_explainer().mode or self._is_thresholded():
             self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, postfix=str(self.instance_index), path=path, interval=uncertainty, show=show, idx=self.instance_index,
+                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
                         save_ext=save_ext)
         else:                
             self.__plot_regression(factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, postfix=str(self.instance_index), path=path, interval=uncertainty, show=show, idx=self.instance_index,
+                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
                         save_ext=save_ext)
 
     # pylint: disable=dangerous-default-value
     def __plot_probabilistic(self, instance, predict, feature_weights, features_to_plot, num_to_show,
-                    column_names, title, postfix, path, show, interval=False, idx=None,
+                    column_names, title, path, show, interval=False, idx=None,
                     save_ext=['svg','pdf','png']):
         """plots regular and uncertainty explanations"""
         if interval is True:
@@ -895,15 +903,14 @@ class FactualExplanation(CalibratedExplanation):
         ax_main_twin.set_ylim(-0.5,x[-1]+0.5)
         ax_main_twin.set_ylabel('Instance values')
         for ext in save_ext:
-            fig.savefig(path + title + '/' + title + '_' + postfix +'.'+ext,
-                    bbox_inches='tight') 
+            fig.savefig(path + title + ext, bbox_inches='tight') 
         if show:
             fig.show()
 
 
     # pylint: disable=dangerous-default-value, too-many-branches, too-many-statements
     def __plot_regression(self, instance, predict, feature_weights, features_to_plot, num_to_show,
-                    column_names, title, postfix, path, show, interval=False, idx=None,
+                    column_names, title, path, show, interval=False, idx=None,
                     save_ext=['svg','pdf','png']):
         """plots regular and uncertainty explanations"""
         if interval is True:
@@ -994,8 +1001,7 @@ class FactualExplanation(CalibratedExplanation):
         ax_main_twin.set_ylim(-0.5,x[-1]+0.5)
         ax_main_twin.set_ylabel('Instance values')
         for ext in save_ext:
-            fig.savefig(path + title + '/' + title + '_' + postfix +'.'+ext,
-                    bbox_inches='tight') 
+            fig.savefig(path + title + ext, bbox_inches='tight')
         if show:
             fig.show()
 
@@ -1264,11 +1270,11 @@ class CounterfactualExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
     # pylint: disable=consider-iterating-dictionary
-    def plot_counterfactual(self, n_features_to_show=None, show=False, full_filename=''):
+    def plot_counterfactual(self, n_features_to_show=None, show=False, filename=''):
         '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
         a dataset.
         '''
-        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, full_filename=full_filename)
+        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename)
         
     # pylint: disable=consider-iterating-dictionary
     def plot_explanation(self, n_features_to_show=None, **kwargs):
@@ -1286,21 +1292,21 @@ class CounterfactualExplanation(CalibratedExplanation):
         show : bool, default=False
             A boolean parameter that determines whether the plot should be displayed or not. If set to
             True, the plot will be displayed. If set to False, the plot will not be displayed.
-        full_filename : str, default=''
-            The full_filename parameter is a string that represents the full path and filename of the plot
+        filename : str, default=''
+            The filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file.
         
         '''
         show = kwargs['show'] if 'show' in kwargs.keys() else False
-        full_filename = kwargs['full_filename'] if 'full_filename' in kwargs.keys() else ''
+        filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
 
         counterfactual = self._get_rules() #get_explanation(instance_index)
         self._check_preconditions()      
         predict = self.prediction
-        if len(full_filename) > 0:
-            path = os.path.dirname(full_filename) + '/'
-            filename = os.path.basename(full_filename)
+        if len(filename) > 0:
+            path = os.path.dirname(filename) + '/'
+            filename = os.path.basename(filename)
             title, ext = os.path.splitext(filename)
             make_directory(title, save_ext=np.array([ext]))
             save_ext = [ext]
@@ -1326,14 +1332,13 @@ class CounterfactualExplanation(CalibratedExplanation):
         column_names = counterfactual['rule']
         self.__plot_counterfactual(counterfactual['value'], predict, feature_predict, \
                                     features_to_plot, num_to_show=num_to_show_, \
-                                    column_names=column_names, title=title, postfix=str(self.instance_index), \
-                                    path=path, show=show, save_ext=save_ext)
+                                    column_names=column_names, title=title, path=path, show=show, save_ext=save_ext)
 
 
 
     # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
     def __plot_counterfactual(self, instance, predict, feature_predict, features_to_plot, \
-                            num_to_show, column_names, title, postfix, path, show,
+                            num_to_show, column_names, title, path, show,
                             save_ext=['svg','pdf','png']):
         """plots counterfactual explanations"""
         fig = plt.figure(figsize=(10,num_to_show*.5))
@@ -1439,7 +1444,7 @@ class CounterfactualExplanation(CalibratedExplanation):
 
         fig.tight_layout()
         for ext in save_ext:
-            fig.savefig(path + title + '/' + title + '_' + postfix +'.'+ext, bbox_inches='tight')
+            fig.savefig(path + title + ext, bbox_inches='tight')
         if show:
             fig.show()
 
