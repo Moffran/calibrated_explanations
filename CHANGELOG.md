@@ -8,6 +8,7 @@
 - Added a state-of-the-art comparison with scripts and notebooks for evaluating the performance of the method in comparison with `LIME` and `SHAP`: see [Classification_Experiment_sota.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_sota.py) and [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) for running and evaluating the experiment.
 ### Fixes
 - Filtered out extreme target values in the quickstart notebook to make the regression examples more realistic. 
+- Fixed bugs related to how plots can be saved to file.
 
 ## [v0.2.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.3) - 2023-11-04
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.2...v0.2.3)
