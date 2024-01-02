@@ -673,9 +673,12 @@ class FactualExplanation(CalibratedExplanation):
                                 else [conjunctive['feature_value'][cf2]])
                 skip = False
                 for ofs in covered_combinations:
-                    if np.all(np.sort(original_features) == ofs):
-                        skip = True
-                        break
+                    try:
+                        if np.all(np.sort(original_features) == ofs):
+                            skip = True
+                            break
+                    except ValueError:
+                        pass
                 if skip:
                     continue
                 covered_combinations.append(np.sort(original_features))
