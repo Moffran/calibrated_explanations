@@ -9,12 +9,7 @@ import warnings
 import pickle
 import numpy as np
 import pandas as pd
-try:
-    import xgboost as xgb
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", 'xgboost'])
-finally:
-    import xgboost as xgb
+import xgboost as xgb
 # 
 from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -22,12 +17,7 @@ from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from venn_abers import VennAbers
 
-try:
-    from calibrated_explanations import CalibratedExplainer
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", 'calibrated-explanations'])
-finally:
-    from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations import CalibratedExplainer
 
 
 # -------------------------------------------------------
