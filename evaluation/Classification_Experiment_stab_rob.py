@@ -2,19 +2,33 @@
 """
 Experiment used in the introductory paper to evaluate the stability and robustness of the explanations
 """
-
+import subprocess
+import sys
 import time
 import warnings
 import pickle
 import numpy as np
 import pandas as pd
-import xgboost as xgb
+try:
+    import xgboost as xgb
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", 'xgboost'])
+finally:
+    import xgboost as xgb
+# 
 from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
 from venn_abers import VennAbers
-from calibrated_explanations import CalibratedExplainer
+
+try:
+    from calibrated_explanations import CalibratedExplainer
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", 'calibrated-explanations'])
+finally:
+    from calibrated_explanations import CalibratedExplainer
+
 
 # -------------------------------------------------------
 # pylint: disable=invalid-name, missing-function-docstring
@@ -107,6 +121,7 @@ for dataset in klara:
                 ce.set_random_state(i)
                 tic = time.time()
                 factual_explanations = ce.explain_factual(testX)
+                factual_explanations.add_conjunctions(max_rule_size=4)
                 ct = time.time()-tic
                 stab_timer['ce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
@@ -146,6 +161,7 @@ for dataset in klara:
                 ce.set_random_state(i)
                 tic = time.time()
                 factual_explanations = ce.explain_factual(testX)
+                factual_explanations.add_conjunctions(max_rule_size=3)
                 ct = time.time()-tic
                 rob_timer['ce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')

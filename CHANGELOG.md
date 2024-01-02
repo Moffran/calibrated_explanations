@@ -1,14 +1,21 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.3...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.0...main)
+### Features
+### Fixes
+
+## [v0.3.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.0) - 2024-01-02
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.3...0.3.0)
 ### Features
 - Updated to version 1.4.1 of venn_abers. Added `precision=4` to the fitting of the venn_abers model to increase speed. 
 - Preparation for weighted categorical rules implemented but not yet activated. 
-- Added a state-of-the-art comparison with scripts and notebooks for evaluating the performance of the method in comparison with `LIME` and `SHAP`: see [Classification_Experiment_sota.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_sota.py) and [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) for running and evaluating the experiment.
+- Added a state-of-the-art comparison with scripts and notebooks for evaluating the performance of the method in comparison with `LIME` and `SHAP`: see [Classification_Experiment_sota.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_sota.py) and [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) for running and evaluating the experiment. Unzip [results_sota.zip](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/results_sota.zip) and run [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) to get the results used in the paper [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305).
+- Updated the parameters used by `plot_all` and `plot_explanation`.
 ### Fixes
 - Filtered out extreme target values in the quickstart notebook to make the regression examples more realistic. 
 - Fixed bugs related to how plots can be saved to file.
+- Fixed an issue where add_conjunctions with `max_rule_size=3` did not work.
 
 ## [v0.2.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.2.3) - 2023-11-04
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.2...v0.2.3)
