@@ -240,7 +240,7 @@ Further reading and citing
 --------------------------
 The `calibrated-explanations` method for classification is introduced in the paper:
 
-[Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305). arXiv preprint arXiv:2305.02305.
+[Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27.
 
 The extensions for regression are introduced in the paper:
 
