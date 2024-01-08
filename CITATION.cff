@@ -1,0 +1,82 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Calibrated Explanations
+message: >-
+  calibrated-explanations is a Python package for the local
+  feature importance explanation method called Calibrated
+  Explanations, supporting both classification and
+  regression. 
+type: software
+authors:
+  - given-names: Helena
+    family-names: Löfström
+    email: helena.lofstrom@ju.se
+    orcid: 'https://orcid.org/0000-0001-9633-0423'
+    affiliation: Jönköping University
+  - given-names: Tuwe
+    family-names: Löfström
+    email: tuwe.lofstrom@ju.se
+    affiliation: 'Jönköping AI Lab, Jönköping University'
+    orcid: 'https://orcid.org/0000-0003-0274-9026'
+  - given-names: Ulf
+    family-names: Johansson
+    email: ulf.johansson@ju.se
+    affiliation: 'Jönköping AI Lab, Jönköping University'
+  - given-names: Cecilia
+    family-names: Sönströd
+    email: cecilia.sonstrod@ju.se
+    affiliation: 'Jönköping AI Lab, Jönköping University'
+  - given-names: Rudy
+    family-names: Matela
+    email: rudy.matela@ju.se
+    affiliation: 'Jönköping AI Lab, Jönköping University'
+identifiers:
+  - type: doi
+    value: 10.1016/j.eswa.2024.123154
+    description: >-
+      Introductory paper: Calibrated Explanations: with
+      Uncertainty Information and Counterfactuals
+repository-code: 'https://github.com/Moffran/calibrated_explanations'
+abstract: >-
+  calibrated-explanations is a Python package for the local
+  feature importance explanation method called Calibrated
+  Explanations, supporting both classification and
+  regression. The proposed method is based on Venn-Abers
+  (classification & regression) and Conformal Predictive
+  Systems (regression) and has the following
+  characteristics:
+
+
+  * Fast, reliable, stable and robust feature importance
+  explanations.
+
+  * Calibration of the underlying model to ensure that
+  predictions reflect reality.
+
+  * Uncertainty quantification of the prediction from the
+  underlying model and the feature importance weights.
+
+  * Rules with straightforward interpretation in relation to
+  the feature weights.
+
+  * Possibility to generate counterfactual rules with
+  uncertainty quantification of the expected predictions.
+
+  * Conjunctional rules conveying joint contribution between
+  features.
+keywords:
+  - Calibrated Explanations
+  - Feature Importance
+  - Explainable AI
+  - Uncertainty Quantification
+  - Counterfactual Explanations
+  - Classification
+  - Regression
+  - Venn-Abers
+  - Conformal Predictive Systems
+  - Probabilistic Regression
+license: BSD-3-Clause
+version: v0.3.0
+date-released: '2024-01-02'
