@@ -280,6 +280,20 @@ Bibtex entry for the regression paper:
       primaryClass =    {cs.LG}
 }
 ```
+
+To cite this software, use the following bibtex entry:
+
+```bibtex
+@software{Lofstrom_Calibrated_Explanations_2024,
+	author = 	{Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia and Matela, Rudy},
+	license = 	{BSD-3-Clause},
+	title = 	{Calibrated Explanations},
+	url = 		{https://github.com/Moffran/calibrated_explanations},
+	version = 	{v0.3.0},
+	month = 	jan,
+	year = 		{2024}
+}
+```
   
 [Top](#calibrated-explanations-documentation)
 
