@@ -3,6 +3,38 @@
 ## [Unreleased]
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.0...main)
 ### Features
+- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README: 
+  - Updated the reference and bibtex to the published version of the introductory paper:
+    - Löfström, H., Löfström, T., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27.
+
+    - ```bibtex
+      @article{lofstrom2024calibrated,
+        title = 	{Calibrated explanations: With uncertainty information and counterfactuals},
+        journal = 	{Expert Systems with Applications},
+        pages = 	{123154},
+        year = 		{2024},
+        issn = 		{0957-4174},
+        doi = 		{https://doi.org/10.1016/j.eswa.2024.123154},
+        url = 		{https://www.sciencedirect.com/science/article/pii/S0957417424000198},
+        author = 	{Helena Löfström and Tuwe Löfström and Ulf Johansson and Cecilia Sönströd},
+        keywords = 	{Explainable AI, Feature importance, Calibrated explanations, Venn-Abers, Uncertainty quantification, Counterfactual explanations},
+        abstract = 	{While local explanations for AI models can offer insights into individual predictions, such as feature importance, they are plagued by issues like instability. The unreliability of feature weights, often skewed due to poorly calibrated ML models, deepens these challenges. Moreover, the critical aspect of feature importance uncertainty remains mostly unaddressed in Explainable AI (XAI). The novel feature importance explanation method presented in this paper, called Calibrated Explanations (CE), is designed to tackle these issues head-on. Built on the foundation of Venn-Abers, CE not only calibrates the underlying model but also delivers reliable feature importance explanations with an exact definition of the feature weights. CE goes beyond conventional solutions by addressing output uncertainty. It accomplishes this by providing uncertainty quantification for both feature weights and the model’s probability estimates. Additionally, CE is model-agnostic, featuring easily comprehensible conditional rules and the ability to generate counterfactual explanations with embedded uncertainty quantification. Results from an evaluation with 25 benchmark datasets underscore the efficacy of CE, making it stand as a fast, reliable, stable, and robust solution.}
+      }
+      ```
+  - Added [Code and results](https://github.com/tuvelofstrom/calibrating-explanations) for the [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2) paper, inspiring the idea behind Calibrated Explanations.
+  - Added a bibtex to the software repository:
+    - ```bibtex
+      @software{Lofstrom_Calibrated_Explanations_2024,
+        author = 	{Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia and Matela, Rudy},
+        license = 	{BSD-3-Clause},
+        title = 	{Calibrated Explanations},
+        url = 	{https://github.com/Moffran/calibrated_explanations},
+        version = 	{v0.3.0},
+        month = 	jan,
+        year = 	{2024}
+      }
+      ``` 
+- Added a [CITATION.cff](https://github.com/Moffran/calibrated_explanations/blob/main/CITATION.cff) with citation data for the software repository.
 ### Fixes
 
 ## [v0.3.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.0) - 2024-01-02
