@@ -233,6 +233,8 @@ the project page on [GitHub](https://github.com/Moffran/calibrated_explanations)
 You can find a detailed guide for contributions in
 [CONTRIBUTING.md](https://github.com/Moffran/calibrated_explanations/blob/main/CONTRIBUTING.md).
 
+[Top](#calibrated-explanations-documentation)
+
 
 Documentation
 -------------
