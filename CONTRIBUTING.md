@@ -11,4 +11,7 @@ File a new feature request by opening an issue and using the feature request tem
 File a new bug report by opening an issue and using the bug report template. Please make sure that the bug is not already listed in the [bug issues](https://github.com/Moffran/calibrated_explanations/labels/bug).
 
 ## Pull requests
-We are not yet ready to accept pull requests. However, we are very interested in hearing your feedback and suggestions. Please open an issue if you have any ideas or questions.
+Please send pull requests through the
+[PR tracker on GitHub](https://github.com/Moffran/calibrated_explanations/pulls).
+We have CI set up,
+so watch out for the automated test results.

@@ -223,12 +223,15 @@ The dependencies are:
   
 [Top](#calibrated-explanations-documentation)
 
-Contributing
------------
 
-Please, read [this](https://github.com/Moffran/calibrated_explanations/blob/main/CONTRIBUTING.md).
-  
-[Top](#calibrated-explanations-documentation)
+Contributing
+------------
+
+Contributions are welcome.
+Please send bug reports, feature requests or pull requests through
+the project page on [GitHub](https://github.com/Moffran/calibrated_explanations).
+You can find a detailed guide for contributions in
+[CONTRIBUTING.md](https://github.com/Moffran/calibrated_explanations/blob/main/CONTRIBUTING.md).
 
 
 Documentation
