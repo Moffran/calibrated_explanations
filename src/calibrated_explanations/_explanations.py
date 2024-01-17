@@ -8,7 +8,7 @@ from copy import deepcopy
 from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
-from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, EntropyDiscretizer, DecileDiscretizer
+from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, EntropyDiscretizer, DecileDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
 from.utils import make_directory
 
 class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
@@ -178,7 +178,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         # -------
         #     a boolean value indicating whether the explanations are counterfactuals.        
         # '''        
-        return isinstance(self.calibrated_explainer.discretizer, (DecileDiscretizer, EntropyDiscretizer))
+        return isinstance(self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer))
 
 
     def plot_all(self,
@@ -533,8 +533,8 @@ class FactualExplanation(CalibratedExplanation):
 
     def _check_preconditions(self):
         if 'regression' in self._get_explainer().mode:
-            if not isinstance(self._get_explainer().discretizer, BinaryDiscretizer):
-                warnings.warn('Factual explanations for regression recommend using the binary ' +\
+            if not isinstance(self._get_explainer().discretizer, BinaryRegressorDiscretizer):
+                warnings.warn('Factual explanations for regression recommend using the binaryRegressor ' +\
                                 'discretizer. Consider extracting factual explanations using ' +\
                                 '`explainer.explain_factual(test_set)`')
         else:
@@ -1022,9 +1022,9 @@ class CounterfactualExplanation(CalibratedExplanation):
         
     def _check_preconditions(self):
         if 'regression' in self._get_explainer().mode:
-            if not isinstance(self._get_explainer().discretizer, DecileDiscretizer):
+            if not isinstance(self._get_explainer().discretizer, RegressorDiscretizer):
                 warnings.warn('Counterfactual explanations for regression recommend using the ' +\
-                                'decile discretizer. Consider extracting counterfactual ' +\
+                                'regressor discretizer. Consider extracting counterfactual ' +\
                                 'explanations using `explainer.explain_counterfactual(test_set)`')
         else:
             if not isinstance(self._get_explainer().discretizer, EntropyDiscretizer):

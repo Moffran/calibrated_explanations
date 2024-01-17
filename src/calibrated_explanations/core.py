@@ -18,7 +18,8 @@ from lime.lime_tabular import LimeTabularExplainer
 
 from ._explanations import CalibratedExplanations
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
-                DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer
+                DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer, \
+                RegressorDiscretizer, BinaryRegressorDiscretizer
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils import safe_isinstance, safe_import, check_is_fitted
@@ -280,7 +281,7 @@ class CalibratedExplainer:
             intervals. 
         """
         if 'regression' in self.mode:
-            discretizer = 'binary'
+            discretizer = 'binaryRegressor'
         else:
             discretizer = 'binaryEntropy'
         self.set_discretizer(discretizer)
@@ -315,7 +316,7 @@ class CalibratedExplainer:
             intervals. 
         """
         if 'regression' in self.mode:
-            discretizer = 'decile'
+            discretizer = 'regressor'
         else:
             discretizer = 'entropy'
         self.set_discretizer(discretizer)
@@ -699,14 +700,18 @@ class CalibratedExplainer:
 
         if discretizer is None:
             if 'regression' in self.mode:
-                discretizer = 'binary'
+                discretizer = 'binaryRegressor'
             else:
                 discretizer = 'binaryEntropy'
         else:
             if 'regression'in self.mode:
-                assert discretizer is None or discretizer in ['binary', 'quartile', 'decile'], \
-                    "The discretizer must be 'binary' (default), 'quartile', or \
+                assert discretizer is None or discretizer in ['binary', 'quartile', 'decile', 'regressor', 'binaryRegressor'], \
+                    "The discretizer must be 'binaryRegressor' (default for factuals), 'regressor' (default for counterfactuals), 'binary', 'quartile', or \
                     'decile' for regression."
+            else:
+                assert discretizer is None or discretizer in ['binary', 'quartile', 'decile', 'entropy', 'binaryEntropy'], \
+                    "The discretizer must be 'binaryEntropy' (default for factuals), 'entropy' (default for counterfactuals), 'binary', 'quartile', or \
+                    'decile' for classification."
 
         if discretizer == 'quartile':
             self.discretizer = QuartileDiscretizer(
@@ -730,6 +735,16 @@ class CalibratedExplainer:
                     random_state=self.random_state)
         elif discretizer == 'binaryEntropy':
             self.discretizer = BinaryEntropyDiscretizer(
+                    cal_X, self.categorical_features,
+                    self.feature_names, labels=cal_y,
+                    random_state=self.random_state)
+        elif discretizer == 'regressor':
+            self.discretizer = RegressorDiscretizer(
+                    cal_X, self.categorical_features,
+                    self.feature_names, labels=cal_y,
+                    random_state=self.random_state)
+        elif discretizer == 'binaryRegressor':
+            self.discretizer = BinaryRegressorDiscretizer(
                     cal_X, self.categorical_features,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)

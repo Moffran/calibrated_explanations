@@ -9,7 +9,8 @@ by Helena Löfström et al.
 """
 from .core import CalibratedExplainer, WrapCalibratedExplainer, __version__
 from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
-                    EntropyDiscretizer, QuartileDiscretizer, DecileDiscretizer
+                    EntropyDiscretizer, QuartileDiscretizer, DecileDiscretizer, \
+                    RegressorDiscretizer, BinaryRegressorDiscretizer
 from ._explanations import CalibratedExplanations, CalibratedExplanation, \
                     FactualExplanation, CounterfactualExplanation
 from .VennAbers import VennAbers
