@@ -8,7 +8,7 @@ from copy import deepcopy
 from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
-from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, EntropyDiscretizer, DecileDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
+from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
 from.utils import make_directory
 
 class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
