@@ -54,8 +54,7 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
             column x.
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
-        data_stats: must have 'means', 'stds', 'mins' and 'maxs', use this
-            if you don't want these values to be computed from data
+        labels: must have target labels of the data  
     """
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         if labels is None:
@@ -100,8 +99,7 @@ class RegressorDiscretizer(BaseDiscretizer):
             column x.
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
-        data_stats: must have 'means', 'stds', 'mins' and 'maxs', use this
-            if you don't want these values to be computed from data
+        labels: must have target values of the data
     """
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         if labels is None:
@@ -133,7 +131,7 @@ class RegressorDiscretizer(BaseDiscretizer):
 
 
 class BinaryRegressorDiscretizer(BaseDiscretizer):
-    """a dynamic Regressor discretizer for the CalibratedExplainer
+    """a dynamic binary Regressor discretizer for the CalibratedExplainer
 
     Args:        
         data: numpy 2d array
@@ -146,13 +144,12 @@ class BinaryRegressorDiscretizer(BaseDiscretizer):
             column x.
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
-        data_stats: must have 'means', 'stds', 'mins' and 'maxs', use this
-            if you don't want these values to be computed from data
+        labels: must have target values of the data
     """
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         if labels is None:
             raise ValueError('Labels must not be None when using '+\
-                             'RegressorDiscretizer')
+                             'BinaryRegressorDiscretizer')
         BaseDiscretizer.__init__(self, data, categorical_features,
                                  feature_names, labels=labels,
                                  random_state=random_state)
