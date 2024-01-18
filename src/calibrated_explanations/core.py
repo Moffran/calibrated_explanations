@@ -158,21 +158,26 @@ class CalibratedExplainer:
         self.shap_exp = None
 
 
-
     def __repr__(self):
-        return f"CalibratedExplainer:\n\t\
+        disp_str = f"CalibratedExplainer:\n\t\
                 mode={self.mode}\n\t\
+                {f'mondrian={self.bins is not None}'}\n\t\
                 discretizer={self.discretizer.__class__}\n\t\
                 model={self.model}\n\t\
-                {f'difficulty_estimator={self.difficulty_estimator}' if self.mode == 'regression' else ''}\n\t\
-                {f'feature_names={self.feature_names}' if self.feature_names is not None and self.verbose else ''}\n\t\
-                {f'categorical_features={self.categorical_features}' if self.categorical_features is not None and self.verbose else ''}\n\t\
-                {f'categorical_labels={self.categorical_labels}' if self.categorical_labels is not None and self.verbose else ''}\n\t\
-                {f'class_labels={self.class_labels}' if self.class_labels is not None and self.verbose else ''}\n\t\
-                {f'sample_percentiles={self.sample_percentiles}' if self.verbose else ''}\n\t\
-                {f'random_state={self.random_state}' if self.verbose else ''}\n\t\
-                {'mondrian=True' if self.bins is not None and self.verbose else ''}\n\t\
-                {f'verbose={self.verbose}' if self.verbose else ''}"
+                {f'difficulty_estimator={self.difficulty_estimator}' if self.mode == 'regression' else ''}"
+        if self.verbose:
+            disp_str += f"\n\tsample_percentiles={self.sample_percentiles}\
+                        \n\trandom_state={self.random_state}\
+                        \n\tverbose={self.verbose}"
+            if self.feature_names is not None:
+                disp_str += f"\n\tfeature_names={self.feature_names}"
+            if self.categorical_features is not None:
+                disp_str += f"\n\tcategorical_features={self.categorical_features}"
+            if self.categorical_labels is not None:
+                disp_str += f"\n\tcategorical_labels={self.categorical_labels}"
+            if self.class_labels is not None:
+                disp_str += f"\n\tclass_labels={self.class_labels}"
+        return disp_str
 
 
     # pylint: disable=invalid-name
@@ -181,6 +186,7 @@ class CalibratedExplainer:
                 threshold = None, # The same meaning as threshold has for cps in crepes.
                 low_high_percentiles = (5, 95),
                 classes = None,
+                bins = None,
                 ):
         # """
         # Predicts the target variable for the test data.
@@ -216,18 +222,21 @@ class CalibratedExplainer:
         #     ConformalPredictiveSystem.
         # classes : ndarray of shape (n_samples,)
         #     The classes predicted for the original instance. None if not multiclass or regression.
+        # bins : array-like of shape (n_samples,), default=None
+        #     Mondrian categories
         # """
         assert self.__initialized, "The model must be initialized before calling predict."
         if self.mode == 'classification':
             if self._is_multiclass():
                 predict, low, high, new_classes = self.interval_model.predict_proba(test_X,
                                                                                     output_interval=True,
-                                                                                    classes=classes)
+                                                                                    classes=classes,
+                                                                                    bins=bins)
                 if classes is None:
                     return predict[:,1], low, high, new_classes
                 return predict[:,1], low, high, None
 
-            predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True)
+            predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True, bins=bins)
             return predict[:,1], low, high, None
         if 'regression' in self.mode:
             # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
@@ -244,14 +253,14 @@ class CalibratedExplainer:
                 low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
                 high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
-                return self.interval_model.predict_uncertainty(test_X, low_high_percentiles)
+                return self.interval_model.predict_uncertainty(test_X, low_high_percentiles, bins=bins)
 
             # regression with threshold condition
             if not np.isscalar(threshold) and len(threshold) != len(test_X):
                 raise ValueError("The length of the threshold parameter must be either a scalar or \
                     the same as the number of instances in testX.")
             # pylint: disable=unexpected-keyword-arg
-            return self.interval_model.predict_probability(test_X, threshold)
+            return self.interval_model.predict_probability(test_X, threshold, bins=bins)
 
         return None, None, None, None # Should never happen
 
@@ -259,17 +268,20 @@ class CalibratedExplainer:
                         test_X,
                         threshold = None,
                         low_high_percentiles = (5, 95),
+                        bins = None,
                         ) -> CalibratedExplanations:
         """
         Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for factual explanations.
 
         Parameters
         ----------
-        testX : A set of test objects to predict
+        testX : A set with n_samples of test objects to predict
         threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression. 
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
+        bins : array-like of shape (n_samples,), default=None
+            Mondrian categories
 
         Raises
         ------
@@ -288,23 +300,26 @@ class CalibratedExplainer:
         else:
             discretizer = 'binaryEntropy'
         self.set_discretizer(discretizer)
-        return self(test_X, threshold, low_high_percentiles)
+        return self(test_X, threshold, low_high_percentiles, bins)
 
     def explain_counterfactual(self,
                                 test_X,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
+                                bins = None,
                                 ) -> CalibratedExplanations:
         """
         Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for counterfactual explanations.
 
         Parameters
         ----------
-        testX : A set of test objects to predict
+        testX : A set with n_samples of test objects to predict
         threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression. 
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
+        bins : array-like of shape (n_samples,), default=None
+            Mondrian categories
 
         Raises
         ------
@@ -323,12 +338,13 @@ class CalibratedExplainer:
         else:
             discretizer = 'entropy'
         self.set_discretizer(discretizer)
-        return self(test_X, threshold, low_high_percentiles)
+        return self(test_X, threshold, low_high_percentiles, bins)
 
     def __call__(self,
                 testX,
                 threshold = None,
                 low_high_percentiles = (5, 95),
+                bins = None,
                 ) -> CalibratedExplanations:
         """
         Calling self as a function creates a CalibratedExplanations object for the test data with the 
@@ -342,7 +358,10 @@ class CalibratedExplainer:
         if testX.shape[1] != self.cal_X.shape[1]:
             raise ValueError("The number of features in the test data must be the same as in the \
                             calibration data.")
-        explanation = CalibratedExplanations(self, testX, threshold)
+        if self._is_mondrian():
+            assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
+            assert len(bins) == len(testX), "The length of the bins parameter must be the same as the number of instances in testX."
+        explanation = CalibratedExplanations(self, testX, threshold, bins)
 
         is_probabilistic = True # classification or when threshold is used for regression
         if threshold is not None:
@@ -364,9 +383,11 @@ class CalibratedExplainer:
         binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': [], 'fractions': []}
 
         for i, x in enumerate(testX):
+            bin_x = [bins[i]] if bins is not None else None
+                
             if threshold is not None and not np.isscalar(explanation.y_threshold):
                 threshold = float(explanation.y_threshold[i])
-            predict, low, high, predicted_class = self._predict(x.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles)
+            predict, low, high, predicted_class = self._predict(x.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bin_x)
             prediction['predict'].append(predict[0])
             prediction['low'].append(low[0])
             prediction['high'].append(high[0])
@@ -397,7 +418,7 @@ class CalibratedExplainer:
                             current_bin = bin_value  # If the discretized value is the same as the original, skip it
 
                         perturbed[f] = value
-                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class, bins=bin_x)
                         average_predict[bin_value] = predict[0]
                         low_predict[bin_value] = low[0]
                         high_predict[bin_value] = high[0]
@@ -418,7 +439,7 @@ class CalibratedExplainer:
                         rule_value.append(lesser_values)
                         for value in lesser_values:
                             perturbed[f] = value
-                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class, bins=bin_x)
                             average_predict[bin_value] += predict[0]
                             low_predict[bin_value] += low[0]
                             high_predict[bin_value] += high[0]
@@ -432,7 +453,7 @@ class CalibratedExplainer:
                         rule_value.append(greater_values)
                         for value in greater_values:
                             perturbed[f] = value
-                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class, bins=bin_x)
                             average_predict[bin_value] += predict[0]
                             low_predict[bin_value] += low[0]
                             high_predict[bin_value] += high[0]
@@ -446,7 +467,7 @@ class CalibratedExplainer:
                     rule_value.append(covered_values)
                     for value in covered_values:
                         perturbed[f] = value
-                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class)
+                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class, bins=bin_x)
                         average_predict[bin_value] += predict[0]
                         low_predict[bin_value] += low[0]
                         high_predict[bin_value] += high[0]
@@ -660,7 +681,7 @@ class CalibratedExplainer:
 
     def __initialize_interval_model(self) -> None:
         if self.mode == 'classification':
-            self.interval_model = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model)
+            self.interval_model = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model, self.bins)
         elif 'regression' in self.mode:
             self.interval_model = IntervalRegressor(self)
         self.__initialized = True
@@ -777,6 +798,16 @@ class CalibratedExplainer:
         #     explanation (CalibratedExplanations): the latest created explanation
         # """
         self.latest_explanation = explanation
+
+
+
+    def _is_mondrian(self):
+        # """returns whether the explainer is a Mondrian explainer
+
+        # Returns:
+        #     bool: True if Mondrian
+        # """
+        return self.bins is not None
 
 
 

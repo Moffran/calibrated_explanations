@@ -15,7 +15,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """
     A class for storing and visualizing calibrated explanations.
     """
-    def __init__(self, calibrated_explainer, test_objects, y_threshold) -> None:
+    def __init__(self, calibrated_explainer, test_objects, y_threshold, bins) -> None:
         self.calibrated_explainer = deepcopy(calibrated_explainer)
         self.test_objects = test_objects
         self.y_threshold = y_threshold
@@ -24,6 +24,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         self.start_index = 0
         self.current_index = self.start_index
         self.end_index = len(test_objects[:,0])
+        self.bins = bins
 
     def __iter__(self):
         self.current_index = self.start_index
@@ -853,8 +854,8 @@ class FactualExplanation(CalibratedExplanation):
 
         # Plot the base prediction in black/grey
         x = np.linspace(0, num_to_show-1, num_to_show)
-        xl = np.linspace(-0.5, x[0], 2)
-        xh = np.linspace(x[-1], x[-1]+0.5, 2)
+        xl = np.linspace(-0.5, x[0] if len(x) > 0 else 0, 2)
+        xh = np.linspace(x[-1], x[-1]+0.5 if len(x) > 0 else 0.5, 2)
         ax_main.fill_betweenx(x, [0], [0], color='k')
         ax_main.fill_betweenx(xl, [0], [0], color='k')
         ax_main.fill_betweenx(xh, [0], [0], color='k')
@@ -897,13 +898,13 @@ class FactualExplanation(CalibratedExplanation):
         ax_main.set_yticks(range(num_to_show))
         ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
             if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
-        ax_main.set_ylim(-0.5,x[-1]+0.5)
+        ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
         ax_main.set_ylabel('Rules')
         ax_main.set_xlabel('Feature weights')
         ax_main_twin = ax_main.twinx()
         ax_main_twin.set_yticks(range(num_to_show))
         ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
-        ax_main_twin.set_ylim(-0.5,x[-1]+0.5)
+        ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
         ax_main_twin.set_ylabel('Instance values')
         for ext in save_ext:
             fig.savefig(path + title + ext, bbox_inches='tight') 
@@ -994,14 +995,14 @@ class FactualExplanation(CalibratedExplanation):
         ax_main.set_yticks(range(num_to_show))
         ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
             if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
-        ax_main.set_ylim(-0.5,x[-1]+0.5)
+        ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
         ax_main.set_ylabel('Rules')
         ax_main.set_xlabel('Feature weights')
         ax_main.set_xlim(x_min, x_max)
         ax_main_twin = ax_main.twinx()
         ax_main_twin.set_yticks(range(num_to_show))
         ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
-        ax_main_twin.set_ylim(-0.5,x[-1]+0.5)
+        ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
         ax_main_twin.set_ylabel('Instance values')
         for ext in save_ext:
             fig.savefig(path + title + ext, bbox_inches='tight')
@@ -1355,8 +1356,8 @@ class CounterfactualExplanation(CalibratedExplanation):
         p = predict['predict']
         venn_abers={'low_high': [p_l,p_h],'predict':p}
         # Fill original Venn Abers interval
-        xl = np.linspace(-0.5, x[0], 2)
-        xh = np.linspace(x[-1], x[-1]+0.5, 2)
+        xl = np.linspace(-0.5, x[0], 2) if len(x) > 0 else np.linspace(-0.5, 0, 2)
+        xh = np.linspace(x[-1], x[-1]+0.5, 2) if len(x) > 0 else np.linspace(0, 0.5, 2)
         if (p_l < 0.5 and p_h < 0.5) or (p_l > 0.5 and p_h > 0.5) or \
                             'regression' in self._get_explainer().mode:
             color = self.__get_fill_color({'predict':1},0.15) \
@@ -1408,12 +1409,12 @@ class CounterfactualExplanation(CalibratedExplanation):
         ax_main.set_yticks(range(num_to_show))
         ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
             if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
-        ax_main.set_ylim(-0.5,x[-1]+0.5)
+        ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
         ax_main.set_ylabel('Counterfactual rules')
         ax_main_twin = ax_main.twinx()
         ax_main_twin.set_yticks(range(num_to_show))
         ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
-        ax_main_twin.set_ylim(-0.5,x[-1]+0.5)
+        ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
         ax_main_twin.set_ylabel('Instance values')
         if self._is_thresholded():
             # pylint: disable=unsubscriptable-object
@@ -1445,7 +1446,10 @@ class CounterfactualExplanation(CalibratedExplanation):
             ax_main.set_xlim(0,1)
             ax_main.set_xticks(np.linspace(0, 1, 11))
 
-        fig.tight_layout()
+        try:
+            fig.tight_layout()
+        except: # pylint: disable=bare-except
+            pass
         for ext in save_ext:
             fig.savefig(path + title + ext, bbox_inches='tight')
         if show:

@@ -37,16 +37,16 @@ class IntervalRegressor:
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
             sigma_cal = self.ce._get_sigma_test(X=self.ce.cal_X)
-            cps.fit(residuals=self.residual_cal, sigmas=sigma_cal)
+            cps.fit(residuals=self.residual_cal, sigmas=sigma_cal, bins=self.ce.bins)
         else:
-            cps.fit(residuals=self.residual_cal)
+            cps.fit(residuals=self.residual_cal, bins=self.ce.bins)
         self.cps = cps
         self.venn_abers = None
         self.proba_cal = None
         self.y_threshold = None
         self.current_y_threshold = None
 
-    def predict_probability(self, test_X, y_threshold):
+    def predict_probability(self, test_X, y_threshold, bins=None):
         '''The `predict_probability` function takes in a test dataset and a threshold value, and returns
         the predicted probabilities for each instance in the dataset being above the threshold(s), along 
         with confidence intervals.
@@ -60,6 +60,9 @@ class IntervalRegressor:
             The `y_threshold` parameter is used to determine the probability of the true value being 
         below the threshold value. If the predicted probability of the positive class is smaller than or 
         equal to `y_threshold`, the instance is classified as positive; otherwise, it is classified as negative.
+        bins 
+            array-like of shape (n_samples,), default=None
+            Mondrian categories
         
         Returns
         -------
@@ -70,7 +73,7 @@ class IntervalRegressor:
         if np.isscalar(self.y_threshold):
             self.current_y_threshold = self.y_threshold
             self.compute_proba_cal(self.y_threshold)
-            proba, low, high = self.venn_abers.predict_proba(test_X, output_interval=True)
+            proba, low, high = self.venn_abers.predict_proba(test_X, output_interval=True, bins=bins)
             return proba[:, 1], low, high, None
 
         interval = np.zeros((test_X.shape[0],2))
@@ -78,12 +81,12 @@ class IntervalRegressor:
         for i, _ in enumerate(proba):
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
-            p, low, high = self.venn_abers.predict_proba(test_X[i, :].reshape(1, -1), output_interval=True)
+            p, low, high = self.venn_abers.predict_proba(test_X[i, :].reshape(1, -1), output_interval=True, bins=bins)
             proba[i] = p[:,1]
             interval[i, :] = np.array([low[0], high[0]])
         return proba, interval[:, 0], interval[:, 1], None
 
-    def predict_uncertainty(self, test_X, low_high_percentiles):
+    def predict_uncertainty(self, test_X, low_high_percentiles, bins=None):
         '''The function `predict_uncertainty` predicts the uncertainty of a given set of instances using a
         `ConformalPredictiveSystem` and returns the predicted values along with the lower and upper bounds of
         the uncertainty interval.
@@ -98,7 +101,10 @@ class IntervalRegressor:
         represents the lower percentile and the second value represents the higher percentile. These
         percentiles are used to calculate the prediction interval for the uncertainty estimation. If the
         first value is set to -np.inf (negative infinity), the interval will be one-sided and upper-bounded 
-        and if the second value is np.inf (infinity), the interval will be one-sided and lower-bounded.
+        and if the second value is np.inf (infinity), the interval will be one-sided and lower-bounded.        
+        bins 
+            array-like of shape (n_samples,), default=None
+            Mondrian categories
         
         Returns
         -------
@@ -113,14 +119,15 @@ class IntervalRegressor:
 
         interval = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test,
                                     lower_percentiles=low,
-                                    higher_percentiles=high)
+                                    higher_percentiles=high,
+                                    bins=bins)
         test_y_hat = (interval[:, 1] + interval[:, 3]) / 2  # The median
         return test_y_hat, \
             interval[:, 0] if low_high_percentiles[0] != -np.inf else np.array([np.min(self.ce.cal_y)]), \
             interval[:, 2] if low_high_percentiles[1] != np.inf else np.array([np.max(self.ce.cal_y)]), \
             None
 
-    def predict_proba(self, test_X):
+    def predict_proba(self, test_X, bins=None):
         '''The function `predict_proba` takes in a set of test data and returns the predicted probabilities
         for being above the y_threshold.
         
@@ -128,7 +135,10 @@ class IntervalRegressor:
         ----------
         test_X
             The test_X parameter is the input data for which you want to predict the probabilities. It
-        should be a numpy array or a pandas DataFrame containing the features of the test data.
+        should be a numpy array or a pandas DataFrame containing the features of the test data.     
+        bins 
+            array-like of shape (n_samples,), default=None
+            Mondrian categories
         
         Returns
         -------
@@ -140,7 +150,7 @@ class IntervalRegressor:
         test_y_hat = self.ce.model.predict(test_X)
 
         sigma_test = self.ce._get_sigma_test(X=test_X)  # pylint: disable=protected-access
-        proba = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test, y=self.current_y_threshold)
+        proba = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test, y=self.current_y_threshold, bins=bins)
         return np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
 
     def compute_proba_cal(self, y_threshold: float):
@@ -151,7 +161,10 @@ class IntervalRegressor:
         y_threshold : float
             The `y_threshold` parameter is a float value that represents the threshold for the probability.
         It is used in the `compute_proba_cal` method to determine the predicted probabilities of the 
-        calibration set for a given threshold value.
+        calibration set for a given threshold value.     
+        bins 
+            array-like of shape (n_samples,), default=None
+            Mondrian categories
         
         '''
         # A less exact but faster solution, suitable when difficulty_estimator is assigned.
@@ -160,7 +173,8 @@ class IntervalRegressor:
             sigmas = self.ce._get_sigma_test(self.ce.cal_X)  # pylint: disable=protected-access
             proba = self.cps.predict(y_hat=self.cal_y_hat,
                                                 y=y_threshold,
-                                                sigmas=sigmas)
+                                                sigmas=sigmas,
+                                                bins=self.ce.bins)
             self.proba_cal = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
         else:
             cps = crepes.ConformalPredictiveSystem()
@@ -168,10 +182,11 @@ class IntervalRegressor:
             for i, _ in enumerate(self.residual_cal):
                 idx = np.setdiff1d(np.arange(len(self.residual_cal)), i)
                 sigma_cal = self.ce._get_sigma_test(self.ce.cal_X[idx, :])  # pylint: disable=protected-access
-                cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal)
+                cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal, bins=self.ce.bins[idx])
                 sigma_i = self.ce._get_sigma_test(self.ce.cal_X[i, :].reshape(1, -1))  # pylint: disable=protected-access
                 self.proba_cal[i, 1] = cps.predict(y_hat=[self.cal_y_hat[i]],
                                                 y=y_threshold,
-                                                sigmas=sigma_i)
+                                                sigmas=sigma_i,
+                                                bins=[self.ce.bins[i]])
                 self.proba_cal[i, 0] = 1 - self.proba_cal[i, 1]
-        self.venn_abers = VennAbers(self.proba_cal, (self.ce.cal_y <= y_threshold).astype(int), self)
+        self.venn_abers = VennAbers(self.proba_cal, (self.ce.cal_y <= y_threshold).astype(int), self, bins=self.ce.bins)
