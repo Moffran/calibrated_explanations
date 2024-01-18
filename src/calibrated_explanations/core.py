@@ -384,7 +384,7 @@ class CalibratedExplainer:
 
         for i, x in enumerate(testX):
             bin_x = [bins[i]] if bins is not None else None
-                
+
             if threshold is not None and not np.isscalar(explanation.y_threshold):
                 threshold = float(explanation.y_threshold[i])
             predict, low, high, predicted_class = self._predict(x.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bin_x)
