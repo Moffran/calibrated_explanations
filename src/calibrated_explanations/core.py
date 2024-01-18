@@ -51,6 +51,7 @@ class CalibratedExplainer:
                 categorical_features = None,
                 categorical_labels = None,
                 class_labels = None,
+                bins = None,
                 difficulty_estimator = None,
                 sample_percentiles = [25, 50, 75],
                 random_state = 42,
@@ -83,6 +84,8 @@ class CalibratedExplainer:
         class_labels : dict(int, str), default=None
             A dictionary mapping numerical target values to class names. This parameter is only applicable
             for classification models. If None, the numerical target values will be used as labels.
+        bins : array-like of shape (n_samples,), default=None
+            Mondrian categories
         difficulty_estimator : DifficultyEstimator, default=None
             A `DifficultyEstimator` object from the `crepes` package. It is used to estimate the difficulty of
             explaining a prediction. If None, no difficulty estimation is used. This parameter is only used
@@ -123,6 +126,7 @@ class CalibratedExplainer:
         self.set_random_state(random_state)
         self.sample_percentiles = sample_percentiles
         self.verbose = verbose
+        self.bins = bins
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.__set_mode(str.lower(mode), initialize=False)
@@ -160,16 +164,15 @@ class CalibratedExplainer:
                 mode={self.mode}\n\t\
                 discretizer={self.discretizer.__class__}\n\t\
                 model={self.model}\n\t\
-                {f'difficulty_estimator={self.difficulty_estimator}' if self.mode == 'regression' else ''}"
-
-                # feature_names={self.feature_names}\n\t\
-                # categorical_features={self.categorical_features}\n\t\
-                # categorical_labels={self.categorical_labels}\n\t\
-                # class_labels={self.class_labels}\n\t\
-                # sample_percentiles={self.sample_percentiles}\n\t\
-                # num_neighbors={self.num_neighbors}\n\t\
-                # random_state={self.random_state}\n\t\
-                # verbose={self.verbose}\n\t\
+                {f'difficulty_estimator={self.difficulty_estimator}' if self.mode == 'regression' else ''}\n\t\
+                {f'feature_names={self.feature_names}' if self.feature_names is not None and self.verbose else ''}\n\t\
+                {f'categorical_features={self.categorical_features}' if self.categorical_features is not None and self.verbose else ''}\n\t\
+                {f'categorical_labels={self.categorical_labels}' if self.categorical_labels is not None and self.verbose else ''}\n\t\
+                {f'class_labels={self.class_labels}' if self.class_labels is not None and self.verbose else ''}\n\t\
+                {f'sample_percentiles={self.sample_percentiles}' if self.verbose else ''}\n\t\
+                {f'random_state={self.random_state}' if self.verbose else ''}\n\t\
+                {'mondrian=True' if self.bins is not None and self.verbose else ''}\n\t\
+                {f'verbose={self.verbose}' if self.verbose else ''}"
 
 
     # pylint: disable=invalid-name

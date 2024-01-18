@@ -37,6 +37,7 @@
       ``` 
 - Added a [CITATION.cff](https://github.com/Moffran/calibrated_explanations/blob/main/CITATION.cff) with citation data for the software repository.
 ### Fixes
+- Extended `__repr__` to include additional fields when `verbose=True`.
 
 ## [v0.3.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.0) - 2024-01-02
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.3...v0.3.0)
