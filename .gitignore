@@ -10,6 +10,7 @@ results/
 doc/
 evaluation/secret/
 prof/
+debug/
 
 calibrated-explanations/
 
