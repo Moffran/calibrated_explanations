@@ -17,7 +17,7 @@ from sklearn.model_selection import train_test_split
 dataset = fetch_openml(name="wine", version=7, as_frame=True)
 
 X = dataset.data.values.astype(float)
-y = dataset.target.values
+y = (dataset.target.values == 'True').astype(int)
 
 feature_names = dataset.feature_names
 
