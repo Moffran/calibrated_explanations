@@ -159,7 +159,11 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         raise RuntimeError(msg % {"name": type(estimator).__name__})
 
 def is_notebook():
+    '''
+    Check if the code is running in a Jupyter notebook
+    '''
     try:
+        # pylint: disable=import-outside-toplevel
         from IPython import get_ipython
         if 'IPKernelApp' not in get_ipython().config:  # pragma: no cover
             return False
