@@ -3,13 +3,14 @@
 """contains the CalibratedExplanations class created by the CalibratedExplainer class
 """
 import os
+# from pyexpat import features
 import warnings
 from copy import deepcopy
 from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
-from.utils import make_directory
+from .utils import make_directory, is_notebook, safe_import
 
 class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """
@@ -93,10 +94,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         # """finalize the explanation by adding the binned data and the feature weights
         # """
         for i, instance in enumerate(self.test_objects):
+            instance_bin = self.bins[i] if self.bins is not None else None
             if self._is_counterfactual():
-                explanation = CounterfactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold)
+                explanation = CounterfactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
             else:
-                explanation = FactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold)
+                explanation = FactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
             self.explanations.append(explanation)
         self.calibrated_explainer._set_latest_explanation(self) # pylint: disable=protected-access
         
@@ -186,7 +188,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 n_features_to_show=10,
                 show=False,
                 filename='',
-                uncertainty=False):
+                uncertainty=False,
+                interactive=False):
         '''The function `plot_all` plots either counterfactual or factual explanations for a given
         instance, with the option to show or save the plots.
         
@@ -219,12 +222,12 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         for index, explanation in enumerate(self.explanations):
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
-            explanation.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty)
+            explanation.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty, interactive=interactive)
 
 
 
     # pylint: disable=too-many-arguments
-    def plot_explanation(self, instance_index, n_features_to_show=10, show=False, filename='', uncertainty=False):
+    def plot_explanation(self, instance_index, n_features_to_show=10, show=False, filename='', uncertainty=False, interactive=False):
         '''This function plots the explanation for a given instance using either factual or
         counterfactual plots.
         
@@ -251,10 +254,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         factual = self.get_explanation(instance_index)
-        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty)
+        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty, interactive=interactive)
 
     # pylint: disable=too-many-arguments
-    def plot_factual(self, instance_index, n_features_to_show=10, show=False, filename='', uncertainty=False):
+    def plot_factual(self, instance_index, n_features_to_show=10, show=False, filename='', uncertainty=False, interactive=False):
         '''This function plots the factual explanation for a given instance using either probabilistic or
         regression plots.
         
@@ -281,10 +284,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         factual = self.get_explanation(instance_index)
-        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty)
+        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty, interactive=interactive)
 
 
-    def plot_counterfactual(self, instance_index, n_features_to_show=10, show=False, filename=''):        
+    def plot_counterfactual(self, instance_index, n_features_to_show=10, show=False, filename='', interactive=False):        
         '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
         a dataset.
         
@@ -306,7 +309,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         '''
         counterfactual = self.get_explanation(instance_index)
-        counterfactual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename)
+        counterfactual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, interactive=interactive)
 
 
     # pylint: disable=protected-access
@@ -364,7 +367,7 @@ class CalibratedExplanation(ABC):
     '''
     A class for storing and visualizing calibrated explanations.
     '''
-    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None):
+    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
         self.calibrated_explanations = calibrated_explanations
         self.instance_index = instance_index
         self.test_object = test_object
@@ -388,6 +391,7 @@ class CalibratedExplanation(ABC):
         self.conjunctive_rules = []
         self._has_rules = False
         self._has_conjunctive_rules = False
+        self.bin = [instance_bin] if instance_bin is not None else None
         
     def _get_explainer(self):
         return self.calibrated_explanations._get_explainer() # pylint: disable=protected-access
@@ -484,7 +488,7 @@ class CalibratedExplanation(ABC):
     
 
     def _predict_conjunctive(self, rule_value_set, original_features, perturbed, threshold, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
-                            predicted_class):
+                            predicted_class, bins=None):
         # """support function to calculate the prediction for a conjunctive rule
         # """
         rule_predict, rule_low, rule_high, rule_count = 0,0,0,0
@@ -503,7 +507,7 @@ class CalibratedExplanation(ABC):
                         perturbed[of3] = value_3
                         p_value, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), # pylint: disable=protected-access
                                             threshold=threshold, low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
-                                            classes=predicted_class)
+                                            classes=predicted_class, bins=bins)
                         rule_predict += p_value[0]
                         rule_low += low[0]
                         rule_high += high[0]
@@ -511,7 +515,7 @@ class CalibratedExplanation(ABC):
                 else:                    
                     p_value, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), # pylint: disable=protected-access
                                                 threshold=threshold, low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
-                                                classes=predicted_class)
+                                                classes=predicted_class, bins=bins)
                     rule_predict += p_value[0]
                     rule_low += low[0]
                     rule_high += high[0]
@@ -521,14 +525,55 @@ class CalibratedExplanation(ABC):
         rule_high /= rule_count
         return rule_predict, rule_low, rule_high
 
+    
+    def _predict_new(self, rule_idx, new_value):
+        return rule_idx, new_value
+
+
+    def _get_slider_values(self, index):
+        # """gets the slider values for a feature or rule
+
+        # Args:
+        #     index (int): the index of the feature or rule
+
+        # Returns:
+        #     min: lowest value of the slider
+        #     max: highest value of the slider
+        #     step: step size of the slider
+        #     value: initial value of the slider
+        # """
+        instance = deepcopy(self.test_object)
+        if index in self._get_explainer().categorical_features:
+            if self._get_explainer().categorical_labels is not None:
+                try:
+                    value = self._get_explainer().categorical_labels[index][int(instance[index])]
+                    min_value = self._get_explainer().categorical_labels[index]
+                except IndexError:
+                    value = instance[index]
+            else:
+                value = instance[index]
+            min_value = np.unique(self._get_explainer().cal_X[:,index])
+            max_value = None
+            num_values = len(min_value)
+        else:
+            value = self._get_explainer().discretizer.values[index][int(instance[index])]
+            if '<' in self._get_explainer().discretizer.names[index][int(instance[index])]:
+                min_value = np.min(self._get_explainer().cal_X[:,index])
+                max_value = instance[index]
+            else:
+                min_value = instance[index]
+                max_value = np.max(self._get_explainer().cal_X[:,index])                
+        num_values = len(np.unique([self._get_explainer().cal_X[:,index] > min_value and self._get_explainer().cal_X[:,index] < max_value]))
+        value = self.test_object[index]
+        return min_value, max_value, (max_value-min_value)/num_values, value
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class FactualExplanation(CalibratedExplanation):
     '''
     A class for storing and visualizing factual explanations.
     '''
-    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None):
-        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
+    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
 
@@ -688,7 +733,8 @@ class FactualExplanation(CalibratedExplanation):
                                                                         original_features,
                                                                         deepcopy(x_original),
                                                                         threshold,
-                                                                        predicted_class)
+                                                                        predicted_class,
+                                                                        bins=self.bin)
 
                 conjunctive['predict'].append(rule_predict)
                 conjunctive['predict_low'].append(rule_low)
@@ -711,11 +757,11 @@ class FactualExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
 
-    def plot_factual(self, n_features_to_show=None, show=False, filename='', uncertainty=False):
+    def plot_factual(self, n_features_to_show=None, show=False, filename='', uncertainty=False, interactive=False):
         '''The function `plot_factual` plots the factual explanation for a given instance using either
         probabilistic or regression plots.
         '''
-        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty)
+        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty, interactive=interactive)
 
     # pylint: disable=consider-iterating-dictionary
     def plot_explanation(self, n_features_to_show=None, **kwargs):
@@ -747,6 +793,7 @@ class FactualExplanation(CalibratedExplanation):
         show = kwargs['show'] if 'show' in kwargs.keys() else False
         filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
         uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs.keys() else False
+        interactive = kwargs['interactive'] if 'interactive' in kwargs.keys() else False
         
         
         factual = self._get_rules() #get_explanation(instance_index)
@@ -782,16 +829,16 @@ class FactualExplanation(CalibratedExplanation):
         if 'classification' in self._get_explainer().mode or self._is_thresholded():
             self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
                         n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
-                        save_ext=save_ext)
+                        save_ext=save_ext, interactive=interactive)
         else:                
             self.__plot_regression(factual['value'], predict, feature_weights, features_to_plot,
                         n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
-                        save_ext=save_ext)
+                        save_ext=save_ext, interactive=interactive)
 
     # pylint: disable=dangerous-default-value
     def __plot_probabilistic(self, instance, predict, feature_weights, features_to_plot, num_to_show,
                     column_names, title, path, show, interval=False, idx=None,
-                    save_ext=['svg','pdf','png']):
+                    save_ext=['svg','pdf','png'], interactive=False):
         """plots regular and uncertainty explanations"""
         if interval is True:
             assert idx is not None
@@ -910,12 +957,50 @@ class FactualExplanation(CalibratedExplanation):
             fig.savefig(path + title + ext, bbox_inches='tight') 
         if show:
             fig.show()
+        
+        if interactive:
+            selected_rule_idx = features_to_plot[0]
+            selected_name = column_names[selected_rule_idx]
+            min_v, _, _, selected_value = self._get_slider_values(selected_rule_idx)
+            selected_categorical = self._get_explainer().categorical_features[selected_rule_idx]
+            if is_notebook():
+                widgets = safe_import('ipywidgets')
+                dropdown = safe_import('ipywidgets.Dropdown')
+                slider = safe_import('ipywidgets.FloatSlider')
+                def update(rule_name, value):
+                    if rule_name != selected_name:                        
+                        selected_rule_idx = features_to_plot[0]
+                        selected_name = column_names[selected_rule_idx]
+                        min_v, max_v, step, selected_value = self._get_slider_values(selected_rule_idx)
+                        selected_categorical = self._get_explainer().categorical_features[selected_rule_idx]
+                        if selected_categorical:
+                            value_drop.options = [min_v]
+                            value_drop.value = selected_value
+                        else:
+                            value_slider.min = min_v
+                            value_slider.max = max_v
+                            value_slider.step = step
+                            value_slider.value = selected_value
+                    else:
+                        if selected_value == value:
+                            return
+                        # evaluate a new instance with the adjusted rule threshold
+                        # self._predict_new(selected_rule_idx, value)
 
 
-    # pylint: disable=dangerous-default-value, too-many-branches, too-many-statements
+                rules = dropdown(options=[column_names[i] for i in features_to_plot], value=selected_name)
+                if selected_categorical: 
+                    value_drop = dropdown(options=[min_v], value=selected_value)
+                    widgets.interact(update, rule_name=rules, value=value_drop)
+                else:
+                    value_slider = slider(min=selected_value-10, max=selected_value+10, step=0.1, value=selected_value)
+                    widgets.interact(update, rule_name=rules, value=value_slider)
+
+
+    # pylint: disable=dangerous-default-value, too-many-branches, too-many-statements, unused-argument
     def __plot_regression(self, instance, predict, feature_weights, features_to_plot, num_to_show,
                     column_names, title, path, show, interval=False, idx=None,
-                    save_ext=['svg','pdf','png']):
+                    save_ext=['svg','pdf','png'], interactive=False):
         """plots regular and uncertainty explanations"""
         if interval is True:
             assert idx is not None
@@ -1016,8 +1101,8 @@ class CounterfactualExplanation(CalibratedExplanation):
     '''This class represents a counterfactual explanation for a given instance. It is a subclass of
     `CalibratedExplanation` and inherits all its properties and methods. 
     '''
-    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None):
-        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold)
+    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
         
@@ -1274,11 +1359,11 @@ class CounterfactualExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
     # pylint: disable=consider-iterating-dictionary
-    def plot_counterfactual(self, n_features_to_show=None, show=False, filename=''):
+    def plot_counterfactual(self, n_features_to_show=None, show=False, filename='', interactive=False):
         '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
         a dataset.
         '''
-        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename)
+        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, interactive=interactive)
         
     # pylint: disable=consider-iterating-dictionary
     def plot_explanation(self, n_features_to_show=None, **kwargs):
@@ -1304,6 +1389,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         '''
         show = kwargs['show'] if 'show' in kwargs.keys() else False
         filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
+        interactive = kwargs['interactive'] if 'interactive' in kwargs.keys() else False
 
         counterfactual = self._get_rules() #get_explanation(instance_index)
         self._check_preconditions()      
@@ -1336,14 +1422,14 @@ class CounterfactualExplanation(CalibratedExplanation):
         column_names = counterfactual['rule']
         self.__plot_counterfactual(counterfactual['value'], predict, feature_predict, \
                                     features_to_plot, num_to_show=num_to_show_, \
-                                    column_names=column_names, title=title, path=path, show=show, save_ext=save_ext)
+                                    column_names=column_names, title=title, path=path, show=show, save_ext=save_ext, interactive=interactive)
 
 
 
-    # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
+    # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements, unused-argument
     def __plot_counterfactual(self, instance, predict, feature_predict, features_to_plot, \
                             num_to_show, column_names, title, path, show,
-                            save_ext=['svg','pdf','png']):
+                            save_ext=['svg','pdf','png'], interactive=False):
         """plots counterfactual explanations"""
         fig = plt.figure(figsize=(10,num_to_show*.5))
         ax_main = fig.add_subplot(111)

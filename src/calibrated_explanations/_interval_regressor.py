@@ -72,6 +72,8 @@ class IntervalRegressor:
         self.y_threshold = y_threshold
         if np.isscalar(self.y_threshold):
             self.current_y_threshold = self.y_threshold
+            if bins is not None:
+                assert self.ce.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
             self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.venn_abers.predict_proba(test_X, output_interval=True, bins=bins)
             return proba[:, 1], low, high, None
@@ -182,11 +184,13 @@ class IntervalRegressor:
             for i, _ in enumerate(self.residual_cal):
                 idx = np.setdiff1d(np.arange(len(self.residual_cal)), i)
                 sigma_cal = self.ce._get_sigma_test(self.ce.cal_X[idx, :])  # pylint: disable=protected-access
-                cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal, bins=self.ce.bins[idx])
+                bin_cal = self.ce.bins[idx] if self.ce.bins is not None else None
+                bin_i = [self.ce.bins[i]] if self.ce.bins is not None else None
+                cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal, bins=bin_cal)
                 sigma_i = self.ce._get_sigma_test(self.ce.cal_X[i, :].reshape(1, -1))  # pylint: disable=protected-access
                 self.proba_cal[i, 1] = cps.predict(y_hat=[self.cal_y_hat[i]],
                                                 y=y_threshold,
                                                 sigmas=sigma_i,
-                                                bins=[self.ce.bins[i]])
+                                                bins=bin_i)
                 self.proba_cal[i, 0] = 1 - self.proba_cal[i, 1]
         self.venn_abers = VennAbers(self.proba_cal, (self.ce.cal_y <= y_threshold).astype(int), self, bins=self.ce.bins)
