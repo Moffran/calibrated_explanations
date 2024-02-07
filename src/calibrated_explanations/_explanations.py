@@ -525,47 +525,128 @@ class CalibratedExplanation(ABC):
         rule_high /= rule_count
         return rule_predict, rule_low, rule_high
 
-    
-    def _predict_new(self, rule_idx, new_value):
+    # pylint: disable=protected-access, unused-variable
+    def predict_new(self, rule_idx, new_value, is_lesser=True):
+        print(f'_predict_new{rule_idx, new_value}')
+        collection = self.calibrated_explanations
+        f = rule_idx
+        lesser = new_value
+        perturbed = deepcopy(self.test_object)
+        
+        rule_value = []
+        num_bins = 2
+        average_predict, low_predict, high_predict, counts = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
+
+        bin_value = 0
+        if is_lesser:
+            lesser = new_value
+            lesser_values = np.unique(self._get_explainer().__get_lesser_values(f, lesser))
+            rule_value.append(lesser_values)
+            for value in lesser_values:
+                perturbed[f] = value
+                predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
+                average_predict[bin_value] += predict[0]
+                low_predict[bin_value] += low[0]
+                high_predict[bin_value] += high[0]
+            average_predict[bin_value] = average_predict[bin_value]/len(lesser_values)
+            low_predict[bin_value] = low_predict[bin_value]/len(lesser_values)
+            high_predict[bin_value] = high_predict[bin_value]/len(lesser_values)
+            counts[bin_value] = len(np.where(self._get_explainer().cal_X[:,f] < lesser)[0])
+            bin_value += 1
+        else:     
+            greater = new_value   
+            greater_values = np.unique(self._get_explainer().__get_greater_values(f, greater))
+            rule_value.append(greater_values)
+            for value in greater_values:
+                perturbed[f] = value
+                predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
+                average_predict[bin_value] += predict[0]
+                low_predict[bin_value] += low[0]
+                high_predict[bin_value] += high[0]
+            average_predict[bin_value] = average_predict[bin_value]/len(greater_values)
+            low_predict[bin_value] = low_predict[bin_value]/len(greater_values)
+            high_predict[bin_value] = high_predict[bin_value]/len(greater_values)
+            counts[bin_value] = len(np.where(self._get_explainer().cal_X[:,f] > greater)[0])
+            bin_value += 1
+
+        covered_values = self._get_explainer().__get_covered_values(f, lesser, greater)
+        rule_value.append(covered_values)
+        for value in covered_values:
+            perturbed[f] = value
+            predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
+            average_predict[bin_value] += predict[0]
+            low_predict[bin_value] += low[0]
+            high_predict[bin_value] += high[0]
+        average_predict[bin_value] = average_predict[bin_value]/len(covered_values)
+        low_predict[bin_value] = low_predict[bin_value]/len(covered_values)
+        high_predict[bin_value] = high_predict[bin_value]/len(covered_values)
+        counts[bin_value] = len(np.where((self._get_explainer().cal_X[:,f] >= lesser) & (self._get_explainer().cal_X[:,f] <= greater))[0])
+        current_bin = bin_value
+
+    # rule_values[f] = (rule_value, x_original[f], perturbed_original[0,f])
+    # uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
+
+    # fractions = counts[uncovered]/np.sum(counts[uncovered])
+
+    # instance_binned['predict'].append(average_predict)
+    # instance_binned['low'].append(low_predict)
+    # instance_binned['high'].append(high_predict)
+    # instance_binned['current_bin'].append(current_bin)
+    # instance_binned['counts'].append(counts)
+    # instance_binned['fractions'].append(fractions)
+
+    # # Handle the situation where the current bin is the only bin
+    # if len(uncovered) == 0:
+    #     instance_predict['predict'][f] = 0
+    #     instance_predict['low'][f] = 0
+    #     instance_predict['high'][f] = 0
+
+    #     instance_weights['predict'][f] = 0
+    #     instance_weights['low'][f] = 0
+    #     instance_weights['high'][f] = 0
+    # else:
+    #     # Calculate the weighted average (only makes a difference for categorical features)
+    #     # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*fractions[uncovered])
+    #     # instance_predict['low'][f] = np.sum(low_predict[uncovered]*fractions[uncovered])
+    #     # instance_predict['high'][f] = np.sum(high_predict[uncovered]*fractions[uncovered])
+    #     instance_predict['predict'][f] = np.mean(average_predict[uncovered])
+    #     instance_predict['low'][f] = np.mean(low_predict[uncovered])
+    #     instance_predict['high'][f] = np.mean(high_predict[uncovered])
+
+    #     instance_weights['predict'][f] = self._assign_weight(instance_predict['predict'][f], prediction['predict'][-1], is_probabilistic)
+    #     tmp_low = self._assign_weight(instance_predict['low'][f], prediction['predict'][-1], is_probabilistic)
+    #     tmp_high = self._assign_weight(instance_predict['high'][f], prediction['predict'][-1], is_probabilistic)
+    #     instance_weights['low'][f] = np.min([tmp_low, tmp_high])
+    #     instance_weights['high'][f] = np.max([tmp_low, tmp_high])
+        #         test_X,
+        #         threshold = None, # The same meaning as threshold has for cps in crepes.
+        #         low_high_percentiles = (5, 95),
+        #         classes = None,
+        #         bins = None,
+        #         ):
+        # rule_predict, rule_low, rule_high = self._get_explainer()._predict(rule_values,
+        #                                                         original_features,
+        #                                                         ,
+        #                                                         threshold,
+        #                                                         predicted_class,
+        #                                                         bins=self.bin)
+        
         return rule_idx, new_value
 
 
-    def _get_slider_values(self, index):
-        # """gets the slider values for a feature or rule
+    @abstractmethod
+    def _get_slider_values(self, index, rule_name):
+        """gets the slider values for a feature or rule
 
-        # Args:
-        #     index (int): the index of the feature or rule
+        Args:
+            index (int): the index of the feature or rule
 
-        # Returns:
-        #     min: lowest value of the slider
-        #     max: highest value of the slider
-        #     step: step size of the slider
-        #     value: initial value of the slider
-        # """
-        instance = deepcopy(self.test_object)
-        if index in self._get_explainer().categorical_features:
-            if self._get_explainer().categorical_labels is not None:
-                try:
-                    value = self._get_explainer().categorical_labels[index][int(instance[index])]
-                    min_value = self._get_explainer().categorical_labels[index]
-                except IndexError:
-                    value = instance[index]
-            else:
-                value = instance[index]
-            min_value = np.unique(self._get_explainer().cal_X[:,index])
-            max_value = None
-            num_values = len(min_value)
-        else:
-            value = self._get_explainer().discretizer.values[index][int(instance[index])]
-            if '<' in self._get_explainer().discretizer.names[index][int(instance[index])]:
-                min_value = np.min(self._get_explainer().cal_X[:,index])
-                max_value = instance[index]
-            else:
-                min_value = instance[index]
-                max_value = np.max(self._get_explainer().cal_X[:,index])                
-        num_values = len(np.unique([self._get_explainer().cal_X[:,index] > min_value and self._get_explainer().cal_X[:,index] < max_value]))
-        value = self.test_object[index]
-        return min_value, max_value, (max_value-min_value)/num_values, value
+        Returns:
+            min: lowest value of the slider
+            max: highest value of the slider
+            step: step size of the slider
+            value: initial value of the slider
+        """
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class FactualExplanation(CalibratedExplanation):
@@ -576,6 +657,26 @@ class FactualExplanation(CalibratedExplanation):
         super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
+
+    def _get_slider_values(self, index, rule_name):
+        assert index not in self._get_explainer().categorical_features, 'categorical features cannot be selected for adaption'
+
+        if '<' in rule_name:
+            index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[0] == rule_name][0]
+            value = self._get_explainer().discretizer.mins[index][1]
+            min_value = self.test_object[index]
+            max_value = np.max(self._get_explainer().cal_X[:,index])
+        else:
+            index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[1] == rule_name][0]
+            value = self._get_explainer().discretizer.mins[index][1]
+            min_value = np.min(self._get_explainer().cal_X[:,index])
+            max_value = self.test_object[index]
+        cal_X = self._get_explainer().cal_X
+        uniques = np.unique(cal_X[[x >= min_value and x <= max_value for x in cal_X[:,index]], index])
+        value_selection = [(uniques[i] + uniques[i+1]) / 2 for i in range(len(uniques) - 1)] # find thresholds between actual values
+        value = min(value_selection, key=lambda x: abs(x-value)) # find value in slider closest to rule condition
+        # print(rule_name, min_value, max_value, value, value_selection)
+        return value_selection, value
 
     def _check_preconditions(self):
         if 'regression' in self._get_explainer().mode:
@@ -959,42 +1060,37 @@ class FactualExplanation(CalibratedExplanation):
             fig.show()
         
         if interactive:
-            selected_rule_idx = features_to_plot[0]
-            selected_name = column_names[selected_rule_idx]
-            min_v, _, _, selected_value = self._get_slider_values(selected_rule_idx)
-            selected_categorical = self._get_explainer().categorical_features[selected_rule_idx]
-            if is_notebook():
-                widgets = safe_import('ipywidgets')
-                dropdown = safe_import('ipywidgets.Dropdown')
-                slider = safe_import('ipywidgets.FloatSlider')
-                def update(rule_name, value):
-                    if rule_name != selected_name:                        
-                        selected_rule_idx = features_to_plot[0]
-                        selected_name = column_names[selected_rule_idx]
-                        min_v, max_v, step, selected_value = self._get_slider_values(selected_rule_idx)
-                        selected_categorical = self._get_explainer().categorical_features[selected_rule_idx]
-                        if selected_categorical:
-                            value_drop.options = [min_v]
-                            value_drop.value = selected_value
-                        else:
-                            value_slider.min = min_v
-                            value_slider.max = max_v
-                            value_slider.step = step
-                            value_slider.value = selected_value
+            # pylint: disable=missing-class-docstring, protected-access, too-few-public-methods
+            class interactive_context:
+                def __init__(self, explanation) -> None:                    
+                    self.selected_rule_idx = [i for i in features_to_plot if i not in explanation._get_explainer().categorical_features][-1] 
+                    self.selected_name = column_names[self.selected_rule_idx]
+                    self.possible_values, self.selected_value = explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
+                    self.explanation = explanation
+                # pylint: disable=missing-function-docstring
+                def update(self, rule_name, value):
+                    print(rule_name, self.selected_name, value, self.selected_value, self.selected_rule_idx)
+                    if rule_name != self.selected_name:   
+                        self.selected_rule_idx = [i for i, item in enumerate(column_names) if item == rule_name][0]
+                        self.selected_name = column_names[self.selected_rule_idx]
+                        self.possible_values, self.selected_value = self.explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
+                        # print(self.selected_name, self.selected_value, self.possible_values)
+                        value_slider.description = self.selected_name
+                        value_slider.options = self.possible_values
+                        value_slider.value = self.selected_value
                     else:
-                        if selected_value == value:
+                        if self.selected_value == value:
                             return
                         # evaluate a new instance with the adjusted rule threshold
-                        # self._predict_new(selected_rule_idx, value)
+                        self.explanation.predict_new(self.selected_rule_idx, value)
+            context = interactive_context(self)
+            if is_notebook():
+                widgets = safe_import('ipywidgets')
 
-
-                rules = dropdown(options=[column_names[i] for i in features_to_plot], value=selected_name)
-                if selected_categorical: 
-                    value_drop = dropdown(options=[min_v], value=selected_value)
-                    widgets.interact(update, rule_name=rules, value=value_drop)
-                else:
-                    value_slider = slider(min=selected_value-10, max=selected_value+10, step=0.1, value=selected_value)
-                    widgets.interact(update, rule_name=rules, value=value_slider)
+                # categorical attributes cannot (and need not) be changed
+                rules = widgets.Dropdown(options=[column_names[i] for i in [i for i in features_to_plot if i not in self._get_explainer().categorical_features][::-1]], value=context.selected_name, description='Select rule')
+                value_slider = widgets.SelectionSlider(options=context.possible_values, value=context.selected_value, description=context.selected_name)
+                widgets.interact(context.update, rule_name=rules, value=value_slider)
 
 
     # pylint: disable=dangerous-default-value, too-many-branches, too-many-statements, unused-argument
@@ -1105,6 +1201,22 @@ class CounterfactualExplanation(CalibratedExplanation):
         super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
+
+    def _get_slider_values(self, index, rule_name):
+        assert index not in self._get_explainer().categorical_features, 'categorical features cannot be selected for adaption'
+
+        if '<' in rule_name:
+            value = self._get_explainer().discretizer.mins[index][1]
+            min_value = np.min(self._get_explainer().cal_X[:,index])
+            max_value = self.test_object[index]
+        else:
+            value = self._get_explainer().discretizer.maxs[index][1]
+            min_value = self.test_object[index]
+            max_value = np.max(self._get_explainer().cal_X[:,index])
+        cal_X = self._get_explainer().cal_X         
+        num_values = len(np.unique(cal_X[[x > min_value and x < max_value for x in cal_X[:,index]], index], return_counts=True))
+        print(rule_name, min_value, max_value, num_values, (max_value-min_value)/num_values, value)
+        return min_value, max_value, (max_value-min_value)/num_values, value
         
     def _check_preconditions(self):
         if 'regression' in self._get_explainer().mode:
