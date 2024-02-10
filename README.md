@@ -198,6 +198,12 @@ Regression offers many more options and to learn more about them, see the [demo_
 
 [Top](#calibrated-explanations-documentation)
 
+Known Limitations
+-----------------
+The implementation currently only support numerical input. Use the `utils.transform_to_numeric` to transform a `DataFrame` with text data into numerical form and at the same time extracting `categorical_features`, `categorical_labels`, `target_labels` (if text labels) and `mappings` (used to apply the same mappings to new data) to be used as input to the `CalibratedExplainer`.
+
+[Top](#calibrated-explanations-documentation)
+
 Install
 -------
 

@@ -4,6 +4,7 @@ Author: Tuwe Löfström
 '''
 import os
 import sys
+import numpy as np
 from inspect import isclass
 
 def make_directory(path: str, save_ext=None) -> None: # pylint: disable=unused-private-member
@@ -172,3 +173,49 @@ def is_notebook():
     except AttributeError:
         return False
     return True
+
+# pylint: disable=too-many-locals, too-many-branches
+def transform_to_numeric(df, target, categorical_features=None, mappings=None):
+    '''
+    Transform the categorical features to numeric
+    '''
+    if categorical_features is None:
+        categorical_features = []
+        mappings = {}
+    else:
+        assert mappings is not None, 'mapping must be provided if categorical_features is provided'
+    categorical_labels = {}
+    target_labels = None
+    for c, col in enumerate(df.columns):
+        if df[col].dtype in (object, str):
+            df[col] = df[col].str.replace("'", "")
+            df[col] = df[col].str.replace('"', '')
+            uniques = []
+            for v in df[col]:
+                if v is None or v is np.nan:
+                    v = 'nan'
+                    # df[col][i] = v
+                if v not in uniques:
+                    uniques.append(v)
+
+            if col != target:
+                categorical_features.append(c)
+                categorical_labels[c] = dict(zip(range(len(uniques)), uniques))
+            else:
+                target_labels = dict(zip(range(len(uniques)), uniques))
+            mapping = dict(zip(uniques, range(len(uniques))))
+            if len(mapping) > 5:
+                counts = df[col].value_counts().sort_values(ascending=False)
+                idx = 0
+                for key, count in counts.items():
+                    if count > 5:
+                        idx += 1
+                        continue
+                    mapping[key] = idx
+            mappings[col] = mapping
+            df[col] = df[col].map(mapping)
+        elif c in categorical_features:
+            df[col] = df[col].map(mappings[col])
+    if len(categorical_features) > 0:
+        return df, categorical_features , categorical_labels, target_labels, mappings
+    return df, None, None, target_labels, mappings
