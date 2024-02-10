@@ -183,7 +183,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         # '''        
         return isinstance(self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer))
 
-
+    # pylint: disable=too-many-arguments
     def plot_all(self,
                 n_features_to_show=10,
                 show=False,
@@ -525,63 +525,66 @@ class CalibratedExplanation(ABC):
         rule_high /= rule_count
         return rule_predict, rule_low, rule_high
 
-    # pylint: disable=protected-access, unused-variable
+    # pylint: disable=protected-access, unused-argument
     def predict_new(self, rule_idx, new_value, is_lesser=True):
+        '''
+        The function `_predict_new` predicts a new threshold value of a feature in a rule.
+        '''
         print(f'_predict_new{rule_idx, new_value}')
-        collection = self.calibrated_explanations
-        f = rule_idx
-        lesser = new_value
-        perturbed = deepcopy(self.test_object)
+        # collection = self.calibrated_explanations
+        # f = rule_idx
+        # lesser = new_value
+        # perturbed = deepcopy(self.test_object)
         
-        rule_value = []
-        num_bins = 2
-        average_predict, low_predict, high_predict, counts = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
+        # rule_value = []
+        # num_bins = 2
+        # average_predict, low_predict, high_predict, counts = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
 
-        bin_value = 0
-        if is_lesser:
-            lesser = new_value
-            lesser_values = np.unique(self._get_explainer().__get_lesser_values(f, lesser))
-            rule_value.append(lesser_values)
-            for value in lesser_values:
-                perturbed[f] = value
-                predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
-                average_predict[bin_value] += predict[0]
-                low_predict[bin_value] += low[0]
-                high_predict[bin_value] += high[0]
-            average_predict[bin_value] = average_predict[bin_value]/len(lesser_values)
-            low_predict[bin_value] = low_predict[bin_value]/len(lesser_values)
-            high_predict[bin_value] = high_predict[bin_value]/len(lesser_values)
-            counts[bin_value] = len(np.where(self._get_explainer().cal_X[:,f] < lesser)[0])
-            bin_value += 1
-        else:     
-            greater = new_value   
-            greater_values = np.unique(self._get_explainer().__get_greater_values(f, greater))
-            rule_value.append(greater_values)
-            for value in greater_values:
-                perturbed[f] = value
-                predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
-                average_predict[bin_value] += predict[0]
-                low_predict[bin_value] += low[0]
-                high_predict[bin_value] += high[0]
-            average_predict[bin_value] = average_predict[bin_value]/len(greater_values)
-            low_predict[bin_value] = low_predict[bin_value]/len(greater_values)
-            high_predict[bin_value] = high_predict[bin_value]/len(greater_values)
-            counts[bin_value] = len(np.where(self._get_explainer().cal_X[:,f] > greater)[0])
-            bin_value += 1
+        # bin_value = 0
+        # if is_lesser:
+        #     lesser = new_value
+        #     lesser_values = np.unique(self._get_explainer().__get_lesser_values(f, lesser))
+        #     rule_value.append(lesser_values)
+        #     for value in lesser_values:
+        #         perturbed[f] = value
+        #         predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
+        #         average_predict[bin_value] += predict[0]
+        #         low_predict[bin_value] += low[0]
+        #         high_predict[bin_value] += high[0]
+        #     average_predict[bin_value] = average_predict[bin_value]/len(lesser_values)
+        #     low_predict[bin_value] = low_predict[bin_value]/len(lesser_values)
+        #     high_predict[bin_value] = high_predict[bin_value]/len(lesser_values)
+        #     counts[bin_value] = len(np.where(self._get_explainer().cal_X[:,f] < lesser)[0])
+        #     bin_value += 1
+        # else:     
+        #     greater = new_value   
+        #     greater_values = np.unique(self._get_explainer().__get_greater_values(f, greater))
+        #     rule_value.append(greater_values)
+        #     for value in greater_values:
+        #         perturbed[f] = value
+        #         predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
+        #         average_predict[bin_value] += predict[0]
+        #         low_predict[bin_value] += low[0]
+        #         high_predict[bin_value] += high[0]
+        #     average_predict[bin_value] = average_predict[bin_value]/len(greater_values)
+        #     low_predict[bin_value] = low_predict[bin_value]/len(greater_values)
+        #     high_predict[bin_value] = high_predict[bin_value]/len(greater_values)
+        #     counts[bin_value] = len(np.where(self._get_explainer().cal_X[:,f] > greater)[0])
+        #     bin_value += 1
 
-        covered_values = self._get_explainer().__get_covered_values(f, lesser, greater)
-        rule_value.append(covered_values)
-        for value in covered_values:
-            perturbed[f] = value
-            predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
-            average_predict[bin_value] += predict[0]
-            low_predict[bin_value] += low[0]
-            high_predict[bin_value] += high[0]
-        average_predict[bin_value] = average_predict[bin_value]/len(covered_values)
-        low_predict[bin_value] = low_predict[bin_value]/len(covered_values)
-        high_predict[bin_value] = high_predict[bin_value]/len(covered_values)
-        counts[bin_value] = len(np.where((self._get_explainer().cal_X[:,f] >= lesser) & (self._get_explainer().cal_X[:,f] <= greater))[0])
-        current_bin = bin_value
+        # covered_values = self._get_explainer().__get_covered_values(f, lesser, greater)
+        # rule_value.append(covered_values)
+        # for value in covered_values:
+        #     perturbed[f] = value
+        #     predict, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), threshold=self.y_threshold, low_high_percentiles=collection.low_high_percentiles, classes=self.prediction['predict'], bins=self.bin)
+        #     average_predict[bin_value] += predict[0]
+        #     low_predict[bin_value] += low[0]
+        #     high_predict[bin_value] += high[0]
+        # average_predict[bin_value] = average_predict[bin_value]/len(covered_values)
+        # low_predict[bin_value] = low_predict[bin_value]/len(covered_values)
+        # high_predict[bin_value] = high_predict[bin_value]/len(covered_values)
+        # counts[bin_value] = len(np.where((self._get_explainer().cal_X[:,f] >= lesser) & (self._get_explainer().cal_X[:,f] <= greater))[0])
+        # current_bin = bin_value
 
     # rule_values[f] = (rule_value, x_original[f], perturbed_original[0,f])
     # uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
@@ -672,7 +675,7 @@ class FactualExplanation(CalibratedExplanation):
             min_value = np.min(self._get_explainer().cal_X[:,index])
             max_value = self.test_object[index]
         cal_X = self._get_explainer().cal_X
-        uniques = np.unique(cal_X[[x >= min_value and x <= max_value for x in cal_X[:,index]], index])
+        uniques = np.unique(cal_X[[min_value < x <= max_value for x in cal_X[:,index]], index])
         value_selection = [(uniques[i] + uniques[i+1]) / 2 for i in range(len(uniques) - 1)] # find thresholds between actual values
         value = min(value_selection, key=lambda x: abs(x-value)) # find value in slider closest to rule condition
         # print(rule_name, min_value, max_value, value, value_selection)
@@ -1001,73 +1004,74 @@ class FactualExplanation(CalibratedExplanation):
         ax_negative.set_xlabel('Probability')
 
         # Plot the base prediction in black/grey
-        x = np.linspace(0, num_to_show-1, num_to_show)
-        xl = np.linspace(-0.5, x[0] if len(x) > 0 else 0, 2)
-        xh = np.linspace(x[-1], x[-1]+0.5 if len(x) > 0 else 0.5, 2)
-        ax_main.fill_betweenx(x, [0], [0], color='k')
-        ax_main.fill_betweenx(xl, [0], [0], color='k')
-        ax_main.fill_betweenx(xh, [0], [0], color='k')
-        if interval:           
-            p = predict['predict']
-            gwl = predict['low'] - p
-            gwh = predict['high'] - p
-            
-            gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
-            ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
+        if num_to_show > 0:
+            x = np.linspace(0, num_to_show-1, num_to_show)
+            xl = np.linspace(-0.5, x[0] if len(x) > 0 else 0, 2)
+            xh = np.linspace(x[-1], x[-1]+0.5 if len(x) > 0 else 0.5, 2)
+            ax_main.fill_betweenx(x, [0], [0], color='k')
+            ax_main.fill_betweenx(xl, [0], [0], color='k')
+            ax_main.fill_betweenx(xh, [0], [0], color='k')
+            if interval:           
+                p = predict['predict']
+                gwl = predict['low'] - p
+                gwh = predict['high'] - p
+                
+                gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
+                ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
-        # For each feature, plot the weight
-        for jx, j in enumerate(features_to_plot):
-            xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
-            min_val,max_val = 0,0
-            if interval:
-                width = feature_weights['predict'][j]
-                wl = feature_weights['low'][j]
-                wh = feature_weights['high'][j]
-                wh, wl = np.max([wh, wl]), np.min([wh, wl])
-                max_val = wh if width < 0 else 0
-                min_val = wl if width > 0 else 0
-                # If uncertainty cover zero, then set to 0 to avoid solid plotting
-                if wl < 0 < wh:
-                    min_val = 0
-                    max_val = 0
-            else:                
-                width = feature_weights[j]
-                min_val = width if width < 0 else 0
-                max_val = width if width > 0 else 0
-            color = 'r' if width > 0 else 'b'
-            ax_main.fill_betweenx(xj, min_val, max_val, color=color)
-            if interval:
-                if wl < 0 < wh and self._get_explainer().mode == 'classification':
-                    ax_main.fill_betweenx(xj, 0, wl, color='b', alpha=0.2)
-                    ax_main.fill_betweenx(xj, wh, 0, color='r', alpha=0.2)
-                else:
-                    ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
+            # For each feature, plot the weight
+            for jx, j in enumerate(features_to_plot):
+                xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
+                min_val,max_val = 0,0
+                if interval:
+                    width = feature_weights['predict'][j]
+                    wl = feature_weights['low'][j]
+                    wh = feature_weights['high'][j]
+                    wh, wl = np.max([wh, wl]), np.min([wh, wl])
+                    max_val = wh if width < 0 else 0
+                    min_val = wl if width > 0 else 0
+                    # If uncertainty cover zero, then set to 0 to avoid solid plotting
+                    if wl < 0 < wh:
+                        min_val = 0
+                        max_val = 0
+                else:                
+                    width = feature_weights[j]
+                    min_val = width if width < 0 else 0
+                    max_val = width if width > 0 else 0
+                color = 'r' if width > 0 else 'b'
+                ax_main.fill_betweenx(xj, min_val, max_val, color=color)
+                if interval:
+                    if wl < 0 < wh and self._get_explainer().mode == 'classification':
+                        ax_main.fill_betweenx(xj, 0, wl, color='b', alpha=0.2)
+                        ax_main.fill_betweenx(xj, wh, 0, color='r', alpha=0.2)
+                    else:
+                        ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
 
-        ax_main.set_yticks(range(num_to_show))
-        ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
-            if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
-        ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-        ax_main.set_ylabel('Rules')
-        ax_main.set_xlabel('Feature weights')
-        ax_main_twin = ax_main.twinx()
-        ax_main_twin.set_yticks(range(num_to_show))
-        ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
-        ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-        ax_main_twin.set_ylabel('Instance values')
+            ax_main.set_yticks(range(num_to_show))
+            ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
+                if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
+            ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
+            ax_main.set_ylabel('Rules')
+            ax_main.set_xlabel('Feature weights')
+            ax_main_twin = ax_main.twinx()
+            ax_main_twin.set_yticks(range(num_to_show))
+            ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
+            ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
+            ax_main_twin.set_ylabel('Instance values')
         for ext in save_ext:
             fig.savefig(path + title + ext, bbox_inches='tight') 
         if show:
             fig.show()
         
         if interactive:
-            # pylint: disable=missing-class-docstring, protected-access, too-few-public-methods
+            # rewrite the code below to exclude categorical features, start with the most important
+            # pylint: disable=missing-function-docstring, missing-class-docstring, protected-access
             class interactive_context:
                 def __init__(self, explanation) -> None:                    
                     self.selected_rule_idx = [i for i in features_to_plot if i not in explanation._get_explainer().categorical_features][-1] 
                     self.selected_name = column_names[self.selected_rule_idx]
                     self.possible_values, self.selected_value = explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
                     self.explanation = explanation
-                # pylint: disable=missing-function-docstring
                 def update(self, rule_name, value):
                     print(rule_name, self.selected_name, value, self.selected_value, self.selected_rule_idx)
                     if rule_name != self.selected_name:   
@@ -1214,7 +1218,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             min_value = self.test_object[index]
             max_value = np.max(self._get_explainer().cal_X[:,index])
         cal_X = self._get_explainer().cal_X         
-        num_values = len(np.unique(cal_X[[x > min_value and x < max_value for x in cal_X[:,index]], index], return_counts=True))
+        num_values = len(np.unique(cal_X[[min_value <= x < max_value for x in cal_X[:,index]], index], return_counts=True))
         print(rule_name, min_value, max_value, num_values, (max_value-min_value)/num_values, value)
         return min_value, max_value, (max_value-min_value)/num_values, value
         

@@ -4,8 +4,8 @@ Author: Tuwe Löfström
 '''
 import os
 import sys
-import numpy as np
 from inspect import isclass
+import numpy as np
 
 def make_directory(path: str, save_ext=None) -> None: # pylint: disable=unused-private-member
     """ create directory if it does not exist
