@@ -41,6 +41,7 @@
 - Extended `__repr__` to include additional fields when `verbose=True`.
 - Fixed a minor bug in the example provided in the [README.md](https://github.com/Moffran/calibrated_explanations/blob/main/README.md#classification) and the [getting_started.md](https://github.com/Moffran/calibrated_explanations/blob/main/docs/getting_started.md#classification), as described in issue #26. 
 - Added `utils.transform_to_numeric` and a clarification about known limitations in [README.md](https://github.com/Moffran/calibrated_explanations/blob/main/README.md#classification) as a response to issue #28.
+- Fixed a minor bug in `FactualExplanation.__plot_probabilistic` that was triggered when no features where to be shown.
 
 ## [v0.3.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.0) - 2024-01-02
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.3...v0.3.0)
