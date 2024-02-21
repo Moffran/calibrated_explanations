@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
-from .utils import make_directory, is_notebook, safe_import
+from .utils import make_directory #, is_notebook, safe_import
 
 class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """
@@ -939,7 +939,7 @@ class FactualExplanation(CalibratedExplanation):
                         n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
                         save_ext=save_ext, interactive=interactive)
 
-    # pylint: disable=dangerous-default-value
+    # pylint: disable=dangerous-default-value, unused-argument
     def __plot_probabilistic(self, instance, predict, feature_weights, features_to_plot, num_to_show,
                     column_names, title, path, show, interval=False, idx=None,
                     save_ext=['svg','pdf','png'], interactive=False):
@@ -1063,38 +1063,38 @@ class FactualExplanation(CalibratedExplanation):
         if show:
             fig.show()
         
-        if interactive:
-            # rewrite the code below to exclude categorical features, start with the most important
-            # pylint: disable=missing-function-docstring, missing-class-docstring, protected-access
-            class interactive_context:
-                def __init__(self, explanation) -> None:                    
-                    self.selected_rule_idx = [i for i in features_to_plot if i not in explanation._get_explainer().categorical_features][-1] 
-                    self.selected_name = column_names[self.selected_rule_idx]
-                    self.possible_values, self.selected_value = explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
-                    self.explanation = explanation
-                def update(self, rule_name, value):
-                    print(rule_name, self.selected_name, value, self.selected_value, self.selected_rule_idx)
-                    if rule_name != self.selected_name:   
-                        self.selected_rule_idx = [i for i, item in enumerate(column_names) if item == rule_name][0]
-                        self.selected_name = column_names[self.selected_rule_idx]
-                        self.possible_values, self.selected_value = self.explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
-                        # print(self.selected_name, self.selected_value, self.possible_values)
-                        value_slider.description = self.selected_name
-                        value_slider.options = self.possible_values
-                        value_slider.value = self.selected_value
-                    else:
-                        if self.selected_value == value:
-                            return
-                        # evaluate a new instance with the adjusted rule threshold
-                        self.explanation.predict_new(self.selected_rule_idx, value)
-            context = interactive_context(self)
-            if is_notebook():
-                widgets = safe_import('ipywidgets')
+        # if interactive:
+        #     # rewrite the code below to exclude categorical features, start with the most important
+        #     # pylint: disable=missing-function-docstring, missing-class-docstring, protected-access
+        #     class interactive_context:
+        #         def __init__(self, explanation) -> None:                    
+        #             self.selected_rule_idx = [i for i in features_to_plot if i not in explanation._get_explainer().categorical_features][-1] 
+        #             self.selected_name = column_names[self.selected_rule_idx]
+        #             self.possible_values, self.selected_value = explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
+        #             self.explanation = explanation
+        #         def update(self, rule_name, value):
+        #             print(rule_name, self.selected_name, value, self.selected_value, self.selected_rule_idx)
+        #             if rule_name != self.selected_name:   
+        #                 self.selected_rule_idx = [i for i, item in enumerate(column_names) if item == rule_name][0]
+        #                 self.selected_name = column_names[self.selected_rule_idx]
+        #                 self.possible_values, self.selected_value = self.explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
+        #                 # print(self.selected_name, self.selected_value, self.possible_values)
+        #                 value_slider.description = self.selected_name
+        #                 value_slider.options = self.possible_values
+        #                 value_slider.value = self.selected_value
+        #             else:
+        #                 if self.selected_value == value:
+        #                     return
+        #                 # evaluate a new instance with the adjusted rule threshold
+        #                 self.explanation.predict_new(self.selected_rule_idx, value)
+        #     context = interactive_context(self)
+        #     if is_notebook():
+        #         widgets = safe_import('ipywidgets')
 
-                # categorical attributes cannot (and need not) be changed
-                rules = widgets.Dropdown(options=[column_names[i] for i in [i for i in features_to_plot if i not in self._get_explainer().categorical_features][::-1]], value=context.selected_name, description='Select rule')
-                value_slider = widgets.SelectionSlider(options=context.possible_values, value=context.selected_value, description=context.selected_name)
-                widgets.interact(context.update, rule_name=rules, value=value_slider)
+        #         # categorical attributes cannot (and need not) be changed
+        #         rules = widgets.Dropdown(options=[column_names[i] for i in [i for i in features_to_plot if i not in self._get_explainer().categorical_features][::-1]], value=context.selected_name, description='Select rule')
+        #         value_slider = widgets.SelectionSlider(options=context.possible_values, value=context.selected_value, description=context.selected_name)
+        #         widgets.interact(context.update, rule_name=rules, value=value_slider)
 
 
     # pylint: disable=dangerous-default-value, too-many-branches, too-many-statements, unused-argument
