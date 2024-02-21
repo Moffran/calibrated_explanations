@@ -3,6 +3,7 @@
 ## [Unreleased]
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.0...main)
 ### Features
+- Added support for Mondrian explanations, using the `bins` attribute. The `bins` attribute takes a categorical feature of the size of the calibration or test set (depending on context) indicating the category of each instance. For continuous attributes, the `crepes.extras.binning`can be used to define categories through binning.  
 - Added `BinaryRegressorDiscretizer` and `RegressorDiscretizer` which are similar to `BinaryEntropyDiscretizer` and `EntropyDiscretizer` in that it uses a decision tree to identify suitable discretizations for numerical features. `explain_factual` and `explain_counterfactual` have been updated to use these discretizers for regression by default. In a future version, the possibility to assign your own discretizer may be removed.
 - Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README: 
   - Updated the reference and bibtex to the published version of the introductory paper:
