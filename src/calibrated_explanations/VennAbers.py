@@ -65,7 +65,10 @@ class VennAbers:
                 low (n_test_samples,): lower bounds of the VennABERS interval for each test sample
                 high (n_test_samples,): upper bounds of the VennABERS interval for each test sample
         """
-        va_proba = self.model.predict_proba(test_X)
+        if 'bins' in self.model.predict_proba.__code__.co_varnames:
+            va_proba = self.model.predict_proba(test_X, bins=bins)
+        else:
+            va_proba = self.model.predict_proba(test_X)
         tprobs, classes = self.get_p_value(va_proba, classes)
         if self.is_mondrian():
             assert bins is not None, "bins must be provided if Mondrian"
