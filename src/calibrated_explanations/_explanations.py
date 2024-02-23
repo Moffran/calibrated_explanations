@@ -913,6 +913,7 @@ class FactualExplanation(CalibratedExplanation):
             filename = os.path.basename(filename)
             title, ext = os.path.splitext(filename)
             make_directory(path, save_ext=np.array([ext]))
+            path = 'plots/' + path
             save_ext = [ext]
         else:
             path = ''
@@ -1514,7 +1515,8 @@ class CounterfactualExplanation(CalibratedExplanation):
             path = os.path.dirname(filename) + '/'
             filename = os.path.basename(filename)
             title, ext = os.path.splitext(filename)
-            make_directory(title, save_ext=np.array([ext]))
+            make_directory(path, save_ext=np.array([ext]))
+            path = 'plots/' + path
             save_ext = [ext]
         else:
             path = ''
