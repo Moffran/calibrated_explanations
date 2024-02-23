@@ -407,10 +407,8 @@ class CalibratedExplainer:
             perturbed_original = self._discretize(copy.deepcopy(x).reshape(1,-1))
             rule_boundaries = self.rule_boundaries(x_original, perturbed_original)
             for f in range(x.shape[0]): # For each feature
-                # if f in self.features_to_ignore:
-                #     # If the feature is to be ignored, skip it
-                #     # Not yet fully implemented - skip for now
-                #     continue
+                if f in self.features_to_ignore:
+                    continue
                 perturbed = copy.deepcopy(x)
 
                 current_bin = -1
