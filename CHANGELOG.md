@@ -1,7 +1,12 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.0...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.1...main)
+### Features
+### Fixes
+
+## [v0.3.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.1) - 2024-02-23
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.0...v0.3.1)
 ### Features
 - Added support for Mondrian explanations, using the `bins` attribute. The `bins` attribute takes a categorical feature of the size of the calibration or test set (depending on context) indicating the category of each instance. For continuous attributes, the `crepes.extras.binning`can be used to define categories through binning.  
 - Added `BinaryRegressorDiscretizer` and `RegressorDiscretizer` which are similar to `BinaryEntropyDiscretizer` and `EntropyDiscretizer` in that it uses a decision tree to identify suitable discretizations for numerical features. `explain_factual` and `explain_counterfactual` have been updated to use these discretizers for regression by default. In a future version, the possibility to assign your own discretizer may be removed.
@@ -43,6 +48,8 @@
 - Fixed a minor bug in the example provided in the [README.md](https://github.com/Moffran/calibrated_explanations/blob/main/README.md#classification) and the [getting_started.md](https://github.com/Moffran/calibrated_explanations/blob/main/docs/getting_started.md#classification), as described in issue #26. 
 - Added `utils.transform_to_numeric` and a clarification about known limitations in [README.md](https://github.com/Moffran/calibrated_explanations/blob/main/README.md#classification) as a response to issue #28.
 - Fixed a minor bug in `FactualExplanation.__plot_probabilistic` that was triggered when no features where to be shown.
+- Fixed a bug with the discretizers in `core`. 
+- Fixed a bug with saving plots to file using the `filename` parameter. 
 
 ## [v0.3.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.0) - 2024-01-02
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.3...v0.3.0)
