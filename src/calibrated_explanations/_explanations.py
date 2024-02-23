@@ -1455,7 +1455,8 @@ class CounterfactualExplanation(CalibratedExplanation):
                                                                         original_features,
                                                                         deepcopy(x_original),
                                                                         threshold,
-                                                                        predicted_class)
+                                                                        predicted_class,
+                                                                        bins=self.bin)
                 conjunctive['predict'].append(rule_predict)
                 conjunctive['predict_low'].append(rule_low)
                 conjunctive['predict_high'].append(rule_high)
