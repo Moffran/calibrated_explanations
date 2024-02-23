@@ -24,7 +24,7 @@ from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils import safe_isinstance, safe_import, check_is_fitted
 
-__version__ = 'v0.3.0'
+__version__ = 'v0.3.1'
 
 
 
@@ -140,6 +140,8 @@ class CalibratedExplainer:
             else:
                 categorical_features = []
         self.categorical_features = list(categorical_features)
+        self.features_to_ignore = []
+        self._preprocess()
 
         if feature_names is None:
             feature_names = [str(i) for i in range(self.num_features)]
@@ -405,6 +407,10 @@ class CalibratedExplainer:
             perturbed_original = self._discretize(copy.deepcopy(x).reshape(1,-1))
             rule_boundaries = self.rule_boundaries(x_original, perturbed_original)
             for f in range(x.shape[0]): # For each feature
+                # if f in self.features_to_ignore:
+                #     # If the feature is to be ignored, skip it
+                #     # Not yet fully implemented - skip for now
+                #     continue
                 perturbed = copy.deepcopy(x)
 
                 current_bin = -1
@@ -428,9 +434,11 @@ class CalibratedExplainer:
                     values = np.array(cal_X[:,f])
                     lesser = rule_boundaries[f][0]
                     greater = rule_boundaries[f][1]
+                    lesser = -np.Inf if not np.any(values < lesser) else lesser
+                    greater = np.Inf if not np.any(values > greater) else greater
                     num_bins = 1
-                    num_bins += int(np.any(values > greater))
-                    num_bins += int(np.any(values < lesser))
+                    num_bins += 1 if lesser != -np.Inf else 0
+                    num_bins += 1 if greater != np.Inf else 0
                     average_predict, low_predict, high_predict, counts = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
 
                     bin_value = 0
@@ -565,14 +573,12 @@ class CalibratedExplainer:
         if perturbed_instance is None:
             perturbed_instance = self._discretize(instance.reshape(1,-1))
         for f in range(self.num_features):
-            if f in self.categorical_features:
+            if f not in self.discretizer.to_discretize:
                 min_max.append([instance[f], instance[f]])
             else:
-                values = np.array(self.discretizer.means[f])
-                min_max.append([self.discretizer.mins[f][np.where(
-                                    perturbed_instance[0,f] == values)[0][0]], \
-                                self.discretizer.maxs[f][np.where(
-                                    perturbed_instance[0,f] == values)[0][0]]])
+                bins = np.concatenate(([-np.Inf], self.discretizer.mins[f][1:], [np.Inf]))
+                min_max.append([self.discretizer.mins[f][np.digitize(perturbed_instance[0,f], bins, right=True)-1], \
+                                self.discretizer.maxs[f][np.digitize(perturbed_instance[0,f], bins, right=True)-1]])
         return min_max
 
 
@@ -687,6 +693,11 @@ class CalibratedExplainer:
         self.__initialized = True
 
 
+    def _preprocess(self):
+        # preprocesses the calibration data by identifying constant value columns to ignore
+        constant_columns = [np.where(np.all(self.cal_X[:,f] == self.cal_X[0,f], axis=0) for f in range(self.cal_X.shape[1]))]
+        self.features_to_ignore = constant_columns
+
 
     def _discretize(self, x):
         # """applies the discretizer to the test instance x
@@ -699,10 +710,9 @@ class CalibratedExplainer:
         # """
         if len(np.shape(x)) == 1:
             x = np.array(x)
-        x.dtype = float
-        tmp = self.discretizer.discretize(x)
         for f in self.discretizer.to_discretize:
-            x[:,f] = [self.discretizer.means[f][int(tmp[i,f])] for i in range(len(x[:,0]))]
+            bins = np.concatenate(([-np.Inf], self.discretizer.mins[f][1:], [np.Inf]))
+            x[:,f] = [self.discretizer.means[f][np.digitize(x[i,f], bins, right=True)-1]  for i in range(len(x[:,f]))]
         return x
 
 
@@ -737,39 +747,40 @@ class CalibratedExplainer:
                     "The discretizer must be 'binaryEntropy' (default for factuals), 'entropy' (default for counterfactuals), 'binary', 'quartile', or \
                     'decile' for classification."
 
+        not_to_discretize = self.categorical_features #np.union1d(self.categorical_features, self.features_to_ignore)
         if discretizer == 'quartile':
             self.discretizer = QuartileDiscretizer(
-                    cal_X, self.categorical_features,
+                    cal_X, not_to_discretize,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
         elif discretizer == 'decile':
             self.discretizer = DecileDiscretizer(
-                    cal_X, self.categorical_features,
+                    cal_X, not_to_discretize,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
         elif discretizer == 'entropy':
             self.discretizer = EntropyDiscretizer(
-                    cal_X, self.categorical_features,
+                    cal_X, not_to_discretize,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
         elif discretizer == 'binary':
             self.discretizer = BinaryDiscretizer(
-                    cal_X, self.categorical_features,
+                    cal_X, not_to_discretize,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
         elif discretizer == 'binaryEntropy':
             self.discretizer = BinaryEntropyDiscretizer(
-                    cal_X, self.categorical_features,
+                    cal_X, not_to_discretize,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
         elif discretizer == 'regressor':
             self.discretizer = RegressorDiscretizer(
-                    cal_X, self.categorical_features,
+                    cal_X, not_to_discretize,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
         elif discretizer == 'binaryRegressor':
             self.discretizer = BinaryRegressorDiscretizer(
-                    cal_X, self.categorical_features,
+                    cal_X, not_to_discretize,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)
 
