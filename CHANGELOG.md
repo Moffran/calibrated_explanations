@@ -36,8 +36,8 @@
         license = 	{BSD-3-Clause},
         title = 	{Calibrated Explanations},
         url = 	{https://github.com/Moffran/calibrated_explanations},
-        version = 	{v0.3.0},
-        month = 	jan,
+        version = 	{v0.3.1},
+        month = 	feb,
         year = 	{2024}
       }
       ``` 
