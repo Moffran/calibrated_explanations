@@ -33,5 +33,8 @@ classifiers = [
 "Homepage"    = "https://github.com/Moffran/calibrated_explanations"
 "Bug Tracker" = "https://github.com/Moffran/calibrated_explanations/issues"
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
