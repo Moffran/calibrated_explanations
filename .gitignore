@@ -5,7 +5,7 @@ evaluation/results_sota.pkl
 .vscode/
 dump/
 pickle/
-plots/
+# plots/
 results/
 doc/
 evaluation/secret/
