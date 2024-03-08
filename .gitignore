@@ -13,6 +13,7 @@ prof/
 debug/
 
 calibrated-explanations/
+evaluation/results_mondrian.pkl
 
 
 # Byte-compiled / optimized / DLL files
