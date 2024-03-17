@@ -4,7 +4,7 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.1...main)
 ### Features
 ### Fixes
-- Updated the requirement for crepes to v0.6.2, to address Known issues with some versions of python.
+- Updated the requirement for crepes to v0.6.2, to address known issues with some versions of python.
 
 ## [v0.3.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.1) - 2024-02-23
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.0...v0.3.1)
