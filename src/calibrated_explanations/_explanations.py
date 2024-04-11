@@ -7,6 +7,7 @@ import os
 import warnings
 from copy import deepcopy
 from abc import ABC, abstractmethod
+from time import time
 import numpy as np
 import matplotlib.pyplot as plt
 from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
@@ -26,6 +27,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         self.current_index = self.start_index
         self.end_index = len(test_objects[:,0])
         self.bins = bins
+        self.total_explain_time = None
 
     def __iter__(self):
         self.current_index = self.start_index
@@ -89,8 +91,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-
-    def _finalize(self, binned, feature_weights, feature_predict, prediction) -> None:
+    # pylint: disable=too-many-arguments
+    def _finalize(self, binned, feature_weights, feature_predict, prediction, instance_time=None, total_time=None) -> None:
         # """finalize the explanation by adding the binned data and the feature weights
         # """
         for i, instance in enumerate(self.test_objects):
@@ -99,8 +101,9 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 explanation = CounterfactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
             else:
                 explanation = FactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
+            explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
-        self.calibrated_explainer._set_latest_explanation(self) # pylint: disable=protected-access
+        self.total_explain_time = time() - total_time if total_time is not None else None
         
             
 
@@ -392,6 +395,7 @@ class CalibratedExplanation(ABC):
         self._has_rules = False
         self._has_conjunctive_rules = False
         self.bin = [instance_bin] if instance_bin is not None else None
+        self.explain_time = None
         
     def _get_explainer(self):
         return self.calibrated_explanations._get_explainer() # pylint: disable=protected-access

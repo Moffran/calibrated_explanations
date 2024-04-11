@@ -14,6 +14,8 @@ import copy
 import warnings
 import numpy as np
 
+from time import time 
+
 from lime.lime_tabular import LimeTabularExplainer
 
 from ._explanations import CalibratedExplanations
@@ -110,6 +112,7 @@ class CalibratedExplainer:
         CalibratedExplainer : A CalibratedExplainer object that can be used to explain predictions from a predictive model.
         
         '''
+        init_time = time()
         self.__initialized = False
         if safe_isinstance(cal_X, "pandas.core.frame.DataFrame"):
             self.cal_X = cal_X.values  # pylint: disable=invalid-name
@@ -158,6 +161,8 @@ class CalibratedExplainer:
         self.lime_exp = None
         self.shap = None
         self.shap_exp = None
+        
+        self.init_time = time() - init_time
 
 
     def __repr__(self):
@@ -166,6 +171,8 @@ class CalibratedExplainer:
                 {f'mondrian={self.bins is not None}'}\n\t\
                 discretizer={self.discretizer.__class__}\n\t\
                 model={self.model}\n\t\
+                init_time={self.init_time}\n\t\
+                {f'total_explain_time={self.latest_explanation.total_explain_time}' if self.latest_explanation is not None else 'latest_explanation is None'}\n\t\
                 {f'difficulty_estimator={self.difficulty_estimator}' if self.mode == 'regression' else ''}"
         if self.verbose:
             disp_str += f"\n\tsample_percentiles={self.sample_percentiles}\
@@ -355,6 +362,8 @@ class CalibratedExplainer:
         already assigned discretizer. Called by the `explain_factual` and `explain_counterfactual` methods. 
         See their documentation for further information.
         """
+        total_time = time()
+        instance_time = []
         if safe_isinstance(testX, "pandas.core.frame.DataFrame"):
             testX = testX.values  # pylint: disable=invalid-name
         if len(testX.shape) == 1:
@@ -387,6 +396,8 @@ class CalibratedExplainer:
         binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': [], 'fractions': []}
 
         for i, x in enumerate(testX):
+            instance_time.append(time())
+            
             bin_x = [bins[i]] if bins is not None else None
 
             if threshold is not None and not np.isscalar(explanation.y_threshold):
@@ -536,8 +547,10 @@ class CalibratedExplainer:
             feature_predict['predict'].append(instance_predict['predict'])
             feature_predict['low'].append(instance_predict['low'])
             feature_predict['high'].append(instance_predict['high'])
+            instance_time[-1] = time() - instance_time[-1]
 
-        explanation._finalize(binned_predict, feature_weights, feature_predict, prediction)
+        explanation._finalize(binned_predict, feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
+        self.latest_explanation = explanation
         return explanation
 
 
@@ -799,17 +812,6 @@ class CalibratedExplainer:
             self.feature_values[feature] = values
             self.feature_frequencies[feature] = (np.array(frequencies) /
                                                  float(sum(frequencies)))
-
-
-
-    def _set_latest_explanation(self, explanation) -> None:
-        # """assigns the latest explanation to the explainer
-
-        # Args:
-        #     explanation (CalibratedExplanations): the latest created explanation
-        # """
-        self.latest_explanation = explanation
-
 
 
     def _is_mondrian(self):
