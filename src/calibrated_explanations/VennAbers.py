@@ -71,7 +71,7 @@ class VennAbers:
         tmp = self.predict_proba(test_X, bins=bins)[:,1]
         return np.asarray(np.round(tmp))
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, too-many-branches
     def predict_proba(self, test_X, output_interval=False, classes=None, bins=None):
         """a function to predict the probabilities of the test samples, optionally outputting the VennABERS interval
 
