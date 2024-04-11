@@ -110,6 +110,8 @@ class VennAbers:
                 tmp = high[:,c] / (1-low[:,c] + high[:,c])
                 va_proba[:,c] = tmp
             if classes is not None:
+                if type(classes) not in (list, np.ndarray):
+                    classes = [classes]
                 if output_interval:
                     return np.asarray(va_proba), [low[i,c] for i,c in enumerate(classes)], [high[i,c] for i,c in enumerate(classes)], classes
                 return np.asarray(va_proba), classes
