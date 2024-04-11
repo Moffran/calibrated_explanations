@@ -9,21 +9,41 @@ import venn_abers as va
 class VennAbers:
     """a class to calibrate the predictions of a model using the VennABERS method
     """
-    def __init__(self, cal_probs, cal_y, model, bins=None):
-        self.cprobs = cal_probs
+    def __init__(self, cprobs, cal_y, model, bins=None):
+        self.cprobs = cprobs
         self.ctargets = cal_y
         self.model = model
         self.bins = bins
-        cprobs, predict = self.get_p_value(self.cprobs)
         if self.is_mondrian():
-            self.va = []
-            for b in np.unique(self.bins):
-                va_bin = va.VennAbers()
-                va_bin.fit(cprobs[self.bins == b,:], np.multiply(predict[self.bins == b] == self.ctargets[self.bins == b], 1) if self.is_multiclass() else self.ctargets[self.bins == b], precision=4)
-                self.va.append((va_bin, b))
+            self.va = {}
+            if self.is_multiclass():
+                tmp_probs = np.zeros((cprobs.shape[0],2))
+                for c in np.unique(self.ctargets):
+                    self.va[c] = {}
+                    tmp_probs[:,0] = 1 - cprobs[:,c]
+                    tmp_probs[:,1] = cprobs[:,c]
+                    for b in np.unique(self.bins):
+                        va_class_bin = va.VennAbers()
+                        va_class_bin.fit(tmp_probs[self.bins == b,:], np.multiply(c == self.ctargets[self.bins == b], 1), precision=4)
+                        self.va[c][b] = va_class_bin
+            else:
+                for b in np.unique(self.bins):
+                    va_bin = va.VennAbers()
+                    va_bin.fit(cprobs[self.bins == b,:], self.ctargets[self.bins == b], precision=4)
+                    self.va[b] = va_bin
         else:
-            self.va = va.VennAbers()
-            self.va.fit(cprobs, np.multiply(predict == self.ctargets, 1) if self.is_multiclass() else self.ctargets, precision=4)
+            if self.is_multiclass():
+                self.va = {}
+                tmp_probs = np.zeros((cprobs.shape[0],2))
+                for c in np.unique(self.ctargets):
+                    tmp_probs[:,0] = 1 - cprobs[:,c]
+                    tmp_probs[:,1] = cprobs[:,c]
+                    va_class = va.VennAbers()
+                    va_class.fit(tmp_probs, np.multiply(c == self.ctargets, 1), precision=4)
+                    self.va[c] = va_class
+            else:
+                self.va = va.VennAbers()
+                self.va.fit(cprobs, self.ctargets, precision=4)
 
     def predict(self, test_X, bins=None):
         """a function to predict the class of the test samples
@@ -44,12 +64,14 @@ class VennAbers:
         #     _, p0p1 = self.va.predict_proba(tprobs)
         # low, high = p0p1[:,0], p0p1[:,1]
         # tmp = high / (1-low + high)
+
         if self.is_multiclass():
             tmp, _ = self.predict_proba(test_X, bins=bins)
             return np.asarray(np.round(tmp[:,1]))
         tmp = self.predict_proba(test_X, bins=bins)[:,1]
         return np.asarray(np.round(tmp))
 
+    # pylint: disable=too-many-locals
     def predict_proba(self, test_X, output_interval=False, classes=None, bins=None):
         """a function to predict the probabilities of the test samples, optionally outputting the VennABERS interval
 
@@ -66,14 +88,39 @@ class VennAbers:
                 high (n_test_samples,): upper bounds of the VennABERS interval for each test sample
         """
         if 'bins' in self.model.predict_proba.__code__.co_varnames:
-            va_proba = self.model.predict_proba(test_X, bins=bins)
+            tprobs = self.model.predict_proba(test_X, bins=bins)
         else:
-            va_proba = self.model.predict_proba(test_X)
-        tprobs, classes = self.get_p_value(va_proba, classes)
+            tprobs = self.model.predict_proba(test_X)
+        p0p1 = np.zeros((tprobs.shape[0],2))
+        va_proba = np.zeros(tprobs.shape)
+
+        if self.is_multiclass():
+            low, high = np.zeros(tprobs.shape), np.zeros(tprobs.shape)
+            tmp_probs = np.zeros((tprobs.shape[0],2))
+            for c, va_class in self.va.items():
+                tmp_probs[:,0] = 1 - tprobs[:,c]
+                tmp_probs[:,1] = tprobs[:,c]
+                if self.is_mondrian():
+                    assert bins is not None, "bins must be provided if Mondrian"
+                    for b, va_class_bin in va_class.items():
+                        p0p1[bins == b,:] = va_class_bin.predict_proba(tmp_probs[bins == b,:])[1]
+                else:
+                    p0p1 = va_class.predict_proba(tmp_probs)[1]
+                low[:,c], high[:,c] = p0p1[:,0], p0p1[:,1]
+                tmp = high[:,c] / (1-low[:,c] + high[:,c])
+                va_proba[:,c] = tmp
+            if classes is not None:
+                if output_interval:
+                    return np.asarray(va_proba), [low[i,c] for i,c in enumerate(classes)], [high[i,c] for i,c in enumerate(classes)], classes
+                return np.asarray(va_proba), classes
+            classes = np.argmax(va_proba, axis=1)
+            if output_interval:
+                return np.asarray(va_proba), low, high, classes
+            return np.asarray(va_proba), classes
+
         if self.is_mondrian():
             assert bins is not None, "bins must be provided if Mondrian"
-            p0p1 = np.zeros((tprobs.shape[0],2))
-            for va_bin, b in self.va:
+            for b, va_bin in self.va.items():
                 p0p1[bins == b,:] = va_bin.predict_proba(tprobs[bins == b,:])[1]
         else:
             _, p0p1 = self.va.predict_proba(tprobs)
@@ -81,26 +128,10 @@ class VennAbers:
         tmp = high / (1-low + high)
         va_proba[:,0] = 1-tmp
         va_proba[:,1] = tmp
-        if self.is_multiclass():
-            va_proba = va_proba[:,:2]
-            if output_interval:
-                return np.asarray(va_proba), low, high, classes
-            return np.asarray(va_proba), classes
         # binary
         if output_interval:
             return np.asarray(va_proba), low, high
         return np.asarray(va_proba)
-
-    def get_p_value(self, proba, classes=None):
-        """return probability for the positive class when binary classification and for the most 
-        probable class otherwise
-        """
-        if classes is None:
-            return proba, np.argmax(proba, axis=1)
-        proba_2 = np.zeros((proba.shape[0], 2))
-        proba_2[:,1] = proba[:,classes]
-        proba_2[:,0] = 1 - proba[:,classes]
-        return proba_2, classes
 
     def is_multiclass(self) -> bool:
         """returns true if more than two classes

@@ -235,8 +235,8 @@ class CalibratedExplainer:
                                                                                     classes=classes,
                                                                                     bins=bins)
                 if classes is None:
-                    return predict[:,1], low, high, new_classes
-                return predict[:,1], low, high, None
+                    return [predict[i,c] for i,c in enumerate(new_classes)], [low[i,c] for i,c in enumerate(new_classes)], [high[i,c] for i,c in enumerate(new_classes)], new_classes
+                return [predict[i,c] for i,c in enumerate(classes)], low, high, None
 
             predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True, bins=bins)
             return predict[:,1], low, high, None
