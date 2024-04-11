@@ -495,7 +495,7 @@ class CalibratedExplanation(ABC):
         if len(original_features) == 2:
             of1, of2 = original_features[0], original_features[1]
             rule_value1, rule_value2 = rule_value_set[0], rule_value_set[1]
-        elif len(original_features) == 3:
+        elif len(original_features) >= 3:
             of1, of2, of3 = original_features[0], original_features[1], original_features[2]
             rule_value1, rule_value2, rule_value3 = rule_value_set[0], rule_value_set[1], rule_value_set[2]  
         for value_1 in rule_value1:
