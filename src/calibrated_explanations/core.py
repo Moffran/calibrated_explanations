@@ -12,9 +12,8 @@ conformal predictive systems (regression).
 # flake8: noqa: E501
 import copy
 import warnings
+from time import time
 import numpy as np
-
-from time import time 
 
 from lime.lime_tabular import LimeTabularExplainer
 
@@ -161,7 +160,7 @@ class CalibratedExplainer:
         self.lime_exp = None
         self.shap = None
         self.shap_exp = None
-        
+
         self.init_time = time() - init_time
 
 
@@ -397,7 +396,7 @@ class CalibratedExplainer:
 
         for i, x in enumerate(testX):
             instance_time.append(time())
-            
+
             bin_x = [bins[i]] if bins is not None else None
 
             if threshold is not None and not np.isscalar(explanation.y_threshold):
