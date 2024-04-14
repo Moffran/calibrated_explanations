@@ -9,7 +9,7 @@ Calibrated Explanations ([Documentation](https://calibrated-explanations.readthe
 [![Lint Status for Calibrated Explanations][lint-status]][lint-log]
 [![License](https://badgen.net/github/license/moffran/calibrated_explanations)](https://github.com/moffran/calibrated_explanations/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/calibrated-explanations)](https://pepy.tech/project/calibrated-explanations)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/v0.3.1)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/v0.3.2)
 
 `calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both classification and regression.
 The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
@@ -200,7 +200,7 @@ Regression offers many more options and to learn more about them, see the [demo_
 
 Known Limitations
 -----------------
-The implementation currently only support numerical input. Use the `utils.transform_to_numeric` (released in version v0.3.1) to transform a `DataFrame` with text data into numerical form and at the same time extracting `categorical_features`, `categorical_labels`, `target_labels` (if text labels) and `mappings` (used to apply the same mappings to new data) to be used as input to the `CalibratedExplainer`. The algorithm does not currently support image data.
+The implementation currently only support numerical input. Use the `utils.transform_to_numeric` (released in version v0.3.2) to transform a `DataFrame` with text data into numerical form and at the same time extracting `categorical_features`, `categorical_labels`, `target_labels` (if text labels) and `mappings` (used to apply the same mappings to new data) to be used as input to the `CalibratedExplainer`. The algorithm does not currently support image data.
 
 [Top](#calibrated-explanations-documentation)
 
@@ -301,7 +301,7 @@ To cite this software, use the following bibtex entry:
 	license = 	{BSD-3-Clause},
 	title = 	{Calibrated Explanations},
 	url = 		{https://github.com/Moffran/calibrated_explanations},
-	version = 	{v0.3.1},
+	version = 	{v0.3.2},
 	month = 	Feb,
 	year = 		{2024}
 }

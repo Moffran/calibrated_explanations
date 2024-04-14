@@ -1,13 +1,18 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.1...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.2...main)
+### Features
+### Fixes
+
+## [v0.3.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.2) - 2024-04-14
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.1...v0.3.2)
 ### Features
 - Added Fairness experiments and plotting for the XAI 2024 paper. Added a `Fairness` tag for the weblinks.
 - Added multi-class experiments and plotting for upcoming submissions. Added a `Multi-class` tag for weblinks.
+- Some improvements were made to the multi-class functionality. The updates included updating the VennAbers class to a more robust handling of multi-class (with or without Mondrian bins).
 ### Fixes
 - Updated the requirement for crepes to v0.6.2, to address known issues with some versions of python.
-- Some improvements were made to the multi-class functionality. The updates included updating the VennAbers class to a more robust handling of multi-class (with or without Mondrian bins).
 - The pythonpath for pytest was added to pyprojects.toml to avoid module not found error when running pytest locally.
 
 ## [v0.3.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.1) - 2024-02-23
