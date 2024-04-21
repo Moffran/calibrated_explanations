@@ -302,7 +302,7 @@ To cite this software, use the following bibtex entry:
 	title = 	{Calibrated Explanations},
 	url = 		{https://github.com/Moffran/calibrated_explanations},
 	version = 	{v0.3.2},
-	month = 	Feb,
+	month = 	April,
 	year = 		{2024}
 }
 ```
