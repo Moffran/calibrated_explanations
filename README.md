@@ -269,7 +269,7 @@ If you use `calibrated-explanations` for a scientific publication, you are kindl
 Bibtex entry for the original paper:
 
 ```bibtex
-@article{lofstrom2024calibrated,
+@article{lofstrom2024ce_classification,
 	title = 	{Calibrated explanations: With uncertainty information and counterfactuals},
 	journal = 	{Expert Systems with Applications},
 	pages = 	{123154},
@@ -285,7 +285,7 @@ Bibtex entry for the original paper:
 Bibtex entry for the regression paper:
 
 ```bibtex
-@misc{cal-expl-regression,
+@misc{lofstrom2023ce_regression,
       title = 	      	{Calibrated Explanations for Regression},
       author =          {L\"ofstr\"om, Tuwe and L\"ofstr\"om, Helena and Johansson, Ulf and S\"onstr\"od, Cecilia and Matela, Rudy},
       year =            {2023},
@@ -298,7 +298,7 @@ Bibtex entry for the regression paper:
 To cite this software, use the following bibtex entry:
 
 ```bibtex
-@software{Lofstrom_Calibrated_Explanations_2024,
+@software{lofstrom2024ce_repository,
 	author = 	{Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia and Matela, Rudy},
 	license = 	{BSD-3-Clause},
 	title = 	{Calibrated Explanations},
