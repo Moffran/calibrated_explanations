@@ -34,10 +34,10 @@ class IntervalRegressor:
         self.model = self
         self.cal_y_hat = self.ce.model.predict(self.ce.cal_X)  # can be calculated through calibrated_explainer
         self.residual_cal = self.ce.cal_y - self.cal_y_hat  # can be calculated through calibrated_explainer
+        self.sigma_cal = self.ce._get_sigma_test(X=self.ce.cal_X)  # pylint: disable=protected-access
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
-            sigma_cal = self.ce._get_sigma_test(X=self.ce.cal_X)
-            cps.fit(residuals=self.residual_cal, sigmas=sigma_cal, bins=self.ce.bins)
+            cps.fit(residuals=self.residual_cal, sigmas=self.sigma_cal, bins=self.ce.bins)
         else:
             cps.fit(residuals=self.residual_cal, bins=self.ce.bins)
         self.cps = cps
@@ -45,6 +45,8 @@ class IntervalRegressor:
         self.proba_cal = None
         self.y_threshold = None
         self.current_y_threshold = None
+        self.split = {}
+        self.pre_fit_for_probabilistic()
 
     def predict_probability(self, test_X, y_threshold, bins=None):
         '''The `predict_probability` function takes in a test dataset and a threshold value, and returns
@@ -75,7 +77,7 @@ class IntervalRegressor:
             if bins is not None:
                 assert self.ce.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
             self.compute_proba_cal(self.y_threshold)
-            proba, low, high = self.venn_abers.predict_proba(test_X, output_interval=True, bins=bins)
+            proba, low, high = self.split['va'].predict_proba(test_X, output_interval=True, bins=bins)
             return proba[:, 1], low, high, None
 
         interval = np.zeros((test_X.shape[0],2))
@@ -83,7 +85,7 @@ class IntervalRegressor:
         for i, _ in enumerate(proba):
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
-            p, low, high = self.venn_abers.predict_proba(test_X[i, :].reshape(1, -1), output_interval=True, bins=bins)
+            p, low, high = self.split['va'].predict_proba(test_X[i, :].reshape(1, -1), output_interval=True, bins=bins)
             proba[i] = p[:,1]
             interval[i, :] = np.array([low[0], high[0]])
         return proba, interval[:, 0], interval[:, 1], None
@@ -155,6 +157,25 @@ class IntervalRegressor:
         proba = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test, y=self.current_y_threshold, bins=bins)
         return np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
 
+    def pre_fit_for_probabilistic(self):
+        '''
+        The `pre_fit_for_probabilistic` function is used to split the calibration set into two parts. 
+        The first part is used to fit the `ConformalPredictiveSystem` and the second part is used to
+        calculate the probability calibration for a given threshold (at prediction time).
+        '''
+        n = len(self.ce.cal_y)
+        cal_parts = np.random.permutation(n).tolist()
+        self.split['parts'] = [cal_parts[:n//2], cal_parts[n//2:]]
+        cal_cps = self.split['parts'][0]
+        self.split['cps'] = crepes.ConformalPredictiveSystem()
+        if self.ce.bins is None:
+            self.split['cps'].fit(residuals=self.residual_cal[cal_cps],
+                            sigmas=self.sigma_cal[cal_cps])
+        else:
+            self.split['cps'].fit(residuals=self.residual_cal[cal_cps],
+                            sigmas=self.sigma_cal[cal_cps],
+                            bins=self.ce.bins[cal_cps])
+
     def compute_proba_cal(self, y_threshold: float):
         '''The `compute_proba_cal` function calculates the probability calibration for a given threshold.
         
@@ -169,28 +190,17 @@ class IntervalRegressor:
             Mondrian categories
         
         '''
-        # A less exact but faster solution, suitable when difficulty_estimator is assigned.
-        # Activated temporarily
-        if self.ce.difficulty_estimator is not None:
-            sigmas = self.ce._get_sigma_test(self.ce.cal_X)  # pylint: disable=protected-access
-            proba = self.cps.predict(y_hat=self.cal_y_hat,
-                                                y=y_threshold,
-                                                sigmas=sigmas,
-                                                bins=self.ce.bins)
-            self.proba_cal = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
+        cal_va = self.split['parts'][1]
+        if self.ce.bins is None:
+            bins = None
         else:
-            cps = crepes.ConformalPredictiveSystem()
-            self.proba_cal = np.zeros((len(self.residual_cal),2))
-            for i, _ in enumerate(self.residual_cal):
-                idx = np.setdiff1d(np.arange(len(self.residual_cal)), i)
-                sigma_cal = self.ce._get_sigma_test(self.ce.cal_X[idx, :])  # pylint: disable=protected-access
-                bin_cal = self.ce.bins[idx] if self.ce.bins is not None else None
-                bin_i = [self.ce.bins[i]] if self.ce.bins is not None else None
-                cps.fit(residuals=self.residual_cal[idx], sigmas=sigma_cal, bins=bin_cal)
-                sigma_i = self.ce._get_sigma_test(self.ce.cal_X[i, :].reshape(1, -1))  # pylint: disable=protected-access
-                self.proba_cal[i, 1] = cps.predict(y_hat=[self.cal_y_hat[i]],
-                                                y=y_threshold,
-                                                sigmas=sigma_i,
-                                                bins=bin_i)
-                self.proba_cal[i, 0] = 1 - self.proba_cal[i, 1]
-        self.venn_abers = VennAbers(self.proba_cal, (self.ce.cal_y <= y_threshold).astype(int), self, bins=self.ce.bins)
+            bins = self.ce.bins[cal_va]
+        proba = self.split['cps'].predict(y_hat=self.cal_y_hat[cal_va],
+                                y=y_threshold,
+                                sigmas=self.sigma_cal[cal_va],
+                                bins=bins)
+        self.split['proba'] = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
+        self.split['va'] = VennAbers(self.split['proba'],
+                                        (self.ce.cal_y[cal_va] <= y_threshold).astype(int),
+                                        self,
+                                        bins=bins)
