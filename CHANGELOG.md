@@ -4,6 +4,7 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.2...main)
 ### Features
 - Changed how probabilistic regression is done to handle both validity and speed by dividing the calibration set into two sets to allow pre-computation of the CPS. 
+- Added a new `under the hood` demo notebook to show how to access the information used in the plots,  like conditions and uncertainties etc.
 ### Fixes
 
 ## [v0.3.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.2) - 2024-04-14
