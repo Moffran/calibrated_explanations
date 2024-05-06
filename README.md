@@ -117,7 +117,7 @@ factual_explanations.get_explanation(0).plot_explanation()
 counterfactual_explanations.get_explanation(0).plot_explanation()
 ```
 #### Support for multiclass
-`calibrated-explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
+`calibrated-explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
 
 ### Regression
 Extracting explanations for regression is very similar to how it is done for classification. 
