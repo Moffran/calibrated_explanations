@@ -77,8 +77,8 @@ try:
 
         X_trainCal, X_test, y_trainCal, y_test = train_test_split(X.values, y_normalized, test_size=test_size,random_state=42)
         X_train, X_cal, y_train, y_cal = train_test_split(X_trainCal, y_trainCal, test_size=500,random_state=42)
-        X_train = X_train[:1000]
-        y_train = y_train[:1000]
+        # X_train = X_train[:1000]
+        # y_train = y_train[:1000]
 
         model.fit(X_train,y_train)
 
@@ -87,10 +87,10 @@ try:
         r_test = y_test - p_test
         r_cal = y_cal - p_cal
 
-        de_dist = DifficultyEstimator().fit(X=X_train, scaler=True)
-        de_std  = DifficultyEstimator().fit(X=X_train, y=y_train, scaler=True)
-        de_abs  = DifficultyEstimator().fit(X=X_train, residuals=y_train - model.oob_prediction_, scaler=True)
-        de_var  = DifficultyEstimator().fit(X=X_train, learner=model, scaler=True)
+        de_dist = DifficultyEstimator().fit(X=X_train[:500], scaler=True)
+        de_std  = DifficultyEstimator().fit(X=X_train[:500], y=y_train[:500], scaler=True)
+        de_abs  = DifficultyEstimator().fit(X=X_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True)
+        de_var  = DifficultyEstimator().fit(X=X_train[:500], learner=model, scaler=True)
 
         np.random.seed(1337)
         # categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
@@ -105,32 +105,32 @@ try:
             ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', random_state=i)
             # try:
             tic = time.time()
-            factual_explanations = ce.explain_factual(X_test)
+            explanations = ce.explain_factual(X_test)
             ct = time.time()-tic
             stab_timer['ce'].append(ct)
             print(f' f{ct:.1f}',end=' ', flush=True)
-            stability['ce'].append([f.feature_weights for f in factual_explanations])
+            stability['ce'].append([f.feature_weights for f in explanations])
 
             tic = time.time()
-            factual_explanation = ce.explain_counterfactual(X_test)
+            explanations = ce.explain_counterfactual(X_test)
             ct = time.time()-tic
             stab_timer['cce'].append(ct)
             print(f' c{ct:.1f}',end=' ', flush=True)
-            stability['cce'].append([f.feature_weights for f in factual_explanations])
+            stability['cce'].append([f.feature_weights for f in explanations])
 
             tic = time.time()
-            factual_explanations = ce.explain_factual(X_test, threshold=0.5)
+            explanations = ce.explain_factual(X_test, threshold=0.5)
             ct = time.time()-tic
             stab_timer['pce'].append(ct)
             print(f' pf{ct:.1f}',end=' ', flush=True)
-            stability['pce'].append([f.feature_weights for f in factual_explanations])
+            stability['pce'].append([f.feature_weights for f in explanations])
 
             tic = time.time()
-            factual_explanation = ce.explain_counterfactual(X_test, threshold=0.5)
+            explanations = ce.explain_counterfactual(X_test, threshold=0.5)
             ct = time.time()-tic
             stab_timer['pcce'].append(ct)
             print(f' pc{ct:.1f}',end='\n', flush=True)
-            stability['pcce'].append([f.feature_weights for f in factual_explanations])
+            stability['pcce'].append([f.feature_weights for f in explanations])
 
             # print(f'no normalization:{}',end=' ')
             for norm in ['_dist', '_std', '_abs', '_var']:
@@ -145,32 +145,32 @@ try:
                 ce.set_difficulty_estimator(de)
 
                 tic = time.time()
-                ce.explain_factual(X_test, threshold=0.5)
+                explanations = ce.explain_factual(X_test)
                 ct = time.time()-tic
                 stab_timer['ce'+norm].append(ct)
                 print(f'{norm[1]}f{ct:.1f}',end=' ', flush=True)
-                stability['ce'+norm].append([f.feature_weights for f in factual_explanations])
+                stability['ce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                ce.explain_counterfactual(X_test, threshold=0.5)
+                explanations = ce.explain_counterfactual(X_test)
                 ct = time.time()-tic
                 stab_timer['cce'+norm].append(ct)
                 print(f'{norm[1]}c{ct:.1f}',end=' ', flush=True)
-                stability['cce'+norm].append([f.feature_weights for f in factual_explanations])
+                stability['cce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                ce.explain_factual(X_test)
+                explanations = ce.explain_factual(X_test, threshold=0.5)
                 ct = time.time()-tic
                 stab_timer['pce'+norm].append(ct)
                 print(f'{norm[1]}pf{ct:.1f}',end=' ', flush=True)
-                stability['pce'+norm].append([f.feature_weights for f in factual_explanations])
+                stability['pce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                ce.explain_counterfactual(X_test)
+                explanations = ce.explain_counterfactual(X_test, threshold=0.5)
                 ct = time.time()-tic
                 stab_timer['pcce'+norm].append(ct)
                 print(f'{norm[1]}pc{ct:.1f}',end='\n', flush=True)
-                stability['pcce'+norm].append([f.feature_weights for f in factual_explanations])
+                stability['pcce'+norm].append([f.feature_weights for f in explanations])
             # print(f'',end='\n', flush=True)
             i += 1
             # except Exception as e: # pylint: disable=broad-exception-caught
@@ -188,46 +188,46 @@ try:
             np.random.seed = i
             model = RandomForestRegressor(n_estimators=100, oob_score=True, random_state=i)
             X_train, X_cal, y_train, y_cal = train_test_split(X_trainCal, y_trainCal, test_size=500,random_state=i)
-            X_train = X_train[:1000]
-            y_train = y_train[:1000]
+            # X_train = X_train[:1000]
+            # y_train = y_train[:1000]
 
             model.fit(X_train, y_train)
-            de_dist = DifficultyEstimator().fit(X=X_train, scaler=True)
-            de_std  = DifficultyEstimator().fit(X=X_train, y=y_train, scaler=True)
-            de_abs  = DifficultyEstimator().fit(X=X_train, residuals=y_train - model.oob_prediction_, scaler=True)
-            de_var  = DifficultyEstimator().fit(X=X_train, learner=model, scaler=True)
+            de_dist = DifficultyEstimator().fit(X=X_train[:500], scaler=True)
+            de_std  = DifficultyEstimator().fit(X=X_train[:500], y=y_train[:500], scaler=True)
+            de_abs  = DifficultyEstimator().fit(X=X_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True)
+            de_var  = DifficultyEstimator().fit(X=X_train[:500], learner=model, scaler=True)
 
             ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression',random_state=i)
             robustness['predict'].append(model.predict(X_test))
 
             # try:
             tic = time.time()
-            factual_explanations = ce.explain_factual(X_test)
+            explanations = ce.explain_factual(X_test)
             ct = time.time()-tic
             rob_timer['ce'].append(ct)
             print(f' f{ct:.1f}',end=' ', flush=True)
-            robustness['ce'].append([f.feature_weights for f in factual_explanations])
+            robustness['ce'].append([f.feature_weights for f in explanations])
 
             tic = time.time()
-            factual_explanation = ce.explain_counterfactual(X_test)
+            explanations = ce.explain_counterfactual(X_test)
             ct = time.time()-tic
             rob_timer['cce'].append(ct)
             print(f' c{ct:.1f}',end=' ', flush=True)
-            robustness['cce'].append([f.feature_weights for f in factual_explanations])
+            robustness['cce'].append([f.feature_weights for f in explanations])
 
             tic = time.time()
-            factual_explanations = ce.explain_factual(X_test, threshold=0.5)
+            explanations = ce.explain_factual(X_test, threshold=0.5)
             ct = time.time()-tic
             rob_timer['pce'].append(ct)
             print(f' pf{ct:.1f}',end=' ', flush=True)
-            robustness['pce'].append([f.feature_weights for f in factual_explanations])
+            robustness['pce'].append([f.feature_weights for f in explanations])
 
             tic = time.time()
-            factual_explanation = ce.explain_counterfactual(X_test, threshold=0.5)
+            explanations = ce.explain_counterfactual(X_test, threshold=0.5)
             ct = time.time()-tic
             rob_timer['pcce'].append(ct)
             print(f' pc{ct:.1f}',end='\n', flush=True)
-            robustness['pcce'].append([f.feature_weights for f in factual_explanations])
+            robustness['pcce'].append([f.feature_weights for f in explanations])
 
             for norm in ['_dist', '_std', '_abs', '_var']:
                 if norm == '_dist':
@@ -241,32 +241,32 @@ try:
                 ce.set_difficulty_estimator(de)
 
                 tic = time.time()
-                ce.explain_factual(X_test, threshold=0.5)
+                explanations = ce.explain_factual(X_test)
                 ct = time.time()-tic
                 rob_timer['ce'+norm].append(ct)
                 print(f'{norm[1]}f{ct:.1f}',end=' ', flush=True)
-                robustness['ce'+norm].append([f.feature_weights for f in factual_explanations])
+                robustness['ce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                ce.explain_counterfactual(X_test, threshold=0.5)
+                explanations = ce.explain_counterfactual(X_test)
                 ct = time.time()-tic
                 rob_timer['cce'+norm].append(ct)
                 print(f'{norm[1]}c{ct:.1f}',end=' ', flush=True)
-                robustness['cce'+norm].append([f.feature_weights for f in factual_explanations])
+                robustness['cce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                ce.explain_factual(X_test)
+                explanations = ce.explain_factual(X_test, threshold=0.5)
                 ct = time.time()-tic
                 rob_timer['pce'+norm].append(ct)
                 print(f'{norm[1]}pf{ct:.1f}',end=' ', flush=True)
-                robustness['pce'+norm].append([f.feature_weights for f in factual_explanations])
+                robustness['pce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                ce.explain_counterfactual(X_test)
+                explanations = ce.explain_counterfactual(X_test, threshold=0.5)
                 ct = time.time()-tic
                 rob_timer['pcce'+norm].append(ct)
                 print(f'{norm[1]}pc{ct:.1f}',end='\n', flush=True)
-                robustness['pcce'+norm].append([f.feature_weights for f in factual_explanations])
+                robustness['pcce'+norm].append([f.feature_weights for f in explanations])
             i += 1
             # except Exception as e: # pylint: disable=broad-exception-caught
             #     warnings.warn(f'Error: {e}')
@@ -284,5 +284,5 @@ try:
     # pickle.dump(results, open('evaluation/results_stab_rob.pkl', 'wb'))
     toc_all = time.time()
     debug_print(str(toc_data-tic_data),is_debug )
-except Exception as e:
+except Exception as e: # pylint: disable=broad-exception-caught
     print(f'Error: {e}')
