@@ -7,12 +7,16 @@ import warnings
 import pickle
 import numpy as np
 import pandas as pd
+import shap
 #
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
+from crepes import ConformalPredictiveSystem
 from crepes.extras import DifficultyEstimator
+
+from lime.lime_tabular import LimeTabularExplainer
 
 from calibrated_explanations import CalibratedExplainer
 
@@ -25,11 +29,31 @@ def debug_print(message, debug=True):
     if debug:
         print(message)
 
+# -------------------------------------------------------
+
+def explain_shap(shap_explainer, data):
+    shap_values = shap_explainer(data)
+    return [{'predict':sv} for sv in shap_values.values]
+
+#pylint: disable=redefined-outer-name
+def explain_lime(lime_explainer, predictor, data):
+    feature_weights = []
+    for x in data:
+        exp = lime_explainer.explain_instance(x, predictor, num_features=data.shape[1])
+        features = [exp.local_exp[1][f][0] for f in range(len(exp.local_exp[1]))]
+        weights = np.zeros(len(features))
+        for i, f in enumerate(features):
+            weights[f] = exp.local_exp[1][i][1]
+        feature_weights.append({'predict':weights})
+    return feature_weights
+
 # ------------------------------------------------------
 
 test_size = 10 # number of test samples per dataset
 is_debug = True
-num_rep = 100
+num_rep = 2
+normalizations = ['', '_dist', '_std', '_abs', '_var']
+resultfile = 'evaluation/regression/results_regression_test.pkl'
 
 descriptors = ['uncal','va',]#,'va'
 Descriptors = {'uncal':'Uncal','va': 'VA'}
@@ -87,89 +111,123 @@ try:
         r_test = y_test - p_test
         r_cal = y_cal - p_cal
 
+        de_none = None
         de_dist = DifficultyEstimator().fit(X=X_train[:500], scaler=True)
         de_std  = DifficultyEstimator().fit(X=X_train[:500], y=y_train[:500], scaler=True)
         de_abs  = DifficultyEstimator().fit(X=X_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True)
         de_var  = DifficultyEstimator().fit(X=X_train[:500], learner=model, scaler=True)
 
+        s_cal_dist = de_dist.apply(X_cal)
+        s_cal_std = de_std.apply(X_cal)
+        s_cal_abs = de_abs.apply(X_cal)
+        s_cal_var = de_var.apply(X_cal)
+
+        cps_none = ConformalPredictiveSystem().fit(residuals=r_cal)
+        cps_dist = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_dist)
+        cps_std = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_std)
+        cps_abs = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_abs)
+        cps_var = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_var)
+
+        # pylint: disable=unnecessary-lambda-assignment, cell-var-from-loop
+        predictor_none = lambda x: np.mean(cps_none.predict(model.predict(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+        predictor_dist = lambda x: np.mean(cps_dist.predict(model.predict(x), sigmas=de_dist.apply(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+        predictor_std = lambda x: np.mean(cps_std.predict(model.predict(x), sigmas=de_std.apply(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+        predictor_abs = lambda x: np.mean(cps_abs.predict(model.predict(x), sigmas=de_abs.apply(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+        predictor_var = lambda x: np.mean(cps_var.predict(model.predict(x), sigmas=de_var.apply(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+
         np.random.seed(1337)
         # categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
 
-        stability =  {'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
-        stab_timer = {'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
-        robustness = {'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], 'predict':[]}#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
-        rob_timer =  {'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        stability =  {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        stab_timer = {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        robustness = {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], 'predict':[]}#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        rob_timer =  {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
         i = 0
         while i < num_rep:
             print(f'{i+1}:',end='\n', flush=True)
             ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', random_state=i)
-            # try:
-            tic = time.time()
-            explanations = ce.explain_factual(X_test)
-            ct = time.time()-tic
-            stab_timer['ce'].append(ct)
-            print(f' f{ct:.1f}',end=' ', flush=True)
-            stability['ce'].append([f.feature_weights for f in explanations])
-
-            tic = time.time()
-            explanations = ce.explain_counterfactual(X_test)
-            ct = time.time()-tic
-            stab_timer['cce'].append(ct)
-            print(f' c{ct:.1f}',end=' ', flush=True)
-            stability['cce'].append([f.feature_weights for f in explanations])
-
-            tic = time.time()
-            explanations = ce.explain_factual(X_test, threshold=0.5)
-            ct = time.time()-tic
-            stab_timer['pce'].append(ct)
-            print(f' pf{ct:.1f}',end=' ', flush=True)
-            stability['pce'].append([f.feature_weights for f in explanations])
-
-            tic = time.time()
-            explanations = ce.explain_counterfactual(X_test, threshold=0.5)
-            ct = time.time()-tic
-            stab_timer['pcce'].append(ct)
-            print(f' pc{ct:.1f}',end='\n', flush=True)
-            stability['pcce'].append([f.feature_weights for f in explanations])
-
             # print(f'no normalization:{}',end=' ')
-            for norm in ['_dist', '_std', '_abs', '_var']:
+            se = shap.Explainer(model, X_cal, seed=i)
+            explain_shap(se, X_test[:1]) # initialization call, to avoid overhead in first call
+            le = LimeTabularExplainer(X_cal, mode='regression', random_state=i)
+
+            tic = time.time()
+            explanations = explain_shap(se, X_test)
+            ct = time.time()-tic
+            stab_timer['shap_base'].append(ct)
+            print(f'bs{ct:.1f}',end=' ', flush=True)
+            stability['shap_base'].append(explanations)
+
+            tic = time.time()
+            explanations = explain_lime(le, lambda x: model.predict(x), X_test) # pylint: disable=unnecessary-lambda
+            ct = time.time()-tic
+            stab_timer['lime_base'].append(ct)
+            print(f'bl{ct:.1f}',end='\n', flush=True)
+            stability['lime_base'].append(explanations)
+
+            for norm in normalizations:
                 if norm == '_dist':
-                    de = de_dist
+                    ce.set_difficulty_estimator(de_dist)
+                    predictor = predictor_dist
+                    letter = 'd'
                 elif norm == '_std':
-                    de = de_std
+                    ce.set_difficulty_estimator(de_std)
+                    predictor = predictor_std
+                    letter = 's'
                 elif norm == '_abs':
-                    de = de_abs
+                    ce.set_difficulty_estimator(de_abs)
+                    predictor = predictor_abs
+                    letter = 'a'
                 elif norm == '_var':
-                    de = de_var
-                ce.set_difficulty_estimator(de)
+                    ce.set_difficulty_estimator(de_var)
+                    predictor = predictor_var
+                    letter = 'v'
+                else:
+                    letter = ' '
+                    predictor = predictor_none
+                se = shap.Explainer(predictor, X_cal, seed=i)
+                explain_shap(se, X_test[:1]) # initialization call, to avoid overhead in first call
+
+                tic = time.time()
+                explanations = explain_shap(se, X_test)
+                ct = time.time()-tic
+                stab_timer['shap'+norm].append(ct)
+                print(f'{letter}s{ct:.1f}',end=' ', flush=True)
+                stability['shap'+norm].append(explanations)
+
+                tic = time.time()
+                explanations = explain_lime(le, predictor, X_test) # pylint: disable=unnecessary-lambda
+                ct = time.time()-tic
+                stab_timer['lime'+norm].append(ct)
+                print(f'{letter}l{ct:.1f}',end=' ', flush=True)
+                stability['lime'+norm].append(explanations)
 
                 tic = time.time()
                 explanations = ce.explain_factual(X_test)
                 ct = time.time()-tic
                 stab_timer['ce'+norm].append(ct)
-                print(f'{norm[1]}f{ct:.1f}',end=' ', flush=True)
+                print(f'{letter}f{ct:.1f}',end=' ', flush=True)
                 stability['ce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
                 explanations = ce.explain_counterfactual(X_test)
                 ct = time.time()-tic
                 stab_timer['cce'+norm].append(ct)
-                print(f'{norm[1]}c{ct:.1f}',end=' ', flush=True)
+                print(f'{letter}c{ct:.1f}',end=' ', flush=True)
                 stability['cce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
                 explanations = ce.explain_factual(X_test, threshold=0.5)
                 ct = time.time()-tic
                 stab_timer['pce'+norm].append(ct)
-                print(f'{norm[1]}pf{ct:.1f}',end=' ', flush=True)
+                print(f'{letter}pf{ct:.1f}',end=' ', flush=True)
                 stability['pce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
                 explanations = ce.explain_counterfactual(X_test, threshold=0.5)
                 ct = time.time()-tic
                 stab_timer['pcce'+norm].append(ct)
-                print(f'{norm[1]}pc{ct:.1f}',end='\n', flush=True)
+                print(f'{letter}pc{ct:.1f}',end='\n', flush=True)
                 stability['pcce'+norm].append([f.feature_weights for f in explanations])
             # print(f'',end='\n', flush=True)
             i += 1
@@ -179,7 +237,7 @@ try:
 
         results[dataSet][alg]['stability'] = stability
         results[dataSet][alg]['stab_timer'] = stab_timer
-        with open('evaluation/regression/results_stab.pkl', 'wb') as f:
+        with open(resultfile, 'wb') as f:
             pickle.dump(results, f)
 
         i = 0
@@ -197,75 +255,110 @@ try:
             de_abs  = DifficultyEstimator().fit(X=X_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True)
             de_var  = DifficultyEstimator().fit(X=X_train[:500], learner=model, scaler=True)
 
+            s_cal_dist = de_dist.apply(X_cal)
+            s_cal_std = de_std.apply(X_cal)
+            s_cal_abs = de_abs.apply(X_cal)
+            s_cal_var = de_var.apply(X_cal)
+
+            cps_none = ConformalPredictiveSystem().fit(residuals=r_cal)
+            cps_dist = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_dist)
+            cps_std = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_std)
+            cps_abs = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_abs)
+            cps_var = ConformalPredictiveSystem().fit(residuals=r_cal, sigmas=s_cal_var)
+
+            # pylint: disable=unnecessary-lambda-assignment, cell-var-from-loop
+            predictor_none = lambda x: np.mean(cps_none.predict(model.predict(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+            predictor_dist = lambda x: np.mean(cps_dist.predict(model.predict(x), sigmas=de_dist.apply(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+            predictor_std = lambda x: np.mean(cps_std.predict(model.predict(x), sigmas=de_std.apply(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+            predictor_abs = lambda x: np.mean(cps_abs.predict(model.predict(x), sigmas=de_abs.apply(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+            predictor_var = lambda x: np.mean(cps_var.predict(model.predict(x), sigmas=de_var.apply(x), lower_percentiles=[50], higher_percentiles=[50]), axis=1)
+
             ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression',random_state=i)
             robustness['predict'].append(model.predict(X_test))
 
+            se = shap.Explainer(model, X_cal, seed=i)
+            explain_shap(se, X_test[:1]) # initialization call, to avoid overhead in first call
+            le = LimeTabularExplainer(X_cal, mode='regression', random_state=i)
+
+            tic = time.time()
+            explanations = explain_shap(se, X_test)
+            ct = time.time()-tic
+            rob_timer['shap_base'].append(ct)
+            print(f'bs{ct:.1f}',end=' ', flush=True)
+            robustness['shap_base'].append(explanations)
+
+            tic = time.time()
+            explanations = explain_lime(le, lambda x: model.predict(x), X_test) # pylint: disable=unnecessary-lambda
+            ct = time.time()-tic
+            rob_timer['lime_base'].append(ct)
+            print(f'bl{ct:.1f}',end='\n', flush=True)
+            robustness['lime_base'].append(explanations)
+
             # try:
-            tic = time.time()
-            explanations = ce.explain_factual(X_test)
-            ct = time.time()-tic
-            rob_timer['ce'].append(ct)
-            print(f' f{ct:.1f}',end=' ', flush=True)
-            robustness['ce'].append([f.feature_weights for f in explanations])
 
-            tic = time.time()
-            explanations = ce.explain_counterfactual(X_test)
-            ct = time.time()-tic
-            rob_timer['cce'].append(ct)
-            print(f' c{ct:.1f}',end=' ', flush=True)
-            robustness['cce'].append([f.feature_weights for f in explanations])
-
-            tic = time.time()
-            explanations = ce.explain_factual(X_test, threshold=0.5)
-            ct = time.time()-tic
-            rob_timer['pce'].append(ct)
-            print(f' pf{ct:.1f}',end=' ', flush=True)
-            robustness['pce'].append([f.feature_weights for f in explanations])
-
-            tic = time.time()
-            explanations = ce.explain_counterfactual(X_test, threshold=0.5)
-            ct = time.time()-tic
-            rob_timer['pcce'].append(ct)
-            print(f' pc{ct:.1f}',end='\n', flush=True)
-            robustness['pcce'].append([f.feature_weights for f in explanations])
-
-            for norm in ['_dist', '_std', '_abs', '_var']:
+            for norm in normalizations:
                 if norm == '_dist':
-                    de = de_dist
+                    ce.set_difficulty_estimator(de_dist)
+                    predictor = predictor_dist
+                    letter = 'd'
                 elif norm == '_std':
-                    de = de_std
+                    ce.set_difficulty_estimator(de_std)
+                    predictor = predictor_std
+                    letter = 's'
                 elif norm == '_abs':
-                    de = de_abs
+                    ce.set_difficulty_estimator(de_abs)
+                    predictor = predictor_abs
+                    letter = 'a'
                 elif norm == '_var':
-                    de = de_var
-                ce.set_difficulty_estimator(de)
+                    ce.set_difficulty_estimator(de_var)
+                    predictor = predictor_var
+                    letter = 'v'
+                else:
+                    letter = ' '
+                    predictor = predictor_none
+                se = shap.Explainer(predictor, X_cal, seed=i)
+                explain_shap(se, X_test[:1]) # initialization call, to avoid overhead in first call
+
+                tic = time.time()
+                explanations = explain_shap(se, X_test)
+                ct = time.time()-tic
+                rob_timer['shap'+norm].append(ct)
+                print(f'{letter}s{ct:.1f}',end=' ', flush=True)
+                robustness['shap'+norm].append(explanations)
+
+                tic = time.time()
+                explanations = explain_lime(le, predictor, X_test) # pylint: disable=unnecessary-lambda
+                ct = time.time()-tic
+                rob_timer['lime'+norm].append(ct)
+                print(f'{letter}l{ct:.1f}',end=' ', flush=True)
+                robustness['lime'+norm].append(explanations)
 
                 tic = time.time()
                 explanations = ce.explain_factual(X_test)
                 ct = time.time()-tic
                 rob_timer['ce'+norm].append(ct)
-                print(f'{norm[1]}f{ct:.1f}',end=' ', flush=True)
+                print(f'{letter}f{ct:.1f}',end=' ', flush=True)
                 robustness['ce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
                 explanations = ce.explain_counterfactual(X_test)
                 ct = time.time()-tic
                 rob_timer['cce'+norm].append(ct)
-                print(f'{norm[1]}c{ct:.1f}',end=' ', flush=True)
+                print(f'{letter}c{ct:.1f}',end=' ', flush=True)
                 robustness['cce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
                 explanations = ce.explain_factual(X_test, threshold=0.5)
                 ct = time.time()-tic
                 rob_timer['pce'+norm].append(ct)
-                print(f'{norm[1]}pf{ct:.1f}',end=' ', flush=True)
+                print(f'{letter}pf{ct:.1f}',end=' ', flush=True)
                 robustness['pce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
                 explanations = ce.explain_counterfactual(X_test, threshold=0.5)
                 ct = time.time()-tic
                 rob_timer['pcce'+norm].append(ct)
-                print(f'{norm[1]}pc{ct:.1f}',end='\n', flush=True)
+                print(f'{letter}pc{ct:.1f}',end='\n', flush=True)
                 robustness['pcce'+norm].append([f.feature_weights for f in explanations])
             i += 1
             # except Exception as e: # pylint: disable=broad-exception-caught
@@ -277,9 +370,7 @@ try:
 
     toc_data = time.time()
     debug_print(dataSet + ': ' +str(toc_data-tic_data),is_debug )
-    with open('evaluation/regression/results_stab.pkl', 'wb') as f:
-        pickle.dump(results, f)
-    with open('evaluation/regression/results_rob.pkl', 'wb') as f:
+    with open(resultfile, 'wb') as f:
         pickle.dump(results, f)
     # pickle.dump(results, open('evaluation/results_stab_rob.pkl', 'wb'))
     toc_all = time.time()
