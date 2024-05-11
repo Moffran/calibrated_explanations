@@ -51,8 +51,8 @@ def explain_lime(lime_explainer, predictor, data):
 
 test_size = 10 # number of test samples per dataset
 is_debug = True
-num_rep = 2
-normalizations = ['', '_dist', '_std', '_abs', '_var']
+num_rep = 100
+normalizations = ['', '_dist', '_std', '_abs', '_var']#['', '_var']#
 resultfile = 'evaluation/regression/results_regression_test.pkl'
 
 descriptors = ['uncal','va',]#,'va'
@@ -138,16 +138,26 @@ try:
         np.random.seed(1337)
         # categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
 
-        stability =  {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
-        stab_timer = {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
-        robustness = {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], 'predict':[]}#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
-        rob_timer =  {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        stability =  {'lime_base':[], 'shap_base':[]}
+        stab_timer = {'lime_base':[], 'shap_base':[]}
+        robustness = {'lime_base':[], 'shap_base':[],'predict':[]}
+        rob_timer =  {'lime_base':[], 'shap_base':[]}
+        for setup in ['lime','shap','ce','cce','pce','pcce']:
+            for norm in normalizations:
+                stability[setup+norm] = []
+                stab_timer[setup+norm] = []
+                robustness[setup+norm] = []
+                rob_timer[setup+norm] = []
+        # stability =  {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        # stab_timer = {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        # robustness = {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], 'predict':[]}#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
+        # rob_timer =  {'lime_base':[], 'lime':[], 'lime_dist':[], 'lime_std':[], 'lime_abs':[], 'lime_var':[], 'shap_base':[], 'shap':[], 'shap_dist':[], 'shap_std':[], 'shap_abs':[], 'shap_var':[], 'ce':[], 'cce':[], 'ce_dist':[], 'cce_dist':[], 'ce_std':[], 'cce_std':[], 'ce_abs':[], 'cce_abs':[], 'ce_var':[], 'cce_var':[], 'pce':[], 'pcce':[], 'pce_dist':[], 'pcce_dist':[], 'pce_std':[], 'pcce_std':[], 'pce_abs':[], 'pcce_abs':[], 'pce_var':[], 'pcce_var':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
         i = 0
         while i < num_rep:
             print(f'{i+1}:',end='\n', flush=True)
             ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', random_state=i)
             # print(f'no normalization:{}',end=' ')
-            se = shap.Explainer(model, X_cal, seed=i)
+            se = shap.Explainer(lambda x: model.predict(x), X_cal, seed=i) # pylint: disable=unnecessary-lambda
             explain_shap(se, X_test[:1]) # initialization call, to avoid overhead in first call
             le = LimeTabularExplainer(X_cal, mode='regression', random_state=i)
 
@@ -276,7 +286,7 @@ try:
             ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression',random_state=i)
             robustness['predict'].append(model.predict(X_test))
 
-            se = shap.Explainer(model, X_cal, seed=i)
+            se = shap.Explainer(lambda x: model.predict(x), X_cal, seed=i) # pylint: disable=unnecessary-lambda
             explain_shap(se, X_test[:1]) # initialization call, to avoid overhead in first call
             le = LimeTabularExplainer(X_cal, mode='regression', random_state=i)
 
