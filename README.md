@@ -18,6 +18,7 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
 	- Multi-class classification models
 	- Regression models
 		* Including probabilistic explanations of the probability that the prediction exceeds a user-defined threshold 
+		* With difficulty adaptable explanations (conformal normalization) 
 * Calibration of the underlying model to ensure that predictions reflect reality.
 * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
 * Rules with straightforward interpretation in relation to instance values and feature weights.
@@ -28,6 +29,10 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
 Below is an example of a probabilistic counterfactual explanation for an instance of the California Housing dataset (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 
 [![Probabilistic counterfactual explanation for California Housing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg "Probabilistic counterfactual explanation for California Housing")](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
+
+Table 1 summarizes the characteristics of Calibrated Explanations.
+
+[![Characteristics of Calibrated Explanantions](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/Table1.png "Characteristics of Calibrated Explanantions")](https://arxiv.org/abs/2308.16245)
  
 Getting started
 ---------------
