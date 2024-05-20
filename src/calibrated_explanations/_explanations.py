@@ -490,7 +490,7 @@ class CalibratedExplanation(ABC):
         return self.conditions
     
     
-
+    # pylint: diable=possibly-used-before-assignment
     def _predict_conjunctive(self, rule_value_set, original_features, perturbed, threshold, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
                             predicted_class, bins=None):
         # """support function to calculate the prediction for a conjunctive rule
