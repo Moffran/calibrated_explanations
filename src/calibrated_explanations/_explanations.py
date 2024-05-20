@@ -495,6 +495,7 @@ class CalibratedExplanation(ABC):
                             predicted_class, bins=None):
         # """support function to calculate the prediction for a conjunctive rule
         # """
+        assert len(original_features) >= 2, 'Conjunctive rules require at least two features'
         rule_predict, rule_low, rule_high, rule_count = 0,0,0,0
         if len(original_features) == 2:
             of1, of2 = original_features[0], original_features[1]
