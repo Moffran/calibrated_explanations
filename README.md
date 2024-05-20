@@ -13,12 +13,17 @@ Calibrated Explanations ([Documentation](https://calibrated-explanations.readthe
 
 `calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both [classification](https://doi.org/10.1016/j.eswa.2024.123154) and [regression](https://arxiv.org/abs/2308.16245).
 The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
-* Fast, reliable, stable and robust feature importance explanations.
+* Fast, reliable, stable and robust feature importance explanations for both classification and regression models:
+	- Binary classification models
+	- Multi-class classification models
+	- Regression models
+		* Including probabilistic explanations of the probability that the prediction exceeds a user-defined threshold 
 * Calibration of the underlying model to ensure that predictions reflect reality.
 * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
 * Rules with straightforward interpretation in relation to the feature weights.
 * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions.
-* Conjunctional rules conveying joint contribution between features.
+* Conjunctional rules conveying feature importance for the interaction of included features.
+* Conditional rules, allowing users the ability to create contextual explanations to handle bias and fairness constraints. 
 
 Below is an example of a probabilistic counterfactual explanation for an instance of the California Housing dataset (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 
