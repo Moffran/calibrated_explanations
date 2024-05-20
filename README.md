@@ -20,10 +20,10 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
 		* Including probabilistic explanations of the probability that the prediction exceeds a user-defined threshold 
 * Calibration of the underlying model to ensure that predictions reflect reality.
 * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
-* Rules with straightforward interpretation in relation to the feature weights.
+* Rules with straightforward interpretation in relation to instance values and feature weights.
 * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions.
 * Conjunctional rules conveying feature importance for the interaction of included features.
-* Conditional rules, allowing users the ability to create contextual explanations to handle bias and fairness constraints. 
+* Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints. 
 
 Below is an example of a probabilistic counterfactual explanation for an instance of the California Housing dataset (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 
@@ -35,7 +35,7 @@ The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/m
 * [quickstart](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart.ipynb) - similar to this Getting Started, including plots.
 * [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) - similar to this Getting Started, but with a wrapper class for easier use.
 * [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) - with examples for binary classification 
-* [demo_multiclass_glass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb) - with examples for multi-class classification
+* [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb) - with examples for multi-class classification
 * [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) - with examples for regression
 * [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) - with examples for regression with thresholds
 * [demo_under_the_hood](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_under_the_hood.ipynb) - illustrating how to access the information composing the explanations
