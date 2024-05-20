@@ -27,13 +27,19 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
 * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints. 
 
 Below is an example of a probabilistic counterfactual explanation for an instance of the California Housing dataset (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
-
-[![Probabilistic counterfactual explanation for California Housing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg "Probabilistic counterfactual explanation for California Housing")](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest)
+<p align="center">
+  <a href="https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest">
+    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic counterfactual explanation for California Housing">
+  </a>
+</p>
 
 Table 1 summarizes the characteristics of Calibrated Explanations.
+<p align="center">
+  <a href="https://arxiv.org/abs/2308.16245">
+    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/Table1.png" alt="Characteristics of Calibrated Explanantions">
+  </a>
+</p>
 
-[![Characteristics of Calibrated Explanantions](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/Table1.png "Characteristics of Calibrated Explanantions")](https://arxiv.org/abs/2308.16245)
- 
 Getting started
 ---------------
 The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The following are commented and should be a good start:
