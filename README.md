@@ -13,7 +13,7 @@ Calibrated Explanations ([Documentation](https://calibrated-explanations.readthe
 
 `calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both [classification](https://doi.org/10.1016/j.eswa.2024.123154) and [regression](https://arxiv.org/abs/2308.16245).
 The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
-* Fast, reliable, stable and robust feature importance explanations for both classification and regression models:
+* Fast, reliable, stable and robust feature importance explanations for:
 	- Binary classification models
 	- Multi-class classification models
 	- Regression models
