@@ -17,7 +17,7 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
 	- Binary classification models
 	- Multi-class classification models
 	- Regression models
-		* Including probabilistic explanations of the probability that the prediction exceeds a user-defined threshold 
+		* Including probabilistic explanations of the probability that the target exceeds a user-defined threshold 
 		* With difficulty adaptable explanations (conformal normalization) 
 * Calibration of the underlying model to ensure that predictions reflect reality.
 * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
