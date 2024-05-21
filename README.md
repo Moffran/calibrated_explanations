@@ -26,7 +26,7 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
 * Conjunctional rules conveying feature importance for the interaction of included features.
 * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints. 
 
-Below is an example of a probabilistic counterfactual explanation for an instance of the California Housing dataset (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
+Below is an example of a probabilistic counterfactual explanation for an instance of the regression dataset California Housing (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 <p align="center">
   <a href="https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest">
     <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic counterfactual explanation for California Housing">
