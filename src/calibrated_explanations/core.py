@@ -25,7 +25,7 @@ from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils import safe_isinstance, safe_import, check_is_fitted
 
-__version__ = 'v0.3.2'
+__version__ = 'v0.3.3'
 
 
 
@@ -623,7 +623,7 @@ class CalibratedExplainer:
             random_state (int): a seed to the random number generator
         """
         self.random_state = random_state
-        np.random.seed(self.random_state)
+        np.random.seed = self.random_state
 
 
 

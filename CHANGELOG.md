@@ -1,11 +1,18 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.2...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.3...main)
 ### Features
-- Changed how probabilistic regression is done to handle both validity and speed by dividing the calibration set into two sets to allow pre-computation of the CPS. 
+### Fixes
+
+## [v0.3.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.3) - 2024-05-25
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.2...v0.3.3)
+### Features
+- Changed how probabilistic regression is done to handle both validity and speed by dividing the calibration set into two sets to allow pre-computation of the CPS. Credits to anonymous reviewer for this suggestion. 
+- Added updated regression experiments and plotting for revised paper. 
 - Added a new `under the hood` demo notebook to show how to access the information used in the plots,  like conditions and uncertainties etc.
 ### Fixes
+- Several minor updates to descrptions and notebooks in the repository. 
 
 ## [v0.3.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.2) - 2024-04-14
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.1...v0.3.2)
