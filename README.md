@@ -188,6 +188,8 @@ All explanations include the *calibrated prediction*, with *confidence intervals
 - **X** marks a *core alternative*
 - **I** marks possible *interval type(s)*
 - **O** marks *optional additions*
+The example plot above, showing a counterfactual probabilistic regression explanation, corresponds to the last column without any optional additions.
+
 
 
 <!-- <p align="center">
