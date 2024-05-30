@@ -34,9 +34,9 @@ Below is an example of a probabilistic counterfactual explanation for an instanc
 </p>
 
 The table summarizes the characteristics of Calibrated Explanations.
-<table align="center" style="text-align: center; border-collapse: collapse;">
+<table align="center" style="border-collapse: collapse;">
   <tr>
-    <th style="border-bottom: 0px;"></th>
+    <th style="border-bottom: 0px; text-align: left;"></th>
     <th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3"></th>
 	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Standard</th>
 	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Probabilistic</th>	
@@ -48,16 +48,16 @@ The table summarizes the characteristics of Calibrated Explanations.
 	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Regression</th>	
   </tr>
   <tr>
-    <th style="text-align: left;">Characteristics</th>
-    <th style="border-left: 1px solid; ">FR</th>
-    <th>FU</th>
-    <th>CF</th>
-    <th style="border-left: 1px solid; ">FR</th>
-    <th>FU</th>
-    <th>CF</th>
-    <th style="border-left: 1px solid; ">FR</th>
-    <th>FU</th>
-    <th>CF</th>
+    <th style="border-bottom: 1px solid; text-align: left;">Characteristics</th>
+    <th style="border-bottom: 1px solid; border-left: 1px solid; ">FR</th>
+    <th style="border-bottom: 1px solid;">FU</th>
+    <th style="border-bottom: 1px solid;">CF</th>
+    <th style="border-bottom: 1px solid; border-left: 1px solid; ">FR</th>
+    <th style="border-bottom: 1px solid;">FU</th>
+    <th style="border-bottom: 1px solid;">CF</th>
+    <th style="border-bottom: 1px solid; border-left: 1px solid; ">FR</th>
+    <th style="border-bottom: 1px solid;">FU</th>
+    <th style="border-bottom: 1px solid;">CF</th>
   </tr>
   <tr>
     <td style="text-align: left;">Feature Weight w/o CI</td>
