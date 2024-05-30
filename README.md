@@ -9,7 +9,7 @@ Calibrated Explanations ([Documentation](https://calibrated-explanations.readthe
 [![Lint Status for Calibrated Explanations][lint-status]][lint-log]
 [![License](https://badgen.net/github/license/moffran/calibrated_explanations)](https://github.com/moffran/calibrated_explanations/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/calibrated-explanations)](https://pepy.tech/project/calibrated-explanations)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/v0.3.3)
+<!-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/main?urlpath=https%3A%2F%2Fgithub.com%2FMoffran%2Fcalibrated_explanations%2Fblob%2Fmain%2Fnotebooks%2Fquickstart.ipynb) -->
 
 `calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both [classification](https://doi.org/10.1016/j.eswa.2024.123154) and [regression](https://arxiv.org/abs/2308.16245).
 The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
