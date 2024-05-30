@@ -33,12 +33,168 @@ Below is an example of a probabilistic counterfactual explanation for an instanc
   </a>
 </p>
 
-Table 1 summarizes the characteristics of Calibrated Explanations.
-<p align="center">
+The table summarizes the characteristics of Calibrated Explanations.
+<table align="center" style="text-align: center; border-collapse: collapse;">
+  <tr>
+    <th style="border-bottom: 0px;"></th>
+    <th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3"></th>
+	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Standard</th>
+	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Probabilistic</th>	
+  </tr>
+  <tr>
+    <th style="border-bottom: 0px; text-align: left;"></th>
+    <th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Classification</th>
+	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Regression</th>
+	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Regression</th>	
+  </tr>
+  <tr>
+    <th style="text-align: left;">Characteristics</th>
+    <th style="border-left: 1px solid; ">FR</th>
+    <th>FU</th>
+    <th>CF</th>
+    <th style="border-left: 1px solid; ">FR</th>
+    <th>FU</th>
+    <th>CF</th>
+    <th style="border-left: 1px solid; ">FR</th>
+    <th>FU</th>
+    <th>CF</th>
+  </tr>
+  <tr>
+    <td style="text-align: left;">Feature Weight w/o CI</td>
+    <td style="border-left: 1px solid; ">X</td>
+    <td></td>
+    <td></td>
+    <td style="border-left: 1px solid; ">X</td>
+    <td></td>
+    <td></td>
+    <td style="border-left: 1px solid; ">X</td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td style="text-align: left;">Feature Weight with CI</td>
+    <td style="border-left: 1px solid; "></td>
+    <td>X</td>
+    <td></td>
+    <td style="border-left: 1px solid; "></td>
+    <td>X</td>
+    <td></td>
+    <td style="border-left: 1px solid; "></td>
+    <td>X</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td style="border-bottom: 1px solid; text-align: left;">Rule Prediction with CI</td>
+    <td style="border-bottom: 1px solid; border-left: 1px solid; "></td>
+    <td style="border-bottom: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;">X</td>
+    <td style="border-bottom: 1px solid; border-left: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;">X</td>
+    <td style="border-bottom: 1px solid; border-left: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;">X</td>
+  </tr>
+  <tr>
+    <td style="text-align: left;">Two-sided CI</td>
+    <td style="border-left: 1px solid; ">I</td>
+    <td>I</td>
+    <td>I</td>
+    <td style="border-left: 1px solid; ">I</td>
+    <td>I</td>
+    <td>I</td>
+    <td style="border-left: 1px solid; ">I</td>
+    <td>I</td>
+    <td>I</td>
+  </tr>
+  <tr>
+    <td style="text-align: left;">Lower-bounded CI</td>
+    <td style="border-left: 1px solid; "></td>
+    <td></td>
+    <td></td>
+    <td style="border-left: 1px solid; ">I</td>
+    <td></td>
+    <td>I</td>
+    <td style="border-left: 1px solid; "></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td style="border-bottom: 1px solid; text-align: left;">Upper-bounded CI</td>
+    <td style="border-bottom: 1px solid; border-left: 1px solid; "></td>
+    <td style="border-bottom: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;"></td>
+    <td style="border-bottom: 1px solid; border-left: 1px solid;">I</td>
+    <td style="border-bottom: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;">I</td>
+    <td style="border-bottom: 1px solid; border-left: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;"></td>
+    <td style="border-bottom: 1px solid;"></td>
+  </tr>
+  <tr>
+    <td style="text-align: left;">Conjunctive Rules</td>
+    <td style="border-left: 1px solid; ">O</td>
+    <td>O</td>
+    <td>O</td>
+    <td style="border-left: 1px solid; ">O</td>
+    <td>O</td>
+    <td>O</td>
+    <td style="border-left: 1px solid; ">O</td>
+    <td>O</td>
+    <td>O</td>
+  </tr>
+  <tr>
+    <td style="text-align: left;">Conditional Rules</td>
+    <td style="border-left: 1px solid; ">O</td>
+    <td>O</td>
+    <td>O</td>
+    <td style="border-left: 1px solid; ">O</td>
+    <td>O</td>
+    <td>O</td>
+    <td style="border-left: 1px solid; ">O</td>
+    <td>O</td>
+    <td>O</td>
+  </tr>
+  <tr>
+    <td style="text-align: left;">Difficulty Estimation</td>
+    <td style="border-left: 1px solid; "></td>
+    <td></td>
+    <td></td>
+    <td style="border-left: 1px solid; ">O</td>
+    <td>O</td>
+    <td>O</td>
+    <td style="border-left: 1px solid; ">O</td>
+    <td>O</td>
+    <td>O</td>
+  </tr>
+  <tr>
+    <td style="text-align: left;"># Alternative Setups</td>
+    <td style="border-left: 1px solid; ">1</td>
+    <td>1</td>
+    <td>1</td>
+    <td style="border-left: 1px solid; ">5</td>
+    <td>5</td>
+    <td>5</td>
+    <td style="border-left: 1px solid; ">5</td>
+    <td>5</td>
+    <td>5</td>
+  </tr>
+</table>
+
+All explanations include the *calibrated prediction*, with *confidence intervals* (**CI**), of the explained instance. 
+- **FR** refers to *factual* explanations visualized using *regular* plots
+- **FU** refers to *factual* explanations visualized using *uncertainty* plots
+- **CF** refers to *counterfactual* explanations and plots
+- **X** marks a *core alternative*
+- **I** marks possible *interval type(s)*
+- **O** marks *optional additions*
+
+
+<!-- <p align="center">
   <a href="https://arxiv.org/abs/2308.16245">
     <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/Table1.png" alt="Characteristics of Calibrated Explanantions">
   </a>
-</p>
+</p> -->
 
 Getting started
 ---------------
