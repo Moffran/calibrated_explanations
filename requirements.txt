@@ -1,4 +1,4 @@
-crepes >= 0.6.2
+crepes >= 0.6.2, < 0.7
 ipython
 lime >= 0.2.0.1
 matplotlib >= 3.4
