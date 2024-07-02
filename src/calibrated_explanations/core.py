@@ -444,11 +444,11 @@ class CalibratedExplainer:
                     values = np.array(cal_X[:,f])
                     lesser = rule_boundaries[f][0]
                     greater = rule_boundaries[f][1]
-                    lesser = -np.Inf if not np.any(values < lesser) else lesser
-                    greater = np.Inf if not np.any(values > greater) else greater
+                    lesser = -np.inf if not np.any(values < lesser) else lesser
+                    greater = np.inf if not np.any(values > greater) else greater
                     num_bins = 1
-                    num_bins += 1 if lesser != -np.Inf else 0
-                    num_bins += 1 if greater != np.Inf else 0
+                    num_bins += 1 if lesser != -np.inf else 0
+                    num_bins += 1 if greater != np.inf else 0
                     average_predict, low_predict, high_predict, counts = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
 
                     bin_value = 0
@@ -588,7 +588,7 @@ class CalibratedExplainer:
             if f not in self.discretizer.to_discretize:
                 min_max.append([instance[f], instance[f]])
             else:
-                bins = np.concatenate(([-np.Inf], self.discretizer.mins[f][1:], [np.Inf]))
+                bins = np.concatenate(([-np.inf], self.discretizer.mins[f][1:], [np.inf]))
                 min_max.append([self.discretizer.mins[f][np.digitize(perturbed_instance[0,f], bins, right=True)-1], \
                                 self.discretizer.maxs[f][np.digitize(perturbed_instance[0,f], bins, right=True)-1]])
         return min_max
@@ -723,7 +723,7 @@ class CalibratedExplainer:
         if len(np.shape(x)) == 1:
             x = np.array(x)
         for f in self.discretizer.to_discretize:
-            bins = np.concatenate(([-np.Inf], self.discretizer.mins[f][1:], [np.Inf]))
+            bins = np.concatenate(([-np.inf], self.discretizer.mins[f][1:], [np.inf]))
             x[:,f] = [self.discretizer.means[f][np.digitize(x[i,f], bins, right=True)-1]  for i in range(len(x[:,f]))]
         return x
 

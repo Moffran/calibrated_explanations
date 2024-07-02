@@ -4,6 +4,8 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.3...main)
 ### Features
 ### Fixes
+- Changed np.Inf to np.inf for compatibility reasons.
+- Temporarily updated requirements.txt to prohibit crepes 0.7.0, as it is currently not compatible. 
 
 ## [v0.3.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.3) - 2024-05-25
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.2...v0.3.3)
