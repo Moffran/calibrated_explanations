@@ -379,6 +379,8 @@ Known Limitations
 -----------------
 The implementation currently only support numerical input. Use the `utils.transform_to_numeric` (released in version v0.3.1) to transform a `DataFrame` with text data into numerical form and at the same time extracting `categorical_features`, `categorical_labels`, `target_labels` (if text labels) and `mappings` (used to apply the same mappings to new data) to be used as input to the `CalibratedExplainer`. The algorithm does not currently support image data.
 
+See e.g. the [Conditional Fairness Experiment](evaluation/Conditional_Fairness_Experiment.ipynb) for examples on how it can be used.
+
 [Top](#calibrated-explanations-documentation)
 
 Install
