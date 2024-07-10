@@ -1,11 +1,37 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.3...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.4...main)
 ### Features
 ### Fixes
-- Changed np.Inf to np.inf for compatibility reasons.
-- Temporarily updated requirements.txt to prohibit crepes 0.7.0, as it is currently not compatible. 
+
+## [v0.3.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.4) - 2024-07-10
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.3...v0.3.4)
+### Features
+- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README: 
+  - Added a reference and bibtex to:
+    - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://doi.org/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham.
+    - ```bibtex
+      @InProceedings{lofstrom2024ce_conditional,
+      author="L{\"o}fstr{\"o}m, Helena
+      and L{\"o}fstr{\"o}m, Tuwe",
+      editor="Longo, Luca
+      and Lapuschkin, Sebastian
+      and Seifert, Christin",
+      title="Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty",
+      booktitle="Explainable Artificial Intelligence",
+      year="2024",
+      publisher="Springer Nature Switzerland",
+      address="Cham",
+      pages="332--355",
+      abstract="While Artificial Intelligence and Machine Learning models are becoming increasingly prevalent, it is essential to remember that they are not infallible or inherently objective. These models depend on the data they are trained on and the inherent bias of the chosen machine learning algorithm. Therefore, selecting and sampling data for training is crucial for a fair outcome of the model. A model predicting, e.g., whether an applicant should be taken further in the job application process, could create heavily biased predictions against women if the data used to train the model mostly contained information about men. The well-known concept of conditional categories used in Conformal Prediction can be utilised to address this type of bias in the data. The Conformal Prediction framework includes uncertainty quantification methods for classification and regression. To help meet the challenges of data sets with potential bias, conditional categories were incorporated into an existing explanation method called Calibrated Explanations, relying on conformal methods. This approach allows users to try out different settings while simultaneously having the possibility to study how the uncertainty in the predictions is affected on an individual level. Furthermore, this paper evaluated how the uncertainty changed when using conditional categories based on attributes containing potential bias. It showed that the uncertainty significantly increased, revealing that fairness came with a cost of increased uncertainty.",
+      isbn="978-3-031-63787-2"
+      }
+      ```
+  - Updated the [docs/citing.md](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md) with the above changes.
+### Fixes
+- Changed np.Inf to np.inf for compatibility reasons (numpy v2.0.0).
+- Updated requirements for numpy and crepes to include versions v2.0.0 and v0.7.0, respecitvely.
 
 ## [v0.3.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.3) - 2024-05-25
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.2...v0.3.3)
