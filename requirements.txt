@@ -2,5 +2,5 @@ crepes >= 0.7.0, < 0.8
 ipython
 lime >= 0.2.0.1
 matplotlib >= 3.4
-numpy >= 1.20, < 1.27
+numpy >= 1.20, < 2.1
 venn-abers >= 1.4.1
