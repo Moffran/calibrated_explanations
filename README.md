@@ -1,4 +1,4 @@
-9Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest))
+Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest))
 =======================
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
