@@ -25,9 +25,13 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install calibrated-explanations
-          pip install pytest pytest-cov pylint
-      #- name: Lint with pylint
-       # run: |
-        #  pylint **/*.py
+          pip install pytest pytest-cov pylint xgboost shap
+      - name: Lint with pylint
+        run: |
+          pylint $(git ls-files '*.py')
       - name: Run tests with coverage
         run: pytest --cov=./
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
