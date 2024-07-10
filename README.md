@@ -1,4 +1,4 @@
-Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest))
+9Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest))
 =======================
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
@@ -479,11 +479,8 @@ Bibtex for the conditional paper:
 
 ```bibtex
 @InProceedings{lofstrom2024ce_conditional,
-	author="L{\"o}fstr{\"o}m, Helena
-and L{\"o}fstr{\"o}m, Tuwe",
-	editor="Longo, Luca
-and Lapuschkin, Sebastian
-and Seifert, Christin",
+	author="L{\"o}fstr{\"o}m, Helena and L{\"o}fstr{\"o}m, Tuwe",
+	editor="Longo, Luca and Lapuschkin, Sebastian and Seifert, Christin",
 	title="Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty",
 	booktitle="Explainable Artificial Intelligence",
 	year="2024",
