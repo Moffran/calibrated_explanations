@@ -479,19 +479,19 @@ Bibtex for the conditional paper:
 
 ```bibtex
 @InProceedings{lofstrom2024ce_conditional,
-author="L{\"o}fstr{\"o}m, Helena
+	author="L{\"o}fstr{\"o}m, Helena
 and L{\"o}fstr{\"o}m, Tuwe",
-editor="Longo, Luca
+	editor="Longo, Luca
 and Lapuschkin, Sebastian
 and Seifert, Christin",
-title="Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty",
-booktitle="Explainable Artificial Intelligence",
-year="2024",
-publisher="Springer Nature Switzerland",
-address="Cham",
-pages="332--355",
-abstract="While Artificial Intelligence and Machine Learning models are becoming increasingly prevalent, it is essential to remember that they are not infallible or inherently objective. These models depend on the data they are trained on and the inherent bias of the chosen machine learning algorithm. Therefore, selecting and sampling data for training is crucial for a fair outcome of the model. A model predicting, e.g., whether an applicant should be taken further in the job application process, could create heavily biased predictions against women if the data used to train the model mostly contained information about men. The well-known concept of conditional categories used in Conformal Prediction can be utilised to address this type of bias in the data. The Conformal Prediction framework includes uncertainty quantification methods for classification and regression. To help meet the challenges of data sets with potential bias, conditional categories were incorporated into an existing explanation method called Calibrated Explanations, relying on conformal methods. This approach allows users to try out different settings while simultaneously having the possibility to study how the uncertainty in the predictions is affected on an individual level. Furthermore, this paper evaluated how the uncertainty changed when using conditional categories based on attributes containing potential bias. It showed that the uncertainty significantly increased, revealing that fairness came with a cost of increased uncertainty.",
-isbn="978-3-031-63787-2"
+	title="Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty",
+	booktitle="Explainable Artificial Intelligence",
+	year="2024",
+	publisher="Springer Nature Switzerland",
+	address="Cham",
+	pages="332--355",
+	abstract="While Artificial Intelligence and Machine Learning models are becoming increasingly prevalent, it is essential to remember that they are not infallible or inherently objective. These models depend on the data they are trained on and the inherent bias of the chosen machine learning algorithm. Therefore, selecting and sampling data for training is crucial for a fair outcome of the model. A model predicting, e.g., whether an applicant should be taken further in the job application process, could create heavily biased predictions against women if the data used to train the model mostly contained information about men. The well-known concept of conditional categories used in Conformal Prediction can be utilised to address this type of bias in the data. The Conformal Prediction framework includes uncertainty quantification methods for classification and regression. To help meet the challenges of data sets with potential bias, conditional categories were incorporated into an existing explanation method called Calibrated Explanations, relying on conformal methods. This approach allows users to try out different settings while simultaneously having the possibility to study how the uncertainty in the predictions is affected on an individual level. Furthermore, this paper evaluated how the uncertainty changed when using conditional categories based on attributes containing potential bias. It showed that the uncertainty significantly increased, revealing that fairness came with a cost of increased uncertainty.",
+	isbn="978-3-031-63787-2"
 }
 ``` 
 
