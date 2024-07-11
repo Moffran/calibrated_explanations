@@ -1,8 +1,11 @@
 # pylint: disable=missing-docstring, missing-module-docstring, invalid-name, protected-access, too-many-locals, line-too-long, duplicate-code
 # flake8: noqa: E501
 from __future__ import absolute_import
+# import tempfile
+# import os
 
 import unittest
+from unittest.mock import patch
 import pytest
 
 import numpy as np
@@ -13,6 +16,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.exceptions import NotFittedError
 
 from calibrated_explanations import CalibratedExplainer, EntropyDiscretizer, BinaryEntropyDiscretizer
+from calibrated_explanations.utils import safe_import, transform_to_numeric, check_is_fitted, safe_isinstance, make_directory, is_notebook # pylint: disable=unused-import
 
 
 MODEL = 'RF'
@@ -56,25 +60,7 @@ def load_multiclass_dataset():
     # df.convert_objects()
 
     df = df.dropna()
-    categorical_features = []
-    categorical_labels = {}
-    for c, col in enumerate(df.columns):
-        if df[col].dtype == object:
-            df[col] = df[col].str.replace("'", "")
-            df[col] = df[col].str.replace('"', '')
-            if col != target:
-                categorical_features.append(c)
-                categorical_labels[c] = dict(zip(range(len(np.unique(df[col]))),np.unique(df[col])))
-            mapping = dict(zip(np.unique(df[col]), range(len(np.unique(df[col])))))
-            if len(mapping) > 5:
-                counts = df[col].value_counts().sort_values(ascending=False)
-                idx = 0
-                for key, count in counts.items():
-                    if count > 5:
-                        idx += 1
-                        continue
-                    mapping[key] = idx
-            df[col] = df[col].map(mapping)
+    df, categorical_features, categorical_labels, target_labels, mappings = transform_to_numeric(df, target) # pylint: disable=unused-variable
 
     X, y = df.drop(target,axis=1), df[target]
     columns = X.columns
@@ -116,6 +102,9 @@ class TestCalibratedExplainer(unittest.TestCase):
             for f in range(exp.calibrated_explainer.num_features):
                 # assert that instance values are covered by the rule conditions
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
+        for explanation in exp:
+            assert safe_isinstance(explanation, ['calibrated_explanations.FactualExplanation', 
+                                                 'calibrated_explanations.CounterfactualExplanation'])
         return True
 
     def test_failure(self):
@@ -123,6 +112,59 @@ class TestCalibratedExplainer(unittest.TestCase):
         with pytest.raises(NotFittedError):
             CalibratedExplainer(RandomForestClassifier(), cal_X, calY, feature_names=feature_names, categorical_features=categorical_features, mode='classification')
 
+    def test_check_is_fitted_with_fitted_model(self):
+        trainX, trainY, _, _, _, _, _, _, _, _ = load_binary_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        # Assuming check_is_fitted does not return anything but raises an error if the model is not fitted
+        try:
+            check_is_fitted(model)
+        except TypeError:
+            pytest.fail("check_is_fitted raised TypeError unexpectedly!")
+        except RuntimeError:
+            pytest.fail("check_is_fitted raised RuntimeError unexpectedly!")
+
+    def test_check_is_fitted_with_non_fitted_model(self):
+        with pytest.raises(NotFittedError):
+            check_is_fitted(RandomForestClassifier())
+        with pytest.raises(TypeError):
+            check_is_fitted(RandomForestClassifier)
+        # with pytest.raises(TypeError):
+        #     check_is_fitted(ClassWithoutFitMethod())
+        # with pytest.raises(RuntimeError):
+        #     check_is_fitted(NonSklearnModel())
+        
+    def test_check_safe_import(self):
+        self.assertIsNotNone(safe_import("sklearn"))
+        
+
+    # def test_make_directory_success(self):
+    #     with tempfile.TemporaryDirectory() as tmp_dir:
+    #         new_dir_path = os.path.join(tmp_dir, "new_directory")
+    #         self.assertFalse(os.path.exists(new_dir_path))  # Ensure the directory does not exist before testing
+    #         make_directory(new_dir_path)
+    #         self.assertTrue(os.path.exists(new_dir_path))  # The directory should exist after calling make_directory
+
+    # def test_make_directory_already_exists(self):
+    #     with tempfile.TemporaryDirectory() as tmp_dir:
+    #         # tmp_dir is already a directory, so calling make_directory should not raise an error
+    #         make_directory(tmp_dir)  # No exception should be raised
+
+    def test_make_directory_invalid_path(self):
+        with self.assertRaises(Exception):  # Replace Exception with the specific exception make_directory raises for invalid paths
+            make_directory("/invalid/path/to/directory")
+
+    # @patch("IPython.get_ipython")
+    # def test_is_notebook_true(self, mock_get_ipython):
+    #     # Mock the environment to simulate running in a Jupyter notebook
+    #     mock_get_ipython.return_value = MagicMock()
+    #     self.assertTrue(is_notebook())
+
+    @patch("IPython.get_ipython")
+    def test_is_notebook_false(self, mock_get_ipython):
+        # Mock the environment to simulate not running in a Jupyter notebook
+        mock_get_ipython.return_value = None
+        self.assertFalse(is_notebook())
+    
     # @unittest.skip('Skipping provisionally.')
     def test_binary_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
@@ -166,6 +208,56 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        counterfactual_explanation.add_conjunctions()
+        self.assertExplanation(counterfactual_explanation)
+    
+    # @unittest.skip('Skipping provisionally.')
+    def test_binary_conditional_ce(self):
+        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            cal_X,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            mode='classification',
+            bins=cal_X[:,0]
+        )
+        factual_explanation = cal_exp.explain_factual(testX, bins=testX[:,0])
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
+        self.assertExplanation(factual_explanation)
+        factual_explanation.add_conjunctions()
+        self.assertExplanation(factual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, bins=testX[:,0])
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        counterfactual_explanation.add_conjunctions()
+        self.assertExplanation(counterfactual_explanation)
+
+    # @unittest.skip('Test passes locally.  Skipping provisionally.')
+    def test_multiclass_conditional_ce(self):
+        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            cal_X,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            mode='classification',
+            bins=cal_X[:,0]
+        )
+        factual_explanation = cal_exp.explain_factual(testX, bins=testX[:,0])
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
+        self.assertExplanation(factual_explanation)
+        factual_explanation.add_conjunctions()
+        self.assertExplanation(factual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()

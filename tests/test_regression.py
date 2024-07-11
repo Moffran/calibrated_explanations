@@ -14,6 +14,7 @@ from sklearn.exceptions import NotFittedError
 from crepes.extras import DifficultyEstimator
 
 from calibrated_explanations import CalibratedExplainer, BinaryRegressorDiscretizer, RegressorDiscretizer # pylint: disable=unused-import
+from calibrated_explanations.utils import safe_isinstance, safe_import, transform_to_numeric, check_is_fitted # pylint: disable=unused-import
 
 MODEL = 'RF'
 
@@ -57,6 +58,9 @@ class TestCalibratedExplainer(unittest.TestCase):
             for f in range(exp.calibrated_explainer.num_features):
                 # assert that instance values are covered by the rule conditions
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
+        for explanation in exp:
+            assert safe_isinstance(explanation, ['calibrated_explanations.FactualExplanation', 
+                                                 'calibrated_explanations.CounterfactualExplanation'])
         return True
 
     def test_failure_regression(self):
@@ -138,6 +142,83 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+        
+    
+
+
+    # NOTE: this takes takes about 70s to run
+    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    def test_regression_conditional_ce(self):
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            bins=calX[:,0]
+        )
+        factual_explanation = cal_exp.explain_factual(testX, bins=testX[:,0])
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
+        self.assertExplanation(factual_explanation)
+        factual_explanation.add_conjunctions()
+        self.assertExplanation(factual_explanation)
+
+        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf), bins=testX[:,0])
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
+        self.assertExplanation(factual_explanation)
+
+        factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9), bins=testX[:,0])
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
+        self.assertExplanation(factual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, bins=testX[:,0])
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf), bins=testX[:,0])
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9), bins=testX[:,0])
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+
+
+    def test_probabilistic_regression_conditional_ce(self):
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            bins=calX[:,0]
+        )
+
+        factual_explanation = cal_exp.explain_factual(testX, testY, bins=testX[:,0])
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
+        self.assertExplanation(factual_explanation)
+        factual_explanation.add_conjunctions()
+        self.assertExplanation(factual_explanation)
+
+        factual_explanation = cal_exp.explain_factual(testX, testY[0], bins=testX[:,0])
+        self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
+        self.assertExplanation(factual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY, bins=testX[:,0])
+        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(counterfactual_explanation)
+
+        counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0], bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
 
