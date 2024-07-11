@@ -92,26 +92,53 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
     def test_probabilistic_regression_ce(self):
@@ -132,18 +159,36 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
     # NOTE: this takes takes about 70s to run
@@ -166,26 +211,53 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf), bins=testX[:,0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9), bins=testX[:,0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf), bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9), bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
     def test_probabilistic_regression_conditional_ce(self):
@@ -207,18 +279,36 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, testY[0], bins=testX[:,0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY, bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0], bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
@@ -240,26 +330,53 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -282,18 +399,36 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
@@ -315,26 +450,53 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -357,18 +519,36 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         factual_explanation = cal_exp.explain_factual(testX, testY[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
 

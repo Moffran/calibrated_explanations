@@ -5,7 +5,7 @@ from __future__ import absolute_import
 # import os
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pytest
 
 import numpy as np
@@ -165,8 +165,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         mock_get_ipython.return_value = None
         self.assertFalse(is_notebook())
 
+
+    @patch('matplotlib.pyplot.subplots')
+    # @patch('matplotlib.pyplot.plot')
     # @unittest.skip('Skipping provisionally.')
-    def test_binary_ce(self):
+    def test_binary_ce(self, mock_subplots):
+        mock_fig, mock_ax = MagicMock(), MagicMock()
+        mock_subplots.return_value = (mock_fig, mock_ax)
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
@@ -182,12 +187,21 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
@@ -206,12 +220,21 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
     # @unittest.skip('Skipping provisionally.')
     def test_binary_conditional_ce(self):
@@ -231,12 +254,21 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_conditional_ce(self):
@@ -256,12 +288,21 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        try:
+            factual_explanation.plot_all()
+            factual_explanation.plot_all(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, bins=testX[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
         self.assertExplanation(counterfactual_explanation)
+        try:
+            counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"plot_all raised unexpected exception: {e}")
 
 
 if __name__ == '__main__':
