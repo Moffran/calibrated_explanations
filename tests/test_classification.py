@@ -103,7 +103,7 @@ class TestCalibratedExplainer(unittest.TestCase):
                 # assert that instance values are covered by the rule conditions
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         for explanation in exp:
-            assert safe_isinstance(explanation, ['calibrated_explanations.FactualExplanation', 
+            assert safe_isinstance(explanation, ['calibrated_explanations.FactualExplanation',
                                                  'calibrated_explanations.CounterfactualExplanation'])
         return True
 
@@ -132,10 +132,10 @@ class TestCalibratedExplainer(unittest.TestCase):
         #     check_is_fitted(ClassWithoutFitMethod())
         # with pytest.raises(RuntimeError):
         #     check_is_fitted(NonSklearnModel())
-        
+
     def test_check_safe_import(self):
         self.assertIsNotNone(safe_import("sklearn"))
-        
+
 
     # def test_make_directory_success(self):
     #     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -164,7 +164,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         # Mock the environment to simulate not running in a Jupyter notebook
         mock_get_ipython.return_value = None
         self.assertFalse(is_notebook())
-    
+
     # @unittest.skip('Skipping provisionally.')
     def test_binary_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
@@ -212,7 +212,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
         self.assertExplanation(counterfactual_explanation)
-    
+
     # @unittest.skip('Skipping provisionally.')
     def test_binary_conditional_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()

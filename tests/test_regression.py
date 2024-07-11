@@ -59,7 +59,7 @@ class TestCalibratedExplainer(unittest.TestCase):
                 # assert that instance values are covered by the rule conditions
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         for explanation in exp:
-            assert safe_isinstance(explanation, ['calibrated_explanations.FactualExplanation', 
+            assert safe_isinstance(explanation, ['calibrated_explanations.FactualExplanation',
                                                  'calibrated_explanations.CounterfactualExplanation'])
         return True
 
@@ -144,8 +144,6 @@ class TestCalibratedExplainer(unittest.TestCase):
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY[0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(counterfactual_explanation)
-        
-    
 
 
     # NOTE: this takes takes about 70s to run
