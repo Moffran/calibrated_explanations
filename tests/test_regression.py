@@ -602,11 +602,21 @@ class TestCalibratedExplainer(unittest.TestCase):
         cal_exp.fit(trainX, trainY)
         print(cal_exp)
         cal_exp.predict(testX)
+        cal_exp.predict(testX, threshold=testY)
         cal_exp.predict(testX, True)
+        cal_exp.predict(testX, True, threshold=testY)
         cal_exp.calibrate(calX, calY, feature_names=feature_names, categorical_features=categorical_features, categorical_labels=categorical_labels)
         print(cal_exp)
         cal_exp.predict(testX)
+        cal_exp.predict(testX, threshold=testY)
         cal_exp.predict(testX, True)
+        cal_exp.predict(testX, True, threshold=testY)
+        with pytest.raises(ValueError):
+            cal_exp.predict_proba(testX)
+        cal_exp.predict_proba(testX, threshold=testY)
+        with pytest.raises(ValueError):
+            cal_exp.predict_proba(testX, True)
+        cal_exp.predict_proba(testX, True, threshold=testY)
 
         factual_explanation = cal_exp.explain_factual(testX)
         self.assertExplanation(factual_explanation)
