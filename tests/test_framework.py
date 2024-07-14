@@ -95,7 +95,7 @@ class TestCalibratedExplainer(unittest.TestCase):
 
         ce._preload_lime()
         ce._preload_shap()
-        
+
         print(ce)
 
 if __name__ == '__main__':
