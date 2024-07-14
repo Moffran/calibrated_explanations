@@ -80,7 +80,7 @@ def load_multiclass_dataset():
     trainCalY, testY = y[train_index], y[test_index]
     # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
     trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
-    return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
+    return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, target_labels, columns
 
 def get_classification_model(model_name, trainX, trainY):
     t1 = DecisionTreeClassifier()
@@ -146,7 +146,7 @@ class TestCalibratedExplainer(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
+        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
@@ -154,6 +154,8 @@ class TestCalibratedExplainer(unittest.TestCase):
             calY,
             feature_names=feature_names,
             categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            class_labels=target_labels,
             mode='classification',
         )
         factual_explanation = cal_exp.explain_factual(testX)
@@ -223,7 +225,7 @@ class TestCalibratedExplainer(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_conditional_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_multiclass_dataset()
+        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
@@ -231,6 +233,8 @@ class TestCalibratedExplainer(unittest.TestCase):
             calY,
             feature_names=feature_names,
             categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            class_labels=target_labels,
             mode='classification',
             bins=cal_X[:,0]
         )
