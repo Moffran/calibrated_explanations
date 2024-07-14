@@ -18,8 +18,7 @@ import numpy as np
 from lime.lime_tabular import LimeTabularExplainer
 
 from ._explanations import CalibratedExplanations
-from ._discretizers import BinaryDiscretizer, BinaryEntropyDiscretizer, \
-                DecileDiscretizer, QuartileDiscretizer, EntropyDiscretizer, \
+from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                 RegressorDiscretizer, BinaryRegressorDiscretizer
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
@@ -751,32 +750,15 @@ class CalibratedExplainer:
                 discretizer = 'binaryEntropy'
         else:
             if 'regression'in self.mode:
-                assert discretizer is None or discretizer in ['binary', 'quartile', 'decile', 'regressor', 'binaryRegressor'], \
-                    "The discretizer must be 'binaryRegressor' (default for factuals), 'regressor' (default for counterfactuals), 'binary', 'quartile', or \
-                    'decile' for regression."
+                assert discretizer is None or discretizer in ['regressor', 'binaryRegressor'], \
+                    "The discretizer must be 'binaryRegressor' (default for factuals) or 'regressor' (default for counterfactuals) for regression."
             else:
-                assert discretizer is None or discretizer in ['binary', 'quartile', 'decile', 'entropy', 'binaryEntropy'], \
-                    "The discretizer must be 'binaryEntropy' (default for factuals), 'entropy' (default for counterfactuals), 'binary', 'quartile', or \
-                    'decile' for classification."
+                assert discretizer is None or discretizer in ['entropy', 'binaryEntropy'], \
+                    "The discretizer must be 'binaryEntropy' (default for factuals) or 'entropy' (default for counterfactuals) for classification."
 
         not_to_discretize = self.categorical_features #np.union1d(self.categorical_features, self.features_to_ignore)
-        if discretizer == 'quartile':
-            self.discretizer = QuartileDiscretizer(
-                    cal_X, not_to_discretize,
-                    self.feature_names, labels=cal_y,
-                    random_state=self.random_state)
-        elif discretizer == 'decile':
-            self.discretizer = DecileDiscretizer(
-                    cal_X, not_to_discretize,
-                    self.feature_names, labels=cal_y,
-                    random_state=self.random_state)
-        elif discretizer == 'entropy':
+        if discretizer == 'entropy':
             self.discretizer = EntropyDiscretizer(
-                    cal_X, not_to_discretize,
-                    self.feature_names, labels=cal_y,
-                    random_state=self.random_state)
-        elif discretizer == 'binary':
-            self.discretizer = BinaryDiscretizer(
                     cal_X, not_to_discretize,
                     self.feature_names, labels=cal_y,
                     random_state=self.random_state)

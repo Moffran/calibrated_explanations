@@ -3,7 +3,11 @@
 ## [Unreleased]
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.4...main)
 ### Features
+- Code coverage tests are added and monitored at [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations).
+  - Tests are added in order to increase code coverage.
+  - Unused code is cleaned up. 
 ### Fixes
+- Discretizers are limited to the default alternatives for classification and regression. BinaryDiscretizer removed. 
 
 ## [v0.3.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.4) - 2024-07-10
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.3...v0.3.4)
