@@ -125,7 +125,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         # """
         rule_set = []
         for explanation in self.explanations:
-            rule_set.append(explanation.get_rules())
+            rule_set.append(explanation._get_rules()) # pylint: disable=protected-access
 
 
 
@@ -488,8 +488,8 @@ class CalibratedExplanation(ABC):
                 rule = self._get_explainer().discretizer.names[f][int(x[f])]
             self.conditions.append(rule)
         return self.conditions
-    
-    
+
+
     # pylint: disable=possibly-used-before-assignment
     def _predict_conjunctive(self, rule_value_set, original_features, perturbed, threshold, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
                             predicted_class, bins=None):
@@ -642,19 +642,20 @@ class CalibratedExplanation(ABC):
         return rule_idx, new_value
 
 
-    @abstractmethod
-    def _get_slider_values(self, index, rule_name):
-        """gets the slider values for a feature or rule
+    # Function under consideration
+    # @abstractmethod
+    # def _get_slider_values(self, index, rule_name):
+    #     """gets the slider values for a feature or rule
 
-        Args:
-            index (int): the index of the feature or rule
+    #     Args:
+    #         index (int): the index of the feature or rule
 
-        Returns:
-            min: lowest value of the slider
-            max: highest value of the slider
-            step: step size of the slider
-            value: initial value of the slider
-        """
+    #     Returns:
+    #         min: lowest value of the slider
+    #         max: highest value of the slider
+    #         step: step size of the slider
+    #         value: initial value of the slider
+    #     """
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class FactualExplanation(CalibratedExplanation):
@@ -666,25 +667,26 @@ class FactualExplanation(CalibratedExplanation):
         self._check_preconditions()
         self._get_rules()
 
-    def _get_slider_values(self, index, rule_name):
-        assert index not in self._get_explainer().categorical_features, 'categorical features cannot be selected for adaption'
+    # Function under consideration
+    # def _get_slider_values(self, index, rule_name):
+    #     assert index not in self._get_explainer().categorical_features, 'categorical features cannot be selected for adaption'
 
-        if '<' in rule_name:
-            index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[0] == rule_name][0]
-            value = self._get_explainer().discretizer.mins[index][1]
-            min_value = self.test_object[index]
-            max_value = np.max(self._get_explainer().cal_X[:,index])
-        else:
-            index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[1] == rule_name][0]
-            value = self._get_explainer().discretizer.mins[index][1]
-            min_value = np.min(self._get_explainer().cal_X[:,index])
-            max_value = self.test_object[index]
-        cal_X = self._get_explainer().cal_X
-        uniques = np.unique(cal_X[[min_value < x <= max_value for x in cal_X[:,index]], index])
-        value_selection = [(uniques[i] + uniques[i+1]) / 2 for i in range(len(uniques) - 1)] # find thresholds between actual values
-        value = min(value_selection, key=lambda x: abs(x-value)) # find value in slider closest to rule condition
-        # print(rule_name, min_value, max_value, value, value_selection)
-        return value_selection, value
+    #     if '<' in rule_name:
+    #         index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[0] == rule_name][0]
+    #         value = self._get_explainer().discretizer.mins[index][1]
+    #         min_value = self.test_object[index]
+    #         max_value = np.max(self._get_explainer().cal_X[:,index])
+    #     else:
+    #         index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[1] == rule_name][0]
+    #         value = self._get_explainer().discretizer.mins[index][1]
+    #         min_value = np.min(self._get_explainer().cal_X[:,index])
+    #         max_value = self.test_object[index]
+    #     cal_X = self._get_explainer().cal_X
+    #     uniques = np.unique(cal_X[[min_value < x <= max_value for x in cal_X[:,index]], index])
+    #     value_selection = [(uniques[i] + uniques[i+1]) / 2 for i in range(len(uniques) - 1)] # find thresholds between actual values
+    #     value = min(value_selection, key=lambda x: abs(x-value)) # find value in slider closest to rule condition
+    #     # print(rule_name, min_value, max_value, value, value_selection)
+    #     return value_selection, value
 
     def _check_preconditions(self):
         if 'regression' in self._get_explainer().mode:
@@ -1212,21 +1214,22 @@ class CounterfactualExplanation(CalibratedExplanation):
         self._check_preconditions()
         self._get_rules()
 
-    def _get_slider_values(self, index, rule_name):
-        assert index not in self._get_explainer().categorical_features, 'categorical features cannot be selected for adaption'
+    # Function under consideration
+    # def _get_slider_values(self, index, rule_name):
+    #     assert index not in self._get_explainer().categorical_features, 'categorical features cannot be selected for adaption'
 
-        if '<' in rule_name:
-            value = self._get_explainer().discretizer.mins[index][1]
-            min_value = np.min(self._get_explainer().cal_X[:,index])
-            max_value = self.test_object[index]
-        else:
-            value = self._get_explainer().discretizer.maxs[index][1]
-            min_value = self.test_object[index]
-            max_value = np.max(self._get_explainer().cal_X[:,index])
-        cal_X = self._get_explainer().cal_X         
-        num_values = len(np.unique(cal_X[[min_value <= x < max_value for x in cal_X[:,index]], index], return_counts=True))
-        print(rule_name, min_value, max_value, num_values, (max_value-min_value)/num_values, value)
-        return min_value, max_value, (max_value-min_value)/num_values, value
+    #     if '<' in rule_name:
+    #         value = self._get_explainer().discretizer.mins[index][1]
+    #         min_value = np.min(self._get_explainer().cal_X[:,index])
+    #         max_value = self.test_object[index]
+    #     else:
+    #         value = self._get_explainer().discretizer.maxs[index][1]
+    #         min_value = self.test_object[index]
+    #         max_value = np.max(self._get_explainer().cal_X[:,index])
+    #     cal_X = self._get_explainer().cal_X         
+    #     num_values = len(np.unique(cal_X[[min_value <= x < max_value for x in cal_X[:,index]], index], return_counts=True))
+    #     print(rule_name, min_value, max_value, num_values, (max_value-min_value)/num_values, value)
+    #     return min_value, max_value, (max_value-min_value)/num_values, value
         
     def _check_preconditions(self):
         if 'regression' in self._get_explainer().mode:
