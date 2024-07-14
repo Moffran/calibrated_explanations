@@ -78,7 +78,7 @@ class TestCalibratedExplainer(unittest.TestCase):
     def test_explanation_functions(self):
         trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns = load_binary_dataset() # pylint: disable=unused-variable
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
-        ce = CalibratedExplainer(model, cal_X, calY)
+        ce = CalibratedExplainer(model, cal_X, calY, verbose=True)
         factual_explanations = ce.explain_factual(testX)
         factual_explanations._get_rules()
         factual_explanations._is_counterfactual()
@@ -95,6 +95,8 @@ class TestCalibratedExplainer(unittest.TestCase):
 
         ce._preload_lime()
         ce._preload_shap()
+        
+        print(ce)
 
 if __name__ == '__main__':
     # unittest.main()

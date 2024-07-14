@@ -225,14 +225,14 @@ class TestCalibratedExplainer(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_conditional_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
+        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
             cal_X,
             calY,
             feature_names=feature_names,
-            categorical_features=categorical_features,
+            # categorical_features=categorical_features,
             categorical_labels=categorical_labels,
             class_labels=target_labels,
             mode='classification',
