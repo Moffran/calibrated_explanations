@@ -80,7 +80,8 @@ def safe_import(module_name):
         imported_module = __import__(module_name)
         return imported_module
     except ImportError as exc:
-        raise ImportError(f"The required module '{module_name}' is not installed. Please install it using 'pip install {module_name}' or another method.") from exc
+        raise ImportError(f"The required module '{module_name}' is not installed. \
+            Please install it using 'pip install {module_name}' or another method.") from exc
 
 # copied from sklearn.utils.validation.check_is_fitted
 def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
