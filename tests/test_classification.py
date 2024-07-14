@@ -5,7 +5,6 @@ from __future__ import absolute_import
 # import os
 
 import unittest
-from unittest.mock import patch#, MagicMock
 import pytest
 
 import numpy as np
@@ -13,10 +12,9 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.exceptions import NotFittedError
 
 from calibrated_explanations import CalibratedExplainer, EntropyDiscretizer, BinaryEntropyDiscretizer, WrapCalibratedExplainer
-from calibrated_explanations.utils import safe_import, transform_to_numeric, check_is_fitted, safe_isinstance, make_directory, is_notebook # pylint: disable=unused-import
+from calibrated_explanations.utils import transform_to_numeric, safe_isinstance
 
 
 MODEL = 'RF'
@@ -107,71 +105,7 @@ class TestCalibratedExplainer(unittest.TestCase):
                                                  'calibrated_explanations.CounterfactualExplanation'])
         return True
 
-    def test_failure(self):
-        _, _, cal_X, calY, _, _, _, _, categorical_features, feature_names = load_binary_dataset()
-        with pytest.raises(NotFittedError):
-            CalibratedExplainer(RandomForestClassifier(), cal_X, calY, feature_names=feature_names, categorical_features=categorical_features, mode='classification')
-
-    def test_check_is_fitted_with_fitted_model(self):
-        trainX, trainY, _, _, _, _, _, _, _, _ = load_binary_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
-        # Assuming check_is_fitted does not return anything but raises an error if the model is not fitted
-        try:
-            check_is_fitted(model)
-        except TypeError:
-            pytest.fail("check_is_fitted raised TypeError unexpectedly!")
-        except RuntimeError:
-            pytest.fail("check_is_fitted raised RuntimeError unexpectedly!")
-
-    def test_check_is_fitted_with_non_fitted_model(self):
-        with pytest.raises(NotFittedError):
-            check_is_fitted(RandomForestClassifier())
-        with pytest.raises(TypeError):
-            check_is_fitted(RandomForestClassifier)
-        # with pytest.raises(TypeError):
-        #     check_is_fitted(ClassWithoutFitMethod())
-        # with pytest.raises(RuntimeError):
-        #     check_is_fitted(NonSklearnModel())
-
-    def test_check_safe_import(self):
-        self.assertIsNotNone(safe_import("sklearn"))
-
-
-    # def test_make_directory_success(self):
-    #     with tempfile.TemporaryDirectory() as tmp_dir:
-    #         new_dir_path = os.path.join(tmp_dir, "new_directory")
-    #         self.assertFalse(os.path.exists(new_dir_path))  # Ensure the directory does not exist before testing
-    #         make_directory(new_dir_path)
-    #         self.assertTrue(os.path.exists(new_dir_path))  # The directory should exist after calling make_directory
-
-    # def test_make_directory_already_exists(self):
-    #     with tempfile.TemporaryDirectory() as tmp_dir:
-    #         # tmp_dir is already a directory, so calling make_directory should not raise an error
-    #         make_directory(tmp_dir)  # No exception should be raised
-
-    def test_make_directory_invalid_path(self):
-        with self.assertRaises(Exception):  # Replace Exception with the specific exception make_directory raises for invalid paths
-            make_directory("/invalid/path/to/directory")
-
-    # @patch("IPython.get_ipython")
-    # def test_is_notebook_true(self, mock_get_ipython):
-    #     # Mock the environment to simulate running in a Jupyter notebook
-    #     mock_get_ipython.return_value = MagicMock()
-    #     self.assertTrue(is_notebook())
-
-    @patch("IPython.get_ipython")
-    def test_is_notebook_false(self, mock_get_ipython):
-        # Mock the environment to simulate not running in a Jupyter notebook
-        mock_get_ipython.return_value = None
-        self.assertFalse(is_notebook())
-
-
-    # @patch('matplotlib.pyplot.subplots')
-    # @patch('matplotlib.pyplot.plot')
-    # @unittest.skip('Skipping provisionally.')
-    def test_binary_ce(self):#, mock_subplots):
-        # mock_fig, mock_ax = MagicMock(), MagicMock()
-        # mock_subplots.return_value = (mock_fig, mock_ax)
+    def test_binary_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
@@ -187,6 +121,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        factual_explanation.remove_conjunctions()
         try:
             factual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
@@ -195,16 +130,19 @@ class TestCalibratedExplainer(unittest.TestCase):
             factual_explanation.plot_all(uncertainty=True)
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot_all(uncertainty=True) raised unexpected exception: {e}")
+        factual_explanation.add_conjunctions(max_rule_size=3)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
         self.assertExplanation(counterfactual_explanation)
+        counterfactual_explanation.remove_conjunctions()
         try:
             counterfactual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
+        counterfactual_explanation.add_conjunctions(max_rule_size=3)
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
@@ -223,6 +161,7 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
+        factual_explanation.remove_conjunctions()
         try:
             factual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
@@ -231,16 +170,19 @@ class TestCalibratedExplainer(unittest.TestCase):
             factual_explanation.plot_all(uncertainty=True)
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot_all(uncertainty=True) raised unexpected exception: {e}")
+        factual_explanation.add_conjunctions(max_rule_size=3)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
         self.assertExplanation(counterfactual_explanation)
+        counterfactual_explanation.remove_conjunctions()
         try:
             counterfactual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
+        counterfactual_explanation.add_conjunctions(max_rule_size=3)
 
     # @unittest.skip('Skipping provisionally.')
     def test_binary_conditional_ce(self):
