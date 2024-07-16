@@ -118,8 +118,9 @@ class TestWrapCalibratedExplainer(unittest.TestCase):
         self.assertTrue(cal_exp.fitted)
         print(cal_exp)
         testY_hat = cal_exp.predict(testX)
-        testY_hat = cal_exp.predict(testX, True) # This is not how it is supposed to be
-        # testY_hat, (low, high) = cal_exp.predict(testX, True)
+        testY_hat, (low, high) = cal_exp.predict(testX, True)
+        self.assertEqual(low, 0)
+        self.assertEqual(high, 0)
         testY_hat = cal_exp.predict_proba(testX)
         testY_hat, (low, high) = cal_exp.predict_proba(testX, True)
         self.assertEqual(low, 0)
