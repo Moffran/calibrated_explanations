@@ -1151,6 +1151,8 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting.")
         if not self.calibrated:
             warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
+            if uq_interval:
+                return self.learner.predict(X_test), (0, 0)
             return self.learner.predict(X_test)
         if self.explainer.mode in 'regression':
             predict, low, high, _ = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
