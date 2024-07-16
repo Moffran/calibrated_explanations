@@ -953,12 +953,16 @@ class WrapCalibratedExplainer():
         -------
         WrapCalibratedExplainer : The WrapCalibratedExplainer object with the fitted learner.
         '''
+        reinitialize = bool(self.calibrated)
+        self.fitted = False
+        self.calibrated = False
         self.learner.fit(X_proper_train, y_proper_train, **kwargs)
         check_is_fitted(self.learner)
         self.fitted = True
 
-        if self.calibrated:
+        if reinitialize:
             self.explainer.reinitialize(self.learner)
+            self.calibrated = True
 
         return self
 
@@ -979,10 +983,23 @@ class WrapCalibratedExplainer():
         Returns
         -------
         WrapCalibratedExplainer : The WrapCalibratedExplainer object with the calibrated explainer.
+        
+        Examples
+        --------
+        Calibrate the learner to the calibration data:
+        >>> calibrate(X_calibration, y_calibration)
+        
+        Provide additional keyword arguments to the CalibratedExplainer:
+        >>> calibrate(X_calibration, y_calibration, feature_names=feature_names, categorical_features=categorical_features)
+        
+        Note: if mode is not explicitly set, it is automatically determined based on the the absence or presence of a predict_proba method in the learner.
         '''
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before calibration.")
-        if 'predict_proba' in dir(self.learner):
+        self.calibrated = False
+        if 'mode' in kwargs:
+            self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, **kwargs)
+        elif 'predict_proba' in dir(self.learner):
             self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, mode='classification', **kwargs)
         else:
             self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, mode='regression', **kwargs)
