@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations import CalibratedExplainer, EntropyDiscretizer, BinaryEntropyDiscretizer, WrapCalibratedExplainer
+from calibrated_explanations import CalibratedExplainer, EntropyDiscretizer, BinaryEntropyDiscretizer
 from calibrated_explanations.utils import transform_to_numeric, safe_isinstance
 
 
@@ -262,42 +262,6 @@ class TestCalibratedExplainer(unittest.TestCase):
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
 
-
-
-    # @unittest.skip('Test passes locally.  Skipping provisionally.')
-    def test_wrap_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
-        cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
-        print(cal_exp)
-        cal_exp.fit(trainX, trainY)
-        print(cal_exp)
-        cal_exp.predict(testX)
-        cal_exp.predict(testX, True)
-        cal_exp.predict_proba(testX)
-        cal_exp.predict_proba(testX, True)
-        cal_exp.calibrate(cal_X, calY, feature_names=feature_names, categorical_features=categorical_features)
-        print(cal_exp)
-        cal_exp.predict(testX)
-        cal_exp.predict(testX, True)
-        cal_exp.predict_proba(testX)
-        cal_exp.predict_proba(testX, True)
-        factual_explanation = cal_exp.explain_factual(testX)
-        self.assertExplanation(factual_explanation)
-        try:
-            factual_explanation.plot_all()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot_all() raised unexpected exception: {e}")
-        try:
-            factual_explanation.plot_all(uncertainty=True)
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot_all(uncertainty=True) raised unexpected exception: {e}")
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
-        self.assertExplanation(counterfactual_explanation)
-        try:
-            counterfactual_explanation.plot_all()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
 
 if __name__ == '__main__':
     # unittest.main()
