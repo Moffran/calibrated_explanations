@@ -58,6 +58,10 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertFalse(cal_exp.fitted)
         self.assertFalse(cal_exp.calibrated)
         print(cal_exp)
+        with pytest.raises(RuntimeError):
+            explanation = cal_exp.explain_factual(testX)
+        with pytest.raises(RuntimeError):
+            explanation = cal_exp.explain_counterfactual(testX)
 
         cal_exp.fit(trainX, trainY)
         self.assertTrue(cal_exp.fitted)
@@ -84,6 +88,10 @@ class TestCalibratedExplainer(unittest.TestCase):
         # An uncalibrated regression model does not support predict_proba as no conformal predictive system is available
         with pytest.raises(RuntimeError):
             cal_exp.predict_proba(testX, uq_interval=True, threshold=testY)
+        with pytest.raises(RuntimeError):
+            explanation = cal_exp.explain_factual(testX)
+        with pytest.raises(RuntimeError):
+            explanation = cal_exp.explain_counterfactual(testX)
 
         # calibrate initialize the conformal predictive system
         # Note that the difficulty estimation works in the same way as when using CalibratedExplainer
@@ -99,6 +107,8 @@ class TestCalibratedExplainer(unittest.TestCase):
         testY_hat = cal_exp.predict(testX, threshold=testY)
         # predict thresholded labels using the conformal predictive system, with uncertainty quantification
         testY_hat, (low, high) = cal_exp.predict(testX, uq_interval=True, threshold=testY)
+        explanation = cal_exp.explain_factual(testX)
+        explanation = cal_exp.explain_counterfactual(testX)
 
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
