@@ -3,7 +3,6 @@
 """contains the CalibratedExplanations class created by the CalibratedExplainer class
 """
 import os
-# from pyexpat import features
 import warnings
 from copy import deepcopy
 from abc import ABC, abstractmethod
@@ -469,7 +468,7 @@ class CalibratedExplanation(ABC):
         #     instance (n_features,): a test instance
 
         # Returns:
-        #     list[str]: a list of conditioins for each feature in the instance
+        #     list[str]: a list of conditions for each feature in the instance
         # """
         self.conditions = []
         # pylint: disable=invalid-name
