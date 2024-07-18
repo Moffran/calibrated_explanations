@@ -1150,13 +1150,15 @@ class WrapCalibratedExplainer():
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting.")
         if not self.calibrated:
+            if 'threshold' in kwargs:
+                raise ValueError("A thresholded prediction is not possible for uncalibrated models.")
             warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
             if uq_interval:
                 return self.learner.predict(X_test), (0, 0)
             return self.learner.predict(X_test)
         if self.explainer.mode in 'regression':
             predict, low, high, _ = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
-            if 'threshold' in kwargs.keys(): # pylint: disable=consider-iterating-dictionary
+            if 'threshold' in kwargs: 
                 threshold = kwargs['threshold']
                 if np.isscalar(threshold):
                     new_classes = [f'y_hat <= {threshold}' if predict[i] >= 0.5 else f'y_hat > {threshold}' for i in range(len(predict))]
