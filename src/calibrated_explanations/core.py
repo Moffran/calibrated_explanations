@@ -1158,7 +1158,7 @@ class WrapCalibratedExplainer():
             return self.learner.predict(X_test)
         if self.explainer.mode in 'regression':
             predict, low, high, _ = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
-            if 'threshold' in kwargs: 
+            if 'threshold' in kwargs:
                 threshold = kwargs['threshold']
                 if np.isscalar(threshold):
                     new_classes = [f'y_hat <= {threshold}' if predict[i] >= 0.5 else f'y_hat > {threshold}' for i in range(len(predict))]
