@@ -68,10 +68,10 @@ class TestCalibratedExplainer(unittest.TestCase):
         self.assertEqual(high, 0)
         # An uncalibrated regression model does not support predict thresholded labels as no conformal predictive system is available
         with pytest.raises(ValueError):
-            cal_exp.predict(testX, threshold=testY)
+            testY_hat = cal_exp.predict(testX, threshold=testY)
         # An uncalibrated regression model does not support predict thresholded labels as no conformal predictive system is available
         with pytest.raises(ValueError):
-            cal_exp.predict(testX, uq_interval=True, threshold=testY)
+            testY_hat, (low, high) = cal_exp.predict(testX, uq_interval=True, threshold=testY)
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
             cal_exp.predict_proba(testX)
