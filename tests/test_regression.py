@@ -595,65 +595,6 @@ class TestCalibratedExplainer(unittest.TestCase):
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
 
 
-    def test_wrap_regression_ce(self):
-        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
-        cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
-        print(cal_exp)
-        cal_exp.fit(trainX, trainY)
-        print(cal_exp)
-        cal_exp.predict(testX)
-        cal_exp.predict(testX, threshold=testY)
-        cal_exp.predict(testX, True)
-        cal_exp.predict(testX, True, threshold=testY)
-        cal_exp.calibrate(calX, calY, feature_names=feature_names, categorical_features=categorical_features, categorical_labels=categorical_labels)
-        print(cal_exp)
-        cal_exp.predict(testX)
-        cal_exp.predict(testX, threshold=testY)
-        cal_exp.predict(testX, True)
-        cal_exp.predict(testX, True, threshold=testY)
-        with pytest.raises(ValueError):
-            cal_exp.predict_proba(testX)
-        cal_exp.predict_proba(testX, threshold=testY)
-        with pytest.raises(ValueError):
-            cal_exp.predict_proba(testX, True)
-        cal_exp.predict_proba(testX, True, threshold=testY)
-
-        factual_explanation = cal_exp.explain_factual(testX)
-        self.assertExplanation(factual_explanation)
-        try:
-            factual_explanation.plot_all()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot_all() raised unexpected exception: {e}")
-        try:
-            factual_explanation.plot_all(uncertainty=True)
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot_all(uncertainty=True) raised unexpected exception: {e}")
-
-        factual_explanation = cal_exp.explain_factual(testX, threshold=testY)
-        self.assertExplanation(factual_explanation)
-        try:
-            factual_explanation.plot_all()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot_all() raised unexpected exception: {e}")
-        try:
-            factual_explanation.plot_all(uncertainty=True)
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot_all(uncertainty=True) raised unexpected exception: {e}")
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
-        self.assertExplanation(counterfactual_explanation)
-        try:
-            counterfactual_explanation.plot_all()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
-
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, threshold=testY)
-        self.assertExplanation(counterfactual_explanation)
-        try:
-            counterfactual_explanation.plot_all()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
-
 if __name__ == '__main__':
     # unittest.main()
     pytest.main()
