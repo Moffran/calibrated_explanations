@@ -79,10 +79,10 @@ class TestCalibratedExplainer(unittest.TestCase):
         with pytest.raises(ValueError):
             cal_exp.predict_proba(testX, uq_interval=True)
         # An uncalibrated regression model does not support predict_proba as no conformal predictive system is available
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeError):
             cal_exp.predict_proba(testX, threshold=testY)
         # An uncalibrated regression model does not support predict_proba as no conformal predictive system is available
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeError):
             cal_exp.predict_proba(testX, uq_interval=True, threshold=testY)
 
         # calibrate initialize the conformal predictive system
