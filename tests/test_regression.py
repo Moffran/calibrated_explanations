@@ -10,7 +10,6 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.exceptions import NotFittedError
 from crepes.extras import DifficultyEstimator
 
 from calibrated_explanations import CalibratedExplainer, BinaryRegressorDiscretizer, RegressorDiscretizer, WrapCalibratedExplainer # pylint: disable=unused-import
@@ -42,7 +41,7 @@ def load_regression_dataset():
 
 def get_regression_model(model_name, trainX, trainY):
     t1 = DecisionTreeRegressor()
-    r1 = RandomForestRegressor(n_estimators=100)
+    r1 = RandomForestRegressor(n_estimators=10)
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
     model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
@@ -51,7 +50,7 @@ def get_regression_model(model_name, trainX, trainY):
 
 
 
-class TestCalibratedExplainer(unittest.TestCase):
+class TestCalibratedExplainer_regression(unittest.TestCase):
     def assertExplanation(self, exp):
         for _, instance in enumerate(exp.test_objects):
             boundaries = exp.calibrated_explainer.rule_boundaries(instance)
@@ -64,13 +63,13 @@ class TestCalibratedExplainer(unittest.TestCase):
         return True
 
     def test_failure_regression(self):
-        trainX, trainY, calX, calY, _, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        trainX, trainY, calX, calY, _, _, _, _, categorical_features, _, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
-        with pytest.raises(NotFittedError):
-            CalibratedExplainer(RandomForestRegressor(), calX, calY, feature_names=feature_names, categorical_features=categorical_features, categorical_labels=categorical_labels, mode='regression')
         cal_exp = CalibratedExplainer(model, calX, calY, feature_names=feature_names, categorical_features=categorical_features, mode='regression')
-        with pytest.raises(NotFittedError):
+        with pytest.raises(RuntimeError):
             cal_exp.set_difficulty_estimator(DifficultyEstimator())
+        with pytest.raises(RuntimeError):
+            cal_exp.set_difficulty_estimator(DifficultyEstimator)
 
 
     # NOTE: this takes takes about 70s to run

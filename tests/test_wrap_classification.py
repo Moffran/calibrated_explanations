@@ -91,7 +91,7 @@ def get_classification_model(model_name, trainX, trainY):
 
 
 
-class TestWrapCalibratedExplainer(unittest.TestCase):
+class TestWrapCalibratedExplainer_classification(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     # pylint: disable=unused-variable

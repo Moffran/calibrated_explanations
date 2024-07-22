@@ -84,7 +84,7 @@ def load_multiclass_dataset():
 
 def get_classification_model(model_name, trainX, trainY):
     t1 = DecisionTreeClassifier()
-    r1 = RandomForestClassifier(n_estimators=100)
+    r1 = RandomForestClassifier(n_estimators=10)
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
     model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
@@ -93,7 +93,7 @@ def get_classification_model(model_name, trainX, trainY):
 
 
 
-class TestCalibratedExplainer(unittest.TestCase):
+class TestCalibratedExplainer_classification(unittest.TestCase):
     def assertExplanation(self, exp):
         for _, instance in enumerate(exp.test_objects):
             boundaries = exp.calibrated_explainer.rule_boundaries(instance)

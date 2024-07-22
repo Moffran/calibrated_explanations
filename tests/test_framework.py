@@ -9,16 +9,15 @@ from unittest.mock import patch#, MagicMock
 import pytest
 
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.exceptions import NotFittedError
 
 from calibrated_explanations import CalibratedExplainer
 from calibrated_explanations.utils import safe_import, check_is_fitted, make_directory, is_notebook
 
 from tests.test_classification import load_binary_dataset, get_classification_model
 
-class TestCalibratedExplainer(unittest.TestCase):
+class TestFramework(unittest.TestCase):
     def test_failure(self):
-        with pytest.raises(NotFittedError):
+        with pytest.raises(RuntimeError):
             CalibratedExplainer(RandomForestClassifier(), [], [])
 
     def test_check_is_fitted_with_fitted_model(self):
@@ -33,14 +32,10 @@ class TestCalibratedExplainer(unittest.TestCase):
             pytest.fail("check_is_fitted raised RuntimeError unexpectedly!")
 
     def test_check_is_fitted_with_non_fitted_model(self):
-        with pytest.raises(NotFittedError):
+        with pytest.raises(RuntimeError):
             check_is_fitted(RandomForestClassifier())
         with pytest.raises(TypeError):
             check_is_fitted(RandomForestClassifier)
-        # with pytest.raises(TypeError):
-        #     check_is_fitted(ClassWithoutFitMethod())
-        # with pytest.raises(RuntimeError):
-        #     check_is_fitted(NonSklearnModel())
 
     def test_check_safe_import(self):
         self.assertIsNotNone(safe_import("sklearn"))

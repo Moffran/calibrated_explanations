@@ -49,7 +49,7 @@ def get_regression_model(model_name, trainX, trainY):
 
 
 
-class TestCalibratedExplainer(unittest.TestCase):
+class TestCalibratedExplainer_regression(unittest.TestCase):
 
     # pylint: disable=unused-variable
     def test_wrap_regression_ce(self):
