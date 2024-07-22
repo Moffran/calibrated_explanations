@@ -7,6 +7,10 @@ from lime.discretize import BaseDiscretizer, QuartileDiscretizer, DecileDiscreti
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 import numpy as np
 
+# pylint: disable=unused-argument
+def __repr__(self):
+    return 'EntropyDiscretizer()'
+EntropyDiscretizer.__repr__ = __repr__
 
 class BinaryEntropyDiscretizer(BaseDiscretizer):
     """a binary entropy discretizer for the CalibratedExplainer
@@ -31,6 +35,8 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
         BaseDiscretizer.__init__(self, data, categorical_features,
                                  feature_names, labels=labels,
                                  random_state=random_state)
+    def __repr__(self):
+        return 'BinaryEntropyDiscretizer()'
     # pylint: disable=invalid-name
     def bins(self, data, labels):
         bins = []
@@ -76,6 +82,8 @@ class RegressorDiscretizer(BaseDiscretizer):
         BaseDiscretizer.__init__(self, data, categorical_features,
                                  feature_names, labels=labels,
                                  random_state=random_state)
+    def __repr__(self):
+        return 'RegressorDiscretizer()'
     # pylint: disable=invalid-name
     def bins(self, data, labels):
         bins = []
@@ -121,6 +129,8 @@ class BinaryRegressorDiscretizer(BaseDiscretizer):
         BaseDiscretizer.__init__(self, data, categorical_features,
                                  feature_names, labels=labels,
                                  random_state=random_state)
+    def __repr__(self):
+        return 'BinaryRegressorDiscretizer()'
     # pylint: disable=invalid-name
     def bins(self, data, labels):
         bins = []

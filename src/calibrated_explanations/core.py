@@ -184,16 +184,13 @@ class CalibratedExplainer:
         self.__initialized = True
 
 
-    def __repr__(self):
-        disp_str = f"CalibratedExplainer:\n\t\
-                mode={self.mode}\n\t\
-                {f'mondrian={self.bins is not None}'}\n\t\
-                discretizer={self.discretizer.__class__}\n\t\
-                model={self.model}\n\t\
-                init_time={self.init_time}\n\t\
-                {f'total_explain_time={self.latest_explanation.total_explain_time}' if self.latest_explanation is not None else 'latest_explanation is None'}\n\t\
-                {f'difficulty_estimator={self.difficulty_estimator}' if self.mode == 'regression' else ''}"
+    def __repr__(self):        
+        # pylint: disable=line-too-long
+        disp_str = f"CalibratedExplainer(mode={self.mode}{f', mondrian={self.bins}' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, model={self.model}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
         if self.verbose:
+            disp_str += f"\n\tinit_time={self.init_time}"
+            if self.latest_explanation is not None:
+                disp_str += f"\n\ttotal_explain_time={self.latest_explanation.total_explain_time}"
             disp_str += f"\n\tsample_percentiles={self.sample_percentiles}\
                         \n\trandom_state={self.random_state}\
                         \n\tverbose={self.verbose}"
