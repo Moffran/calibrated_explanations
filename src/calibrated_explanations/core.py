@@ -16,7 +16,6 @@ from time import time
 import numpy as np
 
 from lime.lime_tabular import LimeTabularExplainer
-from sklearn.exceptions import NotFittedError
 
 from ._explanations import CalibratedExplanations
 from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
@@ -660,19 +659,11 @@ class CalibratedExplainer:
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
         if difficulty_estimator is not None:
-            sklearn = safe_import('sklearn')
-            if sklearn:
-                try:
-                    if not difficulty_estimator.fitted:
-                        raise sklearn.utils.validation.NotFittedError("The difficulty estimator is not fitted. Please fit the estimator first.")
-                except AttributeError as e:
-                    raise sklearn.utils.validation.NotFittedError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
-            else:
-                try:
-                    if not difficulty_estimator.fitted:
-                        raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.")
-                except AttributeError as e:
-                    raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
+            try:
+                if not difficulty_estimator.fitted:
+                    raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.")
+            except AttributeError as e:
+                raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
         if initialize:
             self.__initialize_interval_model()
 
@@ -907,15 +898,18 @@ class CalibratedExplainer:
             return self.shap, self.shap_exp
         return None, None
 
+
 class WrapCalibratedExplainer():
     """A wrapper class for the CalibratedExplainer. It allows to fit, calibrate, and explain the model.
     """
     def __init__(self, learner):
         # Check if the learner is a CalibratedExplainer
-        if safe_isinstance(learner, "calibrated_explanations.CalibratedExplainer"):
+        if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
+            explainer = learner
+            learner = explainer.model
             self.calibrated = True
-            self.explainer = learner
-            self.learner = learner.model
+            self.explainer = explainer
+            self.learner = learner
             check_is_fitted(self.learner)
             self.fitted = True
             return
@@ -928,14 +922,14 @@ class WrapCalibratedExplainer():
         try:
             check_is_fitted(learner)
             self.fitted = True
-        except (TypeError, RuntimeError, NotFittedError):
+        except (TypeError, RuntimeError):
             self.fitted = False
 
     def __repr__(self):
         if self.fitted:
             if self.calibrated:
                 return (f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, "
-                    f"calibrated=True, \nexplainer={self.explainer})")
+                    f"calibrated=True, \n\t\texplainer={self.explainer})")
             return f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, calibrated=False)"
         return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
 
