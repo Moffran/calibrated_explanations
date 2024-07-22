@@ -151,7 +151,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         fitted = [
             v for v in vars(estimator) if v.endswith("_") and not v.startswith("__")
         ]
-    
+
     if not fitted or fitted == []:
         raise RuntimeError(msg % {"name": type(estimator).__name__})
 
