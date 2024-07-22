@@ -184,7 +184,7 @@ class CalibratedExplainer:
         self.__initialized = True
 
 
-    def __repr__(self):        
+    def __repr__(self):
         # pylint: disable=line-too-long
         disp_str = f"CalibratedExplainer(mode={self.mode}{f', mondrian={self.bins}' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, model={self.model}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
         if self.verbose:
