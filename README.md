@@ -439,8 +439,8 @@ Default, the confidence interval is set to a symmetric interval of 90% (defined 
 
 
 ```python
-lower_bounded_explanations = explainer.explain_factual(X_test, low_high_percentiles=(5,np.inf))
-asymmetric_explanations = explainer.explain_factual(X_test, low_high_percentiles=(5,75))
+lower_bounded_explanations = regressor.explain_factual(X_test, low_high_percentiles=(5,np.inf))
+asymmetric_explanations = regressor.explain_factual(X_test, low_high_percentiles=(5,75))
 ```
 
 #### Counterfactual Explanations
