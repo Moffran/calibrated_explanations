@@ -312,7 +312,7 @@ factual_explanations.remove_conjunctions().plot_explanation(0, uncertainty=True)
 
 #### Counterfactual Explanations
 An alternative to factual rules is to extract counterfactual rules. 
-`explain_counterfactual` can be called to get counterfactual rules with an appropriate discretizer automatically assigned. Note that the discretizer has changed. 
+`explain_counterfactual` can be called to get counterfactual rules with an appropriate discretizer automatically assigned. 
 
 
 ```python
@@ -417,7 +417,7 @@ print(f'Calibrated probabilistic uncertainty interval for y_hat <= threshold: [{
 ```
 
 #### Factual Explanations
-Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`. Note that the discretizer is now assigned.
+Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`. 
 
 
 ```python
@@ -444,7 +444,7 @@ asymmetric_explanations = regressor.explain_factual(X_test, low_high_percentiles
 ```
 
 #### Counterfactual Explanations
-The `explain_counterfactual` will work exactly the same as for classification. Note that the discretizer is now changed. 
+The `explain_counterfactual` will work exactly the same as for classification. 
 
 
 ```python
