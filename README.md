@@ -311,8 +311,7 @@ factual_explanations.remove_conjunctions().plot_explanation(0, uncertainty=True)
 ```
 
 #### Counterfactual Explanations
-An alternative to factual rules is to extract counterfactual rules. 
-`explain_counterfactual` can be called to get counterfactual rules with an appropriate discretizer automatically assigned. 
+An alternative to factual rules is to extract counterfactual rules, which is done using the `explain_counterfactual` function. 
 
 
 ```python
