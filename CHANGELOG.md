@@ -1,13 +1,41 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.4...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...main)
 ### Features
+### Fixes
+
+## [v0.3.5](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.5) - 2024-07-24
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.4...v0.3.5)
+### Features
+- Made several improvements of the `WrapCalibratedExplainer`:
+    - `WrapCalibratedExplainer` is introduced as the default way to interact with `calibrated-explanations` in README.md. The benefit of having a wrapper class as interface is that it makes it easier to add different kinds of explanations. 
+    - Documentation of the functions has been updated.
+    - Initialization: 
+      - The `WrapCalibratedExplainer` can now be initialized with an unfitted model as well as with a fitted model.
+      - The `WrapCalibratedExplainer` can now be initialized with an already initialized `CalibratedExplainer` instance, providing access to the `predict` and `predict_proba` functions.
+    - The `fit` method will reinitialize the explainer if the `WrapCalibratedExplainer` has already been calibrated, to ensure that the `explainer` is adapted to the re-fitted model. 
+    - Added improved error handling. 
+    - Made several other minor quality improving adjustments.      
 - Code coverage tests are added and monitored at [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations).
   - Tests are added in order to increase code coverage.
   - Unused code is cleaned up. 
+- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README: 
+  - Added a reference and bibtex to:
+    - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://easychair.org/publications/preprint/rqdD). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>. In press. 
+    - ```bibtex
+      @Booklet{lofstrom2024ce_multiclass,
+        author = {Tuwe Löfström and Helena Löfström and Ulf Johansson},
+        title = {Calibrated Explanations for Multi-Class},
+        howpublished = {EasyChair Preprint no. 14106},
+        year = {EasyChair, 2024}
+      }
+      ```
+  - Updated the [docs/citing.md](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md) with the above changes.
 ### Fixes
-- Discretizers are limited to the default alternatives for classification and regression. BinaryDiscretizer removed. 
+- Discretizers are limited to the default alternatives for classification and regression. BinaryDiscretizer removed. `__repr__` functions added.
+- Changed the `check_is_fitted` function to remove ties to sklearn.
+- Made the `safe_import` throw an `ImportError` when an import fail. 
 
 ## [v0.3.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.4) - 2024-07-10
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.3...v0.3.4)

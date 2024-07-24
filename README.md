@@ -552,17 +552,12 @@ For documentation, see [calibrated-explanations.readthedocs.io](https://calibrat
 
 Further reading and citing
 --------------------------
-The `calibrated-explanations` method for classification is introduced in the paper:
+If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
 
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27.
-
-The extensions for regression are introduced in the paper:
-
 - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245.
-
-Conditional explanations are introduced in the paper:
-
-- [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://doi.org/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham.
+-  [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://doi.org/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham.
+- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://easychair.org/publications/preprint/rqdD). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>. In press. 
 
 The paper that originated the idea of `calibrated-explanations` is:
 
@@ -590,12 +585,12 @@ Bibtex entry for the regression paper:
 
 ```bibtex
 @misc{lofstrom2023ce_regression,
-      title = 	      	{Calibrated Explanations for Regression},
-      author =          {L\"ofstr\"om, Tuwe and L\"ofstr\"om, Helena and Johansson, Ulf and S\"onstr\"od, Cecilia and Matela, Rudy},
-      year =            {2023},
-      eprint =          {2308.16245},
-      archivePrefix =   {arXiv},
-      primaryClass =    {cs.LG}
+  title = 	      	{Calibrated Explanations for Regression},
+  author =          {L\"ofstr\"om, Tuwe and L\"ofstr\"om, Helena and Johansson, Ulf and S\"onstr\"od, Cecilia and Matela, Rudy},
+  year =            {2023},
+  eprint =          {2308.16245},
+  archivePrefix =   {arXiv},
+  primaryClass =    {cs.LG}
 }
 ```
 Bibtex for the conditional paper:
@@ -615,6 +610,17 @@ Bibtex for the conditional paper:
 }
 ``` 
 
+Bibtex for the multi-class paper:
+
+```bibtex
+@Booklet{lofstrom2024ce_multiclass,
+	author = {Tuwe Löfström and Helena Löfström and Ulf Johansson},
+	title = {Calibrated Explanations for Multi-Class},
+	howpublished = {EasyChair Preprint no. 14106},
+	year = {EasyChair, 2024}
+}
+```
+
 To cite this software, use the following bibtex entry:
 
 ```bibtex
@@ -623,7 +629,7 @@ To cite this software, use the following bibtex entry:
 	license = 	{BSD-3-Clause},
 	title = 	{Calibrated Explanations},
 	url = 		{https://github.com/Moffran/calibrated_explanations},
-	version = 	{v0.3.4},
+	version = 	{v0.3.5},
 	month = 	May,
 	year = 		{2024}
 }
