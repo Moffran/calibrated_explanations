@@ -11,9 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations import CalibratedExplainer, BinaryRegressorDiscretizer, RegressorDiscretizer, WrapCalibratedExplainer # pylint: disable=unused-import
-from calibrated_explanations.utils import safe_isinstance, safe_import, transform_to_numeric, check_is_fitted # pylint: disable=unused-import
-
+from calibrated_explanations import WrapCalibratedExplainer
 MODEL = 'RF'
 
 

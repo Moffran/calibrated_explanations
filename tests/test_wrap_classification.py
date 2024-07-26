@@ -14,7 +14,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import WrapCalibratedExplainer
-from calibrated_explanations.utils import transform_to_numeric
+from calibrated_explanations.utils.helper import transform_to_numeric
 
 
 MODEL = 'RF'

@@ -11,7 +11,7 @@ import pytest
 from sklearn.ensemble import RandomForestClassifier
 
 from calibrated_explanations import CalibratedExplainer
-from calibrated_explanations.utils import safe_import, check_is_fitted, make_directory, is_notebook
+from calibrated_explanations.utils.helper import safe_import, check_is_fitted, make_directory, is_notebook
 
 from tests.test_classification import load_binary_dataset, get_classification_model
 
