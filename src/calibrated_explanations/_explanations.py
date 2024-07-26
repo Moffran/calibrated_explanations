@@ -9,8 +9,8 @@ from abc import ABC, abstractmethod
 from time import time
 import numpy as np
 import matplotlib.pyplot as plt
-from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
-from .utils import make_directory #, is_notebook, safe_import
+from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
+from .utils.helper import make_directory 
 
 class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """

@@ -18,11 +18,11 @@ import numpy as np
 from lime.lime_tabular import LimeTabularExplainer
 
 from ._explanations import CalibratedExplanations
-from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
-                RegressorDiscretizer, BinaryRegressorDiscretizer
 from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
-from .utils import safe_isinstance, safe_import, check_is_fitted
+from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
+                RegressorDiscretizer, BinaryRegressorDiscretizer
+from .utils.helper import safe_isinstance, safe_import, check_is_fitted
 
 __version__ = 'v0.3.5'
 

@@ -8,7 +8,7 @@ It is based on the paper "Calibrated Explanations: with Uncertainty Information 
 by Helena Löfström et al.
 """
 from .core import CalibratedExplainer, WrapCalibratedExplainer, __version__
-from ._discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
+from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                     RegressorDiscretizer, BinaryRegressorDiscretizer
 from ._explanations import CalibratedExplanations, CalibratedExplanation, \
                     FactualExplanation, CounterfactualExplanation
