@@ -520,6 +520,8 @@ class CalibratedExplanation(ABC):
         # """
         assert len(original_features) >= 2, 'Conjunctive rules require at least two features'
         rule_predict, rule_low, rule_high, rule_count = 0,0,0,0
+        of1, of2, of3 = 0,0,0
+        rule_value1, rule_value2, rule_value3 = 0,0,0 
         if len(original_features) == 2:
             of1, of2 = original_features[0], original_features[1]
             rule_value1, rule_value2 = rule_value_set[0], rule_value_set[1]
