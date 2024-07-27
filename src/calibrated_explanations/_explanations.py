@@ -188,9 +188,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments
     def plot_all(self,
                 n_features_to_show=10,
+                sort_on_uncertainty=False, 
                 show=False,
                 filename='',
                 uncertainty=False,
+                style='regular',
                 interactive=False):
         '''The function `plot_all` plots either counterfactual or factual explanations for a given
         instance, with the option to show or save the plots.
@@ -200,6 +202,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         n_features_to_show, optional
             The parameter "n_features_to_show" determines the number of top features to display in the
             plot. It specifies how many of the most important features should be shown in the plot.
+        sort_on_uncertainty : bool, default=False
+            The `sort_on_uncertainty` parameter is a boolean flag that determines whether to sort the
+            features based on the uncertainty intervals. If `sort_on_uncertainty` is set to `True`, the
+            features will be sorted based on the uncertainty intervals, with smallest on top. If `sort_on_uncertainty` is set to
+            `False`, the features will be sorted based on the feature weights (default).
         show, optional
             The "show" parameter determines whether the plots should be displayed immediately after they
             are generated. If set to True, the plots will be shown; if set to False, the plots will not be
@@ -224,12 +231,19 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         for index, explanation in enumerate(self.explanations):
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
-            explanation.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty, interactive=interactive)
+            explanation.plot_explanation(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
+                                        show=show, filename=filename, uncertainty=uncertainty, style=style, interactive=interactive)
 
 
 
     # pylint: disable=too-many-arguments
-    def plot_explanation(self, instance_index, n_features_to_show=10, show=False, filename='', uncertainty=False, interactive=False):
+    def plot_explanation(self, instance_index, 
+                        n_features_to_show=10, 
+                        sort_on_uncertainty=False, 
+                        show=False, filename='', 
+                        uncertainty=False, 
+                        style='regular',
+                        interactive=False):
         '''This function plots the explanation for a given instance using either factual or
         counterfactual plots.
         
@@ -241,6 +255,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             The `n_features_to_show` parameter determines the number of top features to display in the
             plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
             number of features, up to the total number of features available.
+        sort_on_uncertainty : bool, default=False
+            The `sort_on_uncertainty` parameter is a boolean flag that determines whether to sort the
+            features based on the uncertainty intervals. If `sort_on_uncertainty` is set to `True`, the
+            features will be sorted based on the uncertainty intervals, with smallest on top. If `sort_on_uncertainty` is set to
+            `False`, the features will be sorted based on the feature weights (default).
         show : bool, default=False
             A boolean parameter that determines whether the plot should be displayed or not. If set to
             True, the plot will be displayed. If set to False, the plot will not be displayed.
@@ -253,65 +272,66 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
             range of possible feature weights based on the lower and upper bounds of the uncertainty
             intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
+        style : str, default='regular'
+            The `style` parameter is a string that determines the style of the plot. Possible styles are
+            * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
+            * 'triangular' - a triangular plot for counterfactual explanations highlighting the interplay 
+                between the calibrated probability and the uncertainty intervals
         
         '''
-        factual = self.get_explanation(instance_index)
-        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty, interactive=interactive)
+        explanation = self.get_explanation(instance_index)
+        explanation.plot_explanation(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty, 
+                                show=show, filename=filename, uncertainty=uncertainty, style=style, interactive=interactive)
 
-    # pylint: disable=too-many-arguments
-    def plot_factual(self, instance_index, n_features_to_show=10, show=False, filename='', uncertainty=False, interactive=False):
-        '''This function plots the factual explanation for a given instance using either probabilistic or
-        regression plots.
+
+    def get_semi_explanations(self, only_ensured=False):
+        '''
+        The function `get_semi_explanations` returns a copy of this `CalibratedExplanations` object with only semi-explanations.
+        Semi-explanations are individual rules that support the predicted class. 
         
         Parameters
         ----------
-        instance_index : int
-            The index of the instance for which you want to plot the factual explanation.
-        n_features_to_show : int, default=10
-            The `n_features_to_show` parameter determines the number of top features to display in the
-            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
-            number of features, up to the total number of features available.
-        show : bool, default=False
-            A boolean parameter that determines whether the plot should be displayed or not. If set to
-            True, the plot will be displayed. If set to False, the plot will not be displayed.
-        filename : str, default=''
-            The filename parameter is a string that represents the full path and filename of the plot
-            image file that will be saved. If this parameter is not provided or is an empty string, the plot
-            will not be saved as an image file.
-        uncertainty : bool, default=False
-            The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
-            intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
-            range of possible feature weights based on the lower and upper bounds of the uncertainty
-            intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
+        only_ensured : bool, default=False
+            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
+            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
+            explanations. If set to `False`, the function will return all semi-explanations. 
         
+        Returns
+        -------
+        semi-explanations : CalibratedExplanations
+            A new `CalibratedExplanations` object containing `CounterfactualExplanation` objects only containing semi-factual 
+            or semi-potential explanations. 
         '''
-        factual = self.get_explanation(instance_index)
-        factual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty, interactive=interactive)
+        assert self._is_counterfactual(), 'Semi-explanations are only available for counterfactual explanations'
+        semi_explanations = deepcopy(self)
+        for explanation in semi_explanations.explanations:
+            explanation.get_semi_explanations(only_ensured=only_ensured)
+        return semi_explanations
 
 
-    def plot_counterfactual(self, instance_index, n_features_to_show=10, show=False, filename='', interactive=False):        
-        '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
-        a dataset.
+    def get_counter_explanations(self, only_ensured=False):
+        '''
+        The function `get_counter_explanations` returns a copy of this `CalibratedExplanations` object with only counter-explanations.
+        Counter-explanations are individual rules that does not support the predicted class. 
         
         Parameters
         ----------
-        instance_index : int
-            The index of the instance for which you want to plot the counterfactual explanation.
-        n_features_to_show : int, default=10
-            The `n_features_to_show` parameter determines the number of top features to display in the
-            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
-            number of features, up to the total number of features available.
-        show : bool, default=False
-            A boolean parameter that determines whether the plot should be displayed or not. If set to
-            True, the plot will be displayed. If set to False, the plot will not be displayed.
-        filename : str, default=''
-            The filename parameter is a string that represents the full path and filename of the plot
-            image file that will be saved. If this parameter is not provided or is an empty string, the plot
-            will not be saved as an image file.
+        only_ensured : bool, default=False
+            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
+            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
+            explanations. If set to `False`, the function will return all semi-explanations. 
         
+        Returns
+        -------
+        semi-explanations : CalibratedExplanations
+            A new `CalibratedExplanations` object containing `CounterfactualExplanation` objects only containing counter-factual 
+            or counter-potential explanations. 
         '''
-        counterfactual = self.get_explanation(instance_index)
-        counterfactual.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, interactive=interactive)
+        assert self._is_counterfactual(), 'Counter-explanations are only available for counterfactual explanations'
+        counter_explanations = deepcopy(self)
+        for explanation in counter_explanations.explanations:
+            explanation.get_counter_explanations(only_ensured=only_ensured)
+        return counter_explanations
 
 
     # pylint: disable=protected-access
@@ -399,18 +419,23 @@ class CalibratedExplanation(ABC):
     def _get_explainer(self):
         return self.calibrated_explanations._get_explainer() # pylint: disable=protected-access
 
-    def _rank_features(self, feature_weights, width=None, num_to_show=None):
-        if num_to_show is None or num_to_show > len(feature_weights):
-            num_to_show = len(feature_weights)
+    def _rank_features(self, feature_weights=None, width=None, num_to_show=None):
+        assert feature_weights is not None or width is not None, 'Either feature_weights or width (or both) must not be None'
+        num_features = len(feature_weights) if feature_weights is not None else len(width)
+        if num_to_show is None or num_to_show > num_features:
+            num_to_show = num_features
         # handle case where there are same weight but different uncertainty
-        if width is not None:
+        if feature_weights is not None and width is not None:
             # get the indeces by first sorting on the absolute value of the
             # feature_weight and then on the width
             sorted_indices = [i for i, x in
-                                sorted(enumerate(list(zip(np.abs(feature_weights), -width))),
+                                sorted(enumerate(list(zip(np.abs(feature_weights), width))),
                                 key=lambda x: (x[1][0], x[1][1]))]
-        else:
-            sorted_indices = np.argsort(np.abs(feature_weights))
+            return sorted_indices[-num_to_show:] # pylint: disable=invalid-unary-operand-type
+        if width is not None:
+            sorted_indices = np.argsort(-width)            
+            return sorted_indices[-num_to_show:] # pylint: disable=invalid-unary-operand-type
+        sorted_indices = np.argsort(np.abs(feature_weights))
         return sorted_indices[-num_to_show:] # pylint: disable=invalid-unary-operand-type
 
     def _is_one_sided(self) -> bool:
@@ -489,7 +514,6 @@ class CalibratedExplanation(ABC):
         return self.conditions
 
 
-    # pylint: disable=possibly-used-before-assignment
     def _predict_conjunctive(self, rule_value_set, original_features, perturbed, threshold, # pylint: disable=invalid-name, too-many-locals, too-many-arguments
                             predicted_class, bins=None):
         # """support function to calculate the prediction for a conjunctive rule
@@ -866,13 +890,6 @@ class FactualExplanation(CalibratedExplanation):
         self._has_conjunctive_rules = True
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
-
-    def plot_factual(self, n_features_to_show=None, show=False, filename='', uncertainty=False, interactive=False):
-        '''The function `plot_factual` plots the factual explanation for a given instance using either
-        probabilistic or regression plots.
-        '''
-        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, uncertainty=uncertainty, interactive=interactive)
-
     # pylint: disable=consider-iterating-dictionary
     def plot_explanation(self, n_features_to_show=None, **kwargs):
         '''This function plots the factual explanation for a given instance using either probabilistic or
@@ -898,7 +915,9 @@ class FactualExplanation(CalibratedExplanation):
             intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
             range of possible feature weights based on the lower and upper bounds of the uncertainty
             intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
-        
+        style : str, default='regular'
+            The `style` parameter is a string that determines the style of the plot. Possible styles are for FactualExplanation:
+            * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)        
         '''
         show = kwargs['show'] if 'show' in kwargs.keys() else False
         filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
@@ -913,6 +932,9 @@ class FactualExplanation(CalibratedExplanation):
         if n_features_to_show is None:
             n_features_to_show = num_features_to_show
         n_features_to_show = np.min([num_features_to_show, n_features_to_show])
+        if n_features_to_show <= 0:
+            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.instance_index}')
+            return
 
         if len(filename) > 0:
             path = os.path.dirname(filename) + '/'
@@ -1212,6 +1234,8 @@ class CounterfactualExplanation(CalibratedExplanation):
         super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
+        self.__is_semi_explanation = False
+        self.__is_counter_explanation = False
 
     # Function under consideration
     # def _get_slider_values(self, index, rule_name):
@@ -1287,7 +1311,8 @@ class CounterfactualExplanation(CalibratedExplanation):
                 values = np.array(self._get_explainer().feature_values[f])
                 values = np.delete(values, values == discretized[f])
                 for value_bin, value in enumerate(values):
-                    if self.prediction['predict'] == instance_predict[f][value_bin]:
+                    # skip if identical to original 
+                    if self.prediction['low'] == instance_low[f][value_bin] and self.prediction['high'] == instance_high[f][value_bin]:
                         continue
                     counterfactual['predict'].append(instance_predict[f][value_bin])
                     counterfactual['predict_low'].append(instance_low[f][value_bin])
@@ -1325,7 +1350,8 @@ class CounterfactualExplanation(CalibratedExplanation):
 
                 value_bin = 0
                 if np.any(values < lesser):
-                    if self.prediction['predict'] == np.mean(instance_predict[f][value_bin]):
+                    # skip if identical to original 
+                    if self.prediction['low'] == np.mean(instance_low[f][value_bin]) and self.prediction['high'] == np.mean(instance_high[f][value_bin]):
                         continue
                     counterfactual['predict'].append(np.mean(instance_predict[f][value_bin]))
                     counterfactual['predict_low'].append(np.mean(instance_low[f][value_bin]))
@@ -1352,7 +1378,8 @@ class CounterfactualExplanation(CalibratedExplanation):
                     value_bin = 1
 
                 if np.any(values > greater):
-                    if self.prediction['predict'] == np.mean(instance_predict[f][value_bin]):
+                    # skip if identical to original 
+                    if self.prediction['low'] == np.mean(instance_low[f][value_bin]) and self.prediction['high'] == np.mean(instance_high[f][value_bin]):
                         continue
                     counterfactual['predict'].append(np.mean(instance_predict[f][value_bin]))
                     counterfactual['predict_low'].append(np.mean(instance_low[f][value_bin]))
@@ -1380,6 +1407,147 @@ class CounterfactualExplanation(CalibratedExplanation):
         self.rules = counterfactual
         self._has_rules = True
         return self.rules
+
+    def is_semi_explanation(self):
+        '''
+        This function returns a boolean value that indicates whether the explanation is a semi-explanation or not.
+        '''
+        return self.__is_semi_explanation
+
+    def is_counter_explanation(self):
+        '''
+        This function returns a boolean value that indicates whether the explanation is a counter-explanation or not.
+        '''
+        return self.__is_counter_explanation
+
+    def __filter_rules(self, only_ensured=False, make_semi=True):
+        '''
+        This is a support function to semi and counter explanations. It filters out rules that are not
+        relevant to the explanation. 
+        '''
+        
+        positive_class = self.prediction['predict'] > 0.5
+        initial_uncertainty = np.abs(self.prediction['high'] - self.prediction['low'])
+
+        # get the semi-explanations for the predicted class
+        new_rules = {'base_predict': [],
+                        'base_predict_low': [],
+                        'base_predict_high': [],
+                        'predict': [],
+                        'predict_low': [],
+                        'predict_high': [],
+                        'weight': [],
+                        'weight_low': [],
+                        'weight_high': [],
+                        'value': [],
+                        'rule': [],
+                        'feature': [],
+                        'feature_value': [],
+                        'classes': None, 
+                        'is_conjunctive': []
+                        }
+        new_rules['classes'] = self.prediction['classes']
+        new_rules['base_predict'].append(self.prediction['predict'])
+        new_rules['base_predict_low'].append(self.prediction['low'])
+        new_rules['base_predict_high'].append(self.prediction['high'])
+        
+        rules = self._get_rules() # pylint: disable=protected-access
+        for rule in range(len(rules['rule'])):
+            if make_semi: # make semi-explanation
+                if positive_class:
+                    # filter negative rules that cannot be positive
+                    if rules['predict_high'][rule] < 0.5:
+                        continue
+                else:
+                    # filter positive rules that cannot be negative              
+                    if rules['predict_low'][rule] > 0.5:
+                        continue
+            else: # make counter-explanation
+                if positive_class:
+                    # filter positive rules that cannot be negative              
+                    if rules['predict_low'][rule] > 0.5:
+                        continue
+                else:
+                    # filter negative rules that cannot be positive
+                    if rules['predict_high'][rule] < 0.5:
+                        continue
+            # if only_ensured is True, filter out rules that lead to increased uncertainty
+            if only_ensured:
+                if rules['predict_high'][rule] - rules['predict_low'][rule] >= initial_uncertainty:
+                    continue
+            # filter out rules that does not provide a different prediction
+            if rules['base_predict_low'] == rules['predict_low'][rule] and rules['base_predict_high'] == rules['predict_high'][rule]:
+                continue
+            new_rules['predict'].append(rules['predict'][rule])
+            new_rules['predict_low'].append(rules['predict_low'][rule])
+            new_rules['predict_high'].append(rules['predict_high'][rule])
+            new_rules['weight'].append(rules['weight'][rule])
+            new_rules['weight_low'].append(rules['weight_low'][rule])
+            new_rules['weight_high'].append(rules['weight_high'][rule])
+            new_rules['value'].append(rules['value'][rule])
+            new_rules['rule'].append(rules['rule'][rule])
+            new_rules['feature'].append(rules['feature'][rule])
+            new_rules['feature_value'].append(rules['feature_value'][rule])
+            new_rules['is_conjunctive'].append(rules['is_conjunctive'][rule])
+        new_rules['classes'] = rules['classes']
+        if self._has_conjunctive_rules: # pylint: disable=protected-access
+            self.conjunctive_rules = deepcopy(new_rules)
+            new_rules['predict'] = [value for i, value in enumerate(new_rules['predict']) if not new_rules['is_conjunctive'][i]]
+            new_rules['predict_low'] = [value for i, value in enumerate(new_rules['predict_low']) if not new_rules['is_conjunctive'][i]]
+            new_rules['predict_high'] = [value for i, value in enumerate(new_rules['predict_high']) if not new_rules['is_conjunctive'][i]]
+            new_rules['weight'] = [value for i, value in enumerate(new_rules['weight']) if not new_rules['is_conjunctive'][i]]
+            new_rules['weight_low'] = [value for i, value in enumerate(new_rules['weight_low']) if not new_rules['is_conjunctive'][i]]
+            new_rules['weight_high'] = [value for i, value in enumerate(new_rules['weight_high']) if not new_rules['is_conjunctive'][i]]
+            new_rules['value'] = [value for i, value in enumerate(new_rules['value']) if not new_rules['is_conjunctive'][i]]
+            new_rules['rule'] = [value for i, value in enumerate(new_rules['rule']) if not new_rules['is_conjunctive'][i]]
+            new_rules['feature'] = [value for i, value in enumerate(new_rules['feature']) if not new_rules['is_conjunctive'][i]]
+            new_rules['feature_value'] = [value for i, value in enumerate(new_rules['feature_value']) if not new_rules['is_conjunctive'][i]]
+            new_rules['is_conjunctive'] = [value for i, value in enumerate(new_rules['is_conjunctive']) if not new_rules['is_conjunctive'][i]]
+
+        self.rules = new_rules
+        return self
+
+    def get_semi_explanations(self, only_ensured=False):
+        '''
+        This function returns the semi-explanations from this counterfactual explanation. 
+        Semi-explanations are individual rules that support the predicted class. 
+        
+        Parameters
+        ----------
+        only_ensured : bool, default=False            
+            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
+            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
+            explanations. If set to `False`, the function will return all semi-explanations. 
+        
+        Returns
+        -------
+        self : CounterfactualExplanation
+            Returns self filtered to only contain semi-factual or semi-potential explanations. 
+        '''
+        self.__filter_rules(only_ensured=only_ensured, make_semi=True)
+        self.__is_semi_explanation = True
+        return self
+
+    def get_counter_explanations(self, only_ensured=False):
+        '''
+        This function returns the counter-explanations from this counterfactual explanation. 
+        Counter-explanations are individual rules that does not support the predicted class. 
+        
+        Parameters
+        ----------
+        only_ensured : bool, default=False            
+            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
+            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
+            explanations. If set to `False`, the function will return all semi-explanations. 
+        
+        Returns
+        -------
+        self : CounterfactualExplanation
+            Returns self filtered to only contain counter-factual or counter-potential explanations. 
+        '''
+        self.__filter_rules(only_ensured=only_ensured, make_semi=False)
+        self.__is_counter_explanation = True
+        return self
 
     # pylint: disable=too-many-locals
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
@@ -1482,13 +1650,6 @@ class CounterfactualExplanation(CalibratedExplanation):
         self.conjunctive_rules = conjunctive
         self._has_conjunctive_rules = True
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
-
-    # pylint: disable=consider-iterating-dictionary
-    def plot_counterfactual(self, n_features_to_show=None, show=False, filename='', interactive=False):
-        '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
-        a dataset.
-        '''
-        self.plot_explanation(n_features_to_show=n_features_to_show, show=show, filename=filename, interactive=interactive)
         
     # pylint: disable=consider-iterating-dictionary
     def plot_explanation(self, n_features_to_show=None, **kwargs):
@@ -1510,11 +1671,21 @@ class CounterfactualExplanation(CalibratedExplanation):
             The filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file.
+        sort_on_uncertainty : bool, default=False
+            A boolean parameter that determines whether to sort the features based on the uncertainty
+            values. If set to True, the features will be sorted based on the uncertainty values. If set to
+            False, the features will not be sorted based on the uncertainty values.
+        style : str, default='regular'
+            The `style` parameter is a string that determines the style of the plot. Possible styles for CounterfactualExplanation:
+            * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
+            * 'triangular' - a triangular plot for counterfactual explanations highlighting the interplay 
+                between the calibrated probability and the uncertainty intervals
         
         '''
         show = kwargs['show'] if 'show' in kwargs.keys() else False
         filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
         interactive = kwargs['interactive'] if 'interactive' in kwargs.keys() else False
+        sort_on_uncertainty = kwargs['sort_on_uncertainty'] if 'sort_on_uncertainty' in kwargs.keys() else False
 
         counterfactual = self._get_rules() #get_explanation(instance_index)
         self._check_preconditions()      
@@ -1542,14 +1713,74 @@ class CounterfactualExplanation(CalibratedExplanation):
         if n_features_to_show is None:
             n_features_to_show = num_rules
         num_to_show_ = np.min([num_rules, n_features_to_show])
-        features_to_plot = self._rank_features(feature_weights,
+        if num_to_show_ <= 0:
+            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.instance_index}')
+            return
+
+        if sort_on_uncertainty:
+            features_to_plot = self._rank_features(width=width,
+                                                num_to_show=num_to_show_)
+        else:
+            features_to_plot = self._rank_features(feature_weights,
                                                 width=width,
                                                 num_to_show=num_to_show_)
+        
+        if kwargs['style'] == 'triangular':
+            proba = predict['predict']
+            uncertainty = np.abs(predict['high'] - predict['low'])
+            rule_proba = counterfactual['predict']
+            rule_uncertainty = np.abs(np.array(counterfactual['predict_high']) - np.array(counterfactual['predict_low']))
+            # Use list comprehension or NumPy array indexing to select elements
+            selected_rule_proba = [rule_proba[i] for i in features_to_plot]
+            selected_rule_uncertainty = [rule_uncertainty[i] for i in features_to_plot]
+            
+            self.__plot_triangular(proba, uncertainty, selected_rule_proba, selected_rule_uncertainty, num_to_show_)
+            return
+        
         column_names = counterfactual['rule']
         self.__plot_counterfactual(counterfactual['value'], predict, feature_predict, \
                                     features_to_plot, num_to_show=num_to_show_, \
                                     column_names=column_names, title=title, path=path, show=show, save_ext=save_ext, interactive=interactive)
 
+
+    def __plot_triangular(self, proba, uncertainty, rule_proba, rule_uncertainty, num_to_show):
+        assert self._get_explainer().mode == 'classification' or \
+            (self._get_explainer().mode == 'regression' and self._is_thresholded()), \
+            'Triangular plot is only available for classification or thresholded regression' 
+        marker_size = 50
+        plt.figure()
+        x = np.arange(0, 1, 0.01)
+        plt.plot((x / (1 + x)), x, color='black')
+        plt.plot(x, ((1 - x) / x), color='black')
+        x = np.arange(0.5, 1, 0.005)
+        plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
+        x = np.arange(0, 0.5, 0.005)
+        plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
+
+        plt.quiver([proba]*num_to_show, [uncertainty]*num_to_show, 
+                    rule_proba[:num_to_show] - proba, 
+                    rule_uncertainty[:num_to_show] - uncertainty, 
+                    angles='xy', scale_units='xy', scale=1, color='lightgrey',
+                    width=0.005, headwidth=3, headlength=3)
+        plt.scatter(rule_proba, rule_uncertainty, label='Explanations', marker='.', s=marker_size)
+        plt.scatter(proba, uncertainty, color='red', label='Original Prediction', marker='.', s=marker_size)
+        plt.xlabel('Probability')
+        plt.ylabel('Uncertainty')
+        plt.title('Explanation of Counterfactual Explanations')
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
+
+        # # Add mplcursors to enable hover text
+        # cursor = mplcursors.cursor(hover=True)
+
+        # # Define the hover text
+        # @cursor.connect("add")
+        # def on_add(sel):
+        #     sel.annotation.set_text(f'Mean: {mean[sel.index]:.2f}\nDiff: {diff[sel.index]:.2f}')
+
+        # Add legend
+        plt.legend()
+        plt.show()
 
 
     # pylint: disable=dangerous-default-value, too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements, unused-argument
