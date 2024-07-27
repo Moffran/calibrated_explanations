@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from calibrated_explanations import CalibratedExplainer, utils
+from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations.utils import helper
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
 
@@ -19,7 +20,7 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
     df = pd.read_csv(fileName, sep=';')
     X, y = df.iloc[:, :-1].values, df.iloc[:, -1].values
 
-    utils.make_directory(f"{dataSet}")
+    helper.make_directory(f"{dataSet}")
 
     if min(y) == 1:
         y = y - 1
