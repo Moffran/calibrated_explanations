@@ -32,7 +32,19 @@ jobs:
           pip install calibrated-explanations
           pip install pytest pytest-cov pylint xgboost shap setuptools
 
+      - name: Download lint outcome artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: lint-outcome
+          path: .
+
+      - name: Read lint outcome
+        id: read_lint_outcome
+        run: echo "lint_outcome=$(cat lint_outcome.txt)" >> $GITHUB_ENV
+
       - name: Run tests with coverage
+        if: ${{ env.lint_outcome == 'success' && !startsWith(github.event.head_commit.message, 'style:') }}
+        id: run_tests
         run: pytest --cov=src/calibrated_explanations
 
       - name: Upload coverage reports to Codecov      
