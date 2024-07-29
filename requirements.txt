@@ -1,6 +1,5 @@
 crepes >= 0.7.0, < 0.8
 ipython
-scipy
 scikit-learn
 matplotlib >= 3.4
 numpy >= 1.20, < 2.1

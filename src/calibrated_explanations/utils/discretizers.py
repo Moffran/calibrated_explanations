@@ -4,7 +4,6 @@
 The discretizers are defined using the same super class as the discretizers from the LIME package.
 """
 from abc import ABCMeta, abstractmethod
-import scipy
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import check_random_state
@@ -21,8 +20,7 @@ class BaseDiscretizer():
     __metaclass__ = ABCMeta  # abstract class
 
     # pylint: disable=too-many-locals
-    def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None,
-                data_stats=None):
+    def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initializer
         Args:
             data: numpy 2d array
@@ -40,7 +38,6 @@ class BaseDiscretizer():
         """
         self.to_discretize = ([x for x in range(data.shape[1])
                                 if x not in categorical_features])
-        self.data_stats = data_stats
         self.names = {}
         self.lambdas = {}
         self.means = {}
@@ -52,13 +49,6 @@ class BaseDiscretizer():
         # To override when implementing a custom binning
         bins = self.bins(data, labels)
         bins = [np.unique(x) for x in bins]
-
-        # Read the stats from data_stats if exists
-        if data_stats:
-            self.means = self.data_stats.get("means")
-            self.stds = self.data_stats.get("stds")
-            self.mins = self.data_stats.get("mins")
-            self.maxs = self.data_stats.get("maxs")
 
         for feature, qts in zip(self.to_discretize, bins):
             n_bins = qts.shape[0]  # Actually number of borders (= #bins-1)
@@ -72,10 +62,6 @@ class BaseDiscretizer():
 
             self.lambdas[feature] = lambda x, qts=qts: np.searchsorted(qts, x)
             discretized = self.lambdas[feature](data[:, feature])
-
-            # If data stats are provided no need to compute the below set of details
-            if data_stats:
-                continue
 
             self.means[feature] = []
             self.stds[feature] = []
@@ -111,51 +97,6 @@ class BaseDiscretizer():
                 ret[feature] = int(value(ret[feature]))
             else:
                 ret[:, feature] = value(ret[:, feature]).astype(int)
-        return ret
-
-    def get_undiscretize_values(self, feature, values):
-        """Returns the original values of a discretized feature
-        
-        Args:
-            feature: int, the feature to undiscritize
-            values: numpy array, the discretized values
-        """
-        mins = np.array(self.mins[feature])[values]
-        maxs = np.array(self.maxs[feature])[values]
-
-        means = np.array(self.means[feature])[values]
-        stds = np.array(self.stds[feature])[values]
-        minz = (mins - means) / stds
-        maxz = (maxs - means) / stds
-        min_max_unequal = minz != maxz
-
-        ret = minz
-        ret[np.where(min_max_unequal)] = scipy.stats.truncnorm.rvs(
-            minz[min_max_unequal],
-            maxz[min_max_unequal],
-            loc=means[min_max_unequal],
-            scale=stds[min_max_unequal],
-            random_state=self.random_state
-        )
-        return ret
-
-    def undiscretize(self, data):
-        """
-        Undiscretizes the data.
-        
-        Args:
-            data: numpy 2d or 1d array
-        """
-        ret = data.copy()
-        for feature in self.means:
-            if len(data.shape) == 1:
-                ret[feature] = self.get_undiscretize_values(
-                    feature, ret[feature].astype(int).reshape(-1, 1)
-                )
-            else:
-                ret[:, feature] = self.get_undiscretize_values(
-                    feature, ret[:, feature].astype(int)
-                )
         return ret
 
 

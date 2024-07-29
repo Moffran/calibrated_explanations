@@ -1,7 +1,6 @@
 crepes >= 0.7.0
 ipython
 scikit-learn
-scipy
 matplotlib >= 3.4
 myst_parser
 nbsphinx
