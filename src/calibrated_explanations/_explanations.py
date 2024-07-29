@@ -39,6 +39,12 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         self.current_index += 1
         return result
 
+    def __len__(self):
+        return len(self.test_objects[:,0])
+
+    def __getitem__(self, index):
+        return self.get_explanation(index)
+
 
     def _is_thresholded(self) -> bool:
         # """test if the explanation is thresholded
@@ -63,7 +69,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     def get_confidence(self) -> float:
-        """get the confidence of the explanation
+        """get the user assigned confidence of the explanation
         
         Returns: 
             returns the difference between the low and high percentiles
@@ -1744,7 +1750,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                                     features_to_plot, num_to_show=num_to_show_, \
                                     column_names=column_names, title=title, path=path, show=show, save_ext=save_ext, interactive=interactive)
 
-
+    # pylint: disable=duplicate-code
     def __plot_triangular(self, proba, uncertainty, rule_proba, rule_uncertainty, num_to_show):
         assert self._get_explainer().mode == 'classification' or \
             (self._get_explainer().mode == 'regression' and self._is_thresholded()), \
