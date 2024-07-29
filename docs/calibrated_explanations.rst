@@ -3,20 +3,20 @@ The calibrated-explanations package
 
 .. module:: calibrated_explanations
 
-.. autoclass:: CalibratedExplainer
-   :members: 
+.. autoclass:: calibrated_explanations.CalibratedExplainer
+   :members:
 
-.. autoclass:: WrapCalibratedExplainer
-   :members: 
-      
-.. autoclass:: CalibratedExplanations
-   :members: 
-      
-.. autoclass:: CalibratedExplanation
-   :members: 
+.. autoclass:: calibrated_explanations.WrapCalibratedExplainer
+   :members:
 
-.. autoclass:: FactualExplanation
-   :members: 
+.. autoclass:: calibrated_explanations.CalibratedExplanations
+   :members:
 
-.. autoclass:: CounterfactualExplanation
-   :members: 
+.. autoclass:: calibrated_explanations.CalibratedExplanation
+   :members:
+
+.. autoclass:: calibrated_explanations.FactualExplanation
+   :members:
+
+.. autoclass:: calibrated_explanations.CounterfactualExplanation
+   :members:

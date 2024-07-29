@@ -1,11 +1,11 @@
 """Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
 
 The calibrated explanations are based on the paper 
-"Calibrated Explanations for Black-Box Predictions" 
+"Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
 by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 
 Calibrated explanations are a way to explain the predictions of a black-box model 
-using Venn-Abers predictors (classification) or 
+using Venn-Abers predictors (classification & regression) or 
 conformal predictive systems (regression).
 """
 # pylint: disable=invalid-name, line-too-long, too-many-lines
@@ -898,7 +898,19 @@ class CalibratedExplainer:
 
 
 class WrapCalibratedExplainer():
-    """A wrapper class for the CalibratedExplainer. It allows to fit, calibrate, and explain the model.
+    """Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
+
+    The calibrated explanations are based on the paper 
+    "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
+    by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
+
+    Calibrated explanations are a way to explain the predictions of a black-box model 
+    using Venn-Abers predictors (classification & regression) or 
+    conformal predictive systems (regression).
+
+    WrapCalibratedExplainer is a wrapper class for the CalibratedExplainer. It allows to fit, calibrate, and explain the model.
+    Compared to the CalibratedExplainer, it allow access to the predict and predict_proba methods of
+    the calibrated explainer, making it easy to get the same output as shown in the explanations.
     """
     def __init__(self, learner):
         # Check if the learner is a CalibratedExplainer
