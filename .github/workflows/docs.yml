@@ -1,0 +1,41 @@
+name: Build and Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    if: ${{startsWith(github.event.head_commit.message, 'docs:') && startsWith(github.event.head_commit.message, 'Docs:')}}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r docs/requirements-docs.txt
+        pip install sphinx sphinx-autobuild
+
+    - name: Build documentation
+      run: |
+        cd docs
+        sphinx-build -b html . _build/html
+
+    - name: Upload documentation artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: docs-html
+        path: docs/_build/html
