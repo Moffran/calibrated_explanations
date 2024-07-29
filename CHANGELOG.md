@@ -3,7 +3,15 @@
 ## [Unreleased]
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...main)
 ### Features
+- Added __len__ and __getitem__ to `CalibratedExplanations`.
+- Restructured package by adding a utils folder:
+  - Moved discretizers.py to utils
+  - Moved utils.py to utils and renamed to helper.py 
+- Added plot_global to `WrapCalibratedExplainer`.
+- Added additional plotting options to the `CounterfactualExplanation` class, accessible through an additional `style` parameter.
 ### Fixes
+- Improved tests to test `predict` and `predict_proba` functions in `WrapCalibratedExplainer` better.
+- Fixed the `predict` and `predict_proba` functions in `WrapCalibratedExplainer`.  
 
 ## [v0.3.5](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.5) - 2024-07-24
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.4...v0.3.5)
