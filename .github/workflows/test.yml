@@ -3,6 +3,8 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Skip CI if commit message starts with 'info:'
+    if: "!startsWith(github.event.head_commit.message, 'info:') && !startsWith(github.event.head_commit.message, 'Info:') && !startsWith(github.event.head_commit.message, 'docs:') && !startsWith(github.event.head_commit.message, 'Docs:')" 
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
