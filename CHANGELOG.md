@@ -10,6 +10,7 @@
 - Added plot_global to `WrapCalibratedExplainer`.
 - Added additional plotting options to the `CounterfactualExplanation` class, accessible through an additional `style` parameter.
 - Updated CI to run pytest before pylint.
+- Updated CI to skip pytest if previous lint failed and commit message starts with 'style:' (since then only the lint needs to be rerun).
 - Updated CI to avoid running tests when commit message starts with 'info:' or 'docs:'.
 ### Fixes
 - Improved tests to test `predict` and `predict_proba` functions in `WrapCalibratedExplainer` better.
