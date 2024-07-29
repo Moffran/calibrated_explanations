@@ -9,6 +9,8 @@
   - Moved utils.py to utils and renamed to helper.py 
 - Added plot_global to `WrapCalibratedExplainer`.
 - Added additional plotting options to the `CounterfactualExplanation` class, accessible through an additional `style` parameter.
+- Updated CI to run pytest before pylint.
+- Updated CI to avoid running tests when commit message starts with 'info:' or 'docs:'.
 ### Fixes
 - Improved tests to test `predict` and `predict_proba` functions in `WrapCalibratedExplainer` better.
 - Fixed the `predict` and `predict_proba` functions in `WrapCalibratedExplainer`.  
