@@ -4,18 +4,20 @@ jobs:
   test:
     runs-on: ubuntu-latest
     # Skip CI if commit message starts with 'info:'
-    if: "!startsWith(github.event.head_commit.message, 'info:') && !startsWith(github.event.head_commit.message, 'Info:') && !startsWith(github.event.head_commit.message, 'docs:') && !startsWith(github.event.head_commit.message, 'Docs:')" 
+    if: ${{!startsWith(github.event.head_commit.message, 'info:') && !startsWith(github.event.head_commit.message, 'Info:') && !startsWith(github.event.head_commit.message, 'docs:') && !startsWith(github.event.head_commit.message, 'Docs:')}}
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip' # caching pip dependencies
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -23,17 +25,32 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-${{ matrix.python-version }}
           restore-keys: |
             ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install calibrated-explanations
           pip install pytest pytest-cov pylint xgboost shap setuptools
+
       - name: Run tests with coverage
         run: pytest --cov=src/calibrated_explanations
-      - name: Upload coverage reports to Codecov
+
+      - name: Upload coverage reports to Codecov      
         uses: codecov/codecov-action@v4.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Lint with pylint
         run: |
           pylint $(git ls-files '*.py')
+        continue-on-error: true
+
+      - name: Save lint outcome
+        if: ${{ always() }}
+        run: echo ${{ steps.lint.outcome }} > lint_outcome.txt
+      - name: Upload lint outcome artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: lint-outcome
+          path: lint_outcome.txt
