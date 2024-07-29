@@ -159,7 +159,8 @@ def provide_numerical_perturbation_to_datasets(X_Cal, list_of_df, list_of_pertur
     """
     # Assuming you have a DataFrame named X_Cal
     # Loop through each column and its data type in X_Cal
-    assert noise_type in ['uniform', 'gaussian'], "Noise type must be either 'uniform' or 'gaussian'."
+    assert noise_type in ['uniform', 'gaussian'], \
+        "Noise type must be either 'uniform' or 'gaussian'."
 
     for column_name, dtype in X_Cal.dtypes.items():
 
@@ -175,10 +176,12 @@ def provide_numerical_perturbation_to_datasets(X_Cal, list_of_df, list_of_pertur
                     # Apply numerical counterfactual perturbation to the selected column -- uniform
                     perturbed_x_cal = numerical_counterfactual_perturbation_uniform(
                                                             copy_x_cal, column_name, severity)
-                if noise_type == 'gaussian':
+                elif noise_type == 'gaussian':
                     # Apply numerical counterfactual perturbation to the selected column -- gaussian
                     perturbed_x_cal = numerical_counterfactual_perturbation_gaussian(
                                                             copy_x_cal, column_name, severity)
+                else:
+                    perturbed_x_cal = None # Should not reach here
 
                 # Store the perturbed dataset in a list
                 list_of_df.append(perturbed_x_cal)
