@@ -48,6 +48,8 @@ def get_regression_model(model_name, trainX, trainY):
 
 
 class TestCalibratedExplainer_regression(unittest.TestCase):
+    def assertBetween(self, value, low, high):
+        self.assertTrue(low <= value <= high, f"Expected {low} <= {value} <= {high}")
 
     # pylint: disable=unused-variable
     def test_wrap_regression_ce(self):
@@ -63,11 +65,14 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
         cal_exp.fit(trainX, trainY)
         self.assertTrue(cal_exp.fitted)
+        self.assertFalse(cal_exp.calibrated)
         print(cal_exp)
-        testY_hat = cal_exp.predict(testX)
-        testY_hat, (low, high) = cal_exp.predict(testX, uq_interval=True)
-        self.assertEqual(low, 0)
-        self.assertEqual(high, 0)
+        testY_hat1 = cal_exp.predict(testX)
+        testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True)
+        for i in range(len(testY_hat2)):
+            self.assertEqual(testY_hat1[i], testY_hat2[i])
+            self.assertEqual(low[i], testY_hat2[i])
+            self.assertEqual(high[i], testY_hat2[i])
         # An uncalibrated regression model does not support predict thresholded labels as no conformal predictive system is available
         with pytest.raises(ValueError):
             testY_hat = cal_exp.predict(testX, threshold=testY)
@@ -90,43 +95,78 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             explanation = cal_exp.explain_factual(testX)
         with pytest.raises(RuntimeError):
             explanation = cal_exp.explain_counterfactual(testX)
+        with pytest.raises(RuntimeError):
+            explanation = cal_exp.explain_factual(testX, threshold=testY)
+        with pytest.raises(RuntimeError):
+            explanation = cal_exp.explain_counterfactual(testX, threshold=testY)
 
         # calibrate initialize the conformal predictive system
         # Note that the difficulty estimation works in the same way as when using CalibratedExplainer
         # No additional testing of difficulty estimation is deemed necessary
         cal_exp.calibrate(calX, calY, feature_names=feature_names, categorical_labels=categorical_labels)
+        self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
         print(cal_exp)
         # predict calibrated regression output using the conformal predictive system
-        testY_hat = cal_exp.predict(testX)
+        testY_hat1 = cal_exp.predict(testX)
         # predict calibrated regression output using the conformal predictive system, with uncertainty quantification
-        testY_hat, (low, high) = cal_exp.predict(testX, uq_interval=True)
+        testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True)
+        for i in range(len(testY_hat2)):
+            self.assertEqual(testY_hat1[i], testY_hat2[i])
+            self.assertBetween(testY_hat2[i], low[i], high[i])
         # predict thresholded labels using the conformal predictive system
-        testY_hat = cal_exp.predict(testX, threshold=testY)
+        testY_hat1 = cal_exp.predict(testX, threshold=testY)
         # predict thresholded labels using the conformal predictive system, with uncertainty quantification
-        testY_hat, (low, high) = cal_exp.predict(testX, uq_interval=True, threshold=testY)
+        testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True, threshold=testY)
+        for i in range(len(testY_hat2)):
+            self.assertEqual(testY_hat1[i], testY_hat2[i])
+            # testY_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
+            # self.assertBetween(testY_hat2[i], low[i], high[i])
         explanation = cal_exp.explain_factual(testX)
         explanation = cal_exp.explain_counterfactual(testX)
+        explanation = cal_exp.explain_factual(testX, threshold=testY)
+        explanation = cal_exp.explain_counterfactual(testX, threshold=testY)
 
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
             cal_exp.predict_proba(testX)
-        testY_hat = cal_exp.predict_proba(testX, threshold=testY)
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
             cal_exp.predict_proba(testX, uq_interval=True)
-        testY_hat, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY)
+        testY_hat1 = cal_exp.predict_proba(testX, threshold=testY[0])
+        testY_hat2, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY[0])
+        for i in range(len(testY_hat2)):
+            # Due to that random_state can not be set to guarantee identical results in 
+            # ConformalPredictiveSystem, the probabilities will differ slightly. This is a known issue.
+            # for j in range(len(testY_hat2[i])):
+            #     self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
+            self.assertBetween(testY_hat2[i,1], low[i], high[i])
+        testY_hat1 = cal_exp.predict_proba(testX, threshold=testY)
+        testY_hat2, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY)
+        for i in range(len(testY_hat2)):
+            # Due to that random_state can not be set to guarantee identical results in 
+            # ConformalPredictiveSystem, the probabilities will differ slightly. This is a known issue.
+            # for j in range(len(testY_hat2[i])):
+            #     self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
+            self.assertBetween(testY_hat2[i,1], low[i], high[i])
 
         cal_exp.fit(trainX, trainY)
         self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
 
+        learner = cal_exp.learner
         explainer = cal_exp.explainer
+
+        new_exp = WrapCalibratedExplainer(learner)
+        self.assertTrue(new_exp.fitted)
+        self.assertFalse(new_exp.calibrated)
+        self.assertEqual(new_exp.learner, learner)
 
         new_exp = WrapCalibratedExplainer(explainer)
         self.assertTrue(new_exp.fitted)
         self.assertTrue(new_exp.calibrated)
         self.assertEqual(new_exp.explainer, explainer)
+        self.assertEqual(new_exp.learner, learner)
 
 
 if __name__ == '__main__':

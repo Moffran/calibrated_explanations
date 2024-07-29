@@ -119,6 +119,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             pytest.fail(f"factual_explanation.plot_all() raised unexpected exception: {e}")
         with pytest.raises(Warning):
             factual_explanation.plot_all(uncertainty=True)
+        with pytest.raises(AssertionError):
+            semi = factual_explanation.get_semi_explanations()
+        with pytest.raises(AssertionError):
+            counter = factual_explanation.get_counter_explanations()
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
@@ -143,6 +147,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             counterfactual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
+        semi = counterfactual_explanation.get_semi_explanations()
+        self.assertExplanation(semi)
+        counter = counterfactual_explanation.get_counter_explanations()
+        self.assertExplanation(counter)
 
 
     def test_probabilistic_regression_ce(self):
@@ -183,6 +191,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             factual_explanation.plot_all(uncertainty=True)
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot_all(uncertainty=True) raised unexpected exception: {e}")
+        with pytest.raises(AssertionError):
+            semi = factual_explanation.get_semi_explanations()
+        with pytest.raises(AssertionError):
+            counter = factual_explanation.get_counter_explanations()
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX, testY)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
@@ -199,6 +211,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             counterfactual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
+        semi = counterfactual_explanation.get_semi_explanations()
+        self.assertExplanation(semi)
+        counter = counterfactual_explanation.get_counter_explanations()
+        self.assertExplanation(counter)
 
 
     # NOTE: this takes takes about 70s to run

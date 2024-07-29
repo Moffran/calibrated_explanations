@@ -130,6 +130,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             factual_explanation.plot_all(uncertainty=True)
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot_all(uncertainty=True) raised unexpected exception: {e}")
+        with pytest.raises(AssertionError):
+            semi = factual_explanation.get_semi_explanations()
+        with pytest.raises(AssertionError):
+            counter = factual_explanation.get_counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
@@ -142,6 +146,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             counterfactual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
+        semi = counterfactual_explanation.get_semi_explanations()
+        self.assertExplanation(semi)
+        counter = counterfactual_explanation.get_counter_explanations()
+        self.assertExplanation(counter)
         counterfactual_explanation.add_conjunctions(max_rule_size=3)
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
@@ -173,6 +181,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             factual_explanation.plot_all(uncertainty=True)
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot_all(uncertainty=True) raised unexpected exception: {e}")
+        with pytest.raises(AssertionError):
+            semi = factual_explanation.get_semi_explanations()
+        with pytest.raises(AssertionError):
+            counter = factual_explanation.get_counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(testX)
@@ -185,6 +197,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             counterfactual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
+        semi = counterfactual_explanation.get_semi_explanations()
+        self.assertExplanation(semi)
+        counter = counterfactual_explanation.get_counter_explanations()
+        self.assertExplanation(counter)
         counterfactual_explanation.add_conjunctions(max_rule_size=3)
 
     # @unittest.skip('Skipping provisionally.')

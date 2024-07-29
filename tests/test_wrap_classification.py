@@ -92,46 +92,155 @@ def get_classification_model(model_name, trainX, trainY):
 
 
 class TestWrapCalibratedExplainer_classification(unittest.TestCase):
+    def assertBetween(self, value, low, high):
+        self.assertTrue(low <= value <= high, f"Expected {low} <= {value} <= {high}")
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     # pylint: disable=unused-variable
-    def test_wrap_normal_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
+    def test_wrap_binary_ce(self):
+        trainX, trainY, cal_X, calY, testX, testY, _, _, categorical_features, feature_names = load_binary_dataset()
         cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
         self.assertFalse(cal_exp.fitted)
         self.assertFalse(cal_exp.calibrated)
+        with pytest.raises(RuntimeError):
+            cal_exp.plot_global(testX)
+        with pytest.raises(RuntimeError):
+            cal_exp.plot_global(testX, testY)
         print(cal_exp)
 
         cal_exp.fit(trainX, trainY)
         self.assertTrue(cal_exp.fitted)
+        self.assertFalse(cal_exp.calibrated)
         print(cal_exp)
-        testY_hat = cal_exp.predict(testX)
-        testY_hat, (low, high) = cal_exp.predict(testX, True)
-        self.assertEqual(low, 0)
-        self.assertEqual(high, 0)
-        testY_hat = cal_exp.predict_proba(testX)
-        testY_hat, (low, high) = cal_exp.predict_proba(testX, True)
-        self.assertEqual(low, 0)
-        self.assertEqual(high, 0)
+        testY_hat1 = cal_exp.predict(testX)
+        testY_hat2, (low, high) = cal_exp.predict(testX, True)
+        for i in range(len(testY_hat2)):
+            self.assertEqual(testY_hat1[i], testY_hat2[i])
+            self.assertEqual(low[i], testY_hat2[i])
+            self.assertEqual(high[i], testY_hat2[i])
+        testY_hat1 = cal_exp.predict_proba(testX)
+        testY_hat2, (low, high) = cal_exp.predict_proba(testX, True)
+        for i in range(len(testY_hat2)):
+            for j in range(len(testY_hat2[i])):
+                self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
+            self.assertEqual(low[i], testY_hat2[i,1])
+            self.assertEqual(high[i], testY_hat2[i,1])
 
         cal_exp.calibrate(cal_X, calY, feature_names=feature_names, categorical_features=categorical_features)
+        self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
         print(cal_exp)
-        testY_hat = cal_exp.predict(testX)
-        testY_hat, (low, high) = cal_exp.predict(testX, True)
-        testY_hat = cal_exp.predict_proba(testX)
-        testY_hat, (low, high) = cal_exp.predict_proba(testX, True)
+        testY_hat1 = cal_exp.predict(testX)
+        testY_hat2, (low, high) = cal_exp.predict(testX, True)
+        for i in range(len(testY_hat2)):
+            self.assertEqual(testY_hat1[i], testY_hat2[i])
+            # self.assertBetween(testY_hat2[i], low[i], high[i])
+        testY_hat1 = cal_exp.predict_proba(testX)
+        testY_hat2, (low, high) = cal_exp.predict_proba(testX, True)
+        for i in range(len(testY_hat2)):
+            for j in range(len(testY_hat2[i])):
+                self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
+            self.assertBetween(testY_hat2[i,1], low[i], high[i])
 
         cal_exp.fit(trainX, trainY)
         self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
 
+        learner = cal_exp.learner
         explainer = cal_exp.explainer
+
+        new_exp = WrapCalibratedExplainer(learner)
+        self.assertTrue(new_exp.fitted)
+        self.assertFalse(new_exp.calibrated)
+        self.assertEqual(new_exp.learner, learner)
 
         new_exp = WrapCalibratedExplainer(explainer)
         self.assertTrue(new_exp.fitted)
         self.assertTrue(new_exp.calibrated)
         self.assertEqual(new_exp.explainer, explainer)
+        self.assertEqual(new_exp.learner, learner)
+
+        try:
+            cal_exp.plot_global(testX)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"cal_exp.plot_global(testX) raised unexpected exception: {e}")
+        try:
+            cal_exp.plot_global(testX, testY)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"cal_exp.plot_global(testX, testY) raised unexpected exception: {e}")
+
+    # @unittest.skip('Test passes locally.  Skipping provisionally.')
+    # pylint: disable=unused-variable
+    def test_wrap_multiclass_ce(self):
+        trainX, trainY, cal_X, calY, testX, testY, _, _, categorical_features, _, _, feature_names = load_multiclass_dataset()
+        cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+        self.assertFalse(cal_exp.fitted)
+        self.assertFalse(cal_exp.calibrated)
+        with pytest.raises(RuntimeError):
+            cal_exp.plot_global(testX)
+        with pytest.raises(RuntimeError):
+            cal_exp.plot_global(testX, testY)
+        print(cal_exp)
+
+        cal_exp.fit(trainX, trainY)
+        self.assertTrue(cal_exp.fitted)
+        self.assertFalse(cal_exp.calibrated)
+        print(cal_exp)
+        testY_hat1 = cal_exp.predict(testX)
+        testY_hat2, (low, high) = cal_exp.predict(testX, True)
+        for i in range(len(testY_hat2)):
+            self.assertEqual(testY_hat1[i], testY_hat2[i])
+            self.assertEqual(low[i], testY_hat2[i])
+            self.assertEqual(high[i], testY_hat2[i])
+        testY_hat1 = cal_exp.predict_proba(testX)
+        testY_hat2, (low, high) = cal_exp.predict_proba(testX, True)
+        for i in range(len(testY_hat2)):
+            for j in range(len(testY_hat2[i])):
+                self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
+                self.assertBetween(testY_hat2[i][j], low[i][j], high[i][j])
+
+        cal_exp.calibrate(cal_X, calY, feature_names=feature_names, categorical_features=categorical_features)
+        self.assertTrue(cal_exp.fitted)
+        self.assertTrue(cal_exp.calibrated)
+        print(cal_exp)
+        testY_hat1 = cal_exp.predict(testX)
+        testY_hat2, (low, high) = cal_exp.predict(testX, True)
+        for i in range(len(testY_hat2)):
+            self.assertEqual(testY_hat1[i], testY_hat2[i])
+            # self.assertBetween(testY_hat2[i], low[i], high[i])
+        testY_hat1 = cal_exp.predict_proba(testX)
+        testY_hat2, (low, high) = cal_exp.predict_proba(testX, True)
+        for i in range(len(testY_hat2)):
+            for j in range(len(testY_hat2[i])):
+                self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
+                self.assertBetween(testY_hat2[i][j], low[i][j], high[i][j])
+
+        cal_exp.fit(trainX, trainY)
+        self.assertTrue(cal_exp.fitted)
+        self.assertTrue(cal_exp.calibrated)
+
+        learner = cal_exp.learner
+        explainer = cal_exp.explainer
+
+        new_exp = WrapCalibratedExplainer(learner)
+        self.assertTrue(new_exp.fitted)
+        self.assertFalse(new_exp.calibrated)
+        self.assertEqual(new_exp.learner, learner)
+
+        new_exp = WrapCalibratedExplainer(explainer)
+        self.assertTrue(new_exp.fitted)
+        self.assertTrue(new_exp.calibrated)
+        self.assertEqual(new_exp.explainer, explainer)
+        self.assertEqual(new_exp.learner, learner)
+
+        try:
+            cal_exp.plot_global(testX)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"cal_exp.plot_global(testX) raised unexpected exception: {e}")
+        try:
+            cal_exp.plot_global(testX, testY)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"cal_exp.plot_global(testX, testY) raised unexpected exception: {e}")
 
 
 if __name__ == '__main__':
