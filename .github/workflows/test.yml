@@ -30,7 +30,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install calibrated-explanations
-          pip install pytest pytest-cov pylint xgboost shap setuptools
+          pip install pytest pytest-cov pylint xgboost lime shap setuptools
 
       # - name: Download lint outcome artifact
       #   uses: actions/download-artifact@v3
