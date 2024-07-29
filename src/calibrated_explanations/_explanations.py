@@ -1727,7 +1727,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                                                 width=width,
                                                 num_to_show=num_to_show_)
         
-        if kwargs['style'] == 'triangular':
+        if 'style' in kwargs and kwargs['style'] == 'triangular':
             proba = predict['predict']
             uncertainty = np.abs(predict['high'] - predict['low'])
             rule_proba = counterfactual['predict']
@@ -1771,14 +1771,6 @@ class CounterfactualExplanation(CalibratedExplanation):
         plt.title('Explanation of Counterfactual Explanations')
         plt.xlim(0, 1)
         plt.ylim(0, 1)
-
-        # # Add mplcursors to enable hover text
-        # cursor = mplcursors.cursor(hover=True)
-
-        # # Define the hover text
-        # @cursor.connect("add")
-        # def on_add(sel):
-        #     sel.annotation.set_text(f'Mean: {mean[sel.index]:.2f}\nDiff: {diff[sel.index]:.2f}')
 
         # Add legend
         plt.legend()

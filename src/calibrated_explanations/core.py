@@ -14,6 +14,7 @@ import copy
 import warnings
 from time import time
 import numpy as np
+import matplotlib.pyplot as plt
 
 from lime.lime_tabular import LimeTabularExplainer
 
@@ -1145,7 +1146,8 @@ class WrapCalibratedExplainer():
                 raise ValueError("A thresholded prediction is not possible for uncalibrated models.")
             warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
             if uq_interval:
-                return self.learner.predict(X_test), (0, 0)
+                predict = self.learner.predict(X_test)
+                return predict, (predict, predict)
             return self.learner.predict(X_test)
         if self.explainer.mode in 'regression':
             predict, low, high, _ = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
@@ -1161,7 +1163,9 @@ class WrapCalibratedExplainer():
             if uq_interval:
                 return predict, (low, high)
             return predict
-        _, low, high, new_classes = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
+        predict, low, high, new_classes = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
+        if new_classes is None:
+            new_classes = predict
         if uq_interval:
             return new_classes, (low, high)
         return new_classes
@@ -1202,13 +1206,13 @@ class WrapCalibratedExplainer():
         
         Examples
         --------
-        For a prediction without prediction intervals:
+        For a prediction without uncertainty quantification intervals:
         >>> predict_proba(X_test)
 
         For a prediction with uncertainty quantification intervals:
         >>> predict_proba(X_test, uq_interval=True)
 
-        Note: The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
+        Note: The `threshold` parameter is only used for regression tasks.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting probabilities.")
@@ -1220,12 +1224,99 @@ class WrapCalibratedExplainer():
         if not self.calibrated:
             warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
             if uq_interval:
-                return self.learner.predict_proba(X_test), (0, 0)
+                proba = self.learner.predict_proba(X_test)
+                if proba.shape[1] > 2:
+                    return proba, (proba, proba)
+                return proba, (proba[:,1], proba[:,1])
             return self.learner.predict_proba(X_test)
-        predict, low, high, _ = self.explainer._predict(X_test, threshold=threshold) # pylint: disable=protected-access
-        proba = np.zeros((predict.shape[0],2))
-        proba[:,1] = predict
-        proba[:,0] = 1 - predict
+        if self.explainer.mode in 'regression':
+            proba_1, low, high, _ = self.explainer.interval_model.predict_probability(X_test, y_threshold=threshold)
+            proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
+            if uq_interval:
+                return proba, (low, high)
+            return proba
+        if self.explainer._is_multiclass(): # pylint: disable=protected-access
+            proba, low, high, _ = self.explainer.interval_model.predict_proba(X_test, output_interval=True)
+            if uq_interval:
+                return proba, (low, high)
+            return proba
+        proba, low, high = self.explainer.interval_model.predict_proba(X_test, output_interval=True)
         if uq_interval:
             return proba, (low, high)
         return proba
+
+    def plot_global(self, X_test, y_test=None, threshold=None):
+        """
+        Generates a global explanation plot for the given test data. This plot is based on the probability distribution and the uncertainty quantification intervals.
+        The plot is only available for calibrated probabilistic models (both classification and thresholded regression).
+        
+        Parameters
+        ----------
+        X_test : array-like
+            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
+        y_test : array-like, optional
+            The true labels of the test data. 
+        threshold : float, int, optional
+            The threshold value used with regression to get probability of being below the threshold. Only applicable to regression.
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted before plotting.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before plotting.")
+        # Testing that the threshold is assigned a value for regression is done in the predict_proba method
+        proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold)
+        uncertainty = np.array(high - low)
+
+        marker_size = 50
+        plt.figure()
+        x = np.arange(0, 1, 0.01)
+        plt.plot((x / (1 + x)), x, color='black')
+        plt.plot(x, ((1 - x) / x), color='black')
+        x = np.arange(0.5, 1, 0.005)
+        plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
+        x = np.arange(0, 0.5, 0.005)
+        plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
+
+        if y_test is not None:
+            if 'predict_proba' not in dir(self.learner):
+                assert np.isscalar(threshold), "The threshold parameter must be a single constant value for all instances when used in plot_global."
+                y_test = np.array([0 if y_test[i] >= threshold else 1 for i in range(len(y_test))])
+                labels = [f'Y >= {threshold}', f'Y < {threshold}']
+            else:
+                labels = [f'Y = {i}' for i in np.unique(y_test)]
+            marker_size = 25
+            if len(labels) == 2:
+                colors = ['blue', 'red']
+                markers = ['o', 'x']
+                proba = proba[:,1]
+            else:
+                colormap = plt.cm.get_cmap('tab10', len(labels))
+                colors = [colormap(i) for i in range(len(labels))]
+                markers = ['o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H','o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H'][:len(labels)]
+                proba = proba[np.arange(len(proba)), y_test]
+                uncertainty = uncertainty[np.arange(len(uncertainty)), y_test]
+            for i, c in enumerate(np.unique(y_test)):
+                plt.scatter(proba[y_test == c], uncertainty[y_test == c], color=colors[i], label=labels[i], marker=markers[i], s=marker_size)
+            plt.legend()
+        else:
+            if self.explainer._is_multiclass(): # pylint: disable=protected-access
+                predicted = np.argmax(proba, axis=1)
+                proba = proba[np.arange(len(proba)), predicted]
+                uncertainty = uncertainty[np.arange(len(uncertainty)), predicted]
+            else:                
+                proba = proba[:,1]
+            plt.scatter(proba, uncertainty, label='Predictions', marker='.', s=marker_size)
+        if 'predict_proba' not in dir(self.learner):
+            plt.xlabel(f'Probability of Y < {threshold}')
+        else:
+            if self.explainer._is_multiclass(): # pylint: disable=protected-access
+                if y_test is not None:
+                    plt.xlabel('Probability of Y = actual class')
+                else:
+                    plt.xlabel('Probability of Y = predicted class')
+            else:
+                plt.xlabel('Probability of Y = 1')
+        plt.ylabel('Uncertainty')
+        plt.xlim(0, 1)
+        plt.ylim(0, 1)
+        plt.show()

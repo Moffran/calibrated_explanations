@@ -86,7 +86,7 @@ class IntervalRegressor:
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
             p, low, high = self.split['va'].predict_proba(test_X[i, :].reshape(1, -1), output_interval=True, bins=bins)
-            proba[i] = p[:,1]
+            proba[i] = p[0,1]
             interval[i, :] = np.array([low[0], high[0]])
         return proba, interval[:, 0], interval[:, 1], None
 
