@@ -525,7 +525,7 @@ The dependencies are:
 
 * [crepes](https://github.com/henrikbostrom/crepes)
 * [venn-abers](https://github.com/ip200/venn-abers)
-* [lime](https://github.com/marcotcr/lime)
+* [scikit-learn](https://github.com/scikit-learn/scikit-learn)
 * [matplotlib](https://matplotlib.org/)
 * [NumPy](https://numpy.org/)
   
@@ -576,6 +576,8 @@ This research is funded by the Swedish Knowledge Foundation together with indust
 We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` classes from [Henrik Boström](https://github.com/henrikbostrom)s [crepes](https://github.com/henrikbostrom/crepes) package to provide support for regression.
 
 We have used the `VennAbers` class from [Ivan Petej](https://github.com/ip200)s [venn-abers](https://github.com/ip200/venn-abers) package to provide support for probabilistic explanations (both classification and probabilistic regression). 
+
+We are using Decision Trees from `scikit-learn` in the discretizers.
 
 We have copied code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Discretizer` class.
 
