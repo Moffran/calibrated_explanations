@@ -146,6 +146,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             counterfactual_explanation.plot_all()
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
+        try:
+            counterfactual_explanation.plot_all(style='triangular')
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
         semi = counterfactual_explanation.get_semi_explanations()
         self.assertExplanation(semi)
         counter = counterfactual_explanation.get_counter_explanations()
@@ -195,6 +199,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         counterfactual_explanation.remove_conjunctions()
         try:
             counterfactual_explanation.plot_all()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
+        try:
+            counterfactual_explanation.plot_all(style='triangular')
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot_all() raised unexpected exception: {e}")
         semi = counterfactual_explanation.get_semi_explanations()
