@@ -1,6 +1,6 @@
 """Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
 
-The calibrated explanations are based on the paper 
+The calibrated explanations explanation method is based on the paper 
 "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
 by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 
@@ -900,7 +900,7 @@ class CalibratedExplainer:
 class WrapCalibratedExplainer():
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
 
-    The calibrated explanations are based on the paper 
+    The calibrated explanations explanation method is based on the paper 
     "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
     by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 

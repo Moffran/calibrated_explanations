@@ -1,5 +1,5 @@
 The calibrated-explanations package
-==================
+===================================
 
 .. module:: calibrated_explanations
 
