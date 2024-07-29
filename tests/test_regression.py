@@ -59,7 +59,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
                 assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
         for explanation in exp:
             assert safe_isinstance(explanation, ['calibrated_explanations.FactualExplanation',
-                                                 'calibrated_explanations.CounterfactualExplanation'])
+                                                'calibrated_explanations.CounterfactualExplanation'])
         return True
 
     def test_failure_regression(self):

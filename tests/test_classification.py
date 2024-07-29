@@ -209,18 +209,24 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         self.assertExplanation(semi)
         counter = counterfactual_explanation.get_counter_explanations()
         self.assertExplanation(counter)
-        counterfactual_explanation.add_conjunctions(max_rule_size=3)
+        counterfactual_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
+        semi = counterfactual_explanation.get_semi_explanations(only_ensured=True)
+        self.assertExplanation(semi)
+        counter = counterfactual_explanation.get_counter_explanations(only_ensured=True)
+        self.assertExplanation(counter)
 
     # @unittest.skip('Skipping provisionally.')
     def test_binary_conditional_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        target_labels = ['No', 'Yes']
         cal_exp = CalibratedExplainer(
             model,
             cal_X,
             calY,
             feature_names=feature_names,
             categorical_features=categorical_features,
+            class_labels=target_labels,
             mode='classification',
             bins=cal_X[:,0]
         )
@@ -250,7 +256,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_conditional_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
+        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
@@ -259,7 +265,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             feature_names=feature_names,
             # categorical_features=categorical_features,
             categorical_labels=categorical_labels,
-            class_labels=target_labels,
+            # class_labels=target_labels,
             mode='classification',
             bins=cal_X[:,0]
         )
