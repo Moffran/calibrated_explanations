@@ -96,7 +96,7 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         self.assertTrue(low <= value <= high, f"Expected {low} <= {value} <= {high}")
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
-    # pylint: disable=unused-variable
+    # pylint: disable=unused-variable, unsubscriptable-object
     def test_wrap_binary_ce(self):
         trainX, trainY, cal_X, calY, testX, testY, _, _, categorical_features, feature_names = load_binary_dataset()
         cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
@@ -114,13 +114,13 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         print(cal_exp)
         testY_hat1 = cal_exp.predict(testX)
         testY_hat2, (low, high) = cal_exp.predict(testX, True)
-        for i in range(len(testY_hat2)):
+        for i, _ in enumerate(testY_hat2):
             self.assertEqual(testY_hat1[i], testY_hat2[i])
             self.assertEqual(low[i], testY_hat2[i])
             self.assertEqual(high[i], testY_hat2[i])
         testY_hat1 = cal_exp.predict_proba(testX)
         testY_hat2, (low, high) = cal_exp.predict_proba(testX, True)
-        for i in range(len(testY_hat2)):
+        for i, _ in enumerate(testY_hat2):
             for j in range(len(testY_hat2[i])):
                 self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
             self.assertEqual(low[i], testY_hat2[i,1])
@@ -132,12 +132,12 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         print(cal_exp)
         testY_hat1 = cal_exp.predict(testX)
         testY_hat2, (low, high) = cal_exp.predict(testX, True)
-        for i in range(len(testY_hat2)):
+        for i, _ in enumerate(testY_hat2):
             self.assertEqual(testY_hat1[i], testY_hat2[i])
             # self.assertBetween(testY_hat2[i], low[i], high[i])
         testY_hat1 = cal_exp.predict_proba(testX)
         testY_hat2, (low, high) = cal_exp.predict_proba(testX, True)
-        for i in range(len(testY_hat2)):
+        for i, _ in enumerate(testY_hat2):
             for j in range(len(testY_hat2[i])):
                 self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
             self.assertBetween(testY_hat2[i,1], low[i], high[i])
@@ -170,7 +170,7 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
             pytest.fail(f"cal_exp.plot_global(testX, testY) raised unexpected exception: {e}")
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
-    # pylint: disable=unused-variable
+    # pylint: disable=unused-variable, unsubscriptable-object
     def test_wrap_multiclass_ce(self):
         trainX, trainY, cal_X, calY, testX, testY, _, _, categorical_features, _, _, feature_names = load_multiclass_dataset()
         cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
@@ -188,13 +188,13 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         print(cal_exp)
         testY_hat1 = cal_exp.predict(testX)
         testY_hat2, (low, high) = cal_exp.predict(testX, True)
-        for i in range(len(testY_hat2)):
+        for i, _ in enumerate(testY_hat2):
             self.assertEqual(testY_hat1[i], testY_hat2[i])
             self.assertEqual(low[i], testY_hat2[i])
             self.assertEqual(high[i], testY_hat2[i])
         testY_hat1 = cal_exp.predict_proba(testX)
         testY_hat2, (low, high) = cal_exp.predict_proba(testX, True)
-        for i in range(len(testY_hat2)):
+        for i, _ in enumerate(testY_hat2):
             for j in range(len(testY_hat2[i])):
                 self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
                 self.assertBetween(testY_hat2[i][j], low[i][j], high[i][j])
@@ -205,12 +205,12 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         print(cal_exp)
         testY_hat1 = cal_exp.predict(testX)
         testY_hat2, (low, high) = cal_exp.predict(testX, True)
-        for i in range(len(testY_hat2)):
+        for i, _ in enumerate(testY_hat2):
             self.assertEqual(testY_hat1[i], testY_hat2[i])
             # self.assertBetween(testY_hat2[i], low[i], high[i])
         testY_hat1 = cal_exp.predict_proba(testX)
         testY_hat2, (low, high) = cal_exp.predict_proba(testX, True)
-        for i in range(len(testY_hat2)):
+        for i, _ in enumerate(testY_hat2):
             for j in range(len(testY_hat2[i])):
                 self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
                 self.assertBetween(testY_hat2[i][j], low[i][j], high[i][j])

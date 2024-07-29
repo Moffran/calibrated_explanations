@@ -1245,6 +1245,7 @@ class WrapCalibratedExplainer():
             return proba, (low, high)
         return proba
 
+    # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot_global(self, X_test, y_test=None, threshold=None):
         """
         Generates a global explanation plot for the given test data. This plot is based on the probability distribution and the uncertainty quantification intervals.
@@ -1303,7 +1304,7 @@ class WrapCalibratedExplainer():
                 predicted = np.argmax(proba, axis=1)
                 proba = proba[np.arange(len(proba)), predicted]
                 uncertainty = uncertainty[np.arange(len(uncertainty)), predicted]
-            else:                
+            else:
                 proba = proba[:,1]
             plt.scatter(proba, uncertainty, label='Predictions', marker='.', s=marker_size)
         if 'predict_proba' not in dir(self.learner):
