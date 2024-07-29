@@ -11,6 +11,7 @@ doc/
 evaluation/secret/
 prof/
 debug/
+src/debug/
 
 calibrated-explanations/
 evaluation/results_mondrian.pkl
