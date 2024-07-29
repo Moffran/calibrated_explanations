@@ -69,10 +69,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         print(cal_exp)
         testY_hat1 = cal_exp.predict(testX)
         testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True)
-        for i, _ in enumerate(testY_hat2):
-            self.assertEqual(testY_hat1[i], testY_hat2[i])
-            self.assertEqual(low[i], testY_hat2[i])
-            self.assertEqual(high[i], testY_hat2[i])
+        for i, y_hat in enumerate(testY_hat2):
+            self.assertEqual(testY_hat1[i], y_hat)
+            self.assertEqual(low[i], y_hat)
+            self.assertEqual(high[i], y_hat)
         # An uncalibrated regression model does not support predict thresholded labels as no conformal predictive system is available
         with pytest.raises(ValueError):
             testY_hat = cal_exp.predict(testX, threshold=testY)
@@ -111,17 +111,17 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         testY_hat1 = cal_exp.predict(testX)
         # predict calibrated regression output using the conformal predictive system, with uncertainty quantification
         testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True)
-        for i, _ in enumerate(testY_hat2):
-            self.assertEqual(testY_hat1[i], testY_hat2[i])
-            self.assertBetween(testY_hat2[i], low[i], high[i])
+        for i, y_hat in enumerate(testY_hat2):
+            self.assertEqual(testY_hat1[i], y_hat)
+            self.assertBetween(y_hat, low[i], high[i])
         # predict thresholded labels using the conformal predictive system
         testY_hat1 = cal_exp.predict(testX, threshold=testY)
         # predict thresholded labels using the conformal predictive system, with uncertainty quantification
         testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True, threshold=testY)
-        for i, _ in enumerate(testY_hat2):
-            self.assertEqual(testY_hat1[i], testY_hat2[i])
+        for i, y_hat in enumerate(testY_hat2):
+            self.assertEqual(testY_hat1[i], y_hat)
             # testY_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
-            # self.assertBetween(testY_hat2[i], low[i], high[i])
+            # self.assertBetween(y_hat, low[i], high[i])
         explanation = cal_exp.explain_factual(testX)
         explanation = cal_exp.explain_counterfactual(testX)
         explanation = cal_exp.explain_factual(testX, threshold=testY)
@@ -135,19 +135,19 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             cal_exp.predict_proba(testX, uq_interval=True)
         testY_hat1 = cal_exp.predict_proba(testX, threshold=testY[0])
         testY_hat2, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY[0])
-        for i, _ in enumerate(testY_hat2):
+        for i, y_hat in enumerate(testY_hat2):
             # Due to that random_state can not be set to guarantee identical results in
             # ConformalPredictiveSystem, the probabilities will differ slightly. This is a known issue.
-            # for j in range(len(testY_hat2[i])):
-            #     self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
+            # for j in range(len(y_hat)):
+            #     self.assertEqual(testY_hat1[i][j], y_hat[j])
             self.assertBetween(testY_hat2[i,1], low[i], high[i])
         testY_hat1 = cal_exp.predict_proba(testX, threshold=testY)
         testY_hat2, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY)
-        for i, _ in enumerate(testY_hat2):
+        for i, y_hat in enumerate(testY_hat2):
             # Due to that random_state can not be set to guarantee identical results in
             # ConformalPredictiveSystem, the probabilities will differ slightly. This is a known issue.
-            # for j in range(len(testY_hat2[i])):
-            #     self.assertEqual(testY_hat1[i][j], testY_hat2[i][j])
+            # for j in range(len(y_hat)):
+            #     self.assertEqual(testY_hat1[i][j], y_hat[j])
             self.assertBetween(testY_hat2[i,1], low[i], high[i])
 
         cal_exp.fit(trainX, trainY)
