@@ -12,6 +12,8 @@ The paper that originated the idea of `calibrated-explanations` is:
 
 - [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18. [Code and results](https://github.com/tuvelofstrom/calibrating-explanations).
 
+## Bibtex Entries
+
 Bibtex entry for the original paper:
 
 ```bibtex
@@ -28,6 +30,7 @@ Bibtex entry for the original paper:
 	abstract = 	{While local explanations for AI models can offer insights into individual predictions, such as feature importance, they are plagued by issues like instability. The unreliability of feature weights, often skewed due to poorly calibrated ML models, deepens these challenges. Moreover, the critical aspect of feature importance uncertainty remains mostly unaddressed in Explainable AI (XAI). The novel feature importance explanation method presented in this paper, called Calibrated Explanations (CE), is designed to tackle these issues head-on. Built on the foundation of Venn-Abers, CE not only calibrates the underlying model but also delivers reliable feature importance explanations with an exact definition of the feature weights. CE goes beyond conventional solutions by addressing output uncertainty. It accomplishes this by providing uncertainty quantification for both feature weights and the model’s probability estimates. Additionally, CE is model-agnostic, featuring easily comprehensible conditional rules and the ability to generate counterfactual explanations with embedded uncertainty quantification. Results from an evaluation with 25 benchmark datasets underscore the efficacy of CE, making it stand as a fast, reliable, stable, and robust solution.}
 }
 ```
+
 Bibtex entry for the regression paper:
 
 ```bibtex
@@ -44,11 +47,8 @@ Bibtex for the conditional paper:
 
 ```bibtex
 @InProceedings{lofstrom2024ce_conditional,
-	author="L{\"o}fstr{\"o}m, Helena
-	and L{\"o}fstr{\"o}m, Tuwe",
-	editor="Longo, Luca
-	and Lapuschkin, Sebastian
-	and Seifert, Christin",
+	author="L{\"o}fstr{\"o}m, Helena and L{\"o}fstr{\"o}m, Tuwe",
+	editor="Longo, Luca and Lapuschkin, Sebastian and Seifert, Christin",
 	title="Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty",
 	booktitle="Explainable Artificial Intelligence",
 	year="2024",

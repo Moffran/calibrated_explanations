@@ -563,77 +563,7 @@ The paper that originated the idea of `calibrated-explanations` is:
 
 - [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18. [Code and results](https://github.com/tuvelofstrom/calibrating-explanations).
 
-If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the papers above.
-
-Bibtex entry for the original paper:
-
-```bibtex
-@article{lofstrom2024ce_classification,
-	title = 	{Calibrated explanations: With uncertainty information and counterfactuals},
-	journal = 	{Expert Systems with Applications},
-	pages = 	{123154},
-	year = 		{2024},
-	issn = 		{0957-4174},
-	doi = 		{https://doi.org/10.1016/j.eswa.2024.123154},
-	url = 		{https://www.sciencedirect.com/science/article/pii/S0957417424000198},
-	author = 	{Helena Löfström and Tuwe Löfström and Ulf Johansson and Cecilia Sönströd},
-	keywords = 	{Explainable AI, Feature importance, Calibrated explanations, Venn-Abers, Uncertainty quantification, Counterfactual explanations},
-	abstract = 	{While local explanations for AI models can offer insights into individual predictions, such as feature importance, they are plagued by issues like instability. The unreliability of feature weights, often skewed due to poorly calibrated ML models, deepens these challenges. Moreover, the critical aspect of feature importance uncertainty remains mostly unaddressed in Explainable AI (XAI). The novel feature importance explanation method presented in this paper, called Calibrated Explanations (CE), is designed to tackle these issues head-on. Built on the foundation of Venn-Abers, CE not only calibrates the underlying model but also delivers reliable feature importance explanations with an exact definition of the feature weights. CE goes beyond conventional solutions by addressing output uncertainty. It accomplishes this by providing uncertainty quantification for both feature weights and the model’s probability estimates. Additionally, CE is model-agnostic, featuring easily comprehensible conditional rules and the ability to generate counterfactual explanations with embedded uncertainty quantification. Results from an evaluation with 25 benchmark datasets underscore the efficacy of CE, making it stand as a fast, reliable, stable, and robust solution.}
-}
-```
-Bibtex entry for the regression paper:
-
-```bibtex
-@misc{lofstrom2023ce_regression,
-  title = 	      	{Calibrated Explanations for Regression},
-  author =          {L\"ofstr\"om, Tuwe and L\"ofstr\"om, Helena and Johansson, Ulf and S\"onstr\"od, Cecilia and Matela, Rudy},
-  year =            {2023},
-  eprint =          {2308.16245},
-  archivePrefix =   {arXiv},
-  primaryClass =    {cs.LG}
-}
-```
-Bibtex for the conditional paper:
-
-```bibtex
-@InProceedings{lofstrom2024ce_conditional,
-	author="L{\"o}fstr{\"o}m, Helena and L{\"o}fstr{\"o}m, Tuwe",
-	editor="Longo, Luca and Lapuschkin, Sebastian and Seifert, Christin",
-	title="Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty",
-	booktitle="Explainable Artificial Intelligence",
-	year="2024",
-	publisher="Springer Nature Switzerland",
-	address="Cham",
-	pages="332--355",
-	abstract="While Artificial Intelligence and Machine Learning models are becoming increasingly prevalent, it is essential to remember that they are not infallible or inherently objective. These models depend on the data they are trained on and the inherent bias of the chosen machine learning algorithm. Therefore, selecting and sampling data for training is crucial for a fair outcome of the model. A model predicting, e.g., whether an applicant should be taken further in the job application process, could create heavily biased predictions against women if the data used to train the model mostly contained information about men. The well-known concept of conditional categories used in Conformal Prediction can be utilised to address this type of bias in the data. The Conformal Prediction framework includes uncertainty quantification methods for classification and regression. To help meet the challenges of data sets with potential bias, conditional categories were incorporated into an existing explanation method called Calibrated Explanations, relying on conformal methods. This approach allows users to try out different settings while simultaneously having the possibility to study how the uncertainty in the predictions is affected on an individual level. Furthermore, this paper evaluated how the uncertainty changed when using conditional categories based on attributes containing potential bias. It showed that the uncertainty significantly increased, revealing that fairness came with a cost of increased uncertainty.",
-	isbn="978-3-031-63787-2"
-}
-``` 
-
-Bibtex for the multi-class paper:
-
-```bibtex
-@Booklet{lofstrom2024ce_multiclass,
-	author = {Tuwe Löfström and Helena Löfström and Ulf Johansson},
-	title = {Calibrated Explanations for Multi-Class},
-	howpublished = {EasyChair Preprint no. 14106},
-	year = {EasyChair, 2024}
-}
-```
-
-To cite this software, use the following bibtex entry:
-
-```bibtex
-@software{lofstrom2024ce_repository,
-	author = 	{Löfström, Helena and Löfström, Tuwe and Johansson, Ulf and Sönströd, Cecilia and Matela, Rudy},
-	license = 	{BSD-3-Clause},
-	title = 	{Calibrated Explanations},
-	url = 		{https://github.com/Moffran/calibrated_explanations},
-	version = 	{v0.3.5},
-	month = 	July,
-	year = 		{2024}
-}
-```
+If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the papers above. Bibtex entries can be found in [citing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md#bibtex-entries).
   
 [Top](#calibrated-explanations-documentation)
 
@@ -647,7 +577,7 @@ We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` clas
 
 We have used the `VennAbers` class from [Ivan Petej](https://github.com/ip200)s [venn-abers](https://github.com/ip200/venn-abers) package to provide support for probabilistic explanations (both classification and probabilistic regression). 
 
-We have used code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Discretizer` class.
+We have copied code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Discretizer` class.
 
 The `check_is_fitted` and `safe_instance` functions in `calibrated_explanations.utils` are copied from `sklearn` and `shap`.  
   
@@ -655,7 +585,5 @@ The `check_is_fitted` and `safe_instance` functions in `calibrated_explanations.
 
 [build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
 [build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
-<!-- [lint-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/pylint.yml -->
-<!-- [lint-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/pylint.yml/badge.svg -->
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations
