@@ -3,6 +3,7 @@
 """
 # pylint: disable=invalid-name, line-too-long
 # flake8: noqa: E501
+import warnings
 import numpy as np
 import venn_abers as va
 
@@ -87,6 +88,7 @@ class VennAbers:
                 low (n_test_samples,): lower bounds of the VennABERS interval for each test sample
                 high (n_test_samples,): upper bounds of the VennABERS interval for each test sample
         """
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
         if 'bins' in self.model.predict_proba.__code__.co_varnames:
             tprobs = self.model.predict_proba(test_X, bins=bins)
         else:
@@ -131,6 +133,7 @@ class VennAbers:
         va_proba[:,0] = 1-tmp
         va_proba[:,1] = tmp
         # binary
+        warnings.filterwarnings("default", category=RuntimeWarning)
         if output_interval:
             return np.asarray(va_proba), low, high
         return np.asarray(va_proba)
