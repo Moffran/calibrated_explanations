@@ -6,6 +6,7 @@ import os
 import sys
 from inspect import isclass
 import numpy as np
+from pandas.api.types import is_categorical_dtype
 
 def make_directory(path: str, save_ext=None) -> None: # pylint: disable=unused-private-member
     """ create directory if it does not exist
@@ -174,6 +175,30 @@ def is_notebook():
 def transform_to_numeric(df, target, categorical_features=None, mappings=None):
     '''
     Transform the categorical features to numeric
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The dataframe to transform
+    target : str
+        The target column name
+    categorical_features : list, optional
+        The list of categorical features, by default None
+    mappings : dict, optional
+        The mapping created by previous calls to this function, by default None
+    
+    Returns
+    -------
+    pd.DataFrame
+        The transformed dataframe
+    Categorical features
+        A list of the indexes to categorical features
+    Categorical labels
+        A dictionary with a list of categorical labels (value) for each categorical feature (key)
+    Target labels
+        A dictionary with target label-index pairs
+    Mappings
+        A dictionary with the mapping of each categorical feature and the target
     '''
     if categorical_features is None:
         categorical_features = []
@@ -183,7 +208,7 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
     categorical_labels = {}
     target_labels = None
     for c, col in enumerate(df.columns):
-        if df[col].dtype in (object, str):
+        if is_categorical_dtype(df[col]) or df[col].dtype in (object, str):
             df[col] = df[col].str.replace("'", "")
             df[col] = df[col].str.replace('"', '')
             uniques = []
