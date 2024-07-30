@@ -4,6 +4,7 @@
 """
 import os
 import warnings
+import math
 from copy import deepcopy
 from abc import ABC, abstractmethod
 from time import time
@@ -329,7 +330,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         
         Returns
         -------
-        semi-explanations : CalibratedExplanations
+        counter-explanations : CalibratedExplanations
             A new `CalibratedExplanations` object containing `CounterfactualExplanation` objects only containing counter-factual 
             or counter-potential explanations. 
         '''
@@ -339,6 +340,22 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             explanation.get_counter_explanations(only_ensured=only_ensured)
         return counter_explanations
 
+    def get_ensured_explanations(self):
+        '''
+        The function `get_ensured_explanations` returns a copy of this `CalibratedExplanations` object with only ensured explanations.
+        Ensured explanations are individual rules that have a smaller confidence interval. 
+        
+        Returns
+        -------
+        ensured-explanations : CalibratedExplanations
+            A new `CalibratedExplanations` object containing `CounterfactualExplanation` objects only containing ensured 
+            explanations. 
+        '''
+        assert self._is_counterfactual(), 'Ensured explanations are only available for counterfactual explanations'
+        ensured_explanations = deepcopy(self)
+        for explanation in ensured_explanations.explanations:
+            explanation.get_ensured_explanations()
+        return ensured_explanations
 
     # pylint: disable=protected-access
     def as_lime(self, num_features_to_show=None):
@@ -1428,7 +1445,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         '''
         return self.__is_counter_explanation
 
-    def __filter_rules(self, only_ensured=False, make_semi=True):
+    def __filter_rules(self, only_ensured=False, make_semi=False, make_counter=False):
         '''
         This is a support function to semi and counter explanations. It filters out rules that are not
         relevant to the explanation. 
@@ -1470,7 +1487,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                     # filter positive rules that cannot be negative              
                     if rules['predict_low'][rule] > 0.5:
                         continue
-            else: # make counter-explanation
+            if make_counter: # make counter-explanation
                 if positive_class:
                     # filter positive rules that cannot be negative              
                     if rules['predict_low'][rule] > 0.5:
@@ -1553,8 +1570,21 @@ class CounterfactualExplanation(CalibratedExplanation):
         self : CounterfactualExplanation
             Returns self filtered to only contain counter-factual or counter-potential explanations. 
         '''
-        self.__filter_rules(only_ensured=only_ensured, make_semi=False)
+        self.__filter_rules(only_ensured=only_ensured, make_counter=True)
         self.__is_counter_explanation = True
+        return self
+
+    def get_ensured_explanations(self):
+        '''
+        This function returns the ensured explanations from this counterfactual explanation. 
+        Ensured explanations are individual rules that have a smaller confidence interval. 
+        
+        Returns
+        -------
+        self : CounterfactualExplanation
+            Returns self filtered to only contain ensured explanations. 
+        '''
+        self.__filter_rules(only_ensured=True)
         return self
 
     # pylint: disable=too-many-locals
@@ -1752,18 +1782,33 @@ class CounterfactualExplanation(CalibratedExplanation):
 
     # pylint: disable=duplicate-code
     def __plot_triangular(self, proba, uncertainty, rule_proba, rule_uncertainty, num_to_show):
-        assert self._get_explainer().mode == 'classification' or \
-            (self._get_explainer().mode == 'regression' and self._is_thresholded()), \
-            'Triangular plot is only available for classification or thresholded regression' 
+        # assert self._get_explainer().mode == 'classification' or \
+        #     (self._get_explainer().mode == 'regression' and self._is_thresholded()), \
+        #     'Triangular plot is only available for classification or thresholded regression' 
         marker_size = 50
+        min_x, min_y = 0,0
+        max_x, max_y = 1,1
+        is_probabilistic = True
         plt.figure()
-        x = np.arange(0, 1, 0.01)
-        plt.plot((x / (1 + x)), x, color='black')
-        plt.plot(x, ((1 - x) / x), color='black')
-        x = np.arange(0.5, 1, 0.005)
-        plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
-        x = np.arange(0, 0.5, 0.005)
-        plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
+        if self._get_explainer().mode == 'classification' or \
+            (self._get_explainer().mode == 'regression' and self._is_thresholded()):
+            x = np.arange(0, 1, 0.01)
+            plt.plot((x / (1 + x)), x, color='black')
+            plt.plot(x, ((1 - x) / x), color='black')
+            x = np.arange(0.5, 1, 0.005)
+            plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
+            x = np.arange(0, 0.5, 0.005)
+            plt.plot((x + 0.5 - x)/(1 + x), x, color='black')            
+        else:
+            min_x = np.min(self._get_explainer().cal_y) # pylint: disable=protected-access
+            max_x = np.max(self._get_explainer().cal_y) # pylint: disable=protected-access
+            min_y = min(np.min(rule_uncertainty), np.min(uncertainty))
+            max_y = max(np.max(rule_uncertainty), np.max(uncertainty))
+            if math.isclose(min_x, max_x, rel_tol=1e-9):
+                warnings.warn("All uncertainties are (almost) identical.", Warning)
+            min_y = min_y - 0.1 * (max_y - min_y)
+            max_y = max_y + 0.1 * (max_y - min_y)
+            is_probabilistic = False
 
         plt.quiver([proba]*num_to_show, [uncertainty]*num_to_show, 
                     rule_proba[:num_to_show] - proba, 
@@ -1772,11 +1817,14 @@ class CounterfactualExplanation(CalibratedExplanation):
                     width=0.005, headwidth=3, headlength=3)
         plt.scatter(rule_proba, rule_uncertainty, label='Explanations', marker='.', s=marker_size)
         plt.scatter(proba, uncertainty, color='red', label='Original Prediction', marker='.', s=marker_size)
-        plt.xlabel('Probability')
+        if is_probabilistic:
+            plt.xlabel('Probability')
+        else:
+            plt.xlabel('Prediction')
         plt.ylabel('Uncertainty')
         plt.title('Explanation of Counterfactual Explanations')
-        plt.xlim(0, 1)
-        plt.ylim(0, 1)
+        plt.xlim(min_x, max_x)
+        plt.ylim(min_y, max_y)
 
         # Add legend
         plt.legend()
