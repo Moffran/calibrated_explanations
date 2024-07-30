@@ -492,6 +492,10 @@ class CalibratedExplanation(ABC):
         return self.y_threshold is not None
 
     @abstractmethod
+    def __repr__(self):
+        pass
+
+    @abstractmethod
     def plot_explanation(self, n_features_to_show=None, **kwargs):
         '''The function `plot_explanation` plots either counterfactual or factual explanations for a given
         instance, with the option to show or save the plots.
@@ -725,6 +729,18 @@ class FactualExplanation(CalibratedExplanation):
         super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
+
+    def __repr__(self):
+        factual = self._get_rules()
+        output = []
+        output.append("Calibrated prediction with uncertainty interval:")
+        output.append(f"{factual['base_predict'][0]:5.3f} [{factual['base_predict_low'][0]:5.3f}, {factual['base_predict_high'][0]:5.3f}]")
+
+        output.append("\nInstance value and factual feature rules, each composed of a factual condition and a feature weight with an uncertainty interval:")
+        for f, rule in enumerate(factual['rule']):
+            output.append(f"{factual['value'][f]:6}: {rule:40s} {factual['weight'][f]:>6.3f} [{factual['weight_low'][f]:>6.3f}, {factual['weight_high'][f]:>6.3f}]")
+
+        return "\n".join(output) + "\n"
 
     # Function under consideration
     # def _get_slider_values(self, index, rule_name):
@@ -1053,14 +1069,14 @@ class FactualExplanation(CalibratedExplanation):
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
         else:
             if self._get_explainer().class_labels is not None:
-                if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_negative.set_yticklabels(labels=[f'P(y!={self._get_explainer().class_labels[self.prediction["classes"]]})']) # pylint: disable=line-too-long
                     ax_positive.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[self.prediction["classes"]]})']) # pylint: disable=line-too-long
                 else:
                     ax_negative.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[0]})']) # pylint: disable=line-too-long
                     ax_positive.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[1]})']) # pylint: disable=line-too-long
             else: 
-                if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_negative.set_yticklabels(labels=[f'P(y!={self.prediction["classes"]})'])
                     ax_positive.set_yticklabels(labels=[f'P(y={self.prediction["classes"]})'])
                 else:
@@ -1272,6 +1288,18 @@ class CounterfactualExplanation(CalibratedExplanation):
         self._get_rules()
         self.__is_semi_explanation = False
         self.__is_counter_explanation = False
+
+    def __repr__(self):
+        counterfactual = self._get_rules()
+        output = []
+        output.append("Calibrated prediction with uncertainty interval:")
+        output.append(f"{counterfactual['base_predict'][0]:5.3f} [{counterfactual['base_predict_low'][0]:5.3f}, {counterfactual['base_predict_high'][0]:5.3f}]")
+
+        output.append("\nInstance value and counterfactual rules, each composed of a counterfactual condition and a prediction with an uncertainty interval:")
+        for f, rule in enumerate(counterfactual['rule']):
+            output.append(f"{counterfactual['value'][f]:6}: {rule:40s} {counterfactual['predict'][f]:>6.3f} [{counterfactual['predict_low'][f]:>6.3f}, {counterfactual['predict_high'][f]:>6.3f}]")
+
+        return "\n".join(output) + "\n"
 
     # Function under consideration
     # def _get_slider_values(self, index, rule_name):
@@ -1934,14 +1962,14 @@ class CounterfactualExplanation(CalibratedExplanation):
                        np.max(self._get_explainer().cal_y)])
         else:
             if self._get_explainer().class_labels is not None:
-                if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_main.set_xlabel('Probability for class '+\
                                 f'\'{self._get_explainer().class_labels[self.prediction["classes"]]}\'') # pylint: disable=line-too-long
                 else:
                     ax_main.set_xlabel('Probability for class '+\
                                 f'\'{self._get_explainer().class_labels[1]}\'')
             else:
-                if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_main.set_xlabel(f'Probability for class \'{self.prediction["classes"]}\'')
                 else:
                     ax_main.set_xlabel('Probability for the positive class')
