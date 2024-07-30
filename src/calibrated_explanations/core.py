@@ -27,6 +27,7 @@ from ._interval_regressor import IntervalRegressor
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                 RegressorDiscretizer, BinaryRegressorDiscretizer
 from .utils.helper import safe_isinstance, safe_import, check_is_fitted
+from .utils.perturbation import perturb_dataset
 
 __version__ = 'v0.3.5'
 
@@ -60,6 +61,7 @@ class CalibratedExplainer:
                 sample_percentiles = [25, 50, 75],
                 random_state = 42,
                 verbose = False,
+                perturb = False,
                 ) -> None:
         # pylint: disable=line-too-long
         '''Constructor for the CalibratedExplainer object for explaining the predictions of a
@@ -133,9 +135,7 @@ class CalibratedExplainer:
         self.verbose = verbose
         self.bins = bins
 
-        self.set_difficulty_estimator(difficulty_estimator, initialize=False)
-        self.__set_mode(str.lower(mode), initialize=False)
-        self.__initialize_interval_model()
+        self.__perturb = perturb
 
         self.categorical_labels = categorical_labels
         self.class_labels = class_labels
@@ -163,6 +163,10 @@ class CalibratedExplainer:
         self.lime_exp = None
         self.shap = None
         self.shap_exp = None
+
+        self.set_difficulty_estimator(difficulty_estimator, initialize=False)
+        self.__set_mode(str.lower(mode), initialize=False)
+        self.__initialize_interval_model()
 
         self.init_time = time() - init_time
 
@@ -209,13 +213,14 @@ class CalibratedExplainer:
         return disp_str
 
 
-    # pylint: disable=invalid-name
+    # pylint: disable=invalid-name, too-many-return-statements
     def _predict(self,
                 test_X,
                 threshold = None, # The same meaning as threshold has for cps in crepes.
                 low_high_percentiles = (5, 95),
                 classes = None,
                 bins = None,
+                feature = None,
                 ):
         # """
         # Predicts the target variable for the test data.
@@ -255,9 +260,17 @@ class CalibratedExplainer:
         #     Mondrian categories
         # """
         assert self.__initialized, "The model must be initialized before calling predict."
+        if feature is None and self.is_perturbed():
+            feature = self.num_features # Use the calibrator defined using cal_X
         if self.mode == 'classification':
-            if self._is_multiclass():
-                predict, low, high, new_classes = self.interval_model.predict_proba(test_X,
+            if self.is_multiclass():
+                if self.is_perturbed():
+                    predict, low, high, new_classes = self.interval_model[feature].predict_proba(test_X,
+                                                                                    output_interval=True,
+                                                                                    classes=classes,
+                                                                                    bins=bins)
+                else:
+                    predict, low, high, new_classes = self.interval_model.predict_proba(test_X,
                                                                                     output_interval=True,
                                                                                     classes=classes,
                                                                                     bins=bins)
@@ -267,7 +280,10 @@ class CalibratedExplainer:
                     classes = [classes]
                 return [predict[i,c] for i,c in enumerate(classes)], low, high, None
 
-            predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True, bins=bins)
+            if self.is_perturbed():
+                predict, low, high = self.interval_model[feature].predict_proba(test_X, output_interval=True, bins=bins)
+            else:
+                predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True, bins=bins)
             return predict[:,1], low, high, None
         if 'regression' in self.mode:
             # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
@@ -284,12 +300,16 @@ class CalibratedExplainer:
                 low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
                 high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
+                if self.is_perturbed():
+                    return self.interval_model[feature].predict_uncertainty(test_X, low_high_percentiles, bins=bins)
                 return self.interval_model.predict_uncertainty(test_X, low_high_percentiles, bins=bins)
 
             # regression with threshold condition
             if not np.isscalar(threshold) and len(threshold) != len(test_X):
                 raise ValueError("The length of the threshold parameter must be either a scalar or \
                     the same as the number of instances in testX.")
+            if self.is_perturbed():
+                return self.interval_model[feature].predict_probability(test_X, threshold, bins=bins)
             # pylint: disable=unexpected-keyword-arg
             return self.interval_model.predict_probability(test_X, threshold, bins=bins)
 
@@ -426,7 +446,7 @@ class CalibratedExplainer:
             prediction['predict'].append(predict[0])
             prediction['low'].append(low[0])
             prediction['high'].append(high[0])
-            if self._is_multiclass():
+            if self.is_multiclass():
                 prediction['classes'].append(predicted_class[0])
             else:
                 prediction['classes'].append(1)
@@ -574,22 +594,125 @@ class CalibratedExplainer:
         return explanation
 
 
+    def explain_perturbed(self,
+                                test_X,
+                                threshold = None,
+                                low_high_percentiles = (5, 95),
+                                bins = None,
+                                ) -> CalibratedExplanations:
+        """
+        Creates a CalibratedExplanations object for the test data.
+
+        Parameters
+        ----------
+        testX : A set with n_samples of test objects to predict
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+        bins : array-like of shape (n_samples,), default=None
+            Mondrian categories
+
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The threshold-parameter is only supported for mode='regression'.
+        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
+            instances in testX.
+        RuntimeError: Perturbed explanations are only possible if the explainer is perturbed.
+
+        Returns
+        -------
+        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+            intervals. 
+        """
+        if not self.is_perturbed:
+            raise RuntimeError("Perturbed explanations are only possible if the explainer is perturbed.")
+        total_time = time()
+        instance_time = []
+        if safe_isinstance(test_X, "pandas.core.frame.DataFrame"):
+            test_X = test_X.values  # pylint: disable=invalid-name
+        if len(test_X.shape) == 1:
+            test_X = test_X.reshape(1, -1)
+        if test_X.shape[1] != self.cal_X.shape[1]:
+            raise ValueError("The number of features in the test data must be the same as in the \
+                            calibration data.")
+        if self._is_mondrian():
+            assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
+            assert len(bins) == len(test_X), "The length of the bins parameter must be the same as the number of instances in testX."
+        explanation = CalibratedExplanations(self, test_X, threshold, bins)
+
+        is_probabilistic = True # classification or when threshold is used for regression
+        if threshold is not None:
+            if not 'regression' in self.mode:
+                raise Warning("The threshold parameter is only supported for mode='regression'.")
+            if not np.isscalar(threshold) and len(threshold) != len(test_X):
+                raise ValueError("The length of the threshold parameter must be either a constant or the same \
+                                as the number of instances in testX.")
+            # explanation.low_high_percentiles = low_high_percentiles
+        elif 'regression' in self.mode:
+            explanation.low_high_percentiles = low_high_percentiles
+            is_probabilistic = False
+
+        feature_weights =  {'predict': [],'low': [],'high': [],}
+        feature_predict =  {'predict': [],'low': [],'high': [],}
+        prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
+
+        feature_time = time()
+        predict, low, high, predicted_class = self._predict(test_X, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
+        prediction['predict'] = predict
+        prediction['low'] = low
+        prediction['high'] = high
+        if self.is_multiclass():
+            prediction['classes'] = predicted_class
+        else:
+            prediction['classes'] = np.ones(test_X.shape[0])
+        for f in range(self.num_features):
+            if f in self.features_to_ignore:
+                continue
+            predict, low, high, predicted_class = self._predict(test_X, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins, feature=f)
+
+            feature_weights['predict'] = self._assign_weight(predict, prediction['predict'], is_probabilistic)
+            feature_weights['low'] = self._assign_weight(low, prediction['predict'], is_probabilistic)
+            feature_weights['high'] = self._assign_weight(high, prediction['predict'], is_probabilistic)
+
+            feature_predict['predict'] = predict
+            feature_predict['low'] = low
+            feature_predict['high'] = high
+        feature_time = time() - feature_time
+        instance_time = [feature_time / test_X.shape[0]]*test_X.shape[0]
+
+
+        explanation.finalize_perturbed(feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
+        self.latest_explanation = explanation
+        return explanation
+
 
     def _assign_weight(self, instance_predict, prediction, is_probabilistic):
         if is_probabilistic:
-            return prediction - instance_predict # probabilistic regression
-        return prediction - instance_predict # standard regression
+            return prediction - instance_predict if np.isscalar(prediction) \
+                else [prediction[i]-ip for i,ip in enumerate(instance_predict)] # probabilistic regression
+        return prediction - instance_predict  if np.isscalar(prediction) \
+            else [prediction[i]-ip for i,ip in enumerate(instance_predict)] # standard regression
 
 
 
-    def _is_multiclass(self):
-        # """test if it is a multiclass problem
+    def is_multiclass(self):
+        """test if it is a multiclass problem
 
-        # Returns:
-        #     bool: True if multiclass
-        # """
+        Returns:
+            bool: True if multiclass
+        """
         return self.num_classes > 2
 
+
+    def is_perturbed(self):
+        """test if the explainer is perturbed
+
+        Returns:
+            bool: True if perturbed
+        """
+        return self.__perturb
 
 
     def rule_boundaries(self, instance, perturbed_instance=None):
@@ -711,10 +834,32 @@ class CalibratedExplainer:
 
 
     def __initialize_interval_model(self) -> None:
-        if self.mode == 'classification':
-            self.interval_model = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model, self.bins)
-        elif 'regression' in self.mode:
-            self.interval_model = IntervalRegressor(self)
+        if self.is_perturbed():
+            self.interval_model = []
+            cal_X, cal_y, bins = self.cal_X, self.cal_y, self.bins
+            self.perturbed_cal_X, self.scaled_cal_X, self.scaled_cal_y, scale_factor = \
+                perturb_dataset(self.cal_X, self.cal_y, self.categorical_features)
+            self.bins = [self.bins]*scale_factor if self.bins is not None else None
+            for f in range(self.num_features):
+                perturbed_cal_X = self.scaled_cal_X.copy()
+                perturbed_cal_X[f] = self.perturbed_cal_X[f]
+                if self.mode == 'classification':
+                    self.interval_model.append(VennAbers(self.model.predict_proba(perturbed_cal_X), self.scaled_cal_y, self.model, self.bins))
+                elif 'regression' in self.mode:
+                    self.cal_X = perturbed_cal_X
+                    self.cal_y = self.scaled_cal_y
+                    self.interval_model.append(IntervalRegressor(self))
+
+            self.cal_X, self.cal_y, self.bins = cal_X, cal_y, bins
+            if self.mode == 'classification':
+                self.interval_model.append(VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model, self.bins))
+            elif 'regression' in self.mode:
+                self.interval_model.append(IntervalRegressor(self))
+        else:
+            if self.mode == 'classification':
+                self.interval_model = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model, self.bins)
+            elif 'regression' in self.mode:
+                self.interval_model = IntervalRegressor(self)
         self.__initialized = True
 
 
@@ -806,7 +951,7 @@ class CalibratedExplainer:
 
             self.feature_values[feature] = values
             self.feature_frequencies[feature] = (np.array(frequencies) /
-                                                 float(sum(frequencies)))
+                                                float(sum(frequencies)))
 
 
     def _is_mondrian(self):
@@ -1109,6 +1254,55 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
         return self.explainer.explain_counterfactual(X_test, **kwargs)
 
+    def explain_perturbed(self, X_test, **kwargs):
+        """
+        Generates a CalibratedExplanations object for the provided test data, provided that the CalibratedExplainer has been perturbed (using the parameter perturb=True).
+
+        Parameters
+        ----------
+        X_test : array-like
+            The test data for which predictions and explanations are to be generated. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
+
+        **kwargs : Various types, optional
+            Additional parameters to customize the explanation process. Supported parameters include:
+
+            - threshold (float, int, or array-like of shape (n_samples,), default=None): Specifies the p-value thresholds for probabilistic explanations in regression tasks. This parameter is ignored for classification tasks.
+
+            - low_high_percentiles (tuple of two floats, default=(5, 95)): Defines the lower and upper percentiles for calculating prediction intervals in regression tasks. This is used to adjust the breadth of the intervals based on the distribution of the predictions.
+
+            Additional keyword arguments can be passed to further customize the behavior of the explanation generation. These arguments are dynamically processed based on the specific requirements of the explanation task.
+
+        Raises
+        ------
+        ValueError
+            If the number of features in `X_test` does not match the number of features in the calibration data used to initialize the CalibratedExplanations object.
+
+        Warning
+            If the `threshold` parameter is provided for a task other than regression, a warning is issued indicating that this parameter is only applicable to regression tasks.
+
+        ValueError
+            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
+
+        Returns
+        -------
+        CalibratedExplanations
+            An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
+
+        Examples
+        --------
+        Generate explanations with a specific threshold for regression:
+        >>> explain_perturbed(X_test, threshold=0.05)
+
+        Generate explanations using custom percentile values for interval calculation:
+        >>> explain_perturbed(X_test, low_high_percentiles=(10, 90))
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+        return self.explainer.explain_perturbed(X_test, **kwargs)
+        
+
     # pylint: disable=too-many-return-statements
     def predict(self, X_test, uq_interval=False, **kwargs):
         """
@@ -1250,7 +1444,7 @@ class WrapCalibratedExplainer():
             if uq_interval:
                 return proba, (low, high)
             return proba
-        if self.explainer._is_multiclass(): # pylint: disable=protected-access
+        if self.explainer.is_multiclass(): # pylint: disable=protected-access
             proba, low, high, _ = self.explainer.interval_model.predict_proba(X_test, output_interval=True)
             if uq_interval:
                 return proba, (low, high)
@@ -1367,7 +1561,7 @@ class WrapCalibratedExplainer():
             if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
                 plt.scatter(predict, uncertainty, label='Predictions', marker='.', s=marker_size)
             else:
-                if self.explainer._is_multiclass(): # pylint: disable=protected-access
+                if self.explainer.is_multiclass(): # pylint: disable=protected-access
                     predicted = np.argmax(proba, axis=1)
                     proba = proba[np.arange(len(proba)), predicted]
                     uncertainty = uncertainty[np.arange(len(uncertainty)), predicted]
@@ -1383,7 +1577,7 @@ class WrapCalibratedExplainer():
             if 'predict_proba' not in dir(self.learner):
                 plt.xlabel(f'Probability of Y < {threshold}')
             else:
-                if self.explainer._is_multiclass(): # pylint: disable=protected-access
+                if self.explainer.is_multiclass(): # pylint: disable=protected-access
                     if y_test is not None:
                         plt.xlabel('Probability of Y = actual class')
                     else:

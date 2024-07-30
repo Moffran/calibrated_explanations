@@ -110,8 +110,19 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
-        
-            
+
+
+    # pylint: disable=too-many-arguments
+    def finalize_perturbed(self, feature_weights, feature_predict, prediction, instance_time=None, total_time=None) -> None:
+        """finalize the explanation by adding the binned data and the feature weights
+        """
+        for i, instance in enumerate(self.test_objects):
+            instance_bin = self.bins[i] if self.bins is not None else None
+            explanation = PerturbedExplanation(self, i, instance, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
+            explanation.explain_time = instance_time[i] if instance_time is not None else None
+            self.explanations.append(explanation)
+        self.total_explain_time = time() - total_time if total_time is not None else None
+
 
 
 
@@ -501,7 +512,7 @@ class CalibratedExplanation(ABC):
 
     @abstractmethod
     def _get_rules(self):
-        pass    
+        pass
 
     def remove_conjunctions(self):
         """removes any conjunctive rules"""
@@ -1998,3 +2009,33 @@ class CounterfactualExplanation(CalibratedExplanation):
         color = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
         # Return html color code in #RRGGBB format
         return '#%2x%2x%2x' % tuple(color) # pylint: disable=consider-using-f-string
+
+
+class PerturbedExplanation(CalibratedExplanation):
+    """
+    Perturbed Explanation class, representing shap-like explanations.
+    """
+    def __init__(self, calibrated_explanations, instance_index, test_object, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, instance_index, test_object, {}, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
+        self._check_preconditions()
+        self._get_rules()
+
+
+    def plot_explanation(self, n_features_to_show=None, **kwargs):
+        '''The function `plot_explanation` plots either counterfactual or factual explanations for a given
+        instance, with the option to show or save the plots.
+        '''
+        # pass
+
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
+        '''The function `add_conjunctions` adds conjunctive rules to the factual or counterfactual
+        explanations. The conjunctive rules are added to the `conjunctive_rules` attribute of the
+        `CalibratedExplanations` object.
+        '''
+        # pass
+
+    def _check_preconditions(self):
+        pass
+
+    def _get_rules(self):
+        pass    
