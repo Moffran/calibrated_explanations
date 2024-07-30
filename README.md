@@ -483,15 +483,15 @@ A `WrapCalibratedExplainer` can also be initialized with a trained model or with
 
 
 ```python
-new_classifier = WrapCalibratedExplainer(classifier.learner)
-display(new_classifier)
-new_classifier_explainer = WrapCalibratedExplainer(classifier.explainer)
-display(new_classifier_explainer)
+fitted_classifier = WrapCalibratedExplainer(classifier.learner)
+display(fitted_classifier)
+calibrated_classifier = WrapCalibratedExplainer(classifier.explainer)
+display(calibrated_classifier)
 
-new_regressor = WrapCalibratedExplainer(regressor.learner)
-display(new_regressor)
-new_regressor_explainer = WrapCalibratedExplainer(regressor.explainer)
-display(new_regressor_explainer)
+fitted_regressor = WrapCalibratedExplainer(regressor.learner)
+display(fitted_regressor)
+calibrated_regressor = WrapCalibratedExplainer(regressor.explainer)
+display(calibrated_regressor)
 ```
 
 When a calibrated explainer is re-fitted, the explainer is reinitialized.

@@ -275,3 +275,22 @@ probabilistic_counterfactual_explanations.plot_all()
 ```
 
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
+
+### Alternatives
+
+A `WrapCalibratedExplainer` can also be initialized with a trained model or with a `CalibratedExplainer` object, as is examplified below. 
+
+
+```python
+fitted_classifier = WrapCalibratedExplainer(classifier.learner)
+display(fitted_classifier)
+calibrated_classifier = WrapCalibratedExplainer(classifier.explainer)
+display(calibrated_classifier)
+
+fitted_regressor = WrapCalibratedExplainer(regressor.learner)
+display(fitted_regressor)
+calibrated_regressor = WrapCalibratedExplainer(regressor.explainer)
+display(calibrated_regressor)
+```
+
+When a calibrated explainer is re-fitted, the explainer is reinitialized.
