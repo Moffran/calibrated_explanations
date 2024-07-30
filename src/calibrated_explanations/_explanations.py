@@ -1058,14 +1058,14 @@ class FactualExplanation(CalibratedExplanation):
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
         else:
             if self._get_explainer().class_labels is not None:
-                if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_negative.set_yticklabels(labels=[f'P(y!={self._get_explainer().class_labels[self.prediction["classes"]]})']) # pylint: disable=line-too-long
                     ax_positive.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[self.prediction["classes"]]})']) # pylint: disable=line-too-long
                 else:
                     ax_negative.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[0]})']) # pylint: disable=line-too-long
                     ax_positive.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[1]})']) # pylint: disable=line-too-long
             else: 
-                if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_negative.set_yticklabels(labels=[f'P(y!={self.prediction["classes"]})'])
                     ax_positive.set_yticklabels(labels=[f'P(y={self.prediction["classes"]})'])
                 else:
@@ -1951,14 +1951,14 @@ class CounterfactualExplanation(CalibratedExplanation):
                        np.max(self._get_explainer().cal_y)])
         else:
             if self._get_explainer().class_labels is not None:
-                if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_main.set_xlabel('Probability for class '+\
                                 f'\'{self._get_explainer().class_labels[self.prediction["classes"]]}\'') # pylint: disable=line-too-long
                 else:
                     ax_main.set_xlabel('Probability for class '+\
                                 f'\'{self._get_explainer().class_labels[1]}\'')
             else:
-                if self._get_explainer()._is_multiclass(): # pylint: disable=protected-access
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_main.set_xlabel(f'Probability for class \'{self.prediction["classes"]}\'')
                 else:
                     ax_main.set_xlabel('Probability for the positive class')

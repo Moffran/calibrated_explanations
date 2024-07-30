@@ -256,7 +256,7 @@ class CalibratedExplainer:
         # """
         assert self.__initialized, "The model must be initialized before calling predict."
         if self.mode == 'classification':
-            if self._is_multiclass():
+            if self.is_multiclass():
                 predict, low, high, new_classes = self.interval_model.predict_proba(test_X,
                                                                                     output_interval=True,
                                                                                     classes=classes,
@@ -426,7 +426,7 @@ class CalibratedExplainer:
             prediction['predict'].append(predict[0])
             prediction['low'].append(low[0])
             prediction['high'].append(high[0])
-            if self._is_multiclass():
+            if self.is_multiclass():
                 prediction['classes'].append(predicted_class[0])
             else:
                 prediction['classes'].append(1)
@@ -582,12 +582,12 @@ class CalibratedExplainer:
 
 
 
-    def _is_multiclass(self):
-        # """test if it is a multiclass problem
+    def is_multiclass(self):
+        """test if it is a multiclass problem
 
-        # Returns:
-        #     bool: True if multiclass
-        # """
+        Returns:
+            bool: True if multiclass
+        """
         return self.num_classes > 2
 
 
@@ -1250,7 +1250,7 @@ class WrapCalibratedExplainer():
             if uq_interval:
                 return proba, (low, high)
             return proba
-        if self.explainer._is_multiclass(): # pylint: disable=protected-access
+        if self.explainer.is_multiclass(): # pylint: disable=protected-access
             proba, low, high, _ = self.explainer.interval_model.predict_proba(X_test, output_interval=True)
             if uq_interval:
                 return proba, (low, high)
@@ -1367,7 +1367,7 @@ class WrapCalibratedExplainer():
             if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
                 plt.scatter(predict, uncertainty, label='Predictions', marker='.', s=marker_size)
             else:
-                if self.explainer._is_multiclass(): # pylint: disable=protected-access
+                if self.explainer.is_multiclass(): # pylint: disable=protected-access
                     predicted = np.argmax(proba, axis=1)
                     proba = proba[np.arange(len(proba)), predicted]
                     uncertainty = uncertainty[np.arange(len(uncertainty)), predicted]
@@ -1383,7 +1383,7 @@ class WrapCalibratedExplainer():
             if 'predict_proba' not in dir(self.learner):
                 plt.xlabel(f'Probability of Y < {threshold}')
             else:
-                if self.explainer._is_multiclass(): # pylint: disable=protected-access
+                if self.explainer.is_multiclass(): # pylint: disable=protected-access
                     if y_test is not None:
                         plt.xlabel('Probability of Y = actual class')
                     else:
