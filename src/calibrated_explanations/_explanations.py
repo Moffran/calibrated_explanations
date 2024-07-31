@@ -43,8 +43,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     def __len__(self):
         return len(self.test_objects[:,0])
 
-    def __getitem__(self, index):
-        return self.get_explanation(index)
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            # Handle single item access
+            return self.explanations[key]
+        if isinstance(key, slice):
+            # Handle slicing
+            return self.explanations[key]
+        raise TypeError("Invalid argument type.")
 
 
     def _is_thresholded(self) -> bool:
@@ -110,8 +116,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
-        
-            
+
 
 
 
