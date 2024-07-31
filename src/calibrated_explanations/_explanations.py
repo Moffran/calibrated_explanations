@@ -417,7 +417,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         Returns:
             shap.Explanation : shap explanation object with the same values as the explanation
         """
-        _, shap_exp = self.calibrated_explainer._preload_shap(len(self.test_objects[:,0])) # pylint: disable=protected-access
+        _, shap_exp = self.calibrated_explainer._preload_shap() # pylint: disable=protected-access
+        shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
+        shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.test_objects[0, :])))
+        shap_exp.data = self.test_objects
         for i, explanation in enumerate(self.explanations): #range(len(self.test_objects[:,0])):
             shap_exp.base_values[i] = explanation.prediction['predict']
             for f in range(len(self.test_objects[0, :])):
