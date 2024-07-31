@@ -113,14 +113,14 @@ def perturb_dataset(cal_X,
     assert noise_type in ['uniform', 'gaussian'], \
         "Noise type must be either 'uniform' or 'gaussian'."
 
-    for f in range(len(scaled_cal_y)):
+    for f in range(scaled_cal_X.shape[1]):
         if f in categorical_features:
-            perturbed_cal_X[f] = categorical_perturbation(perturbed_cal_X[f])
+            perturbed_cal_X[:,f] = categorical_perturbation(perturbed_cal_X[:,f])
         else:
             if noise_type == 'uniform':
                 # Apply numerical counterfactual perturbation to the selected column -- uniform
-                perturbed_cal_X[f] = uniform_perturbation(perturbed_cal_X[f], severity)
+                perturbed_cal_X[:,f] = uniform_perturbation(perturbed_cal_X[:,f], severity)
             elif noise_type == 'gaussian':
                 # Apply numerical counterfactual perturbation to the selected column -- gaussian
-                perturbed_cal_X[f] = gaussian_perturbation(perturbed_cal_X[f], severity)
+                perturbed_cal_X[:,f] = gaussian_perturbation(perturbed_cal_X[:,f], severity)
     return perturbed_cal_X, scaled_cal_X, scaled_cal_y, scale_factor

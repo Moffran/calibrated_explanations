@@ -657,6 +657,9 @@ class CalibratedExplainer:
         feature_weights =  {'predict': [],'low': [],'high': [],}
         feature_predict =  {'predict': [],'low': [],'high': [],}
         prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
+        
+        instance_weights = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(test_X))]
+        instance_predict = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(test_X))]
 
         feature_time = time()
         predict, low, high, predicted_class = self._predict(test_X, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
@@ -672,13 +675,25 @@ class CalibratedExplainer:
                 continue
             predict, low, high, predicted_class = self._predict(test_X, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins, feature=f)
 
-            feature_weights['predict'] = self._assign_weight(predict, prediction['predict'], is_probabilistic)
-            feature_weights['low'] = self._assign_weight(low, prediction['predict'], is_probabilistic)
-            feature_weights['high'] = self._assign_weight(high, prediction['predict'], is_probabilistic)
+            for i in range(len(test_X)):
+                instance_weights[i]['predict'][f] = self._assign_weight(predict[i], prediction['predict'][i], is_probabilistic)
+                tmp_low = self._assign_weight(low[i], prediction['predict'][i], is_probabilistic)
+                tmp_high = self._assign_weight(high[i], prediction['predict'][i], is_probabilistic)
+                instance_weights[i]['low'][f] = np.min([tmp_low, tmp_high])
+                instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
 
-            feature_predict['predict'] = predict
-            feature_predict['low'] = low
-            feature_predict['high'] = high
+                instance_predict[i]['predict'][f] = predict[i]
+                instance_predict[i]['low'][f] = low[i]
+                instance_predict[i]['high'][f] = high[i]
+
+        for i in range(len(test_X)):
+            feature_weights['predict'].append(instance_weights[i]['predict'])
+            feature_weights['low'].append(instance_weights[i]['low'])
+            feature_weights['high'].append(instance_weights[i]['high'])
+
+            feature_predict['predict'].append(instance_predict[i]['predict'])
+            feature_predict['low'].append(instance_predict[i]['low'])
+            feature_predict['high'].append(instance_predict[i]['high'])
         feature_time = time() - feature_time
         instance_time = [feature_time / test_X.shape[0]]*test_X.shape[0]
 
@@ -838,11 +853,11 @@ class CalibratedExplainer:
             self.interval_model = []
             cal_X, cal_y, bins = self.cal_X, self.cal_y, self.bins
             self.perturbed_cal_X, self.scaled_cal_X, self.scaled_cal_y, scale_factor = \
-                perturb_dataset(self.cal_X, self.cal_y, self.categorical_features)
+                perturb_dataset(self.cal_X, self.cal_y, self.categorical_features, noise_type='uniform', scale_factor=5, severity=1)
             self.bins = [self.bins]*scale_factor if self.bins is not None else None
             for f in range(self.num_features):
                 perturbed_cal_X = self.scaled_cal_X.copy()
-                perturbed_cal_X[f] = self.perturbed_cal_X[f]
+                perturbed_cal_X[:,f] = self.perturbed_cal_X[:,f]
                 if self.mode == 'classification':
                     self.interval_model.append(VennAbers(self.model.predict_proba(perturbed_cal_X), self.scaled_cal_y, self.model, self.bins))
                 elif 'regression' in self.mode:
