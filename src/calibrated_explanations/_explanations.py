@@ -43,8 +43,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     def __len__(self):
         return len(self.test_objects[:,0])
 
-    def __getitem__(self, index):
-        return self.get_explanation(index)
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            # Handle single item access
+            return self.explanations[key]
+        if isinstance(key, slice):
+            # Handle slicing
+            return self.explanations[key]
+        raise TypeError("Invalid argument type.")
 
 
     def _is_thresholded(self) -> bool:
@@ -2048,12 +2054,25 @@ class PerturbedExplanation(CalibratedExplanation):
         self._check_preconditions()
         self._get_rules()
 
+    def __repr__(self):
+        perturbed = self._get_rules()
+        output = []
+        output.append(f"{'Prediction':10} [{' Low':5}, {' High':5}]")
+        output.append(f"   {perturbed['base_predict'][0]:5.3f}   [{perturbed['base_predict_low'][0]:5.3f}, {perturbed['base_predict_high'][0]:5.3f}]")
 
-    def plot_explanation(self, n_features_to_show=None, **kwargs):
-        '''The function `plot_explanation` plots either counterfactual or factual explanations for a given
-        instance, with the option to show or save the plots.
-        '''
-        # pass
+        output.append(f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]")# {'Prediction':10} [{' Low':5}, {' High':5}]")
+        # feature_order = self._rank_features(perturbed['weight'], 
+        #                         width=np.array(perturbed['weight_high']) - np.array(perturbed['weight_low']), 
+        #                         num_to_show=len(perturbed['rule']))
+        feature_order = range(len(perturbed['rule']))
+        for f in reversed(feature_order):
+            output.append(f"{perturbed['value'][f]:6}: {perturbed['rule'][f]:40s} {perturbed['weight'][f]:>6.3f} [{perturbed['weight_low'][f]:>6.3f}, {perturbed['weight_high'][f]:>6.3f}]")#    {perturbed['predict'][f]:5.3f}   [{perturbed['predict_low'][f]:5.3f}, {perturbed['predict_high'][f]:5.3f}]")
+
+        # sum_weights = np.sum((perturbed['weight']))
+        # sum_weights_low = np.sum((perturbed['weight_low']))
+        # sum_weights_high = np.sum((perturbed['weight_high']))
+        # output.append(f"{'Mean':6}: {'':40s} {sum_weights:>6.3f} [{sum_weights_low:>6.3f}, {sum_weights_high:>6.3f}]")
+        return "\n".join(output) + "\n"
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         '''The function `add_conjunctions` adds conjunctive rules to the factual or counterfactual
@@ -2064,6 +2083,379 @@ class PerturbedExplanation(CalibratedExplanation):
 
     def _check_preconditions(self):
         pass
-
+    
+    # pylint: disable=too-many-statements, too-many-branches
     def _get_rules(self):
-        pass    
+        # """creates factual rules
+
+        # Returns:
+        #     List[Dict[str, List]]: a list of dictionaries containing the factual rules, one for each test instance
+        # """
+        if self._has_conjunctive_rules:
+            return self.conjunctive_rules
+        if self._has_rules:
+            return self.rules        
+        self._has_rules = False
+        # i = self.instance_index
+        instance = deepcopy(self.test_object)
+        perturbed = {'base_predict': [],
+                    'base_predict_low': [],
+                    'base_predict_high': [],
+                    'predict': [],
+                    'predict_low': [],
+                    'predict_high': [],
+                    'weight': [],
+                    'weight_low': [],
+                    'weight_high': [],
+                    'value': [],
+                    'rule': [],
+                    'feature': [],
+                    'feature_value': [],
+                    'classes': None, 
+                    'is_conjunctive': []
+                    }
+        perturbed['classes'] = self.prediction['classes']
+        perturbed['base_predict'].append(self.prediction['predict'])
+        perturbed['base_predict_low'].append(self.prediction['low'])
+        perturbed['base_predict_high'].append(self.prediction['high'])
+        rules = self._define_conditions()
+        for f,_ in enumerate(instance): # pylint: disable=invalid-name
+            if self.prediction['predict'] == self.feature_predict['predict'][f]:
+                continue
+            perturbed['predict'].append(self.feature_predict['predict'][f])
+            perturbed['predict_low'].append(self.feature_predict['low'][f])
+            perturbed['predict_high'].append(self.feature_predict['high'][f])
+            perturbed['weight'].append(self.feature_weights['predict'][f])
+            perturbed['weight_low'].append(self.feature_weights['low'][f])
+            perturbed['weight_high'].append(self.feature_weights['high'][f])
+            if f in self._get_explainer().categorical_features:
+                if self._get_explainer().categorical_labels is not None:
+                    perturbed['value'].append(
+                        self._get_explainer().categorical_labels[f][int(instance[f])])
+                else:
+                    perturbed['value'].append(str(instance[f]))
+            else:
+                perturbed['value'].append(str(np.around(instance[f],decimals=2)))
+            perturbed['rule'].append(rules[f])
+            perturbed['feature'].append(f)
+            perturbed['feature_value'].append(None)
+            perturbed['is_conjunctive'].append(False)
+        self.rules = perturbed
+        self._has_rules = True
+        return self.rules
+
+
+    def _define_conditions(self):
+        # """defines the rule conditions for an instance
+
+        # Args:
+        #     instance (n_features,): a test instance
+
+        # Returns:
+        #     list[str]: a list of conditions for each feature in the instance
+        # """
+        self.conditions = []
+        for f in range(self._get_explainer().num_features):
+            rule = f"{self._get_explainer().feature_names[f]}"
+            self.conditions.append(rule)
+        return self.conditions
+
+
+    def plot_explanation(self, n_features_to_show=None, **kwargs):
+        '''This function plots the factual explanation for a given instance using either probabilistic or
+        regression plots.
+        
+        Parameters
+        ----------
+        instance_index : int
+            The index of the instance for which you want to plot the factual explanation.
+        n_features_to_show : int, default=10
+            The `n_features_to_show` parameter determines the number of top features to display in the
+            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
+            number of features, up to the total number of features available.
+        show : bool, default=False
+            A boolean parameter that determines whether the plot should be displayed or not. If set to
+            True, the plot will be displayed. If set to False, the plot will not be displayed.
+        filename : str, default=''
+            The filename parameter is a string that represents the full path and filename of the plot
+            image file that will be saved. If this parameter is not provided or is an empty string, the plot
+            will not be saved as an image file.
+        uncertainty : bool, default=False
+            The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
+            intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
+            range of possible feature weights based on the lower and upper bounds of the uncertainty
+            intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
+        style : str, default='regular'
+            The `style` parameter is a string that determines the style of the plot. Possible styles are for FactualExplanation:
+            * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)        
+        '''
+        show = kwargs['show'] if 'show' in kwargs.keys() else False
+        filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
+        uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs.keys() else False
+        interactive = kwargs['interactive'] if 'interactive' in kwargs.keys() else False
+        
+        
+        factual = self._get_rules() #get_explanation(instance_index)
+        self._check_preconditions()
+        predict = self.prediction
+        num_features_to_show = len(factual['weight'])
+        if n_features_to_show is None:
+            n_features_to_show = num_features_to_show
+        n_features_to_show = np.min([num_features_to_show, n_features_to_show])
+        if n_features_to_show <= 0:
+            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.instance_index}')
+            return
+
+        if len(filename) > 0:
+            path = os.path.dirname(filename) + '/'
+            filename = os.path.basename(filename)
+            title, ext = os.path.splitext(filename)
+            make_directory(path, save_ext=np.array([ext]))
+            path = 'plots/' + path
+            save_ext = [ext]
+        else:
+            path = ''
+            title = ''
+            save_ext = []
+        if uncertainty:            
+            feature_weights = {'predict':factual['weight'],
+                                'low':factual['weight_low'], 
+                                'high':factual['weight_high']}
+        else:
+            feature_weights = factual['weight']
+        width = np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
+                        (len(factual['weight'])))
+        features_to_plot = self._rank_features(factual['weight'],
+                                                width=width,
+                                                num_to_show=n_features_to_show)
+        column_names = factual['rule']
+        if 'classification' in self._get_explainer().mode or self._is_thresholded():
+            self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
+                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
+                        save_ext=save_ext, interactive=interactive)
+        else:                
+            self.__plot_regression(factual['value'], predict, feature_weights, features_to_plot,
+                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
+                        save_ext=save_ext, interactive=interactive)
+
+    # pylint: disable=dangerous-default-value, unused-argument
+    def __plot_probabilistic(self, instance, predict, feature_weights, features_to_plot, num_to_show,
+                    column_names, title, path, show, interval=False, idx=None,
+                    save_ext=['svg','pdf','png'], interactive=False):
+        """plots regular and uncertainty explanations"""
+        if interval is True:
+            assert idx is not None
+        fig = plt.figure(figsize=(10,num_to_show*.5+2))
+        subfigs = fig.subfigures(3, 1, height_ratios=[1, 1, num_to_show+2])
+
+        if interval and (self._is_one_sided()):
+            raise Warning('Interval plot is not supported for one-sided explanations.')
+
+        ax_positive = subfigs[0].add_subplot(111)
+        ax_negative = subfigs[1].add_subplot(111)
+        
+        ax_main = subfigs[2].add_subplot(111)
+
+        # plot the probabilities at the top
+        x = np.linspace(0, 1, 2)
+        xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
+        p = predict['predict']
+        pl = predict['low'] if predict['low'] != -np.inf \
+                                else np.min(self._get_explainer().cal_y)
+        ph = predict['high'] if predict['high'] != np.inf \
+                                else np.max(self._get_explainer().cal_y)
+
+        ax_negative.fill_betweenx(xj, 1-p, 1-p, color='b')
+        ax_negative.fill_betweenx(xj, 0, 1-ph, color='b')
+        ax_negative.fill_betweenx(xj, 1-pl, 1-ph, color='b', alpha=0.2)
+        ax_negative.set_xlim([0,1])
+        ax_negative.set_yticks(range(1))
+        ax_negative.set_xticks(np.linspace(0,1,6))
+        ax_positive.fill_betweenx(xj, p, p, color='r')
+        ax_positive.fill_betweenx(xj, 0, pl, color='r')
+        ax_positive.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
+        ax_positive.set_xlim([0,1])
+        ax_positive.set_yticks(range(1))
+        ax_positive.set_xticks([])
+
+        if self._is_thresholded():
+            if np.isscalar(self.y_threshold):
+                ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})'])
+                ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})'])
+            else:                    
+                ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
+                ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
+        else:
+            if self._get_explainer().class_labels is not None:
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
+                    ax_negative.set_yticklabels(labels=[f'P(y!={self._get_explainer().class_labels[self.prediction["classes"]]})']) # pylint: disable=line-too-long
+                    ax_positive.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[self.prediction["classes"]]})']) # pylint: disable=line-too-long
+                else:
+                    ax_negative.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[0]})']) # pylint: disable=line-too-long
+                    ax_positive.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[1]})']) # pylint: disable=line-too-long
+            else: 
+                if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
+                    ax_negative.set_yticklabels(labels=[f'P(y!={self.prediction["classes"]})'])
+                    ax_positive.set_yticklabels(labels=[f'P(y={self.prediction["classes"]})'])
+                else:
+                    ax_negative.set_yticklabels(labels=['P(y=0)'])
+                    ax_positive.set_yticklabels(labels=['P(y=1)'])
+        ax_negative.set_xlabel('Probability')
+
+        # Plot the base prediction in black/grey
+        if num_to_show > 0:
+            x = np.linspace(0, num_to_show-1, num_to_show)
+            xl = np.linspace(-0.5, x[0] if len(x) > 0 else 0, 2)
+            xh = np.linspace(x[-1], x[-1]+0.5 if len(x) > 0 else 0.5, 2)
+            ax_main.fill_betweenx(x, [0], [0], color='k')
+            ax_main.fill_betweenx(xl, [0], [0], color='k')
+            ax_main.fill_betweenx(xh, [0], [0], color='k')
+            if interval:           
+                p = predict['predict']
+                gwl = predict['low'] - p
+                gwh = predict['high'] - p
+                
+                gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
+                ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
+
+            # For each feature, plot the weight
+            for jx, j in enumerate(features_to_plot):
+                xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
+                min_val,max_val = 0,0
+                if interval:
+                    width = feature_weights['predict'][j]
+                    wl = feature_weights['low'][j]
+                    wh = feature_weights['high'][j]
+                    wh, wl = np.max([wh, wl]), np.min([wh, wl])
+                    max_val = wh if width < 0 else 0
+                    min_val = wl if width > 0 else 0
+                    # If uncertainty cover zero, then set to 0 to avoid solid plotting
+                    if wl < 0 < wh:
+                        min_val = 0
+                        max_val = 0
+                else:                
+                    width = feature_weights[j]
+                    min_val = width if width < 0 else 0
+                    max_val = width if width > 0 else 0
+                color = 'r' if width > 0 else 'b'
+                ax_main.fill_betweenx(xj, min_val, max_val, color=color)
+                if interval:
+                    if wl < 0 < wh and self._get_explainer().mode == 'classification':
+                        ax_main.fill_betweenx(xj, 0, wl, color='b', alpha=0.2)
+                        ax_main.fill_betweenx(xj, wh, 0, color='r', alpha=0.2)
+                    else:
+                        ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
+
+            ax_main.set_yticks(range(num_to_show))
+            ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
+                if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
+            ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
+            ax_main.set_ylabel('Rules')
+            ax_main.set_xlabel('Feature weights')
+            ax_main_twin = ax_main.twinx()
+            ax_main_twin.set_yticks(range(num_to_show))
+            ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
+            ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
+            ax_main_twin.set_ylabel('Instance values')
+        for ext in save_ext:
+            fig.savefig(path + title + ext, bbox_inches='tight') 
+        if show:
+            fig.show()
+
+
+    # pylint: disable=dangerous-default-value, too-many-branches, too-many-statements, unused-argument
+    def __plot_regression(self, instance, predict, feature_weights, features_to_plot, num_to_show,
+                    column_names, title, path, show, interval=False, idx=None,
+                    save_ext=['svg','pdf','png'], interactive=False):
+        """plots regular and uncertainty explanations"""
+        if interval is True:
+            assert idx is not None
+        fig = plt.figure(figsize=(10,num_to_show*.5+2))
+        subfigs = fig.subfigures(2, 1, height_ratios=[1, num_to_show+2])
+
+        if interval and (self._is_one_sided()):
+            raise Warning('Interval plot is not supported for one-sided explanations.')
+
+        ax_regression = subfigs[0].add_subplot(111)        
+        ax_main = subfigs[1].add_subplot(111)
+
+        # plot the probabilities at the top
+        x = np.linspace(0, 1, 2)
+        xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
+        p = predict['predict']
+        pl = predict['low'] if predict['low'] != -np.inf \
+                                else np.min(self._get_explainer().cal_y)
+        ph = predict['high'] if predict['high'] != np.inf \
+                                else np.max(self._get_explainer().cal_y)
+        
+        ax_regression.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
+        ax_regression.fill_betweenx(xj, p, p, color='r')
+        ax_regression.set_xlim([np.min([pl, np.min(self._get_explainer().cal_y)]),np.max([ph, np.max(self._get_explainer().cal_y)])])
+        ax_regression.set_yticks(range(1))
+
+        ax_regression.set_xlabel(f'Prediction interval with {self.calibrated_explanations.get_confidence()}% confidence')
+        ax_regression.set_yticklabels(labels=['Median prediction'])
+
+        # Plot the base prediction in black/grey
+        x = np.linspace(0, num_to_show-1, num_to_show)
+        xl = np.linspace(-0.5, x[0], 2)
+        xh = np.linspace(x[-1], x[-1]+0.5, 2)
+        ax_main.fill_betweenx(x, [0], [0], color='k')
+        ax_main.fill_betweenx(xl, [0], [0], color='k')
+        ax_main.fill_betweenx(xh, [0], [0], color='k')
+        x_min, x_max = 0,0
+        if interval:            
+            p = predict['predict']
+            gwl = p - predict['low']
+            gwh = p - predict['high']
+            
+            gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
+            # ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
+
+            x_min, x_max = gwl,gwh
+        # For each feature, plot the weight
+        for jx, j in enumerate(features_to_plot):
+            xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
+            min_val,max_val = 0,0
+            if interval:
+                width = feature_weights['predict'][j]
+                wl = feature_weights['low'][j]
+                wh = feature_weights['high'][j]
+                wh, wl = np.max([wh, wl]), np.min([wh, wl])
+                max_val = wh if width < 0 else 0
+                min_val = wl if width > 0 else 0
+                # If uncertainty cover zero, then set to 0 to avoid solid plotting
+                if wl < 0 < wh:
+                    min_val = 0
+                    max_val = 0
+            else:                
+                width = feature_weights[j]
+                min_val = width if width < 0 else 0
+                max_val = width if width > 0 else 0
+            color = 'b' if width > 0 else 'r'
+            ax_main.fill_betweenx(xj, min_val, max_val, color=color)
+            if interval:
+                ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
+                
+                x_min = np.min([x_min, min_val, max_val, wl, wh])
+                x_max = np.max([x_max, min_val, max_val, wl, wh])
+            else:
+                x_min = np.min([x_min, min_val, max_val])
+                x_max = np.max([x_max, min_val, max_val])
+
+        ax_main.set_yticks(range(num_to_show))
+        ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
+            if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
+        ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
+        ax_main.set_ylabel('Rules')
+        ax_main.set_xlabel('Feature weights')
+        ax_main.set_xlim(x_min, x_max)
+        ax_main_twin = ax_main.twinx()
+        ax_main_twin.set_yticks(range(num_to_show))
+        ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
+        ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
+        ax_main_twin.set_ylabel('Instance values')
+        for ext in save_ext:
+            fig.savefig(path + title + ext, bbox_inches='tight')
+        if show:
+            fig.show()
