@@ -739,10 +739,10 @@ class FactualExplanation(CalibratedExplanation):
     def __repr__(self):
         factual = self._get_rules()
         output = []
-        output.append("Calibrated prediction with uncertainty interval:")
+        output.append(f"{'Prediction':10} [{' Low':5}, {' High':5}]")
         output.append(f"{factual['base_predict'][0]:5.3f} [{factual['base_predict_low'][0]:5.3f}, {factual['base_predict_high'][0]:5.3f}]")
 
-        output.append("\nInstance value and factual feature rules, each composed of a factual condition and a feature weight with an uncertainty interval:")
+        output.append(f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]")
         for f, rule in enumerate(factual['rule']):
             output.append(f"{factual['value'][f]:6}: {rule:40s} {factual['weight'][f]:>6.3f} [{factual['weight_low'][f]:>6.3f}, {factual['weight_high'][f]:>6.3f}]")
 
@@ -948,7 +948,6 @@ class FactualExplanation(CalibratedExplanation):
         self._has_conjunctive_rules = True
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
-    # pylint: disable=consider-iterating-dictionary
     def plot_explanation(self, n_features_to_show=None, **kwargs):
         '''This function plots the factual explanation for a given instance using either probabilistic or
         regression plots.
@@ -977,10 +976,10 @@ class FactualExplanation(CalibratedExplanation):
             The `style` parameter is a string that determines the style of the plot. Possible styles are for FactualExplanation:
             * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)        
         '''
-        show = kwargs['show'] if 'show' in kwargs.keys() else False
-        filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
-        uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs.keys() else False
-        interactive = kwargs['interactive'] if 'interactive' in kwargs.keys() else False
+        show = kwargs['show'] if 'show' in kwargs else False
+        filename = kwargs['filename'] if 'filename' in kwargs else ''
+        uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs else False
+        interactive = kwargs['interactive'] if 'interactive' in kwargs else False
         
         
         factual = self._get_rules() #get_explanation(instance_index)
@@ -1298,12 +1297,12 @@ class CounterfactualExplanation(CalibratedExplanation):
     def __repr__(self):
         counterfactual = self._get_rules()
         output = []
-        output.append("Calibrated prediction with uncertainty interval:")
+        output.append(f"{'Prediction':10} [{' Low':5}, {' High':5}]")
         output.append(f"{counterfactual['base_predict'][0]:5.3f} [{counterfactual['base_predict_low'][0]:5.3f}, {counterfactual['base_predict_high'][0]:5.3f}]")
 
-        output.append("\nInstance value and counterfactual rules, each composed of a counterfactual condition and a prediction with an uncertainty interval:")
+        output.append(f"{'Value':6}: {'Feature':40s} {'Prediction':10} [{' Low':6}, {' High':6}]")
         for f, rule in enumerate(counterfactual['rule']):
-            output.append(f"{counterfactual['value'][f]:6}: {rule:40s} {counterfactual['predict'][f]:>6.3f} [{counterfactual['predict_low'][f]:>6.3f}, {counterfactual['predict_high'][f]:>6.3f}]")
+            output.append(f"{counterfactual['value'][f]:6}: {rule:40s} {counterfactual['predict'][f]:>6.3f}     [{counterfactual['predict_low'][f]:>6.3f}, {counterfactual['predict_high'][f]:>6.3f}]")
 
         return "\n".join(output) + "\n"
 
@@ -2060,13 +2059,13 @@ class PerturbedExplanation(CalibratedExplanation):
         output.append(f"{'Prediction':10} [{' Low':5}, {' High':5}]")
         output.append(f"   {perturbed['base_predict'][0]:5.3f}   [{perturbed['base_predict_low'][0]:5.3f}, {perturbed['base_predict_high'][0]:5.3f}]")
 
-        output.append(f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]")# {'Prediction':10} [{' Low':5}, {' High':5}]")
-        # feature_order = self._rank_features(perturbed['weight'], 
-        #                         width=np.array(perturbed['weight_high']) - np.array(perturbed['weight_low']), 
-        #                         num_to_show=len(perturbed['rule']))
-        feature_order = range(len(perturbed['rule']))
+        output.append(f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]")
+        feature_order = self._rank_features(perturbed['weight'], 
+                                width=np.array(perturbed['weight_high']) - np.array(perturbed['weight_low']), 
+                                num_to_show=len(perturbed['rule']))
+        # feature_order = range(len(perturbed['rule']))
         for f in reversed(feature_order):
-            output.append(f"{perturbed['value'][f]:6}: {perturbed['rule'][f]:40s} {perturbed['weight'][f]:>6.3f} [{perturbed['weight_low'][f]:>6.3f}, {perturbed['weight_high'][f]:>6.3f}]")#    {perturbed['predict'][f]:5.3f}   [{perturbed['predict_low'][f]:5.3f}, {perturbed['predict_high'][f]:5.3f}]")
+            output.append(f"{perturbed['value'][f]:6}: {perturbed['rule'][f]:40s} {perturbed['weight'][f]:>6.3f} [{perturbed['weight_low'][f]:>6.3f}, {perturbed['weight_high'][f]:>6.3f}]")
 
         # sum_weights = np.sum((perturbed['weight']))
         # sum_weights_low = np.sum((perturbed['weight_low']))
@@ -2189,10 +2188,10 @@ class PerturbedExplanation(CalibratedExplanation):
             The `style` parameter is a string that determines the style of the plot. Possible styles are for FactualExplanation:
             * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)        
         '''
-        show = kwargs['show'] if 'show' in kwargs.keys() else False
-        filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
-        uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs.keys() else False
-        interactive = kwargs['interactive'] if 'interactive' in kwargs.keys() else False
+        show = kwargs['show'] if 'show' in kwargs else False
+        filename = kwargs['filename'] if 'filename' in kwargs else ''
+        uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs else False
+        interactive = kwargs['interactive'] if 'interactive' in kwargs else False
         
         
         factual = self._get_rules() #get_explanation(instance_index)
@@ -2350,7 +2349,7 @@ class PerturbedExplanation(CalibratedExplanation):
             ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
                 if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
             ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-            ax_main.set_ylabel('Rules')
+            ax_main.set_ylabel('Features')
             ax_main.set_xlabel('Feature weights')
             ax_main_twin = ax_main.twinx()
             ax_main_twin.set_yticks(range(num_to_show))
@@ -2447,7 +2446,7 @@ class PerturbedExplanation(CalibratedExplanation):
         ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
             if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
         ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-        ax_main.set_ylabel('Rules')
+        ax_main.set_ylabel('Features')
         ax_main.set_xlabel('Feature weights')
         ax_main.set_xlim(x_min, x_max)
         ax_main_twin = ax_main.twinx()
