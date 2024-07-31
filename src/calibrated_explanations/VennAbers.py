@@ -15,6 +15,7 @@ class VennAbers:
         self.ctargets = cal_y
         self.model = model
         self.bins = bins
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
         if self.is_mondrian():
             self.va = {}
             if self.is_multiclass():
@@ -45,6 +46,7 @@ class VennAbers:
             else:
                 self.va = va.VennAbers()
                 self.va.fit(cprobs, self.ctargets, precision=4)
+        warnings.filterwarnings("default", category=RuntimeWarning)
 
     def predict(self, test_X, bins=None):
         """a function to predict the class of the test samples

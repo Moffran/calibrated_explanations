@@ -657,11 +657,12 @@ class CalibratedExplainer:
         feature_weights =  {'predict': [],'low': [],'high': [],}
         feature_predict =  {'predict': [],'low': [],'high': [],}
         prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
-        
+
         instance_weights = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(test_X))]
         instance_predict = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(test_X))]
 
         feature_time = time()
+
         predict, low, high, predicted_class = self._predict(test_X, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
         prediction['predict'] = predict
         prediction['low'] = low
@@ -670,9 +671,12 @@ class CalibratedExplainer:
             prediction['classes'] = predicted_class
         else:
             prediction['classes'] = np.ones(test_X.shape[0])
+        cal_y = self.cal_y
+        self.cal_y = self.scaled_cal_y
         for f in range(self.num_features):
             if f in self.features_to_ignore:
                 continue
+
             predict, low, high, predicted_class = self._predict(test_X, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins, feature=f)
 
             for i in range(len(test_X)):
@@ -685,6 +689,7 @@ class CalibratedExplainer:
                 instance_predict[i]['predict'][f] = predict[i]
                 instance_predict[i]['low'][f] = low[i]
                 instance_predict[i]['high'][f] = high[i]
+        self.cal_y = cal_y
 
         for i in range(len(test_X)):
             feature_weights['predict'].append(instance_weights[i]['predict'])
@@ -1316,7 +1321,7 @@ class WrapCalibratedExplainer():
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
         return self.explainer.explain_perturbed(X_test, **kwargs)
-        
+
 
     # pylint: disable=too-many-return-statements
     def predict(self, X_test, uq_interval=False, **kwargs):

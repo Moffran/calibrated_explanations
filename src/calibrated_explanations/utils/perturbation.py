@@ -109,7 +109,7 @@ def perturb_dataset(cal_X,
     '''
     perturbed_cal_X = np.tile(cal_X.copy(), (scale_factor,1))
     scaled_cal_X = perturbed_cal_X.copy()
-    scaled_cal_y = np.tile(cal_y.copy(), (scale_factor,1))
+    scaled_cal_y = np.tile(cal_y.copy(), scale_factor)
     assert noise_type in ['uniform', 'gaussian'], \
         "Noise type must be either 'uniform' or 'gaussian'."
 
