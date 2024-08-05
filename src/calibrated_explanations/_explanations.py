@@ -50,6 +50,9 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         if isinstance(key, slice):
             # Handle slicing
             return self.explanations[key]
+        if isinstance(key, (list, np.ndarray)) and isinstance(key[0], (bool, np.bool_)):
+            # Handle boolean indexing
+            return [exp for exp, include in zip(self.explanations, key) if include]
         raise TypeError("Invalid argument type.")
 
 
