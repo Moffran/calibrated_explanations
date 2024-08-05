@@ -19,7 +19,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from lime.lime_tabular import LimeTabularExplainer
+from crepes import ConformalClassifier
+from crepes.extras import hinge
 
 from ._explanations import CalibratedExplanations
 from .VennAbers import VennAbers
@@ -62,6 +63,7 @@ class CalibratedExplainer:
                 random_state = 42,
                 verbose = False,
                 perturb = False,
+                reject=False,
                 ) -> None:
         # pylint: disable=line-too-long
         '''Constructor for the CalibratedExplainer object for explaining the predictions of a
@@ -110,6 +112,13 @@ class CalibratedExplainer:
             A boolean parameter that determines whether additional printouts should be enabled during the
             operation of the class. If set to True, it will print out additional information during the
             execution of the code. If set to False, it will not print out any additional information.
+        perturb : bool, default=False
+            A boolean parameter that determines whether the explainer should perturb the calibration set to 
+            enable perturbed explanations.
+        reject : bool, default=False
+            A boolean parameter that determines whether the explainer should reject explanations that are
+            deemed too difficult to explain. If set to True, the explainer will reject explanations that are
+            deemed too difficult to explain. If set to False, the explainer will not reject any explanations.
         
         Return
         ------
@@ -163,10 +172,13 @@ class CalibratedExplainer:
         self.lime_exp = None
         self.shap = None
         self.shap_exp = None
+        self.reject = reject
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.__set_mode(str.lower(mode), initialize=False)
+
         self.__initialize_interval_model()
+        self.reject_model = self.initialize_reject_model() if reject else None
 
         self.init_time = time() - init_time
 
@@ -882,6 +894,87 @@ class CalibratedExplainer:
                 self.interval_model = IntervalRegressor(self)
         self.__initialized = True
 
+    def initialize_reject_model(self, calibration_set=None, threshold=None):
+        '''
+        Initializes the reject model for the explainer. The reject model is a ConformalClassifier
+        that is trained on the calibration data. The reject model is used to determine whether a test
+        instance is within the calibration data distribution. The reject model is only available for
+        classification, unless a threshold is assigned.
+        
+        Parameters
+        ----------
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression.
+        '''
+        if calibration_set is not None:
+            if calibration_set is tuple:
+                cal_X, cal_y = calibration_set
+            else:
+                cal_X, cal_y = calibration_set[0], calibration_set[1]
+        else:
+            cal_X, cal_y = self.cal_X, self.cal_y
+        self.reject_threshold = None
+        if self.mode in 'regression':
+            proba_1, _, _, _ = self.interval_model.predict_probability(cal_X, y_threshold=threshold, bins=self.bins)
+            proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
+            classes = (cal_y < threshold).astype(int)
+            self.reject_threshold = threshold
+        elif self.is_multiclass(): # pylint: disable=protected-access
+            proba, classes = self.interval_model.predict_proba(cal_X, bins=self.bins)
+            proba = np.array([[1-proba[i,c], proba[i,c]] for i,c in enumerate(classes)])
+            classes = (classes == cal_y).astype(int)
+        else:
+            proba = self.interval_model.predict_proba(cal_X, bins=self.bins)
+            classes = cal_y
+        alphas_cal = hinge(proba, np.unique(classes), classes)
+        self.reject_model = ConformalClassifier().fit(alphas=alphas_cal, bins=classes)
+        return self.reject_model
+
+    def predict_reject(self, test_X, bins=None, confidence=0.95):
+        '''
+        Predicts whether a test instance is within the calibration data distribution.
+
+        Parameters
+        ----------
+        test_X : A set with n_samples of test objects to predict
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression.
+
+        Returns
+        -------
+        np.ndarray : A boolean array of shape (n_samples,) indicating whether the test instances are within the calibration data distribution.
+        '''
+        if self.mode in 'regression':
+            assert self.reject_threshold is not None, "The reject model is only available for regression with a threshold."
+            proba_1, _, _, _ = self.interval_model.predict_probability(test_X, y_threshold=self.reject_threshold, bins=bins)
+            proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
+            classes = [0,1]
+        elif self.is_multiclass(): # pylint: disable=protected-access
+            proba, classes = self.interval_model.predict_proba(test_X, bins=bins)
+            proba = np.array([[1-proba[i,c], proba[i,c]] for i,c in enumerate(classes)])
+            classes = [0,1]
+        else:
+            proba = self.interval_model.predict_proba(test_X, bins=bins)
+            classes = np.unique(self.cal_y)
+        alphas_test = hinge(proba)
+
+        prediction_set = np.array([
+                self.reject_model.predict_set(alphas_test,
+                                            np.full(len(alphas_test), classes[c]),
+                                            confidence=confidence)[:, c]
+                for c in range(len(classes))
+            ]).T
+        singelton = np.sum(np.sum(prediction_set, axis=1) == 1)
+        empty = np.sum(np.sum(prediction_set, axis=1) == 0)
+        n = len(test_X)
+
+        epsilon = 1 - confidence
+        error_rate = (n*epsilon - empty) / singelton
+        reject_rate = 1 - singelton/n
+
+        rejected = np.sum(prediction_set, axis=1) != 1
+        return rejected, error_rate, reject_rate
+
 
     def _preprocess(self):
         # preprocesses the calibration data by identifying constant value columns to ignore
@@ -1023,24 +1116,27 @@ class CalibratedExplainer:
         #     LimeTabularExplainer: a LimeTabularExplainer object defined for the problem
         #     lime_exp: a template lime explanation achieved through the explain_instance method
         # """
-        if not self._is_lime_enabled():
-            if self.mode == 'classification':
-                self.lime = LimeTabularExplainer(self.cal_X[:1, :],
-                                                feature_names=self.feature_names,
-                                                class_names=['0','1'],
-                                                mode=self.mode)
-                self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
-                                                            self.model.predict_proba,
-                                                            num_features=self.num_features)
-            elif 'regression' in self.mode:
-                self.lime = LimeTabularExplainer(self.cal_X[:1, :],
-                                                feature_names=self.feature_names,
-                                                mode='regression')
-                self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
-                                                            self.model.predict,
-                                                            num_features=self.num_features)
-            self._is_lime_enabled(True)
-        return self.lime, self.lime_exp
+        LimeTabularExplainer = safe_import("lime.lime_tabular.LimeTabularExplainer")
+        if LimeTabularExplainer:
+            if not self._is_lime_enabled():
+                if self.mode == 'classification':
+                    self.lime = LimeTabularExplainer(self.cal_X[:1, :],
+                                                    feature_names=self.feature_names,
+                                                    class_names=['0','1'],
+                                                    mode=self.mode)
+                    self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
+                                                                self.model.predict_proba,
+                                                                num_features=self.num_features)
+                elif 'regression' in self.mode:
+                    self.lime = LimeTabularExplainer(self.cal_X[:1, :],
+                                                    feature_names=self.feature_names,
+                                                    mode='regression')
+                    self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
+                                                                self.model.predict,
+                                                                num_features=self.num_features)
+                self._is_lime_enabled(True)
+            return self.lime, self.lime_exp
+        return None, None
 
 
 
@@ -1215,10 +1311,16 @@ class WrapCalibratedExplainer():
         Examples
         --------
         Generate explanations with a specific threshold for regression:
-        >>> explain_factual(X_test, threshold=0.05)
+        
+        .. code-block:: python
+        
+            w.explain_factual(X_test, threshold=0.05)
 
         Generate explanations using custom percentile values for interval calculation:
-        >>> explain_factual(X_test, low_high_percentiles=(10, 90))
+        
+        .. code-block:: python
+        
+            w.explain_factual(X_test, low_high_percentiles=(10, 90))
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
@@ -1263,10 +1365,16 @@ class WrapCalibratedExplainer():
         Examples
         --------
         Generate explanations with a specific threshold for regression:
-        >>> explain_counterfactual(X_test, threshold=0.05)
+        
+        .. code-block:: python
+        
+            w.explain_counterfactual(X_test, threshold=0.05)
 
         Generate explanations using custom percentile values for interval calculation:
-        >>> explain_counterfactual(X_test, low_high_percentiles=(10, 90))
+        
+        .. code-block:: python
+        
+            w.explain_counterfactual(X_test, low_high_percentiles=(10, 90))
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
@@ -1311,10 +1419,16 @@ class WrapCalibratedExplainer():
         Examples
         --------
         Generate explanations with a specific threshold for regression:
-        >>> explain_perturbed(X_test, threshold=0.05)
+        
+        .. code-block:: python
+        
+            w.explain_perturbed(X_test, threshold=0.05)
 
         Generate explanations using custom percentile values for interval calculation:
-        >>> explain_perturbed(X_test, low_high_percentiles=(10, 90))
+        
+        .. code-block:: python
+        
+            w.explain_perturbed(X_test, low_high_percentiles=(10, 90))
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
@@ -1361,12 +1475,20 @@ class WrapCalibratedExplainer():
         Examples
         --------
         For a prediction without prediction intervals:
-        >>> predict(X_test)
+        
+        .. code-block:: python
+        
+            w.predict(X_test)
 
         For a prediction with uncertainty quantification intervals:
-        >>> predict(X_test, uq_interval=True)
+        
+        .. code-block:: python
+        
+            w.predict(X_test, uq_interval=True)
 
-        Note: The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
+        Note
+        ----
+        The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting.")
@@ -1394,7 +1516,7 @@ class WrapCalibratedExplainer():
             return predict
         predict, low, high, new_classes = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
         if new_classes is None:
-            new_classes = predict
+            new_classes = (predict >= 0.5).astype(int)
         if uq_interval:
             return new_classes, (low, high)
         return new_classes
@@ -1436,12 +1558,20 @@ class WrapCalibratedExplainer():
         Examples
         --------
         For a prediction without uncertainty quantification intervals:
-        >>> predict_proba(X_test)
+        
+        .. code-block:: python
+        
+            w.predict_proba(X_test)
 
         For a prediction with uncertainty quantification intervals:
-        >>> predict_proba(X_test, uq_interval=True)
+        
+        .. code-block:: python
+        
+            w.predict_proba(X_test, uq_interval=True)
 
-        Note: The `threshold` parameter is only used for regression tasks.
+        Note
+        ----
+        The `threshold` parameter is only used for regression tasks.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting probabilities.")
