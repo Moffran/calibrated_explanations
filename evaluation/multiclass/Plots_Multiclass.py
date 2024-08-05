@@ -54,15 +54,15 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
     factual_explanations = ce.explain_factual(testX)
     for i in range(num_to_test):
         predicted = factual_explanations.get_explanation(i).prediction['classes']
-        factual_explanations.plot_explanation(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_i{i}_c{testY[i]}_p{predicted}.png")
-        factual_explanations.plot_explanation(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_i{i}_c{testY[i]}_p{predicted}.png")
+        factual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_i{i}_c{testY[i]}_p{predicted}.png")
+        factual_explanations.plot(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_i{i}_c{testY[i]}_p{predicted}.png")
 
     print('Factual Explanations done', end=' - ', flush=True)
 
     counterfactual_explanations = ce.explain_counterfactual(testX)
     for i in range(num_to_test):
         predicted = counterfactual_explanations.get_explanation(i).prediction['classes']
-        counterfactual_explanations.plot_explanation(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_i{i}_c{testY[i]}_p{predicted}.png")
+        counterfactual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_i{i}_c{testY[i]}_p{predicted}.png")
 
     print('Counterfactual Explanations done', end=' - ', flush=True)
     
@@ -74,14 +74,14 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
     factual_explanations = ce.explain_factual(testX, bins=test_p)
     for i in range(num_to_test):
         predicted = factual_explanations.get_explanation(i).prediction['classes']
-        factual_explanations.plot_explanation(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
-        factual_explanations.plot_explanation(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
+        factual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
+        factual_explanations.plot(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
 
     print('Mondrian Factual Explanations done', end=' - ', flush=True)
 
     counterfactual_explanations = ce.explain_counterfactual(testX, bins=test_p)
     for i in range(num_to_test):
         predicted = counterfactual_explanations.get_explanation(i).prediction['classes']
-        counterfactual_explanations.plot_explanation(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
+        counterfactual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
 
     print('Mondrian Counterfactual Explanations done')

@@ -3,7 +3,8 @@
 ## [Unreleased]
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...main)
 ### Features
-- Added __len__ and __getitem__ to `CalibratedExplanations`.
+- Renamed the `plot_all` and `plot_explanation` functions to `plot` and updated all usages of the `plot` function.
+- Added __len__ and __getitem__ to `CalibratedExplanations`. __getitem__ allow indexing with `int`, `slice`, boolean and integer lists.
 - Restructured package by adding a utils folder:
   - Moved discretizers.py to utils
   - Moved utils.py to utils and renamed to helper.py 
@@ -13,6 +14,7 @@
 - Updated CI to skip pytest if previous lint failed and commit message starts with 'style:' (since then only the lint needs to be rerun).
 - Updated CI to avoid running tests when commit message starts with 'info:' or 'docs:'.
 ### Fixes
+- Improved the `safe_import` to allow `import ... from ...` constructs.
 - Improved tests to test `predict` and `predict_proba` functions in `WrapCalibratedExplainer` better.
 - Fixed the `predict` and `predict_proba` functions in `WrapCalibratedExplainer`.  
 

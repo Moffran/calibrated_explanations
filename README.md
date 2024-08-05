@@ -291,23 +291,23 @@ factual_explanations = classifier.explain_factual(X_test)
 display(classifier)
 ```
 
-Once we have the explanations, we can plot all of them using `plot_all`. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. To plot only a single instance, the `plot_explanation` function can be called, submitting the index of the test instance to plot.
+Once we have the explanations, we can plot all of them using `plot`. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. To plot only a single instance, the `plot` function can be called, submitting the index of the test instance to plot.
 
 
 ```python
-factual_explanations.plot_all()
-factual_explanations.plot_all(uncertainty=True)
+factual_explanations.plot()
+factual_explanations.plot(uncertainty=True)
 
-factual_explanations.plot_explanation(0, uncertainty=True)
+factual_explanations.plot(0, uncertainty=True)
 ```
 
 You can also add and remove conjunctive rules.
 
 
 ```python
-factual_explanations.add_conjunctions().plot_explanation(0)
-factual_explanations.plot_explanation(0, uncertainty=True)
-factual_explanations.remove_conjunctions().plot_explanation(0, uncertainty=True)
+factual_explanations.add_conjunctions().plot(0)
+factual_explanations.plot(0, uncertainty=True)
+factual_explanations.remove_conjunctions().plot(0, uncertainty=True)
 ```
 
 #### Counterfactual Explanations
@@ -319,14 +319,14 @@ counterfactual_explanations = classifier.explain_counterfactual(X_test)
 display(classifier)
 ```
 
-Counterfactuals are also visualized using the `plot_all`. Plotting an individual counterfactual explanation is done using `plot_explanation`, submitting the index to plot. Adding or removing conjunctions is done as before. 
+Counterfactuals are also visualized using the `plot`. Plotting an individual counterfactual explanation is done using `plot`, submitting the index to plot. Adding or removing conjunctions is done as before. 
 
 
 ```python
-counterfactual_explanations.plot_all()
-counterfactual_explanations.add_conjunctions().plot_all()
+counterfactual_explanations.plot()
+counterfactual_explanations.add_conjunctions().plot()
 
-counterfactual_explanations.plot_explanation(0)
+counterfactual_explanations.plot(0)
 ```
 
 `calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
@@ -428,10 +428,10 @@ Regression also offer both regular and uncertainty plots for factual explanation
 
 
 ```python
-factual_explanations.plot_all()
-factual_explanations.plot_all(uncertainty=True)
+factual_explanations.plot()
+factual_explanations.plot(uncertainty=True)
 
-factual_explanations.add_conjunctions().plot_all(uncertainty=True)
+factual_explanations.add_conjunctions().plot(uncertainty=True)
 ```
 
 Default, the confidence interval is set to a symmetric interval of 90% (defined as `low_high_percentiles=(5,95)`). The intervals can cover any user specified interval, including one-sided intervals. To define a one-sided upper-bounded 90% interval, set `low_high_percentiles=(-np.inf,90)`, and to define a one-sided lower-bounded 95% interval, set `low_high_percentiles=(5,np.inf)`. Percentiles can also be set to any other values in the range (0,100) (exclusive), and intervals do not have to be symmetric. 
@@ -455,8 +455,8 @@ Counterfactual plots work as for classification.
 
 
 ```python
-counterfactual_explanations.plot_all()
-counterfactual_explanations.add_conjunctions().plot_all()
+counterfactual_explanations.plot()
+counterfactual_explanations.add_conjunctions().plot()
 ```
 
 ### Probabilistic Regression
@@ -465,14 +465,14 @@ The difference between probabilistic regression and regular regression is that t
 
 ```python
 probabilistic_factual_explanations = regressor.explain_factual(X_test, threshold=200)
-probabilistic_factual_explanations.plot_all()
-probabilistic_factual_explanations.plot_all(uncertainty=True)
+probabilistic_factual_explanations.plot()
+probabilistic_factual_explanations.plot(uncertainty=True)
 ```
 
 
 ```python
 probabilistic_counterfactual_explanations = regressor.explain_counterfactual(X_test, threshold=200)
-probabilistic_counterfactual_explanations.plot_all()
+probabilistic_counterfactual_explanations.plot()
 ```
 
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.

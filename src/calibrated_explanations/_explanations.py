@@ -226,7 +226,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         return isinstance(self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer))
 
     # pylint: disable=too-many-arguments
-    def plot_all(self,
+    def plot(self, 
+                index=None,                         
                 n_features_to_show=10,
                 sort_on_uncertainty=False, 
                 show=False,
@@ -234,30 +235,33 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 uncertainty=False,
                 style='regular',
                 interactive=False):
-        '''The function `plot_all` plots either counterfactual or factual explanations for a given
+        '''The function `plot` plots either counterfactual or factual explanations for a given
         instance, with the option to show or save the plots.
         
         Parameters
         ----------
-        n_features_to_show, optional
-            The parameter "n_features_to_show" determines the number of top features to display in the
-            plot. It specifies how many of the most important features should be shown in the plot.
+        index : int or None, default=None
+            The index of the instance for which you want to plot the explanation. If None, the function will plot all the explanations.
+        n_features_to_show :  int or None, default=10
+            The parameter `n_features_to_show` determines the number of top features to display in the
+            plot. It specifies how many of the most important features should be shown in the plot. If set to
+            `None`, all the features will be shown. 
         sort_on_uncertainty : bool, default=False
             The `sort_on_uncertainty` parameter is a boolean flag that determines whether to sort the
             features based on the uncertainty intervals. If `sort_on_uncertainty` is set to `True`, the
             features will be sorted based on the uncertainty intervals, with smallest on top. If `sort_on_uncertainty` is set to
             `False`, the features will be sorted based on the feature weights (default).
-        show, optional
-            The "show" parameter determines whether the plots should be displayed immediately after they
+        show : bool, default=False
+            The `show` parameter determines whether the plots should be displayed immediately after they
             are generated. If set to True, the plots will be shown; if set to False, the plots will not be
-            shown.
+            shown. Plots will be shown in jupyter notebooks.
         filename : str, default=''
             The filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file. The index of each explanation will be appended to the
             filename (e.g. filename0.png, filename1.png, etc.).
-        uncertainty, optional
-            The "uncertainty" parameter is a boolean flag that determines whether to include uncertainty
+        uncertainty : bool, default=False
+            The `uncertainty` parameter is a boolean flag that determines whether to include uncertainty
             information in the plots. If set to True, the plots will show uncertainty measures, if
             available, along with the explanations. If set to False, the plots will only show the
             explanations without uncertainty information. Only applicable to factual explanations.
@@ -268,60 +272,18 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             filename = os.path.basename(filename)
             title, ext = os.path.splitext(filename)
             make_directory(path, save_ext=np.array([ext]))
-        for index, explanation in enumerate(self.explanations):
+        if index is not None:            
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
-            explanation.plot_explanation(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
+            self.get_explanation(index).plot(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
+                                        show=show, filename=filename, uncertainty=uncertainty, style=style, interactive=interactive)
+        else:
+            for index, explanation in enumerate(self.explanations):
+                if len(filename) > 0:
+                    filename = path + title + str(index) + ext
+                explanation.plot(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
                                         show=show, filename=filename, uncertainty=uncertainty, style=style, interactive=interactive)
 
-
-
-    # pylint: disable=too-many-arguments
-    def plot_explanation(self, instance_index, 
-                        n_features_to_show=10, 
-                        sort_on_uncertainty=False, 
-                        show=False, filename='', 
-                        uncertainty=False, 
-                        style='regular',
-                        interactive=False):
-        '''This function plots the explanation for a given instance using either factual or
-        counterfactual plots.
-        
-        Parameters
-        ----------
-        instance_index : int
-            The index of the instance for which you want to plot the  explanation.
-        n_features_to_show : int, default=10
-            The `n_features_to_show` parameter determines the number of top features to display in the
-            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
-            number of features, up to the total number of features available.
-        sort_on_uncertainty : bool, default=False
-            The `sort_on_uncertainty` parameter is a boolean flag that determines whether to sort the
-            features based on the uncertainty intervals. If `sort_on_uncertainty` is set to `True`, the
-            features will be sorted based on the uncertainty intervals, with smallest on top. If `sort_on_uncertainty` is set to
-            `False`, the features will be sorted based on the feature weights (default).
-        show : bool, default=False
-            A boolean parameter that determines whether the plot should be displayed or not. If set to
-            True, the plot will be displayed. If set to False, the plot will not be displayed.
-        filename : str, default=''
-            The filename parameter is a string that represents the full path and filename of the plot
-            image file that will be saved. If this parameter is not provided or is an empty string, the plot
-            will not be saved as an image file.
-        uncertainty : bool, default=False
-            Only applicable if factual explanation. The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
-            intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
-            range of possible feature weights based on the lower and upper bounds of the uncertainty
-            intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
-        style : str, default='regular'
-            The `style` parameter is a string that determines the style of the plot. Possible styles are
-            * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
-            * 'triangular' - a triangular plot for counterfactual explanations highlighting the interplay 
-                between the calibrated probability and the uncertainty intervals
-        
-        '''
-        explanation = self.get_explanation(instance_index)
-        explanation.plot_explanation(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty, 
-                                show=show, filename=filename, uncertainty=uncertainty, style=style, interactive=interactive)
 
 
     def get_semi_explanations(self, class_label=None, only_ensured=False):
@@ -521,8 +483,8 @@ class CalibratedExplanation(ABC):
         pass
 
     @abstractmethod
-    def plot_explanation(self, n_features_to_show=None, **kwargs):
-        '''The function `plot_explanation` plots either counterfactual or factual explanations for a given
+    def plot(self, n_features_to_show=None, **kwargs):
+        '''The `plot` function plots explanations for a given
         instance, with the option to show or save the plots.
         '''
         # pass
@@ -967,7 +929,7 @@ class FactualExplanation(CalibratedExplanation):
         self._has_conjunctive_rules = True
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
-    def plot_explanation(self, n_features_to_show=None, **kwargs):
+    def plot(self, n_features_to_show=None, **kwargs):
         '''This function plots the factual explanation for a given instance using either probabilistic or
         regression plots.
         
@@ -1755,7 +1717,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
         
     # pylint: disable=consider-iterating-dictionary
-    def plot_explanation(self, n_features_to_show=None, **kwargs):
+    def plot(self, n_features_to_show=None, **kwargs):
         '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
         a dataset.
         
@@ -2181,7 +2143,7 @@ class PerturbedExplanation(CalibratedExplanation):
         return self.conditions
 
 
-    def plot_explanation(self, n_features_to_show=None, **kwargs):
+    def plot(self, n_features_to_show=None, **kwargs):
         '''This function plots the factual explanation for a given instance using either probabilistic or
         regression plots.
         
