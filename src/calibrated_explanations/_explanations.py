@@ -278,9 +278,9 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             self.get_explanation(index).plot(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
                                         show=show, filename=filename, uncertainty=uncertainty, style=style, interactive=interactive)
         else:
-            for index, explanation in enumerate(self.explanations):
+            for i, explanation in enumerate(self.explanations):
                 if len(filename) > 0:
-                    filename = path + title + str(index) + ext
+                    filename = path + title + str(i) + ext
                 explanation.plot(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
                                         show=show, filename=filename, uncertainty=uncertainty, style=style, interactive=interactive)
 
