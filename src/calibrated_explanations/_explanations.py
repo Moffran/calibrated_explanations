@@ -58,10 +58,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             elif isinstance(key[0], int):
                 # Handle integer list indexing
                 new_.explanations = [self.explanations[i] for i in key]
-            new_.bins = None if self.bins is None else [self.bins[e.instance_index] for e in new_]
-            new_.test_objects = [self.test_objects[e.instance_index,:] for e in new_]
+            new_.bins = None if self.bins is None else [self.bins[e.index] for e in new_]
+            new_.test_objects = [self.test_objects[e.index,:] for e in new_]
             new_.y_threshold = None if self.y_threshold is None else self.y_threshold \
-                        if np.isscalar(self.y_threshold) else [self.y_threshold[e.instance_index] for e in new_]
+                        if np.isscalar(self.y_threshold) else [self.y_threshold[e.index] for e in new_]
             new_.start_index = 0
             new_.current_index = new_.start_index
             new_.end_index = len(new_)
@@ -193,13 +193,13 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    def get_explanation(self, instance_index):
-        '''The function `get_explanation` returns the explanation corresponding to the instance_index.
+    def get_explanation(self, index):
+        '''The function `get_explanation` returns the explanation corresponding to the index.
         
         Parameters
         ----------
-        instance_index
-            The `instance_index` parameter is an integer that represents the index of the explanation
+        index
+            The `index` parameter is an integer that represents the index of the explanation
             instance that you want to retrieve. It is used to specify which explanation instance you want to
             get from either the counterfactual rules or the factual rules.
         
@@ -209,10 +209,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             on the condition `self._is_counterfactual()`. 
         
         '''
-        assert isinstance(instance_index, int), "instance_index must be an integer"
-        assert instance_index >= 0, "instance_index must be greater than or equal to 0"
-        assert instance_index < len(self.test_objects), "instance_index must be less than the number of test instances"        
-        return self.explanations[instance_index]
+        assert isinstance(index, int), "index must be an integer"
+        assert index >= 0, "index must be greater than or equal to 0"
+        assert index < len(self.test_objects), "index must be less than the number of test instances"        
+        return self.explanations[index]
 
 
     def _is_counterfactual(self):
@@ -410,24 +410,24 @@ class CalibratedExplanation(ABC):
     '''
     A class for storing and visualizing calibrated explanations.
     '''
-    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+    def __init__(self, calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
         self.calibrated_explanations = calibrated_explanations
-        self.instance_index = instance_index
+        self.index = index
         self.test_object = test_object
         self.binned = {}
         self.feature_weights = {}
         self.feature_predict = {}
         self.prediction = {}
         for key in binned.keys():
-            self.binned[key] = deepcopy(binned[key][instance_index])
+            self.binned[key] = deepcopy(binned[key][index])
         for key in feature_weights.keys():
-            self.feature_weights[key] = deepcopy(feature_weights[key][instance_index])
-            self.feature_predict[key] = deepcopy(feature_predict[key][instance_index])
+            self.feature_weights[key] = deepcopy(feature_weights[key][index])
+            self.feature_predict[key] = deepcopy(feature_predict[key][index])
         for key in prediction.keys():
-            self.prediction[key] = deepcopy(prediction[key][instance_index])
+            self.prediction[key] = deepcopy(prediction[key][index])
         self.y_threshold=y_threshold if np.isscalar(y_threshold) else \
                             None if y_threshold is None else \
-                            y_threshold[instance_index] 
+                            y_threshold[index] 
 
         self.conditions = []
         self.rules = []
@@ -712,8 +712,8 @@ class FactualExplanation(CalibratedExplanation):
     '''
     A class for storing and visualizing factual explanations.
     '''
-    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
-        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
+    def __init__(self, calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
 
@@ -773,7 +773,7 @@ class FactualExplanation(CalibratedExplanation):
         if self._has_rules:
             return self.rules        
         self._has_rules = False
-        # i = self.instance_index
+        # i = self.index
         instance = deepcopy(self.test_object)
         factual = {'base_predict': [],
                     'base_predict_low': [],
@@ -847,7 +847,7 @@ class FactualExplanation(CalibratedExplanation):
             conjunctive = deepcopy(factual)
         self._has_conjunctive_rules = False
         self.conjunctive_rules = []
-        i =self.instance_index
+        i =self.index
         # pylint: disable=unsubscriptable-object, invalid-name
         threshold = None if self.y_threshold is None else self.y_threshold
         x_original = deepcopy(self.test_object)
@@ -935,8 +935,6 @@ class FactualExplanation(CalibratedExplanation):
         
         Parameters
         ----------
-        instance_index : int
-            The index of the instance for which you want to plot the factual explanation.
         n_features_to_show : int, default=10
             The `n_features_to_show` parameter determines the number of top features to display in the
             plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
@@ -963,7 +961,7 @@ class FactualExplanation(CalibratedExplanation):
         interactive = kwargs['interactive'] if 'interactive' in kwargs else False
         
         
-        factual = self._get_rules() #get_explanation(instance_index)
+        factual = self._get_rules() #get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         num_features_to_show = len(factual['weight'])
@@ -971,7 +969,7 @@ class FactualExplanation(CalibratedExplanation):
             n_features_to_show = num_features_to_show
         n_features_to_show = np.min([num_features_to_show, n_features_to_show])
         if n_features_to_show <= 0:
-            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.instance_index}')
+            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.index}')
             return
 
         if len(filename) > 0:
@@ -999,11 +997,11 @@ class FactualExplanation(CalibratedExplanation):
         column_names = factual['rule']
         if 'classification' in self._get_explainer().mode or self._is_thresholded():
             self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
+                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext, interactive=interactive)
         else:                
             self.__plot_regression(factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
+                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext, interactive=interactive)
 
     # pylint: disable=dangerous-default-value, unused-argument
@@ -1268,8 +1266,8 @@ class CounterfactualExplanation(CalibratedExplanation):
     '''This class represents a counterfactual explanation for a given instance. It is a subclass of
     `CalibratedExplanation` and inherits all its properties and methods. 
     '''
-    def __init__(self, calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
-        super().__init__(calibrated_explanations, instance_index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
+    def __init__(self, calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
         self.__is_semi_explanation = False
@@ -1723,8 +1721,6 @@ class CounterfactualExplanation(CalibratedExplanation):
         
         Parameters
         ----------
-        instance_index : int
-            The index of the instance for which you want to plot the counterfactual explanation.
         n_features_to_show : int, default=10
             The `n_features_to_show` parameter determines the number of top features to display in the
             plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
@@ -1752,7 +1748,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         interactive = kwargs['interactive'] if 'interactive' in kwargs.keys() else False
         sort_on_uncertainty = kwargs['sort_on_uncertainty'] if 'sort_on_uncertainty' in kwargs.keys() else False
 
-        counterfactual = self._get_rules() #get_explanation(instance_index)
+        counterfactual = self._get_rules() #get_explanation(index)
         self._check_preconditions()      
         predict = self.prediction
         if len(filename) > 0:
@@ -1779,7 +1775,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             n_features_to_show = num_rules
         num_to_show_ = np.min([num_rules, n_features_to_show])
         if num_to_show_ <= 0:
-            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.instance_index}')
+            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.index}')
             return
 
         if sort_on_uncertainty:
@@ -2031,8 +2027,8 @@ class PerturbedExplanation(CalibratedExplanation):
     """
     Perturbed Explanation class, representing shap-like explanations.
     """
-    def __init__(self, calibrated_explanations, instance_index, test_object, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
-        super().__init__(calibrated_explanations, instance_index, test_object, {}, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
+    def __init__(self, calibrated_explanations, index, test_object, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, index, test_object, {}, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
 
@@ -2078,7 +2074,7 @@ class PerturbedExplanation(CalibratedExplanation):
         if self._has_rules:
             return self.rules        
         self._has_rules = False
-        # i = self.instance_index
+        # i = self.index
         instance = deepcopy(self.test_object)
         perturbed = {'base_predict': [],
                     'base_predict_low': [],
@@ -2149,8 +2145,6 @@ class PerturbedExplanation(CalibratedExplanation):
         
         Parameters
         ----------
-        instance_index : int
-            The index of the instance for which you want to plot the factual explanation.
         n_features_to_show : int, default=10
             The `n_features_to_show` parameter determines the number of top features to display in the
             plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
@@ -2177,7 +2171,7 @@ class PerturbedExplanation(CalibratedExplanation):
         interactive = kwargs['interactive'] if 'interactive' in kwargs else False
         
         
-        factual = self._get_rules() #get_explanation(instance_index)
+        factual = self._get_rules() #get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         num_features_to_show = len(factual['weight'])
@@ -2185,7 +2179,7 @@ class PerturbedExplanation(CalibratedExplanation):
             n_features_to_show = num_features_to_show
         n_features_to_show = np.min([num_features_to_show, n_features_to_show])
         if n_features_to_show <= 0:
-            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.instance_index}')
+            warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.index}')
             return
 
         if len(filename) > 0:
@@ -2213,11 +2207,11 @@ class PerturbedExplanation(CalibratedExplanation):
         column_names = factual['rule']
         if 'classification' in self._get_explainer().mode or self._is_thresholded():
             self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
+                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext, interactive=interactive)
         else:                
             self.__plot_regression(factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.instance_index,
+                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext, interactive=interactive)
 
     # pylint: disable=dangerous-default-value, unused-argument
