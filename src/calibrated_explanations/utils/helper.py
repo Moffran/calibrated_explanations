@@ -4,6 +4,7 @@ Author: Tuwe Löfström
 '''
 import os
 import sys
+import importlib
 from inspect import isclass
 import numpy as np
 from pandas.api.types import is_categorical_dtype
@@ -74,15 +75,22 @@ def safe_isinstance(obj, class_path_str):
 
     return False
 
-def safe_import(module_name):
+def safe_import(module_name, class_name=None):
     '''safely import a module, if it is not installed, print a message and return None
     '''
     try:
-        imported_module = __import__(module_name)
-        return imported_module
+        imported_module = importlib.import_module(module_name)
+        if class_name is None:
+            return imported_module
+        if isinstance(class_name, (list, np.ndarray)):
+            return [getattr(imported_module, name) for name in class_name]
+        return getattr(imported_module, class_name)
     except ImportError as exc:
-        raise ImportError(f"The required module '{module_name}' is not installed. \
-            Please install it using 'pip install {module_name}' or another method.") from exc
+        raise ImportError(f"The required module '{module_name}' is not installed. "
+                f"Please install it using 'pip install {module_name}' or another method.") from exc
+    except AttributeError as exc:
+        raise ImportError(f"The class or function '{class_name}' does "+
+                f"not exist in the module '{module_name}'.") from exc
 
 # copied from sklearn.utils.validation.check_is_fitted
 def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
