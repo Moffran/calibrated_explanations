@@ -16,6 +16,7 @@ import warnings
 from time import time
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -1674,7 +1675,7 @@ class WrapCalibratedExplainer():
             if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
                 norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
                 # Choose a colormap
-                colormap = plt.cm.viridis  # pylint: disable=no-member
+                colormap = cm.viridis  # pylint: disable=no-member
                 # Map the normalized values to colors
                 colors = colormap(norm(y_test))
                 ax.scatter(predict, uncertainty, label='Predictions', color=colors, marker='.', s=marker_size)
@@ -1699,7 +1700,7 @@ class WrapCalibratedExplainer():
                     markers = ['o', 'x']
                     proba = proba[:,1]
                 else:
-                    colormap = plt.cm.get_cmap('tab10', len(labels))
+                    colormap = cm.get_cmap('tab10', len(labels))
                     colors = [colormap(i) for i in range(len(labels))]
                     markers = ['o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H','o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H'][:len(labels)]
                     proba = proba[np.arange(len(proba)), y_test]
