@@ -50,9 +50,22 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         if isinstance(key, slice):
             # Handle slicing
             return self.explanations[key]
-        if isinstance(key, (list, np.ndarray)) and isinstance(key[0], (bool, np.bool_)):
-            # Handle boolean indexing
-            return [exp for exp, include in zip(self.explanations, key) if include]
+        if isinstance(key, (list, np.ndarray)):
+            new_ = deepcopy(self)
+            if isinstance(key[0], (bool, np.bool_)):
+                # Handle boolean indexing
+                new_.explanations = [exp for exp, include in zip(self.explanations, key) if include]
+            elif isinstance(key[0], int):
+                # Handle integer list indexing
+                new_.explanations = [self.explanations[i] for i in key]
+            new_.bins = None if self.bins is None else [self.bins[e.instance_index] for e in new_]
+            new_.test_objects = [self.test_objects[e.instance_index,:] for e in new_]
+            new_.y_threshold = None if self.y_threshold is None else self.y_threshold \
+                        if np.isscalar(self.y_threshold) else [self.y_threshold[e.instance_index] for e in new_]
+            new_.start_index = 0
+            new_.current_index = new_.start_index
+            new_.end_index = len(new_)
+            return new_
         raise TypeError("Invalid argument type.")
 
 
