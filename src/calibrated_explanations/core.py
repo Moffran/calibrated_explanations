@@ -16,7 +16,6 @@ import warnings
 from time import time
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -1117,11 +1116,11 @@ class CalibratedExplainer:
         #     LimeTabularExplainer: a LimeTabularExplainer object defined for the problem
         #     lime_exp: a template lime explanation achieved through the explain_instance method
         # """
-        LimeTabularExplainer = safe_import("lime.lime_tabular.LimeTabularExplainer")
-        if LimeTabularExplainer:
+        lime = safe_import("lime.lime_tabular","LimeTabularExplainer")
+        if lime:
             if not self._is_lime_enabled():
                 if self.mode == 'classification':
-                    self.lime = LimeTabularExplainer(self.cal_X[:1, :],
+                    self.lime = lime(self.cal_X[:1, :],
                                                     feature_names=self.feature_names,
                                                     class_names=['0','1'],
                                                     mode=self.mode)
@@ -1129,7 +1128,7 @@ class CalibratedExplainer:
                                                                 self.model.predict_proba,
                                                                 num_features=self.num_features)
                 elif 'regression' in self.mode:
-                    self.lime = LimeTabularExplainer(self.cal_X[:1, :],
+                    self.lime = lime(self.cal_X[:1, :],
                                                     feature_names=self.feature_names,
                                                     mode='regression')
                     self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
@@ -1675,7 +1674,7 @@ class WrapCalibratedExplainer():
             if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
                 norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
                 # Choose a colormap
-                colormap = cm.viridis  # pylint: disable=no-member
+                colormap = plt.cm.viridis  # pylint: disable=no-member
                 # Map the normalized values to colors
                 colors = colormap(norm(y_test))
                 ax.scatter(predict, uncertainty, label='Predictions', color=colors, marker='.', s=marker_size)
@@ -1700,7 +1699,7 @@ class WrapCalibratedExplainer():
                     markers = ['o', 'x']
                     proba = proba[:,1]
                 else:
-                    colormap = cm.get_cmap('tab10', len(labels))
+                    colormap = plt.get_cmap('tab10', len(labels))
                     colors = [colormap(i) for i in range(len(labels))]
                     markers = ['o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H','o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H'][:len(labels)]
                     proba = proba[np.arange(len(proba)), y_test]
