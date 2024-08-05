@@ -324,7 +324,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                 show=show, filename=filename, uncertainty=uncertainty, style=style, interactive=interactive)
 
 
-    def get_semi_explanations(self, only_ensured=False):
+    def get_semi_explanations(self, class_label=None, only_ensured=False):
         '''
         The function `get_semi_explanations` returns a copy of this `CalibratedExplanations` object with only semi-explanations.
         Semi-explanations are individual rules that support the predicted class. 
@@ -345,11 +345,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         assert self._is_counterfactual(), 'Semi-explanations are only available for counterfactual explanations'
         semi_explanations = deepcopy(self)
         for explanation in semi_explanations.explanations:
-            explanation.get_semi_explanations(only_ensured=only_ensured)
+            explanation.get_semi_explanations(class_label=class_label, only_ensured=only_ensured)
         return semi_explanations
 
 
-    def get_counter_explanations(self, only_ensured=False):
+    def get_counter_explanations(self, class_label=None, only_ensured=False):
         '''
         The function `get_counter_explanations` returns a copy of this `CalibratedExplanations` object with only counter-explanations.
         Counter-explanations are individual rules that does not support the predicted class. 
@@ -370,7 +370,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         assert self._is_counterfactual(), 'Counter-explanations are only available for counterfactual explanations'
         counter_explanations = deepcopy(self)
         for explanation in counter_explanations.explanations:
-            explanation.get_counter_explanations(only_ensured=only_ensured)
+            explanation.get_counter_explanations(class_label=class_label, only_ensured=only_ensured)
         return counter_explanations
 
     def get_ensured_explanations(self):
@@ -1508,13 +1508,15 @@ class CounterfactualExplanation(CalibratedExplanation):
         '''
         return self.__is_counter_explanation
 
-    def __filter_rules(self, only_ensured=False, make_semi=False, make_counter=False):
+    def __filter_rules(self, class_label=None, only_ensured=False, make_semi=False, make_counter=False):
         '''
         This is a support function to semi and counter explanations. It filters out rules that are not
         relevant to the explanation. 
         '''
-        
-        positive_class = self.prediction['predict'] > 0.5
+        if class_label is None:
+            positive_class = self.prediction['predict'] > 0.5
+        else:
+            positive_class = class_label == 1            
         initial_uncertainty = np.abs(self.prediction['high'] - self.prediction['low'])
 
         # get the semi-explanations for the predicted class
@@ -1595,7 +1597,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         self.rules = new_rules
         return self
 
-    def get_semi_explanations(self, only_ensured=False):
+    def get_semi_explanations(self, class_label=None, only_ensured=False):
         '''
         This function returns the semi-explanations from this counterfactual explanation. 
         Semi-explanations are individual rules that support the predicted class. 
@@ -1612,11 +1614,11 @@ class CounterfactualExplanation(CalibratedExplanation):
         self : CounterfactualExplanation
             Returns self filtered to only contain semi-factual or semi-potential explanations. 
         '''
-        self.__filter_rules(only_ensured=only_ensured, make_semi=True)
+        self.__filter_rules(class_label=class_label, only_ensured=only_ensured, make_semi=True)
         self.__is_semi_explanation = True
         return self
 
-    def get_counter_explanations(self, only_ensured=False):
+    def get_counter_explanations(self, class_label=None, only_ensured=False):
         '''
         This function returns the counter-explanations from this counterfactual explanation. 
         Counter-explanations are individual rules that does not support the predicted class. 
@@ -1633,7 +1635,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         self : CounterfactualExplanation
             Returns self filtered to only contain counter-factual or counter-potential explanations. 
         '''
-        self.__filter_rules(only_ensured=only_ensured, make_counter=True)
+        self.__filter_rules(class_label=class_label, only_ensured=only_ensured, make_counter=True)
         self.__is_counter_explanation = True
         return self
 
