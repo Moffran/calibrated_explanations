@@ -1,11 +1,12 @@
 *.pdf
 *.svg
 evaluation/results_sota.pkl
-# *.png
+*.png
+*.pkl
 .vscode/
 dump/
 pickle/
-# plots/
+*plots/
 results/
 doc/
 evaluation/secret/
@@ -14,8 +15,6 @@ debug/
 src/debug/
 
 calibrated-explanations/
-evaluation/results_mondrian.pkl
-
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
