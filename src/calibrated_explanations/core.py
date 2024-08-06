@@ -871,7 +871,7 @@ class CalibratedExplainer:
             cal_X, cal_y, bins = self.cal_X, self.cal_y, self.bins
             self.perturbed_cal_X, self.scaled_cal_X, self.scaled_cal_y, scale_factor = \
                 perturb_dataset(self.cal_X, self.cal_y, self.categorical_features, noise_type='uniform', scale_factor=5, severity=1)
-            self.bins = [self.bins]*scale_factor if self.bins is not None else None
+            self.bins = np.tile(self.bins.copy(), scale_factor) if self.bins is not None else None
             for f in range(self.num_features):
                 perturbed_cal_X = self.scaled_cal_X.copy()
                 perturbed_cal_X[:,f] = self.perturbed_cal_X[:,f]
