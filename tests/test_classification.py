@@ -105,6 +105,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
                                                  'calibrated_explanations.CounterfactualExplanation'])
         return True
 
+
     def test_binary_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
         model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
@@ -155,6 +156,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         counter = counterfactual_explanation.get_counter_explanations()
         self.assertExplanation(counter)
         counterfactual_explanation.add_conjunctions(max_rule_size=3)
+
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
@@ -215,6 +217,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         counter = counterfactual_explanation.get_counter_explanations(only_ensured=True)
         self.assertExplanation(counter)
 
+
     # @unittest.skip('Skipping provisionally.')
     def test_binary_conditional_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
@@ -254,6 +257,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
 
+
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_conditional_ce(self):
         trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
@@ -292,6 +296,126 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             counterfactual_explanation.plot()
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
+
+
+    def test_binary_perturbed_ce(self):
+        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            cal_X,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            mode='classification',
+            perturb=True
+        )
+        perturbed_explanation = cal_exp.explain_perturbed(testX)
+        perturbed_explanation.add_conjunctions()
+        perturbed_explanation.remove_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+        with pytest.raises(AssertionError):
+            _ = perturbed_explanation.get_semi_explanations()
+        with pytest.raises(AssertionError):
+            _ = perturbed_explanation.get_counter_explanations()
+        perturbed_explanation.add_conjunctions(max_rule_size=3)
+
+
+    # @unittest.skip('Test passes locally.  Skipping provisionally.')
+    def test_multiclass_perturbed_ce(self):
+        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            cal_X,
+            calY,
+            feature_names=feature_names,
+            categorical_labels=categorical_labels,
+            class_labels=target_labels,
+            mode='classification',
+            verbose=True,
+            perturb=True
+        )
+        print(cal_exp)
+        perturbed_explanation = cal_exp.explain_perturbed(testX)
+        perturbed_explanation.add_conjunctions()
+        perturbed_explanation.remove_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+        with pytest.raises(AssertionError):
+            _ = perturbed_explanation.get_semi_explanations()
+        with pytest.raises(AssertionError):
+            _ = perturbed_explanation.get_counter_explanations()
+        perturbed_explanation.add_conjunctions(max_rule_size=3)
+
+
+    # @unittest.skip('Skipping provisionally.')
+    def test_binary_conditional_perturbed_ce(self):
+        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        target_labels = ['No', 'Yes']
+        cal_exp = CalibratedExplainer(
+            model,
+            cal_X,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            class_labels=target_labels,
+            mode='classification',
+            bins=cal_X[:,0],
+            perturb=True
+        )
+        perturbed_explanation = cal_exp.explain_perturbed(testX, bins=testX[:,0])
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+
+    # @unittest.skip('Test passes locally.  Skipping provisionally.')
+    def test_multiclass_perturbed_conditional_ce(self):
+        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
+        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            cal_X,
+            calY,
+            feature_names=feature_names,
+            # categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            # class_labels=target_labels,
+            mode='classification',
+            bins=cal_X[:,0],
+            perturb=True
+        )
+        perturbed_explanation = cal_exp.explain_perturbed(testX, bins=testX[:,0])
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
 
 
 if __name__ == '__main__':
