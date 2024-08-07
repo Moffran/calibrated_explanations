@@ -33,7 +33,7 @@ class IntervalRegressor:
         self.ce = calibrated_explainer
         self.bins = calibrated_explainer.bins
         self.model = self
-        self.cal_y_hat = self.ce.model.predict(self.ce.cal_X)  # can be calculated through calibrated_explainer
+        self.cal_y_hat = self.ce.learner.predict(self.ce.cal_X)  # can be calculated through calibrated_explainer
         self.residual_cal = self.ce.cal_y - self.cal_y_hat  # can be calculated through calibrated_explainer
         self.sigma_cal = self.ce._get_sigma_test(X=self.ce.cal_X)  # pylint: disable=protected-access
         cps = crepes.ConformalPredictiveSystem()
@@ -116,7 +116,7 @@ class IntervalRegressor:
             four values: median, lower bound, upper bound, and None
                     
         '''
-        test_y_hat = self.ce.model.predict(test_X)
+        test_y_hat = self.ce.learner.predict(test_X)
 
         sigma_test = self.ce._get_sigma_test(X=test_X)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
@@ -152,7 +152,7 @@ class IntervalRegressor:
         negative class (1-proba) and the second column represents the probability of the positive class (proba).
         
         '''
-        test_y_hat = self.ce.model.predict(test_X)
+        test_y_hat = self.ce.learner.predict(test_X)
 
         sigma_test = self.ce._get_sigma_test(X=test_X)  # pylint: disable=protected-access
         proba = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test, y=self.current_y_threshold, bins=bins)

@@ -10,10 +10,10 @@ import venn_abers as va
 class VennAbers:
     """a class to calibrate the predictions of a model using the VennABERS method
     """
-    def __init__(self, cprobs, cal_y, model, bins=None):
+    def __init__(self, cprobs, cal_y, learner, bins=None):
         self.cprobs = cprobs
         self.ctargets = cal_y
-        self.model = model
+        self.learner = learner
         self.bins = bins
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         if self.is_mondrian():
@@ -58,7 +58,7 @@ class VennAbers:
         Returns:
             predicted classes (n_test_samples,): predicted classes based on the regularized VennABERS probabilities. If multiclass, the predicted class is 1 if the prediction from the underlying model is the same after calibration and 0 otherwise.
         """
-        # tprobs, _ = self.get_p_value(self.model.predict_proba(test_X))
+        # tprobs, _ = self.get_p_value(self.learner.predict_proba(test_X))
         # if self.is_mondrian():
         #     p0p1 = np.zeros((tprobs.shape[0],2))
         #     for va_bin, b in self.va:
@@ -91,10 +91,10 @@ class VennAbers:
                 high (n_test_samples,): upper bounds of the VennABERS interval for each test sample
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
-        if 'bins' in self.model.predict_proba.__code__.co_varnames:
-            tprobs = self.model.predict_proba(test_X, bins=bins)
+        if 'bins' in self.learner.predict_proba.__code__.co_varnames:
+            tprobs = self.learner.predict_proba(test_X, bins=bins)
         else:
-            tprobs = self.model.predict_proba(test_X)
+            tprobs = self.learner.predict_proba(test_X)
         p0p1 = np.zeros((tprobs.shape[0],2))
         va_proba = np.zeros(tprobs.shape)
 
