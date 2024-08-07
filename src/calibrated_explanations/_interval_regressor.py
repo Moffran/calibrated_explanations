@@ -31,15 +31,16 @@ class IntervalRegressor:
         
         '''
         self.ce = calibrated_explainer
+        self.bins = calibrated_explainer.bins
         self.model = self
         self.cal_y_hat = self.ce.model.predict(self.ce.cal_X)  # can be calculated through calibrated_explainer
         self.residual_cal = self.ce.cal_y - self.cal_y_hat  # can be calculated through calibrated_explainer
         self.sigma_cal = self.ce._get_sigma_test(X=self.ce.cal_X)  # pylint: disable=protected-access
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
-            cps.fit(residuals=self.residual_cal, sigmas=self.sigma_cal, bins=self.ce.bins)
+            cps.fit(residuals=self.residual_cal, sigmas=self.sigma_cal, bins=self.bins)
         else:
-            cps.fit(residuals=self.residual_cal, bins=self.ce.bins)
+            cps.fit(residuals=self.residual_cal, bins=self.bins)
         self.cps = cps
         self.venn_abers = None
         self.proba_cal = None
@@ -75,7 +76,7 @@ class IntervalRegressor:
         if np.isscalar(self.y_threshold):
             self.current_y_threshold = self.y_threshold
             if bins is not None:
-                assert self.ce.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
+                assert self.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
             self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.split['va'].predict_proba(test_X, output_interval=True, bins=bins)
             return proba[:, 1], low, high, None
@@ -168,13 +169,13 @@ class IntervalRegressor:
         self.split['parts'] = [cal_parts[:n//2], cal_parts[n//2:]]
         cal_cps = self.split['parts'][0]
         self.split['cps'] = crepes.ConformalPredictiveSystem()
-        if self.ce.bins is None:
+        if self.bins is None:
             self.split['cps'].fit(residuals=self.residual_cal[cal_cps],
                             sigmas=self.sigma_cal[cal_cps])
         else:
             self.split['cps'].fit(residuals=self.residual_cal[cal_cps],
                             sigmas=self.sigma_cal[cal_cps],
-                            bins=self.ce.bins[cal_cps])
+                            bins=self.bins[cal_cps])
 
     def compute_proba_cal(self, y_threshold: float):
         '''The `compute_proba_cal` function calculates the probability calibration for a given threshold.
@@ -191,10 +192,10 @@ class IntervalRegressor:
         
         '''
         cal_va = self.split['parts'][1]
-        if self.ce.bins is None:
+        if self.bins is None:
             bins = None
         else:
-            bins = self.ce.bins[cal_va]
+            bins = self.bins[cal_va]
         proba = self.split['cps'].predict(y_hat=self.cal_y_hat[cal_va],
                                 y=y_threshold,
                                 sigmas=self.sigma_cal[cal_va],
