@@ -206,7 +206,7 @@ class CalibratedExplainer:
 
     def __repr__(self):
         # pylint: disable=line-too-long
-        disp_str = f"CalibratedExplainer(mode={self.mode}{f', mondrian={self.bins}' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, model={self.model}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
+        disp_str = f"CalibratedExplainer(mode={self.mode}{f', mondrian=True' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, model={self.model}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
         if self.verbose:
             disp_str += f"\n\tinit_time={self.init_time}"
             if self.latest_explanation is not None:
@@ -886,6 +886,7 @@ class CalibratedExplainer:
             if self.mode == 'classification':
                 self.interval_model.append(VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model, self.bins))
             elif 'regression' in self.mode:
+                # Add a reference model using the original calibration data last
                 self.interval_model.append(IntervalRegressor(self))
         else:
             if self.mode == 'classification':
