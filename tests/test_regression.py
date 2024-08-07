@@ -659,9 +659,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         with pytest.raises(Warning):
             perturbed_explanation.plot(uncertainty=True)
         with pytest.raises(AssertionError):
-            semi = perturbed_explanation.get_semi_explanations()
+            _ = perturbed_explanation.get_semi_explanations()
         with pytest.raises(AssertionError):
-            counter = perturbed_explanation.get_counter_explanations()
+            _ = perturbed_explanation.get_counter_explanations()
 
 
     def test_probabilistic_regression_perturbed_ce(self):
@@ -699,9 +699,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
         with pytest.raises(AssertionError):
-            semi = perturbed_explanation.get_semi_explanations()
+            _ = perturbed_explanation.get_semi_explanations()
         with pytest.raises(AssertionError):
-            counter = perturbed_explanation.get_counter_explanations()
+            _ = perturbed_explanation.get_counter_explanations()
 
 
     # NOTE: this takes takes about 70s to run

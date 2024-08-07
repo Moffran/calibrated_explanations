@@ -206,7 +206,7 @@ class CalibratedExplainer:
 
     def __repr__(self):
         # pylint: disable=line-too-long
-        disp_str = f"CalibratedExplainer(mode={self.mode}{f', mondrian=True' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, model={self.model}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
+        disp_str = f"CalibratedExplainer(mode={self.mode}{', conditional=True' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, model={self.model}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
         if self.verbose:
             disp_str += f"\n\tinit_time={self.init_time}"
             if self.latest_explanation is not None:
