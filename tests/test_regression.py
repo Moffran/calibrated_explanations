@@ -614,6 +614,339 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
 
 
+# ------------------------------------------------------------------------------
+
+
+    # NOTE: this takes takes about 70s to run
+    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    def test_regression_perturbed_ce(self):
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            perturb=True
+        )
+        perturbed_explanation = cal_exp.explain_perturbed(testX)
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"factual_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, low_high_percentiles=(0.1, np.inf))
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        with pytest.raises(Warning):
+            perturbed_explanation.plot(uncertainty=True)
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, low_high_percentiles=(-np.inf, 0.9))
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        with pytest.raises(Warning):
+            perturbed_explanation.plot(uncertainty=True)
+        with pytest.raises(AssertionError):
+            semi = perturbed_explanation.get_semi_explanations()
+        with pytest.raises(AssertionError):
+            counter = perturbed_explanation.get_counter_explanations()
+
+
+    def test_probabilistic_regression_perturbed_ce(self):
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            perturb=True
+        )
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, testY)
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, testY[0])
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+        with pytest.raises(AssertionError):
+            semi = perturbed_explanation.get_semi_explanations()
+        with pytest.raises(AssertionError):
+            counter = perturbed_explanation.get_counter_explanations()
+
+
+    # NOTE: this takes takes about 70s to run
+    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    def test_regression_conditional_perturbed_ce(self):
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            bins=calX[:,0],
+            perturb=True
+        )
+        perturbed_explanation = cal_exp.explain_perturbed(testX, bins=testX[:,0])
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, low_high_percentiles=(0.1, np.inf), bins=testX[:,0])
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        with pytest.raises(Warning):
+            perturbed_explanation.plot(uncertainty=True)
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, low_high_percentiles=(-np.inf, 0.9), bins=testX[:,0])
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        with pytest.raises(Warning):
+            perturbed_explanation.plot(uncertainty=True)
+
+
+    def test_probabilistic_regression_conditional_perturbed_ce(self):
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            bins=calY > testY[0],
+            perturb=True
+        )
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, testY, bins=testY > testY[0])
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, testY[0], bins=testY > testY[0])
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+
+    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    def test_knn_normalized_regression_perturbed_ce(self):
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            difficulty_estimator=DifficultyEstimator().fit(X=trainX, y=trainY, scaler=True),
+            perturb=True
+        )
+        perturbed_explanation = cal_exp.explain_perturbed(testX)
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, low_high_percentiles=(0.1, np.inf))
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        with pytest.raises(Warning):
+            perturbed_explanation.plot(uncertainty=True)
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, low_high_percentiles=(-np.inf, 0.9))
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        with pytest.raises(Warning):
+            perturbed_explanation.plot(uncertainty=True)
+
+
+    # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
+    def test_knn_normalized_probabilistic_regression_perturbed_ce(self):
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            difficulty_estimator=DifficultyEstimator().fit(X=trainX, y=trainY, scaler=True),
+            perturb=True
+        )
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, testY)
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, testY[0])
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+
+    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    def test_var_normalized_regression_perturbed_ce(self):
+        trainX, trainY, calX, calY, testX, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            difficulty_estimator=DifficultyEstimator().fit(X=trainX, learner=model, scaler=True),
+            perturb=True
+        )
+        perturbed_explanation = cal_exp.explain_perturbed(testX)
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, low_high_percentiles=(0.1, np.inf))
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        with pytest.raises(Warning):
+            perturbed_explanation.plot(uncertainty=True)
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, low_high_percentiles=(-np.inf, 0.9))
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        with pytest.raises(Warning):
+            perturbed_explanation.plot(uncertainty=True)
+
+
+    # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
+    def test_var_normalized_probabilistic_regression_perturbed_ce(self):
+        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        model, _ = get_regression_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        cal_exp = CalibratedExplainer(
+            model,
+            calX,
+            calY,
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            categorical_labels=categorical_labels,
+            mode='regression',
+            difficulty_estimator=DifficultyEstimator().fit(X=trainX, learner=model, scaler=True),
+            perturb=True
+        )
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, testY)
+        perturbed_explanation.add_conjunctions()
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+        perturbed_explanation = cal_exp.explain_perturbed(testX, testY[0])
+        try:
+            perturbed_explanation.plot()
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot() raised unexpected exception: {e}")
+        try:
+            perturbed_explanation.plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"perturbed_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+
+
 if __name__ == '__main__':
     # unittest.main()
     pytest.main()
