@@ -4,7 +4,7 @@ The calibrated explanations explanation method is based on the paper
 "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
 by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 
-Calibrated explanations are a way to explain the predictions of a black-box model 
+Calibrated explanations are a way to explain the predictions of a black-box learner 
 using Venn-Abers predictors (classification & regression) or 
 conformal predictive systems (regression).
 """
@@ -35,21 +35,21 @@ __version__ = 'v0.3.5'
 
 
 class CalibratedExplainer:
-    """The CalibratedExplainer class is used for explaining machine learning models with calibrated
+    """The CalibratedExplainer class is used for explaining machine learning learners with calibrated
     predictions.
 
     The calibrated explanations are based on the paper 
     "Calibrated Explanations for Black-Box Predictions" 
     by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 
-    Calibrated explanations provides a way to explain the predictions of a black-box model 
+    Calibrated explanations provides a way to explain the predictions of a black-box learner 
     using Venn-Abers predictors (classification) or 
     conformal predictive systems (regression).
     """
     # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
     # pylint: disable=dangerous-default-value
     def __init__(self,
-                model,
+                learner,
                 cal_X,
                 cal_y,
                 mode = 'classification',
@@ -67,16 +67,16 @@ class CalibratedExplainer:
                 ) -> None:
         # pylint: disable=line-too-long
         '''Constructor for the CalibratedExplainer object for explaining the predictions of a
-        black-box model.
+        black-box learner.
         
         Parameters
         ----------
-        model : predictive model
-            A predictive model that can be used to predict the target variable. The model must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
+        learner : predictive learner
+            A predictive learner that can be used to predict the target variable. The learner must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
         cal_X : array-like of shape (n_calibrations_samples, n_features)
-            The calibration input data for the model.
+            The calibration input data for the learner.
         cal_y : array-like of shape (n_calibrations_samples,)
-            The calibration target data for the model.
+            The calibration target data for the learner.
         mode : str equal to "classification" or "regression", default="classification"
             The mode parameter specifies the type of problem being solved.
         feature_names : list of str, default=None
@@ -91,13 +91,13 @@ class CalibratedExplainer:
             feature encoding in the explanations. If None, the feature values will be used as labels.
         class_labels : dict(int, str), default=None
             A dictionary mapping numerical target values to class names. This parameter is only applicable
-            for classification models. If None, the numerical target values will be used as labels.
+            for classification learners. If None, the numerical target values will be used as labels.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
         difficulty_estimator : DifficultyEstimator, default=None
             A `DifficultyEstimator` object from the `crepes` package. It is used to estimate the difficulty of
             explaining a prediction. If None, no difficulty estimation is used. This parameter is only used
-            for regression models.
+            for regression learners.
         sample_percentiles : list of int, default=[25, 50, 75]
             An array-like object that specifies the percentiles used to sample values for evaluation of
             numerical features. For example, if `sample_percentiles = [25, 50, 75]`, then the values at the
@@ -122,7 +122,7 @@ class CalibratedExplainer:
         
         Return
         ------
-        CalibratedExplainer : A CalibratedExplainer object that can be used to explain predictions from a predictive model.
+        CalibratedExplainer : A CalibratedExplainer object that can be used to explain predictions from a predictive learner.
         
         '''
         init_time = time()
@@ -136,8 +136,8 @@ class CalibratedExplainer:
         else:
             self.cal_y = cal_y
 
-        check_is_fitted(model)
-        self.model = model
+        check_is_fitted(learner)
+        self.learner = learner
         self.num_features = len(self.cal_X[0, :])
         self.set_random_state(random_state)
         self.sample_percentiles = sample_percentiles
@@ -177,36 +177,36 @@ class CalibratedExplainer:
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.__set_mode(str.lower(mode), initialize=False)
 
-        self.__initialize_interval_model()
-        self.reject_model = self.initialize_reject_model() if reject else None
+        self.__initialize_interval_learner()
+        self.reject_learner = self.initialize_reject_learner() if reject else None
 
         self.init_time = time() - init_time
 
-    def reinitialize(self, model):
+    def reinitialize(self, learner):
         """
-        Reinitializes the explainer with a new model. This is useful when the model is updated or retrained and the
+        Reinitializes the explainer with a new learner. This is useful when the learner is updated or retrained and the
         explainer needs to be reinitialized.
         
         Parameters
         ----------
-        model : predictive model
-            A predictive model that can be used to predict the target variable. The model must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
+        learner : predictive learner
+            A predictive learner that can be used to predict the target variable. The learner must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
         
         Return
         ------
-        CalibratedExplainer : A CalibratedExplainer object that can be used to explain predictions from a predictive model.
+        CalibratedExplainer : A CalibratedExplainer object that can be used to explain predictions from a predictive learner.
         
         """
         self.__initialized = False
-        check_is_fitted(model)
-        self.model = model
-        self.__initialize_interval_model()
+        check_is_fitted(learner)
+        self.learner = learner
+        self.__initialize_interval_learner()
         self.__initialized = True
 
 
     def __repr__(self):
         # pylint: disable=line-too-long
-        disp_str = f"CalibratedExplainer(mode={self.mode}{', conditional=True' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, model={self.model}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
+        disp_str = f"CalibratedExplainer(mode={self.mode}{', conditional=True' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, learner={self.learner}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
         if self.verbose:
             disp_str += f"\n\tinit_time={self.init_time}"
             if self.latest_explanation is not None:
@@ -271,18 +271,18 @@ class CalibratedExplainer:
         # bins : array-like of shape (n_samples,), default=None
         #     Mondrian categories
         # """
-        assert self.__initialized, "The model must be initialized before calling predict."
+        assert self.__initialized, "The learner must be initialized before calling predict."
         if feature is None and self.is_perturbed():
             feature = self.num_features # Use the calibrator defined using cal_X
         if self.mode == 'classification':
             if self.is_multiclass():
                 if self.is_perturbed():
-                    predict, low, high, new_classes = self.interval_model[feature].predict_proba(test_X,
+                    predict, low, high, new_classes = self.interval_learner[feature].predict_proba(test_X,
                                                                                     output_interval=True,
                                                                                     classes=classes,
                                                                                     bins=bins)
                 else:
-                    predict, low, high, new_classes = self.interval_model.predict_proba(test_X,
+                    predict, low, high, new_classes = self.interval_learner.predict_proba(test_X,
                                                                                     output_interval=True,
                                                                                     classes=classes,
                                                                                     bins=bins)
@@ -293,9 +293,9 @@ class CalibratedExplainer:
                 return [predict[i,c] for i,c in enumerate(classes)], low, high, None
 
             if self.is_perturbed():
-                predict, low, high = self.interval_model[feature].predict_proba(test_X, output_interval=True, bins=bins)
+                predict, low, high = self.interval_learner[feature].predict_proba(test_X, output_interval=True, bins=bins)
             else:
-                predict, low, high = self.interval_model.predict_proba(test_X, output_interval=True, bins=bins)
+                predict, low, high = self.interval_learner.predict_proba(test_X, output_interval=True, bins=bins)
             return predict[:,1], low, high, None
         if 'regression' in self.mode:
             # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
@@ -313,17 +313,17 @@ class CalibratedExplainer:
                 high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
                 if self.is_perturbed():
-                    return self.interval_model[feature].predict_uncertainty(test_X, low_high_percentiles, bins=bins)
-                return self.interval_model.predict_uncertainty(test_X, low_high_percentiles, bins=bins)
+                    return self.interval_learner[feature].predict_uncertainty(test_X, low_high_percentiles, bins=bins)
+                return self.interval_learner.predict_uncertainty(test_X, low_high_percentiles, bins=bins)
 
             # regression with threshold condition
             if not np.isscalar(threshold) and len(threshold) != len(test_X):
                 raise ValueError("The length of the threshold parameter must be either a scalar or \
                     the same as the number of instances in testX.")
             if self.is_perturbed():
-                return self.interval_model[feature].predict_probability(test_X, threshold, bins=bins)
+                return self.interval_learner[feature].predict_probability(test_X, threshold, bins=bins)
             # pylint: disable=unexpected-keyword-arg
-            return self.interval_model.predict_probability(test_X, threshold, bins=bins)
+            return self.interval_learner.predict_probability(test_X, threshold, bins=bins)
 
         return None, None, None, None # Should never happen
 
@@ -810,7 +810,7 @@ class CalibratedExplainer:
 
         Args:
             difficulty_estimator (crepes.extras.DifficultyEstimator): A DifficultyEstimator object from the crepes package
-            initialize (bool, optional): If true, then the interval model is initialized once done. Defaults to True.
+            initialize (bool, optional): If true, then the interval learner is initialized once done. Defaults to True.
         """
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
@@ -821,7 +821,7 @@ class CalibratedExplainer:
             except AttributeError as e:
                 raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
         if initialize:
-            self.__initialize_interval_model()
+            self.__initialize_interval_learner()
 
 
 
@@ -845,29 +845,29 @@ class CalibratedExplainer:
 
         # Args:
         #     mode (str): The mode can be either 'classification' or 'regression'.
-        #     initialize (bool, optional): If true, then the interval model is initialized once done. Defaults to True.
+        #     initialize (bool, optional): If true, then the interval learner is initialized once done. Defaults to True.
 
         # Raises:
         #     ValueError: The mode can be either 'classification' or 'regression'.
         # """
         self.__initialized = False
         if mode == 'classification':
-            assert 'predict_proba' in dir(self.model), "The model must have a predict_proba method."
+            assert 'predict_proba' in dir(self.learner), "The learner must have a predict_proba method."
             self.num_classes = len(np.unique(self.cal_y))
         elif 'regression' in mode:
-            assert 'predict' in dir(self.model), "The model must have a predict method."
+            assert 'predict' in dir(self.learner), "The learner must have a predict method."
             self.num_classes = 0
         else:
             raise ValueError("The mode must be either 'classification' or 'regression'.")
         self.mode = mode
         if initialize:
-            self.__initialize_interval_model()
+            self.__initialize_interval_learner()
 
 
 
-    def __initialize_interval_model(self) -> None:
+    def __initialize_interval_learner(self) -> None:
         if self.is_perturbed():
-            self.interval_model = []
+            self.interval_learner = []
             cal_X, cal_y, bins = self.cal_X, self.cal_y, self.bins
             self.perturbed_cal_X, self.scaled_cal_X, self.scaled_cal_y, scale_factor = \
                 perturb_dataset(self.cal_X, self.cal_y, self.categorical_features, noise_type='uniform', scale_factor=5, severity=1)
@@ -876,30 +876,30 @@ class CalibratedExplainer:
                 perturbed_cal_X = self.scaled_cal_X.copy()
                 perturbed_cal_X[:,f] = self.perturbed_cal_X[:,f]
                 if self.mode == 'classification':
-                    self.interval_model.append(VennAbers(self.model.predict_proba(perturbed_cal_X), self.scaled_cal_y, self.model, self.bins))
+                    self.interval_learner.append(VennAbers(self.learner.predict_proba(perturbed_cal_X), self.scaled_cal_y, self.learner, self.bins))
                 elif 'regression' in self.mode:
                     self.cal_X = perturbed_cal_X
                     self.cal_y = self.scaled_cal_y
-                    self.interval_model.append(IntervalRegressor(self))
+                    self.interval_learner.append(IntervalRegressor(self))
 
             self.cal_X, self.cal_y, self.bins = cal_X, cal_y, bins
             if self.mode == 'classification':
-                self.interval_model.append(VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model, self.bins))
+                self.interval_learner.append(VennAbers(self.learner.predict_proba(self.cal_X), self.cal_y, self.learner, self.bins))
             elif 'regression' in self.mode:
-                # Add a reference model using the original calibration data last
-                self.interval_model.append(IntervalRegressor(self))
+                # Add a reference learner using the original calibration data last
+                self.interval_learner.append(IntervalRegressor(self))
         else:
             if self.mode == 'classification':
-                self.interval_model = VennAbers(self.model.predict_proba(self.cal_X), self.cal_y, self.model, self.bins)
+                self.interval_learner = VennAbers(self.learner.predict_proba(self.cal_X), self.cal_y, self.learner, self.bins)
             elif 'regression' in self.mode:
-                self.interval_model = IntervalRegressor(self)
+                self.interval_learner = IntervalRegressor(self)
         self.__initialized = True
 
-    def initialize_reject_model(self, calibration_set=None, threshold=None):
+    def initialize_reject_learner(self, calibration_set=None, threshold=None):
         '''
-        Initializes the reject model for the explainer. The reject model is a ConformalClassifier
-        that is trained on the calibration data. The reject model is used to determine whether a test
-        instance is within the calibration data distribution. The reject model is only available for
+        Initializes the reject learner for the explainer. The reject learner is a ConformalClassifier
+        that is trained on the calibration data. The reject learner is used to determine whether a test
+        instance is within the calibration data distribution. The reject learner is only available for
         classification, unless a threshold is assigned.
         
         Parameters
@@ -916,20 +916,20 @@ class CalibratedExplainer:
             cal_X, cal_y = self.cal_X, self.cal_y
         self.reject_threshold = None
         if self.mode in 'regression':
-            proba_1, _, _, _ = self.interval_model.predict_probability(cal_X, y_threshold=threshold, bins=self.bins)
+            proba_1, _, _, _ = self.interval_learner.predict_probability(cal_X, y_threshold=threshold, bins=self.bins)
             proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
             classes = (cal_y < threshold).astype(int)
             self.reject_threshold = threshold
         elif self.is_multiclass(): # pylint: disable=protected-access
-            proba, classes = self.interval_model.predict_proba(cal_X, bins=self.bins)
+            proba, classes = self.interval_learner.predict_proba(cal_X, bins=self.bins)
             proba = np.array([[1-proba[i,c], proba[i,c]] for i,c in enumerate(classes)])
             classes = (classes == cal_y).astype(int)
         else:
-            proba = self.interval_model.predict_proba(cal_X, bins=self.bins)
+            proba = self.interval_learner.predict_proba(cal_X, bins=self.bins)
             classes = cal_y
         alphas_cal = hinge(proba, np.unique(classes), classes)
-        self.reject_model = ConformalClassifier().fit(alphas=alphas_cal, bins=classes)
-        return self.reject_model
+        self.reject_learner = ConformalClassifier().fit(alphas=alphas_cal, bins=classes)
+        return self.reject_learner
 
     def predict_reject(self, test_X, bins=None, confidence=0.95):
         '''
@@ -946,21 +946,21 @@ class CalibratedExplainer:
         np.ndarray : A boolean array of shape (n_samples,) indicating whether the test instances are within the calibration data distribution.
         '''
         if self.mode in 'regression':
-            assert self.reject_threshold is not None, "The reject model is only available for regression with a threshold."
-            proba_1, _, _, _ = self.interval_model.predict_probability(test_X, y_threshold=self.reject_threshold, bins=bins)
+            assert self.reject_threshold is not None, "The reject learner is only available for regression with a threshold."
+            proba_1, _, _, _ = self.interval_learner.predict_probability(test_X, y_threshold=self.reject_threshold, bins=bins)
             proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
             classes = [0,1]
         elif self.is_multiclass(): # pylint: disable=protected-access
-            proba, classes = self.interval_model.predict_proba(test_X, bins=bins)
+            proba, classes = self.interval_learner.predict_proba(test_X, bins=bins)
             proba = np.array([[1-proba[i,c], proba[i,c]] for i,c in enumerate(classes)])
             classes = [0,1]
         else:
-            proba = self.interval_model.predict_proba(test_X, bins=bins)
+            proba = self.interval_learner.predict_proba(test_X, bins=bins)
             classes = np.unique(self.cal_y)
         alphas_test = hinge(proba)
 
         prediction_set = np.array([
-                self.reject_model.predict_set(alphas_test,
+                self.reject_learner.predict_set(alphas_test,
                                             np.full(len(alphas_test), classes[c]),
                                             confidence=confidence)[:, c]
                 for c in range(len(classes))
@@ -1077,6 +1077,160 @@ class CalibratedExplainer:
         return self.bins is not None
 
 
+    # pylint: disable=too-many-return-statements
+    def predict(self, X_test, uq_interval=False, **kwargs):
+        """
+        Generates a calibrated prediction for the given test data. If the learner is not calibrated, the prediction remains uncalibrated.
+
+        Parameters
+        ----------
+        X_test : array-like
+            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
+        uq_interval : bool, default=False
+            If True, returns the uncertainty quantification interval along with the calibrated prediction. 
+        **kwargs : Various types, optional
+            Additional parameters to customize the explanation process. Supported parameters include:
+
+            - threshold : float, int, or array-like of shape (n_samples,), optional, default=None
+                Specifies the threshold(s) to get a thresholded prediction for regression tasks (prediction labels: `y_hat<=threshold-value` | `y_hat>threshold-value`). This parameter is ignored for classification tasks.
+
+            - low_high_percentiles : tuple of two floats, optional, default=(5, 95)
+                The lower and upper percentiles used to calculate the prediction interval for regression tasks. Determines the breadth of the interval based on the distribution of the predictions. This parameter is ignored for classification tasks.
+
+        Raises
+        ------
+        RuntimeError
+            If the learner has not been fitted prior to making predictions.
+
+        Warning
+            If the learner is not calibrated.
+
+        Returns
+        -------
+        calibrated_prediction : float or array-like, or str
+            The calibrated prediction. For regression tasks, this is the median of the conformal predictive system or a thresholded prediction if `threshold`is set. For classification tasks, it is the class label with the highest calibrated probability.
+        interval : tuple of floats, optional
+            A tuple (low, high) representing the lower and upper bounds of the uncertainty interval. This is returned only if `uq_interval=True`.
+
+        Examples
+        --------
+        For a prediction without prediction intervals:
+        
+        .. code-block:: python
+        
+            w.predict(X_test)
+
+        For a prediction with uncertainty quantification intervals:
+        
+        .. code-block:: python
+        
+            w.predict(X_test, uq_interval=True)
+
+        Note
+        ----
+        The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
+        """
+        if self.mode in 'regression':
+            predict, low, high, _ = self._predict(X_test, **kwargs)
+            if 'threshold' in kwargs:
+                threshold = kwargs['threshold']
+                if np.isscalar(threshold):
+                    new_classes = [f'y_hat <= {threshold}' if predict[i] >= 0.5 else f'y_hat > {threshold}' for i in range(len(predict))]
+                else:
+                    new_classes = [f'y_hat <= {threshold[i]}' if predict[i] >= 0.5 else f'y_hat > {threshold[i]}' for i in range(len(predict))]
+                if uq_interval:
+                    return new_classes, (low, high)
+                return new_classes
+            if uq_interval:
+                return predict, (low, high)
+            return predict
+        predict, low, high, new_classes = self._predict(X_test, **kwargs)
+        if new_classes is None:
+            new_classes = (predict >= 0.5).astype(int)
+        if uq_interval:
+            return new_classes, (low, high)
+        return new_classes
+
+
+
+    def predict_proba(self, X_test, uq_interval=False, threshold=None):
+        """
+        A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
+        prediction is not calibrated either.
+        
+        Parameters
+        ----------
+        X_test : array-like
+            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
+        uq_interval : bool, default=False
+            If true, then the prediction interval is returned as well.
+        threshold : float, int or array-like of shape (n_samples,), optional, default=None
+            Threshold values used with regression to get probability of being below the threshold. Only applicable to regression.
+
+        Raises
+        ------
+        RuntimeError
+            If the learner is not fitted before predicting.
+
+        ValueError
+            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
+
+        RuntimeError
+            If the learner is not fitted before predicting.
+            
+        Warning
+            If the learner is not calibrated.
+            
+        Returns
+        -------
+        calibrated probability : 
+            The calibrated probability of the positive class (or the predicted class for multiclass).
+        (low, high) : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
+        
+        Examples
+        --------
+        For a prediction without uncertainty quantification intervals:
+        
+        .. code-block:: python
+        
+            w.predict_proba(X_test)
+
+        For a prediction with uncertainty quantification intervals:
+        
+        .. code-block:: python
+        
+            w.predict_proba(X_test, uq_interval=True)
+
+        Note
+        ----
+        The `threshold` parameter is only used for regression tasks.
+        """
+        if self.mode in 'regression':
+            if isinstance(self.interval_learner, list):
+                proba_1, low, high, _ = self.interval_learner[-1].predict_probability(X_test, y_threshold=threshold)
+            else:
+                proba_1, low, high, _ = self.interval_learner.predict_probability(X_test, y_threshold=threshold)
+            proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
+            if uq_interval:
+                return proba, (low, high)
+            return proba
+        if self.is_multiclass(): # pylint: disable=protected-access
+            if isinstance(self.interval_learner, list):
+                proba, low, high, _ = self.interval_learner[-1].predict_proba(X_test, output_interval=True)
+            else:
+                proba, low, high, _ = self.interval_learner.predict_proba(X_test, output_interval=True)
+            if uq_interval:
+                return proba, (low, high)
+            return proba
+        if isinstance(self.interval_learner, list):
+            proba, low, high = self.interval_learner[-1].predict_proba(X_test, output_interval=True)
+        else:
+            proba, low, high = self.interval_learner.predict_proba(X_test, output_interval=True)            
+        if uq_interval:
+            return proba, (low, high)
+        return proba
+
+
 
     def _is_lime_enabled(self, is_enabled=None) -> bool:
         # """returns whether lime export is enabled.
@@ -1126,14 +1280,14 @@ class CalibratedExplainer:
                                                     class_names=['0','1'],
                                                     mode=self.mode)
                     self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
-                                                                self.model.predict_proba,
+                                                                self.learner.predict_proba,
                                                                 num_features=self.num_features)
                 elif 'regression' in self.mode:
                     self.lime = lime(self.cal_X[:1, :],
                                                     feature_names=self.feature_names,
                                                     mode='regression')
                     self.lime_exp = self.lime.explain_instance(self.cal_X[0, :],
-                                                                self.model.predict,
+                                                                self.learner.predict,
                                                                 num_features=self.num_features)
                 self._is_lime_enabled(True)
             return self.lime, self.lime_exp
@@ -1169,11 +1323,11 @@ class WrapCalibratedExplainer():
     "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
     by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 
-    Calibrated explanations are a way to explain the predictions of a black-box model 
+    Calibrated explanations are a way to explain the predictions of a black-box learner 
     using Venn-Abers predictors (classification & regression) or 
     conformal predictive systems (regression).
 
-    WrapCalibratedExplainer is a wrapper class for the CalibratedExplainer. It allows to fit, calibrate, and explain the model.
+    WrapCalibratedExplainer is a wrapper class for the CalibratedExplainer. It allows to fit, calibrate, and explain the learner.
     Compared to the CalibratedExplainer, it allow access to the predict and predict_proba methods of
     the calibrated explainer, making it easy to get the same output as shown in the explanations.
     """
@@ -1181,7 +1335,7 @@ class WrapCalibratedExplainer():
         # Check if the learner is a CalibratedExplainer
         if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
             explainer = learner
-            learner = explainer.model
+            learner = explainer.learner
             self.calibrated = True
             self.explainer = explainer
             self.learner = learner
@@ -1441,7 +1595,7 @@ class WrapCalibratedExplainer():
     # pylint: disable=too-many-return-statements
     def predict(self, X_test, uq_interval=False, **kwargs):
         """
-        Generates a calibrated prediction for the given test data. If the model is not calibrated, the prediction remains uncalibrated.
+        Generates a calibrated prediction for the given test data. If the learner is not calibrated, the prediction remains uncalibrated.
 
         Parameters
         ----------
@@ -1461,10 +1615,10 @@ class WrapCalibratedExplainer():
         Raises
         ------
         RuntimeError
-            If the model has not been fitted prior to making predictions.
+            If the learner has not been fitted prior to making predictions.
 
         Warning
-            If the model is not calibrated.
+            If the learner is not calibrated.
 
         Returns
         -------
@@ -1495,32 +1649,13 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting.")
         if not self.calibrated:
             if 'threshold' in kwargs:
-                raise ValueError("A thresholded prediction is not possible for uncalibrated models.")
+                raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
             if uq_interval:
                 predict = self.learner.predict(X_test)
                 return predict, (predict, predict)
             return self.learner.predict(X_test)
-        if self.explainer.mode in 'regression':
-            predict, low, high, _ = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
-            if 'threshold' in kwargs:
-                threshold = kwargs['threshold']
-                if np.isscalar(threshold):
-                    new_classes = [f'y_hat <= {threshold}' if predict[i] >= 0.5 else f'y_hat > {threshold}' for i in range(len(predict))]
-                else:
-                    new_classes = [f'y_hat <= {threshold[i]}' if predict[i] >= 0.5 else f'y_hat > {threshold[i]}' for i in range(len(predict))]
-                if uq_interval:
-                    return new_classes, (low, high)
-                return new_classes
-            if uq_interval:
-                return predict, (low, high)
-            return predict
-        predict, low, high, new_classes = self.explainer._predict(X_test, **kwargs) # pylint: disable=protected-access
-        if new_classes is None:
-            new_classes = (predict >= 0.5).astype(int)
-        if uq_interval:
-            return new_classes, (low, high)
-        return new_classes
+        return self.explainer.predict(X_test, uq_interval=uq_interval, **kwargs)
 
     def predict_proba(self, X_test, uq_interval=False, threshold=None):
         """
@@ -1548,7 +1683,7 @@ class WrapCalibratedExplainer():
             If the learner is not fitted before predicting.
             
         Warning
-            If the model is not calibrated.
+            If the learner is not calibrated.
             
         Returns
         -------
@@ -1589,27 +1724,14 @@ class WrapCalibratedExplainer():
                     return proba, (proba, proba)
                 return proba, (proba[:,1], proba[:,1])
             return self.learner.predict_proba(X_test)
-        if self.explainer.mode in 'regression':
-            proba_1, low, high, _ = self.explainer.interval_model.predict_probability(X_test, y_threshold=threshold)
-            proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
-            if uq_interval:
-                return proba, (low, high)
-            return proba
-        if self.explainer.is_multiclass(): # pylint: disable=protected-access
-            proba, low, high, _ = self.explainer.interval_model.predict_proba(X_test, output_interval=True)
-            if uq_interval:
-                return proba, (low, high)
-            return proba
-        proba, low, high = self.explainer.interval_model.predict_proba(X_test, output_interval=True)
-        if uq_interval:
-            return proba, (low, high)
-        return proba
+        return self.explainer.predict_proba(X_test, uq_interval=uq_interval, threshold=threshold)
+
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot_global(self, X_test, y_test=None, threshold=None, **kwargs):
         """
         Generates a global explanation plot for the given test data. This plot is based on the probability distribution and the uncertainty quantification intervals.
-        The plot is only available for calibrated probabilistic models (both classification and thresholded regression).
+        The plot is only available for calibrated probabilistic learners (both classification and thresholded regression).
         
         Parameters
         ----------
