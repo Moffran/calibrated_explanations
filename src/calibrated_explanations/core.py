@@ -1225,7 +1225,7 @@ class CalibratedExplainer:
         if isinstance(self.interval_learner, list):
             proba, low, high = self.interval_learner[-1].predict_proba(X_test, output_interval=True)
         else:
-            proba, low, high = self.interval_learner.predict_proba(X_test, output_interval=True)            
+            proba, low, high = self.interval_learner.predict_proba(X_test, output_interval=True)
         if uq_interval:
             return proba, (low, high)
         return proba
