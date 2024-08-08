@@ -76,10 +76,10 @@ for dataset in klara:
         debug_print(dataSet+' '+alg)
         results[dataSet][alg] = {}
 
-        trainCalX, testX, trainCalY, testY = train_test_split(X.values, y.values, test_size=test_size,random_state=42)
-        trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=np.max(calibration_sizes),random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X.values, y.values, test_size=test_size,random_state=42)
+        X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train, test_size=np.max(calibration_sizes),random_state=42)
 
-        c2.fit(trainX,trainY)
+        c2.fit(X_prop_train,y_prop_train)
         categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
 
         ablation =  {'ce':{}, 'cce':{}, 'proba':{}, }
@@ -99,23 +99,23 @@ for dataset in klara:
                 abl_timer['cce'][cal_size][str(sample_percentile)] = []
 
                 cal_prop = int(np.max(calibration_sizes)/cal_size)
-                calX_sample = calX[0::cal_prop,:]
-                calY_sample = calY[0::cal_prop]
-                ce = CalibratedExplainer(c2, calX_sample, calY_sample, \
+                X_cal_sample = X_cal[0::cal_prop,:]
+                y_cal_sample = y_cal[0::cal_prop]
+                ce = CalibratedExplainer(c2, X_cal_sample, y_cal_sample, \
                     feature_names=df.columns, categorical_features=categorical_features, sample_percentiles=sample_percentile)
-                ablation['proba'][cal_size][str(sample_percentile)].append(c2.predict_proba(testX)[:,1])
+                ablation['proba'][cal_size][str(sample_percentile)].append(c2.predict_proba(X_test)[:,1])
 
                 try:
                     # print(f'{i}:',end='\t')
                     tic = time.time()
-                    factual_explanations = ce.explain_factual(testX)
+                    factual_explanations = ce.explain_factual(X_test)
                     ct = time.time()-tic
                     abl_timer['ce'][cal_size][str(sample_percentile)].append(ct)
                     # print(f'{ct:.1f}',end='\t')
                     ablation['ce'][cal_size][str(sample_percentile)].append([f.feature_weights for f in factual_explanations])
 
                     tic = time.time()
-                    factual_explanation = ce.explain_counterfactual(testX)
+                    factual_explanation = ce.explain_counterfactual(X_test)
                     ct = time.time()-tic
                     abl_timer['cce'][cal_size][str(sample_percentile)].append(ct)
                     # print(f'{ct:.1f}',end='\t')

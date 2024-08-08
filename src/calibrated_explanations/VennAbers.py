@@ -10,9 +10,9 @@ import venn_abers as va
 class VennAbers:
     """a class to calibrate the predictions of a model using the VennABERS method
     """
-    def __init__(self, cprobs, cal_y, learner, bins=None):
+    def __init__(self, cprobs, y_cal, learner, bins=None):
         self.cprobs = cprobs
-        self.ctargets = cal_y
+        self.ctargets = y_cal
         self.learner = learner
         self.bins = bins
         warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -48,17 +48,17 @@ class VennAbers:
                 self.va.fit(cprobs, self.ctargets, precision=4)
         warnings.filterwarnings("default", category=RuntimeWarning)
 
-    def predict(self, test_X, bins=None):
+    def predict(self, X_test, bins=None):
         """a function to predict the class of the test samples
 
         Args:
-            test_X (n_test_samples, n_features): test samples
+            X_test (n_test_samples, n_features): test samples
             bins (array-like of shape (n_samples,), optional): Mondrian categories
 
         Returns:
             predicted classes (n_test_samples,): predicted classes based on the regularized VennABERS probabilities. If multiclass, the predicted class is 1 if the prediction from the underlying model is the same after calibration and 0 otherwise.
         """
-        # tprobs, _ = self.get_p_value(self.learner.predict_proba(test_X))
+        # tprobs, _ = self.get_p_value(self.learner.predict_proba(X_test))
         # if self.is_mondrian():
         #     p0p1 = np.zeros((tprobs.shape[0],2))
         #     for va_bin, b in self.va:
@@ -69,17 +69,17 @@ class VennAbers:
         # tmp = high / (1-low + high)
 
         if self.is_multiclass():
-            tmp, _ = self.predict_proba(test_X, bins=bins)
+            tmp, _ = self.predict_proba(X_test, bins=bins)
             return np.asarray(np.round(tmp[:,1]))
-        tmp = self.predict_proba(test_X, bins=bins)[:,1]
+        tmp = self.predict_proba(X_test, bins=bins)[:,1]
         return np.asarray(np.round(tmp))
 
     # pylint: disable=too-many-locals, too-many-branches
-    def predict_proba(self, test_X, output_interval=False, classes=None, bins=None):
+    def predict_proba(self, X_test, output_interval=False, classes=None, bins=None):
         """a function to predict the probabilities of the test samples, optionally outputting the VennABERS interval
 
         Args:
-            testX (n_test_samples, n_features): test samples
+            X_test (n_test_samples, n_features): test samples
             output_interval (bool, optional): if true, the VennAbers intervals are outputted. Defaults to False.
             classes ((n_test_samples,), optional): a list of predicted classes. Defaults to None.
             bins (array-like of shape (n_samples,), optional): Mondrian categories
@@ -92,9 +92,9 @@ class VennAbers:
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         if 'bins' in self.learner.predict_proba.__code__.co_varnames:
-            tprobs = self.learner.predict_proba(test_X, bins=bins)
+            tprobs = self.learner.predict_proba(X_test, bins=bins)
         else:
-            tprobs = self.learner.predict_proba(test_X)
+            tprobs = self.learner.predict_proba(X_test)
         p0p1 = np.zeros((tprobs.shape[0],2))
         va_proba = np.zeros(tprobs.shape)
 

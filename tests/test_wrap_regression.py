@@ -30,19 +30,19 @@ def load_regression_dataset():
     categorical_labels = None
     columns = ds.drop('REGRESSION', axis=1).columns
 
-    trainCalX, testX, trainCalY, testY = train_test_split(X, y, test_size=num_to_test, random_state=42)
-    # trainCalX,trainCalY = shuffle(trainCalX, trainCalY)
-    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=calibration_size, random_state=42)
-    return trainX, trainY, calX, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, columns
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=num_to_test, random_state=42)
+    # X_train,y_train = shuffle(X_train, y_train)
+    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train, test_size=calibration_size, random_state=42)
+    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, no_of_classes, no_of_features, categorical_features, categorical_labels, columns
 
 
-def get_regression_model(model_name, trainX, trainY):
+def get_regression_model(model_name, X_prop_train, y_prop_train):
     t1 = DecisionTreeRegressor()
     r1 = RandomForestRegressor(n_estimators=100)
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
     model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
-    model.fit(trainX,trainY)
+    model.fit(X_prop_train,y_prop_train)
     return model, model_name
 
 
@@ -53,107 +53,107 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
     # pylint: disable=unused-variable, unsubscriptable-object
     def test_wrap_regression_ce(self):
-        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
         self.assertFalse(cal_exp.fitted)
         self.assertFalse(cal_exp.calibrated)
         print(cal_exp)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_factual(testX)
+            explanation = cal_exp.explain_factual(X_test)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_counterfactual(testX)
+            explanation = cal_exp.explain_counterfactual(X_test)
 
-        cal_exp.fit(trainX, trainY)
+        cal_exp.fit(X_prop_train, y_prop_train)
         self.assertTrue(cal_exp.fitted)
         self.assertFalse(cal_exp.calibrated)
         print(cal_exp)
-        testY_hat1 = cal_exp.predict(testX)
-        testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True)
-        for i, y_hat in enumerate(testY_hat2):
-            self.assertEqual(testY_hat1[i], y_hat)
+        y_test_hat1 = cal_exp.predict(X_test)
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, uq_interval=True)
+        for i, y_hat in enumerate(y_test_hat2):
+            self.assertEqual(y_test_hat1[i], y_hat)
             self.assertEqual(low[i], y_hat)
             self.assertEqual(high[i], y_hat)
         # An uncalibrated regression model does not support predict thresholded labels as no conformal predictive system is available
         with pytest.raises(ValueError):
-            testY_hat = cal_exp.predict(testX, threshold=testY)
+            y_test_hat = cal_exp.predict(X_test, threshold=y_test)
         # An uncalibrated regression model does not support predict thresholded labels as no conformal predictive system is available
         with pytest.raises(ValueError):
-            testY_hat, (low, high) = cal_exp.predict(testX, uq_interval=True, threshold=testY)
+            y_test_hat, (low, high) = cal_exp.predict(X_test, uq_interval=True, threshold=y_test)
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
-            cal_exp.predict_proba(testX)
+            cal_exp.predict_proba(X_test)
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
-            cal_exp.predict_proba(testX, uq_interval=True)
+            cal_exp.predict_proba(X_test, uq_interval=True)
         # An uncalibrated regression model does not support predict_proba as no conformal predictive system is available
         with pytest.raises(RuntimeError):
-            cal_exp.predict_proba(testX, threshold=testY)
+            cal_exp.predict_proba(X_test, threshold=y_test)
         # An uncalibrated regression model does not support predict_proba as no conformal predictive system is available
         with pytest.raises(RuntimeError):
-            cal_exp.predict_proba(testX, uq_interval=True, threshold=testY)
+            cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_factual(testX)
+            explanation = cal_exp.explain_factual(X_test)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_counterfactual(testX)
+            explanation = cal_exp.explain_counterfactual(X_test)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_factual(testX, threshold=testY)
+            explanation = cal_exp.explain_factual(X_test, threshold=y_test)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_counterfactual(testX, threshold=testY)
+            explanation = cal_exp.explain_counterfactual(X_test, threshold=y_test)
 
         # calibrate initialize the conformal predictive system
         # Note that the difficulty estimation works in the same way as when using CalibratedExplainer
         # No additional testing of difficulty estimation is deemed necessary
-        cal_exp.calibrate(calX, calY, feature_names=feature_names, categorical_labels=categorical_labels)
+        cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_labels=categorical_labels)
         self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
         print(cal_exp)
         # predict calibrated regression output using the conformal predictive system
-        testY_hat1 = cal_exp.predict(testX)
+        y_test_hat1 = cal_exp.predict(X_test)
         # predict calibrated regression output using the conformal predictive system, with uncertainty quantification
-        testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True)
-        for i, y_hat in enumerate(testY_hat2):
-            self.assertEqual(testY_hat1[i], y_hat)
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, uq_interval=True)
+        for i, y_hat in enumerate(y_test_hat2):
+            self.assertEqual(y_test_hat1[i], y_hat)
             self.assertBetween(y_hat, low[i], high[i])
         # predict thresholded labels using the conformal predictive system
-        testY_hat1 = cal_exp.predict(testX, threshold=testY)
+        y_test_hat1 = cal_exp.predict(X_test, threshold=y_test)
         # predict thresholded labels using the conformal predictive system, with uncertainty quantification
-        testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True, threshold=testY)
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, uq_interval=True, threshold=y_test)
         # Due to that random_state can not be set to guarantee identical results in
         # ConformalPredictiveSystem, the probabilities will differ slightly, sometimes resulting in different
         # predicted class labels (depending on whether it is above or below the threshold). This is a known issue.
-        # for i, y_hat in enumerate(testY_hat2):
-            # self.assertEqual(testY_hat1[i], y_hat)
-            # testY_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
+        # for i, y_hat in enumerate(y_test_hat2):
+            # self.assertEqual(y_test_hat1[i], y_hat)
+            # y_test_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
             # self.assertBetween(y_hat, low[i], high[i])
-        explanation = cal_exp.explain_factual(testX)
-        explanation = cal_exp.explain_counterfactual(testX)
-        explanation = cal_exp.explain_factual(testX, threshold=testY)
-        explanation = cal_exp.explain_counterfactual(testX, threshold=testY)
+        explanation = cal_exp.explain_factual(X_test)
+        explanation = cal_exp.explain_counterfactual(X_test)
+        explanation = cal_exp.explain_factual(X_test, threshold=y_test)
+        explanation = cal_exp.explain_counterfactual(X_test, threshold=y_test)
 
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
-            cal_exp.predict_proba(testX)
+            cal_exp.predict_proba(X_test)
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
-            cal_exp.predict_proba(testX, uq_interval=True)
-        testY_hat1 = cal_exp.predict_proba(testX, threshold=testY[0])
-        testY_hat2, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY[0])
-        for i, y_hat in enumerate(testY_hat2):
+            cal_exp.predict_proba(X_test, uq_interval=True)
+        y_test_hat1 = cal_exp.predict_proba(X_test, threshold=y_test[0])
+        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test[0])
+        for i, y_hat in enumerate(y_test_hat2):
             # Due to that random_state can not be set to guarantee identical results in
             # ConformalPredictiveSystem, the probabilities will differ slightly. This is a known issue.
             # for j in range(len(y_hat)):
-            #     self.assertEqual(testY_hat1[i][j], y_hat[j])
-            self.assertBetween(testY_hat2[i,1], low[i], high[i])
-        testY_hat1 = cal_exp.predict_proba(testX, threshold=testY)
-        testY_hat2, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY)
-        for i, y_hat in enumerate(testY_hat2):
+            #     self.assertEqual(y_test_hat1[i][j], y_hat[j])
+            self.assertBetween(y_test_hat2[i,1], low[i], high[i])
+        y_test_hat1 = cal_exp.predict_proba(X_test, threshold=y_test)
+        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test)
+        for i, y_hat in enumerate(y_test_hat2):
             # Due to that random_state can not be set to guarantee identical results in
             # ConformalPredictiveSystem, the probabilities will differ slightly. This is a known issue.
             # for j in range(len(y_hat)):
-            #     self.assertEqual(testY_hat1[i][j], y_hat[j])
-            self.assertBetween(testY_hat2[i,1], low[i], high[i])
+            #     self.assertEqual(y_test_hat1[i][j], y_hat[j])
+            self.assertBetween(y_test_hat2[i,1], low[i], high[i])
 
-        cal_exp.fit(trainX, trainY)
+        cal_exp.fit(X_prop_train, y_prop_train)
         self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
 
@@ -172,91 +172,91 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertEqual(new_exp.learner, learner)
 
         try:
-            cal_exp.plot_global(testX) # pylint: disable=no-member
+            cal_exp.plot_global(X_test) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(testX) raised unexpected exception: {e}")
+            pytest.fail(f"cal_exp.plot_global(X_test) raised unexpected exception: {e}")
         try:
-            cal_exp.plot_global(testX, testY) # pylint: disable=no-member
+            cal_exp.plot_global(X_test, y_test) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(testX, testY) raised unexpected exception: {e}")
+            pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
 
         try:
-            cal_exp.plot_global(testX, threshold=testY[0]) # pylint: disable=no-member
+            cal_exp.plot_global(X_test, threshold=y_test[0]) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(testX) raised unexpected exception: {e}")
+            pytest.fail(f"cal_exp.plot_global(X_test) raised unexpected exception: {e}")
         try:
-            cal_exp.plot_global(testX, testY, threshold=testY[0]) # pylint: disable=no-member
+            cal_exp.plot_global(X_test, y_test, threshold=y_test[0]) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(testX, testY) raised unexpected exception: {e}")
+            pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
 
         # with pytest.raises(AssertionError):
-        #     cal_exp.plot_global(testX, threshold=testY) # pylint: disable=no-member
+        #     cal_exp.plot_global(X_test, threshold=y_test) # pylint: disable=no-member
         # with pytest.raises(AssertionError):
-        #     cal_exp.plot_global(testX, testY, threshold=testY) # pylint: disable=no-member
+        #     cal_exp.plot_global(X_test, y_test, threshold=y_test) # pylint: disable=no-member
 
 
 
     # pylint: disable=unused-variable, unsubscriptable-object
     def test_wrap_regression_perturbed_ce(self):
-        trainX, trainY, calX, calY, testX, testY, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
-        cal_exp.fit(trainX, trainY)
+        cal_exp.fit(X_prop_train, y_prop_train)
         # calibrate initialize the conformal predictive system
         # Note that the difficulty estimation works in the same way as when using CalibratedExplainer
         # No additional testing of difficulty estimation is deemed necessary
-        cal_exp.calibrate(calX, calY, feature_names=feature_names, categorical_labels=categorical_labels, perturb=True)
+        cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_labels=categorical_labels, perturb=True)
         self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
         print(cal_exp)
         # predict calibrated regression output using the conformal predictive system
-        testY_hat1 = cal_exp.predict(testX)
+        y_test_hat1 = cal_exp.predict(X_test)
         # predict calibrated regression output using the conformal predictive system, with uncertainty quantification
-        testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True)
-        for i, y_hat in enumerate(testY_hat2):
-            self.assertEqual(testY_hat1[i], y_hat)
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, uq_interval=True)
+        for i, y_hat in enumerate(y_test_hat2):
+            self.assertEqual(y_test_hat1[i], y_hat)
             self.assertBetween(y_hat, low[i], high[i])
         # predict thresholded labels using the conformal predictive system
-        testY_hat1 = cal_exp.predict(testX, threshold=testY)
+        y_test_hat1 = cal_exp.predict(X_test, threshold=y_test)
         # predict thresholded labels using the conformal predictive system, with uncertainty quantification
-        testY_hat2, (low, high) = cal_exp.predict(testX, uq_interval=True, threshold=testY)
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, uq_interval=True, threshold=y_test)
         # Due to that random_state can not be set to guarantee identical results in
         # ConformalPredictiveSystem, the probabilities will differ slightly, sometimes resulting in different
         # predicted class labels (depending on whether it is above or below the threshold). This is a known issue.
-        # for i, y_hat in enumerate(testY_hat2):
-            # self.assertEqual(testY_hat1[i], y_hat)
-            # testY_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
+        # for i, y_hat in enumerate(y_test_hat2):
+            # self.assertEqual(y_test_hat1[i], y_hat)
+            # y_test_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
             # self.assertBetween(y_hat, low[i], high[i])
-        explanation = cal_exp.explain_factual(testX)
-        explanation = cal_exp.explain_counterfactual(testX)
-        explanation = cal_exp.explain_factual(testX, threshold=testY)
-        explanation = cal_exp.explain_counterfactual(testX, threshold=testY)
-        explanation = cal_exp.explain_perturbed(testX)
-        explanation = cal_exp.explain_perturbed(testX, threshold=testY)
+        explanation = cal_exp.explain_factual(X_test)
+        explanation = cal_exp.explain_counterfactual(X_test)
+        explanation = cal_exp.explain_factual(X_test, threshold=y_test)
+        explanation = cal_exp.explain_counterfactual(X_test, threshold=y_test)
+        explanation = cal_exp.explain_perturbed(X_test)
+        explanation = cal_exp.explain_perturbed(X_test, threshold=y_test)
 
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
-            cal_exp.predict_proba(testX)
+            cal_exp.predict_proba(X_test)
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
-            cal_exp.predict_proba(testX, uq_interval=True)
-        testY_hat1 = cal_exp.predict_proba(testX, threshold=testY[0])
-        testY_hat2, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY[0])
-        for i, y_hat in enumerate(testY_hat2):
+            cal_exp.predict_proba(X_test, uq_interval=True)
+        y_test_hat1 = cal_exp.predict_proba(X_test, threshold=y_test[0])
+        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test[0])
+        for i, y_hat in enumerate(y_test_hat2):
             # Due to that random_state can not be set to guarantee identical results in
             # ConformalPredictiveSystem, the probabilities will differ slightly. This is a known issue.
             # for j in range(len(y_hat)):
-            #     self.assertEqual(testY_hat1[i][j], y_hat[j])
-            self.assertBetween(testY_hat2[i,1], low[i], high[i])
-        testY_hat1 = cal_exp.predict_proba(testX, threshold=testY)
-        testY_hat2, (low, high) = cal_exp.predict_proba(testX, uq_interval=True, threshold=testY)
-        for i, y_hat in enumerate(testY_hat2):
+            #     self.assertEqual(y_test_hat1[i][j], y_hat[j])
+            self.assertBetween(y_test_hat2[i,1], low[i], high[i])
+        y_test_hat1 = cal_exp.predict_proba(X_test, threshold=y_test)
+        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test)
+        for i, y_hat in enumerate(y_test_hat2):
             # Due to that random_state can not be set to guarantee identical results in
             # ConformalPredictiveSystem, the probabilities will differ slightly. This is a known issue.
             # for j in range(len(y_hat)):
-            #     self.assertEqual(testY_hat1[i][j], y_hat[j])
-            self.assertBetween(testY_hat2[i,1], low[i], high[i])
+            #     self.assertEqual(y_test_hat1[i][j], y_hat[j])
+            self.assertBetween(y_test_hat2[i,1], low[i], high[i])
 
-        cal_exp.fit(trainX, trainY)
+        cal_exp.fit(X_prop_train, y_prop_train)
         self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
 
@@ -275,27 +275,27 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertEqual(new_exp.learner, learner)
 
         try:
-            cal_exp.plot_global(testX) # pylint: disable=no-member
+            cal_exp.plot_global(X_test) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(testX) raised unexpected exception: {e}")
+            pytest.fail(f"cal_exp.plot_global(X_test) raised unexpected exception: {e}")
         try:
-            cal_exp.plot_global(testX, testY) # pylint: disable=no-member
+            cal_exp.plot_global(X_test, y_test) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(testX, testY) raised unexpected exception: {e}")
+            pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
 
         try:
-            cal_exp.plot_global(testX, threshold=testY[0]) # pylint: disable=no-member
+            cal_exp.plot_global(X_test, threshold=y_test[0]) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(testX) raised unexpected exception: {e}")
+            pytest.fail(f"cal_exp.plot_global(X_test) raised unexpected exception: {e}")
         try:
-            cal_exp.plot_global(testX, testY, threshold=testY[0]) # pylint: disable=no-member
+            cal_exp.plot_global(X_test, y_test, threshold=y_test[0]) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(testX, testY) raised unexpected exception: {e}")
+            pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
 
         # with pytest.raises(AssertionError):
-        #     cal_exp.plot_global(testX, threshold=testY) # pylint: disable=no-member
+        #     cal_exp.plot_global(X_test, threshold=y_test) # pylint: disable=no-member
         # with pytest.raises(AssertionError):
-        #     cal_exp.plot_global(testX, testY, threshold=testY) # pylint: disable=no-member
+        #     cal_exp.plot_global(X_test, y_test, threshold=y_test) # pylint: disable=no-member
 
 
 if __name__ == '__main__':

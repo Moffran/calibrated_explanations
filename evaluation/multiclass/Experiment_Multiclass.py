@@ -85,38 +85,38 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
         kf = StratifiedKFold(n_splits=10)
 
         for train_index, test_index in kf.split(X, y):
-            trainCalX, testX = X[train_index], X[test_index]
-            trainCalY, testY = y[train_index], y[test_index]
-            m1.fit(trainCalX, trainCalY)
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            m1.fit(X_train, y_train)
             # treeSize_noncal = treeSize_noncal + m1.tree_.node_count
 
-            trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33)
+            X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train, test_size=0.33)
 
             uniqueY = np.unique(y)
-            uniqueTrainY = np.unique(trainCalY)
+            uniqueTrainY = np.unique(y_train)
             class_missing = len(uniqueTrainY) != len(uniqueY)
 
-            s = len(trainY)
+            s = len(y_prop_train)
             
 
-            m2.fit(trainX, trainY)
+            m2.fit(X_prop_train, y_prop_train)
             # treeSize_va = treeSize_va + m2.tree_.node_count
 
-            uncal_preds[test_index] = m1.predict(testX)
-            uncal_probs[test_index, :] = fix_class_missing(m1.predict_proba(testX), class_missing, uniqueY, uniqueTrainY)
+            uncal_preds[test_index] = m1.predict(X_test)
+            uncal_probs[test_index, :] = fix_class_missing(m1.predict_proba(X_test), class_missing, uniqueY, uniqueTrainY)
             
 
-            uniqueTrainY = np.unique(trainY)
+            uniqueTrainY = np.unique(y_prop_train)
             class_missing = len(uniqueTrainY) != len(uniqueY)
 
-            cal_preds = m2.predict(calX)
-            cal_probs = fix_class_missing(m2.predict_proba(calX), class_missing, uniqueY, uniqueTrainY)
+            cal_preds = m2.predict(X_cal)
+            cal_probs = fix_class_missing(m2.predict_proba(X_cal), class_missing, uniqueY, uniqueTrainY)
 
-            test_preds = m2.predict(testX)
-            test_probs = fix_class_missing(m2.predict_proba(testX), class_missing, uniqueY, uniqueTrainY)
+            test_preds = m2.predict(X_test)
+            test_probs = fix_class_missing(m2.predict_proba(X_test), class_missing, uniqueY, uniqueTrainY)
 
-            va = VennAbers(cal_probs, calY, m2)
-            tmp = va.predict_proba(testX, output_interval=True)
+            va = VennAbers(cal_probs, y_cal, m2)
+            tmp = va.predict_proba(X_test, output_interval=True)
             va_probs[test_index, :] = tmp[0]
             va_preds[test_index] = np.argmax(tmp[0], axis=1)
             l[test_index, :] = tmp[1]

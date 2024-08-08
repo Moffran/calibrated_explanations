@@ -39,11 +39,11 @@ def load_binary_dataset():
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     test_index = np.array([*range(int(num_to_test/2)), *range(no_of_instances-1, no_of_instances-int(num_to_test/2)-1,-1)])
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
-    traincal_X, testX = X[train_index, :], X[test_index, :]
-    trainCalY, testY = y[train_index], y[test_index]
-    # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
-    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33, random_state=42, stratify=trainCalY)
-    return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns
+    trainX_cal, X_test = X[train_index, :], X[test_index, :]
+    y_train, y_test = y[train_index], y[test_index]
+    # trainX_cal,y_train = shuffle(trainX_cal, y_train)
+    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(trainX_cal, y_train, test_size=0.33, random_state=42, stratify=y_train)
+    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, no_of_classes, no_of_features, categorical_features, columns
 
 def load_multiclass_dataset():
     dataSet = 'glass'
@@ -76,19 +76,19 @@ def load_multiclass_dataset():
     test_index = np.array(test_idx).flatten()
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
-    traincal_X, testX = X[train_index, :], X[test_index, :]
-    trainCalY, testY = y[train_index], y[test_index]
-    # traincal_X,trainCalY = shuffle(traincal_X, trainCalY)
-    trainX, cal_X, trainY, calY = train_test_split(traincal_X, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
-    return trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, categorical_labels, target_labels, columns
+    trainX_cal, X_test = X[train_index, :], X[test_index, :]
+    y_train, y_test = y[train_index], y[test_index]
+    # trainX_cal,y_train = shuffle(trainX_cal, y_train)
+    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(trainX_cal, y_train, test_size=0.33,random_state=42, stratify=y_train)
+    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, no_of_classes, no_of_features, categorical_features, categorical_labels, target_labels, columns
 
-def get_classification_model(model_name, trainX, trainY):
+def get_classification_model(model_name, X_prop_train, y_prop_train):
     t1 = DecisionTreeClassifier()
     r1 = RandomForestClassifier(n_estimators=10)
     model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
 
     model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
-    model.fit(trainX,trainY)
+    model.fit(X_prop_train,y_prop_train)
     return model, model_name
 
 
@@ -107,17 +107,17 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
 
     def test_binary_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
-            cal_X,
-            calY,
+            X_cal,
+            y_cal,
             feature_names=feature_names,
             categorical_features=categorical_features,
             mode='classification',
         )
-        factual_explanation = cal_exp.explain_factual(testX)
+        factual_explanation = cal_exp.explain_factual(X_test)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
@@ -137,7 +137,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             counter = factual_explanation.get_counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
+        counterfactual_explanation = cal_exp.explain_counterfactual(X_test)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
@@ -160,12 +160,12 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
-            cal_X,
-            calY,
+            X_cal,
+            y_cal,
             feature_names=feature_names,
             categorical_labels=categorical_labels,
             class_labels=target_labels,
@@ -173,7 +173,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             verbose=True
         )
         print(cal_exp)
-        factual_explanation = cal_exp.explain_factual(testX)
+        factual_explanation = cal_exp.explain_factual(X_test)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
@@ -193,7 +193,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             counter = factual_explanation.get_counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX)
+        counterfactual_explanation = cal_exp.explain_counterfactual(X_test)
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
@@ -220,20 +220,20 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
     # @unittest.skip('Skipping provisionally.')
     def test_binary_conditional_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         target_labels = ['No', 'Yes']
         cal_exp = CalibratedExplainer(
             model,
-            cal_X,
-            calY,
+            X_cal,
+            y_cal,
             feature_names=feature_names,
             categorical_features=categorical_features,
             class_labels=target_labels,
             mode='classification',
-            bins=cal_X[:,0]
+            bins=X_cal[:,0]
         )
-        factual_explanation = cal_exp.explain_factual(testX, bins=testX[:,0])
+        factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:,0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
@@ -247,7 +247,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, bins=testX[:,0])
+        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, bins=X_test[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
@@ -260,20 +260,20 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_conditional_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
-            cal_X,
-            calY,
+            X_cal,
+            y_cal,
             feature_names=feature_names,
             # categorical_features=categorical_features,
             categorical_labels=categorical_labels,
             # class_labels=target_labels,
             mode='classification',
-            bins=cal_X[:,0]
+            bins=X_cal[:,0]
         )
-        factual_explanation = cal_exp.explain_factual(testX, bins=testX[:,0])
+        factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:,0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
@@ -287,7 +287,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(testX, bins=testX[:,0])
+        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, bins=X_test[:,0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
         counterfactual_explanation.add_conjunctions()
@@ -299,18 +299,18 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
 
     def test_binary_perturbed_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
-            cal_X,
-            calY,
+            X_cal,
+            y_cal,
             feature_names=feature_names,
             categorical_features=categorical_features,
             mode='classification',
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(testX)
+        perturbed_explanation = cal_exp.explain_perturbed(X_test)
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.remove_conjunctions()
         try:
@@ -330,12 +330,12 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_perturbed_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
-            cal_X,
-            calY,
+            X_cal,
+            y_cal,
             feature_names=feature_names,
             categorical_labels=categorical_labels,
             class_labels=target_labels,
@@ -344,7 +344,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             perturb=True
         )
         print(cal_exp)
-        perturbed_explanation = cal_exp.explain_perturbed(testX)
+        perturbed_explanation = cal_exp.explain_perturbed(X_test)
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.remove_conjunctions()
         try:
@@ -364,21 +364,21 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
     # @unittest.skip('Skipping provisionally.')
     def test_binary_conditional_perturbed_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, categorical_features, feature_names = load_binary_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = load_binary_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         target_labels = ['No', 'Yes']
         cal_exp = CalibratedExplainer(
             model,
-            cal_X,
-            calY,
+            X_cal,
+            y_cal,
             feature_names=feature_names,
             categorical_features=categorical_features,
             class_labels=target_labels,
             mode='classification',
-            bins=cal_X[:,0],
+            bins=X_cal[:,0],
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(testX, bins=testX[:,0])
+        perturbed_explanation = cal_exp.explain_perturbed(X_test, bins=X_test[:,0])
         perturbed_explanation.add_conjunctions()
         try:
             perturbed_explanation.plot()
@@ -392,21 +392,21 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_perturbed_conditional_ce(self):
-        trainX, trainY, cal_X, calY, testX, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
             model,
-            cal_X,
-            calY,
+            X_cal,
+            y_cal,
             feature_names=feature_names,
             # categorical_features=categorical_features,
             categorical_labels=categorical_labels,
             # class_labels=target_labels,
             mode='classification',
-            bins=cal_X[:,0],
+            bins=X_cal[:,0],
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(testX, bins=testX[:,0])
+        perturbed_explanation = cal_exp.explain_perturbed(X_test, bins=X_test[:,0])
         perturbed_explanation.add_conjunctions()
         try:
             perturbed_explanation.plot()

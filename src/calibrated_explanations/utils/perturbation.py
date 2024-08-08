@@ -98,8 +98,8 @@ def uniform_perturbation(column, severity):
     return perturbed_column
 
 # pylint: disable=invalid-name, too-many-arguments
-def perturb_dataset(cal_X,
-                    cal_y,
+def perturb_dataset(X_cal,
+                    y_cal,
                     categorical_features=None,
                     noise_type='uniform',
                     scale_factor=5,
@@ -107,20 +107,20 @@ def perturb_dataset(cal_X,
     '''
     Function used to perturb the dataset for the calibration process.
     '''
-    perturbed_cal_X = np.tile(cal_X.copy(), (scale_factor,1))
-    scaled_cal_X = perturbed_cal_X.copy()
-    scaled_cal_y = np.tile(cal_y.copy(), scale_factor)
+    perturbed_X_cal = np.tile(X_cal.copy(), (scale_factor,1))
+    scaled_X_cal = perturbed_X_cal.copy()
+    scaled_y_cal = np.tile(y_cal.copy(), scale_factor)
     assert noise_type in ['uniform', 'gaussian'], \
         "Noise type must be either 'uniform' or 'gaussian'."
 
-    for f in range(scaled_cal_X.shape[1]):
+    for f in range(scaled_X_cal.shape[1]):
         if f in categorical_features:
-            perturbed_cal_X[:,f] = categorical_perturbation(perturbed_cal_X[:,f])
+            perturbed_X_cal[:,f] = categorical_perturbation(perturbed_X_cal[:,f])
         else:
             if noise_type == 'uniform':
                 # Apply numerical counterfactual perturbation to the selected column -- uniform
-                perturbed_cal_X[:,f] = uniform_perturbation(perturbed_cal_X[:,f], severity)
+                perturbed_X_cal[:,f] = uniform_perturbation(perturbed_X_cal[:,f], severity)
             elif noise_type == 'gaussian':
                 # Apply numerical counterfactual perturbation to the selected column -- gaussian
-                perturbed_cal_X[:,f] = gaussian_perturbation(perturbed_cal_X[:,f], severity)
-    return perturbed_cal_X, scaled_cal_X, scaled_cal_y, scale_factor
+                perturbed_X_cal[:,f] = gaussian_perturbation(perturbed_X_cal[:,f], severity)
+    return perturbed_X_cal, scaled_X_cal, scaled_y_cal, scale_factor

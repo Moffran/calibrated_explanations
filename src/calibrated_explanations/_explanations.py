@@ -367,8 +367,8 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             tmp.local_pred = explanation.prediction['predict']
             if 'regression' in self.calibrated_explainer.mode:
                 tmp.predicted_value = explanation.prediction['predict']
-                tmp.min_value = np.min(self.calibrated_explainer.cal_y)
-                tmp.max_value = np.max(self.calibrated_explainer.cal_y)
+                tmp.min_value = np.min(self.calibrated_explainer.y_cal)
+                tmp.max_value = np.max(self.calibrated_explainer.y_cal)
             else:
                 tmp.predict_proba[0], tmp.predict_proba[1] = \
                         1-explanation.prediction['predict'], explanation.prediction['predict']
@@ -609,7 +609,7 @@ class CalibratedExplanation(ABC):
         #     average_predict[bin_value] = average_predict[bin_value]/len(lesser_values)
         #     low_predict[bin_value] = low_predict[bin_value]/len(lesser_values)
         #     high_predict[bin_value] = high_predict[bin_value]/len(lesser_values)
-        #     counts[bin_value] = len(np.where(self._get_explainer().cal_X[:,f] < lesser)[0])
+        #     counts[bin_value] = len(np.where(self._get_explainer().X_cal[:,f] < lesser)[0])
         #     bin_value += 1
         # else:     
         #     greater = new_value   
@@ -624,7 +624,7 @@ class CalibratedExplanation(ABC):
         #     average_predict[bin_value] = average_predict[bin_value]/len(greater_values)
         #     low_predict[bin_value] = low_predict[bin_value]/len(greater_values)
         #     high_predict[bin_value] = high_predict[bin_value]/len(greater_values)
-        #     counts[bin_value] = len(np.where(self._get_explainer().cal_X[:,f] > greater)[0])
+        #     counts[bin_value] = len(np.where(self._get_explainer().X_cal[:,f] > greater)[0])
         #     bin_value += 1
 
         # covered_values = self._get_explainer().__get_covered_values(f, lesser, greater)
@@ -638,7 +638,7 @@ class CalibratedExplanation(ABC):
         # average_predict[bin_value] = average_predict[bin_value]/len(covered_values)
         # low_predict[bin_value] = low_predict[bin_value]/len(covered_values)
         # high_predict[bin_value] = high_predict[bin_value]/len(covered_values)
-        # counts[bin_value] = len(np.where((self._get_explainer().cal_X[:,f] >= lesser) & (self._get_explainer().cal_X[:,f] <= greater))[0])
+        # counts[bin_value] = len(np.where((self._get_explainer().X_cal[:,f] >= lesser) & (self._get_explainer().X_cal[:,f] <= greater))[0])
         # current_bin = bin_value
 
     # rule_values[f] = (rule_value, x_original[f], perturbed_original[0,f])
@@ -676,7 +676,7 @@ class CalibratedExplanation(ABC):
     #     tmp_high = self._assign_weight(instance_predict['high'][f], prediction['predict'][-1], is_probabilistic)
     #     instance_weights['low'][f] = np.min([tmp_low, tmp_high])
     #     instance_weights['high'][f] = np.max([tmp_low, tmp_high])
-        #         test_X,
+        #         X_test,
         #         threshold = None, # The same meaning as threshold has for cps in crepes.
         #         low_high_percentiles = (5, 95),
         #         classes = None,
@@ -737,14 +737,14 @@ class FactualExplanation(CalibratedExplanation):
     #         index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[0] == rule_name][0]
     #         value = self._get_explainer().discretizer.mins[index][1]
     #         min_value = self.test_object[index]
-    #         max_value = np.max(self._get_explainer().cal_X[:,index])
+    #         max_value = np.max(self._get_explainer().X_cal[:,index])
     #     else:
     #         index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[1] == rule_name][0]
     #         value = self._get_explainer().discretizer.mins[index][1]
-    #         min_value = np.min(self._get_explainer().cal_X[:,index])
+    #         min_value = np.min(self._get_explainer().X_cal[:,index])
     #         max_value = self.test_object[index]
-    #     cal_X = self._get_explainer().cal_X
-    #     uniques = np.unique(cal_X[[min_value < x <= max_value for x in cal_X[:,index]], index])
+    #     X_cal = self._get_explainer().X_cal
+    #     uniques = np.unique(X_cal[[min_value < x <= max_value for x in X_cal[:,index]], index])
     #     value_selection = [(uniques[i] + uniques[i+1]) / 2 for i in range(len(uniques) - 1)] # find thresholds between actual values
     #     value = min(value_selection, key=lambda x: abs(x-value)) # find value in slider closest to rule condition
     #     # print(rule_name, min_value, max_value, value, value_selection)
@@ -1027,9 +1027,9 @@ class FactualExplanation(CalibratedExplanation):
         xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
         p = predict['predict']
         pl = predict['low'] if predict['low'] != -np.inf \
-                                else np.min(self._get_explainer().cal_y)
+                                else np.min(self._get_explainer().y_cal)
         ph = predict['high'] if predict['high'] != np.inf \
-                                else np.max(self._get_explainer().cal_y)
+                                else np.max(self._get_explainer().y_cal)
 
         ax_negative.fill_betweenx(xj, 1-p, 1-p, color='b')
         ax_negative.fill_betweenx(xj, 0, 1-ph, color='b')
@@ -1183,13 +1183,13 @@ class FactualExplanation(CalibratedExplanation):
         xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
         p = predict['predict']
         pl = predict['low'] if predict['low'] != -np.inf \
-                                else np.min(self._get_explainer().cal_y)
+                                else np.min(self._get_explainer().y_cal)
         ph = predict['high'] if predict['high'] != np.inf \
-                                else np.max(self._get_explainer().cal_y)
+                                else np.max(self._get_explainer().y_cal)
         
         ax_regression.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
         ax_regression.fill_betweenx(xj, p, p, color='r')
-        ax_regression.set_xlim([np.min([pl, np.min(self._get_explainer().cal_y)]),np.max([ph, np.max(self._get_explainer().cal_y)])])
+        ax_regression.set_xlim([np.min([pl, np.min(self._get_explainer().y_cal)]),np.max([ph, np.max(self._get_explainer().y_cal)])])
         ax_regression.set_yticks(range(1))
 
         ax_regression.set_xlabel(f'Prediction interval with {self.calibrated_explanations.get_confidence()}% confidence')
@@ -1291,14 +1291,14 @@ class CounterfactualExplanation(CalibratedExplanation):
 
     #     if '<' in rule_name:
     #         value = self._get_explainer().discretizer.mins[index][1]
-    #         min_value = np.min(self._get_explainer().cal_X[:,index])
+    #         min_value = np.min(self._get_explainer().X_cal[:,index])
     #         max_value = self.test_object[index]
     #     else:
     #         value = self._get_explainer().discretizer.maxs[index][1]
     #         min_value = self.test_object[index]
-    #         max_value = np.max(self._get_explainer().cal_X[:,index])
-    #     cal_X = self._get_explainer().cal_X         
-    #     num_values = len(np.unique(cal_X[[min_value <= x < max_value for x in cal_X[:,index]], index], return_counts=True))
+    #         max_value = np.max(self._get_explainer().X_cal[:,index])
+    #     X_cal = self._get_explainer().X_cal         
+    #     num_values = len(np.unique(X_cal[[min_value <= x < max_value for x in X_cal[:,index]], index], return_counts=True))
     #     print(rule_name, min_value, max_value, num_values, (max_value-min_value)/num_values, value)
     #     return min_value, max_value, (max_value-min_value)/num_values, value
         
@@ -1392,7 +1392,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                                 f'{self._get_explainer().feature_names[f]} = {value}')
                     counterfactual['is_conjunctive'].append(False)
             else:
-                values = np.array(self._get_explainer().cal_X[:,f])
+                values = np.array(self._get_explainer().X_cal[:,f])
                 lesser = rule_boundaries[f][0]
                 greater = rule_boundaries[f][1]
 
@@ -1823,8 +1823,8 @@ class CounterfactualExplanation(CalibratedExplanation):
             x = np.arange(0, 0.5, 0.005)
             plt.plot((x + 0.5 - x)/(1 + x), x, color='black')            
         else:
-            min_x = np.min(self._get_explainer().cal_y) # pylint: disable=protected-access
-            max_x = np.max(self._get_explainer().cal_y) # pylint: disable=protected-access
+            min_x = np.min(self._get_explainer().y_cal) # pylint: disable=protected-access
+            max_x = np.max(self._get_explainer().y_cal) # pylint: disable=protected-access
             min_y = min(np.min(rule_uncertainty), np.min(uncertainty))
             max_y = max(np.max(rule_uncertainty), np.max(uncertainty))
             if math.isclose(min_x, max_x, rel_tol=1e-9):
@@ -1864,9 +1864,9 @@ class CounterfactualExplanation(CalibratedExplanation):
 
         x = np.linspace(0, num_to_show-1, num_to_show)
         p_l = predict['low'] if predict['low'] != -np.inf \
-                            else np.min(self._get_explainer().cal_y)
+                            else np.min(self._get_explainer().y_cal)
         p_h = predict['high'] if predict['high'] != np.inf \
-                            else np.max(self._get_explainer().cal_y)
+                            else np.max(self._get_explainer().y_cal)
         p = predict['predict']
         venn_abers={'low_high': [p_l,p_h],'predict':p}
         # Fill original Venn Abers interval
@@ -1902,9 +1902,9 @@ class CounterfactualExplanation(CalibratedExplanation):
 
         for jx, j in enumerate(features_to_plot):
             p_l = feature_predict['low'][j] if feature_predict['low'][j] != -np.inf \
-                                            else np.min(self._get_explainer().cal_y)
+                                            else np.min(self._get_explainer().y_cal)
             p_h = feature_predict['high'][j] if feature_predict['high'][j] != np.inf \
-                                            else np.max(self._get_explainer().cal_y)
+                                            else np.max(self._get_explainer().y_cal)
             p = feature_predict['predict'][j]
             xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
             venn_abers={'low_high': [p_l,p_h],'predict':p}
@@ -1942,8 +1942,8 @@ class CounterfactualExplanation(CalibratedExplanation):
             ax_main.set_xticks(np.linspace(0, 1, 11))
         elif 'regression' in self._get_explainer().mode:
             ax_main.set_xlabel(f'Prediction interval with {self.calibrated_explanations.get_confidence()}% confidence')
-            ax_main.set_xlim([np.min(self._get_explainer().cal_y),
-                       np.max(self._get_explainer().cal_y)])
+            ax_main.set_xlim([np.min(self._get_explainer().y_cal),
+                       np.max(self._get_explainer().y_cal)])
         else:
             if self._get_explainer().class_labels is not None:
                 if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
@@ -2237,9 +2237,9 @@ class PerturbedExplanation(CalibratedExplanation):
         xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
         p = predict['predict']
         pl = predict['low'] if predict['low'] != -np.inf \
-                                else np.min(self._get_explainer().cal_y)
+                                else np.min(self._get_explainer().y_cal)
         ph = predict['high'] if predict['high'] != np.inf \
-                                else np.max(self._get_explainer().cal_y)
+                                else np.max(self._get_explainer().y_cal)
 
         ax_negative.fill_betweenx(xj, 1-p, 1-p, color='b')
         ax_negative.fill_betweenx(xj, 0, 1-ph, color='b')
@@ -2360,13 +2360,13 @@ class PerturbedExplanation(CalibratedExplanation):
         xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
         p = predict['predict']
         pl = predict['low'] if predict['low'] != -np.inf \
-                                else np.min(self._get_explainer().cal_y)
+                                else np.min(self._get_explainer().y_cal)
         ph = predict['high'] if predict['high'] != np.inf \
-                                else np.max(self._get_explainer().cal_y)
+                                else np.max(self._get_explainer().y_cal)
         
         ax_regression.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
         ax_regression.fill_betweenx(xj, p, p, color='r')
-        ax_regression.set_xlim([np.min([pl, np.min(self._get_explainer().cal_y)]),np.max([ph, np.max(self._get_explainer().cal_y)])])
+        ax_regression.set_xlim([np.min([pl, np.min(self._get_explainer().y_cal)]),np.max([ph, np.max(self._get_explainer().y_cal)])])
         ax_regression.set_yticks(range(1))
 
         ax_regression.set_xlabel(f'Prediction interval with {self.calibrated_explanations.get_confidence()}% confidence')

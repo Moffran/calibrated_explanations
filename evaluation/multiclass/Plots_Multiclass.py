@@ -39,49 +39,49 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
     test_index = np.array(test_idx).flatten()
 
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
-    trainCalX, testX = X[train_index,:], X[test_index,:]
-    trainCalY, testY = y[train_index], y[test_index]
-    trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=42, stratify=trainCalY)
+    X_train, X_test = X[train_index,:], X[test_index,:]
+    y_train, y_test = y[train_index], y[test_index]
+    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train, test_size=0.33,random_state=42, stratify=y_train)
 
     print(dataSet, end=' - ', flush=True)
 
-    model.fit(trainX, trainY)
+    model.fit(X_prop_train, y_prop_train)
 
     print('Model trained', end=' - ', flush=True)
 
-    ce = CalibratedExplainer(model, calX, calY, \
+    ce = CalibratedExplainer(model, X_cal, y_cal, \
                     feature_names=df.columns)
-    factual_explanations = ce.explain_factual(testX)
+    factual_explanations = ce.explain_factual(X_test)
     for i in range(num_to_test):
         predicted = factual_explanations.get_explanation(i).prediction['classes']
-        factual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_i{i}_c{testY[i]}_p{predicted}.png")
-        factual_explanations.plot(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_i{i}_c{testY[i]}_p{predicted}.png")
+        factual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_i{i}_c{y_test[i]}_p{predicted}.png")
+        factual_explanations.plot(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Factual Explanations done', end=' - ', flush=True)
 
-    counterfactual_explanations = ce.explain_counterfactual(testX)
+    counterfactual_explanations = ce.explain_counterfactual(X_test)
     for i in range(num_to_test):
         predicted = counterfactual_explanations.get_explanation(i).prediction['classes']
-        counterfactual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_i{i}_c{testY[i]}_p{predicted}.png")
+        counterfactual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Counterfactual Explanations done', end=' - ', flush=True)
     
-    cal_p = model.predict(calX)
-    test_p = model.predict(testX)
+    cal_p = model.predict(X_cal)
+    test_p = model.predict(X_test)
 
-    ce = CalibratedExplainer(model, calX, calY, \
+    ce = CalibratedExplainer(model, X_cal, y_cal, \
                     feature_names=df.columns, bins=cal_p)
-    factual_explanations = ce.explain_factual(testX, bins=test_p)
+    factual_explanations = ce.explain_factual(X_test, bins=test_p)
     for i in range(num_to_test):
         predicted = factual_explanations.get_explanation(i).prediction['classes']
-        factual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
-        factual_explanations.plot(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
+        factual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
+        factual_explanations.plot(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Mondrian Factual Explanations done', end=' - ', flush=True)
 
-    counterfactual_explanations = ce.explain_counterfactual(testX, bins=test_p)
+    counterfactual_explanations = ce.explain_counterfactual(X_test, bins=test_p)
     for i in range(num_to_test):
         predicted = counterfactual_explanations.get_explanation(i).prediction['classes']
-        counterfactual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_Mondrian_i{i}_c{testY[i]}_p{predicted}.png")
+        counterfactual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Mondrian Counterfactual Explanations done')

@@ -80,21 +80,21 @@ for dataset in klara:
         for desc in descriptors:
             calibrators[desc] = {}
             calibrators[desc]['ce'] = []
-        trainCalX, testX, trainCalY, testY = train_test_split(X.values, y.values, test_size=test_size,random_state=42)
-        trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(X.values, y.values, test_size=test_size,random_state=42)
+        X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train, test_size=0.33,random_state=42)
 
-        c2.fit(trainX,trainY)
+        c2.fit(X_prop_train,y_prop_train)
 
         calibrators['uncal']['model'] = c2
         if 'va' in descriptors:
             calibrators['va']['model'] = VennAbers()
-            calibrators['va']['model'].fit(c2.predict_proba(calX), calY)
-        calibrators['data'] = {'trainX':trainX,'trainY':trainY,'calX':calX,'calY':calY,'testX':testX,'testY':testY,}
+            calibrators['va']['model'].fit(c2.predict_proba(X_cal), y_cal)
+        calibrators['data'] = {'X_prop_train':X_prop_train,'y_prop_train':y_prop_train,'X_cal':X_cal,'y_cal':y_cal,'X_test':X_test,'y_test':y_test,}
 
         np.random.seed(1337)
         categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
 
-        ce = CalibratedExplainer(c2, calX, calY, \
+        ce = CalibratedExplainer(c2, X_cal, y_cal, \
             feature_names=df.columns, categorical_features=categorical_features)
 
         stability =  {'ce':[], 'cce':[], }#'lime':[], 'lime_va':[], 'shap':[], 'shap_va':[]}
@@ -108,7 +108,7 @@ for dataset in klara:
 
                 ce.set_random_state(i)
                 tic = time.time()
-                factual_explanations = ce.explain_factual(testX)
+                factual_explanations = ce.explain_factual(X_test)
                 factual_explanations.add_conjunctions(max_rule_size=4)
                 ct = time.time()-tic
                 stab_timer['ce'].append(ct)
@@ -117,7 +117,7 @@ for dataset in klara:
 
                 ce.set_random_state(i)
                 tic = time.time()
-                factual_explanation = ce.explain_counterfactual(testX)
+                factual_explanation = ce.explain_counterfactual(X_test)
                 ct = time.time()-tic
                 stab_timer['cce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
@@ -137,18 +137,18 @@ for dataset in klara:
                 c2 = xgb.XGBClassifier(objective='binary:logistic',use_label_encoder=False,eval_metric='logloss', random_state=i)
             else:
                 c2 = RandomForestClassifier(n_estimators=100, random_state=i)
-            trainX, calX, trainY, calY = train_test_split(trainCalX, trainCalY, test_size=0.33,random_state=i)
+            X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train, test_size=0.33,random_state=i)
 
-            c2.fit(trainX,trainY)
-            ce = CalibratedExplainer(c2, calX, calY, \
+            c2.fit(X_prop_train,y_prop_train)
+            ce = CalibratedExplainer(c2, X_cal, y_cal, \
                 feature_names=df.columns, categorical_features=categorical_features)
-            robustness['proba'].append(c2.predict_proba(testX)[:,1])
+            robustness['proba'].append(c2.predict_proba(X_test)[:,1])
 
             try:
                 # print(f'{i}:',end='\t')
                 ce.set_random_state(i)
                 tic = time.time()
-                factual_explanations = ce.explain_factual(testX)
+                factual_explanations = ce.explain_factual(X_test)
                 factual_explanations.add_conjunctions(max_rule_size=3)
                 ct = time.time()-tic
                 rob_timer['ce'].append(ct)
@@ -157,7 +157,7 @@ for dataset in klara:
 
                 ce.set_random_state(i)
                 tic = time.time()
-                factual_explanation = ce.explain_counterfactual(testX)
+                factual_explanation = ce.explain_counterfactual(X_test)
                 ct = time.time()-tic
                 rob_timer['cce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')

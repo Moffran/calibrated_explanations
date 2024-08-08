@@ -22,10 +22,10 @@ class IntervalRegressor:
         model
             The `model` parameter is an object that represents a fitted regression model. It should have a
         `predict` method that can be used to make predictions on new instances.
-        cal_X
+        X_cal
             A numpy array containing the instance objects used for calibration. These are the input
         features for the model.
-        cal_y
+        y_cal
             The instance targets used for calibration. It is a numpy array that contains the true target
         values for the instances in the calibration set.
         
@@ -33,9 +33,9 @@ class IntervalRegressor:
         self.ce = calibrated_explainer
         self.bins = calibrated_explainer.bins
         self.model = self
-        self.cal_y_hat = self.ce.learner.predict(self.ce.cal_X)  # can be calculated through calibrated_explainer
-        self.residual_cal = self.ce.cal_y - self.cal_y_hat  # can be calculated through calibrated_explainer
-        self.sigma_cal = self.ce._get_sigma_test(X=self.ce.cal_X)  # pylint: disable=protected-access
+        self.y_cal_hat = self.ce.learner.predict(self.ce.X_cal)  # can be calculated through calibrated_explainer
+        self.residual_cal = self.ce.y_cal - self.y_cal_hat  # can be calculated through calibrated_explainer
+        self.sigma_cal = self.ce._get_sigma_test(X=self.ce.X_cal)  # pylint: disable=protected-access
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
             cps.fit(residuals=self.residual_cal, sigmas=self.sigma_cal, bins=self.bins)
@@ -49,15 +49,15 @@ class IntervalRegressor:
         self.split = {}
         self.pre_fit_for_probabilistic()
 
-    def predict_probability(self, test_X, y_threshold, bins=None):
+    def predict_probability(self, X_test, y_threshold, bins=None):
         '''The `predict_probability` function takes in a test dataset and a threshold value, and returns
         the predicted probabilities for each instance in the dataset being above the threshold(s), along 
         with confidence intervals.
         
         Parameters
         ----------
-        test_X
-            test_X is a numpy.ndarray containing the instance objects for which we want to predict the
+        X_test
+            X_test is a numpy.ndarray containing the instance objects for which we want to predict the
         probability.
         y_threshold
             The `y_threshold` parameter is used to determine the probability of the true value being 
@@ -78,28 +78,28 @@ class IntervalRegressor:
             if bins is not None:
                 assert self.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
             self.compute_proba_cal(self.y_threshold)
-            proba, low, high = self.split['va'].predict_proba(test_X, output_interval=True, bins=bins)
+            proba, low, high = self.split['va'].predict_proba(X_test, output_interval=True, bins=bins)
             return proba[:, 1], low, high, None
 
-        interval = np.zeros((test_X.shape[0],2))
-        proba = np.zeros(test_X.shape[0])
+        interval = np.zeros((X_test.shape[0],2))
+        proba = np.zeros(X_test.shape[0])
         for i, _ in enumerate(proba):
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
-            p, low, high = self.split['va'].predict_proba(test_X[i, :].reshape(1, -1), output_interval=True, bins=bins)
+            p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=bins)
             proba[i] = p[0,1]
             interval[i, :] = np.array([low[0], high[0]])
         return proba, interval[:, 0], interval[:, 1], None
 
-    def predict_uncertainty(self, test_X, low_high_percentiles, bins=None):
+    def predict_uncertainty(self, X_test, low_high_percentiles, bins=None):
         '''The function `predict_uncertainty` predicts the uncertainty of a given set of instances using a
         `ConformalPredictiveSystem` and returns the predicted values along with the lower and upper bounds of
         the uncertainty interval.
         
         Parameters
         ----------
-        test_X
-            test_X is a numpy array containing the instance objects for which we want to predict the
+        X_test
+            X_test is a numpy array containing the instance objects for which we want to predict the
         uncertainty.
         low_high_percentiles
             The `low_high_percentiles` parameter is a list containing two values. The first value
@@ -116,30 +116,30 @@ class IntervalRegressor:
             four values: median, lower bound, upper bound, and None
                     
         '''
-        test_y_hat = self.ce.learner.predict(test_X)
+        y_test_hat = self.ce.learner.predict(X_test)
 
-        sigma_test = self.ce._get_sigma_test(X=test_X)  # pylint: disable=protected-access
+        sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
         high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
-        interval = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test,
+        interval = self.cps.predict(y_hat=y_test_hat, sigmas=sigma_test,
                                     lower_percentiles=low,
                                     higher_percentiles=high,
                                     bins=bins)
-        test_y_hat = (interval[:, 1] + interval[:, 3]) / 2  # The median
-        return test_y_hat, \
-            interval[:, 0] if low_high_percentiles[0] != -np.inf else np.array([np.min(self.ce.cal_y)]), \
-            interval[:, 2] if low_high_percentiles[1] != np.inf else np.array([np.max(self.ce.cal_y)]), \
+        y_test_hat = (interval[:, 1] + interval[:, 3]) / 2  # The median
+        return y_test_hat, \
+            interval[:, 0] if low_high_percentiles[0] != -np.inf else np.array([np.min(self.ce.y_cal)]), \
+            interval[:, 2] if low_high_percentiles[1] != np.inf else np.array([np.max(self.ce.y_cal)]), \
             None
 
-    def predict_proba(self, test_X, bins=None):
+    def predict_proba(self, X_test, bins=None):
         '''The function `predict_proba` takes in a set of test data and returns the predicted probabilities
         for being above the y_threshold.
         
         Parameters
         ----------
-        test_X
-            The test_X parameter is the input data for which you want to predict the probabilities. It
+        X_test
+            The X_test parameter is the input data for which you want to predict the probabilities. It
         should be a numpy array or a pandas DataFrame containing the features of the test data.     
         bins 
             array-like of shape (n_samples,), default=None
@@ -152,10 +152,10 @@ class IntervalRegressor:
         negative class (1-proba) and the second column represents the probability of the positive class (proba).
         
         '''
-        test_y_hat = self.ce.learner.predict(test_X)
+        y_test_hat = self.ce.learner.predict(X_test)
 
-        sigma_test = self.ce._get_sigma_test(X=test_X)  # pylint: disable=protected-access
-        proba = self.cps.predict(y_hat=test_y_hat, sigmas=sigma_test, y=self.current_y_threshold, bins=bins)
+        sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
+        proba = self.cps.predict(y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold, bins=bins)
         return np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
 
     def pre_fit_for_probabilistic(self):
@@ -164,7 +164,7 @@ class IntervalRegressor:
         The first part is used to fit the `ConformalPredictiveSystem` and the second part is used to
         calculate the probability calibration for a given threshold (at prediction time).
         '''
-        n = len(self.ce.cal_y)
+        n = len(self.ce.y_cal)
         cal_parts = np.random.permutation(n).tolist()
         self.split['parts'] = [cal_parts[:n//2], cal_parts[n//2:]]
         cal_cps = self.split['parts'][0]
@@ -196,12 +196,12 @@ class IntervalRegressor:
             bins = None
         else:
             bins = self.bins[cal_va]
-        proba = self.split['cps'].predict(y_hat=self.cal_y_hat[cal_va],
+        proba = self.split['cps'].predict(y_hat=self.y_cal_hat[cal_va],
                                 y=y_threshold,
                                 sigmas=self.sigma_cal[cal_va],
                                 bins=bins)
         self.split['proba'] = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
         self.split['va'] = VennAbers(self.split['proba'],
-                                        (self.ce.cal_y[cal_va] <= y_threshold).astype(int),
+                                        (self.ce.y_cal[cal_va] <= y_threshold).astype(int),
                                         self,
                                         bins=bins)

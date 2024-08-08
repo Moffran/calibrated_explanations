@@ -21,8 +21,8 @@ class TestFramework(unittest.TestCase):
             CalibratedExplainer(RandomForestClassifier(), [], [])
 
     def test_check_is_fitted_with_fitted_model(self):
-        trainX, trainY, _, _, _, _, _, _, _, _ = load_binary_dataset()
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
+        X_prop_train, y_prop_train, _, _, _, _, _, _, _, _ = load_binary_dataset()
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         # Assuming check_is_fitted does not return anything but raises an error if the model is not fitted
         try:
             check_is_fitted(model)
@@ -71,10 +71,10 @@ class TestFramework(unittest.TestCase):
         self.assertFalse(is_notebook())
 
     def test_explanation_functions(self):
-        trainX, trainY, cal_X, calY, testX, testY, no_of_classes, no_of_features, categorical_features, columns = load_binary_dataset() # pylint: disable=unused-variable
-        model, _ = get_classification_model('RF', trainX, trainY) # pylint: disable=redefined-outer-name
-        ce = CalibratedExplainer(model, cal_X, calY, verbose=True)
-        factual_explanations = ce.explain_factual(testX)
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, no_of_classes, no_of_features, categorical_features, columns = load_binary_dataset() # pylint: disable=unused-variable
+        model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
+        ce = CalibratedExplainer(model, X_cal, y_cal, verbose=True)
+        factual_explanations = ce.explain_factual(X_test)
         factual_explanations._get_rules()
         factual_explanations._is_counterfactual()
         factual_explanations._is_one_sided()
@@ -82,7 +82,7 @@ class TestFramework(unittest.TestCase):
         factual_explanations.as_lime()
         factual_explanations.as_shap()
 
-        counterfactual_explanations = ce.explain_counterfactual(testX)
+        counterfactual_explanations = ce.explain_counterfactual(X_test)
         counterfactual_explanations._get_rules()
         counterfactual_explanations._is_counterfactual()
         counterfactual_explanations._is_one_sided()
