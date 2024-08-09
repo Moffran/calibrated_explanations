@@ -685,7 +685,7 @@ class CalibratedExplainer:
         # Step 1: Predict the test set to get the predictions and intervals
         perturbed_threshold = np.empty((0,)) if threshold is not None and not np.isscalar(threshold) else threshold if threshold is not None else None
         perturbed_bins = np.empty((0,)) if bins is not None else None
-        perturbed_X = np.empty((0, X_test.shape[1]))
+        perturbed_X = np.empty((0, self.num_features))
         perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
         perturbed_class = np.empty((0,),dtype=int)
         X_perturbed = self._discretize(copy.deepcopy(X_test))
@@ -695,7 +695,7 @@ class CalibratedExplainer:
         lesser_values = {}
         greater_values = {}
         covered_values = {}
-        for f in range(X_test.shape[1]):
+        for f in range(self.num_features):
             if f in self.categorical_features:
                 feature_values = self.feature_values[f]
                 X_copy = copy.deepcopy(X_test)
@@ -777,7 +777,7 @@ class CalibratedExplainer:
             instance_weights[i] = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
             instance_predict[i] = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
             instance_binned[i] = {'predict': {},'low': {},'high': {},'current_bin': {},'rule_values': {}, 'counts': {}, 'fractions': {}}
-        for f in range(X_test.shape[1]): # For each feature
+        for f in range(self.num_features): # For each feature
             if f in self.features_to_ignore:
                 continue
             feature_values = self.feature_values[f]
@@ -787,7 +787,7 @@ class CalibratedExplainer:
                     current_bin = -1
                     average_predict, low_predict, high_predict, counts = np.zeros(len(feature_values)),np.zeros(len(feature_values)),np.zeros(len(feature_values)),np.zeros(len(feature_values))
                     for bin_value, value in enumerate(feature_values):  # For each bin (i.e. discretized value) in the values array...
-                        feature_index = [perturbed_feature[i,0] == f and perturbed_feature[i,2] == value for i in range(len(perturbed_feature))]
+                        feature_index = [perturbed_feature[j,0] == f and perturbed_feature[j,1] == i and perturbed_feature[j,2] == value for j in range(len(perturbed_feature))]
                         if X_test[i,f] == value:
                             current_bin = bin_value  # If the discretized value is the same as the original, skip it
                         average_predict[bin_value] = predict[feature_index]
