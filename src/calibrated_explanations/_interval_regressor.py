@@ -86,7 +86,10 @@ class IntervalRegressor:
         for i, _ in enumerate(proba):
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
-            p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=bins)
+            if bins is not None:
+                p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]])
+            else:
+                p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True)
             proba[i] = p[0,1]
             interval[i, :] = np.array([low[0], high[0]])
         return proba, interval[:, 0], interval[:, 1], None
@@ -128,8 +131,8 @@ class IntervalRegressor:
                                     bins=bins)
         y_test_hat = (interval[:, 1] + interval[:, 3]) / 2  # The median
         return y_test_hat, \
-            interval[:, 0] if low_high_percentiles[0] != -np.inf else np.array([np.min(self.ce.y_cal)]), \
-            interval[:, 2] if low_high_percentiles[1] != np.inf else np.array([np.max(self.ce.y_cal)]), \
+            interval[:, 0] if low_high_percentiles[0] != -np.inf else np.tile(np.array([np.min(self.ce.y_cal)]), len(interval)), \
+            interval[:, 2] if low_high_percentiles[1] != np.inf else np.tile(np.array([np.max(self.ce.y_cal)]), len(interval)), \
             None
 
     def predict_proba(self, X_test, bins=None):
