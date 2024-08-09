@@ -683,8 +683,8 @@ class CalibratedExplainer:
             prediction['classes'] = np.ones(predict.shape)
 
         # Step 1: Predict the test set to get the predictions and intervals
-        perturbed_threshold = np.empty((0,1)) if threshold is not None and not np.isscalar(threshold) else threshold if threshold is not None else None
-        perturbed_bins = np.empty((0,1)) if bins is not None else None
+        perturbed_threshold = np.empty((0,)) if threshold is not None and not np.isscalar(threshold) else threshold if threshold is not None else None
+        perturbed_bins = np.empty((0,)) if bins is not None else None
         perturbed_X = np.empty((0, X_test.shape[1]))
         perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
         perturbed_class = np.empty((0,),dtype=int)
@@ -704,7 +704,7 @@ class CalibratedExplainer:
                     perturbed_X = np.concatenate((perturbed_X, np.array(X_copy)))
                     perturbed_feature = np.concatenate((perturbed_feature, [(f, i, value, None) for i in range(X_test.shape[0])]))
                     perturbed_bins = np.concatenate((perturbed_bins, bins)) if bins is not None else None
-                    perturbed_class = np.concatenate((perturbed_class, predicted_class))
+                    perturbed_class = np.concatenate((perturbed_class, prediction['predict']))
                     if threshold is not None and not np.isscalar(threshold):
                         perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
             else:
@@ -751,7 +751,7 @@ class CalibratedExplainer:
                         X_local[f] = value
                         perturbed_X = np.concatenate((perturbed_X, np.array(X_local.reshape(1,-1))))
                         perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
-                        perturbed_bins = np.concatenate((perturbed_bins, bins[i])) if bins is not None else None
+                        perturbed_bins = np.concatenate((perturbed_bins, [bins[i]])) if bins is not None else None
                         perturbed_class = np.concatenate((perturbed_class, [prediction['classes'][i]]))
                         if threshold is not None and not np.isscalar(threshold):
                             perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
@@ -800,12 +800,12 @@ class CalibratedExplainer:
 
                     fractions = counts[uncovered]/np.sum(counts[uncovered])
 
-                    instance_binned[i]['predict'].append(average_predict)
-                    instance_binned[i]['low'].append(low_predict)
-                    instance_binned[i]['high'].append(high_predict)
-                    instance_binned[i]['current_bin'].append(current_bin)
-                    instance_binned[i]['counts'].append(counts)
-                    instance_binned[i]['fractions'].append(fractions)
+                    instance_binned[i]['predict'][f] = average_predict
+                    instance_binned[i]['low'][f] = low_predict
+                    instance_binned[i]['high'][f] = high_predict
+                    instance_binned[i]['current_bin'][f] = current_bin
+                    instance_binned[i]['counts'][f] = counts
+                    instance_binned[i]['fractions'][f] = fractions
 
                     # Handle the situation where the current bin is the only bin
                     if len(uncovered) == 0:
@@ -858,7 +858,7 @@ class CalibratedExplainer:
                                     perturbed_feature[p_i,0] == f and
                                     perturbed_feature[p_i,1] == i and
                                     perturbed_feature[p_i,2] == j and
-                                    perturbed_feature[p_i,3] == True]
+                                    perturbed_feature[p_i,3] == True] # pylint: disable=singleton-comparison
                         average_predict[i][bin_value[i]] = np.mean(predict[index])
                         low_predict[i][bin_value[i]] = np.mean(low[index])
                         high_predict[i][bin_value[i]] = np.mean(high[index])
@@ -877,7 +877,7 @@ class CalibratedExplainer:
                                     perturbed_feature[p_i,0] == f and
                                     perturbed_feature[p_i,1] == i and
                                     perturbed_feature[p_i,2] == j and
-                                    perturbed_feature[p_i,3] == False]
+                                    perturbed_feature[p_i,3] == False] # pylint: disable=singleton-comparison
                         average_predict[i][bin_value[i]] = np.mean(predict[index])
                         low_predict[i][bin_value[i]] = np.mean(low[index])
                         high_predict[i][bin_value[i]] = np.mean(high[index])
