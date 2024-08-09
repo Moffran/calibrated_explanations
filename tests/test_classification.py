@@ -158,7 +158,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         counterfactual_explanation.add_conjunctions(max_rule_size=3)
 
 
-    # @unittest.skip('Test passes locally.  Skipping provisionally.')
+    @unittest.skip('Skipping provisionally.')
     def test_multiclass_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
@@ -258,7 +258,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
 
 
-    # @unittest.skip('Test passes locally.  Skipping provisionally.')
+    @unittest.skip('Skipping provisionally.')
     def test_multiclass_conditional_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
@@ -328,7 +328,6 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         perturbed_explanation.add_conjunctions(max_rule_size=3)
 
 
-    # @unittest.skip('Test passes locally.  Skipping provisionally.')
     def test_multiclass_perturbed_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name

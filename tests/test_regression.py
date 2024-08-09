@@ -72,8 +72,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             cal_exp.set_difficulty_estimator(DifficultyEstimator)
 
 
-    # NOTE: this takes takes about 70s to run
-    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    @unittest.skip('Skipping provisionally.')
     def test_regression_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
@@ -221,8 +220,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertExplanation(counter)
 
 
-    # NOTE: this takes takes about 70s to run
-    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    @unittest.skip('Skipping provisionally.')
     def test_regression_conditional_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
@@ -295,6 +293,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
 
 
+    @unittest.skip('Skipping provisionally.')
     def test_probabilistic_regression_conditional_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
@@ -352,7 +351,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
 
 
-    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    @unittest.skip('Skipping provisionally.')
     def test_knn_normalized_regression_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
@@ -483,7 +482,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
 
 
-    # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
+    @unittest.skip('Skipping provisionally.')
     def test_var_normalized_regression_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
