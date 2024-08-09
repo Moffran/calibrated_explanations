@@ -383,7 +383,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 tmp.local_exp[1][j] = (f, feature_weights[f])
             del tmp.local_exp[1][num_to_show:]
             tmp.domain_mapper.discretized_feature_names = rules
-            tmp.domain_mapper.feature_values = explanation.test_object
+            tmp.domain_mapper.feature_values = explanation.X_test
             exp.append(tmp)
         return exp
 
@@ -410,10 +410,10 @@ class CalibratedExplanation(ABC):
     '''
     A class for storing and visualizing calibrated explanations.
     '''
-    def __init__(self, calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+    def __init__(self, calibrated_explanations, index, X_test, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
         self.calibrated_explanations = calibrated_explanations
         self.index = index
-        self.test_object = test_object
+        self.X_test = X_test
         self.binned = {}
         self.feature_weights = {}
         self.feature_predict = {}
@@ -522,7 +522,7 @@ class CalibratedExplanation(ABC):
         # """
         self.conditions = []
         # pylint: disable=invalid-name
-        x = self._get_explainer().discretizer.discretize(self.test_object)
+        x = self._get_explainer().discretizer.discretize(self.X_test)
         for f in range(self._get_explainer().num_features):
             if f in self._get_explainer().categorical_features:
                 if self._get_explainer().categorical_labels is not None:
@@ -589,7 +589,7 @@ class CalibratedExplanation(ABC):
         # collection = self.calibrated_explanations
         # f = rule_idx
         # lesser = new_value
-        # perturbed = deepcopy(self.test_object)
+        # perturbed = deepcopy(self.X_test)
         
         # rule_value = []
         # num_bins = 2
@@ -712,8 +712,8 @@ class FactualExplanation(CalibratedExplanation):
     '''
     A class for storing and visualizing factual explanations.
     '''
-    def __init__(self, calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
-        super().__init__(calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
+    def __init__(self, calibrated_explanations, index, X_test, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, index, X_test, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
 
@@ -736,13 +736,13 @@ class FactualExplanation(CalibratedExplanation):
     #     if '<' in rule_name:
     #         index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[0] == rule_name][0]
     #         value = self._get_explainer().discretizer.mins[index][1]
-    #         min_value = self.test_object[index]
+    #         min_value = self.X_test[index]
     #         max_value = np.max(self._get_explainer().X_cal[:,index])
     #     else:
     #         index = [i for i, item in enumerate(self._get_explainer().discretizer.names.values()) if item[1] == rule_name][0]
     #         value = self._get_explainer().discretizer.mins[index][1]
     #         min_value = np.min(self._get_explainer().X_cal[:,index])
-    #         max_value = self.test_object[index]
+    #         max_value = self.X_test[index]
     #     X_cal = self._get_explainer().X_cal
     #     uniques = np.unique(X_cal[[min_value < x <= max_value for x in X_cal[:,index]], index])
     #     value_selection = [(uniques[i] + uniques[i+1]) / 2 for i in range(len(uniques) - 1)] # find thresholds between actual values
@@ -774,7 +774,7 @@ class FactualExplanation(CalibratedExplanation):
             return self.rules        
         self._has_rules = False
         # i = self.index
-        instance = deepcopy(self.test_object)
+        instance = deepcopy(self.X_test)
         factual = {'base_predict': [],
                     'base_predict_low': [],
                     'base_predict_high': [],
@@ -850,7 +850,7 @@ class FactualExplanation(CalibratedExplanation):
         i =self.index
         # pylint: disable=unsubscriptable-object, invalid-name
         threshold = None if self.y_threshold is None else self.y_threshold
-        x_original = deepcopy(self.test_object)
+        x_original = deepcopy(self.X_test)
 
         num_rules = len(factual['rule'])
         predicted_class = factual['classes']
@@ -1266,8 +1266,8 @@ class CounterfactualExplanation(CalibratedExplanation):
     '''This class represents a counterfactual explanation for a given instance. It is a subclass of
     `CalibratedExplanation` and inherits all its properties and methods. 
     '''
-    def __init__(self, calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
-        super().__init__(calibrated_explanations, index, test_object, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
+    def __init__(self, calibrated_explanations, index, X_test, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, index, X_test, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
         self.__is_semi_explanation = False
@@ -1292,10 +1292,10 @@ class CounterfactualExplanation(CalibratedExplanation):
     #     if '<' in rule_name:
     #         value = self._get_explainer().discretizer.mins[index][1]
     #         min_value = np.min(self._get_explainer().X_cal[:,index])
-    #         max_value = self.test_object[index]
+    #         max_value = self.X_test[index]
     #     else:
     #         value = self._get_explainer().discretizer.maxs[index][1]
-    #         min_value = self.test_object[index]
+    #         min_value = self.X_test[index]
     #         max_value = np.max(self._get_explainer().X_cal[:,index])
     #     X_cal = self._get_explainer().X_cal         
     #     num_values = len(np.unique(X_cal[[min_value <= x < max_value for x in X_cal[:,index]], index], return_counts=True))
@@ -1327,7 +1327,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             return self.rules
         self.rules = []
         self.labels = {} # pylint: disable=attribute-defined-outside-init
-        instance = deepcopy(self.test_object)
+        instance = deepcopy(self.X_test)
         discretized = self._get_explainer()._discretize(deepcopy(instance).reshape(1,-1))[0] # pylint: disable=protected-access
         instance_predict = self.binned['predict']
         instance_low = self.binned['low']
@@ -1640,7 +1640,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         self.conjunctive_rules = []
         # pylint: disable=unsubscriptable-object, invalid-name
         threshold = None if self.y_threshold is None else self.y_threshold 
-        x_original = deepcopy(self.test_object)
+        x_original = deepcopy(self.X_test)
 
         num_rules = len(counterfactual['rule'])
         predicted_class = counterfactual['classes']
@@ -2027,8 +2027,8 @@ class PerturbedExplanation(CalibratedExplanation):
     """
     Perturbed Explanation class, representing shap-like explanations.
     """
-    def __init__(self, calibrated_explanations, index, test_object, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
-        super().__init__(calibrated_explanations, index, test_object, {}, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
+    def __init__(self, calibrated_explanations, index, X_test, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        super().__init__(calibrated_explanations, index, X_test, {}, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
         self._get_rules()
 
@@ -2075,7 +2075,7 @@ class PerturbedExplanation(CalibratedExplanation):
             return self.rules        
         self._has_rules = False
         # i = self.index
-        instance = deepcopy(self.test_object)
+        instance = deepcopy(self.X_test)
         perturbed = {'base_predict': [],
                     'base_predict_low': [],
                     'base_predict_high': [],
