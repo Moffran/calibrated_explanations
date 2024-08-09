@@ -785,9 +785,9 @@ class CalibratedExplainer:
             if f in self.categorical_features:
                 for i in np.unique(perturbed):
                     current_bin = -1
+                    average_predict, low_predict, high_predict, counts = np.zeros(len(feature_values)),np.zeros(len(feature_values)),np.zeros(len(feature_values)),np.zeros(len(feature_values))
                     for bin_value, value in enumerate(feature_values):  # For each bin (i.e. discretized value) in the values array...
                         feature_index = [perturbed_feature[i,0] == f and perturbed_feature[i,2] == value for i in range(len(perturbed_feature))]
-                        average_predict, low_predict, high_predict, counts = np.zeros(len(feature_values)),np.zeros(len(feature_values)),np.zeros(len(feature_values)),np.zeros(len(feature_values))
                         if X_test[i,f] == value:
                             current_bin = bin_value  # If the discretized value is the same as the original, skip it
                         average_predict[bin_value] = predict[feature_index]
@@ -825,9 +825,9 @@ class CalibratedExplainer:
                         instance_predict[i]['low'][f] = np.mean(low_predict[uncovered])
                         instance_predict[i]['high'][f] = np.mean(high_predict[uncovered])
 
-                        instance_weights[i]['predict'][f] = self._assign_weight(instance_predict[i]['predict'][f], prediction['predict'][-1], is_probabilistic)
-                        tmp_low = self._assign_weight(instance_predict[i]['low'][f], prediction['predict'][-1], is_probabilistic)
-                        tmp_high = self._assign_weight(instance_predict[i]['high'][f], prediction['predict'][-1], is_probabilistic)
+                        instance_weights[i]['predict'][f] = self._assign_weight(instance_predict[i]['predict'][f], prediction['predict'][i], is_probabilistic)
+                        tmp_low = self._assign_weight(instance_predict[i]['low'][f], prediction['predict'][i], is_probabilistic)
+                        tmp_high = self._assign_weight(instance_predict[i]['high'][f], prediction['predict'][i], is_probabilistic)
                         instance_weights[i]['low'][f] = np.min([tmp_low, tmp_high])
                         instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
             else:
