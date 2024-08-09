@@ -4,8 +4,6 @@ from __future__ import absolute_import
 # import tempfile
 # import os
 
-from copy import deepcopy
-from math import e
 import unittest
 import pytest
 
@@ -92,7 +90,6 @@ def get_classification_model(model_name, X_prop_train, y_prop_train):
     model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
     model.fit(X_prop_train,y_prop_train)
     return model, model_name
-
 
 
 class TestCalibratedExplainer_classification(unittest.TestCase):
