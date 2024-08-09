@@ -17,15 +17,15 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """
     A class for storing and visualizing calibrated explanations.
     """
-    def __init__(self, calibrated_explainer, test_objects, y_threshold, bins) -> None:
+    def __init__(self, calibrated_explainer, X_test, y_threshold, bins) -> None:
         self.calibrated_explainer = deepcopy(calibrated_explainer)
-        self.test_objects = test_objects
+        self.X_test = X_test
         self.y_threshold = y_threshold
         self.low_high_percentiles = None
         self.explanations = []
         self.start_index = 0
         self.current_index = self.start_index
-        self.end_index = len(test_objects[:,0])
+        self.end_index = len(X_test[:,0])
         self.bins = bins
         self.total_explain_time = None
 
@@ -41,7 +41,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         return result
 
     def __len__(self):
-        return len(self.test_objects[:,0])
+        return len(self.X_test[:,0])
 
     def __getitem__(self, key):
         if isinstance(key, int):
@@ -59,7 +59,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 # Handle integer list indexing
                 new_.explanations = [self.explanations[i] for i in key]
             new_.bins = None if self.bins is None else [self.bins[e.index] for e in new_]
-            new_.test_objects = [self.test_objects[e.index,:] for e in new_]
+            new_.X_test = [self.X_test[e.index,:] for e in new_]
             new_.y_threshold = None if self.y_threshold is None else self.y_threshold \
                         if np.isscalar(self.y_threshold) else [self.y_threshold[e.index] for e in new_]
             new_.start_index = 0
@@ -120,10 +120,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=too-many-arguments
-    def _finalize(self, binned, feature_weights, feature_predict, prediction, instance_time=None, total_time=None) -> None:
-        # """finalize the explanation by adding the binned data and the feature weights
-        # """
-        for i, instance in enumerate(self.test_objects):
+    def finalize(self, binned, feature_weights, feature_predict, prediction, instance_time=None, total_time=None) -> None:
+        """finalize the explanation by adding the binned data and the feature weights
+        """
+        for i, instance in enumerate(self.X_test):
             instance_bin = self.bins[i] if self.bins is not None else None
             if self._is_counterfactual():
                 explanation = CounterfactualExplanation(self, i, instance, binned, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
@@ -138,7 +138,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     def finalize_perturbed(self, feature_weights, feature_predict, prediction, instance_time=None, total_time=None) -> None:
         """finalize the explanation by adding the binned data and the feature weights
         """
-        for i, instance in enumerate(self.test_objects):
+        for i, instance in enumerate(self.X_test):
             instance_bin = self.bins[i] if self.bins is not None else None
             explanation = PerturbedExplanation(self, i, instance, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
             explanation.explain_time = instance_time[i] if instance_time is not None else None
@@ -211,7 +211,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         '''
         assert isinstance(index, int), "index must be an integer"
         assert index >= 0, "index must be greater than or equal to 0"
-        assert index < len(self.test_objects), "index must be less than the number of test instances"        
+        assert index < len(self.X_test), "index must be less than the number of test instances"        
         return self.explanations[index]
 
 
@@ -361,7 +361,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         """
         _, lime_exp = self.calibrated_explainer._preload_lime() # pylint: disable=protected-access
         exp = []
-        for explanation in self.explanations: #range(len(self.test_objects[:,0])):
+        for explanation in self.explanations: #range(len(self.X_test[:,0])):
             tmp = deepcopy(lime_exp)
             tmp.intercept[1] = 0
             tmp.local_pred = explanation.prediction['predict']
@@ -397,11 +397,11 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         """
         _, shap_exp = self.calibrated_explainer._preload_shap() # pylint: disable=protected-access
         shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
-        shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.test_objects[0, :])))
-        shap_exp.data = self.test_objects
-        for i, explanation in enumerate(self.explanations): #range(len(self.test_objects[:,0])):
+        shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.X_test[0, :])))
+        shap_exp.data = self.X_test
+        for i, explanation in enumerate(self.explanations): #range(len(self.X_test[:,0])):
             shap_exp.base_values[i] = explanation.prediction['predict']
-            for f in range(len(self.test_objects[0, :])):
+            for f in range(len(self.X_test[0, :])):
                 shap_exp.values[i][f] = -explanation.feature_weights['predict'][f]
         return shap_exp
         
