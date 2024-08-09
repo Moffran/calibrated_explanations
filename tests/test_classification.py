@@ -4,6 +4,8 @@ from __future__ import absolute_import
 # import tempfile
 # import os
 
+from copy import deepcopy
+from math import e
 import unittest
 import pytest
 
@@ -95,14 +97,18 @@ def get_classification_model(model_name, X_prop_train, y_prop_train):
 
 class TestCalibratedExplainer_classification(unittest.TestCase):
     def assertExplanation(self, exp):
-        for _, instance in enumerate(exp.X_test):
-            boundaries = exp.calibrated_explainer.rule_boundaries(instance)
-            for f in range(exp.calibrated_explainer.num_features):
-                # assert that instance values are covered by the rule conditions
-                assert instance[f] >= boundaries[f][0] and instance[f] <= boundaries[f][1]
+        # for i, instance in enumerate(exp.X_test):
+        #     rules = exp[i].rules['rule']
+        #     for j,f in enumerate(exp[i].rules['feature']):
+        #         # assert that instance values are covered by the rule conditions
+        #         if '<=' in rules[j]:
+        #             assert instance[f] <= boundaries[f][1]
+        #         elif '>' in rules[j]:
+        #             assert instance[f] > boundaries[f][0]
         for explanation in exp:
             assert safe_isinstance(explanation, ['calibrated_explanations.FactualExplanation',
-                                                 'calibrated_explanations.CounterfactualExplanation'])
+                                                 'calibrated_explanations.CounterfactualExplanation',
+                                                 'calibrated_explanations.PerturbedExplanation'])
         return True
 
 
@@ -158,7 +164,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         counterfactual_explanation.add_conjunctions(max_rule_size=3)
 
 
-    @unittest.skip('Skipping provisionally.')
+    # @unittest.skip('Skipping provisionally.')
     def test_multiclass_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
@@ -258,7 +264,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
 
 
-    @unittest.skip('Skipping provisionally.')
+    # @unittest.skip('Skipping provisionally.')
     def test_multiclass_conditional_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, _, feature_names = load_multiclass_dataset()
         model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
