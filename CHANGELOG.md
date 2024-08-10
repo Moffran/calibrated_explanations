@@ -3,7 +3,9 @@
 ## [Unreleased]
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...main)
 ### Features
-- Substantial speedup achieved! Implemented the core algorithm minimizing the number of calls to core._predict, substantially speeding up the code. Initial tests indicate speedups with between 10-25 times the previous speed.  
+- Substantial speedup achieved through the newly implemented `explain` method! Implemented the core algorithm minimizing the number of calls to core._predict, substantially speeding up the code. 
+  - Re-ran the ablation study for classification, looking at the impact of calibration set size, number of percentile samplings for numeric features and the number of features. 
+  - Uploaded a pdf version of the ablation study, making the results easier to overview. 
 - Renamed the `plot_all` and `plot_explanation` functions to `plot` and updated all usages of the `plot` function.
 - Added __len__ and __getitem__ to `CalibratedExplanations`. __getitem__ allow indexing with `int`, `slice`, boolean and integer lists.
 - Restructured package by adding a utils folder:
