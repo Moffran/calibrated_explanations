@@ -332,7 +332,6 @@ class CalibratedExplainer:
                         threshold = None,
                         low_high_percentiles = (5, 95),
                         bins = None,
-                        fast=True,
                         ) -> CalibratedExplanations:
         """
         Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for factual explanations.
@@ -364,16 +363,13 @@ class CalibratedExplainer:
         else:
             discretizer = 'binaryEntropy'
         self.set_discretizer(discretizer)
-        if fast:
-            return self.explain(X_test, threshold, low_high_percentiles, bins)
-        return self(X_test, threshold, low_high_percentiles, bins)
+        return self.explain(X_test, threshold, low_high_percentiles, bins)
 
     def explain_counterfactual(self,
                                 X_test,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
                                 bins = None,
-                                fast=True,
                                 ) -> CalibratedExplanations:
         """
         Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for counterfactual explanations.
@@ -405,9 +401,7 @@ class CalibratedExplainer:
         else:
             discretizer = 'entropy'
         self.set_discretizer(discretizer)
-        if fast:
-            return self.explain(X_test, threshold, low_high_percentiles, bins)
-        return self(X_test, threshold, low_high_percentiles, bins)
+        return self.explain(X_test, threshold, low_high_percentiles, bins)
 
     def __call__(self,
                 X_test,
@@ -420,215 +414,7 @@ class CalibratedExplainer:
         already assigned discretizer. Called by the `explain_factual` and `explain_counterfactual` methods. 
         See their documentation for further information.
         """
-        total_time = time()
-        instance_time = []
-        if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
-            X_test = X_test.values  # pylint: disable=invalid-name
-        if len(X_test.shape) == 1:
-            X_test = X_test.reshape(1, -1)
-        if X_test.shape[1] != self.X_cal.shape[1]:
-            raise ValueError("The number of features in the test data must be the same as in the \
-                            calibration data.")
-        if self._is_mondrian():
-            assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
-            assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
-        explanation = CalibratedExplanations(self, X_test, threshold, bins)
-
-        is_probabilistic = True # classification or when threshold is used for regression
-        if threshold is not None:
-            if not 'regression' in self.mode:
-                raise Warning("The threshold parameter is only supported for mode='regression'.")
-            if not np.isscalar(threshold) and len(threshold) != len(X_test):
-                raise ValueError("The length of the threshold parameter must be either a constant or the same \
-                                as the number of instances in X_test.")
-            # explanation.low_high_percentiles = low_high_percentiles
-        elif 'regression' in self.mode:
-            explanation.low_high_percentiles = low_high_percentiles
-            is_probabilistic = False
-
-        X_cal = self.X_cal
-
-        feature_weights =  {'predict': [],'low': [],'high': [],}
-        feature_predict =  {'predict': [],'low': [],'high': [],}
-        prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
-        binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': [], 'fractions': []}
-
-        for i, x in enumerate(X_test):
-            instance_time.append(time())
-
-            bin_x = [bins[i]] if bins is not None else None
-
-            if threshold is not None and not np.isscalar(explanation.y_threshold):
-                threshold = float(explanation.y_threshold[i])
-            predict, low, high, predicted_class = self._predict(x.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bin_x)
-            # print(predicted_class)
-            prediction['predict'].append(predict[0])
-            prediction['low'].append(low[0])
-            prediction['high'].append(high[0])
-            if self.is_multiclass():
-                prediction['classes'].append(predicted_class[0])
-            else:
-                prediction['classes'].append(1)
-
-            rule_values = {}
-            instance_weights = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
-            instance_predict = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
-            instance_binned = {'predict': {},'low': {},'high': {},'current_bin': {},'rule_values': {}, 'counts': {}, 'fractions': {}}
-            # Get the perturbations
-            x_original = copy.deepcopy(x)
-            perturbed_original = self._discretize(copy.deepcopy(x).reshape(1,-1))
-            rule_boundaries = self.rule_boundaries(x_original, perturbed_original)
-            for f in range(x.shape[0]): # For each feature
-                if f in self.features_to_ignore:
-                    continue
-                perturbed = copy.deepcopy(x)
-
-                current_bin = -1
-                if f in self.categorical_features:
-                    values = self.feature_values[f]
-                    rule_value = values
-                    average_predict, low_predict, high_predict, counts = np.zeros(len(values)),np.zeros(len(values)),np.zeros(len(values)),np.zeros(len(values))
-                    for bin_value, value in enumerate(values):  # For each bin (i.e. discretized value) in the values array...
-                        perturbed[f] = perturbed_original[0,f] # Assign the original discretized value to ensure similarity to value
-                        if perturbed[f] == value:
-                            current_bin = bin_value  # If the discretized value is the same as the original, skip it
-
-                        perturbed[f] = value
-                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class, bins=bin_x)
-                        average_predict[bin_value] = predict[0]
-                        low_predict[bin_value] = low[0]
-                        high_predict[bin_value] = high[0]
-                        counts[bin_value] = len(np.where(X_cal[:,f] == value)[0])
-                else:
-                    rule_value = []
-                    values = np.array(X_cal[:,f])
-                    lesser = rule_boundaries[f][0]
-                    greater = rule_boundaries[f][1]
-                    lesser = -np.inf if not np.any(values < lesser) else lesser
-                    greater = np.inf if not np.any(values > greater) else greater
-                    num_bins = 1
-                    num_bins += 1 if lesser != -np.inf else 0
-                    num_bins += 1 if greater != np.inf else 0
-                    average_predict, low_predict, high_predict, counts = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
-
-                    bin_value = 0
-                    if np.any(values < lesser):
-                        lesser_values = np.unique(self.__get_lesser_values(f, lesser))
-                        rule_value.append(lesser_values)
-                        # print('[',end='')
-                        for value in lesser_values:
-                            perturbed[f] = value
-                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class, bins=bin_x)
-                            average_predict[bin_value] += predict[0]
-                            low_predict[bin_value] += low[0]
-                            high_predict[bin_value] += high[0]
-                            # print(f'{predict[0]:.5f}',end=' ')
-                            # print(perturbed,'lesser')
-                        # print('] lesser')
-                        average_predict[bin_value] = average_predict[bin_value]/len(lesser_values)
-                        low_predict[bin_value] = low_predict[bin_value]/len(lesser_values)
-                        high_predict[bin_value] = high_predict[bin_value]/len(lesser_values)
-                        counts[bin_value] = len(np.where(X_cal[:,f] < lesser)[0])
-                        bin_value += 1
-                        # print(i, f, average_predict, low_predict, high_predict, counts)
-
-                    if np.any(values > greater):
-                        greater_values = np.unique(self.__get_greater_values(f, greater))
-                        rule_value.append(greater_values)
-                        # print('[',end='')
-                        for value in greater_values:
-                            perturbed[f] = value
-                            predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class, bins=bin_x)
-                            average_predict[bin_value] += predict[0]
-                            low_predict[bin_value] += low[0]
-                            high_predict[bin_value] += high[0]
-                            # print(f'{predict[0]:.5f}',end=' ')
-                            # print(perturbed,'greater')
-                        # print('] greater')
-                        average_predict[bin_value] = average_predict[bin_value]/len(greater_values)
-                        low_predict[bin_value] = low_predict[bin_value]/len(greater_values)
-                        high_predict[bin_value] = high_predict[bin_value]/len(greater_values)
-                        counts[bin_value] = len(np.where(X_cal[:,f] > greater)[0])
-                        bin_value += 1
-                        # print(i, f, average_predict, low_predict, high_predict, counts)
-
-                    covered_values = self.__get_covered_values(f, lesser, greater)
-                    rule_value.append(covered_values)
-                    # print('[',end='')
-                    for value in covered_values:
-                        perturbed[f] = value
-                        predict, low, high, _ = self._predict(perturbed.reshape(1,-1), threshold=threshold, low_high_percentiles=low_high_percentiles, classes=predicted_class, bins=bin_x)
-                        average_predict[bin_value] += predict[0]
-                        low_predict[bin_value] += low[0]
-                        high_predict[bin_value] += high[0]
-                        # print(f'{predict[0]:.5f}',end=' ')
-                        # print(perturbed,'covered')
-                    # print('] covered')
-                    average_predict[bin_value] = average_predict[bin_value]/len(covered_values)
-                    low_predict[bin_value] = low_predict[bin_value]/len(covered_values)
-                    high_predict[bin_value] = high_predict[bin_value]/len(covered_values)
-                    counts[bin_value] = len(np.where((X_cal[:,f] >= lesser) & (X_cal[:,f] <= greater))[0])
-                    current_bin = bin_value
-                    # print(i, f, average_predict, low_predict, high_predict, counts)
-
-                # print(i, f, average_predict, low_predict, high_predict, counts)
-
-                rule_values[f] = (rule_value, x_original[f], perturbed_original[0,f])
-                uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
-
-                fractions = counts[uncovered]/np.sum(counts[uncovered])
-
-                instance_binned['predict'][f] = average_predict
-                instance_binned['low'][f] = low_predict
-                instance_binned['high'][f] = high_predict
-                instance_binned['current_bin'][f] = current_bin
-                instance_binned['counts'][f] = counts
-                instance_binned['fractions'][f] = fractions
-
-                # Handle the situation where the current bin is the only bin
-                if len(uncovered) == 0:
-                    instance_predict['predict'][f] = 0
-                    instance_predict['low'][f] = 0
-                    instance_predict['high'][f] = 0
-
-                    instance_weights['predict'][f] = 0
-                    instance_weights['low'][f] = 0
-                    instance_weights['high'][f] = 0
-                else:
-                    # Calculate the weighted average (only makes a difference for categorical features)
-                    # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*fractions[uncovered])
-                    # instance_predict['low'][f] = np.sum(low_predict[uncovered]*fractions[uncovered])
-                    # instance_predict['high'][f] = np.sum(high_predict[uncovered]*fractions[uncovered])
-                    instance_predict['predict'][f] = np.mean(average_predict[uncovered])
-                    instance_predict['low'][f] = np.mean(low_predict[uncovered])
-                    instance_predict['high'][f] = np.mean(high_predict[uncovered])
-
-                    instance_weights['predict'][f] = self._assign_weight(instance_predict['predict'][f], prediction['predict'][-1], is_probabilistic)
-                    tmp_low = self._assign_weight(instance_predict['low'][f], prediction['predict'][-1], is_probabilistic)
-                    tmp_high = self._assign_weight(instance_predict['high'][f], prediction['predict'][-1], is_probabilistic)
-                    instance_weights['low'][f] = np.min([tmp_low, tmp_high])
-                    instance_weights['high'][f] = np.max([tmp_low, tmp_high])
-
-            binned_predict['predict'].append(instance_binned['predict'])
-            binned_predict['low'].append(instance_binned['low'])
-            binned_predict['high'].append(instance_binned['high'])
-            binned_predict['current_bin'].append(instance_binned['current_bin'])
-            binned_predict['rule_values'].append(rule_values)
-            binned_predict['counts'].append(instance_binned['counts'])
-            binned_predict['fractions'].append(instance_binned['fractions'])
-
-            feature_weights['predict'].append(instance_weights['predict'])
-            feature_weights['low'].append(instance_weights['low'])
-            feature_weights['high'].append(instance_weights['high'])
-
-            feature_predict['predict'].append(instance_predict['predict'])
-            feature_predict['low'].append(instance_predict['low'])
-            feature_predict['high'].append(instance_predict['high'])
-            instance_time[-1] = time() - instance_time[-1]
-
-        explanation.finalize(binned_predict, feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
-        self.latest_explanation = explanation
-        return explanation
+        return self.explain(X_test, threshold, low_high_percentiles, bins)
 
 
     def explain(self,
