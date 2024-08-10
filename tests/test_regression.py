@@ -95,7 +95,11 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot() raised unexpected exception: {e}")
         try:
-            factual_explanation.plot(uncertainty=True)
+            factual_explanation[0].plot(uncertainty=True)
+        except Exception as e: # pylint: disable=broad-except
+            pytest.fail(f"factual_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
+        try:
+            factual_explanation[0].plot(style='triangular')
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"factual_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
 
