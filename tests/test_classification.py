@@ -121,6 +121,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             mode='classification',
         )
         factual_explanation = cal_exp.explain_factual(X_test)
+        _ = factual_explanation[list([0,1])]
+        _ = factual_explanation[range(len(factual_explanation)) == 0]
+        _ = factual_explanation[0]
+        _ = factual_explanation[:1]
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
@@ -157,6 +161,8 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         semi = counterfactual_explanation.get_semi_explanations()
         self.assertExplanation(semi)
         counter = counterfactual_explanation.get_counter_explanations()
+        self.assertExplanation(counter)
+        counter = counterfactual_explanation.get_ensured_explanations()
         self.assertExplanation(counter)
         counterfactual_explanation.add_conjunctions(max_rule_size=3)
 
