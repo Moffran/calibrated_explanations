@@ -59,7 +59,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 # Handle integer list indexing
                 new_.explanations = [self.explanations[i] for i in key]
             new_.bins = None if self.bins is None else [self.bins[e.index] for e in new_]
-            new_.X_test = [self.X_test[e.index,:] for e in new_]
+            new_.X_test = np.array([self.X_test[e.index,:] for e in new_])
             new_.y_threshold = None if self.y_threshold is None else self.y_threshold \
                         if np.isscalar(self.y_threshold) else [self.y_threshold[e.index] for e in new_]
             new_.start_index = 0
