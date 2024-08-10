@@ -321,6 +321,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             perturb=True
         )
         perturbed_explanation = cal_exp.explain_perturbed(X_test)
+        print(perturbed_explanation[0])
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.remove_conjunctions()
         try:
