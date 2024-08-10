@@ -1484,7 +1484,7 @@ class CalibratedExplainer:
             if not self._is_shap_enabled() or \
                 num_test is not None and self.shap_exp.shape[0] != num_test:
                 f = lambda x: self._predict(x)[0]  # pylint: disable=unnecessary-lambda-assignment
-                self.shap = shap.Explainer(f, self.X_cal[:1, :], feature_names=self.feature_names)
+                self.shap = shap.Explainer(f, self.X_cal, feature_names=self.feature_names)
                 self.shap_exp = self.shap(self.X_cal[0, :].reshape(1,-1)) \
                                         if num_test is None else self.shap(self.X_cal[:num_test, :])
                 self._is_shap_enabled(True)
