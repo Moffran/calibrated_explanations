@@ -4,7 +4,6 @@ Experiment used in the introductory paper to evaluate the stability and robustne
 """
 
 import time
-import sys
 import warnings
 import pickle
 import numpy as np
@@ -14,7 +13,6 @@ from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassif
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
-sys.path.append(r'C:\Users\loftuw\Documents\Github\calibrated_explanations\src')
 from calibrated_explanations import CalibratedExplainer
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
