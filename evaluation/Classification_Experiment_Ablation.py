@@ -4,6 +4,7 @@ Experiment used in the introductory paper to evaluate the stability and robustne
 """
 
 import time
+import sys
 import warnings
 import pickle
 import numpy as np
@@ -13,7 +14,9 @@ from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassif
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
+sys.path.append(r'C:\Users\loftuw\Documents\Github\calibrated_explanations\src')
 from calibrated_explanations import CalibratedExplainer
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # -------------------------------------------------------
 # pylint: disable=invalid-name, missing-function-docstring
@@ -105,24 +108,24 @@ for dataset in klara:
                     feature_names=df.columns, categorical_features=categorical_features, sample_percentiles=sample_percentile)
                 ablation['proba'][cal_size][str(sample_percentile)].append(c2.predict_proba(X_test)[:,1])
 
-                try:
+                # try:
                     # print(f'{i}:',end='\t')
-                    tic = time.time()
-                    factual_explanations = ce.explain_factual(X_test)
-                    ct = time.time()-tic
-                    abl_timer['ce'][cal_size][str(sample_percentile)].append(ct)
-                    # print(f'{ct:.1f}',end='\t')
-                    ablation['ce'][cal_size][str(sample_percentile)].append([f.feature_weights for f in factual_explanations])
+                tic = time.time()
+                factual_explanations = ce.explain_factual(X_test)
+                ct = time.time()-tic
+                abl_timer['ce'][cal_size][str(sample_percentile)].append(ct)
+                # print(f'{ct:.1f}',end='\t')
+                ablation['ce'][cal_size][str(sample_percentile)].append([f.feature_weights for f in factual_explanations])
 
-                    tic = time.time()
-                    factual_explanation = ce.explain_counterfactual(X_test)
-                    ct = time.time()-tic
-                    abl_timer['cce'][cal_size][str(sample_percentile)].append(ct)
-                    # print(f'{ct:.1f}',end='\t')
-                    ablation['cce'][cal_size][str(sample_percentile)].append([f.feature_weights for f in factual_explanations])
+                tic = time.time()
+                factual_explanation = ce.explain_counterfactual(X_test)
+                ct = time.time()-tic
+                abl_timer['cce'][cal_size][str(sample_percentile)].append(ct)
+                # print(f'{ct:.1f}',end='\t')
+                ablation['cce'][cal_size][str(sample_percentile)].append([f.feature_weights for f in factual_explanations])
 
-                except Exception as e: # pylint: disable=broad-exception-caught
-                    warnings.warn(f'Error: {e}')
+                # except Exception as e: # pylint: disable=broad-exception-caught
+                #     warnings.warn(f'Error: {e}')
                 # print('')
 
         results[dataSet][alg]['ablation'] = ablation
