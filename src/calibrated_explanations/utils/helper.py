@@ -217,12 +217,14 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
     target_labels = None
     for c, col in enumerate(df.columns):
         if is_categorical_dtype(df[col]) or df[col].dtype in (object, str):
+            df[col] = df[col].fillna('nan')
+            df[col] = df[col].astype(str)
             df[col] = df[col].str.replace("'", "")
             df[col] = df[col].str.replace('"', '')
             uniques = []
             for v in df[col]:
-                if v is None or v is np.nan:
-                    v = 'nan'
+                # if v is None or v is np.nan:
+                #     v = 'nan'
                     # df[col][i] = v
                 if v not in uniques:
                     uniques.append(v)
@@ -244,6 +246,8 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
             mappings[col] = mapping
             df[col] = df[col].map(mapping)
         elif c in categorical_features:
+            df[col] = df[col].fillna('nan')
+            df[col] = df[col].astype(str)
             df[col] = df[col].map(mappings[col])
     if len(categorical_features) > 0:
         return df, categorical_features , categorical_labels, target_labels, mappings
