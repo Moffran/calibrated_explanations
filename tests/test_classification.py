@@ -121,7 +121,8 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             mode='classification',
         )
         factual_explanation = cal_exp.explain_factual(X_test)
-        _ = factual_explanation[list([0,1])]
+        filtered_explanations = factual_explanation[list([0,1])]
+        _ = filtered_explanations[list([0])]
         _ = factual_explanation[list(range(len(factual_explanation))) == 0]
         print(factual_explanation[0])
         _ = factual_explanation[:1]
@@ -145,6 +146,11 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         factual_explanation.add_conjunctions(max_rule_size=3)
 
         counterfactual_explanation = cal_exp.explain_counterfactual(X_test)
+        filtered_explanations = counterfactual_explanation[list([0,1])]
+        _ = filtered_explanations[list([0])]
+        _ = counterfactual_explanation[list(range(len(counterfactual_explanation))) == 0]
+        print(counterfactual_explanation[0])
+        _ = counterfactual_explanation[:1]
         print(counterfactual_explanation[0])
         self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
         self.assertExplanation(counterfactual_explanation)
@@ -184,6 +190,11 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         )
         print(cal_exp)
         factual_explanation = cal_exp.explain_factual(X_test)
+        filtered_explanations = factual_explanation[list([0,1])]
+        _ = filtered_explanations[list([0])]
+        _ = factual_explanation[list(range(len(factual_explanation))) == 0]
+        print(factual_explanation[0])
+        _ = factual_explanation[:1]
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
@@ -244,6 +255,11 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             bins=X_cal[:,0]
         )
         factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:,0])
+        filtered_explanations = factual_explanation[list([0,1])]
+        _ = filtered_explanations[list([0])]
+        _ = factual_explanation[list(range(len(factual_explanation))) == 0]
+        print(factual_explanation[0])
+        _ = factual_explanation[:1]
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
@@ -284,6 +300,11 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             bins=X_cal[:,0]
         )
         factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:,0])
+        filtered_explanations = factual_explanation[list([0,1])]
+        _ = filtered_explanations[list([0])]
+        _ = factual_explanation[list(range(len(factual_explanation))) == 0]
+        print(factual_explanation[0])
+        _ = factual_explanation[:1]
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryEntropyDiscretizer)
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
