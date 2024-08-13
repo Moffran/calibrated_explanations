@@ -108,7 +108,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
                                                  'calibrated_explanations.PerturbedExplanation'])
         return True
 
-
+# pylint: disable=too-many-statements
     def test_binary_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = load_binary_dataset()
         model, _ = get_classification_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
@@ -174,6 +174,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         counterfactual_explanation.add_conjunctions(max_rule_size=3)
 
 
+# pylint: disable=too-many-statements
     # @unittest.skip('Skipping provisionally.')
     def test_multiclass_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = load_multiclass_dataset()
