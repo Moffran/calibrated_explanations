@@ -985,8 +985,10 @@ class CalibratedExplainer:
         for further information.
 
         Args:
-            difficulty_estimator (crepes.extras.DifficultyEstimator): A DifficultyEstimator object from the crepes package
-            initialize (bool, optional): If true, then the interval learner is initialized once done. Defaults to True.
+            difficulty_estimator (crepes.extras.DifficultyEstimator or None): 
+                A DifficultyEstimator object from the crepes package. To remove the difficulty estimator, set to None.
+            initialize (bool, optional): 
+                If true, then the interval learner is initialized once done. Defaults to True.
         """
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
@@ -1902,6 +1904,16 @@ class WrapCalibratedExplainer():
             return self.learner.predict_proba(X_test)
         return self.explainer.predict_proba(X_test, uq_interval=uq_interval, threshold=threshold)
 
+    def set_difficulty_estimator(self, difficulty_estimator) -> None:
+        """assigns a difficulty estimator for regression. For further information, 
+        see the documentation for the difficulty estimator or refer to the crepes package 
+        for further information.
+
+        Args:
+            difficulty_estimator (crepes.extras.DifficultyEstimator or None): 
+                A DifficultyEstimator object from the crepes package. To remove the difficulty estimator, set to None.
+        """
+        self.explainer.set_difficulty_estimator(difficulty_estimator)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot_global(self, X_test, y_test=None, threshold=None, **kwargs):
