@@ -1493,6 +1493,136 @@ class CalibratedExplainer:
             return self.shap, self.shap_exp
         return None, None
 
+    # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
+    def plot_global(self, X_test, y_test=None, threshold=None, **kwargs):
+        """
+        Generates a global explanation plot for the given test data. This plot is based on the probability distribution and the uncertainty quantification intervals.
+        The plot is only available for calibrated probabilistic learners (both classification and thresholded regression).
+        
+        Parameters
+        ----------
+        X_test : array-like
+            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
+        y_test : array-like, optional
+            The true labels of the test data. 
+        threshold : float, int, optional
+            The threshold value used with regression to get probability of being below the threshold. Only applicable to regression.
+        """
+        is_regularized = True
+        if 'predict_proba' not in dir(self.learner):
+            if threshold is None:
+                predict, (low, high) = self.predict(X_test, uq_interval=True, **kwargs)
+                is_regularized = False
+            else:
+                proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold)
+        else:
+            proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold)
+        uncertainty = np.array(high - low)
+
+        marker_size = 50
+        min_x, min_y = 0,0
+        max_x, max_y = 1,1
+        ax = None
+        if is_regularized:
+            plt.figure()
+            x = np.arange(0, 1, 0.01)
+            plt.plot((x / (1 + x)), x, color='black')
+            plt.plot(x, ((1 - x) / x), color='black')
+            x = np.arange(0.5, 1, 0.005)
+            plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
+            x = np.arange(0, 0.5, 0.005)
+            plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
+        else:
+            _, ax = plt.subplots()
+            # draw a line from (0,0) to (0.5,1) and from (1,0) to (0.5,1)
+            min_x = np.min(self.y_cal)
+            max_x = np.max(self.y_cal)
+            min_y = np.min(uncertainty)
+            max_y = np.max(uncertainty)
+            if math.isclose(min_x, max_x, rel_tol=1e-9):
+                warnings.warn("All uncertainties are (almost) identical.", Warning)
+
+            min_x = min_x - min(0.1 * (max_x - min_x), 0) if min_x > 0 else min_x - 0.1 * (max_x - min_x)
+            max_x = max_x + 0.1 * (max_x - min_x)
+            # min_y = min_y - max(0.1 * (max_y - min_y), 0) # uncertainty is always positive
+            max_y = max_y + 0.1 * (max_y - min_y)
+            # mid_x = (min_x + max_x) / 2
+            # mid_y = (min_y + max_y) / 2
+            # ax.plot([min_x, mid_x], [min_y, max_y], color='black')
+            # ax.plot([max_x, mid_x], [min_y, max_y], color='black')
+            # # draw a line from (0.5,0) to halfway between (0.5,0) and (0,1)
+            # ax.plot([mid_x, mid_x / 2], [min_y, mid_y], color='black')
+            # # draw a line from (0.5,0) to halfway between (0.5,0) and (1,1)
+            # ax.plot([mid_x, mid_x + mid_x / 2], [min_y, mid_y], color='black')
+
+        if y_test is not None:
+            if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
+                norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
+                # Choose a colormap
+                colormap = plt.cm.viridis  # pylint: disable=no-member
+                # Map the normalized values to colors
+                colors = colormap(norm(y_test))
+                ax.scatter(predict, uncertainty, label='Predictions', color=colors, marker='.', s=marker_size)
+                # # Create a new axes for the colorbar
+                # divider = make_axes_locatable(ax)
+                # cax = divider.append_axes("right", size="5%", pad=0.05)
+                # # Add the colorbar to the new axes
+                # plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=colormap), cax=cax, label='Target Values')
+            else:
+                if 'predict_proba' not in dir(self.learner):
+                    assert np.isscalar(threshold), "The threshold parameter must be a single constant value for all instances when used in plot_global."
+                    y_test = np.array([0 if y_test[i] >= threshold else 1 for i in range(len(y_test))])
+                    labels = [f'Y >= {threshold}', f'Y < {threshold}']
+                else:
+                    if self.class_labels is not None:
+                        labels = [f'Y = {i}' for i in self.class_labels.values()]
+                    else:
+                        labels = [f'Y = {i}' for i in np.unique(y_test)]
+                marker_size = 25
+                if len(labels) == 2:
+                    colors = ['blue', 'red']
+                    markers = ['o', 'x']
+                    proba = proba[:,1]
+                else:
+                    colormap = plt.get_cmap('tab10', len(labels))
+                    colors = [colormap(i) for i in range(len(labels))]
+                    markers = ['o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H','o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H'][:len(labels)]
+                    proba = proba[np.arange(len(proba)), y_test]
+                    uncertainty = uncertainty[np.arange(len(uncertainty)), y_test]
+                for i, c in enumerate(np.unique(y_test)):
+                    plt.scatter(proba[y_test == c], uncertainty[y_test == c], color=colors[i], label=labels[i], marker=markers[i], s=marker_size)
+                plt.legend()
+        else:
+            if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
+                plt.scatter(predict, uncertainty, label='Predictions', marker='.', s=marker_size)
+            else:
+                if self.is_multiclass(): # pylint: disable=protected-access
+                    predicted = np.argmax(proba, axis=1)
+                    proba = proba[np.arange(len(proba)), predicted]
+                    uncertainty = uncertainty[np.arange(len(uncertainty)), predicted]
+                else:
+                    proba = proba[:,1]
+                plt.scatter(proba, uncertainty, label='Predictions', marker='.', s=marker_size)
+
+        if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
+            plt.xlabel('Predictions',loc='center')
+            plt.ylabel('Uncertainty',loc='center')
+        else:
+            plt.ylabel('Uncertainty')
+            if 'predict_proba' not in dir(self.learner):
+                plt.xlabel(f'Probability of Y < {threshold}')
+            else:
+                if self.is_multiclass(): # pylint: disable=protected-access
+                    if y_test is not None:
+                        plt.xlabel('Probability of Y = actual class')
+                    else:
+                        plt.xlabel('Probability of Y = predicted class')
+                else:
+                    plt.xlabel('Probability of Y = 1')
+        plt.xlim(min_x, max_x)
+        plt.ylim(min_y, max_y)
+        plt.show()
+
 
 class WrapCalibratedExplainer():
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
@@ -1965,117 +2095,4 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before plotting.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before plotting.")
-        is_regularized = True
-        if 'predict_proba' not in dir(self.learner):
-            if threshold is None:
-                predict, (low, high) = self.predict(X_test, uq_interval=True, **kwargs)
-                is_regularized = False
-            else:
-                proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold)
-        else:
-            proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold)
-        uncertainty = np.array(high - low)
-
-        marker_size = 50
-        min_x, min_y = 0,0
-        max_x, max_y = 1,1
-        ax = None
-        if is_regularized:
-            plt.figure()
-            x = np.arange(0, 1, 0.01)
-            plt.plot((x / (1 + x)), x, color='black')
-            plt.plot(x, ((1 - x) / x), color='black')
-            x = np.arange(0.5, 1, 0.005)
-            plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
-            x = np.arange(0, 0.5, 0.005)
-            plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
-        else:
-            _, ax = plt.subplots()
-            # draw a line from (0,0) to (0.5,1) and from (1,0) to (0.5,1)
-            min_x = np.min(self.explainer.y_cal)
-            max_x = np.max(self.explainer.y_cal)
-            min_y = np.min(uncertainty)
-            max_y = np.max(uncertainty)
-            if math.isclose(min_x, max_x, rel_tol=1e-9):
-                warnings.warn("All uncertainties are (almost) identical.", Warning)
-
-            min_x = min_x - min(0.1 * (max_x - min_x), 0) if min_x > 0 else min_x - 0.1 * (max_x - min_x)
-            max_x = max_x + 0.1 * (max_x - min_x)
-            # min_y = min_y - max(0.1 * (max_y - min_y), 0) # uncertainty is always positive
-            max_y = max_y + 0.1 * (max_y - min_y)
-            # mid_x = (min_x + max_x) / 2
-            # mid_y = (min_y + max_y) / 2
-            # ax.plot([min_x, mid_x], [min_y, max_y], color='black')
-            # ax.plot([max_x, mid_x], [min_y, max_y], color='black')
-            # # draw a line from (0.5,0) to halfway between (0.5,0) and (0,1)
-            # ax.plot([mid_x, mid_x / 2], [min_y, mid_y], color='black')
-            # # draw a line from (0.5,0) to halfway between (0.5,0) and (1,1)
-            # ax.plot([mid_x, mid_x + mid_x / 2], [min_y, mid_y], color='black')
-
-        if y_test is not None:
-            if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
-                norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
-                # Choose a colormap
-                colormap = plt.cm.viridis  # pylint: disable=no-member
-                # Map the normalized values to colors
-                colors = colormap(norm(y_test))
-                ax.scatter(predict, uncertainty, label='Predictions', color=colors, marker='.', s=marker_size)
-                # # Create a new axes for the colorbar
-                # divider = make_axes_locatable(ax)
-                # cax = divider.append_axes("right", size="5%", pad=0.05)
-                # # Add the colorbar to the new axes
-                # plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=colormap), cax=cax, label='Target Values')
-            else:
-                if 'predict_proba' not in dir(self.learner):
-                    assert np.isscalar(threshold), "The threshold parameter must be a single constant value for all instances when used in plot_global."
-                    y_test = np.array([0 if y_test[i] >= threshold else 1 for i in range(len(y_test))])
-                    labels = [f'Y >= {threshold}', f'Y < {threshold}']
-                else:
-                    if self.explainer.class_labels is not None:
-                        labels = [f'Y = {i}' for i in self.explainer.class_labels.values()]
-                    else:
-                        labels = [f'Y = {i}' for i in np.unique(y_test)]
-                marker_size = 25
-                if len(labels) == 2:
-                    colors = ['blue', 'red']
-                    markers = ['o', 'x']
-                    proba = proba[:,1]
-                else:
-                    colormap = plt.get_cmap('tab10', len(labels))
-                    colors = [colormap(i) for i in range(len(labels))]
-                    markers = ['o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H','o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H'][:len(labels)]
-                    proba = proba[np.arange(len(proba)), y_test]
-                    uncertainty = uncertainty[np.arange(len(uncertainty)), y_test]
-                for i, c in enumerate(np.unique(y_test)):
-                    plt.scatter(proba[y_test == c], uncertainty[y_test == c], color=colors[i], label=labels[i], marker=markers[i], s=marker_size)
-                plt.legend()
-        else:
-            if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
-                plt.scatter(predict, uncertainty, label='Predictions', marker='.', s=marker_size)
-            else:
-                if self.explainer.is_multiclass(): # pylint: disable=protected-access
-                    predicted = np.argmax(proba, axis=1)
-                    proba = proba[np.arange(len(proba)), predicted]
-                    uncertainty = uncertainty[np.arange(len(uncertainty)), predicted]
-                else:
-                    proba = proba[:,1]
-                plt.scatter(proba, uncertainty, label='Predictions', marker='.', s=marker_size)
-
-        if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
-            plt.xlabel('Predictions',loc='center')
-            plt.ylabel('Uncertainty',loc='center')
-        else:
-            plt.ylabel('Uncertainty')
-            if 'predict_proba' not in dir(self.learner):
-                plt.xlabel(f'Probability of Y < {threshold}')
-            else:
-                if self.explainer.is_multiclass(): # pylint: disable=protected-access
-                    if y_test is not None:
-                        plt.xlabel('Probability of Y = actual class')
-                    else:
-                        plt.xlabel('Probability of Y = predicted class')
-                else:
-                    plt.xlabel('Probability of Y = 1')
-        plt.xlim(min_x, max_x)
-        plt.ylim(min_y, max_y)
-        plt.show()
+        self.explainer.plot_global(X_test, y_test=y_test, threshold=threshold, **kwargs)
