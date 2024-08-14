@@ -1,5 +1,4 @@
-# pylint: disable=too-many-lines, trailing-whitespace, line-too-long, too-many-public-methods, invalid-name
-# flake8: noqa: E501
+# pylint: disable=too-many-lines, line-too-long, too-many-public-methods, invalid-name
 """contains the CalibratedExplanations class created by the CalibratedExplainer class
 """
 import os
@@ -11,7 +10,7 @@ from time import time
 import numpy as np
 import matplotlib.pyplot as plt
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
-from .utils.helper import make_directory 
+from .utils.helper import make_directory
 
 class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     """
@@ -32,7 +31,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     def __iter__(self):
         self.current_index = self.start_index
         return self
-    
+
     def __next__(self):
         if self.current_index >= self.end_index:
             raise StopIteration
@@ -197,41 +196,40 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
     def get_explanation(self, index):
         '''The function `get_explanation` returns the explanation corresponding to the index.
-        
+
         Parameters
         ----------
         index
             The `index` parameter is an integer that represents the index of the explanation
             instance that you want to retrieve. It is used to specify which explanation instance you want to
             get from either the counterfactual rules or the factual rules.
-        
+
         Returns
         -------
             The method `get_explanation` returns either a CounterfactualExplanation or a FactualExplanation, depending
             on the condition `self._is_counterfactual()`. 
-        
         '''
         assert isinstance(index, int), "index must be an integer"
         assert index >= 0, "index must be greater than or equal to 0"
-        assert index < len(self.X_test), "index must be less than the number of test instances"        
+        assert index < len(self.X_test), "index must be less than the number of test instances"
         return self.explanations[index]
 
 
     def _is_counterfactual(self):
         # '''The function checks if the explanations are counterfactuals by checking if the `discretizer` attribute of the `calibrated_explainer` object is an
         # instance of either `DecileDiscretizer` or `EntropyDiscretizer`.
-        
+
         # Returns
         # -------
-        #     a boolean value indicating whether the explanations are counterfactuals.        
-        # '''        
+        #     a boolean value indicating whether the explanations are counterfactuals.
+        # '''
         return isinstance(self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer))
 
     # pylint: disable=too-many-arguments
-    def plot(self, 
-                index=None,                         
+    def plot(self,
+                index=None,
                 n_features_to_show=10,
-                sort_on_uncertainty=False, 
+                sort_on_uncertainty=False,
                 show=False,
                 filename='',
                 uncertainty=False,
@@ -239,7 +237,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 interactive=False):
         '''The function `plot` plots either counterfactual or factual explanations for a given
         instance, with the option to show or save the plots.
-        
+
         Parameters
         ----------
         index : int or None, default=None
@@ -267,14 +265,13 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             information in the plots. If set to True, the plots will show uncertainty measures, if
             available, along with the explanations. If set to False, the plots will only show the
             explanations without uncertainty information. Only applicable to factual explanations.
-        
         '''
         if len(filename) > 0:
             path = os.path.dirname(filename) + '/'
             filename = os.path.basename(filename)
             title, ext = os.path.splitext(filename)
             make_directory(path, save_ext=np.array([ext]))
-        if index is not None:            
+        if index is not None:
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
             self.get_explanation(index).plot(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
@@ -292,14 +289,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         '''
         The function `get_semi_explanations` returns a copy of this `CalibratedExplanations` object with only semi-explanations.
         Semi-explanations are individual rules that support the predicted class. 
-        
+
         Parameters
         ----------
         only_ensured : bool, default=False
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
             explanations. If set to `False`, the function will return all semi-explanations. 
-        
+
         Returns
         -------
         semi-explanations : CalibratedExplanations
@@ -317,14 +314,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         '''
         The function `get_counter_explanations` returns a copy of this `CalibratedExplanations` object with only counter-explanations.
         Counter-explanations are individual rules that does not support the predicted class. 
-        
+
         Parameters
         ----------
         only_ensured : bool, default=False
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
             explanations. If set to `False`, the function will return all semi-explanations. 
-        
+
         Returns
         -------
         counter-explanations : CalibratedExplanations
@@ -341,7 +338,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         '''
         The function `get_ensured_explanations` returns a copy of this `CalibratedExplanations` object with only ensured explanations.
         Ensured explanations are individual rules that have a smaller confidence interval. 
-        
+
         Returns
         -------
         ensured-explanations : CalibratedExplanations
@@ -378,7 +375,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             feature_weights = explanation.feature_weights['predict']
             num_to_show = num_features_to_show if num_features_to_show is not None else \
                 self.calibrated_explainer.num_features
-            features_to_plot = explanation._rank_features(feature_weights, 
+            features_to_plot = explanation._rank_features(feature_weights,
                         num_to_show=num_to_show)
             rules = explanation._define_conditions()
             for j,f in enumerate(features_to_plot[::-1]): # pylint: disable=invalid-name
@@ -406,7 +403,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             for f in range(len(self.X_test[0, :])):
                 shap_exp.values[i][f] = -explanation.feature_weights['predict'][f]
         return shap_exp
-        
+
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class CalibratedExplanation(ABC):
     '''
@@ -429,7 +426,7 @@ class CalibratedExplanation(ABC):
             self.prediction[key] = deepcopy(prediction[key][index])
         self.y_threshold=y_threshold if np.isscalar(y_threshold) else \
                             None if y_threshold is None else \
-                            y_threshold[index] 
+                            y_threshold[index]
 
         self.conditions = []
         self.rules = []
@@ -438,7 +435,7 @@ class CalibratedExplanation(ABC):
         self._has_conjunctive_rules = False
         self.bin = [instance_bin] if instance_bin is not None else None
         self.explain_time = None
-        
+
     def _get_explainer(self):
         return self.calibrated_explanations._get_explainer() # pylint: disable=protected-access
 
@@ -456,7 +453,7 @@ class CalibratedExplanation(ABC):
                                 key=lambda x: (x[1][0], x[1][1]))]
             return sorted_indices[-num_to_show:] # pylint: disable=invalid-unary-operand-type
         if width is not None:
-            sorted_indices = np.argsort(-width)            
+            sorted_indices = np.argsort(-width)
             return sorted_indices[-num_to_show:] # pylint: disable=invalid-unary-operand-type
         sorted_indices = np.argsort(np.abs(feature_weights))
         return sorted_indices[-num_to_show:] # pylint: disable=invalid-unary-operand-type
@@ -548,13 +545,13 @@ class CalibratedExplanation(ABC):
         assert len(original_features) >= 2, 'Conjunctive rules require at least two features'
         rule_predict, rule_low, rule_high, rule_count = 0,0,0,0
         of1, of2, of3 = 0,0,0
-        rule_value1, rule_value2, rule_value3 = 0,0,0 
+        rule_value1, rule_value2, rule_value3 = 0,0,0
         if len(original_features) == 2:
             of1, of2 = original_features[0], original_features[1]
             rule_value1, rule_value2 = rule_value_set[0], rule_value_set[1]
         elif len(original_features) >= 3:
             of1, of2, of3 = original_features[0], original_features[1], original_features[2]
-            rule_value1, rule_value2, rule_value3 = rule_value_set[0], rule_value_set[1], rule_value_set[2]  
+            rule_value1, rule_value2, rule_value3 = rule_value_set[0], rule_value_set[1], rule_value_set[2]
         for value_1 in rule_value1:
             perturbed[of1] = value_1
             for value_2 in rule_value2:
@@ -569,7 +566,7 @@ class CalibratedExplanation(ABC):
                         rule_low += low[0]
                         rule_high += high[0]
                         rule_count += 1
-                else:                    
+                else:
                     p_value, low, high, _ = self._get_explainer()._predict(perturbed.reshape(1,-1), # pylint: disable=protected-access
                                                 threshold=threshold, low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
                                                 classes=predicted_class, bins=bins)
@@ -592,7 +589,7 @@ class CalibratedExplanation(ABC):
         # f = rule_idx
         # lesser = new_value
         # perturbed = deepcopy(self.X_test)
-        
+
         # rule_value = []
         # num_bins = 2
         # average_predict, low_predict, high_predict, counts = np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins),np.zeros(num_bins)
@@ -613,8 +610,8 @@ class CalibratedExplanation(ABC):
         #     high_predict[bin_value] = high_predict[bin_value]/len(lesser_values)
         #     counts[bin_value] = len(np.where(self._get_explainer().X_cal[:,f] < lesser)[0])
         #     bin_value += 1
-        # else:     
-        #     greater = new_value   
+        # else:
+        #     greater = new_value
         #     greater_values = np.unique(self._get_explainer().__get_greater_values(f, greater))
         #     rule_value.append(greater_values)
         #     for value in greater_values:
@@ -690,7 +687,7 @@ class CalibratedExplanation(ABC):
         #                                                         threshold,
         #                                                         predicted_class,
         #                                                         bins=self.bin)
-        
+
         return rule_idx, new_value
 
 
@@ -763,7 +760,7 @@ class FactualExplanation(CalibratedExplanation):
                 warnings.warn('Factual explanations for classification recommend using the ' +\
                                 'binaryEntropy discretizer. Consider extracting factual ' +\
                                 'explanations using `explainer.explain_factual(test_set)`')
-    
+
     def _get_rules(self):
         # """creates factual rules
 
@@ -773,7 +770,7 @@ class FactualExplanation(CalibratedExplanation):
         if self._has_conjunctive_rules:
             return self.conjunctive_rules
         if self._has_rules:
-            return self.rules        
+            return self.rules
         self._has_rules = False
         # i = self.index
         instance = deepcopy(self.X_test)
@@ -859,7 +856,7 @@ class FactualExplanation(CalibratedExplanation):
         conjunctive['classes'] = predicted_class
         if n_top_features is None:
             n_top_features = num_rules
-        top_conjunctives = self._rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))), 
+        top_conjunctives = self._rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))),
                             width=np.reshape(np.array(conjunctive['weight_high']) - np.array(conjunctive['weight_low']),
                             (len(conjunctive['weight']))), num_to_show= np.min([num_rules, n_top_features]))
 
@@ -961,8 +958,7 @@ class FactualExplanation(CalibratedExplanation):
         filename = kwargs['filename'] if 'filename' in kwargs else ''
         uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs else False
         interactive = kwargs['interactive'] if 'interactive' in kwargs else False
-        
-        
+
         factual = self._get_rules() #get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
@@ -985,7 +981,7 @@ class FactualExplanation(CalibratedExplanation):
             path = ''
             title = ''
             save_ext = []
-        if uncertainty:            
+        if uncertainty:
             feature_weights = {'predict':factual['weight'],
                                 'low':factual['weight_low'], 
                                 'high':factual['weight_high']}
@@ -1001,7 +997,7 @@ class FactualExplanation(CalibratedExplanation):
             self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
                         n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext, interactive=interactive)
-        else:                
+        else:
             self.__plot_regression(factual['value'], predict, feature_weights, features_to_plot,
                         n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext, interactive=interactive)
@@ -1021,7 +1017,7 @@ class FactualExplanation(CalibratedExplanation):
 
         ax_positive = subfigs[0].add_subplot(111)
         ax_negative = subfigs[1].add_subplot(111)
-        
+
         ax_main = subfigs[2].add_subplot(111)
 
         # plot the probabilities at the top
@@ -1050,7 +1046,7 @@ class FactualExplanation(CalibratedExplanation):
             if np.isscalar(self.y_threshold):
                 ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})'])
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})'])
-            else:                    
+            else:
                 ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
         else:
@@ -1061,7 +1057,7 @@ class FactualExplanation(CalibratedExplanation):
                 else:
                     ax_negative.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[0]})']) # pylint: disable=line-too-long
                     ax_positive.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[1]})']) # pylint: disable=line-too-long
-            else: 
+            else:
                 if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_negative.set_yticklabels(labels=[f'P(y!={self.prediction["classes"]})'])
                     ax_positive.set_yticklabels(labels=[f'P(y={self.prediction["classes"]})'])
@@ -1078,11 +1074,11 @@ class FactualExplanation(CalibratedExplanation):
             ax_main.fill_betweenx(x, [0], [0], color='k')
             ax_main.fill_betweenx(xl, [0], [0], color='k')
             ax_main.fill_betweenx(xh, [0], [0], color='k')
-            if interval:           
+            if interval:
                 p = predict['predict']
                 gwl = predict['low'] - p
                 gwh = predict['high'] - p
-                
+
                 gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
                 ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
@@ -1101,7 +1097,7 @@ class FactualExplanation(CalibratedExplanation):
                     if wl < 0 < wh:
                         min_val = 0
                         max_val = 0
-                else:                
+                else:
                     width = feature_weights[j]
                     min_val = width if width < 0 else 0
                     max_val = width if width > 0 else 0
@@ -1126,22 +1122,22 @@ class FactualExplanation(CalibratedExplanation):
             ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
             ax_main_twin.set_ylabel('Instance values')
         for ext in save_ext:
-            fig.savefig(path + title + ext, bbox_inches='tight') 
+            fig.savefig(path + title + ext, bbox_inches='tight')
         if show:
             fig.show()
-        
+
         # if interactive:
         #     # rewrite the code below to exclude categorical features, start with the most important
         #     # pylint: disable=missing-function-docstring, missing-class-docstring, protected-access
         #     class interactive_context:
-        #         def __init__(self, explanation) -> None:                    
-        #             self.selected_rule_idx = [i for i in features_to_plot if i not in explanation._get_explainer().categorical_features][-1] 
+        #         def __init__(self, explanation) -> None:
+        #             self.selected_rule_idx = [i for i in features_to_plot if i not in explanation._get_explainer().categorical_features][-1]
         #             self.selected_name = column_names[self.selected_rule_idx]
         #             self.possible_values, self.selected_value = explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
         #             self.explanation = explanation
         #         def update(self, rule_name, value):
         #             print(rule_name, self.selected_name, value, self.selected_value, self.selected_rule_idx)
-        #             if rule_name != self.selected_name:   
+        #             if rule_name != self.selected_name:
         #                 self.selected_rule_idx = [i for i, item in enumerate(column_names) if item == rule_name][0]
         #                 self.selected_name = column_names[self.selected_rule_idx]
         #                 self.possible_values, self.selected_value = self.explanation._get_slider_values(self.selected_rule_idx, self.selected_name)
@@ -1177,7 +1173,7 @@ class FactualExplanation(CalibratedExplanation):
         if interval and (self._is_one_sided()):
             raise Warning('Interval plot is not supported for one-sided explanations.')
 
-        ax_regression = subfigs[0].add_subplot(111)        
+        ax_regression = subfigs[0].add_subplot(111)
         ax_main = subfigs[1].add_subplot(111)
 
         # plot the probabilities at the top
@@ -1188,7 +1184,7 @@ class FactualExplanation(CalibratedExplanation):
                                 else np.min(self._get_explainer().y_cal)
         ph = predict['high'] if predict['high'] != np.inf \
                                 else np.max(self._get_explainer().y_cal)
-        
+
         ax_regression.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
         ax_regression.fill_betweenx(xj, p, p, color='r')
         ax_regression.set_xlim([np.min([pl, np.min(self._get_explainer().y_cal)]),np.max([ph, np.max(self._get_explainer().y_cal)])])
@@ -1205,11 +1201,11 @@ class FactualExplanation(CalibratedExplanation):
         ax_main.fill_betweenx(xl, [0], [0], color='k')
         ax_main.fill_betweenx(xh, [0], [0], color='k')
         x_min, x_max = 0,0
-        if interval:            
+        if interval:
             p = predict['predict']
             gwl = p - predict['low']
             gwh = p - predict['high']
-            
+
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             # ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
@@ -1229,7 +1225,7 @@ class FactualExplanation(CalibratedExplanation):
                 if wl < 0 < wh:
                     min_val = 0
                     max_val = 0
-            else:                
+            else:
                 width = feature_weights[j]
                 min_val = width if width < 0 else 0
                 max_val = width if width > 0 else 0
@@ -1237,7 +1233,7 @@ class FactualExplanation(CalibratedExplanation):
             ax_main.fill_betweenx(xj, min_val, max_val, color=color)
             if interval:
                 ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
-                
+
                 x_min = np.min([x_min, min_val, max_val, wl, wh])
                 x_max = np.max([x_max, min_val, max_val, wl, wh])
             else:
@@ -1260,7 +1256,6 @@ class FactualExplanation(CalibratedExplanation):
             fig.savefig(path + title + ext, bbox_inches='tight')
         if show:
             fig.show()
-
 
 
 
@@ -1299,11 +1294,11 @@ class CounterfactualExplanation(CalibratedExplanation):
     #         value = self._get_explainer().discretizer.maxs[index][1]
     #         min_value = self.X_test[index]
     #         max_value = np.max(self._get_explainer().X_cal[:,index])
-    #     X_cal = self._get_explainer().X_cal         
+    #     X_cal = self._get_explainer().X_cal
     #     num_values = len(np.unique(X_cal[[min_value <= x < max_value for x in X_cal[:,index]], index], return_counts=True))
     #     print(rule_name, min_value, max_value, num_values, (max_value-min_value)/num_values, value)
     #     return min_value, max_value, (max_value-min_value)/num_values, value
-        
+
     def _check_preconditions(self):
         if 'regression' in self._get_explainer().mode:
             if not isinstance(self._get_explainer().discretizer, RegressorDiscretizer):
@@ -1315,7 +1310,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                 warnings.warn('Counterfactual explanations for classification recommend using ' +\
                                 'the entropy discretizer. Consider extracting counterfactual ' +\
                                 'explanations using `explainer.explain_counterfactual(test_set)`')
-    
+
     # pylint: disable=too-many-statements, too-many-branches
     def _get_rules(self):
         # """creates counterfactual rules
@@ -1361,7 +1356,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                 values = np.array(self._get_explainer().feature_values[f])
                 values = np.delete(values, values == discretized[f])
                 for value_bin, value in enumerate(values):
-                    # skip if identical to original 
+                    # skip if identical to original
                     if self.prediction['low'] == instance_low[f][value_bin] and self.prediction['high'] == instance_high[f][value_bin]:
                         continue
                     counterfactual['predict'].append(instance_predict[f][value_bin])
@@ -1400,7 +1395,7 @@ class CounterfactualExplanation(CalibratedExplanation):
 
                 value_bin = 0
                 if np.any(values < lesser):
-                    # skip if identical to original 
+                    # skip if identical to original
                     if self.prediction['low'] == np.mean(instance_low[f][value_bin]) and self.prediction['high'] == np.mean(instance_high[f][value_bin]):
                         continue
                     counterfactual['predict'].append(np.mean(instance_predict[f][value_bin]))
@@ -1428,7 +1423,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                     value_bin = 1
 
                 if np.any(values > greater):
-                    # skip if identical to original 
+                    # skip if identical to original
                     if self.prediction['low'] == np.mean(instance_low[f][value_bin]) and self.prediction['high'] == np.mean(instance_high[f][value_bin]):
                         continue
                     counterfactual['predict'].append(np.mean(instance_predict[f][value_bin]))
@@ -1478,7 +1473,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         if class_label is None:
             positive_class = self.prediction['predict'] > 0.5
         else:
-            positive_class = class_label == 1            
+            positive_class = class_label == 1
         initial_uncertainty = np.abs(self.prediction['high'] - self.prediction['low'])
 
         # get the semi-explanations for the predicted class
@@ -1502,7 +1497,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         new_rules['base_predict'].append(self.prediction['predict'])
         new_rules['base_predict_low'].append(self.prediction['low'])
         new_rules['base_predict_high'].append(self.prediction['high'])
-        
+
         rules = self._get_rules() # pylint: disable=protected-access
         for rule in range(len(rules['rule'])):
             if make_semi: # make semi-explanation
@@ -1511,12 +1506,12 @@ class CounterfactualExplanation(CalibratedExplanation):
                     if rules['predict_high'][rule] < 0.5:
                         continue
                 else:
-                    # filter positive rules that cannot be negative              
+                    # filter positive rules that cannot be negative
                     if rules['predict_low'][rule] > 0.5:
                         continue
             if make_counter: # make counter-explanation
                 if positive_class:
-                    # filter positive rules that cannot be negative              
+                    # filter positive rules that cannot be negative
                     if rules['predict_low'][rule] > 0.5:
                         continue
                 else:
@@ -1584,14 +1579,14 @@ class CounterfactualExplanation(CalibratedExplanation):
         '''
         This function returns the counter-explanations from this counterfactual explanation. 
         Counter-explanations are individual rules that does not support the predicted class. 
-        
+
         Parameters
         ----------
         only_ensured : bool, default=False            
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
             explanations. If set to `False`, the function will return all semi-explanations. 
-        
+
         Returns
         -------
         self : CounterfactualExplanation
@@ -1605,7 +1600,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         '''
         This function returns the ensured explanations from this counterfactual explanation. 
         Ensured explanations are individual rules that have a smaller confidence interval. 
-        
+
         Returns
         -------
         self : CounterfactualExplanation
@@ -1641,7 +1636,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             return self
         self.conjunctive_rules = []
         # pylint: disable=unsubscriptable-object, invalid-name
-        threshold = None if self.y_threshold is None else self.y_threshold 
+        threshold = None if self.y_threshold is None else self.y_threshold
         x_original = deepcopy(self.X_test)
 
         num_rules = len(counterfactual['rule'])
@@ -1649,7 +1644,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         conjunctive['classes'] = predicted_class
         if n_top_features is None:
             n_top_features = num_rules
-        top_conjunctives = self._rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))), 
+        top_conjunctives = self._rank_features(np.reshape(conjunctive['weight'], (len(conjunctive['weight']))),
                             width=np.reshape(np.array(conjunctive['weight_high']) - np.array(conjunctive['weight_low']),
                             (len(conjunctive['weight']))), num_to_show= np.min([num_rules, n_top_features]))
 
@@ -1715,12 +1710,12 @@ class CounterfactualExplanation(CalibratedExplanation):
         self.conjunctive_rules = conjunctive
         self._has_conjunctive_rules = True
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
-        
+
     # pylint: disable=consider-iterating-dictionary
     def plot(self, n_features_to_show=None, **kwargs):
         '''The function `plot_counterfactual` plots the counterfactual explanation for a given instance in
         a dataset.
-        
+
         Parameters
         ----------
         n_features_to_show : int, default=10
@@ -1743,7 +1738,6 @@ class CounterfactualExplanation(CalibratedExplanation):
             * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
             * 'triangular' - a triangular plot for counterfactual explanations highlighting the interplay 
                 between the calibrated probability and the uncertainty intervals
-        
         '''
         show = kwargs['show'] if 'show' in kwargs.keys() else False
         filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
@@ -1751,7 +1745,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         sort_on_uncertainty = kwargs['sort_on_uncertainty'] if 'sort_on_uncertainty' in kwargs.keys() else False
 
         counterfactual = self._get_rules() #get_explanation(index)
-        self._check_preconditions()      
+        self._check_preconditions()
         predict = self.prediction
         if len(filename) > 0:
             path = os.path.dirname(filename) + '/'
@@ -1787,7 +1781,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             features_to_plot = self._rank_features(feature_weights,
                                                 width=width,
                                                 num_to_show=num_to_show_)
-        
+
         if 'style' in kwargs and kwargs['style'] == 'triangular':
             proba = predict['predict']
             uncertainty = np.abs(predict['high'] - predict['low'])
@@ -1796,10 +1790,10 @@ class CounterfactualExplanation(CalibratedExplanation):
             # Use list comprehension or NumPy array indexing to select elements
             selected_rule_proba = [rule_proba[i] for i in features_to_plot]
             selected_rule_uncertainty = [rule_uncertainty[i] for i in features_to_plot]
-            
+
             self.__plot_triangular(proba, uncertainty, selected_rule_proba, selected_rule_uncertainty, num_to_show_)
             return
-        
+
         column_names = counterfactual['rule']
         self.__plot_counterfactual(counterfactual['value'], predict, feature_predict, \
                                     features_to_plot, num_to_show=num_to_show_, \
@@ -1809,7 +1803,7 @@ class CounterfactualExplanation(CalibratedExplanation):
     def __plot_triangular(self, proba, uncertainty, rule_proba, rule_uncertainty, num_to_show):
         # assert self._get_explainer().mode == 'classification' or \
         #     (self._get_explainer().mode == 'regression' and self._is_thresholded()), \
-        #     'Triangular plot is only available for classification or thresholded regression' 
+        #     'Triangular plot is only available for classification or thresholded regression'
         marker_size = 50
         min_x, min_y = 0,0
         max_x, max_y = 1,1
@@ -1823,7 +1817,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             x = np.arange(0.5, 1, 0.005)
             plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
             x = np.arange(0, 0.5, 0.005)
-            plt.plot((x + 0.5 - x)/(1 + x), x, color='black')            
+            plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
         else:
             min_x = np.min(self._get_explainer().y_cal) # pylint: disable=protected-access
             max_x = np.max(self._get_explainer().y_cal) # pylint: disable=protected-access
@@ -1835,9 +1829,9 @@ class CounterfactualExplanation(CalibratedExplanation):
             max_y = max_y + 0.1 * (max_y - min_y)
             is_probabilistic = False
 
-        plt.quiver([proba]*num_to_show, [uncertainty]*num_to_show, 
-                    rule_proba[:num_to_show] - proba, 
-                    rule_uncertainty[:num_to_show] - uncertainty, 
+        plt.quiver([proba]*num_to_show, [uncertainty]*num_to_show,
+                    rule_proba[:num_to_show] - proba,
+                    rule_uncertainty[:num_to_show] - uncertainty,
                     angles='xy', scale_units='xy', scale=1, color='lightgrey',
                     width=0.005, headwidth=3, headlength=3)
         plt.scatter(rule_proba, rule_uncertainty, label='Explanations', marker='.', s=marker_size)
@@ -1884,10 +1878,10 @@ class CounterfactualExplanation(CalibratedExplanation):
             ax_main.fill_betweenx(xl, [p_l]*(2), [p_h]*(2),color=color)
             ax_main.fill_betweenx(xh, [p_l]*(2), [p_h]*(2),color=color)
             if 'regression' in self._get_explainer().mode:
-                ax_main.fill_betweenx(x, p, p, color='r', alpha=0.3)  
-                # Fill up to the edges                
-                ax_main.fill_betweenx(xl, p, p, color='r', alpha=0.3)  
-                ax_main.fill_betweenx(xh, p, p, color='r', alpha=0.3)           
+                ax_main.fill_betweenx(x, p, p, color='r', alpha=0.3)
+                # Fill up to the edges
+                ax_main.fill_betweenx(xl, p, p, color='r', alpha=0.3)
+                ax_main.fill_betweenx(xh, p, p, color='r', alpha=0.3)
         else:
             venn_abers['predict'] = p_l
             color = self.__get_fill_color(venn_abers, 0.15)
@@ -1913,7 +1907,7 @@ class CounterfactualExplanation(CalibratedExplanation):
             # Fill each feature impact
             if 'regression' in self._get_explainer().mode:
                 ax_main.fill_betweenx(xj, p_l,p_h, color='r', alpha= 0.40)
-                ax_main.fill_betweenx(xj, p, p, color='r')  
+                ax_main.fill_betweenx(xj, p, p, color='r')
             elif (p_l < 0.5 and p_h < 0.5) or (p_l > 0.5 and p_h > 0.5) :
                 ax_main.fill_betweenx(xj, p_l,p_h,color=self.__get_fill_color(venn_abers, 0.99))
             else:
@@ -2041,8 +2035,8 @@ class PerturbedExplanation(CalibratedExplanation):
         output.append(f"   {perturbed['base_predict'][0]:5.3f}   [{perturbed['base_predict_low'][0]:5.3f}, {perturbed['base_predict_high'][0]:5.3f}]")
 
         output.append(f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]")
-        feature_order = self._rank_features(perturbed['weight'], 
-                                width=np.array(perturbed['weight_high']) - np.array(perturbed['weight_low']), 
+        feature_order = self._rank_features(perturbed['weight'],
+                                width=np.array(perturbed['weight_high']) - np.array(perturbed['weight_low']),
                                 num_to_show=len(perturbed['rule']))
         # feature_order = range(len(perturbed['rule']))
         for f in reversed(feature_order):
@@ -2063,7 +2057,7 @@ class PerturbedExplanation(CalibratedExplanation):
 
     def _check_preconditions(self):
         pass
-    
+
     # pylint: disable=too-many-statements, too-many-branches
     def _get_rules(self):
         # """creates factual rules
@@ -2074,7 +2068,7 @@ class PerturbedExplanation(CalibratedExplanation):
         if self._has_conjunctive_rules:
             return self.conjunctive_rules
         if self._has_rules:
-            return self.rules        
+            return self.rules
         self._has_rules = False
         # i = self.index
         instance = deepcopy(self.X_test)
@@ -2171,8 +2165,7 @@ class PerturbedExplanation(CalibratedExplanation):
         filename = kwargs['filename'] if 'filename' in kwargs else ''
         uncertainty = kwargs['uncertainty'] if 'uncertainty' in kwargs else False
         interactive = kwargs['interactive'] if 'interactive' in kwargs else False
-        
-        
+
         factual = self._get_rules() #get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
@@ -2195,7 +2188,7 @@ class PerturbedExplanation(CalibratedExplanation):
             path = ''
             title = ''
             save_ext = []
-        if uncertainty:            
+        if uncertainty:
             feature_weights = {'predict':factual['weight'],
                                 'low':factual['weight_low'], 
                                 'high':factual['weight_high']}
@@ -2211,7 +2204,7 @@ class PerturbedExplanation(CalibratedExplanation):
             self.__plot_probabilistic(factual['value'], predict, feature_weights, features_to_plot,
                         n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext, interactive=interactive)
-        else:                
+        else:
             self.__plot_regression(factual['value'], predict, feature_weights, features_to_plot,
                         n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext, interactive=interactive)
@@ -2231,7 +2224,7 @@ class PerturbedExplanation(CalibratedExplanation):
 
         ax_positive = subfigs[0].add_subplot(111)
         ax_negative = subfigs[1].add_subplot(111)
-        
+
         ax_main = subfigs[2].add_subplot(111)
 
         # plot the probabilities at the top
@@ -2260,7 +2253,7 @@ class PerturbedExplanation(CalibratedExplanation):
             if np.isscalar(self.y_threshold):
                 ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})'])
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})'])
-            else:                    
+            else:
                 ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
         else:
@@ -2271,7 +2264,7 @@ class PerturbedExplanation(CalibratedExplanation):
                 else:
                     ax_negative.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[0]})']) # pylint: disable=line-too-long
                     ax_positive.set_yticklabels(labels=[f'P(y={self._get_explainer().class_labels[1]})']) # pylint: disable=line-too-long
-            else: 
+            else:
                 if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
                     ax_negative.set_yticklabels(labels=[f'P(y!={self.prediction["classes"]})'])
                     ax_positive.set_yticklabels(labels=[f'P(y={self.prediction["classes"]})'])
@@ -2288,11 +2281,11 @@ class PerturbedExplanation(CalibratedExplanation):
             ax_main.fill_betweenx(x, [0], [0], color='k')
             ax_main.fill_betweenx(xl, [0], [0], color='k')
             ax_main.fill_betweenx(xh, [0], [0], color='k')
-            if interval:           
+            if interval:
                 p = predict['predict']
                 gwl = predict['low'] - p
                 gwh = predict['high'] - p
-                
+
                 gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
                 ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
@@ -2311,7 +2304,7 @@ class PerturbedExplanation(CalibratedExplanation):
                     if wl < 0 < wh:
                         min_val = 0
                         max_val = 0
-                else:                
+                else:
                     width = feature_weights[j]
                     min_val = width if width < 0 else 0
                     max_val = width if width > 0 else 0
@@ -2336,7 +2329,7 @@ class PerturbedExplanation(CalibratedExplanation):
             ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
             ax_main_twin.set_ylabel('Instance values')
         for ext in save_ext:
-            fig.savefig(path + title + ext, bbox_inches='tight') 
+            fig.savefig(path + title + ext, bbox_inches='tight')
         if show:
             fig.show()
 
@@ -2354,7 +2347,7 @@ class PerturbedExplanation(CalibratedExplanation):
         if interval and (self._is_one_sided()):
             raise Warning('Interval plot is not supported for one-sided explanations.')
 
-        ax_regression = subfigs[0].add_subplot(111)        
+        ax_regression = subfigs[0].add_subplot(111)
         ax_main = subfigs[1].add_subplot(111)
 
         # plot the probabilities at the top
@@ -2365,7 +2358,7 @@ class PerturbedExplanation(CalibratedExplanation):
                                 else np.min(self._get_explainer().y_cal)
         ph = predict['high'] if predict['high'] != np.inf \
                                 else np.max(self._get_explainer().y_cal)
-        
+
         ax_regression.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
         ax_regression.fill_betweenx(xj, p, p, color='r')
         ax_regression.set_xlim([np.min([pl, np.min(self._get_explainer().y_cal)]),np.max([ph, np.max(self._get_explainer().y_cal)])])
@@ -2382,11 +2375,11 @@ class PerturbedExplanation(CalibratedExplanation):
         ax_main.fill_betweenx(xl, [0], [0], color='k')
         ax_main.fill_betweenx(xh, [0], [0], color='k')
         x_min, x_max = 0,0
-        if interval:            
+        if interval:
             p = predict['predict']
             gwl = p - predict['low']
             gwh = p - predict['high']
-            
+
             gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
             # ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
@@ -2406,7 +2399,7 @@ class PerturbedExplanation(CalibratedExplanation):
                 if wl < 0 < wh:
                     min_val = 0
                     max_val = 0
-            else:                
+            else:
                 width = feature_weights[j]
                 min_val = width if width < 0 else 0
                 max_val = width if width > 0 else 0
@@ -2414,7 +2407,7 @@ class PerturbedExplanation(CalibratedExplanation):
             ax_main.fill_betweenx(xj, min_val, max_val, color=color)
             if interval:
                 ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
-                
+
                 x_min = np.min([x_min, min_val, max_val, wl, wh])
                 x_max = np.max([x_max, min_val, max_val, wl, wh])
             else:
