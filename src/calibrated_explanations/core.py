@@ -1915,6 +1915,37 @@ class WrapCalibratedExplainer():
         """
         self.explainer.set_difficulty_estimator(difficulty_estimator)
 
+
+    def initialize_reject_learner(self, threshold=None):
+        '''
+        Initializes the reject learner for the explainer. The reject learner is a ConformalClassifier
+        that is trained on the calibration data. The reject learner is used to determine whether a test
+        instance is within the calibration data distribution. The reject learner is only available for
+        classification, unless a threshold is assigned.
+        
+        Parameters
+        ----------
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression.
+        '''
+        return self.explainer.initialize_reject_learner(threshold=threshold)
+
+    def predict_reject(self, X_test, bins=None, confidence=0.95):
+        '''
+        Predicts whether a test instance is within the calibration data distribution.
+
+        Parameters
+        ----------
+        X_test : A set with n_samples of test objects to predict
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression.
+
+        Returns
+        -------
+        np.ndarray : A boolean array of shape (n_samples,) indicating whether the test instances are within the calibration data distribution.
+        '''
+        return self.explainer.predict_reject(X_test, bins=bins, confidence=confidence)
+
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot_global(self, X_test, y_test=None, threshold=None, **kwargs):
         """
