@@ -169,6 +169,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             mode='regression'
         )
 
+        cal_exp.initialize_reject_learner(threshold=0.5)
+        cal_exp.predict_reject(X_test)
+
         factual_explanation = cal_exp.explain_factual(X_test, y_test)
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
@@ -311,6 +314,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             mode='regression',
             bins=X_cal[:,0]
         )
+
+        cal_exp.initialize_reject_learner(threshold=0.5)
+        cal_exp.predict_reject(X_test, bins=X_test[:,0])
 
         factual_explanation = cal_exp.explain_factual(X_test, y_test, bins=X_test[:,0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)

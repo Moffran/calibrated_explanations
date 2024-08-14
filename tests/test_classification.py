@@ -120,6 +120,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             categorical_features=categorical_features,
             mode='classification',
         )
+
+        cal_exp.initialize_reject_learner()
+        cal_exp.predict_reject(X_test)
+
         factual_explanation = cal_exp.explain_factual(X_test)
         filtered_explanations = factual_explanation[list([0,1])]
         _ = filtered_explanations[list([0])]
@@ -189,6 +193,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             mode='classification',
             verbose=True
         )
+
+        cal_exp.initialize_reject_learner()
+        cal_exp.predict_reject(X_test)
+
         print(cal_exp)
         factual_explanation = cal_exp.explain_factual(X_test)
         filtered_explanations = factual_explanation[list([0,1])]
@@ -255,6 +263,10 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             mode='classification',
             bins=X_cal[:,0]
         )
+
+        cal_exp.initialize_reject_learner()
+        cal_exp.predict_reject(X_test, bins=X_test[:,0])
+
         factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:,0])
         filtered_explanations = factual_explanation[list([0,1])]
         _ = filtered_explanations[list([0])]
