@@ -1933,7 +1933,7 @@ class CounterfactualExplanation(CalibratedExplanation):
                                     f'{float(self.y_threshold) :.2f}')
             else:
                 ax_main.set_xlabel('Probability of target being below '+\
-                                    f'{float(self.y_threshold) :.2f}') 
+                                    f'{float(self.y_threshold) :.2f}')
             ax_main.set_xlim(0,1)
             ax_main.set_xticks(np.linspace(0, 1, 11))
         elif 'regression' in self._get_explainer().mode:
