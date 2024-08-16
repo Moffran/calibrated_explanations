@@ -13,6 +13,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 
+from crepes.extras import MondrianCategorizer
+
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.utils.helper import transform_to_numeric
 
@@ -242,6 +244,100 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
 
+
+    # @unittest.skip('Test passes locally.  Skipping provisionally.')
+    # pylint: disable=unused-variable, unsubscriptable-object, too-many-statements
+    def test_wrap_conditional_binary_ce(self):
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = load_binary_dataset()
+        cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+        cal_exp.fit(X_prop_train, y_prop_train)
+
+        def get_values(X):
+            return X[:,0]
+
+        mc = MondrianCategorizer()
+        mc.fit(X_cal, f=get_values, no_bins=5)
+
+        cal_exp.calibrate(X_cal, y_cal, mc=mc, feature_names=feature_names, categorical_features=categorical_features)
+        self.assertTrue(cal_exp.fitted)
+        self.assertTrue(cal_exp.calibrated)
+        print(cal_exp)
+        y_test_hat1 = cal_exp.predict(X_test)
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
+        for i, y_hat in enumerate(y_test_hat2):
+            self.assertEqual(y_test_hat1[i], y_hat)
+            # self.assertBetween(y_hat, low[i], high[i])
+        y_test_hat1 = cal_exp.predict_proba(X_test)
+        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
+        for i, y_hat in enumerate(y_test_hat2):
+            for j, y_hat_j in enumerate(y_hat):
+                self.assertEqual(y_test_hat1[i][j], y_hat_j)
+            self.assertBetween(y_test_hat2[i,1], low[i], high[i])
+
+        cal_exp.fit(X_prop_train, y_prop_train)
+        self.assertTrue(cal_exp.fitted)
+        self.assertTrue(cal_exp.calibrated)
+
+        learner = cal_exp.learner
+        explainer = cal_exp.explainer
+
+        new_exp = WrapCalibratedExplainer(learner)
+        self.assertTrue(new_exp.fitted)
+        self.assertFalse(new_exp.calibrated)
+        self.assertEqual(new_exp.learner, learner)
+
+        new_exp = WrapCalibratedExplainer(explainer)
+        self.assertTrue(new_exp.fitted)
+        self.assertTrue(new_exp.calibrated)
+        self.assertEqual(new_exp.explainer, explainer)
+        self.assertEqual(new_exp.learner, learner)
+
+    # @unittest.skip('Test passes locally.  Skipping provisionally.')
+    # pylint: disable=unused-variable, unsubscriptable-object, too-many-statements
+    def test_wrap_conditional_multiclass_ce(self):
+        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, _, _, feature_names = load_multiclass_dataset()
+        cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+        cal_exp.fit(X_prop_train, y_prop_train)
+
+        def get_values(X):
+            return X[:,0]
+
+        mc = MondrianCategorizer()
+        mc.fit(X_cal, f=get_values, no_bins=5)
+
+        cal_exp.calibrate(X_cal, y_cal, mc=mc, feature_names=feature_names, categorical_features=categorical_features)
+        self.assertTrue(cal_exp.fitted)
+        self.assertTrue(cal_exp.calibrated)
+        print(cal_exp)
+        y_test_hat1 = cal_exp.predict(X_test)
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
+        for i, y_hat in enumerate(y_test_hat2):
+            self.assertEqual(y_test_hat1[i], y_hat)
+            # self.assertBetween(y_hat, low[i], high[i])
+        y_test_hat1 = cal_exp.predict_proba(X_test)
+        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
+        for i, y_hat in enumerate(y_test_hat2):
+            for j, y_hat_j in enumerate(y_hat):
+                self.assertEqual(y_test_hat1[i][j], y_hat_j)
+                self.assertBetween(y_hat_j, low[i][j], high[i][j])
+
+        cal_exp.fit(X_prop_train, y_prop_train)
+        self.assertTrue(cal_exp.fitted)
+        self.assertTrue(cal_exp.calibrated)
+
+        learner = cal_exp.learner
+        explainer = cal_exp.explainer
+
+        new_exp = WrapCalibratedExplainer(learner)
+        self.assertTrue(new_exp.fitted)
+        self.assertFalse(new_exp.calibrated)
+        self.assertEqual(new_exp.learner, learner)
+
+        new_exp = WrapCalibratedExplainer(explainer)
+        self.assertTrue(new_exp.fitted)
+        self.assertTrue(new_exp.calibrated)
+        self.assertEqual(new_exp.explainer, explainer)
+        self.assertEqual(new_exp.learner, learner)
 
 if __name__ == '__main__':
     # unittest.main()
