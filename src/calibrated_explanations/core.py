@@ -985,14 +985,14 @@ class CalibratedExplainer:
 
 
     def set_difficulty_estimator(self, difficulty_estimator, initialize=True) -> None:
-        """assigns a difficulty estimator for regression. For further information, 
-        see the documentation for the difficulty estimator or refer to the crepes package 
+        """assigns a :class:`crepes.extras.DifficultyEstimator` for regression. For further information, 
+        see the documentation for the :class:`crepes.extras.DifficultyEstimator` or refer to the crepes package 
         for further information.
 
         Parameters
         ----------
         difficulty_estimator : :class:`crepes.extras.DifficultyEstimator` or None): 
-            A :class:`crepes.extras.DifficultyEstimator` object from the crepes package. To remove the difficulty estimator, set to None.
+            A :class:`crepes.extras.DifficultyEstimator` object from the crepes package. To remove the :class:`crepes.extras.DifficultyEstimator`, set to None.
         initialize (bool, optional): 
             If true, then the interval learner is initialized once done. Defaults to True.
         """
@@ -2093,14 +2093,14 @@ class WrapCalibratedExplainer():
         return self.explainer.predict_proba(X_test, uq_interval=uq_interval, threshold=threshold, **kwargs)
 
     def set_difficulty_estimator(self, difficulty_estimator) -> None:
-        """assigns a difficulty estimator for regression. For further information, 
-        see the documentation for the difficulty estimator or refer to the crepes package 
+        """assigns a :class:`crepes.extras.DifficultyEstimator` for regression. For further information, 
+        see the documentation for the :class:`crepes.extras.DifficultyEstimator` or refer to the crepes package 
         for further information.
 
         Parameters
         ----------
-        difficulty_estimator : :class:`crepes.extras.DifficultyEstimator or None: 
-            A crepes.extras.DifficultyEstimator` object from the crepes package. To remove the difficulty estimator, set to None.
+        difficulty_estimator : :class:`crepes.extras.DifficultyEstimator` or None: 
+            A :class:`crepes.extras.DifficultyEstimator` object from the crepes package. To remove the :class:`crepes.extras.DifficultyEstimator`, set to None.
         """
         self.explainer.set_difficulty_estimator(difficulty_estimator)
 
