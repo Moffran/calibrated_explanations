@@ -20,7 +20,7 @@ import matplotlib.colors as mcolors
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from crepes import ConformalClassifier
-from crepes.extras import hinge
+from crepes.extras import hinge, MondrianCategorizer
 
 from ._explanations import CalibratedExplanations
 from .VennAbers import VennAbers
@@ -30,12 +30,12 @@ from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
 from .utils.helper import safe_isinstance, safe_import, check_is_fitted
 from .utils.perturbation import perturb_dataset
 
-__version__ = 'v0.3.5'
+__version__ = 'v0.4.0'
 
 
 
 class CalibratedExplainer:
-    """The CalibratedExplainer class is used for explaining machine learning learners with calibrated
+    """The :class:`.CalibratedExplainer` class is used for explaining machine learning learners with calibrated
     predictions.
 
     The calibrated explanations are based on the paper 
@@ -66,7 +66,7 @@ class CalibratedExplainer:
                 reject=False,
                 ) -> None:
         # pylint: disable=line-too-long
-        '''Constructor for the CalibratedExplainer object for explaining the predictions of a
+        '''Constructor for the :class:`.CalibratedExplainer` object for explaining the predictions of a
         black-box learner.
         
         Parameters
@@ -94,7 +94,7 @@ class CalibratedExplainer:
             for classification learners. If None, the numerical target values will be used as labels.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
-        difficulty_estimator : DifficultyEstimator, default=None
+        difficulty_estimator : :class:`crepes.extras.DifficultyEstimator`, default=None
             A `DifficultyEstimator` object from the `crepes` package. It is used to estimate the difficulty of
             explaining a prediction. If None, no difficulty estimation is used. This parameter is only used
             for regression learners.
@@ -122,7 +122,7 @@ class CalibratedExplainer:
         
         Return
         ------
-        CalibratedExplainer : A CalibratedExplainer object that can be used to explain predictions from a predictive learner.
+        :class:`.CalibratedExplainer` : A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
         
         '''
         init_time = time()
@@ -194,7 +194,7 @@ class CalibratedExplainer:
         
         Return
         ------
-        CalibratedExplainer : A CalibratedExplainer object that can be used to explain predictions from a predictive learner.
+        :class:`.CalibratedExplainer` : A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
         
         """
         self.__initialized = False
@@ -334,7 +334,7 @@ class CalibratedExplainer:
                         bins = None,
                         ) -> CalibratedExplanations:
         """
-        Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for factual explanations.
+        Creates a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
         Parameters
         ----------
@@ -355,7 +355,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+        :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
             intervals. 
         """
         if 'regression' in self.mode:
@@ -372,7 +372,7 @@ class CalibratedExplainer:
                                 bins = None,
                                 ) -> CalibratedExplanations:
         """
-        Creates a CalibratedExplanations object for the test data with the discretizer automatically assigned for counterfactual explanations.
+        Creates a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for counterfactual explanations.
 
         Parameters
         ----------
@@ -393,7 +393,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+        :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
             intervals. 
         """
         if 'regression' in self.mode:
@@ -410,7 +410,7 @@ class CalibratedExplainer:
                 bins = None,
                 ) -> CalibratedExplanations:
         """
-        Calling self as a function creates a CalibratedExplanations object for the test data with the 
+        Calling self as a function creates a :class:`.CalibratedExplanations` object for the test data with the 
         already assigned discretizer. Called by the `explain_factual` and `explain_counterfactual` methods. 
         See their documentation for further information.
         """
@@ -424,7 +424,7 @@ class CalibratedExplainer:
                 bins = None,
                 ) -> CalibratedExplanations:
         """
-        Calling the explain function creates a CalibratedExplanations object for the test data with the 
+        Calling the explain function creates a :class:`.CalibratedExplanations` object for the test data with the 
         already assigned discretizer. Called by the `explain_factual` and `explain_counterfactual` methods. 
         See their documentation for further information.
         """
@@ -762,7 +762,7 @@ class CalibratedExplainer:
                                 bins = None,
                                 ) -> CalibratedExplanations:
         """
-        Creates a CalibratedExplanations object for the test data.
+        Creates a :class:`.CalibratedExplanations` object for the test data.
 
         Parameters
         ----------
@@ -784,7 +784,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        CalibratedExplanations : A CalibratedExplanations object containing the predictions and the 
+        :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
             intervals. 
         """
         if not self.is_perturbed:
@@ -881,7 +881,8 @@ class CalibratedExplainer:
     def is_multiclass(self):
         """test if it is a multiclass problem
 
-        Returns:
+        Returns
+        -------
             bool: True if multiclass
         """
         return self.num_classes > 2
@@ -890,8 +891,9 @@ class CalibratedExplainer:
     def is_perturbed(self):
         """test if the explainer is perturbed
 
-        Returns:
-            bool: True if perturbed
+        Returns
+        -------
+        bool: True if perturbed
         """
         return self.__perturb
 
@@ -900,12 +902,14 @@ class CalibratedExplainer:
         """
         Extracts the rule boundaries for a set of instances.
 
-        Args:
-            instances (n_instances, n_features): the instances to extract boundaries for
-            perturbed_instances ((n_instances, n_features), optional): discretized versions of instances. Defaults to None.
+        Parameters
+        ----------
+        instances (n_instances, n_features): the instances to extract boundaries for
+        perturbed_instances ((n_instances, n_features), optional): discretized versions of instances. Defaults to None.
 
-        Returns:
-            (n_instances, n_features, 2): min and max values for each feature for each instance
+        Returns
+        -------
+        (n_instances, n_features, 2): min and max values for each feature for each instance
         """
         # backwards compatibility
         if len(instances.shape) == 1:
@@ -971,8 +975,9 @@ class CalibratedExplainer:
     def set_random_state(self, random_state: int) -> None:
         """changes the random seed
 
-        Args:
-            random_state (int): a seed to the random number generator
+        Parameters
+        ----------
+        random_state (int): a seed to the random number generator
         """
         self.random_state = random_state
         np.random.seed = self.random_state
@@ -984,11 +989,12 @@ class CalibratedExplainer:
         see the documentation for the difficulty estimator or refer to the crepes package 
         for further information.
 
-        Args:
-            difficulty_estimator (crepes.extras.DifficultyEstimator or None): 
-                A DifficultyEstimator object from the crepes package. To remove the difficulty estimator, set to None.
-            initialize (bool, optional): 
-                If true, then the interval learner is initialized once done. Defaults to True.
+        Parameters
+        ----------
+        difficulty_estimator : :class:`crepes.extras.DifficultyEstimator` or None): 
+            A :class:`crepes.extras.DifficultyEstimator` object from the crepes package. To remove the difficulty estimator, set to None.
+        initialize (bool, optional): 
+            If true, then the interval learner is initialized once done. Defaults to True.
         """
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
@@ -1075,7 +1081,7 @@ class CalibratedExplainer:
 
     def initialize_reject_learner(self, calibration_set=None, threshold=None):
         '''
-        Initializes the reject learner for the explainer. The reject learner is a ConformalClassifier
+        Initializes the reject learner for the explainer. The reject learner is a :class:`crepes.base.ConformalClassifier`
         that is trained on the calibration data. The reject learner is used to determine whether a test
         instance is within the calibration data distribution. The reject learner is only available for
         classification, unless a threshold is assigned.
@@ -1165,10 +1171,12 @@ class CalibratedExplainer:
         """
         Applies the discretizer to a set of test instances x.
 
-        Args:
+        Parameters
+        ----------
             x (n_instances, n_features): the test instances to discretize
 
-        Returns:
+        Returns
+        -------
             (n_instances, n_features): perturbed test instances
         """
         x = np.array(x)  # Ensure x is a numpy array
@@ -1184,7 +1192,8 @@ class CalibratedExplainer:
         The discretizer can be either 'entropy' or 'binaryEntropy' for classification and 'regressor' or 'binaryRegressor' for regression. 
         Once the discretizer is assigned, the calibration data is discretized.
 
-        Args:
+        Parameters
+        ----------
             discretizer (str): _description_
             X_cal ((n_calibration_samples,n_features), optional): calibration inputs. Defaults to None.
             y_cal ((n_calibrations_samples), optional): calibration targets. Defaults to None.
@@ -1331,7 +1340,7 @@ class CalibratedExplainer:
 
 
 
-    def predict_proba(self, X_test, uq_interval=False, threshold=None):
+    def predict_proba(self, X_test, uq_interval=False, threshold=None, **kwargs):
         """
         A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
         prediction is not calibrated either.
@@ -1385,25 +1394,25 @@ class CalibratedExplainer:
         """
         if self.mode in 'regression':
             if isinstance(self.interval_learner, list):
-                proba_1, low, high, _ = self.interval_learner[-1].predict_probability(X_test, y_threshold=threshold)
+                proba_1, low, high, _ = self.interval_learner[-1].predict_probability(X_test, y_threshold=threshold, **kwargs)
             else:
-                proba_1, low, high, _ = self.interval_learner.predict_probability(X_test, y_threshold=threshold)
+                proba_1, low, high, _ = self.interval_learner.predict_probability(X_test, y_threshold=threshold, **kwargs)
             proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
             if uq_interval:
                 return proba, (low, high)
             return proba
         if self.is_multiclass(): # pylint: disable=protected-access
             if isinstance(self.interval_learner, list):
-                proba, low, high, _ = self.interval_learner[-1].predict_proba(X_test, output_interval=True)
+                proba, low, high, _ = self.interval_learner[-1].predict_proba(X_test, output_interval=True, **kwargs)
             else:
-                proba, low, high, _ = self.interval_learner.predict_proba(X_test, output_interval=True)
+                proba, low, high, _ = self.interval_learner.predict_proba(X_test, output_interval=True, **kwargs)
             if uq_interval:
                 return proba, (low, high)
             return proba
         if isinstance(self.interval_learner, list):
-            proba, low, high = self.interval_learner[-1].predict_proba(X_test, output_interval=True)
+            proba, low, high = self.interval_learner[-1].predict_proba(X_test, output_interval=True, **kwargs)
         else:
-            proba, low, high = self.interval_learner.predict_proba(X_test, output_interval=True)
+            proba, low, high = self.interval_learner.predict_proba(X_test, output_interval=True, **kwargs)
         if uq_interval:
             return proba, (low, high)
         return proba
@@ -1635,8 +1644,8 @@ class WrapCalibratedExplainer():
     using Venn-Abers predictors (classification & regression) or 
     conformal predictive systems (regression).
 
-    WrapCalibratedExplainer is a wrapper class for the CalibratedExplainer. It allows to fit, calibrate, and explain the learner.
-    Compared to the CalibratedExplainer, it allow access to the predict and predict_proba methods of
+    :class:`.WrapCalibratedExplainer` is a wrapper class for the :class:`.CalibratedExplainer`. It allows to fit, calibrate, and explain the learner.
+    Compared to the :class:`.CalibratedExplainer`, it allow access to the predict and predict_proba methods of
     the calibrated explainer, making it easy to get the same output as shown in the explanations.
     """
     def __init__(self, learner):
@@ -1654,6 +1663,7 @@ class WrapCalibratedExplainer():
         self.learner = learner
         self.explainer = None
         self.calibrated = False
+        self.mc = None
 
         # Check if the learner is already fitted
         try:
@@ -1682,7 +1692,7 @@ class WrapCalibratedExplainer():
         
         Returns
         -------
-        WrapCalibratedExplainer : The WrapCalibratedExplainer object with the fitted learner.
+        :class:`.WrapCalibratedExplainer` : The :class:`.WrapCalibratedExplainer` object with the fitted learner.
         '''
         reinitialize = bool(self.calibrated)
         self.fitted = False
@@ -1697,7 +1707,7 @@ class WrapCalibratedExplainer():
 
         return self
 
-    def calibrate(self, X_calibration, y_calibration, **kwargs):
+    def calibrate(self, X_calibration, y_calibration, mc=None, **kwargs):
         '''
         Calibrates the learner to the calibration data.
         
@@ -1705,7 +1715,10 @@ class WrapCalibratedExplainer():
         ----------
         X_calibration : A set of calibration objects to predict
         y_calibration : The true labels of the calibration objects
-        **kwargs : Keyword arguments to be passed to the CalibratedExplainer's __init__ method
+        mc : function or :class:`crepes.extras.MondrianCategorizer`, default=None
+            function or :class:`crepes.extras.MondrianCategorizer` for computing Mondrian 
+            categories
+        **kwargs : Keyword arguments to be passed to the :class:`.CalibratedExplainer`'s __init__ method
         
         Raises
         ------
@@ -1713,21 +1726,33 @@ class WrapCalibratedExplainer():
         
         Returns
         -------
-        WrapCalibratedExplainer : The WrapCalibratedExplainer object with the calibrated explainer.
+        :class:`.WrapCalibratedExplainer` : The :class:`.WrapCalibratedExplainer` object with the calibrated explainer.
         
         Examples
         --------
         Calibrate the learner to the calibration data:
         >>> calibrate(X_calibration, y_calibration)
         
-        Provide additional keyword arguments to the CalibratedExplainer:
+        Provide additional keyword arguments to the :class:`.CalibratedExplainer`:
         >>> calibrate(X_calibration, y_calibration, feature_names=feature_names, categorical_features=categorical_features)
         
         Note: if mode is not explicitly set, it is automatically determined based on the the absence or presence of a predict_proba method in the learner.
         '''
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before calibration.")
-        self.calibrated = False
+        self.calibrated = False        
+        if isinstance(mc, MondrianCategorizer):
+            self.mc = mc
+            bins = mc.apply(X_calibration)
+        elif mc is not None:
+            self.mc = mc
+            bins = mc(X_calibration)
+        elif 'bins' in kwargs:
+            bins = kwargs['bins']
+        else:
+            bins = None
+        kwargs['bins'] = bins
+
         if 'mode' in kwargs:
             self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, **kwargs)
         elif 'predict_proba' in dir(self.learner):
@@ -1739,7 +1764,7 @@ class WrapCalibratedExplainer():
 
     def explain_factual(self, X_test, **kwargs):
         """
-        Generates a CalibratedExplanations object for the provided test data, automatically selecting an appropriate discretizer for factual explanations.
+        Generates a :class:`.CalibratedExplanations` object for the provided test data, automatically selecting an appropriate discretizer for factual explanations.
 
         Parameters
         ----------
@@ -1768,7 +1793,7 @@ class WrapCalibratedExplainer():
 
         Returns
         -------
-        CalibratedExplanations
+        :class:`.CalibratedExplanations`
             An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
 
         Examples
@@ -1789,11 +1814,20 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+        if isinstance(self.mc, MondrianCategorizer):
+            bins = self.mc.apply(X_test)
+        elif self.mc is not None:
+            bins = self.mc(X_test)
+        elif 'bins' in kwargs:
+            bins = kwargs['bins']
+        else:
+            bins = None
+        kwargs['bins'] = bins
         return self.explainer.explain_factual(X_test, **kwargs)
 
     def explain_counterfactual(self, X_test, **kwargs):
         """
-        Generates a CalibratedExplanations object for the provided test data, automatically selecting an appropriate discretizer for counterfactual explanations.
+        Generates a :class:`.CalibratedExplanations` object for the provided test data, automatically selecting an appropriate discretizer for counterfactual explanations.
 
         Parameters
         ----------
@@ -1822,7 +1856,7 @@ class WrapCalibratedExplainer():
 
         Returns
         -------
-        CalibratedExplanations
+        :class:`.CalibratedExplanations`
             An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
 
         Examples
@@ -1843,11 +1877,20 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+        if isinstance(self.mc, MondrianCategorizer):
+            bins = self.mc.apply(X_test)
+        elif self.mc is not None:
+            bins = self.mc(X_test)
+        elif 'bins' in kwargs:
+            bins = kwargs['bins']
+        else:
+            bins = None
+        kwargs['bins'] = bins
         return self.explainer.explain_counterfactual(X_test, **kwargs)
 
     def explain_perturbed(self, X_test, **kwargs):
         """
-        Generates a CalibratedExplanations object for the provided test data, provided that the CalibratedExplainer has been perturbed (using the parameter perturb=True).
+        Generates a :class:`.CalibratedExplanations` object for the provided test data, provided that the :class:`.CalibratedExplainer` has been perturbed (using the parameter perturb=True).
 
         Parameters
         ----------
@@ -1876,7 +1919,7 @@ class WrapCalibratedExplainer():
 
         Returns
         -------
-        CalibratedExplanations
+        :class:`.CalibratedExplanations`
             An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
 
         Examples
@@ -1897,6 +1940,15 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+        if isinstance(self.mc, MondrianCategorizer):
+            bins = self.mc.apply(X_test)
+        elif self.mc is not None:
+            bins = self.mc(X_test)
+        elif 'bins' in kwargs:
+            bins = kwargs['bins']
+        else:
+            bins = None
+        kwargs['bins'] = bins
         return self.explainer.explain_perturbed(X_test, **kwargs)
 
 
@@ -1963,9 +2015,18 @@ class WrapCalibratedExplainer():
                 predict = self.learner.predict(X_test)
                 return predict, (predict, predict)
             return self.learner.predict(X_test)
+        if isinstance(self.mc, MondrianCategorizer):
+            bins = self.mc.apply(X_test)
+        elif self.mc is not None:
+            bins = self.mc(X_test)
+        elif 'bins' in kwargs:
+            bins = kwargs['bins']
+        else:
+            bins = None
+        kwargs['bins'] = bins
         return self.explainer.predict(X_test, uq_interval=uq_interval, **kwargs)
 
-    def predict_proba(self, X_test, uq_interval=False, threshold=None):
+    def predict_proba(self, X_test, uq_interval=False, threshold=None, **kwargs):
         """
         A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
         prediction is not calibrated either.
@@ -2032,16 +2093,26 @@ class WrapCalibratedExplainer():
                     return proba, (proba, proba)
                 return proba, (proba[:,1], proba[:,1])
             return self.learner.predict_proba(X_test)
-        return self.explainer.predict_proba(X_test, uq_interval=uq_interval, threshold=threshold)
+        if isinstance(self.mc, MondrianCategorizer):
+            bins = self.mc.apply(X_test)
+        elif self.mc is not None:
+            bins = self.mc(X_test)
+        elif 'bins' in kwargs:
+            bins = kwargs['bins']
+        else:
+            bins = None
+        kwargs['bins'] = bins
+        return self.explainer.predict_proba(X_test, uq_interval=uq_interval, threshold=threshold, **kwargs)
 
     def set_difficulty_estimator(self, difficulty_estimator) -> None:
         """assigns a difficulty estimator for regression. For further information, 
         see the documentation for the difficulty estimator or refer to the crepes package 
         for further information.
 
-        Args:
-            difficulty_estimator (crepes.extras.DifficultyEstimator or None): 
-                A DifficultyEstimator object from the crepes package. To remove the difficulty estimator, set to None.
+        Parameters
+        ----------
+        difficulty_estimator : :class:`crepes.extras.DifficultyEstimator or None: 
+            A crepes.extras.DifficultyEstimator` object from the crepes package. To remove the difficulty estimator, set to None.
         """
         self.explainer.set_difficulty_estimator(difficulty_estimator)
 
