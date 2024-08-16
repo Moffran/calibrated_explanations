@@ -1728,7 +1728,7 @@ class WrapCalibratedExplainer():
         Returns
         -------
         :class:`.WrapCalibratedExplainer` 
-            The :class:`.WrapCalibratedExplainer` object with the calibrated explainer.
+            The :class:`.WrapCalibratedExplainer` object with `explainer` initialized as a :class:`.CalibratedExplainer`.
         
         Examples
         --------
