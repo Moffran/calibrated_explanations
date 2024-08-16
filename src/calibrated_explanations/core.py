@@ -1523,9 +1523,9 @@ class CalibratedExplainer:
                 predict, (low, high) = self.predict(X_test, uq_interval=True, **kwargs)
                 is_regularized = False
             else:
-                proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold)
+                proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold, **kwargs)
         else:
-            proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold)
+            proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold, **kwargs)
         uncertainty = np.array(high - low)
 
         marker_size = 50
@@ -1747,10 +1747,8 @@ class WrapCalibratedExplainer():
         elif mc is not None:
             self.mc = mc
             bins = mc(X_calibration)
-        elif 'bins' in kwargs:
-            bins = kwargs['bins']
         else:
-            bins = None
+            bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
 
         if 'mode' in kwargs:
@@ -1818,10 +1816,8 @@ class WrapCalibratedExplainer():
             bins = self.mc.apply(X_test)
         elif self.mc is not None:
             bins = self.mc(X_test)
-        elif 'bins' in kwargs:
-            bins = kwargs['bins']
         else:
-            bins = None
+            bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
         return self.explainer.explain_factual(X_test, **kwargs)
 
@@ -1881,10 +1877,8 @@ class WrapCalibratedExplainer():
             bins = self.mc.apply(X_test)
         elif self.mc is not None:
             bins = self.mc(X_test)
-        elif 'bins' in kwargs:
-            bins = kwargs['bins']
         else:
-            bins = None
+            bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
         return self.explainer.explain_counterfactual(X_test, **kwargs)
 
@@ -1944,10 +1938,8 @@ class WrapCalibratedExplainer():
             bins = self.mc.apply(X_test)
         elif self.mc is not None:
             bins = self.mc(X_test)
-        elif 'bins' in kwargs:
-            bins = kwargs['bins']
         else:
-            bins = None
+            bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
         return self.explainer.explain_perturbed(X_test, **kwargs)
 
@@ -2019,10 +2011,8 @@ class WrapCalibratedExplainer():
             bins = self.mc.apply(X_test)
         elif self.mc is not None:
             bins = self.mc(X_test)
-        elif 'bins' in kwargs:
-            bins = kwargs['bins']
         else:
-            bins = None
+            bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
         return self.explainer.predict(X_test, uq_interval=uq_interval, **kwargs)
 
@@ -2097,10 +2087,8 @@ class WrapCalibratedExplainer():
             bins = self.mc.apply(X_test)
         elif self.mc is not None:
             bins = self.mc(X_test)
-        elif 'bins' in kwargs:
-            bins = kwargs['bins']
         else:
-            bins = None
+            bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
         return self.explainer.predict_proba(X_test, uq_interval=uq_interval, threshold=threshold, **kwargs)
 
@@ -2166,4 +2154,11 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before plotting.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before plotting.")
+        if isinstance(self.mc, MondrianCategorizer):
+            bins = self.mc.apply(X_test)
+        elif self.mc is not None:
+            bins = self.mc(X_test)
+        else:
+            bins = kwargs.get('bins', None)
+        kwargs['bins'] = bins
         self.explainer.plot_global(X_test, y_test=y_test, threshold=threshold, **kwargs)
