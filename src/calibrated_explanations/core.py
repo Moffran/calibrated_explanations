@@ -1692,7 +1692,8 @@ class WrapCalibratedExplainer():
         
         Returns
         -------
-        :class:`.WrapCalibratedExplainer` : The :class:`.WrapCalibratedExplainer` object with the fitted learner.
+        :class:`.WrapCalibratedExplainer`
+            The :class:`.WrapCalibratedExplainer` object with the fitted learner.
         '''
         reinitialize = bool(self.calibrated)
         self.fitted = False
@@ -1726,7 +1727,8 @@ class WrapCalibratedExplainer():
         
         Returns
         -------
-        :class:`.WrapCalibratedExplainer` : The :class:`.WrapCalibratedExplainer` object with the calibrated explainer.
+        :class:`.WrapCalibratedExplainer` 
+            The :class:`.WrapCalibratedExplainer` object with the calibrated explainer.
         
         Examples
         --------
@@ -2053,9 +2055,10 @@ class WrapCalibratedExplainer():
             
         Returns
         -------
-        calibrated probability : 
+        calibrated probability : array-like of shape (n_samples, n_classes) 
             The calibrated probability of the positive class (or the predicted class for multiclass).
-        (low, high) : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
+        (low, high) : array-like of tuple of floats
+            The lower and upper bound of the prediction interval.
         
         Examples
         --------
