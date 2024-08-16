@@ -1731,14 +1731,17 @@ class WrapCalibratedExplainer():
         Examples
         --------
         Calibrate the learner to the calibration data:
+        
         .. code-block:: python
 
-           calibrate(X_calibration, y_calibration)
+            w.calibrate(X_calibration, y_calibration)
         
         Provide additional keyword arguments to the :class:`.CalibratedExplainer`:
+        
         .. code-block:: python
 
-           calibrate(X_calibration, y_calibration, feature_names=feature_names, categorical_features=categorical_features)
+            w.calibrate(X_calibration, y_calibration, feature_names=feature_names, 
+                        categorical_features=categorical_features)
         
         Note: if mode is not explicitly set, it is automatically determined based on the the absence or presence of a predict_proba method in the learner.
         '''
