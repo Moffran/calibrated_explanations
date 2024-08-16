@@ -573,7 +573,7 @@ This research is funded by the Swedish Knowledge Foundation together with indust
 
 [Rudy Matela](https://github.com/rudymatela) has been our git guru and has helped us with the release process.
 
-We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` classes from [Henrik Boström](https://github.com/henrikbostrom)s [crepes](https://github.com/henrikbostrom/crepes) package to provide support for regression.
+We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` classes from [Henrik Boström](https://github.com/henrikbostrom)s [crepes](https://github.com/henrikbostrom/crepes) package to provide support for regression. The `MondrianCategorizer` class is also supported as an alternative to using the `bins` parameter to create conditional explanations.
 
 We have used the `VennAbers` class from [Ivan Petej](https://github.com/ip200)s [venn-abers](https://github.com/ip200/venn-abers) package to provide support for probabilistic explanations (both classification and probabilistic regression). 
 
