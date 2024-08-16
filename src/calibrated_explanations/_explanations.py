@@ -43,23 +43,33 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         return len(self.X_test[:,0])
 
     def __getitem__(self, key):
+        '''
+        The function `__getitem__` returns the explanation(s) corresponding to the index key. In case the 
+        index key is an integer (or results in a single result), the function returns the explanation 
+        corresponding to the index. If the key is a slice or an integer or boolean list (or numpy array) 
+        resulting in more than one explanation, the function returns a new `CalibratedExplanations` 
+        object with the indexed explanations.
+        '''
         if isinstance(key, int):
             # Handle single item access
             return self.explanations[key]
-        if isinstance(key, slice):
-            # Handle slicing
-            return self.explanations[key]
-        if isinstance(key, (list, np.ndarray)):
+        if isinstance(key, (slice, list, np.ndarray)):
             new_ = deepcopy(self)
-            if isinstance(key[0], (bool, np.bool_)):
-                # Handle boolean indexing
-                new_.explanations = [exp for exp, include in zip(self.explanations, key) if include]
-            elif isinstance(key[0], int):
-                # Handle integer list indexing
-                new_.explanations = [self.explanations[i] for i in key]
+            if isinstance(key, slice):
+                # Handle slicing
+                new_.explanations = self.explanations[key]
+            if isinstance(key, (list, np.ndarray)):
+                if isinstance(key[0], (bool, np.bool_)):
+                    # Handle boolean indexing
+                    new_.explanations = [exp for exp, include in zip(self.explanations, key) if include]
+                elif isinstance(key[0], int):
+                    # Handle integer list indexing
+                    new_.explanations = [self.explanations[i] for i in key]
+            if len(new_.explanations) == 1:
+                return new_.explanations[0]
             new_.start_index = 0
             new_.current_index = new_.start_index
-            new_.end_index = len(key)
+            new_.end_index = len(new_.explanations)
             new_.bins = None if self.bins is None else [self.bins[e.index] for e in new_]
             new_.X_test = np.array([self.X_test[e.index,:] for e in new_])
             new_.y_threshold = None if self.y_threshold is None else self.y_threshold \
