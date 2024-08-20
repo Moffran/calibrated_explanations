@@ -291,7 +291,7 @@ factual_explanations = classifier.explain_factual(X_test)
 display(classifier)
 ```
 
-Once we have the explanations, we can plot all of them using `plot`. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. To plot only a single instance, the `plot` function can be called, submitting the index of the test instance to plot.
+Once we have the explanations, we can plot all of them using the `plot` function. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. To plot only a single instance, the `plot` function can be called, submitting the index of the test instance to plot.
 
 
 ```python
@@ -319,7 +319,7 @@ counterfactual_explanations = classifier.explain_counterfactual(X_test)
 display(classifier)
 ```
 
-Counterfactuals are also visualized using the `plot`. Plotting an individual counterfactual explanation is done using `plot`, submitting the index to plot. Adding or removing conjunctions is done as before. 
+Counterfactuals are also visualized using the `plot` function. Plotting an individual counterfactual explanation is done using `plot`, submitting the index to plot. Adding or removing conjunctions is done as before. 
 
 
 ```python
@@ -339,9 +339,6 @@ dataset = fetch_openml(name="house_sales", version=3)
 
 X = dataset.data.values.astype(float)
 y = dataset.target.values/1000
-y_filter = y < 400
-X = X[y_filter,:]
-y = y[y_filter]
 
 feature_names = dataset.feature_names
 
@@ -410,6 +407,7 @@ You can also get the probability of the prediction being below a certain thresho
 ```python
 prediction = regressor.predict(X_test, threshold=200)
 print(f'Calibrated probabilistic prediction: {prediction}')
+
 proba, (low, high) = regressor.predict_proba(X_test, uq_interval=True, threshold=200)
 print(f'Calibrated probabilistic probability estimate [y_hat > threshold, y_hat <= threshold]: \n{proba}')
 print(f'Calibrated probabilistic uncertainty interval for y_hat <= threshold: [{[(low[i], high[i]) for i in range(len(low))]}]')
