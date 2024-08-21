@@ -217,10 +217,13 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
     target_labels = None
     for c, col in enumerate(df.columns):
         if is_categorical_dtype(df[col]) or df[col].dtype in (object, str):
-            df[col] = df[col].fillna('nan')
             df[col] = df[col].astype(str)
             df[col] = df[col].str.replace("'", "")
             df[col] = df[col].str.replace('"', '')
+            if is_categorical_dtype(df[col]) and 'nan' not in df[col].cat.categories:
+                df[col] = df[col].cat.add_categories(['nan'])
+            df[col] = df[col].fillna('nan')
+            df[col] = df[col].astype('category')
             uniques = []
             for v in df[col]:
                 # if v is None or v is np.nan:
