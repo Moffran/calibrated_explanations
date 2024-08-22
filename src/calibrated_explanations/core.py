@@ -511,7 +511,7 @@ class CalibratedExplainer:
                     perturbed_feature = np.concatenate((perturbed_feature, [(f, i, value, None) for i in range(X_test.shape[0])]))
                     perturbed_bins = np.concatenate((perturbed_bins, bins)) if bins is not None else None
                     perturbed_class = np.concatenate((perturbed_class, prediction['predict']))
-                    perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
+                    perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, list(range(X_test.shape[0])))
             else:
                 X_copy = copy.deepcopy(X_test)
                 feature_values = np.unique(np.array(X_cal[:,f]))
@@ -832,7 +832,7 @@ class CalibratedExplainer:
         is_probabilistic = True # classification or when threshold is used for regression
         if threshold is not None:
             if not 'regression' in self.mode:
-                raise Warning("The threshold parameter is only supported for mode='regression'.")            
+                raise Warning("The threshold parameter is only supported for mode='regression'.")
             assert_threshold(threshold, X_test)
             # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
@@ -1778,7 +1778,7 @@ class WrapCalibratedExplainer():
         '''
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before calibration.")
-        self.calibrated = False        
+        self.calibrated = False
         if isinstance(mc, MondrianCategorizer):
             self.mc = mc
             bins = mc.apply(X_calibration)
