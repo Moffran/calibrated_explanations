@@ -27,7 +27,7 @@ from .VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                 RegressorDiscretizer, BinaryRegressorDiscretizer
-from .utils.helper import safe_isinstance, safe_import, check_is_fitted
+from .utils.helper import safe_isinstance, safe_import, check_is_fitted, assert_threshold
 from .utils.perturbation import perturb_dataset
 
 __version__ = 'v0.4.0'
@@ -317,9 +317,7 @@ class CalibratedExplainer:
                 return self.interval_learner.predict_uncertainty(X_test, low_high_percentiles, bins=bins)
 
             # regression with threshold condition
-            if not np.isscalar(threshold) and len(threshold) != len(X_test):
-                raise ValueError("The length of the threshold parameter must be either a scalar or \
-                    the same as the number of instances in X_test.")
+            assert_threshold(threshold, X_test)
             if self.is_perturbed():
                 return self.interval_learner[feature].predict_probability(X_test, threshold, bins=bins)
             # pylint: disable=unexpected-keyword-arg
@@ -434,8 +432,8 @@ class CalibratedExplainer:
         if len(X_test.shape) == 1:
             X_test = X_test.reshape(1, -1)
         if X_test.shape[1] != self.X_cal.shape[1]:
-            raise ValueError("The number of features in the test data must be the same as in the \
-                            calibration data.")
+            raise ValueError("The number of features in the test data must be the same as in the "\
+                            +"calibration data.")
         if self._is_mondrian():
             assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
             assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
@@ -445,9 +443,9 @@ class CalibratedExplainer:
         if threshold is not None:
             if not 'regression' in self.mode:
                 raise Warning("The threshold parameter is only supported for mode='regression'.")
-            if not np.isscalar(threshold) and len(threshold) != len(X_test):
-                raise ValueError("The length of the threshold parameter must be either a constant or the same \
-                                as the number of instances in X_test.")
+            if isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
+                warnings.warn("Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.")
+            assert_threshold(threshold, X_test)
             # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
@@ -469,7 +467,17 @@ class CalibratedExplainer:
             prediction['classes'] = np.ones(predict.shape)
 
         # Step 1: Predict the test set to get the predictions and intervals
-        perturbed_threshold = np.empty((0,)) if threshold is not None and not np.isscalar(threshold) else threshold if threshold is not None else None
+        assert_threshold(threshold, X_test)
+        if threshold is not None:
+            if isinstance(threshold, (list, np.ndarray)):
+                if isinstance(threshold[0], tuple):
+                    perturbed_threshold = np.empty((0,), dtype=tuple)
+                else:
+                    perturbed_threshold = np.empty((0,))
+            else:
+                perturbed_threshold = threshold
+        else:
+            perturbed_threshold = None
         perturbed_bins = np.empty((0,)) if bins is not None else None
         perturbed_X = np.empty((0, self.num_features))
         perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
@@ -477,10 +485,22 @@ class CalibratedExplainer:
         X_perturbed = self._discretize(copy.deepcopy(X_test))
         rule_boundaries = self.rule_boundaries(X_test, X_perturbed)
 
+        def concatenate_thresholds(perturbed_threshold, threshold, indices):
+            if threshold is not None:
+                if isinstance(threshold, (list, np.ndarray)):
+                    if isinstance(threshold[0], tuple):
+                        if len(perturbed_threshold) == 0:
+                            perturbed_threshold = [threshold[i] for i in indices]
+                        else:
+                            perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i] for i in indices]))
+                    else:
+                        perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indices]))
+            return perturbed_threshold
         # Step 2: prepare the perturbed test instances
         lesser_values = {}
         greater_values = {}
         covered_values = {}
+        # pylint: disable=too-many-nested-blocks
         for f in range(self.num_features):
             if f in self.categorical_features:
                 feature_values = self.feature_values[f]
@@ -491,8 +511,7 @@ class CalibratedExplainer:
                     perturbed_feature = np.concatenate((perturbed_feature, [(f, i, value, None) for i in range(X_test.shape[0])]))
                     perturbed_bins = np.concatenate((perturbed_bins, bins)) if bins is not None else None
                     perturbed_class = np.concatenate((perturbed_class, prediction['predict']))
-                    if threshold is not None and not np.isscalar(threshold):
-                        perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
+                    perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
             else:
                 X_copy = copy.deepcopy(X_test)
                 feature_values = np.unique(np.array(X_cal[:,f]))
@@ -507,30 +526,28 @@ class CalibratedExplainer:
                 covered_values[f] = {}
                 for j, val in enumerate(np.unique(lesser)):
                     lesser_values[f][j] = (np.unique(self.__get_lesser_values(f, val)), val)
-                    indeces = np.where(lesser == val)[0]
+                    indices = np.where(lesser == val)[0]
                     for value in lesser_values[f][j][0]:
-                        X_local = copy.deepcopy(X_test[indeces,:])
+                        X_local = copy.deepcopy(X_test[indices,:])
                         X_local[:,f] = value
                         perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
-                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, True) for i in indeces]))
-                        perturbed_bins = np.concatenate((perturbed_bins, bins[indeces])) if bins is not None else None
-                        perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indeces]))
-                        if threshold is not None and not np.isscalar(threshold):
-                            perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indeces]))
+                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, True) for i in indices]))
+                        perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
+                        perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
+                        perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
                 for j, val in enumerate(np.unique(greater)):
                     greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
-                    indeces = np.where(greater == val)[0]
+                    indices = np.where(greater == val)[0]
                     for value in greater_values[f][j][0]:
-                        X_local = copy.deepcopy(X_test[indeces,:])
+                        X_local = copy.deepcopy(X_test[indices,:])
                         X_local[:,f] = value
                         perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
-                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, False) for i in indeces]))
-                        perturbed_bins = np.concatenate((perturbed_bins, bins[indeces])) if bins is not None else None
-                        perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indeces]))
-                        if threshold is not None and not np.isscalar(threshold):
-                            perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indeces]))
-                indeces = range(len(X_test))
-                for i in indeces:
+                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, False) for i in indices]))
+                        perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
+                        perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
+                        perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
+                indices = range(len(X_test))
+                for i in indices:
                     covered_values[f][i] = (self.__get_covered_values(f, lesser[i], greater[i]), (lesser[i], greater[i]))
                     for value in covered_values[f][i][0]:
                         X_local = copy.deepcopy(X_test[i])
@@ -539,9 +556,18 @@ class CalibratedExplainer:
                         perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
                         perturbed_bins = np.concatenate((perturbed_bins, [bins[i]])) if bins is not None else None
                         perturbed_class = np.concatenate((perturbed_class, [prediction['classes'][i]]))
-                        if threshold is not None and not np.isscalar(threshold):
-                            perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
+                        if threshold is not None:
+                            if isinstance(threshold, (list, np.ndarray)):
+                                if isinstance(threshold[0], tuple):
+                                    if len(perturbed_threshold) == 0:
+                                        perturbed_threshold = [threshold[i]]
+                                    else:
+                                        perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
+                                else:
+                                    perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
 
+        if threshold is not None and isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
+            perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
         predict, low, high, _ = self._predict(perturbed_X, threshold=perturbed_threshold, low_high_percentiles=low_high_percentiles, classes=perturbed_class, bins=perturbed_bins)
         # Predict and other arrays should be numpy arrays to allow boolean indexing
         predict = np.array(predict)
@@ -674,8 +700,8 @@ class CalibratedExplainer:
                         # print(perturbed_X[index], 'greater')
                         # print(i, f, average_predict[i], low_predict[i], high_predict[i], counts[i])
 
-                indeces = range(len(X_test))
-                for i in indeces:
+                indices = range(len(X_test))
+                for i in indices:
                     for j, (l,g) in enumerate(np.unique(list(zip(lesser, greater)), axis=0)):
                         index = [p_i for p_i in range(len(perturbed_feature)) if
                                     perturbed_feature[p_i,0] == f and
@@ -806,10 +832,8 @@ class CalibratedExplainer:
         is_probabilistic = True # classification or when threshold is used for regression
         if threshold is not None:
             if not 'regression' in self.mode:
-                raise Warning("The threshold parameter is only supported for mode='regression'.")
-            if not np.isscalar(threshold) and len(threshold) != len(X_test):
-                raise ValueError("The length of the threshold parameter must be either a constant or the same \
-                                as the number of instances in X_test.")
+                raise Warning("The threshold parameter is only supported for mode='regression'.")            
+            assert_threshold(threshold, X_test)
             # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
@@ -1320,11 +1344,16 @@ class CalibratedExplainer:
         if self.mode in 'regression':
             predict, low, high, _ = self._predict(X_test, **kwargs)
             if 'threshold' in kwargs:
+                def get_label(predict, threshold):
+                    if np.isscalar(threshold):
+                        return f'y_hat <= {threshold}' if predict >= 0.5 else f'y_hat > {threshold}'
+                    if isinstance(threshold, tuple):
+                        return f'{threshold[0]} < y_hat <= {threshold[1]}' if predict >= 0.5 else f'y_hat <= {threshold[0]} || y_hat > {threshold[1]}'
                 threshold = kwargs['threshold']
-                if np.isscalar(threshold):
-                    new_classes = [f'y_hat <= {threshold}' if predict[i] >= 0.5 else f'y_hat > {threshold}' for i in range(len(predict))]
+                if np.isscalar(threshold) or isinstance(threshold, tuple):
+                    new_classes = [get_label(predict[i], threshold) for i in range(len(predict))]
                 else:
-                    new_classes = [f'y_hat <= {threshold[i]}' if predict[i] >= 0.5 else f'y_hat > {threshold[i]}' for i in range(len(predict))]
+                    new_classes = [get_label(predict[i], threshold[i]) for i in range(len(predict))]
                 if uq_interval:
                     return new_classes, (low, high)
                 return new_classes

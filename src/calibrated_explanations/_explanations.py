@@ -79,6 +79,12 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             return new_
         raise TypeError("Invalid argument type.")
 
+    def __repr__(self) -> str:
+        explanations_str = "\n".join([str(e) for e in self.explanations])
+        return f"CalibratedExplanations({len(self)} explanations):\n{explanations_str}"
+
+    def __str__(self) -> str:
+        return self.__repr__()
 
     def _is_thresholded(self) -> bool:
         # """test if the explanation is thresholded
@@ -434,7 +440,7 @@ class CalibratedExplanation(ABC):
             self.feature_predict[key] = deepcopy(feature_predict[key][index])
         for key in prediction.keys():
             self.prediction[key] = deepcopy(prediction[key][index])
-        self.y_threshold=y_threshold if np.isscalar(y_threshold) else \
+        self.y_threshold=y_threshold if np.isscalar(y_threshold) or isinstance(y_threshold, tuple) else \
                             None if y_threshold is None else \
                             y_threshold[index]
 
@@ -1053,12 +1059,15 @@ class FactualExplanation(CalibratedExplanation):
         ax_positive.set_xticks([])
 
         if self._is_thresholded():
-            if np.isscalar(self.y_threshold):
+            if isinstance(self.y_threshold, (list, np.ndarray)):
+                ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
+                ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
+            elif np.isscalar(self.y_threshold):
                 ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})'])
                 ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})'])
             else:
-                ax_negative.set_yticklabels(labels=[f'P(y>{float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
-                ax_positive.set_yticklabels(labels=[f'P(y<={float(self.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
+                ax_negative.set_yticklabels(labels=[f'P(y<={float(self.y_threshold[0]) :.2f}||y>{float(self.y_threshold[1]) :.2f})'])
+                ax_positive.set_yticklabels(labels=[f'P({float(self.y_threshold[0]) :.2f}<y<={float(self.y_threshold[1]) :.2f})'])
         else:
             if self._get_explainer().class_labels is not None:
                 if self._get_explainer().is_multiclass(): # pylint: disable=protected-access
@@ -1941,6 +1950,10 @@ class CounterfactualExplanation(CalibratedExplanation):
             if np.isscalar(self.y_threshold):
                 ax_main.set_xlabel('Probability of target being below '+\
                                     f'{float(self.y_threshold) :.2f}')
+            elif isinstance(self.y_threshold, tuple):
+                ax_main.set_xlabel('Probability of target being between '+\
+                                    f'{float(self.y_threshold[0]) :.2f} and '+\
+                                    f'{float(self.y_threshold[1]) :.2f}')
             else:
                 ax_main.set_xlabel('Probability of target being below '+\
                                     f'{float(self.y_threshold) :.2f}')

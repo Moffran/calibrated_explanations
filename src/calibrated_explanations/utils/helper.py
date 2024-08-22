@@ -255,3 +255,31 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
     if len(categorical_features) > 0:
         return df, categorical_features , categorical_labels, target_labels, mappings
     return df, None, None, target_labels, mappings
+
+def assert_threshold(threshold, x):
+    '''
+    Test if the thresholds are valid
+    
+    Parameters
+    ----------
+    thresholds : list
+        The list of thresholds
+    
+    Returns
+    -------
+    list
+        The list of thresholds
+    '''
+    if threshold is None:
+        return threshold
+    if np.isscalar(threshold) and isinstance(threshold, (int, float)):
+        return threshold
+    if isinstance(threshold, tuple):
+        assert len(threshold) == 2, 'tuple thresholds must be a tuple with two values'
+        return threshold
+    if isinstance(threshold, (list, np.ndarray)):
+        assert len(threshold) == x.shape[0], \
+            'list thresholds must have the same length as the number of samples'
+        return [assert_threshold(t, [x[i]]) for i,t in enumerate(threshold)]
+    raise ValueError(
+        'thresholds must be a scalar, binary tuple or list of scalars or binary tuples')

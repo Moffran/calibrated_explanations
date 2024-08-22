@@ -72,26 +72,53 @@ class IntervalRegressor:
             four values: proba (y <= y_threshold), lower bound, upper bound, and None.
         
         '''
+        if bins is not None:
+            assert self.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
         self.y_threshold = y_threshold
         if np.isscalar(self.y_threshold):
             self.current_y_threshold = self.y_threshold
-            if bins is not None:
-                assert self.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
             self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.split['va'].predict_proba(X_test, output_interval=True, bins=bins)
             return proba[:, 1], low, high, None
 
+        if isinstance(self.y_threshold, tuple):
+            h_threshold = np.max(self.y_threshold)
+            self.current_y_threshold = h_threshold
+            self.compute_proba_cal(h_threshold)
+            _, low_h, high_h = self.split['va'].predict_proba(X_test, output_interval=True, bins=bins)
+            l_threshold = np.min(self.y_threshold)
+            self.current_y_threshold = l_threshold
+            self.compute_proba_cal(l_threshold)
+            _, low_l, high_l = self.split['va'].predict_proba(X_test, output_interval=True, bins=bins)
+            low_ = low_h-low_l
+            high_ = high_h-high_l
+            low = np.min(np.array([low_, high_]), axis=0)
+            high = np.max(np.array([low_, high_]), axis=0)
+            proba = high / (1-low + high)
+            assert np.all([low[i] <= proba[i] <= high[i] for i in range(len(low))]), 'Lower bound must be less than or equal to upper bound, with proba in the middle.'
+            return proba, low, high, None
+
+        bins = bins if bins is not None else [None]*X_test.shape[0]
         interval = np.zeros((X_test.shape[0],2))
         proba = np.zeros(X_test.shape[0])
         for i, _ in enumerate(proba):
-            self.current_y_threshold = self.y_threshold[i]
-            self.compute_proba_cal(self.y_threshold[i])
-            if bins is not None:
-                p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]])
+            if isinstance(self.y_threshold[i], tuple):
+                h_threshold = np.max(self.y_threshold[i])
+                self.current_y_threshold = h_threshold
+                self.compute_proba_cal(h_threshold)
+                proba_h, low_h, high_h = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]])
+                l_threshold = np.min(self.y_threshold[i])
+                self.current_y_threshold = l_threshold
+                self.compute_proba_cal(l_threshold)
+                proba_l, low_l, high_l = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]])
+                proba[i] = proba_h[0,1]-proba_l[0,1]
+                interval[i, :] = np.array([low_h[0]-low_l[0], high_h[0]-high_l[0]])
             else:
-                p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True)
-            proba[i] = p[0,1]
-            interval[i, :] = np.array([low[0], high[0]])
+                self.current_y_threshold = self.y_threshold[i]
+                self.compute_proba_cal(self.y_threshold[i])
+                p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]])
+                proba[i] = p[0,1]
+                interval[i, :] = np.array([low[0], high[0]])
         return proba, interval[:, 0], interval[:, 1], None
 
     def predict_uncertainty(self, X_test, low_high_percentiles, bins=None):
