@@ -49,6 +49,7 @@ class IntervalRegressor:
         self.split = {}
         self.pre_fit_for_probabilistic()
 
+    # pylint: disable=too-many-locals
     def predict_probability(self, X_test, y_threshold, bins=None):
         '''The `predict_probability` function takes in a test dataset and a threshold value, and returns
         the predicted probabilities for each instance in the dataset being above the threshold(s), along 

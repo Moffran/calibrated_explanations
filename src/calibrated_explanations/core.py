@@ -1349,6 +1349,7 @@ class CalibratedExplainer:
                         return f'y_hat <= {threshold}' if predict >= 0.5 else f'y_hat > {threshold}'
                     if isinstance(threshold, tuple):
                         return f'{threshold[0]} < y_hat <= {threshold[1]}' if predict >= 0.5 else f'y_hat <= {threshold[0]} || y_hat > {threshold[1]}'
+                    return 'Error in CalibratedExplainer.predict.get_label()' # should not reach here
                 threshold = kwargs['threshold']
                 if np.isscalar(threshold) or isinstance(threshold, tuple):
                     new_classes = [get_label(predict[i], threshold) for i in range(len(predict))]
