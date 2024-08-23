@@ -33,19 +33,18 @@ class VennAbers:
                     va_bin = va.VennAbers()
                     va_bin.fit(cprobs[self.bins == b,:], self.ctargets[self.bins == b], precision=4)
                     self.va[b] = va_bin
+        elif self.is_multiclass():
+            self.va = {}
+            tmp_probs = np.zeros((cprobs.shape[0],2))
+            for c in np.unique(self.ctargets):
+                tmp_probs[:,0] = 1 - cprobs[:,c]
+                tmp_probs[:,1] = cprobs[:,c]
+                va_class = va.VennAbers()
+                va_class.fit(tmp_probs, np.multiply(c == self.ctargets, 1), precision=4)
+                self.va[c] = va_class
         else:
-            if self.is_multiclass():
-                self.va = {}
-                tmp_probs = np.zeros((cprobs.shape[0],2))
-                for c in np.unique(self.ctargets):
-                    tmp_probs[:,0] = 1 - cprobs[:,c]
-                    tmp_probs[:,1] = cprobs[:,c]
-                    va_class = va.VennAbers()
-                    va_class.fit(tmp_probs, np.multiply(c == self.ctargets, 1), precision=4)
-                    self.va[c] = va_class
-            else:
-                self.va = va.VennAbers()
-                self.va.fit(cprobs, self.ctargets, precision=4)
+            self.va = va.VennAbers()
+            self.va.fit(cprobs, self.ctargets, precision=4)
         warnings.filterwarnings("default", category=RuntimeWarning)
 
     def predict(self, X_test, bins=None):

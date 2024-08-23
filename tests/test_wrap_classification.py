@@ -105,9 +105,9 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         self.assertFalse(cal_exp.fitted)
         self.assertFalse(cal_exp.calibrated)
         with pytest.raises(RuntimeError):
-            cal_exp.plot_global(X_test) # pylint: disable=no-member
+            cal_exp.plot(X_test) # pylint: disable=no-member
         with pytest.raises(RuntimeError):
-            cal_exp.plot_global(X_test, y_test) # pylint: disable=no-member
+            cal_exp.plot(X_test, y_test) # pylint: disable=no-member
         print(cal_exp)
 
         cal_exp.fit(X_prop_train, y_prop_train)
@@ -163,11 +163,11 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         self.assertEqual(new_exp.learner, learner)
 
         try:
-            cal_exp.plot_global(X_test) # pylint: disable=no-member
+            cal_exp.plot(X_test) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"cal_exp.plot_global(X_test) raised unexpected exception: {e}")
         try:
-            cal_exp.plot_global(X_test, y_test) # pylint: disable=no-member
+            cal_exp.plot(X_test, y_test) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
 
@@ -179,9 +179,9 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         self.assertFalse(cal_exp.fitted)
         self.assertFalse(cal_exp.calibrated)
         with pytest.raises(RuntimeError):
-            cal_exp.plot_global(X_test) # pylint: disable=no-member
+            cal_exp.plot(X_test) # pylint: disable=no-member
         with pytest.raises(RuntimeError):
-            cal_exp.plot_global(X_test, y_test) # pylint: disable=no-member
+            cal_exp.plot(X_test, y_test) # pylint: disable=no-member
         print(cal_exp)
 
         cal_exp.fit(X_prop_train, y_prop_train)
@@ -236,11 +236,11 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         self.assertEqual(new_exp.learner, learner)
 
         try:
-            cal_exp.plot_global(X_test) # pylint: disable=no-member
+            cal_exp.plot(X_test) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"cal_exp.plot_global(X_test) raised unexpected exception: {e}")
         try:
-            cal_exp.plot_global(X_test, y_test) # pylint: disable=no-member
+            cal_exp.plot(X_test, y_test) # pylint: disable=no-member
         except Exception as e: # pylint: disable=broad-except
             pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
 

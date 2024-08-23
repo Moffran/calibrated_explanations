@@ -394,10 +394,7 @@ class CalibratedExplainer:
         :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
             intervals. 
         """
-        if 'regression' in self.mode:
-            discretizer = 'regressor'
-        else:
-            discretizer = 'entropy'
+        discretizer = 'regressor' if 'regression' in self.mode else 'entropy'
         self.set_discretizer(discretizer)
         return self.explain(X_test, threshold, low_high_percentiles, bins)
 
@@ -439,7 +436,6 @@ class CalibratedExplainer:
             assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
         explanation = CalibratedExplanations(self, X_test, threshold, bins)
 
-        is_probabilistic = True # classification or when threshold is used for regression
         if threshold is not None:
             if not 'regression' in self.mode:
                 raise Warning("The threshold parameter is only supported for mode='regression'.")
@@ -449,7 +445,6 @@ class CalibratedExplainer:
             # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
-            is_probabilistic = False
         X_cal = self.X_cal
 
         instance_time = time()
@@ -486,15 +481,14 @@ class CalibratedExplainer:
         rule_boundaries = self.rule_boundaries(X_test, X_perturbed)
 
         def concatenate_thresholds(perturbed_threshold, threshold, indices):
-            if threshold is not None:
-                if isinstance(threshold, (list, np.ndarray)):
-                    if isinstance(threshold[0], tuple):
-                        if len(perturbed_threshold) == 0:
-                            perturbed_threshold = [threshold[i] for i in indices]
-                        else:
-                            perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i] for i in indices]))
+            if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                if isinstance(threshold[0], tuple):
+                    if len(perturbed_threshold) == 0:
+                        perturbed_threshold = [threshold[i] for i in indices]
                     else:
-                        perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indices]))
+                        perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i] for i in indices]))
+                else:
+                    perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indices]))
             return perturbed_threshold
         # Step 2: prepare the perturbed test instances
         lesser_values = {}
@@ -518,8 +512,8 @@ class CalibratedExplainer:
                 lesser = rule_boundaries[:,f,0]
                 greater = rule_boundaries[:,f,1]
                 for i in range(len(X_test)):
-                    lesser[i] = -np.inf if not np.any(feature_values < lesser[i]) else lesser[i]
-                    greater[i] = np.inf if not np.any(feature_values > greater[i]) else greater[i]
+                    lesser[i] = lesser[i] if np.any(feature_values < lesser[i]) else -np.inf
+                    greater[i] = greater[i] if np.any(feature_values > greater[i]) else np.inf
 
                 lesser_values[f] = {}
                 greater_values[f] = {}
@@ -556,15 +550,14 @@ class CalibratedExplainer:
                         perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
                         perturbed_bins = np.concatenate((perturbed_bins, [bins[i]])) if bins is not None else None
                         perturbed_class = np.concatenate((perturbed_class, [prediction['classes'][i]]))
-                        if threshold is not None:
-                            if isinstance(threshold, (list, np.ndarray)):
-                                if isinstance(threshold[0], tuple):
-                                    if len(perturbed_threshold) == 0:
-                                        perturbed_threshold = [threshold[i]]
-                                    else:
-                                        perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
+                        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                            if isinstance(threshold[0], tuple):
+                                if len(perturbed_threshold) == 0:
+                                    perturbed_threshold = [threshold[i]]
                                 else:
                                     perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
+                            else:
+                                perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
 
         if threshold is not None and isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
             perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
@@ -637,9 +630,9 @@ class CalibratedExplainer:
                         instance_predict[i]['low'][f] = np.mean(low_predict[uncovered])
                         instance_predict[i]['high'][f] = np.mean(high_predict[uncovered])
 
-                        instance_weights[i]['predict'][f] = self._assign_weight(instance_predict[i]['predict'][f], prediction['predict'][i], is_probabilistic)
-                        tmp_low = self._assign_weight(instance_predict[i]['low'][f], prediction['predict'][i], is_probabilistic)
-                        tmp_high = self._assign_weight(instance_predict[i]['high'][f], prediction['predict'][i], is_probabilistic)
+                        instance_weights[i]['predict'][f] = self._assign_weight(instance_predict[i]['predict'][f], prediction['predict'][i])
+                        tmp_low = self._assign_weight(instance_predict[i]['low'][f], prediction['predict'][i])
+                        tmp_high = self._assign_weight(instance_predict[i]['high'][f], prediction['predict'][i])
                         instance_weights[i]['low'][f] = np.min([tmp_low, tmp_high])
                         instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
             else:
@@ -649,8 +642,8 @@ class CalibratedExplainer:
 
                 average_predict, low_predict, high_predict, counts, rule_value = {},{},{},{},{}
                 for i in range(len(X_test)):
-                    lesser[i] = -np.inf if not np.any(feature_values < lesser[i]) else lesser[i]
-                    greater[i] = np.inf if not np.any(feature_values > greater[i]) else greater[i]
+                    lesser[i] = lesser[i] if np.any(feature_values < lesser[i]) else -np.inf
+                    greater[i] = greater[i] if np.any(feature_values > greater[i]) else np.inf
                     num_bins = 1
                     num_bins += 1 if lesser[i] != -np.inf else 0
                     num_bins += 1 if greater[i] != np.inf else 0
@@ -751,9 +744,9 @@ class CalibratedExplainer:
                         instance_predict[i]['low'][f] = np.mean(low_predict[i][uncovered])
                         instance_predict[i]['high'][f] = np.mean(high_predict[i][uncovered])
 
-                        instance_weights[i]['predict'][f] = self._assign_weight(instance_predict[i]['predict'][f], prediction['predict'][i], is_probabilistic)
-                        tmp_low = self._assign_weight(instance_predict[i]['low'][f], prediction['predict'][i], is_probabilistic)
-                        tmp_high = self._assign_weight(instance_predict[i]['high'][f], prediction['predict'][i], is_probabilistic)
+                        instance_weights[i]['predict'][f] = self._assign_weight(instance_predict[i]['predict'][f], prediction['predict'][i])
+                        tmp_low = self._assign_weight(instance_predict[i]['low'][f], prediction['predict'][i])
+                        tmp_high = self._assign_weight(instance_predict[i]['high'][f], prediction['predict'][i])
                         instance_weights[i]['low'][f] = np.min([tmp_low, tmp_high])
                         instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
 
@@ -829,15 +822,13 @@ class CalibratedExplainer:
             assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
         explanation = CalibratedExplanations(self, X_test, threshold, bins)
 
-        is_probabilistic = True # classification or when threshold is used for regression
         if threshold is not None:
-            if not 'regression' in self.mode:
+            if 'regression' not in self.mode:
                 raise Warning("The threshold parameter is only supported for mode='regression'.")
             assert_threshold(threshold, X_test)
-            # explanation.low_high_percentiles = low_high_percentiles
+                # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
-            is_probabilistic = False
 
         feature_weights =  {'predict': [],'low': [],'high': [],}
         feature_predict =  {'predict': [],'low': [],'high': [],}
@@ -865,9 +856,9 @@ class CalibratedExplainer:
             predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins, feature=f)
 
             for i in range(len(X_test)):
-                instance_weights[i]['predict'][f] = self._assign_weight(predict[i], prediction['predict'][i], is_probabilistic)
-                tmp_low = self._assign_weight(low[i], prediction['predict'][i], is_probabilistic)
-                tmp_high = self._assign_weight(high[i], prediction['predict'][i], is_probabilistic)
+                instance_weights[i]['predict'][f] = self._assign_weight(predict[i], prediction['predict'][i])
+                tmp_low = self._assign_weight(low[i], prediction['predict'][i])
+                tmp_high = self._assign_weight(high[i], prediction['predict'][i])
                 instance_weights[i]['low'][f] = np.min([tmp_low, tmp_high])
                 instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
 
@@ -893,12 +884,9 @@ class CalibratedExplainer:
         return explanation
 
 
-    def _assign_weight(self, instance_predict, prediction, is_probabilistic):
-        if is_probabilistic:
-            return prediction - instance_predict if np.isscalar(prediction) \
+    def _assign_weight(self, instance_predict, prediction):
+        return prediction - instance_predict if np.isscalar(prediction) \
                 else [prediction[i]-ip for i,ip in enumerate(instance_predict)] # probabilistic regression
-        return prediction - instance_predict  if np.isscalar(prediction) \
-            else [prediction[i]-ip for i,ip in enumerate(instance_predict)] # standard regression
 
 
 
@@ -974,25 +962,23 @@ class CalibratedExplainer:
     def __get_greater_values(self, f: int, greater: float):
         if not np.any(self.X_cal[:,f] > greater):
             return np.array([])
-        greater_values = np.percentile(self.X_cal[self.X_cal[:,f] > greater,f],
+        return np.percentile(self.X_cal[self.X_cal[:,f] > greater,f],
                                        self.sample_percentiles)
-        return greater_values
+        
 
 
 
     def __get_lesser_values(self, f: int, lesser: float):
         if not np.any(self.X_cal[:,f] < lesser):
             return np.array([])
-        lesser_values = np.percentile(self.X_cal[self.X_cal[:,f] < lesser,f],
+        return np.percentile(self.X_cal[self.X_cal[:,f] < lesser,f],
                                       self.sample_percentiles)
-        return lesser_values
 
 
 
     def __get_covered_values(self, f: int, lesser: float, greater: float):
         covered = np.where((self.X_cal[:,f] >= lesser) & (self.X_cal[:,f] <= greater))[0]
-        covered_values = np.percentile(self.X_cal[covered,f], self.sample_percentiles)
-        return covered_values
+        return np.percentile(self.X_cal[covered,f], self.sample_percentiles)
 
 
 
@@ -1075,33 +1061,36 @@ class CalibratedExplainer:
 
     def __initialize_interval_learner(self) -> None:
         if self.is_perturbed():
-            self.interval_learner = []
-            X_cal, y_cal, bins = self.X_cal, self.y_cal, self.bins
-            self.perturbed_X_cal, self.scaled_X_cal, self.scaled_y_cal, scale_factor = \
-                perturb_dataset(self.X_cal, self.y_cal, self.categorical_features, noise_type='uniform', scale_factor=5, severity=1)
-            self.bins = np.tile(self.bins.copy(), scale_factor) if self.bins is not None else None
-            for f in range(self.num_features):
-                perturbed_X_cal = self.scaled_X_cal.copy()
-                perturbed_X_cal[:,f] = self.perturbed_X_cal[:,f]
-                if self.mode == 'classification':
-                    self.interval_learner.append(VennAbers(self.learner.predict_proba(perturbed_X_cal), self.scaled_y_cal, self.learner, self.bins))
-                elif 'regression' in self.mode:
-                    self.X_cal = perturbed_X_cal
-                    self.y_cal = self.scaled_y_cal
-                    self.interval_learner.append(IntervalRegressor(self))
-
-            self.X_cal, self.y_cal, self.bins = X_cal, y_cal, bins
-            if self.mode == 'classification':
-                self.interval_learner.append(VennAbers(self.learner.predict_proba(self.X_cal), self.y_cal, self.learner, self.bins))
-            elif 'regression' in self.mode:
-                # Add a reference learner using the original calibration data last
-                self.interval_learner.append(IntervalRegressor(self))
-        else:
-            if self.mode == 'classification':
-                self.interval_learner = VennAbers(self.learner.predict_proba(self.X_cal), self.y_cal, self.learner, self.bins)
-            elif 'regression' in self.mode:
-                self.interval_learner = IntervalRegressor(self)
+            self.__initialize_interval_learner_for_perturbed()
+        elif self.mode == 'classification':
+            self.interval_learner = VennAbers(self.learner.predict_proba(self.X_cal), self.y_cal, self.learner, self.bins)
+        elif 'regression' in self.mode:
+            self.interval_learner = IntervalRegressor(self)
         self.__initialized = True
+
+# pylint: disable=attribute-defined-outside-init
+    def __initialize_interval_learner_for_perturbed(self):
+        self.interval_learner = []
+        X_cal, y_cal, bins = self.X_cal, self.y_cal, self.bins
+        self.perturbed_X_cal, self.scaled_X_cal, self.scaled_y_cal, scale_factor = \
+                perturb_dataset(self.X_cal, self.y_cal, self.categorical_features, noise_type='uniform', scale_factor=5, severity=1)
+        self.bins = np.tile(self.bins.copy(), scale_factor) if self.bins is not None else None
+        for f in range(self.num_features):
+            perturbed_X_cal = self.scaled_X_cal.copy()
+            perturbed_X_cal[:,f] = self.perturbed_X_cal[:,f]
+            if self.mode == 'classification':
+                self.interval_learner.append(VennAbers(self.learner.predict_proba(perturbed_X_cal), self.scaled_y_cal, self.learner, self.bins))
+            elif 'regression' in self.mode:
+                self.X_cal = perturbed_X_cal
+                self.y_cal = self.scaled_y_cal
+                self.interval_learner.append(IntervalRegressor(self))
+
+        self.X_cal, self.y_cal, self.bins = X_cal, y_cal, bins
+        if self.mode == 'classification':
+            self.interval_learner.append(VennAbers(self.learner.predict_proba(self.X_cal), self.y_cal, self.learner, self.bins))
+        elif 'regression' in self.mode:
+            # Add a reference learner using the original calibration data last
+            self.interval_learner.append(IntervalRegressor(self))
 
     def initialize_reject_learner(self, calibration_set=None, threshold=None):
         '''
@@ -1115,13 +1104,12 @@ class CalibratedExplainer:
         threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression.
         '''
-        if calibration_set is not None:
-            if calibration_set is tuple:
-                X_cal, y_cal = calibration_set
-            else:
-                X_cal, y_cal = calibration_set[0], calibration_set[1]
-        else:
+        if calibration_set is None:
             X_cal, y_cal = self.X_cal, self.y_cal
+        elif calibration_set is tuple:
+            X_cal, y_cal = calibration_set
+        else:
+            X_cal, y_cal = calibration_set[0], calibration_set[1]
         self.reject_threshold = None
         if self.mode in 'regression':
             proba_1, _, _, _ = self.interval_learner.predict_probability(X_cal, y_threshold=threshold, bins=self.bins)
@@ -1211,7 +1199,7 @@ class CalibratedExplainer:
 
 
     # pylint: disable=too-many-branches
-    def set_discretizer(self, discretizer: str, X_cal=None, y_cal=None) -> None:
+    def set_discretizer(self, discretizer, X_cal=None, y_cal=None) -> None:
         """assign discretizer to the explainer. 
         The discretizer can be either 'entropy' or 'binaryEntropy' for classification and 'regressor' or 'binaryRegressor' for regression. 
         Once the discretizer is assigned, the calibration data is discretized.
@@ -1228,31 +1216,23 @@ class CalibratedExplainer:
             y_cal = self.y_cal
 
         if discretizer is None:
-            if 'regression' in self.mode:
-                discretizer = 'binaryRegressor'
-            else:
-                discretizer = 'binaryEntropy'
+            discretizer = (
+                'binaryRegressor' if 'regression' in self.mode else 'binaryEntropy'
+            )
+        elif 'regression'in self.mode:
+            assert discretizer is None or discretizer in {
+                'regressor',
+                'binaryRegressor',
+            }, "The discretizer must be 'binaryRegressor' (default for factuals) or 'regressor' (default for counterfactuals) for regression."
         else:
-            if 'regression'in self.mode:
-                assert discretizer is None or discretizer in ['regressor', 'binaryRegressor'], \
-                    "The discretizer must be 'binaryRegressor' (default for factuals) or 'regressor' (default for counterfactuals) for regression."
-            else:
-                assert discretizer is None or discretizer in ['entropy', 'binaryEntropy'], \
-                    "The discretizer must be 'binaryEntropy' (default for factuals) or 'entropy' (default for counterfactuals) for classification."
+            assert discretizer is None or discretizer in {
+                'entropy',
+                'binaryEntropy',
+            }, "The discretizer must be 'binaryEntropy' (default for factuals) or 'entropy' (default for counterfactuals) for classification."
 
         not_to_discretize = self.categorical_features #np.union1d(self.categorical_features, self.features_to_ignore)
-        if discretizer == 'entropy':
-            self.discretizer = EntropyDiscretizer(
-                    X_cal, not_to_discretize,
-                    self.feature_names, labels=y_cal,
-                    random_state=self.random_state)
-        elif discretizer == 'binaryEntropy':
+        if discretizer == 'binaryEntropy':
             self.discretizer = BinaryEntropyDiscretizer(
-                    X_cal, not_to_discretize,
-                    self.feature_names, labels=y_cal,
-                    random_state=self.random_state)
-        elif discretizer == 'regressor':
-            self.discretizer = RegressorDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
                     random_state=self.random_state)
@@ -1262,6 +1242,16 @@ class CalibratedExplainer:
                     self.feature_names, labels=y_cal,
                     random_state=self.random_state)
 
+        elif discretizer == 'entropy':
+            self.discretizer = EntropyDiscretizer(
+                    X_cal, not_to_discretize,
+                    self.feature_names, labels=y_cal,
+                    random_state=self.random_state)
+        elif discretizer == 'regressor':
+            self.discretizer = RegressorDiscretizer(
+                    X_cal, not_to_discretize,
+                    self.feature_names, labels=y_cal,
+                    random_state=self.random_state)
         self.discretized_X_cal = self._discretize(copy.deepcopy(self.X_cal))
 
         self.feature_values = {}
@@ -1350,14 +1340,13 @@ class CalibratedExplainer:
                     if isinstance(threshold, tuple):
                         return f'{threshold[0]} < y_hat <= {threshold[1]}' if predict >= 0.5 else f'y_hat <= {threshold[0]} || y_hat > {threshold[1]}'
                     return 'Error in CalibratedExplainer.predict.get_label()' # should not reach here
+
                 threshold = kwargs['threshold']
                 if np.isscalar(threshold) or isinstance(threshold, tuple):
                     new_classes = [get_label(predict[i], threshold) for i in range(len(predict))]
                 else:
                     new_classes = [get_label(predict[i], threshold[i]) for i in range(len(predict))]
-                if uq_interval:
-                    return new_classes, (low, high)
-                return new_classes
+                return (new_classes, (low, high)) if uq_interval else new_classes
             if uq_interval:
                 return predict, (low, high)
             return predict
@@ -1428,9 +1417,7 @@ class CalibratedExplainer:
             else:
                 proba_1, low, high, _ = self.interval_learner.predict_probability(X_test, y_threshold=threshold, **kwargs)
             proba = np.array([[1-proba_1[i], proba_1[i]] for i in range(len(proba_1))])
-            if uq_interval:
-                return proba, (low, high)
-            return proba
+            return (proba, (low, high)) if uq_interval else proba
         if self.is_multiclass(): # pylint: disable=protected-access
             if isinstance(self.interval_learner, list):
                 proba, low, high, _ = self.interval_learner[-1].predict_proba(X_test, output_interval=True, **kwargs)
@@ -1480,16 +1467,8 @@ class CalibratedExplainer:
         return self.__shap_enabled
 
 
-
     def _preload_lime(self):
-        # """creates a lime structure for the explainer
-
-        # Returns:
-        #     LimeTabularExplainer: a LimeTabularExplainer object defined for the problem
-        #     lime_exp: a template lime explanation achieved through the explain_instance method
-        # """
-        lime = safe_import("lime.lime_tabular","LimeTabularExplainer")
-        if lime:
+        if lime := safe_import("lime.lime_tabular", "LimeTabularExplainer"):
             if not self._is_lime_enabled():
                 if self.mode == 'classification':
                     self.lime = lime(self.X_cal[:1, :],
@@ -1510,18 +1489,8 @@ class CalibratedExplainer:
             return self.lime, self.lime_exp
         return None, None
 
-
-
     def _preload_shap(self, num_test=None):
-        # """creates a shap structure for the explainer
-
-        # Returns:
-        #     shap.Explainer: a Explainer object defined for the problem
-        #     shap_exp: a template shap explanation achieved through the __call__ method
-        # """
-        # pylint: disable=access-member-before-definition
-        shap = safe_import("shap")
-        if shap:
+        if shap := safe_import("shap"):
             if not self._is_shap_enabled() or \
                 num_test is not None and self.shap_exp.shape[0] != num_test:
                 f = lambda x: self._predict(x)[0]  # pylint: disable=unnecessary-lambda-assignment
@@ -1533,7 +1502,7 @@ class CalibratedExplainer:
         return None, None
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-    def plot_global(self, X_test, y_test=None, threshold=None, **kwargs):
+    def plot(self, X_test, y_test=None, threshold=None, **kwargs):
         """
         Generates a global explanation plot for the given test data. This plot is based on the probability distribution and the uncertainty quantification intervals.
         The plot is only available for calibrated probabilistic learners (both classification and thresholded regression).
@@ -1548,12 +1517,9 @@ class CalibratedExplainer:
             The threshold value used with regression to get probability of being below the threshold. Only applicable to regression.
         """
         is_regularized = True
-        if 'predict_proba' not in dir(self.learner):
-            if threshold is None:
-                predict, (low, high) = self.predict(X_test, uq_interval=True, **kwargs)
-                is_regularized = False
-            else:
-                proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold, **kwargs)
+        if 'predict_proba' not in dir(self.learner) and threshold is None:
+            predict, (low, high) = self.predict(X_test, uq_interval=True, **kwargs)
+            is_regularized = False
         else:
             proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold, **kwargs)
         uncertainty = np.array(high - low)
@@ -1563,14 +1529,7 @@ class CalibratedExplainer:
         max_x, max_y = 1,1
         ax = None
         if is_regularized:
-            plt.figure()
-            x = np.arange(0, 1, 0.01)
-            plt.plot((x / (1 + x)), x, color='black')
-            plt.plot(x, ((1 - x) / x), color='black')
-            x = np.arange(0.5, 1, 0.005)
-            plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
-            x = np.arange(0, 0.5, 0.005)
-            plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
+            self._plot_proba_triangle()
         else:
             _, ax = plt.subplots()
             # draw a line from (0,0) to (0.5,1) and from (1,0) to (0.5,1)
@@ -1594,44 +1553,7 @@ class CalibratedExplainer:
             # # draw a line from (0.5,0) to halfway between (0.5,0) and (1,1)
             # ax.plot([mid_x, mid_x + mid_x / 2], [min_y, mid_y], color='black')
 
-        if y_test is not None:
-            if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
-                norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
-                # Choose a colormap
-                colormap = plt.cm.viridis  # pylint: disable=no-member
-                # Map the normalized values to colors
-                colors = colormap(norm(y_test))
-                ax.scatter(predict, uncertainty, label='Predictions', color=colors, marker='.', s=marker_size)
-                # # Create a new axes for the colorbar
-                # divider = make_axes_locatable(ax)
-                # cax = divider.append_axes("right", size="5%", pad=0.05)
-                # # Add the colorbar to the new axes
-                # plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=colormap), cax=cax, label='Target Values')
-            else:
-                if 'predict_proba' not in dir(self.learner):
-                    assert np.isscalar(threshold), "The threshold parameter must be a single constant value for all instances when used in plot_global."
-                    y_test = np.array([0 if y_test[i] >= threshold else 1 for i in range(len(y_test))])
-                    labels = [f'Y >= {threshold}', f'Y < {threshold}']
-                else:
-                    if self.class_labels is not None:
-                        labels = [f'Y = {i}' for i in self.class_labels.values()]
-                    else:
-                        labels = [f'Y = {i}' for i in np.unique(y_test)]
-                marker_size = 25
-                if len(labels) == 2:
-                    colors = ['blue', 'red']
-                    markers = ['o', 'x']
-                    proba = proba[:,1]
-                else:
-                    colormap = plt.get_cmap('tab10', len(labels))
-                    colors = [colormap(i) for i in range(len(labels))]
-                    markers = ['o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H','o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H'][:len(labels)]
-                    proba = proba[np.arange(len(proba)), y_test]
-                    uncertainty = uncertainty[np.arange(len(uncertainty)), y_test]
-                for i, c in enumerate(np.unique(y_test)):
-                    plt.scatter(proba[y_test == c], uncertainty[y_test == c], color=colors[i], label=labels[i], marker=markers[i], s=marker_size)
-                plt.legend()
-        else:
+        if y_test is None:
             if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
                 plt.scatter(predict, uncertainty, label='Predictions', marker='.', s=marker_size)
             else:
@@ -1643,6 +1565,43 @@ class CalibratedExplainer:
                     proba = proba[:,1]
                 plt.scatter(proba, uncertainty, label='Predictions', marker='.', s=marker_size)
 
+        elif 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
+            norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
+            # Choose a colormap
+            colormap = plt.cm.viridis  # pylint: disable=no-member
+            # Map the normalized values to colors
+            colors = colormap(norm(y_test))
+            ax.scatter(predict, uncertainty, label='Predictions', color=colors, marker='.', s=marker_size)
+            # # Create a new axes for the colorbar
+            # divider = make_axes_locatable(ax)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # # Add the colorbar to the new axes
+            # plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=colormap), cax=cax, label='Target Values')
+        else:
+            if 'predict_proba' not in dir(self.learner):
+                assert np.isscalar(threshold), "The threshold parameter must be a single constant value for all instances when used in plot_global."
+                y_test = np.array([0 if y_test[i] >= threshold else 1 for i in range(len(y_test))])
+                labels = [f'Y >= {threshold}', f'Y < {threshold}']
+            else:
+                labels = (
+                    [f'Y = {i}' for i in self.class_labels.values()]
+                    if self.class_labels is not None
+                    else [f'Y = {i}' for i in np.unique(y_test)]
+                )
+            marker_size = 25
+            if len(labels) == 2:
+                colors = ['blue', 'red']
+                markers = ['o', 'x']
+                proba = proba[:,1]
+            else:
+                colormap = plt.get_cmap('tab10', len(labels))
+                colors = [colormap(i) for i in range(len(labels))]
+                markers = ['o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H','o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H'][:len(labels)]
+                proba = proba[np.arange(len(proba)), y_test]
+                uncertainty = uncertainty[np.arange(len(uncertainty)), y_test]
+            for i, c in enumerate(np.unique(y_test)):
+                plt.scatter(proba[y_test == c], uncertainty[y_test == c], color=colors[i], label=labels[i], marker=markers[i], s=marker_size)
+            plt.legend()
         if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
             plt.xlabel('Predictions',loc='center')
             plt.ylabel('Uncertainty',loc='center')
@@ -1661,6 +1620,16 @@ class CalibratedExplainer:
         plt.xlim(min_x, max_x)
         plt.ylim(min_y, max_y)
         plt.show()
+
+    def _plot_proba_triangle(self):
+        plt.figure()
+        x = np.arange(0, 1, 0.01)
+        plt.plot((x / (1 + x)), x, color='black')
+        plt.plot(x, ((1 - x) / x), color='black')
+        x = np.arange(0.5, 1, 0.005)
+        plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
+        x = np.arange(0, 0.5, 0.005)
+        plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
 
 
 class WrapCalibratedExplainer():
@@ -2176,7 +2145,7 @@ class WrapCalibratedExplainer():
         return self.explainer.predict_reject(X_test, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-    def plot_global(self, X_test, y_test=None, threshold=None, **kwargs):
+    def plot(self, X_test, y_test=None, threshold=None, **kwargs):
         """
         Generates a global explanation plot for the given test data. This plot is based on the probability distribution and the uncertainty quantification intervals.
         The plot is only available for calibrated probabilistic learners (both classification and thresholded regression).
@@ -2201,4 +2170,4 @@ class WrapCalibratedExplainer():
         else:
             bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
-        self.explainer.plot_global(X_test, y_test=y_test, threshold=threshold, **kwargs)
+        self.explainer.plot(X_test, y_test=y_test, threshold=threshold, **kwargs)
