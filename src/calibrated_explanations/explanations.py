@@ -174,7 +174,6 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
 
-    
     def _get_rules(self):
         return [explanation._get_rules() for explanation in self.explanations] # pylint: disable=protected-access
 

@@ -59,7 +59,7 @@ class CalibratedExplainer:
                 class_labels = None,
                 bins = None,
                 difficulty_estimator = None,
-                sample_percentiles = [25, 50, 75],
+                sample_percentiles = None,
                 random_state = 42,
                 verbose = False,
                 perturb = False,
@@ -140,6 +140,8 @@ class CalibratedExplainer:
         self.learner = learner
         self.num_features = len(self.X_cal[0, :])
         self.set_random_state(random_state)
+        if sample_percentiles is None:
+            sample_percentiles = [25, 50, 75]
         self.sample_percentiles = sample_percentiles
         self.verbose = verbose
         self.bins = bins
@@ -964,8 +966,6 @@ class CalibratedExplainer:
             return np.array([])
         return np.percentile(self.X_cal[self.X_cal[:,f] > greater,f],
                                        self.sample_percentiles)
-        
-
 
 
     def __get_lesser_values(self, f: int, lesser: float):
