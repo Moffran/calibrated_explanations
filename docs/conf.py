@@ -13,9 +13,11 @@
 
 import os
 import sys
+sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../src'))
 sys.path.insert(0, os.path.abspath('../notebooks'))
 sys.path.insert(0, os.path.abspath('../src/calibrated_explanations'))
+sys.path.insert(0, os.path.abspath('../src/calibrated_explanations/utils'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -25,10 +27,10 @@ copyright = '2023, Helena Löfström, Tuwe Löfström'
 author = 'Helena Löfström, Tuwe Löfström'
 
 # The short X.Y version
-version = '0.3'
+version = '0.4'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.5'
+release = '0.4.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -43,12 +45,21 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.todo",
+    'sphinx.ext.coverage',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.githubpages',
     "numpydoc",
     "nbsphinx",
     "myst_parser",
 ]
 
-autosummary_generate = True
+# The master toctree document.
+master_doc = 'index'
+
+intersphinx_mapping = {
+    'crepes': ('https://crepes.readthedocs.io/en/latest/', None),
+}
+
 
 templates_path = ['_templates']
 
@@ -87,7 +98,7 @@ html_context = {
     "default_mode": "light",
 }
 
-html_title = f"{project} v. {version}"
+html_title = f"{project} v{version}"
 html_last_updated_fmt = "%b %d, %Y"
 
 
