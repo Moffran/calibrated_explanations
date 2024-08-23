@@ -1,25 +1,50 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.4.0...main)
 ### Features
-- Substantial speedup achieved through the newly implemented `explain` method! Implemented the core algorithm minimizing the number of calls to core._predict, substantially speeding up the code. 
-  - Re-ran the ablation study for classification, looking at the impact of calibration set size, number of percentile samplings for numeric features and the number of features. 
-  - Uploaded a pdf version of the ablation study, making the results easier to overview. 
-- Renamed the `plot_all` and `plot_explanation` functions to `plot` and updated all usages of the `plot` function.
-- Added __len__ and __getitem__ to `CalibratedExplanations`. __getitem__ allow indexing with `int`, `slice`, boolean and integer lists.
-- Restructured package by adding a utils folder:
-  - Moved discretizers.py to utils
-  - Moved utils.py to utils and renamed to helper.py 
-- Added plot_global to `WrapCalibratedExplainer`.
-- Added additional plotting options to the `CounterfactualExplanation` class, accessible through an additional `style` parameter.
-- Updated CI to run pytest before pylint.
-- Updated CI to skip pytest if previous lint failed and commit message starts with 'style:' (since then only the lint needs to be rerun).
-- Updated CI to avoid running tests when commit message starts with 'info:' or 'docs:'.
 ### Fixes
-- Improved the `safe_import` to allow `import ... from ...` constructs.
-- Improved tests to test `predict` and `predict_proba` functions in `WrapCalibratedExplainer` better.
-- Fixed the `predict` and `predict_proba` functions in `WrapCalibratedExplainer`.  
+
+## [v0.4.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.4.0) - 2024-08-24
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...v0.4.0)
+### Features
+- Paper updates:
+  - [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245) has been accepted to Machine Learning. It is currently in press.
+- Code improvements: 
+  - __Substantial speedup__ achieved through the newly implemented `explain` method! This method implements the core algorithm while minimizing the number of calls to core._predict, substantially speeding up the code without altering the algorithmic logic of `calibrated_explanations`. The `explain` method is used exclusively from this version on when calling `explain_factual` or `explain_counterfactual`. 
+    - Re-ran the ablation study for classification, looking at the impact of calibration set size, number of percentile samplings for numeric features and the number of features. 
+      - Uploaded a pdf version of the [ablation study](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Calibrated_Explanations_Ablation.pdf), making the results easier to overview.
+    - Re-ran the evaluation for regression, measuring stability, robustness and running times with and without normalization.
+  - Improved the `safe_import` to allow `import ... from ...` constructs.
+  - Restructured package
+    - Added a utils folder:
+      - Moved discretizers.py to utils
+      - Moved utils.py to utils and renamed to helper.py
+    - Made explanations public
+    - Made VennAbers and interval_regressor restricted
+  - Experimental functionality introduced:
+    - Several new experimental features have been introduced. These will be presented as Features once they are thoroughly tested and evaluated.
+- Code interface improvements:
+  - Added support for the `MondrianCategorizer` from crepes in the `WrapCalibratedExplainer`.
+  - Added wrapper functions in `WrapCalibratedExplainer` redirecting to `CalibratedExplainer`:
+    - Including `predict`, `predict_proba`, and `set_difficulty_estimator`.
+    - Moved any remaining implementations of functions in `WrapCalibratedExplainer` to `CalibratedExplainer`.
+  - Renamed the `plot_all` and `plot_explanation` functions to `plot`. Updated all usages of the `plot` function.
+  - Added `__len__` and `__getitem__` to `CalibratedExplanations`. 
+    - `__getitem__` allow indexing with `int`, `slice`, and lists (both boolean and integer lists). When more than one explanation is retrieved, a new `CalibratedExplanations` is returned, otherwise, the indexed `CalibratedExplanation` is returned.
+- Documentation improvements:
+  - Restructured and extended the [documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
+    - Updated the information at the entry page
+    - Added an API reference
+- Improvements of the CI setup:
+  - Updated CI to run pytest before pylint.
+  - Updated CI to avoid running tests when commit message starts with 'info:' or 'docs:'.
+- Testing improvements
+  - Improved tests to test `predict` and `predict_proba` functions in `CalibratedExplainer` better.
+  - Added several other tests to increase [coverage](https://app.codecov.io/github/Moffran/calibrated_explanations).
+### Fixes
+- Fixed minor errors in the `predict` and `predict_proba` functions in `CalibratedExplainer`.
+- Several other minor bug fixes have also been made.
 
 ## [v0.3.5](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.5) - 2024-07-24
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.4...v0.3.5)
