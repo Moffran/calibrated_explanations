@@ -1755,8 +1755,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         style : str, default='regular'
             The `style` parameter is a string that determines the style of the plot. Possible styles for CounterfactualExplanation:
             * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
-            * 'triangular' - a triangular plot for counterfactual explanations highlighting the interplay 
-                between the calibrated probability and the uncertainty intervals
+            * 'triangular' - a triangular plot for counterfactual explanations highlighting the interplay between the calibrated probability and the uncertainty intervals
         '''
         show = kwargs['show'] if 'show' in kwargs.keys() else False
         filename = kwargs['filename'] if 'filename' in kwargs.keys() else ''
