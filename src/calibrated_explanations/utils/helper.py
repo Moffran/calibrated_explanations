@@ -9,15 +9,15 @@ from inspect import isclass
 import numpy as np
 from pandas.api.types import is_categorical_dtype
 
-def make_directory(path: str, save_ext=None) -> None: # pylint: disable=unused-private-member
+def make_directory(path: str, save_ext=None) -> None:    # pylint: disable=unused-private-member
     """ create directory if it does not exist
     """
     if save_ext is not None and len(save_ext) == 0:
         return
     if not os.path.isdir('plots'):
         os.mkdir('plots')
-    if not os.path.isdir('plots/'+path):
-        os.mkdir('plots/'+path)
+    if not os.path.isdir(f'plots/{path}'):
+        os.mkdir(f'plots/{path}')
 
 
 # copied from shap.utils._general.safe_isinstance
@@ -173,9 +173,7 @@ def is_notebook():
         from IPython import get_ipython
         if 'IPKernelApp' not in get_ipython().config:  # pragma: no cover
             return False
-    except ImportError:
-        return False
-    except AttributeError:
+    except (ImportError, AttributeError):
         return False
     return True
 
