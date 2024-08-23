@@ -5,7 +5,7 @@
 ### Features
 ### Fixes
 
-## [v0.4.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.4.0) - 2024-08-24
+## [v0.4.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.4.0) - 2024-08-23
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...v0.4.0)
 ### Features
 - Paper updates:
