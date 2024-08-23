@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn.calibration import calibration_curve
 from matplotlib import pyplot as plt
-from calibrated_explanations.VennAbers import VennAbers
+from calibrated_explanations._VennAbers import VennAbers
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
 

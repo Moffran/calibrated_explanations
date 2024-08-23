@@ -5,7 +5,7 @@ This module contains the class for the interval regressors.
 """
 import crepes
 import numpy as np
-from .VennAbers import VennAbers
+from ._VennAbers import VennAbers
 
 class IntervalRegressor:
     """The IntervalRegressor class is used for regression analysis on intervals of data.

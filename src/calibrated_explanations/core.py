@@ -22,8 +22,8 @@ import matplotlib.colors as mcolors
 from crepes import ConformalClassifier
 from crepes.extras import hinge, MondrianCategorizer
 
-from ._explanations import CalibratedExplanations
-from .VennAbers import VennAbers
+from .explanations import CalibratedExplanations
+from ._VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                 RegressorDiscretizer, BinaryRegressorDiscretizer
