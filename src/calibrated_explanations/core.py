@@ -30,7 +30,7 @@ from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
 from .utils.helper import safe_isinstance, safe_import, check_is_fitted, assert_threshold
 from .utils.perturbation import perturb_dataset
 
-__version__ = 'v0.4.0'
+__version__ = 'v0.4.1a'
 
 
 
