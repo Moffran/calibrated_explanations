@@ -282,7 +282,7 @@ def assert_threshold(threshold, x):
     raise ValueError(
         'thresholds must be a scalar, binary tuple or list of scalars or binary tuples')
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-statements
 def calculate_metrics(uncertainty=None,
                       prediction=None,
                       w=0.5,
