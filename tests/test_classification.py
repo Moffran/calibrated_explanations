@@ -24,7 +24,7 @@ def load_binary_dataset():
     num_to_test = 2
     target = 'Y'
 
-    fileName = 'data/' + dataSet + ".csv"
+    fileName = f'data/{dataSet}.csv'
     df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
 
     X, y = df.drop(target,axis=1), df[target]
@@ -37,7 +37,14 @@ def load_binary_dataset():
     idx = np.argsort(y.values).astype(int)
     X, y = X.values[idx, :], y.values[idx]
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
-    test_index = np.array([*range(int(num_to_test/2)), *range(no_of_instances-1, no_of_instances-int(num_to_test/2)-1,-1)])
+    test_index = np.array(
+        [
+            *range(num_to_test // 2),
+            *range(
+                no_of_instances - 1, no_of_instances - num_to_test // 2 - 1, -1
+            ),
+        ]
+    )
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
     trainX_cal, X_test = X[train_index, :], X[test_index, :]
     y_train, y_test = y[train_index], y[test_index]
@@ -51,7 +58,7 @@ def load_multiclass_dataset():
     num_to_test = 6
     # print(dataSet)
 
-    fileName = 'data/Multiclass/' + dataSet + ".csv"
+    fileName = f'data/Multiclass/{dataSet}.csv'
     df = pd.read_csv(fileName, delimiter=delimiter)
     target = 'Type'
 
@@ -72,7 +79,7 @@ def load_multiclass_dataset():
     test_idx = []
     idx = list(range(no_of_instances))
     for i in range(no_of_classes):
-        test_idx.append(np.where(y == i)[0][0:int(num_to_test/no_of_classes)])
+        test_idx.append(np.where(y == i)[0][:num_to_test // no_of_classes])
     test_index = np.array(test_idx).flatten()
     # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)

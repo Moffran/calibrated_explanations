@@ -22,7 +22,7 @@ def load_regression_dataset():
     calibration_size = 200
     dataset = 'abalone.txt'
 
-    ds = pd.read_csv('data/reg/' + dataset)
+    ds = pd.read_csv(f'data/reg/{dataset}')
     X = ds.drop('REGRESSION', axis=1).values[:2000,:]
     y = ds['REGRESSION'].values[:2000]
     y = (y-np.min(y))/(np.max(y)-np.min(y))

@@ -23,7 +23,7 @@ def load_regression_dataset():
     calibration_size = 200
     dataset = 'abalone.txt'
 
-    ds = pd.read_csv('data/reg/' + dataset)
+    ds = pd.read_csv(f'data/reg/{dataset}')
     X = ds.drop('REGRESSION', axis=1).values[:2000,:]
     y = ds['REGRESSION'].values[:2000]
     y = (y-np.min(y))/(np.max(y)-np.min(y))
@@ -52,7 +52,7 @@ def get_regression_model(model_name, X_prop_train, y_prop_train):
 
 class TestCalibratedExplainer_regression(unittest.TestCase):
     def assertExplanation(self, exp):
-        for _, instance in enumerate(exp.X_test):
+        for instance in exp.X_test:
             boundaries = exp.calibrated_explainer.rule_boundaries(instance)
             for f in range(exp.calibrated_explainer.num_features):
                 # assert that instance values are covered by the rule conditions
