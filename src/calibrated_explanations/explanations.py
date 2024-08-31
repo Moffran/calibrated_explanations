@@ -1476,8 +1476,7 @@ class CounterfactualExplanation(CalibratedExplanation):
         for rule in range(len(rules['rule'])):
             # filter out potential rules if include_potential is False
             if not include_potential and (
-                                rules['predict_low'][rule] < 0.5
-                                and rules['predict_high'][rule] > 0.5
+                                rules['predict_low'][rule] < 0.5 < rules['predict_high'][rule]
                             ):
                 continue
             if make_super and (
@@ -1487,15 +1486,12 @@ class CounterfactualExplanation(CalibratedExplanation):
                                 and rules['predict'][rule] > self.prediction['predict']
                             ):
                 continue
-            if make_semi and (
-                                positive_class
-                                and (rules['predict'][rule] < 0.5
-                                    or rules['predict'][rule] > self.prediction['predict'])
-                                or not positive_class
-                                and (rules['predict'][rule] > 0.5
-                                    or rules['predict'][rule] < self.prediction['predict'])
-                            ):
-                continue
+            if make_semi:
+                if positive_class:
+                    if rules['predict'][rule] < 0.5 or rules['predict'][rule] > self.prediction['predict']:
+                        continue
+                elif rules['predict'][rule] > 0.5 or rules['predict'][rule] < self.prediction['predict']:
+                    continue
             if make_counter and (
                                 positive_class
                                 and rules['predict'][rule] > 0.5
