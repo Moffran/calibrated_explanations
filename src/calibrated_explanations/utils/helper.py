@@ -281,3 +281,145 @@ def assert_threshold(threshold, x):
         return [assert_threshold(t, [x[i]]) for i,t in enumerate(threshold)]
     raise ValueError(
         'thresholds must be a scalar, binary tuple or list of scalars or binary tuples')
+
+# pylint: disable=too-many-arguments
+def calculate_metrics(uncertainty=None,
+                      prediction=None,
+                      w=0.5,
+                      metric=None,
+                      normalize=False,
+                      inverse_prediction=False):
+    '''
+    The function `calculate_metrics` calculates different metrics based on the uncertainty and 
+    probability values.
+
+    Parameters
+    ----------
+    uncertainty : float
+        The `uncertainty` parameter is a float value that represents the uncertainty of the
+        explanation. Uncertainty is a measure of the confidence of the explanation. For 
+        classification, this is a value between 0 and 1, where 0 means the explanation is certain 
+        and 1 means the explanation is uncertain. For regression, this is the width of the 
+        uncertainty interval determined by the user defined percentiles.
+    prediction : float
+        The `prediction` parameter is a float value that represents the prediction of the 
+        explanation. For classification, this is the probability of the predicted class. For 
+        regression, this is the predicted value.
+    w : float, default=0.5
+        The `w` parameter is a float value that represents the weight of the uncertainty in the 
+        metric calculation. The weight must be between 0 and 1. The default value is 0.5.
+    metric : str, list of str, or None, default=None
+        The `metric` parameter is a string that represents the metric to calculate.
+        If `metric` is set to None, the function will calculate all available metrics.
+        If `metric` is set to a list of metrics, the function will calculate only those
+        metrics. The available metrics are:
+        - 'weighted_sum' : Weighted Sum Method 
+        - 'pareto_efficiency' : Pareto Efficiency Method (simplified as sum of normalized values)
+        - 'arithmetic_mean' : Arithmetic Mean Method
+        - 'min_max_normalization' : Min-Max Normalization Method
+    normalize : bool, default=False
+        The `normalize` parameter is a boolean value that represents whether to normalize the 
+        uncertainty and prediction values. The default value is False.
+    inverse_prediction : bool, default=False
+        The `inverse_prediction` parameter is a boolean value that represents whether to inverse 
+        the prediction values (by negating them). The default value is False.
+
+    Note
+    ----
+    If the method is called with no arguments, it will return the list of available metrics.
+    '''
+    # Discarded metrics:
+        # - 'geometric_mean' : Geometric Mean Method
+        # - 'harmonic_mean' : Harmonic Mean Method
+        # - 'weighted_product' : Customizable Weighted Product Method
+        # - 'logarithmic' : Logarithmic Method
+        # - 'quadratic_mean' : Quadratic Mean Method
+        # - 'inverse_uncertainty' : Inverse Uncertainty Method
+        # - 'exponential' : Exponential Weighted Method
+        # - 'penalty_high_uncertainty' : Penalty for High Uncertainty Method
+        # - 'exponential_penalty' : Exponential Penalty Method
+        # - 'logarithmic_penalty' : Logarithmic Penalty Method
+        # - 'quadratic_penalty' : Quadratic Penalty Method
+
+    # Count the number of arguments passed
+    if uncertainty is None and prediction is None:
+        return ['weighted_sum', #'geometric_mean', #'harmonic_mean', #'weighted_product',
+                'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
+                'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
+                #'penalty_high_uncertainty', 'exponential_penalty', 'logarithmic_penalty',
+                #'quadratic_penalty'
+                ]
+
+    assert uncertainty is not None and prediction is not None, \
+            'Both uncertainty and prediction must be provided if any other argument is provided'
+    uncertainty = np.array(uncertainty) if isinstance(uncertainty, list) else uncertainty
+    prediction = np.array(prediction) if isinstance(prediction, list) else prediction
+    metrics = {}
+    assert 0 <= w <= 1, 'The weight must be between 0 and 1.'
+    if metric is None:
+        metric = ['weighted_sum', #'geometric_mean', #'harmonic_mean', #'weighted_product',
+                'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
+                'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
+                #'penalty_high_uncertainty', 'exponential_penalty', 'logarithmic_penalty',
+                #'quadratic_penalty'
+                ]
+    elif isinstance(metric, str):
+        metric = [metric]
+    if normalize:
+        min_uncertainty, max_uncertainty = np.min(uncertainty), np.max(uncertainty)
+        min_prediction, max_prediction = np.min(prediction), np.max(prediction)
+        uncertainty = (uncertainty - min_uncertainty) / (max_uncertainty - min_uncertainty)
+        prediction = (prediction - min_prediction) / (max_prediction - min_prediction)
+    prediction = -1*prediction if inverse_prediction and prediction is not None else prediction
+
+    if 'weighted_sum' in metric:
+        metrics['weighted_sum'] = w * (1 - uncertainty) + (1-w) * prediction
+
+    if 'geometric_mean' in metric:
+        metrics['geometric_mean'] = np.sqrt((1 - uncertainty) * prediction)
+
+    if 'harmonic_mean' in metric:
+        metrics['harmonic_mean'] = 2 * (1 - uncertainty) * prediction \
+                                    / ((1 - uncertainty) + prediction)
+
+    if 'weighted_product' in metric:
+        metrics['weighted_product'] = (1 - uncertainty) ** w * prediction ** (1-w)
+
+    if 'pareto_efficiency' in metric:
+        metrics['pareto_efficiency'] = (1 - uncertainty) + prediction
+
+    if 'arithmetic_mean' in metric:
+        metrics['arithmetic_mean'] = ((1 - uncertainty) + prediction) / 2
+
+    if 'min_max_normalization' in metric:
+        min_uncertainty, max_uncertainty = 0, 1
+        min_prediction, max_prediction = 0, 1
+        norm_uncertainty = (1 - uncertainty - min_uncertainty) / (max_uncertainty - min_uncertainty)
+        norm_prediction = (prediction - min_prediction) / (max_prediction - min_prediction)
+        metrics['min_max_normalization'] = norm_uncertainty + norm_prediction
+
+    if 'exponential' in metric:
+        metrics['exponential'] = np.exp(1 - uncertainty) * np.exp(prediction)
+
+    if 'logarithmic' in metric:
+        metrics['logarithmic'] = np.log(1 + (1 - uncertainty)) + np.log(1 + prediction)
+
+    if 'quadratic_mean' in metric:
+        metrics['quadratic_mean'] = np.sqrt(((1 - uncertainty) ** 2 + prediction ** 2) / 2)
+
+    if 'inverse_uncertainty' in metric:
+        metrics['inverse_uncertainty'] = - (uncertainty / prediction+1e-6)
+
+    if 'penalty_high_uncertainty' in metric:
+        metrics['penalty_high_uncertainty'] = prediction - w * uncertainty
+
+    if 'exponential_penalty' in metric:
+        metrics['exponential_penalty'] = prediction * np.exp(-w * uncertainty)
+
+    if 'logarithmic_penalty' in metric:
+        metrics['logarithmic_penalty'] = prediction - np.log(1 + w * uncertainty)
+
+    if 'quadratic_penalty' in metric:
+        metrics['quadratic_penalty'] = prediction - w * uncertainty ** 2
+
+    return metrics if len(metrics) > 1 else metrics[list(metrics.keys())[0]]
