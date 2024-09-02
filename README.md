@@ -11,20 +11,20 @@ Calibrated Explanations ([Documentation](https://calibrated-explanations.readthe
 <!-- [![Lint Status for Calibrated Explanations][lint-status]][lint-log] -->
 <!-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/main?urlpath=https%3A%2F%2Fgithub.com%2FMoffran%2Fcalibrated_explanations%2Fblob%2Fmain%2Fnotebooks%2Fquickstart.ipynb) -->
 
-`calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both [classification](https://doi.org/10.1016/j.eswa.2024.123154) and [regression](https://arxiv.org/abs/2308.16245).
+`calibrated-explanations` is a Python package for the local feature importance explanation method providing uncertainty quantification, supporting both [classification](https://doi.org/10.1016/j.eswa.2024.123154) and [regression](https://arxiv.org/abs/2308.16245).
 The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
-* Fast, reliable, stable and robust feature importance explanations for:
-	- Binary classification models ([read paper](https://doi.org/10.1016/j.eswa.2024.123154))
-	- Multi-class classification models ([read paper](https://easychair.org/publications/preprint/rqdD))
-	- Regression models ([read paper](https://arxiv.org/abs/2308.16245))
-		* Including probabilistic explanations of the probability that the target exceeds a user-defined threshold 
-		* With difficulty adaptable explanations (conformal normalization) 
-* Calibration of the underlying model to ensure that predictions reflect reality.
-* Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
-* Rules with straightforward interpretation in relation to instance values and feature weights.
-* Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions.
-* Conjunctional rules conveying feature importance for the interaction of included features.
-* Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints ([read paper](https://doi.org/10.1007/978-3-031-63787-2_17)). 
+* __Fast__, __reliable__, __stable__ and __robust__ __feature importance explanations__ for:
+	- __Binary classification__ models ([read paper](https://doi.org/10.1016/j.eswa.2024.123154))
+	- __Multi-class classification__ models ([read paper](https://easychair.org/publications/preprint/rqdD))
+	- __Regression__ models ([read paper](https://arxiv.org/abs/2308.16245))
+		* Including __probabilistic explanations__ of the probability that the target exceeds a user-defined threshold 
+		* With __difficulty adaptable explanations__ (conformal normalization) 
+* __Calibration of the underlying model__ to ensure that predictions reflect reality.
+* __Uncertainty quantification__ of the prediction from the underlying model and the feature importance weights. 
+* __Proximity-based rules with straightforward interpretation__ in relation to instance values and feature weights.
+* Possibility to generate __counterfactual rules with uncertainty quantification__ of the expected predictions.
+* __Conjunctional rules__ conveying feature importance for the interaction of included features.
+* __Conditional rules__, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints ([read paper](https://doi.org/10.1007/978-3-031-63787-2_17)). 
 
 Below is an example of a probabilistic counterfactual explanation for an instance of the regression dataset California Housing (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 <p align="center">
