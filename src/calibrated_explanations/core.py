@@ -1803,6 +1803,10 @@ class WrapCalibratedExplainer():
         .. code-block:: python
         
             w.explain_counterfactual(X_test, low_high_percentiles=(10, 90))
+
+        Note
+        ----
+        The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
@@ -1816,6 +1820,71 @@ class WrapCalibratedExplainer():
             bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
         return self.explainer.explain_counterfactual(X_test, **kwargs)
+
+    def explore_alternatives(self, X_test, **kwargs):
+        """
+        Generates a :class:`.CalibratedExplanations` object for the provided test data, automatically selecting an appropriate discretizer for alternative explanations.
+
+        Parameters
+        ----------
+        X_test : array-like
+            The test data for which predictions and explanations are to be generated. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
+
+        **kwargs : Various types, optional
+            Additional parameters to customize the explanation process. Supported parameters include:
+
+            - threshold (float, int, or array-like of shape (n_samples,), default=None): Specifies the p-value thresholds for probabilistic explanations in regression tasks. This parameter is ignored for classification tasks.
+
+            - low_high_percentiles (tuple of two floats, default=(5, 95)): Defines the lower and upper percentiles for calculating prediction intervals in regression tasks. This is used to adjust the breadth of the intervals based on the distribution of the predictions.
+
+            Additional keyword arguments can be passed to further customize the behavior of the explanation generation. These arguments are dynamically processed based on the specific requirements of the explanation task.
+
+        Raises
+        ------
+        ValueError
+            If the number of features in `X_test` does not match the number of features in the calibration data used to initialize the CalibratedExplanations object.
+
+        Warning
+            If the `threshold` parameter is provided for a task other than regression, a warning is issued indicating that this parameter is only applicable to regression tasks.
+
+        ValueError
+            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
+
+        Returns
+        -------
+        :class:`.CalibratedExplanations`
+            An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
+
+        Examples
+        --------
+        Generate explanations with a specific threshold for regression:
+        
+        .. code-block:: python
+        
+            w.explore_alternatives(X_test, threshold=0.05)
+
+        Generate explanations using custom percentile values for interval calculation:
+        
+        .. code-block:: python
+        
+            w.explore_alternatives(X_test, low_high_percentiles=(10, 90))
+
+        Note
+        ----
+        The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+        if isinstance(self.mc, MondrianCategorizer):
+            bins = self.mc.apply(X_test)
+        elif self.mc is not None:
+            bins = self.mc(X_test)
+        else:
+            bins = kwargs.get('bins', None)
+        kwargs['bins'] = bins
+        return self.explainer.explore_alternatives(X_test, **kwargs)
 
     def explain_perturbed(self, X_test, **kwargs):
         """

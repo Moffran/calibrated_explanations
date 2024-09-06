@@ -549,8 +549,8 @@ class CalibratedExplanation(ABC):
                             y_threshold[index]
 
         self.conditions = []
-        self.rules = []
-        self.conjunctive_rules = []
+        self.rules = None
+        self.conjunctive_rules = None
         self._has_rules = False
         self._has_conjunctive_rules = False
         self.bin = [instance_bin] if instance_bin is not None else None
@@ -560,6 +560,10 @@ class CalibratedExplanation(ABC):
             self.y_minmax = [np.min(self._get_explainer().y_cal), np.max(self._get_explainer().y_cal)]
         else:
             self.y_minmax = [0,0]
+
+    def __len__(self):
+        return len(self._get_rules()['rule'])
+
 
     def get_mode(self):
         '''
@@ -1019,6 +1023,7 @@ class AlternativeExplanation(CalibratedExplanation):
     def __init__(self, calibrated_explanations, index, X_test, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
         super().__init__(calibrated_explanations, index, X_test, binned, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
         self._check_preconditions()
+        self._has_rules = False
         self._get_rules()
         self.__is_super_explanation = False
         self.__is_semi_explanation = False
