@@ -175,7 +175,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
         cal_exp.plot(X_test) # pylint: disable=no-member
         cal_exp.plot(X_test, y_test) # pylint: disable=no-member
-        
+
         cal_exp.plot(X_test, threshold=y_test[0]) # pylint: disable=no-member
         cal_exp.plot(X_test, y_test, threshold=y_test[0]) # pylint: disable=no-member
 
