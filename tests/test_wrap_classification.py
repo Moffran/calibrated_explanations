@@ -169,14 +169,8 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         self.assertEqual(new_exp.explainer, explainer)
         self.assertEqual(new_exp.learner, learner)
 
-        try:
-            cal_exp.plot(X_test) # pylint: disable=no-member
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(X_test) raised unexpected exception: {e}")
-        try:
-            cal_exp.plot(X_test, y_test) # pylint: disable=no-member
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
+        cal_exp.plot(X_test) # pylint: disable=no-member
+        cal_exp.plot(X_test, y_test) # pylint: disable=no-member
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')
     # pylint: disable=unused-variable, unsubscriptable-object, too-many-statements
@@ -242,14 +236,8 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         self.assertEqual(new_exp.explainer, explainer)
         self.assertEqual(new_exp.learner, learner)
 
-        try:
-            cal_exp.plot(X_test) # pylint: disable=no-member
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(X_test) raised unexpected exception: {e}")
-        try:
-            cal_exp.plot(X_test, y_test) # pylint: disable=no-member
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"cal_exp.plot_global(X_test, y_test) raised unexpected exception: {e}")
+        cal_exp.plot(X_test) # pylint: disable=no-member
+        cal_exp.plot(X_test, y_test) # pylint: disable=no-member
 
 
     # @unittest.skip('Test passes locally.  Skipping provisionally.')

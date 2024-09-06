@@ -76,7 +76,7 @@ class TestFramework(unittest.TestCase):
         ce = CalibratedExplainer(model, X_cal, y_cal, verbose=True)
         factual_explanations = ce.explain_factual(X_test)
         factual_explanations._get_rules()
-        factual_explanations._is_counterfactual()
+        factual_explanations._is_alternative()
         factual_explanations._is_one_sided()
         factual_explanations._is_thresholded()
         factual_explanations.as_lime()
@@ -84,7 +84,7 @@ class TestFramework(unittest.TestCase):
 
         counterfactual_explanations = ce.explain_counterfactual(X_test)
         counterfactual_explanations._get_rules()
-        counterfactual_explanations._is_counterfactual()
+        counterfactual_explanations._is_alternative()
         counterfactual_explanations._is_one_sided()
         counterfactual_explanations._is_thresholded()
 
