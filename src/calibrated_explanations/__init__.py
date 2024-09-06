@@ -11,6 +11,6 @@ from .core import CalibratedExplainer, WrapCalibratedExplainer, __version__
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                     RegressorDiscretizer, BinaryRegressorDiscretizer
 from .explanations import CalibratedExplanations, CalibratedExplanation, \
-                    FactualExplanation, CounterfactualExplanation, PerturbedExplanation
+                    FactualExplanation, AlternativeExplanation, PerturbedExplanation
 from ._VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
