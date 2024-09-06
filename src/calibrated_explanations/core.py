@@ -11,12 +11,9 @@ conformal predictive systems (regression).
 # pylint: disable=invalid-name, line-too-long, too-many-lines
 # flake8: noqa: E501
 import copy
-import math
 import warnings
 from time import time
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from crepes import ConformalClassifier
@@ -29,6 +26,7 @@ from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                 RegressorDiscretizer, BinaryRegressorDiscretizer
 from .utils.helper import safe_isinstance, safe_import, check_is_fitted, assert_threshold
 from .utils.perturbation import perturb_dataset
+from ._plots import _plot_global
 
 __version__ = 'v0.4.1a'
 
@@ -395,6 +393,48 @@ class CalibratedExplainer:
         -------
         :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
             intervals. 
+
+        Note
+        ----
+        The `explore_alternatives` will eventually be used instead of the `explain_counterfactuals` method.
+        """
+        discretizer = 'regressor' if 'regression' in self.mode else 'entropy'
+        self.set_discretizer(discretizer)
+        return self.explain(X_test, threshold, low_high_percentiles, bins)
+
+    def explore_alternatives(self,
+                                X_test,
+                                threshold = None,
+                                low_high_percentiles = (5, 95),
+                                bins = None,
+                                ) -> CalibratedExplanations:
+        """
+        Creates a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
+
+        Parameters
+        ----------
+        X_test : A set with n_samples of test objects to predict
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+        bins : array-like of shape (n_samples,), default=None
+            Mondrian categories
+
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The threshold-parameter is only supported for mode='regression'.
+        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
+            instances in X_test.
+
+        Returns
+        -------
+        :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing one :class:`.AlternativeExplanation` for each instance. 
+
+        Note
+        ----
+        The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.  
         """
         discretizer = 'regressor' if 'regression' in self.mode else 'entropy'
         self.set_discretizer(discretizer)
@@ -1516,120 +1556,7 @@ class CalibratedExplainer:
         threshold : float, int, optional
             The threshold value used with regression to get probability of being below the threshold. Only applicable to regression.
         """
-        is_regularized = True
-        if 'predict_proba' not in dir(self.learner) and threshold is None:
-            predict, (low, high) = self.predict(X_test, uq_interval=True, **kwargs)
-            is_regularized = False
-        else:
-            proba, (low, high) = self.predict_proba(X_test, uq_interval=True, threshold=threshold, **kwargs)
-        uncertainty = np.array(high - low)
-
-        marker_size = 50
-        min_x, min_y = 0,0
-        max_x, max_y = 1,1
-        ax = None
-        if is_regularized:
-            self._plot_proba_triangle()
-        else:
-            _, ax = plt.subplots()
-            # draw a line from (0,0) to (0.5,1) and from (1,0) to (0.5,1)
-            min_x = np.min(self.y_cal)
-            max_x = np.max(self.y_cal)
-            min_y = np.min(uncertainty)
-            max_y = np.max(uncertainty)
-            if math.isclose(min_x, max_x, rel_tol=1e-9):
-                warnings.warn("All uncertainties are (almost) identical.", Warning)
-
-            min_x = min_x - min(0.1 * (max_x - min_x), 0) if min_x > 0 else min_x - 0.1 * (max_x - min_x)
-            max_x = max_x + 0.1 * (max_x - min_x)
-            # min_y = min_y - max(0.1 * (max_y - min_y), 0) # uncertainty is always positive
-            max_y = max_y + 0.1 * (max_y - min_y)
-            # mid_x = (min_x + max_x) / 2
-            # mid_y = (min_y + max_y) / 2
-            # ax.plot([min_x, mid_x], [min_y, max_y], color='black')
-            # ax.plot([max_x, mid_x], [min_y, max_y], color='black')
-            # # draw a line from (0.5,0) to halfway between (0.5,0) and (0,1)
-            # ax.plot([mid_x, mid_x / 2], [min_y, mid_y], color='black')
-            # # draw a line from (0.5,0) to halfway between (0.5,0) and (1,1)
-            # ax.plot([mid_x, mid_x + mid_x / 2], [min_y, mid_y], color='black')
-
-        if y_test is None:
-            if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
-                plt.scatter(predict, uncertainty, label='Predictions', marker='.', s=marker_size)
-            else:
-                if self.is_multiclass(): # pylint: disable=protected-access
-                    predicted = np.argmax(proba, axis=1)
-                    proba = proba[np.arange(len(proba)), predicted]
-                    uncertainty = uncertainty[np.arange(len(uncertainty)), predicted]
-                else:
-                    proba = proba[:,1]
-                plt.scatter(proba, uncertainty, label='Predictions', marker='.', s=marker_size)
-
-        elif 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
-            norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
-            # Choose a colormap
-            colormap = plt.cm.viridis  # pylint: disable=no-member
-            # Map the normalized values to colors
-            colors = colormap(norm(y_test))
-            ax.scatter(predict, uncertainty, label='Predictions', color=colors, marker='.', s=marker_size)
-            # # Create a new axes for the colorbar
-            # divider = make_axes_locatable(ax)
-            # cax = divider.append_axes("right", size="5%", pad=0.05)
-            # # Add the colorbar to the new axes
-            # plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=colormap), cax=cax, label='Target Values')
-        else:
-            if 'predict_proba' not in dir(self.learner):
-                assert np.isscalar(threshold), "The threshold parameter must be a single constant value for all instances when used in plot_global."
-                y_test = np.array([0 if y_test[i] >= threshold else 1 for i in range(len(y_test))])
-                labels = [f'Y >= {threshold}', f'Y < {threshold}']
-            else:
-                labels = (
-                    [f'Y = {i}' for i in self.class_labels.values()]
-                    if self.class_labels is not None
-                    else [f'Y = {i}' for i in np.unique(y_test)]
-                )
-            marker_size = 25
-            if len(labels) == 2:
-                colors = ['blue', 'red']
-                markers = ['o', 'x']
-                proba = proba[:,1]
-            else:
-                colormap = plt.get_cmap('tab10', len(labels))
-                colors = [colormap(i) for i in range(len(labels))]
-                markers = ['o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H','o', 'x', 's', '^', 'v', 'D', 'P', '*', 'h', 'H'][:len(labels)]
-                proba = proba[np.arange(len(proba)), y_test]
-                uncertainty = uncertainty[np.arange(len(uncertainty)), y_test]
-            for i, c in enumerate(np.unique(y_test)):
-                plt.scatter(proba[y_test == c], uncertainty[y_test == c], color=colors[i], label=labels[i], marker=markers[i], s=marker_size)
-            plt.legend()
-        if 'predict_proba' not in dir(self.learner) and threshold is None: # not probabilistic
-            plt.xlabel('Predictions',loc='center')
-            plt.ylabel('Uncertainty',loc='center')
-        else:
-            plt.ylabel('Uncertainty')
-            if 'predict_proba' not in dir(self.learner):
-                plt.xlabel(f'Probability of Y < {threshold}')
-            else:
-                if self.is_multiclass(): # pylint: disable=protected-access
-                    if y_test is not None:
-                        plt.xlabel('Probability of Y = actual class')
-                    else:
-                        plt.xlabel('Probability of Y = predicted class')
-                else:
-                    plt.xlabel('Probability of Y = 1')
-        plt.xlim(min_x, max_x)
-        plt.ylim(min_y, max_y)
-        plt.show()
-
-    def _plot_proba_triangle(self):
-        plt.figure()
-        x = np.arange(0, 1, 0.01)
-        plt.plot((x / (1 + x)), x, color='black')
-        plt.plot(x, ((1 - x) / x), color='black')
-        x = np.arange(0.5, 1, 0.005)
-        plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
-        x = np.arange(0, 0.5, 0.005)
-        plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
+        _plot_global(self, X_test, y_test=y_test, threshold=threshold, **kwargs)
 
 
 class WrapCalibratedExplainer():
