@@ -15,7 +15,7 @@ Calibrated Explanations ([Documentation](https://calibrated-explanations.readthe
 The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
 * __Fast__, __reliable__, __stable__ and __robust__ __feature importance explanations__ for:
 	- __Binary classification__ models ([read paper](https://doi.org/10.1016/j.eswa.2024.123154)).
-	- __Multi-class classification__ models ([read paper](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf)).
+	- __Multi-class classification__ models (read [paper](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf) and [slides](https://copa-conference.com/presentations/Lofstrom.pdf)).
 	- __Regression__ models ([read paper](https://arxiv.org/abs/2308.16245)).
 		* Including __probabilistic explanations__ of the probability that the target exceeds a user-defined threshold.
 		* With __difficulty adaptable explanations__ (conformal normalization).
