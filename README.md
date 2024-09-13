@@ -384,12 +384,12 @@ Alternatively, you can install it from conda-forge:
 conda install -c conda-forge calibrated-explanations
 ```
 
-### From GitHub:
+<!-- ### From GitHub:
 To install the latest version directly from the GitHub repository, use the following command:
 
 ```bash	
 conda install git+https://github.com/Moffran/calibrated_explanations.git
-```
+``` -->
 
 ### Dependencies:
 The following dependencies are required and will be installed automatically if not already present:
