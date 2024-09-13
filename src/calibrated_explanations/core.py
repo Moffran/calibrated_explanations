@@ -14,7 +14,8 @@ import copy
 import warnings
 from time import time
 import numpy as np
-# from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from sklearn.metrics import confusion_matrix
 
 from crepes import ConformalClassifier
 from crepes.extras import hinge, MondrianCategorizer
@@ -1550,13 +1551,31 @@ class CalibratedExplainer:
         Parameters
         ----------
         X_test : array-like
-            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
+            The test data for which predictions are to be made. This should be in a format compatible 
+            with sklearn (e.g., numpy arrays, pandas DataFrames).
         y_test : array-like, optional
             The true labels of the test data. 
         threshold : float, int, optional
-            The threshold value used with regression to get probability of being below the threshold. Only applicable to regression.
+            The threshold value used with regression to get probability of being below the threshold. 
+            Only applicable to regression.
         """
         _plot_global(self, X_test, y_test=y_test, threshold=threshold, **kwargs)
+
+    def calibrated_confusion_matrix(self):
+        """
+        Generates a confusion matrix for the calibration set to provide insights about model behavior. 
+        The confusion matrix is only available for classification tasks. Leave-one-out cross-validation is 
+        used on the calibration set to generate the confusion matrix. 
+        """
+        assert self.mode == 'classification', "The confusion matrix is only available for classification tasks."
+        cal_predicted_classes = np.zeros(len(self.y_cal))
+        for i in range(len(self.y_cal)):
+            va = VennAbers(self.learner.predict_proba(np.concatenate((self.X_cal[:i], self.X_cal[i+1:]), axis=0)),
+                           np.concatenate((self.y_cal[:i], self.y_cal[i+1:])),
+                           self.learner)
+            _, _, _, predict = va.predict_proba([self.X_cal[i]], output_interval=True)
+            cal_predicted_classes[i] = predict[0]
+        return confusion_matrix(self.y_cal, cal_predicted_classes)
 
 
 class WrapCalibratedExplainer():
@@ -1744,7 +1763,7 @@ class WrapCalibratedExplainer():
             w.explain_factual(X_test, low_high_percentiles=(10, 90))
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
         if isinstance(self.mc, MondrianCategorizer):
@@ -1809,7 +1828,7 @@ class WrapCalibratedExplainer():
         The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
         if isinstance(self.mc, MondrianCategorizer):
@@ -1874,7 +1893,7 @@ class WrapCalibratedExplainer():
         The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
         if isinstance(self.mc, MondrianCategorizer):
@@ -1935,7 +1954,7 @@ class WrapCalibratedExplainer():
             w.explain_perturbed(X_test, low_high_percentiles=(10, 90))
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted before explaining.")
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
         if isinstance(self.mc, MondrianCategorizer):
@@ -2097,6 +2116,18 @@ class WrapCalibratedExplainer():
         kwargs['bins'] = bins
         return self.explainer.predict_proba(X_test, uq_interval=uq_interval, threshold=threshold, **kwargs)
 
+    def calibrated_confusion_matrix(self):
+        """
+        Generates a confusion matrix for the calibration set to provide insights about model behavior. 
+        The confusion matrix is only available for classification tasks. Leave-one-out cross-validation is 
+        used on the calibration set to generate the confusion matrix. 
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before providing a confusion matrix.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before providing a confusion matrix.")
+        return self.explainer.calibrated_confusion_matrix()
+
     def set_difficulty_estimator(self, difficulty_estimator) -> None:
         """assigns a :class:`crepes.extras.DifficultyEstimator` for regression. For further information, 
         see the documentation for the :class:`crepes.extras.DifficultyEstimator` or refer to the crepes package 
@@ -2107,6 +2138,10 @@ class WrapCalibratedExplainer():
         difficulty_estimator : :class:`crepes.extras.DifficultyEstimator` or None: 
             A :class:`crepes.extras.DifficultyEstimator` object from the crepes package. To remove the :class:`crepes.extras.DifficultyEstimator`, set to None.
         """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before assigning a difficulty estimator.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before assigning a difficulty estimator.")
         self.explainer.set_difficulty_estimator(difficulty_estimator)
 
 
@@ -2122,6 +2157,10 @@ class WrapCalibratedExplainer():
         threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression.
         '''
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before initializing reject learner.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before initializing reject learner.")
         return self.explainer.initialize_reject_learner(threshold=threshold)
 
     def predict_reject(self, X_test, bins=None, confidence=0.95):
@@ -2138,6 +2177,10 @@ class WrapCalibratedExplainer():
         -------
         np.ndarray : A boolean array of shape (n_samples,) indicating whether the test instances are within the calibration data distribution.
         '''
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before predicting rejection.")
         return self.explainer.predict_reject(X_test, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
@@ -2156,7 +2199,7 @@ class WrapCalibratedExplainer():
             The threshold value used with regression to get probability of being below the threshold. Only applicable to regression.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted before plotting.")
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before plotting.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before plotting.")
         if isinstance(self.mc, MondrianCategorizer):
