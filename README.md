@@ -61,7 +61,7 @@ Below is an example of a probabilistic alternative explanation for an instance f
 The darker red bars for each rule (seen to the left) show the probability intervals provided by Venn-Abers, indicating how the likelihood of the outcome changes when specific feature values (seen to the right) are modified according to the rule conditions.
 <p align="center">
   <a href="https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest">
-    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic counterfactual explanation for California Housing">
+    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic alternative explanation for California Housing">
   </a>
 </p>
 
