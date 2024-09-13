@@ -58,7 +58,7 @@ Calibrated Explanations offers a range of features designed to enhance both the 
 ### Example Explanation
 Below is an example of a probabilistic alternative explanation for an instance from the California Housing regression dataset, with a threshold set at 180,000. The light red area in the background represents the calibrated probability interval for the prediction being below the threshold, as determined by the underlying model using a Conformal Predictive System to generate a probability estimate and Venn-Abers to generate epistemic uncertainty.
 
-The darker red bars for each rule show the probability intervals provided by Venn-Abers, indicating how the likelihood of the outcome changes when specific feature values are modified according to the rule conditions.
+The darker red bars for each rule (seen to the left) show the probability intervals provided by Venn-Abers, indicating how the likelihood of the outcome changes when specific feature values (seen to the right) are modified according to the rule conditions.
 <p align="center">
   <a href="https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest">
     <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic counterfactual explanation for California Housing">
