@@ -1,5 +1,5 @@
-Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest))
-=======================
+# Calibrated Explanations ([Documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest))
+<!-- ======================= -->
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/calibrated-explanations.svg)](https://anaconda.org/conda-forge/calibrated-explanations)
@@ -11,196 +11,61 @@ Calibrated Explanations ([Documentation](https://calibrated-explanations.readthe
 <!-- [![Lint Status for Calibrated Explanations][lint-status]][lint-log] -->
 <!-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/main?urlpath=https%3A%2F%2Fgithub.com%2FMoffran%2Fcalibrated_explanations%2Fblob%2Fmain%2Fnotebooks%2Fquickstart.ipynb) -->
 
-`calibrated-explanations` is a Python package for Calibrated Explanations, a local feature importance explanation method providing uncertainty quantification, supporting both [classification](https://doi.org/10.1016/j.eswa.2024.123154) and [regression](https://arxiv.org/abs/2308.16245).
-The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
-* __Fast__, __reliable__, __stable__ and __robust__ __feature importance explanations__ for:
-	- __Binary classification__ models ([read paper](https://doi.org/10.1016/j.eswa.2024.123154)).
-	- __Multi-class classification__ models (read [paper](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf) and [slides](https://copa-conference.com/presentations/Lofstrom.pdf)).
-	- __Regression__ models ([read paper](https://arxiv.org/abs/2308.16245)).
-		* Including __probabilistic explanations__ of the probability that the target exceeds a user-defined threshold.
-		* With __difficulty adaptable explanations__ (conformal normalization).
-* __Calibration of the underlying model__ to ensure that predictions reflect reality.
-* __Uncertainty quantification__ of both the prediction from the underlying model and the feature importance weights. 
-* __Proximity-based rules with straightforward interpretation__ in relation to instance values and feature weights.
-* Possibility to generate __counterfactual rules with uncertainty quantification__ of the expected predictions.
-* __Conjunctional rules__ conveying feature importance for the interaction of included features  (described in the [regression paper](https://arxiv.org/abs/2308.16245)).
-* __Conditional rules__, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints ([read paper](https://doi.org/10.1007/978-3-031-63787-2_17)). 
+**Calibrated Explanations** is an explanation method for machine learning designed to enhance both the interpretability of model predictions and the quantification of uncertainty. In many real-world applications, understanding how confident a model is about its predictions is just as important as the predictions themselves. This framework provides calibrated explanations for both predictions and feature importance by quantifying **aleatoric** and **epistemic uncertainty** — two types of uncertainty that offer critical insights into both data and model reliability.
 
-Below is an example of a probabilistic counterfactual explanation for an instance of the regression dataset California Housing (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
+- **Aleatoric uncertainty** represents the noise inherent in the data. It affects the spread of probability distributions (for probabilistic outcomes) and predictions (for regression). This uncertainty is **irreducible** because it reflects limitations in the data generation process itself. Incorporating calibration ensures accurate aleatoric uncertainty.
+  
+- **Epistemic uncertainty** arises from the model's lack of knowledge due to limited training data or insufficient complexity. It affects the model’s confidence in its output when it encounters unfamiliar or out-of-distribution data. Unlike aleatoric uncertainty, epistemic uncertainty is **reducible** — it can be minimized by gathering more data, improving the model architecture, or refining features.
+
+By providing estimates for both aleatoric and epistemic uncertainty, **Calibrated Explanations** offers a more comprehensive understanding of predictions, both in terms of accuracy and confidence. This is particularly valuable in high-stakes environments where model reliability and interpretability are essential, such as in healthcare, finance, and autonomous systems.
+
+For an in-depth guide on how to start using Calibrated Explanations, refer to the [Getting Started](#getting-started) section below.
+
+### Key Features:
+- **Calibrated Prediction Confidence**: Obtain well-calibrated uncertainty estimates for predictions, helping users make informed decisions based on the model’s confidence.
+- **Uncertainty-Aware Feature Importance**: Understand not only which features are important but also how uncertain the model is about the contribution of those features.
+- **Support for Various Tasks**: The framework supports classification, regression, and probabilistic regression, making it adaptable to a wide range of machine learning problems.
+
+The ability to quantify both aleatoric and epistemic uncertainty provides practitioners with actionable insights into the reliability of predictions and explanations, fostering greater trust and transparency in machine learning models. 
+
+### Key Characteristics of Calibrated Explanations
+
+Calibrated Explanations offers a range of features designed to enhance both the interpretability and reliability of machine learning models. These characteristics can be summarized as follows:
+
+* **Fast, reliable, stable, and robust feature importance explanations** for:
+  - **Binary classification models** ([Read paper](https://doi.org/10.1016/j.eswa.2024.123154)).
+  - **Multi-class classification models** ([Read paper](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf), [Slides](https://copa-conference.com/presentations/Lofstrom.pdf)).
+  - **Regression models** ([Read paper](https://arxiv.org/abs/2308.16245)), including:
+    - **Probabilistic explanations**: Provides the probability that the target exceeds a user-defined threshold.
+    - **Difficulty-adaptable explanations**: Adjust explanations based on conformal normalization for varying levels of data difficulty.
+
+* **Aleatoric and epistemic uncertainty estimates**: These estimates are provided by **Venn-Abers** for probabilistic explanations and by **Conformal Predictive Systems** for regression tasks. Both types of uncertainty are grounded in solid theoretical foundations, leveraging **conformal prediction** and **Venn prediction** to ensure reliability and robustness in uncertainty quantification.
+
+* **Calibration of the underlying model**: Ensures that predictions accurately reflect reality, improving trust in model outputs.
+
+* **Comprehensive uncertainty quantification**:
+  - **Prediction uncertainty**: Quantifies both aleatoric and epistemic uncertainties for the model’s predictions.
+  - **Feature importance uncertainty**: Measures uncertainty in feature importance scores, helping to assess the reliability of each feature's contribution.
+
+* **Proximity-based rules for straightforward interpretation**: Generates rules that are easily interpretable by relating instance values to feature importance weights.
+
+* **Alternative explanations with uncertainty quantification**: Provides explanations for how predicted outcomes would change if specific input features were modified, including uncertainty estimates for these alternative outcomes.
+
+* **Conjunctional rules**: Provides feature importance explanations for interactions between multiple features, highlighting joint contributions (discussed in detail in the [regression paper](https://arxiv.org/abs/2308.16245)).
+
+* **Conditional rules for contextual explanations**: Allows users to create explanations conditioned on specific criteria, enabling better handling of e.g. fairness and bias constraints ([Read paper](https://doi.org/10.1007/978-3-031-63787-2_17)). Using conformal terminology, this means that Mondrian categories are supported. 
+  
+### Example Explanation
+Below is an example of a probabilistic alternative explanation for an instance from the California Housing regression dataset, with a threshold set at 180,000. The light red area in the background represents the calibrated probability interval for the prediction being below the threshold, as determined by the underlying model using a Conformal Predictive System to generate a probability estimate and Venn-Abers to generate epistemic uncertainty.
+
+The darker red bars for each rule show the probability intervals provided by Venn-Abers, indicating how the likelihood of the outcome changes when specific feature values are modified according to the rule conditions.
 <p align="center">
   <a href="https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest">
     <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic counterfactual explanation for California Housing">
   </a>
 </p>
 
-The table summarizes the characteristics of Calibrated Explanations.
-<table align="center" style="border-collapse: collapse;">
-  <tr>
-    <th style="border-bottom: 0px; text-align: left;"></th>
-    <th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3"></th>
-	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Standard</th>
-	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Probabilistic</th>	
-  </tr>
-  <tr>
-    <th style="border-bottom: 0px; text-align: left;"></th>
-    <th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Classification</th>
-	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Regression</th>
-	<th style="text-align: center; border-left: 1px solid; border-bottom: 0px;" colspan="3">Regression</th>	
-  </tr>
-  <tr>
-    <th style="border-bottom: 1px solid; text-align: left;">Characteristics</th>
-    <th style="border-bottom: 1px solid; border-left: 1px solid; ">FR</th>
-    <th style="border-bottom: 1px solid;">FU</th>
-    <th style="border-bottom: 1px solid;">CF</th>
-    <th style="border-bottom: 1px solid; border-left: 1px solid; ">FR</th>
-    <th style="border-bottom: 1px solid;">FU</th>
-    <th style="border-bottom: 1px solid;">CF</th>
-    <th style="border-bottom: 1px solid; border-left: 1px solid; ">FR</th>
-    <th style="border-bottom: 1px solid;">FU</th>
-    <th style="border-bottom: 1px solid;">CF</th>
-  </tr>
-  <tr>
-    <td style="text-align: left;">Feature Weight w/o CI</td>
-    <td style="border-left: 1px solid; ">X</td>
-    <td></td>
-    <td></td>
-    <td style="border-left: 1px solid; ">X</td>
-    <td></td>
-    <td></td>
-    <td style="border-left: 1px solid; ">X</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td style="text-align: left;">Feature Weight with CI</td>
-    <td style="border-left: 1px solid; "></td>
-    <td>X</td>
-    <td></td>
-    <td style="border-left: 1px solid; "></td>
-    <td>X</td>
-    <td></td>
-    <td style="border-left: 1px solid; "></td>
-    <td>X</td>
-    <td></td>
-  </tr>
-  <tr>
-    <td style="border-bottom: 1px solid; text-align: left;">Rule Prediction with CI</td>
-    <td style="border-bottom: 1px solid; border-left: 1px solid; "></td>
-    <td style="border-bottom: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;">X</td>
-    <td style="border-bottom: 1px solid; border-left: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;">X</td>
-    <td style="border-bottom: 1px solid; border-left: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;">X</td>
-  </tr>
-  <tr>
-    <td style="text-align: left;">Two-sided CI</td>
-    <td style="border-left: 1px solid; ">I</td>
-    <td>I</td>
-    <td>I</td>
-    <td style="border-left: 1px solid; ">I</td>
-    <td>I</td>
-    <td>I</td>
-    <td style="border-left: 1px solid; ">I</td>
-    <td>I</td>
-    <td>I</td>
-  </tr>
-  <tr>
-    <td style="text-align: left;">Lower-bounded CI</td>
-    <td style="border-left: 1px solid; "></td>
-    <td></td>
-    <td></td>
-    <td style="border-left: 1px solid; ">I</td>
-    <td></td>
-    <td>I</td>
-    <td style="border-left: 1px solid; "></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td style="border-bottom: 1px solid; text-align: left;">Upper-bounded CI</td>
-    <td style="border-bottom: 1px solid; border-left: 1px solid; "></td>
-    <td style="border-bottom: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;"></td>
-    <td style="border-bottom: 1px solid; border-left: 1px solid;">I</td>
-    <td style="border-bottom: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;">I</td>
-    <td style="border-bottom: 1px solid; border-left: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;"></td>
-    <td style="border-bottom: 1px solid;"></td>
-  </tr>
-  <tr>
-    <td style="text-align: left;">Conjunctive Rules</td>
-    <td style="border-left: 1px solid; ">O</td>
-    <td>O</td>
-    <td>O</td>
-    <td style="border-left: 1px solid; ">O</td>
-    <td>O</td>
-    <td>O</td>
-    <td style="border-left: 1px solid; ">O</td>
-    <td>O</td>
-    <td>O</td>
-  </tr>
-  <tr>
-    <td style="text-align: left;">Conditional Rules</td>
-    <td style="border-left: 1px solid; ">O</td>
-    <td>O</td>
-    <td>O</td>
-    <td style="border-left: 1px solid; ">O</td>
-    <td>O</td>
-    <td>O</td>
-    <td style="border-left: 1px solid; ">O</td>
-    <td>O</td>
-    <td>O</td>
-  </tr>
-  <tr>
-    <td style="text-align: left;">Difficulty Estimation</td>
-    <td style="border-left: 1px solid; "></td>
-    <td></td>
-    <td></td>
-    <td style="border-left: 1px solid; ">O</td>
-    <td>O</td>
-    <td>O</td>
-    <td style="border-left: 1px solid; ">O</td>
-    <td>O</td>
-    <td>O</td>
-  </tr>
-  <tr>
-    <td style="text-align: left;"># Alternative Setups</td>
-    <td style="border-left: 1px solid; ">1</td>
-    <td>1</td>
-    <td>1</td>
-    <td style="border-left: 1px solid; ">5</td>
-    <td>5</td>
-    <td>5</td>
-    <td style="border-left: 1px solid; ">5</td>
-    <td>5</td>
-    <td>5</td>
-  </tr>
-</table>
-
-All explanations include the *calibrated prediction*, with *confidence intervals* (**CI**), of the explained instance. 
-- **FR** refers to *factual* explanations visualized using *regular* plots
-- **FU** refers to *factual* explanations visualized using *uncertainty* plots
-- **CF** refers to *counterfactual* explanations and plots
-- **X** marks a *core alternative*
-- **I** marks possible *interval type(s)*
-- **O** marks *optional additions*
-  
-The example plot above, showing a counterfactual probabilistic regression explanation, corresponds to the last column without any optional additions.
-
-
-
-<!-- <p align="center">
-  <a href="https://arxiv.org/abs/2308.16245">
-    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/Table1.png" alt="Characteristics of Calibrated Explanantions">
-  </a>
-</p> -->
-
-Getting started
----------------
+## Getting started
 The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb), using the `WrapCalibratedExplainer` class, is similar to this Getting Started, including plots and output.
 
 The notebooks listed below are using the `CalibratedExplainer` class. They showcase a number of different use cases, as indicated by their names:
@@ -330,6 +195,7 @@ counterfactual_explanations.plot(0)
 ```
 
 `calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
+
 ### Regression
 Extracting explanations for regression is very similar to how it is done for classification. First we load and divide the dataset. The target is divided by 1000, meaning that the target is in thousands of dollars. 
 
@@ -475,10 +341,9 @@ probabilistic_counterfactual_explanations.plot()
 
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
 
-### Alternatives
+### Alternative ways to initialize WrapCalibratedExplainer
 
 A `WrapCalibratedExplainer` can also be initialized with a trained model or with a `CalibratedExplainer` object, as is examplified below. 
-
 
 ```python
 fitted_classifier = WrapCalibratedExplainer(classifier.learner)
@@ -496,30 +361,38 @@ When a calibrated explainer is re-fitted, the explainer is reinitialized.
 
 [Top](#calibrated-explanations-documentation)
 
-Known Limitations
------------------
+## Known Limitations
 The implementation currently only support numerical input. Use the `utils.helper.transform_to_numeric` (released in version v0.3.1) to transform a `DataFrame` with text data into numerical form and at the same time extracting `categorical_features`, `categorical_labels`, `target_labels` (if text labels) and `mappings` (used to apply the same mappings to new data) to be used as input to the `CalibratedExplainer`. The algorithm does not currently support image data.
 
 See e.g. the [Conditional Fairness Experiment](evaluation/Conditional_Fairness_Experiment.ipynb) for examples on how it can be used.
 
 [Top](#calibrated-explanations-documentation)
 
-Install
--------
+## Install
 
-`calibrated-explanations` is implemented in Python, so you need a Python environment.
-
+### From PyPI:
 Install `calibrated-explanations` from PyPI:
 
-	pip install calibrated-explanations
+```bash
+pip install calibrated-explanations
+```
 
-or from conda-forge:
-	
- 	conda install -c conda-forge calibrated-explanations
+### From conda-forge:
+Alternatively, you can install it from conda-forge:
 
-or by following further instructions at [conda-forge](https://github.com/conda-forge/calibrated-explanations-feedstock#installing-calibrated-explanations).
+```bash	
+conda install -c conda-forge calibrated-explanations
+```
 
-The dependencies are:
+### From GitHub:
+To install the latest version directly from the GitHub repository, use the following command:
+
+```bash	
+conda install git+https://github.com/Moffran/calibrated_explanations.git
+```
+
+### Dependencies:
+The following dependencies are required and will be installed automatically if not already present:
 
 * [crepes](https://github.com/henrikbostrom/crepes)
 * [venn-abers](https://github.com/ip200/venn-abers)
