@@ -21,14 +21,14 @@ By providing estimates for both aleatoric and epistemic uncertainty, **Calibrate
 
 For an in-depth guide on how to start using Calibrated Explanations, refer to the [Getting Started](#getting-started) section below.
 
-### Key Features:
+### Core Features:
 - **Calibrated Prediction Confidence**: Obtain well-calibrated uncertainty estimates for predictions, helping users make informed decisions based on the model’s confidence.
 - **Uncertainty-Aware Feature Importance**: Understand not only which features are important but also how uncertain the model is about the contribution of those features.
 - **Support for Various Tasks**: The framework supports classification, regression, and probabilistic regression, making it adaptable to a wide range of machine learning problems.
 
 The ability to quantify both aleatoric and epistemic uncertainty provides practitioners with actionable insights into the reliability of predictions and explanations, fostering greater trust and transparency in machine learning models. 
 
-### Key Characteristics of Calibrated Explanations
+### Distinctive Characteristics of Calibrated Explanations
 
 Calibrated Explanations offers a range of features designed to enhance both the interpretability and reliability of machine learning models. These characteristics can be summarized as follows:
 
