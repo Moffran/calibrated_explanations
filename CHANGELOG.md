@@ -3,7 +3,10 @@
 ## [Unreleased]
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.4.0...main)
 ### Features
+- Improved the introduction in README.
+- Added `calibrated_confusion_matrix` in `CalibratedExplainer` and `WrapCalibratedExplainer`, providing a leave-one-out calibrated confusion matrix using the calibration set. The insights from the confusion matrix are useful when analyzing explanations, to determine the general prediction and error distributions of the model.
 ### Fixes
+- Added checks to ensure that the learner is not called unless the `WrapCalibratedExplainer` is calibrated.
 
 ## [v0.4.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.4.0) - 2024-08-23
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...v0.4.0)
