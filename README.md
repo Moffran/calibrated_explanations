@@ -93,8 +93,6 @@ dataset = fetch_openml(name="wine", version=7, as_frame=True, parser='auto')
 X = dataset.data.values.astype(float)
 y = (dataset.target.values == 'True').astype(int)
 
-feature_names = dataset.feature_names
-
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=2, stratify=y)
 
 X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train,
@@ -134,7 +132,7 @@ Before we can generate explanations, we need to calibrate our model using the ca
 
 
 ```python
-classifier.calibrate(X_cal, y_cal, feature_names=feature_names)
+classifier.calibrate(X_cal, y_cal)
 display(classifier)
 ```
 
@@ -206,8 +204,6 @@ dataset = fetch_openml(name="house_sales", version=3)
 X = dataset.data.values.astype(float)
 y = dataset.target.values/1000
 
-feature_names = dataset.feature_names
-
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=2, random_state=42)
 
 X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train,
@@ -243,7 +239,7 @@ Before we can generate explanations, we need to calibrate our model using the ca
 
 
 ```python
-regressor.calibrate(X_cal, y_cal, feature_names=feature_names)
+regressor.calibrate(X_cal, y_cal)
 display(regressor)
 ```
 
@@ -253,7 +249,7 @@ We can easily add a difficulty estimator by assigning a `DifficultyEstimator` to
 ```python
 from crepes.extras import DifficultyEstimator
 
-regressor.calibrate(X_cal, y_cal, feature_names=feature_names, 
+regressor.calibrate(X_cal, y_cal, 
                     difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=regressor.learner, scaler=True))
 display(regressor)
 ```
@@ -426,9 +422,9 @@ Further reading and citing
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
 
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27.
-- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245. Accepted to Machine Learning. In press.
+- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2024). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245. Accepted to Machine Learning. In press.
 -  [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://doi.org/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham.
-- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>. [Presentation](https://copa-conference.com/presentations/Lofstrom.pdf)
+- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>, PMLR 230:175-194. [Presentation](https://copa-conference.com/presentations/Lofstrom.pdf)
   
 The paper that originated the idea of `calibrated-explanations` is:
 
@@ -440,7 +436,7 @@ If you use `calibrated-explanations` for a scientific publication, you are kindl
 
 Acknowledgements
 ----------------
-This research is funded by the Swedish Knowledge Foundation together with industrial partners supporting the research and education environment on Knowledge Intensive Product Realization SPARK at Jönköping University, Sweden, through projects: AFAIR grant no. 20200223, ETIAI grant no. 20230040, and PREMACOP grant no. 20220187. Helena Löfström was a PhD student in the Industrial Graduate School in Digital Retailing (INSiDR) at the University of Borås, funded by the Swedish Knowledge Foundation, grant no. 20160035. 
+This research is funded by the Swedish Knowledge Foundation together with industrial partners supporting the research and education environment on Knowledge Intensive Product Realization SPARK at Jönköping University, Sweden, through projects: AFAIR grant no. 20200223, ETIAI grant no. 20230040, and PREMACOP grant no. 20220187. Helena Löfström was initially a PhD student in the Industrial Graduate School in Digital Retailing (INSiDR) at the University of Borås, funded by the Swedish Knowledge Foundation, grant no. 20160035. 
 
 [Rudy Matela](https://github.com/rudymatela) has been our git guru and has helped us with the release process.
 
