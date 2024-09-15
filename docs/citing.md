@@ -85,11 +85,20 @@ Bibtex for the conditional paper:
 Bibtex for the multi-class paper:
 
 ```bibtex
-@Booklet{lofstrom2024ce_multiclass,
-	author = {Tuwe Löfström and Helena Löfström and Ulf Johansson},
-	title = {Calibrated Explanations for Multi-Class},
-	howpublished = {EasyChair Preprint no. 14106},
-	year = {EasyChair, 2024}
+@InProceedings{lofstrom2024ce_multiclass,
+	title = 	 {Calibrated Explanations for Multi-class},
+	author =       {L\"{o}fstr\"{o}m, Tuwe and L\"{o}fstr\"{o}m, Helena and Johansson, Ulf},
+	booktitle = 	 {Proceedings of the Thirteenth Symposium on Conformal and Probabilistic Prediction with Applications},
+	pages = 	 {175--194},
+	year = 	 {2024},
+	editor = 	 {Vantini, Simone and Fontana, Matteo and Solari, Aldo and Boström, Henrik and Carlsson, Lars},
+	volume = 	 {230},
+	series = 	 {Proceedings of Machine Learning Research},
+	month = 	 {09--11 Sep},
+	publisher =    {PMLR},
+	pdf = 	 {https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf},
+	url = 	 {https://proceedings.mlr.press/v230/lofstrom24a.html},
+	abstract = 	 {Calibrated Explanations is a recently proposed feature importance explanation method providing uncertainty quantification. It utilises Venn-Abers to generate well-calibrated factual and counterfactual explanations for binary classification. In this paper, we extend the method to support multi-class classification. The paper includes an evaluation illustrating the calibration quality of the selected multi-class calibration approach, as well as a demonstration of how the explanations can help determine which explanations to trust.}
 }
 ```
 
