@@ -18,7 +18,7 @@ The paper that originated the idea of `calibrated-explanations` is:
 Bibtex for Helena Löfström's dissertation:
 
 ```bibtex
-@phdthesis{Lofstrom1810440,
+@phdthesis{lofstrom2023dissertation,
    author = {L{\"o}fstr{\"o}m, Helena},
    institution = {Jönköping University, JIBS, Informatics},
    pages = {72},
