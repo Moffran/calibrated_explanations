@@ -26,7 +26,7 @@ For an in-depth guide on how to start using Calibrated Explanations, refer to th
 - **Uncertainty-Aware Feature Importance**: Understand not only which features are important but also how uncertain the model is about the contribution of those features.
 - **Support for Various Tasks**: The framework supports classification, regression, and probabilistic regression, making it adaptable to a wide range of machine learning problems.
 
-The ability to quantify both aleatoric and epistemic uncertainty provides practitioners with actionable insights into the reliability of predictions and explanations, fostering appropriate trust ([read paper](https://scholar.google.com/citations?view_op=view_citation&hl=sv&user=reKgRBwAAAAJ&citation_for_view=reKgRBwAAAAJ:Se3iqnhoufwC)) and transparency in machine learning models. 
+The ability to quantify both aleatoric and epistemic uncertainty provides practitioners with actionable insights into the reliability of predictions and explanations, fostering **appropriate trust** ([read paper](https://scholar.google.com/citations?view_op=view_citation&hl=sv&user=reKgRBwAAAAJ&citation_for_view=reKgRBwAAAAJ:Se3iqnhoufwC)) and transparency in machine learning models. 
 
 ### Distinctive Characteristics of Calibrated Explanations
 
