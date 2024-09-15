@@ -19,20 +19,20 @@ Bibtex for Helena Löfström's dissertation:
 
 ```bibtex
 @phdthesis{lofstrom2023dissertation,
-   author = {L{\"o}fstr{\"o}m, Helena},
-   institution = {Jönköping University, JIBS, Informatics},
-   pages = {72},
-   publisher = {Jönköping University, Jönköping International Business School},
-   school = {, JIBS, Informatics},
-   title = {Trustworthy explanations : Improved decision support through well-calibrated uncertainty quantification},
-   series = {JIBS Dissertation Series},
-   ISSN = {1403-0470},
-   number = {159},
-   keywords = {Explainable Artificial Intelligence, Interpretable Machine Learning, Decision Support Systems, Uncertainty Estimation, Explanation Methods},
-   abstract = {The use of Artificial Intelligence (AI) has transformed fields like disease diagnosis and defence. Utilising sophisticated Machine Learning (ML) models, AI predicts future events based on historical data, introducing complexity that challenges understanding and decision-making. Previous research emphasizes users’ difficulty discerning when to trust predictions due to model complexity, underscoring addressing model complexity and providing transparent explanations as pivotal for facilitating high-quality decisions. Many ML models offer probability estimates for predictions, commonly used in methods providing explanations to guide users on prediction confidence. However, these probabilities often do not accurately reflect the actual distribution in the data, leading to potential user misinterpretation of prediction trustworthiness. Additionally, most explanation methods fail to convey whether the model’s probability is linked to any uncertainty, further diminishing the reliability of the explanations. Evaluating the quality of explanations for decision support is challenging, and although highlighted as essential in research, there are no benchmark criteria for comparative evaluations. This thesis introduces an innovative explanation method that generates reliable explanations, incorporating uncertainty information supporting users in determining when to trust the model’s predictions. The thesis also outlines strategies for evaluating explanation quality and facilitating comparative evaluations. Through empirical evaluations and user studies, the thesis provides practical insights to support decision-making utilising complex ML models. },
-   ISBN = {978-91-7914-031-1},
-   ISBN = {978-91-7914-032-8},
-   year = {2023}
+	author = {L{\"o}fstr{\"o}m, Helena},
+	institution = {Jönköping University, JIBS, Informatics},
+	pages = {72},
+	publisher = {Jönköping University, Jönköping International Business School},
+	school = {, JIBS, Informatics},
+	title = {Trustworthy explanations : Improved decision support through well-calibrated uncertainty quantification},
+	series = {JIBS Dissertation Series},
+	ISSN = {1403-0470},
+	number = {159},
+	keywords = {Explainable Artificial Intelligence, Interpretable Machine Learning, Decision Support Systems, Uncertainty Estimation, Explanation Methods},
+	abstract = {The use of Artificial Intelligence (AI) has transformed fields like disease diagnosis and defence. Utilising sophisticated Machine Learning (ML) models, AI predicts future events based on historical data, introducing complexity that challenges understanding and decision-making. Previous research emphasizes users’ difficulty discerning when to trust predictions due to model complexity, underscoring addressing model complexity and providing transparent explanations as pivotal for facilitating high-quality decisions. Many ML models offer probability estimates for predictions, commonly used in methods providing explanations to guide users on prediction confidence. However, these probabilities often do not accurately reflect the actual distribution in the data, leading to potential user misinterpretation of prediction trustworthiness. Additionally, most explanation methods fail to convey whether the model’s probability is linked to any uncertainty, further diminishing the reliability of the explanations. Evaluating the quality of explanations for decision support is challenging, and although highlighted as essential in research, there are no benchmark criteria for comparative evaluations. This thesis introduces an innovative explanation method that generates reliable explanations, incorporating uncertainty information supporting users in determining when to trust the model’s predictions. The thesis also outlines strategies for evaluating explanation quality and facilitating comparative evaluations. Through empirical evaluations and user studies, the thesis provides practical insights to support decision-making utilising complex ML models. },
+	ISBN = {978-91-7914-031-1},
+	ISBN = {978-91-7914-032-8},
+	year = {2023}
 }
 ```
 
