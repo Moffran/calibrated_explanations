@@ -1,4 +1,4 @@
-771005-0316# Citing calibrated-explanations
+# Citing calibrated-explanations
 
 
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
