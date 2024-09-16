@@ -253,10 +253,12 @@ We can easily add a difficulty estimator by assigning a `DifficultyEstimator` to
 ```python
 from crepes.extras import DifficultyEstimator
 
-regressor.calibrate(X_cal, y_cal, 
-                    difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=regressor.learner, scaler=True))
+de = DifficultyEstimator().fit(X=X_prop_train, learner=regressor.learner, scaler=True)
+regressor.calibrate(X_cal, y_cal, difficulty_estimator=de)
 display(regressor)
 ```
+
+A `DifficultyEstimator` can also be assigned to an already calibrated model using the `set_difficult_estimator` method. Using `set_difficult_estimator(None)` removes any previously assigned `DifficultyEstimator`. 
 
 Once the model is calibrated, the `predict` method produce calibrated predictions with uncertainties. The default confidence is 90 per cent, which can be altered using the `low_high_percentiles` parameter. 
 
