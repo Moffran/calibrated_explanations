@@ -125,8 +125,8 @@ The `WrapCalibratedExplainer` class has a `predict` and a `predict_proba` method
 
 
 ```python
-print('Uncalibrated probability estimates:')
-print(classifier.predict_proba(X_test))
+print('Uncalibrated prediction (probability estimates):')
+print(f'{classifier.predict(X_test)} ({classifier.predict_proba(X_test)})')
 ```
 
 Before we can generate explanations, we need to calibrate our model using the calibration set. 
@@ -142,8 +142,8 @@ Once the model is calibrated, the `predict` and `predict_proba` methods produce 
 
 ```python
 proba, (low, high) = classifier.predict_proba(X_test, uq_interval=True)
-print('Calibrated probability estimates:')
-print(proba)
+print('Calibrated prediction (probability estimates):')
+print(f'{classifier.predict(X_test)} ({proba})')
 print('Calibrated uncertainty interval for the positive class:')
 print([(low[i], high[i]) for i in range(len(low))])
 ```
