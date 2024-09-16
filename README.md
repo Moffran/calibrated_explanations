@@ -125,7 +125,8 @@ The `WrapCalibratedExplainer` class has a `predict` and a `predict_proba` method
 
 
 ```python
-print(f'Uncalibrated probability estimates: \n{classifier.predict_proba(X_test)}')
+print('Uncalibrated probability estimates:')
+print(classifier.predict_proba(X_test))
 ```
 
 Before we can generate explanations, we need to calibrate our model using the calibration set. 
@@ -141,8 +142,10 @@ Once the model is calibrated, the `predict` and `predict_proba` methods produce 
 
 ```python
 proba, (low, high) = classifier.predict_proba(X_test, uq_interval=True)
-print(f'Calibrated probability estimates: \n{proba}')
-print(f'Calibrated uncertainty interval for the positive class: [{[(low[i], high[i]) for i in range(len(low))]}]')
+print('Calibrated probability estimates:')
+print(proba)
+print('Calibrated uncertainty interval for the positive class:')
+print([(low[i], high[i]) for i in range(len(low))])
 ```
 
 #### Factual Explanations
@@ -232,7 +235,8 @@ The `WrapCalibratedExplainer` class has a `predict` method that returns the pred
 
 
 ```python
-print(f'Uncalibrated model prediction: \n{regressor.predict(X_test)}')
+print('Uncalibrated model prediction:')
+print(regressor.predict(X_test))
 ```
 
 Before we can generate explanations, we need to calibrate our model using the calibration set. 
@@ -254,13 +258,15 @@ regressor.calibrate(X_cal, y_cal,
 display(regressor)
 ```
 
-Once the model is calibrated, the `predict`  method produce calibrated predictions with uncertainties. The default confidence is 90 per cent, which can be altered using the `low_high_percentiles` parameter. 
+Once the model is calibrated, the `predict` method produce calibrated predictions with uncertainties. The default confidence is 90 per cent, which can be altered using the `low_high_percentiles` parameter. 
 
 
 ```python
-prediction, (low, high) = regressor.predict(X_test, uq_interval=True, low_high_percentiles=(5, 95))
-print(f'Calibrated prediction: \n{prediction}')
-print(f'Calibrated uncertainty interval: [{[(low[i], high[i]) for i in range(len(low))]}]')
+prediction, (low, high) = regressor.predict(X_test, uq_interval=True) # default low_high_percentiles=(5, 95)
+print('Calibrated prediction:')
+print(prediction)
+print('Calibrated uncertainty interval:')
+print([(low[i], high[i]) for i in range(len(low))])
 ```
 
 You can also get the probability of the prediction being below a certain threshold using `predict_proba` by assigning the `threshold` parameter.
@@ -268,11 +274,14 @@ You can also get the probability of the prediction being below a certain thresho
 
 ```python
 prediction = regressor.predict(X_test, threshold=200)
-print(f'Calibrated probabilistic prediction: {prediction}')
+print('Calibrated probabilistic prediction:')
+print(prediction)
 
 proba, (low, high) = regressor.predict_proba(X_test, uq_interval=True, threshold=200)
-print(f'Calibrated probabilistic probability estimate [y_hat > threshold, y_hat <= threshold]: \n{proba}')
-print(f'Calibrated probabilistic uncertainty interval for y_hat <= threshold: [{[(low[i], high[i]) for i in range(len(low))]}]')
+print('Calibrated probabilistic probability estimate [y_hat > threshold, y_hat <= threshold]:')
+print(proba)
+print('Calibrated probabilistic uncertainty interval for y_hat <= threshold:')
+print([(low[i], high[i]) for i in range(len(low))])
 ```
 
 #### Factual Explanations
@@ -280,7 +289,7 @@ Let us explain a test instance using our `WrapCalibratedExplainer` object. The m
 
 
 ```python
-factual_explanations = regressor.explain_factual(X_test)
+factual_explanations = regressor.explain_factual(X_test) # default low_high_percentiles=(5, 95)
 display(regressor)
 ```
 
@@ -307,7 +316,7 @@ The `explain_counterfactual` will work exactly the same as for classification.
 
 
 ```python
-counterfactual_explanations = regressor.explain_counterfactual(X_test)
+counterfactual_explanations = regressor.explain_counterfactual(X_test) # default low_high_percentiles=(5, 95)
 display(regressor)
 ```
 
@@ -399,9 +408,7 @@ The following dependencies are required and will be installed automatically if n
 [Top](#calibrated-explanations-documentation)
 
 
-Contributing
-------------
-
+## Contributing
 Contributions are welcome.
 Please send bug reports, feature requests or pull requests through
 the project page on [GitHub](https://github.com/Moffran/calibrated_explanations).
@@ -411,14 +418,13 @@ You can find a detailed guide for contributions in
 [Top](#calibrated-explanations-documentation)
 
 
-Documentation
--------------
+## Documentation
 For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
   
 [Top](#calibrated-explanations-documentation)
 
-Further reading and citing
---------------------------
+
+## Further reading and citing
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
 
 - [Löfström, H](https://github.com/Moffran). (2023). [Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440&dswid=6197) (Doctoral dissertation, Jönköping University, Jönköping International Business School).
@@ -435,8 +441,7 @@ If you use `calibrated-explanations` for a scientific publication, you are kindl
   
 [Top](#calibrated-explanations-documentation)
 
-Acknowledgements
-----------------
+## Acknowledgements
 This research is funded by the Swedish Knowledge Foundation together with industrial partners supporting the research and education environment on Knowledge Intensive Product Realization SPARK at Jönköping University, Sweden, through projects: AFAIR grant no. 20200223, ETIAI grant no. 20230040, and PREMACOP grant no. 20220187. Helena Löfström was initially a PhD student in the Industrial Graduate School in Digital Retailing (INSiDR) at the University of Borås, funded by the Swedish Knowledge Foundation, grant no. 20160035. 
 
 [Rudy Matela](https://github.com/rudymatela) has been our git guru and has helped us with the release process.
