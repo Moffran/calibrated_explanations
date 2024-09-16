@@ -1047,14 +1047,14 @@ class CalibratedExplainer:
         initialize (bool, optional): 
             If true, then the interval learner is initialized once done. Defaults to True.
         """
-        self.__initialized = False
-        self.difficulty_estimator = difficulty_estimator
         if difficulty_estimator is not None:
             try:
                 if not difficulty_estimator.fitted:
                     raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.")
             except AttributeError as e:
                 raise RuntimeError("The difficulty estimator is not fitted. Please fit the estimator first.") from e
+        self.__initialized = False
+        self.difficulty_estimator = difficulty_estimator
         if initialize:
             self.__initialize_interval_learner()
 
