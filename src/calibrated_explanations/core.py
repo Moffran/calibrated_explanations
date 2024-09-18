@@ -399,9 +399,7 @@ class CalibratedExplainer:
         ----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactuals` method.
         """
-        discretizer = 'regressor' if 'regression' in self.mode else 'entropy'
-        self.set_discretizer(discretizer)
-        return self.explain(X_test, threshold, low_high_percentiles, bins)
+        return self.explore_alternatives(X_test, threshold, low_high_percentiles, bins)
 
     def explore_alternatives(self,
                                 X_test,
@@ -1827,18 +1825,7 @@ class WrapCalibratedExplainer():
         ----
         The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
-        if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
-        if not self.calibrated:
-            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
-        if isinstance(self.mc, MondrianCategorizer):
-            bins = self.mc.apply(X_test)
-        elif self.mc is not None:
-            bins = self.mc(X_test)
-        else:
-            bins = kwargs.get('bins', None)
-        kwargs['bins'] = bins
-        return self.explainer.explain_counterfactual(X_test, **kwargs)
+        return self.explore_alternatives(X_test, **kwargs)
 
     def explore_alternatives(self, X_test, **kwargs):
         """
