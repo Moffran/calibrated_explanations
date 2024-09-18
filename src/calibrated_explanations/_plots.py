@@ -53,9 +53,10 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
     if explanation.is_thresholded():
         if np.isscalar(explanation.y_threshold):
             ax_negative.set_yticklabels(labels=[f'P(y>{float(explanation.y_threshold) :.2f})'])
-        else:
-            ax_negative.set_yticklabels(labels=[f'P(y>{float(explanation.y_threshold) :.2f})']) # pylint: disable=unsubscriptable-object
-        ax_positive.set_yticklabels(labels=[f'P(y<={float(explanation.y_threshold) :.2f})'])
+            ax_positive.set_yticklabels(labels=[f'P(y<={float(explanation.y_threshold) :.2f})'])
+        else: # interval threshold
+            ax_negative.set_yticklabels(labels=[f'y_hat <= {explanation.y_threshold[0]:.3f} || y_hat > {explanation.y_threshold[1]:.3f}']) # pylint: disable=unsubscriptable-object
+            ax_positive.set_yticklabels(labels=[f'{explanation.y_threshold[0]:.3f} < y_hat <= {explanation.y_threshold[1]:.3f}'])#f'P(y<={float(explanation.y_threshold) :.2f})' if predict >= 0.5 else f'P(y>{float(explanation.y_threshold) :.2f})'
     elif explanation.get_class_labels() is None:
         if explanation._get_explainer().is_multiclass(): # pylint: disable=protected-access
             ax_negative.set_yticklabels(labels=[f'P(y!={explanation.prediction["classes"]})'])
