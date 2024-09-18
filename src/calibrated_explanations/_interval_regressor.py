@@ -101,7 +101,7 @@ class IntervalRegressor:
             interval[i, :] = np.array([low, high])
         return proba, interval[:, 0], interval[:, 1], None
 
-    def _predict_tuple_interval(self, threshold, X_test, bins):
+    def _predict_tuple_interval(self, X_test, threshold, bins):
         h_threshold = np.max(threshold)
         self.current_y_threshold = h_threshold
         self.compute_proba_cal(h_threshold)
