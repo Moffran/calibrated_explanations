@@ -364,7 +364,7 @@ class CalibratedExplainer:
         self.set_discretizer(discretizer)
         return self.explain(X_test, threshold, low_high_percentiles, bins)
 
-    def explain_alternative(self,
+    def explain_counterfactual(self,
                                 X_test,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
@@ -397,7 +397,7 @@ class CalibratedExplainer:
 
         Note
         ----
-        The `explore_alternatives` will eventually be used instead of the `explain_alternatives` method.
+        The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
         """
         return self.explore_alternatives(X_test, threshold, low_high_percentiles, bins)
 
@@ -433,7 +433,7 @@ class CalibratedExplainer:
 
         Note
         ----
-        The `explore_alternatives` will eventually be used instead of the `explain_alternative` method.  
+        The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.  
         """
         discretizer = 'regressor' if 'regression' in self.mode else 'entropy'
         self.set_discretizer(discretizer)
@@ -447,8 +447,7 @@ class CalibratedExplainer:
                 ) -> CalibratedExplanations:
         """
         Calling self as a function creates a :class:`.CalibratedExplanations` object for the test data with the 
-        already assigned discretizer. Called by the `explain_factual` and `explain_alternative` methods. 
-        See their documentation for further information.
+        already assigned discretizer. Since v0.4.0, this method is equivalent to the `explain` method.
         """
         return self.explain(X_test, threshold, low_high_percentiles, bins)
 
@@ -461,7 +460,7 @@ class CalibratedExplainer:
                 ) -> CalibratedExplanations:
         """
         Calling the explain function creates a :class:`.CalibratedExplanations` object for the test data with the 
-        already assigned discretizer. Called by the `explain_factual` and `explain_alternative` methods. 
+        already assigned discretizer. Called by the `explain_factual` and `explore_alternatives` methods. 
         See their documentation for further information.
         """
         total_time = time()
@@ -1773,7 +1772,7 @@ class WrapCalibratedExplainer():
         kwargs['bins'] = bins
         return self.explainer.explain_factual(X_test, **kwargs)
 
-    def explain_alternative(self, X_test, **kwargs):
+    def explain_counterfactual(self, X_test, **kwargs):
         """
         Generates a :class:`.CalibratedExplanations` object for the provided test data, automatically selecting an appropriate discretizer for alternative explanations.
 
@@ -1813,17 +1812,17 @@ class WrapCalibratedExplainer():
         
         .. code-block:: python
         
-            w.explain_alternative(X_test, threshold=0.05)
+            w.explain_counterfactual(X_test, threshold=0.05)
 
         Generate explanations using custom percentile values for interval calculation:
         
         .. code-block:: python
         
-            w.explain_alternative(X_test, low_high_percentiles=(10, 90))
+            w.explain_counterfactual(X_test, low_high_percentiles=(10, 90))
 
         Note
         ----
-        The `explore_alternatives` is the same as `explain_alternative` which eventually be removed.
+        The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         return self.explore_alternatives(X_test, **kwargs)
 
@@ -1877,7 +1876,7 @@ class WrapCalibratedExplainer():
 
         Note
         ----
-        The `explore_alternatives` is the same as `explain_alternative` which eventually be removed.
+        The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
