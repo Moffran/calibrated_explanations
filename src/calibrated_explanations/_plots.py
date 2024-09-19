@@ -55,8 +55,8 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
             ax_negative.set_yticklabels(labels=[f'P(y>{float(explanation.y_threshold) :.2f})'])
             ax_positive.set_yticklabels(labels=[f'P(y<={float(explanation.y_threshold) :.2f})'])
         else: # interval threshold
-            ax_negative.set_yticklabels(labels=[f'y_hat <= {explanation.y_threshold[0]:.3f} || y_hat > {explanation.y_threshold[1]:.3f}']) # pylint: disable=unsubscriptable-object
-            ax_positive.set_yticklabels(labels=[f'{explanation.y_threshold[0]:.3f} < y_hat <= {explanation.y_threshold[1]:.3f}'])#f'P(y<={float(explanation.y_threshold) :.2f})' if predict >= 0.5 else f'P(y>{float(explanation.y_threshold) :.2f})'
+            ax_negative.set_yticklabels(labels=[f'y_hat <= {explanation.y_threshold[0]:.3f} || y_hat > {explanation.y_threshold[1]:.3f}']) # pylint: disable=line-too-long
+            ax_positive.set_yticklabels(labels=[f'{explanation.y_threshold[0]:.3f} < y_hat <= {explanation.y_threshold[1]:.3f}'])# pylint: disable=line-too-long
     elif explanation.get_class_labels() is None:
         if explanation._get_explainer().is_multiclass(): # pylint: disable=protected-access
             ax_negative.set_yticklabels(labels=[f'P(y!={explanation.prediction["classes"]})'])
@@ -377,8 +377,8 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
             )
         elif isinstance(explanation.y_threshold, tuple):
             ax_main.set_xlabel(
-                f'Probability of target being between {float(explanation.y_threshold[0]):.2f} and '
-                + f'{float(explanation.y_threshold[1]):.2f}'
+                f'Probability of target being between {float(explanation.y_threshold[0]):.3f} and '
+                + f'{float(explanation.y_threshold[1]):.3f}'
             )
         else:
             ax_main.set_xlabel(
