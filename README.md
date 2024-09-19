@@ -313,7 +313,7 @@ lower_bounded_explanations = regressor.explain_factual(X_test, low_high_percenti
 asymmetric_explanations = regressor.explain_factual(X_test, low_high_percentiles=(5,75))
 ```
 
-#### Alternative Explanations
+#### Explore Alternative Explanations
 The `explore_alternatives` will work exactly the same as for classification. 
 
 
