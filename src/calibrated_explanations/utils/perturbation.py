@@ -40,7 +40,7 @@ def categorical_perturbation(column, num_permutations=5):
 
 
 
-# Assuming you have a function to generate counterfactual instances for numerical columns
+# Assuming you have a function to generate alternative instances for numerical columns
 def gaussian_perturbation(column, severity):
     """
     Apply Gaussian noise as numerical perturbation to a column in a DataFrame.
@@ -118,9 +118,9 @@ def perturb_dataset(X_cal,
             perturbed_X_cal[:,f] = categorical_perturbation(perturbed_X_cal[:,f])
         else:
             if noise_type == 'uniform':
-                # Apply numerical counterfactual perturbation to the selected column -- uniform
+                # Apply numerical alternative perturbation to the selected column -- uniform
                 perturbed_X_cal[:,f] = uniform_perturbation(perturbed_X_cal[:,f], severity)
             elif noise_type == 'gaussian':
-                # Apply numerical counterfactual perturbation to the selected column -- gaussian
+                # Apply numerical alternative perturbation to the selected column -- gaussian
                 perturbed_X_cal[:,f] = gaussian_perturbation(perturbed_X_cal[:,f], severity)
     return perturbed_X_cal, scaled_X_cal, scaled_y_cal, scale_factor

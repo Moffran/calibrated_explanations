@@ -51,7 +51,7 @@ abstract: >-
   * Calibration of the underlying model to ensure that predictions reflect reality.
   * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
   * Rules with straightforward interpretation in relation to instance values and feature weights.
-  * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions.
+  * Possibility to generate alternative rules with uncertainty quantification of the expected predictions.
   * Conjunctional rules conveying feature importance for the interaction of included features.
   * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints ([read paper](https://doi.org/10.1007/978-3-031-63787-2_17)). 
 keywords:
@@ -59,7 +59,7 @@ keywords:
   - Feature Importance
   - Explainable AI
   - Uncertainty Quantification
-  - Counterfactual Explanations
+  - Alternative Explanations
   - Classification
   - Regression
   - Probabilistic Regression

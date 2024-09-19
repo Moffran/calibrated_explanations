@@ -59,12 +59,12 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
 
     print('Factual Explanations done', end=' - ', flush=True)
 
-    counterfactual_explanations = ce.explain_counterfactual(X_test)
+    alternative_explanations = ce.explore_alternatives(X_test)
     for i in range(num_to_test):
-        predicted = counterfactual_explanations.get_explanation(i).prediction['classes']
-        counterfactual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_i{i}_c{y_test[i]}_p{predicted}.png")
+        predicted = alternative_explanations.get_explanation(i).prediction['classes']
+        alternative_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_alternative_i{i}_c{y_test[i]}_p{predicted}.png")
 
-    print('Counterfactual Explanations done', end=' - ', flush=True)
+    print('Alternative Explanations done', end=' - ', flush=True)
     
     cal_p = model.predict(X_cal)
     test_p = model.predict(X_test)
@@ -79,9 +79,9 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
 
     print('Mondrian Factual Explanations done', end=' - ', flush=True)
 
-    counterfactual_explanations = ce.explain_counterfactual(X_test, bins=test_p)
+    alternative_explanations = ce.explore_alternatives(X_test, bins=test_p)
     for i in range(num_to_test):
-        predicted = counterfactual_explanations.get_explanation(i).prediction['classes']
-        counterfactual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_counterfactual_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
+        predicted = alternative_explanations.get_explanation(i).prediction['classes']
+        alternative_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_alternative_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
 
-    print('Mondrian Counterfactual Explanations done')
+    print('Mondrian Alternative Explanations done')

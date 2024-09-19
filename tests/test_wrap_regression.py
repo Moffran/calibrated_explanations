@@ -63,7 +63,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         with pytest.raises(RuntimeError):
             explanation = cal_exp.explain_factual(X_test)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_counterfactual(X_test)
+            explanation = cal_exp.explore_alternatives(X_test)
 
         cal_exp.fit(X_prop_train, y_prop_train)
         self.assertTrue(cal_exp.fitted)
@@ -96,11 +96,11 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         with pytest.raises(RuntimeError):
             explanation = cal_exp.explain_factual(X_test)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_counterfactual(X_test)
+            explanation = cal_exp.explore_alternatives(X_test)
         with pytest.raises(RuntimeError):
             explanation = cal_exp.explain_factual(X_test, threshold=y_test)
         with pytest.raises(RuntimeError):
-            explanation = cal_exp.explain_counterfactual(X_test, threshold=y_test)
+            explanation = cal_exp.explore_alternatives(X_test, threshold=y_test)
 
         # calibrate initialize the conformal predictive system
         # Note that the difficulty estimation works in the same way as when using CalibratedExplainer
@@ -128,9 +128,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             # y_test_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
             # self.assertBetween(y_hat, low[i], high[i])
         explanation = cal_exp.explain_factual(X_test)
-        explanation = cal_exp.explain_counterfactual(X_test)
+        explanation = cal_exp.explore_alternatives(X_test)
         explanation = cal_exp.explain_factual(X_test, threshold=y_test)
-        explanation = cal_exp.explain_counterfactual(X_test, threshold=y_test)
+        explanation = cal_exp.explore_alternatives(X_test, threshold=y_test)
 
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
@@ -219,9 +219,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             # y_test_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
             # self.assertBetween(y_hat, low[i], high[i])
         explanation = cal_exp.explain_factual(X_test)
-        explanation = cal_exp.explain_counterfactual(X_test)
+        explanation = cal_exp.explore_alternatives(X_test)
         explanation = cal_exp.explain_factual(X_test, threshold=y_test)
-        explanation = cal_exp.explain_counterfactual(X_test, threshold=y_test)
+        explanation = cal_exp.explore_alternatives(X_test, threshold=y_test)
 
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):
@@ -302,9 +302,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             # y_test_hat2 is a string in the form 'y_hat > threshold' so we cannot compare it to low and high
             # self.assertBetween(y_hat, low[i], high[i])
         explanation = cal_exp.explain_factual(X_test)
-        explanation = cal_exp.explain_counterfactual(X_test)
+        explanation = cal_exp.explore_alternatives(X_test)
         explanation = cal_exp.explain_factual(X_test, threshold=y_test)
-        explanation = cal_exp.explain_counterfactual(X_test, threshold=y_test)
+        explanation = cal_exp.explore_alternatives(X_test, threshold=y_test)
         explanation = cal_exp.explain_perturbed(X_test)
         explanation = cal_exp.explain_perturbed(X_test, threshold=y_test)
 

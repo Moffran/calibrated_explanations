@@ -363,7 +363,7 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
     ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
             if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
     ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-    ax_main.set_ylabel('Counterfactual rules')
+    ax_main.set_ylabel('Alternative rules')
     ax_main_twin = ax_main.twinx()
     ax_main_twin.set_yticks(range(num_to_show))
     ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])

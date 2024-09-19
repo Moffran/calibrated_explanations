@@ -5,6 +5,9 @@
 ### Features
 - Improved the introduction in README.
 - Added `calibrated_confusion_matrix` in `CalibratedExplainer` and `WrapCalibratedExplainer`, providing a leave-one-out calibrated confusion matrix using the calibration set. The insights from the confusion matrix are useful when analyzing explanations, to determine the general prediction and error distributions of the model.
+- Updating terminology:
+  - Changed the name of `CounterfactualExplanation` to `AlternativeExplanation`, as it better reflect the purpose and functionality of the class. 
+  - Have added an `explore_alternatives` method in `CalibratedExplainer` and `WrapCalibratedExplainer` instead of `explain_counterfactual`, as the name of later is ambiguous. The `explain_counterfactual` is still kept for compatibility reasons but only forwards the call to `explore_alternatives`. All files and notebooks have been updated to only call `explore_alternatives`. All references to counterfactuals have been changed to alternatives, with obvious exceptions. 
 ### Fixes
 - Added checks to ensure that the learner is not called unless the `WrapCalibratedExplainer` is calibrated.
 

@@ -117,7 +117,7 @@ for dataset in klara:
 
                 ce.set_random_state(i)
                 tic = time.time()
-                factual_explanation = ce.explain_counterfactual(X_test)
+                factual_explanation = ce.explore_alternatives(X_test)
                 ct = time.time()-tic
                 stab_timer['cce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')
@@ -157,7 +157,7 @@ for dataset in klara:
 
                 ce.set_random_state(i)
                 tic = time.time()
-                factual_explanation = ce.explain_counterfactual(X_test)
+                factual_explanation = ce.explore_alternatives(X_test)
                 ct = time.time()-tic
                 rob_timer['cce'].append(ct)
                 # print(f'{ct:.1f}',end='\t')

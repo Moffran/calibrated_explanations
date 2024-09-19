@@ -156,33 +156,33 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             counter = factual_explanation.get_counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test)
-        filtered_explanations = counterfactual_explanation[list([0,1])]
+        alternative_explanation = cal_exp.explore_alternatives(X_test)
+        filtered_explanations = alternative_explanation[list([0,1])]
         _ = filtered_explanations[list([0])]
-        _ = counterfactual_explanation[list(range(len(counterfactual_explanation))) == 0]
-        print(counterfactual_explanation[0])
-        _ = counterfactual_explanation[:1]
-        print(counterfactual_explanation[0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.remove_conjunctions()
+        _ = alternative_explanation[list(range(len(alternative_explanation))) == 0]
+        print(alternative_explanation[0])
+        _ = alternative_explanation[:1]
+        print(alternative_explanation[0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.add_conjunctions()
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.remove_conjunctions()
         try:
-            counterfactual_explanation.plot()
+            alternative_explanation.plot()
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
+            pytest.fail(f"alternative_explanation.plot() raised unexpected exception: {e}")
         try:
-            counterfactual_explanation.plot(style='triangular')
+            alternative_explanation.plot(style='triangular')
         except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"counterfactual_explanation.plot() raised unexpected exception: {e}")
-        semi = counterfactual_explanation.get_semi_explanations()
+            pytest.fail(f"alternative_explanation.plot() raised unexpected exception: {e}")
+        semi = alternative_explanation.get_semi_explanations()
         self.assertExplanation(semi)
-        counter = counterfactual_explanation.get_counter_explanations()
+        counter = alternative_explanation.get_counter_explanations()
         self.assertExplanation(counter)
-        counter = counterfactual_explanation.get_ensured_explanations()
+        counter = alternative_explanation.get_ensured_explanations()
         self.assertExplanation(counter)
-        counterfactual_explanation.add_conjunctions(max_rule_size=3)
+        alternative_explanation.add_conjunctions(max_rule_size=3)
 
 
 # pylint: disable=too-many-statements
@@ -224,22 +224,22 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             counter = factual_explanation.get_counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test)
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.remove_conjunctions()
-        counterfactual_explanation.plot()
-        counterfactual_explanation.plot(style='triangular')
-        semi = counterfactual_explanation.get_semi_explanations()
+        alternative_explanation = cal_exp.explore_alternatives(X_test)
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.add_conjunctions()
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.remove_conjunctions()
+        alternative_explanation.plot()
+        alternative_explanation.plot(style='triangular')
+        semi = alternative_explanation.get_semi_explanations()
         self.assertExplanation(semi)
-        counter = counterfactual_explanation.get_counter_explanations()
+        counter = alternative_explanation.get_counter_explanations()
         self.assertExplanation(counter)
-        counterfactual_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
-        semi = counterfactual_explanation.get_semi_explanations(only_ensured=True)
+        alternative_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
+        semi = alternative_explanation.get_semi_explanations(only_ensured=True)
         self.assertExplanation(semi)
-        counter = counterfactual_explanation.get_counter_explanations(only_ensured=True)
+        counter = alternative_explanation.get_counter_explanations(only_ensured=True)
         self.assertExplanation(counter)
 
 
@@ -275,12 +275,12 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         factual_explanation.plot()
         factual_explanation.plot(uncertainty=True)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, bins=X_test[:,0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, bins=X_test[:,0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.add_conjunctions()
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
 
     # @unittest.skip('Skipping provisionally.')
@@ -311,12 +311,12 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         factual_explanation.plot()
         factual_explanation.plot(uncertainty=True)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, bins=X_test[:,0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.add_conjunctions()
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, bins=X_test[:,0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, EntropyDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.add_conjunctions()
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
 
     def test_binary_perturbed_ce(self):

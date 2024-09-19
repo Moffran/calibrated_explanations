@@ -22,7 +22,7 @@
       BinaryRegressorDiscretizer
       CalibratedExplanation
       CalibratedExplanations
-      CounterfactualExplanation
+      AlternativeExplanation
       EntropyDiscretizer
       FactualExplanation
       PerturbedExplanation

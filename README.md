@@ -176,23 +176,23 @@ factual_explanations.plot(0, uncertainty=True)
 factual_explanations.remove_conjunctions().plot(0, uncertainty=True)
 ```
 
-#### Counterfactual Explanations
-An alternative to factual rules is to extract counterfactual rules, which is done using the `explain_counterfactual` function. 
+#### Explore Alternative Explanations
+An alternative to factual rules is to extract alternative rules, which is done using the `explore_alternatives` function. Alternative explanations provides insights on how predicted outcomes would change if specific input features were modified, including uncertainty estimates for these alternative outcomes.
 
 
 ```python
-counterfactual_explanations = classifier.explain_counterfactual(X_test)
+alternative_explanations = classifier.explore_alternatives(X_test)
 display(classifier)
 ```
 
-Counterfactuals are also visualized using the `plot` function. Plotting an individual counterfactual explanation is done using `plot`, submitting the index to plot. Adding or removing conjunctions is done as before. 
+Alternatives are also visualized using the `plot` function. Plotting an individual alternative explanation is done using `plot`, submitting the index to plot. Adding or removing conjunctions is done as before. 
 
 
 ```python
-counterfactual_explanations.plot()
-counterfactual_explanations.add_conjunctions().plot()
+alternative_explanations.plot()
+alternative_explanations.add_conjunctions().plot()
 
-counterfactual_explanations.plot(0)
+alternative_explanations.plot(0)
 ```
 
 `calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
@@ -313,21 +313,21 @@ lower_bounded_explanations = regressor.explain_factual(X_test, low_high_percenti
 asymmetric_explanations = regressor.explain_factual(X_test, low_high_percentiles=(5,75))
 ```
 
-#### Counterfactual Explanations
-The `explain_counterfactual` will work exactly the same as for classification. 
+#### Alternative Explanations
+The `explore_alternatives` will work exactly the same as for classification. 
 
 
 ```python
-counterfactual_explanations = regressor.explain_counterfactual(X_test) # default low_high_percentiles=(5, 95)
+alternative_explanations = regressor.explore_alternatives(X_test) # default low_high_percentiles=(5, 95)
 display(regressor)
 ```
 
-Counterfactual plots work as for classification.
+Alternative plots work as for classification.
 
 
 ```python
-counterfactual_explanations.plot()
-counterfactual_explanations.add_conjunctions().plot()
+alternative_explanations.plot()
+alternative_explanations.add_conjunctions().plot()
 ```
 
 ### Probabilistic Regression
@@ -342,8 +342,8 @@ probabilistic_factual_explanations.plot(uncertainty=True)
 
 
 ```python
-probabilistic_counterfactual_explanations = regressor.explain_counterfactual(X_test, threshold=200)
-probabilistic_counterfactual_explanations.plot()
+probabilistic_alternative_explanations = regressor.explore_alternatives(X_test, threshold=200)
+probabilistic_alternative_explanations.plot()
 ```
 
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.

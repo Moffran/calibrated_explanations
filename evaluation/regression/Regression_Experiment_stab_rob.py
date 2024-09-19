@@ -220,7 +220,7 @@ try:
                 stability['ce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explain_counterfactual(X_test)
+                explanations = ce.explore_alternatives(X_test)
                 ct = time.time()-tic
                 stab_timer['cce'+norm].append(ct)
                 print(f'{letter}c{ct:.1f}',end=' ', flush=True)
@@ -234,7 +234,7 @@ try:
                 stability['pce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explain_counterfactual(X_test, threshold=0.5)
+                explanations = ce.explore_alternatives(X_test, threshold=0.5)
                 ct = time.time()-tic
                 stab_timer['pcce'+norm].append(ct)
                 print(f'{letter}pc{ct:.1f}',end='\n', flush=True)
@@ -351,7 +351,7 @@ try:
                 robustness['ce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explain_counterfactual(X_test)
+                explanations = ce.explore_alternatives(X_test)
                 ct = time.time()-tic
                 rob_timer['cce'+norm].append(ct)
                 print(f'{letter}c{ct:.1f}',end=' ', flush=True)
@@ -365,7 +365,7 @@ try:
                 robustness['pce'+norm].append([f.feature_weights for f in explanations])
 
                 tic = time.time()
-                explanations = ce.explain_counterfactual(X_test, threshold=0.5)
+                explanations = ce.explore_alternatives(X_test, threshold=0.5)
                 ct = time.time()-tic
                 rob_timer['pcce'+norm].append(ct)
                 print(f'{letter}pc{ct:.1f}',end='\n', flush=True)

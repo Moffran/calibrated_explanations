@@ -112,23 +112,23 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         with pytest.raises(AssertionError):
             counter = factual_explanation.get_counter_explanations()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test)
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test)
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
-        semi = counterfactual_explanation.get_semi_explanations()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
+        semi = alternative_explanation.get_semi_explanations()
         self.assertExplanation(semi)
-        counter = counterfactual_explanation.get_counter_explanations()
+        counter = alternative_explanation.get_counter_explanations()
         self.assertExplanation(counter)
 
 
@@ -166,19 +166,19 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         with pytest.raises(AssertionError):
             counter = factual_explanation.get_counter_explanations()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, y_test)
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, y_test[0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
         factual_explanation[0].plot(uncertainty=True)
-        semi = counterfactual_explanation.get_semi_explanations()
+        semi = alternative_explanation.get_semi_explanations()
         self.assertExplanation(semi)
-        counter = counterfactual_explanation.get_counter_explanations()
+        counter = alternative_explanation.get_counter_explanations()
         self.assertExplanation(counter)
 
 
@@ -218,20 +218,20 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         with pytest.raises(Warning):
             factual_explanation.plot(uncertainty=True)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, bins=X_test[:,0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, bins=X_test[:,0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:,0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:,0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:,0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:,0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
 
     # @unittest.skip('Skipping provisionally.')
@@ -266,15 +266,15 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         factual_explanation.plot()
         factual_explanation.plot(uncertainty=True)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, y_test, bins=X_test[:,0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, y_test, bins=X_test[:,0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, y_test[0], bins=X_test[:,0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0], bins=X_test[:,0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
 
     # @unittest.skip('Skipping provisionally.')
@@ -313,20 +313,20 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         with pytest.raises(Warning):
             factual_explanation.plot(uncertainty=True)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test)
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test)
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -358,15 +358,15 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         factual_explanation.plot()
         factual_explanation.plot(uncertainty=True)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, y_test)
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, y_test[0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
 
     # @unittest.skip('Skipping provisionally.')
@@ -405,20 +405,20 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         with pytest.raises(Warning):
             factual_explanation.plot(uncertainty=True)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test)
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test)
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, low_high_percentiles=(0.1, np.inf))
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf))
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, low_high_percentiles=(-np.inf, 0.9))
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9))
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -450,15 +450,15 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         factual_explanation.plot()
         factual_explanation.plot(uncertainty=True)
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, y_test)
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
-        counterfactual_explanation = cal_exp.explain_counterfactual(X_test, y_test[0])
-        self.assertIsInstance(counterfactual_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
-        self.assertExplanation(counterfactual_explanation)
-        counterfactual_explanation.plot()
+        alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0])
+        self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
+        self.assertExplanation(alternative_explanation)
+        alternative_explanation.plot()
 
 
 # ------------------------------------------------------------------------------

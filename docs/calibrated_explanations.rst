@@ -15,5 +15,5 @@ The calibrated-explanations package
 .. autoclass:: calibrated_explanations.FactualExplanation
    :members:
 
-.. autoclass:: calibrated_explanations.CounterfactualExplanation
+.. autoclass:: calibrated_explanations.AlternativeExplanation
    :members:

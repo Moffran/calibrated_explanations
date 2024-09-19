@@ -82,11 +82,11 @@ class TestFramework(unittest.TestCase):
         factual_explanations.as_lime()
         factual_explanations.as_shap()
 
-        counterfactual_explanations = ce.explain_counterfactual(X_test)
-        counterfactual_explanations._get_rules()
-        counterfactual_explanations._is_alternative()
-        counterfactual_explanations._is_one_sided()
-        counterfactual_explanations._is_thresholded()
+        alternative_explanations = ce.explore_alternatives(X_test)
+        alternative_explanations._get_rules()
+        alternative_explanations._is_alternative()
+        alternative_explanations._is_one_sided()
+        alternative_explanations._is_thresholded()
 
         ce._preload_lime()
         ce._preload_shap()

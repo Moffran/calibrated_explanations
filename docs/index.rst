@@ -33,11 +33,11 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
    * Calibration of the underlying model to ensure that predictions reflect reality.
    * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
    * Rules with straightforward interpretation in relation to instance values and feature weights.
-   * Possibility to generate counterfactual rules with uncertainty quantification of the expected predictions.
+   * Possibility to generate alternative rules with uncertainty quantification of the expected predictions.
    * Conjunctional rules conveying feature importance for the interaction of included features.
    * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints (`read paper <https://doi.org/10.1007/978-3-031-63787-2_17/>`_). 
 
-Below is an example of a probabilistic counterfactual explanation for an instance of the regression dataset California Housing (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
+Below is an example of a probabilistic alternative explanation for an instance of the regression dataset California Housing (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 
 .. image:: images/counterfactual_probabilistic_house_regression.png
    :width: 800
@@ -92,29 +92,29 @@ Here is a basic example to get you started:
    your_threshold = 1000
    factual_explanations = regressor.explain_factual(X_test, threshold=your_threshold)
 
-   # Counterfactual Explanations
-   # Create counterfactual explanations for classification
-   counterfactual_explanations = classifier.explain_counterfactual(X_test)
-   # Create counterfactual standard explanations for regression with default 90 % uncertainty interval
-   counterfactual_explanations = regressor.explain_counterfactual(X_test) # low_high_percentiles=(5,95)
-   # Create counterfactual standard explanations for regression with user assigned uncertainty interval
-   counterfactual_explanations = regressor.explain_counterfactual(X_test, low_high_percentiles=(10,90))
-   # Create counterfactual probabilistic explanations for regression with user assigned threshold
-   counterfactual_explanations = regressor.explain_counterfactual(X_test, threshold=your_threshold)
+   # Alternative Explanations
+   # Create alternative explanations for classification
+   alternative_explanations = classifier.explore_alternatives(X_test)
+   # Create alternative standard explanations for regression with default 90 % uncertainty interval
+   alternative_explanations = regressor.explore_alternatives(X_test) # low_high_percentiles=(5,95)
+   # Create alternative standard explanations for regression with user assigned uncertainty interval
+   alternative_explanations = regressor.explore_alternatives(X_test, low_high_percentiles=(10,90))
+   # Create alternative probabilistic explanations for regression with user assigned threshold
+   alternative_explanations = regressor.explore_alternatives(X_test, threshold=your_threshold)
    
    # Plot the explanations
    factual_explanations.plot()
    factual_explanations.plot(uncertainty=True)
-   counterfactual_explanations.plot()
+   alternative_explanations.plot()
 
    # Add conjunctions to the explanations
    factual_conjunctions.add_conjunctions()
-   counterfactual_conjunctions.add_conjunctions()
+   alternative_conjunctions.add_conjunctions()
 
    # One-sided explanations for regression are easily created
    factual_upper_bounded = regressor.explain_factual(X_test, 
                               low_high_percentiles=(-np.inf,90))
-   counterfactual_lower_bounded = regressor.explain_counterfactual(X_test, 
+   alternative_lower_bounded = regressor.explore_alternatives(X_test, 
                               low_high_percentiles=(10,np.inf))
 
 Contents

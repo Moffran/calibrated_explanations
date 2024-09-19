@@ -116,7 +116,7 @@ for dataset in klara:
                 ablation['ce'][cal_size][str(sample_percentile)].append([f.feature_weights for f in factual_explanations])
 
                 tic = time.time()
-                factual_explanation = ce.explain_counterfactual(X_test)
+                factual_explanation = ce.explore_alternatives(X_test)
                 ct = time.time()-tic
                 abl_timer['cce'][cal_size][str(sample_percentile)].append(ct)
                 # print(f'{ct:.1f}',end='\t')
