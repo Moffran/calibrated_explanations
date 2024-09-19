@@ -247,7 +247,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                 filename='',
                 uncertainty=False,
                 style='regular',
-                ranking_metric='weighted_sum',
+                ranking_metric='feature_weight',
                 ranking_weight=0.5,
                 ranking_inverse=False,
                 interactive=False):
@@ -287,7 +287,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             The `style` parameter is a string that determines the style of the plot. The following styles are supported: 
             - 'regular': The plot will show the feature weights as bars with the uncertainty intervals as lighter bars.
             - 'triangular': Experimental.
-        ranking_metric : str, default='weighted_sum'
+        ranking_metric : str, default='feature_weight'
             The `ranking_metric` parameter is a string that determines the metric used to rank the features. 
             The following metrics are supported:
             - 'weighted_sum': The weighted sum of the feature weights and the uncertainty intervals. The `ranking_weight` 
@@ -950,7 +950,7 @@ class FactualExplanation(CalibratedExplanation):
         show = kwargs.get('show', False)
         filename = kwargs.get('filename', '')
         uncertainty = kwargs.get('uncertainty', False)
-        ranking_metric = kwargs.get('ranking_metric', 'weighted_sum')
+        ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
         ranking_weight = kwargs.get('ranking_weight', 0.5)
         ranking_inverse = kwargs.get('ranking_inverse', False)
         sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
@@ -1498,7 +1498,7 @@ class AlternativeExplanation(CalibratedExplanation):
         '''
         show = kwargs.get('show', False)
         filename = kwargs.get('filename', '')
-        ranking_metric = kwargs.get('ranking_metric', 'weighted_sum')
+        ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
         ranking_weight = kwargs.get('ranking_weight', 0.5)
         ranking_inverse = kwargs.get('ranking_inverse', False)
         sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
@@ -1717,7 +1717,7 @@ class PerturbedExplanation(CalibratedExplanation):
         show = kwargs.get('show', False)
         filename = kwargs.get('filename', '')
         uncertainty = kwargs.get('uncertainty', False)
-        ranking_metric = kwargs.get('ranking_metric', 'weighted_sum')
+        ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
         ranking_weight = kwargs.get('ranking_weight', 0.5)
         ranking_inverse = kwargs.get('ranking_inverse', False)
         sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
