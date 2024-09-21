@@ -58,12 +58,13 @@ class CalibratedExplainer:
                 class_labels = None,
                 bins = None,
                 difficulty_estimator = None,
-                sample_percentiles = None,
-                random_state = 42,
-                verbose = False,
-                perturb = False,
-                reject=False,
-                ) -> None:
+                **kwargs,) -> None:
+                # sample_percentiles = None,
+                # random_state = 42,
+                # verbose = False,
+                # perturb = False,
+                # reject=False,
+                # ) -> None:
         # pylint: disable=line-too-long
         '''Constructor for the :class:`.CalibratedExplainer` object for explaining the predictions of a
         black-box learner.
@@ -138,14 +139,15 @@ class CalibratedExplainer:
         check_is_fitted(learner)
         self.learner = learner
         self.num_features = len(self.X_cal[0, :])
-        self.set_random_state(random_state)
-        if sample_percentiles is None:
-            sample_percentiles = [25, 50, 75]
-        self.sample_percentiles = sample_percentiles
-        self.verbose = verbose
+        self.set_random_state(kwargs.get('random_state', 42))
+        self.sample_percentiles = kwargs.get('sample_percentiles', [25, 50, 75])
+        self.verbose = kwargs.get('verbose', False)
         self.bins = bins
 
-        self.__perturb = perturb
+        self.__perturb = kwargs.get('perturb', False)
+        self.__noise_type = kwargs.get('noise_type', 'uniform')
+        self.__scale_factor = kwargs.get('scale_factor', 5)
+        self.__severity = kwargs.get('severity', 1)
 
         self.categorical_labels = categorical_labels
         self.class_labels = class_labels
@@ -173,13 +175,13 @@ class CalibratedExplainer:
         self.lime_exp = None
         self.shap = None
         self.shap_exp = None
-        self.reject = reject
+        self.reject = kwargs.get('reject', False)
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.__set_mode(str.lower(mode), initialize=False)
 
         self.__initialize_interval_learner()
-        self.reject_learner = self.initialize_reject_learner() if reject else None
+        self.reject_learner = self.initialize_reject_learner() if kwargs.get('reject', False) else None
 
         self.init_time = time() - init_time
 
@@ -846,8 +848,13 @@ class CalibratedExplainer:
         :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
             intervals. 
         """
-        if not self.is_perturbed:
-            raise RuntimeError("Perturbed explanations are only possible if the explainer is perturbed.")
+        if not self.is_perturbed():
+            try:
+                self.__perturb = True
+                self.__initialize_interval_learner_for_perturbed()
+            except Exception as exc:
+                self.__perturb = False
+                raise RuntimeError("Perturbed explanations are only possible if the explainer is perturbed.") from exc
         total_time = time()
         instance_time = []
         if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
@@ -1111,7 +1118,10 @@ class CalibratedExplainer:
         self.interval_learner = []
         X_cal, y_cal, bins = self.X_cal, self.y_cal, self.bins
         self.perturbed_X_cal, self.scaled_X_cal, self.scaled_y_cal, scale_factor = \
-                perturb_dataset(self.X_cal, self.y_cal, self.categorical_features, noise_type='uniform', scale_factor=5, severity=1)
+                perturb_dataset(self.X_cal, self.y_cal, self.categorical_features,
+                                noise_type=self.__noise_type,
+                                scale_factor=self.__scale_factor,
+                                severity=self.__severity)
         self.bins = np.tile(self.bins.copy(), scale_factor) if self.bins is not None else None
         for f in range(self.num_features):
             perturbed_X_cal = self.scaled_X_cal.copy()
