@@ -1233,7 +1233,7 @@ class AlternativeExplanation(CalibratedExplanation):
                             ):
                 continue
             # if only_ensured is True, filter out rules that lead to increased uncertainty
-            if only_ensured and rules['predict_high'][rule] - rules['predict_low'][rule] >= initial_uncertainty:
+            if only_ensured and rules['predict_high'][rule] - rules['predict_low'][rule] > initial_uncertainty:
                 continue
             # filter out rules that does not provide a different prediction
             if rules['base_predict_low'] == rules['predict_low'][rule] and rules['base_predict_high'] == rules['predict_high'][rule]:
