@@ -287,8 +287,7 @@ def calculate_metrics(uncertainty=None,
                       prediction=None,
                       w=0.5,
                       metric=None,
-                      normalize=False,
-                      inverse_prediction=False):
+                      normalize=False,):
     '''
     The function `calculate_metrics` calculates different metrics based on the uncertainty and 
     probability values.
@@ -307,7 +306,7 @@ def calculate_metrics(uncertainty=None,
         regression, this is the predicted value.
     w : float, default=0.5
         The `w` parameter is a float value that represents the weight of the uncertainty in the 
-        metric calculation. The weight must be between 0 and 1. The default value is 0.5.
+        metric calculation. The weight must be between -1 and 1. The default value is 0.5.
     metric : str, list of str, or None, default=None
         The `metric` parameter is a string that represents the metric to calculate.
         If `metric` is set to None, the function will calculate all available metrics.
@@ -320,9 +319,6 @@ def calculate_metrics(uncertainty=None,
     normalize : bool, default=False
         The `normalize` parameter is a boolean value that represents whether to normalize the 
         uncertainty and prediction values. The default value is False.
-    inverse_prediction : bool, default=False
-        The `inverse_prediction` parameter is a boolean value that represents whether to inverse 
-        the prediction values (by negating them). The default value is False.
 
     Note
     ----
@@ -355,7 +351,11 @@ def calculate_metrics(uncertainty=None,
     uncertainty = np.array(uncertainty) if isinstance(uncertainty, list) else uncertainty
     prediction = np.array(prediction) if isinstance(prediction, list) else prediction
     metrics = {}
-    assert 0 <= w <= 1, 'The weight must be between 0 and 1.'
+    assert -1 <= w <= 1, 'The weight must be between -1 and 1.'
+    inverse_prediction = False
+    if w < 0:
+        w = -w
+        inverse_prediction = True
     if metric is None:
         metric = ['weighted_sum', #'geometric_mean', #'harmonic_mean', #'weighted_product',
                 'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
@@ -373,7 +373,7 @@ def calculate_metrics(uncertainty=None,
     prediction = -1*prediction if inverse_prediction and prediction is not None else prediction
 
     if 'weighted_sum' in metric:
-        metrics['weighted_sum'] = w * (1 - uncertainty) + (1-w) * prediction
+        metrics['weighted_sum'] = (1-w) * (1 - uncertainty) + w * (prediction)
 
     if 'geometric_mean' in metric:
         metrics['geometric_mean'] = np.sqrt((1 - uncertainty) * prediction)
