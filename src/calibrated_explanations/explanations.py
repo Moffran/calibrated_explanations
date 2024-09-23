@@ -952,11 +952,9 @@ class FactualExplanation(CalibratedExplanation):
         uncertainty = kwargs.get('uncertainty', False)
         ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
         ranking_weight = kwargs.get('ranking_weight', 0.5)
-        ranking_inverse = kwargs.get('ranking_inverse', False)
         sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
         if sort_on_uncertainty or ranking_metric == 'uncertainty':
             ranking_weight = 1.0
-            ranking_inverse = False
             ranking_metric = 'weighted_sum'
 
         factual = self._get_rules() #get_explanation(index)
@@ -999,7 +997,6 @@ class FactualExplanation(CalibratedExplanation):
                                                 prediction=factual['predict'],
                                                 w=ranking_weight,
                                                 metric=ranking_metric,
-                                                inverse_prediction=ranking_inverse,
                                                 )
             features_to_plot = self._rank_features(width=ranking,
                                                 num_to_show=n_features_to_show)
@@ -1500,11 +1497,9 @@ class AlternativeExplanation(CalibratedExplanation):
         filename = kwargs.get('filename', '')
         ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
         ranking_weight = kwargs.get('ranking_weight', 0.5)
-        ranking_inverse = kwargs.get('ranking_inverse', False)
         sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
         if sort_on_uncertainty or ranking_metric == 'uncertainty':
             ranking_weight = 1.0
-            ranking_inverse = False
             ranking_metric = 'weighted_sum'
 
         alternative = self._get_rules() #get_explanation(index)
@@ -1546,7 +1541,6 @@ class AlternativeExplanation(CalibratedExplanation):
                                                 prediction=alternative['predict'],
                                                 w=ranking_weight,
                                                 metric=ranking_metric,
-                                                inverse_prediction=ranking_inverse,
                                                 )
             features_to_plot = self._rank_features(width=ranking,
                                                 num_to_show=num_to_show_)
@@ -1719,11 +1713,9 @@ class PerturbedExplanation(CalibratedExplanation):
         uncertainty = kwargs.get('uncertainty', False)
         ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
         ranking_weight = kwargs.get('ranking_weight', 0.5)
-        ranking_inverse = kwargs.get('ranking_inverse', False)
         sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
         if sort_on_uncertainty or ranking_metric == 'uncertainty':
             ranking_weight = 1.0
-            ranking_inverse = False
             ranking_metric = 'weighted_sum'
 
         factual = self._get_rules() #get_explanation(index)
@@ -1766,7 +1758,6 @@ class PerturbedExplanation(CalibratedExplanation):
                                                 prediction=factual['predict'],
                                                 w=ranking_weight,
                                                 metric=ranking_metric,
-                                                inverse_prediction=ranking_inverse,
                                                 )
             features_to_plot = self._rank_features(width=ranking,
                                                 num_to_show=n_features_to_show)
