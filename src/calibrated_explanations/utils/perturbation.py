@@ -4,6 +4,7 @@
 Returns:
     _type_: _description_
 """
+# pylint: disable=too-many-positional-arguments
 # Import Libraries
 # import configparser
 import numpy as np
@@ -64,9 +65,7 @@ def gaussian_perturbation(column, severity):
     perturbation = np.random.normal(loc=0, scale=original_std * severity, size=len(column))
 
     # Apply perturbation while preserving mean and standard deviation
-    perturbed_column = original_mean + perturbation
-
-    return perturbed_column
+    return original_mean + perturbation
 
 
 def uniform_perturbation(column, severity):
@@ -93,9 +92,7 @@ def uniform_perturbation(column, severity):
                                      high=original_range * severity, size=len(column))
 
     # Apply perturbation while preserving mean
-    perturbed_column = column + perturbation
-
-    return perturbed_column
+    return column + perturbation
 
 # pylint: disable=invalid-name, too-many-arguments
 def perturb_dataset(X_cal,
@@ -116,11 +113,10 @@ def perturb_dataset(X_cal,
     for f in range(scaled_X_cal.shape[1]):
         if f in categorical_features:
             perturbed_X_cal[:,f] = categorical_perturbation(perturbed_X_cal[:,f])
-        else:
-            if noise_type == 'uniform':
-                # Apply numerical alternative perturbation to the selected column -- uniform
-                perturbed_X_cal[:,f] = uniform_perturbation(perturbed_X_cal[:,f], severity)
-            elif noise_type == 'gaussian':
-                # Apply numerical alternative perturbation to the selected column -- gaussian
-                perturbed_X_cal[:,f] = gaussian_perturbation(perturbed_X_cal[:,f], severity)
+        elif noise_type == 'uniform':
+            # Apply numerical alternative perturbation to the selected column -- uniform
+            perturbed_X_cal[:,f] = uniform_perturbation(perturbed_X_cal[:,f], severity)
+        elif noise_type == 'gaussian':
+            # Apply numerical alternative perturbation to the selected column -- gaussian
+            perturbed_X_cal[:,f] = gaussian_perturbation(perturbed_X_cal[:,f], severity)
     return perturbed_X_cal, scaled_X_cal, scaled_y_cal, scale_factor

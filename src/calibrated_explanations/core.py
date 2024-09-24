@@ -8,8 +8,7 @@ Calibrated explanations are a way to explain the predictions of a black-box lear
 using Venn-Abers predictors (classification & regression) or 
 conformal predictive systems (regression).
 """
-# pylint: disable=invalid-name, line-too-long, too-many-lines
-# flake8: noqa: E501
+# pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments
 import copy
 import warnings
 from time import time

@@ -1,5 +1,4 @@
-# pylint: disable=too-many-arguments
-# flake8: noqa: E501
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 """This module defines the discretizers used by CalibratedExplainer.
 The discretizers are defined using the same super class as the discretizers from the LIME package.
 """
