@@ -5,13 +5,11 @@
 import contextlib
 import os
 import warnings
-# import math
 from copy import deepcopy
 from abc import ABC, abstractmethod
 from time import time
 import numpy as np
 from pandas import Categorical
-# import matplotlib.pyplot as plt
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
 from .utils.helper import make_directory, calculate_metrics
 from ._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
@@ -1551,8 +1549,12 @@ class AlternativeExplanation(CalibratedExplanation):
                                                 width=width,
                                                 num_to_show=num_to_show_)
         else:
+            # Always rank base on predicted class
+            prediction = alternative['predict']
+            if self.get_mode() == 'classification' or self.is_thresholded():
+                prediction = prediction if predict['predict'] > 0.5 else [1-p for p in prediction]
             ranking = calculate_metrics(uncertainty=[alternative['predict_high'][i]-alternative['predict_low'][i] for i in range(num_rules)],
-                                                prediction=alternative['predict'],
+                                                prediction=prediction,
                                                 w=ranking_weight,
                                                 metric=ranking_metric,
                                                 )
@@ -1568,7 +1570,7 @@ class AlternativeExplanation(CalibratedExplanation):
             selected_rule_proba = [rule_proba[i] for i in features_to_plot]
             selected_rule_uncertainty = [rule_uncertainty[i] for i in features_to_plot]
 
-            _plot_triangular(self, proba, uncertainty, selected_rule_proba, selected_rule_uncertainty, num_to_show_)
+            _plot_triangular(self, proba, uncertainty, selected_rule_proba, selected_rule_uncertainty, num_to_show_, title=title, path=path, show=show, save_ext=save_ext)
             return
 
         column_names = alternative['rule']
