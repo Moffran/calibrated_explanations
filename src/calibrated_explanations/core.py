@@ -810,7 +810,7 @@ class CalibratedExplainer:
         instance_time = time() - instance_time
         instance_time = [instance_time/len(X_test) for _ in range(len(X_test))]
 
-        explanation.finalize(binned_predict, feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
+        explanation = explanation.finalize(binned_predict, feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
         self.latest_explanation = explanation
         return explanation
 

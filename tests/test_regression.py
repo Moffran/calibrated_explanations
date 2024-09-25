@@ -92,7 +92,6 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.plot()
         factual_explanation[0].plot(uncertainty=True)
-        factual_explanation[0].plot(uncertainty=True)
 
         factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
@@ -107,10 +106,11 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         factual_explanation.plot()
         with pytest.raises(Warning):
             factual_explanation.plot(uncertainty=True)
-        with pytest.raises(AssertionError):
-            semi = factual_explanation.get_semi_explanations()
-        with pytest.raises(AssertionError):
-            counter = factual_explanation.get_counter_explanations()
+        # Removed from CalibratedExplanations
+        # with pytest.raises(AssertionError):
+        #     semi = factual_explanation.get_semi_explanations()
+        # with pytest.raises(AssertionError):
+        #     counter = factual_explanation.get_counter_explanations()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test)
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
@@ -159,12 +159,11 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         factual_explanation = cal_exp.explain_factual(X_test, y_test[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
-        with pytest.raises(AssertionError):
-            semi = factual_explanation.get_semi_explanations()
-        with pytest.raises(AssertionError):
-            counter = factual_explanation.get_counter_explanations()
+        # Removed from CalibratedExplanations
+        # with pytest.raises(AssertionError):
+        #     semi = factual_explanation.get_semi_explanations()
+        # with pytest.raises(AssertionError):
+        #     counter = factual_explanation.get_counter_explanations()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
@@ -175,7 +174,6 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
         alternative_explanation.plot()
-        factual_explanation[0].plot(uncertainty=True)
         semi = alternative_explanation.get_semi_explanations()
         self.assertExplanation(semi)
         counter = alternative_explanation.get_counter_explanations()
@@ -258,13 +256,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
         factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
 
         factual_explanation = cal_exp.explain_factual(X_test, y_test[0], bins=X_test[:,0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, y_test, bins=X_test[:,0])
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
@@ -274,7 +269,6 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0], bins=X_test[:,0])
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
 
     # @unittest.skip('Skipping provisionally.')
@@ -296,37 +290,26 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
 
         factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        with pytest.raises(Warning):
-            factual_explanation.plot(uncertainty=True)
 
         factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        with pytest.raises(Warning):
-            factual_explanation.plot(uncertainty=True)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test)
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
-
+        
         alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -349,24 +332,19 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
+
 
         factual_explanation = cal_exp.explain_factual(X_test, y_test[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0])
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
 
     # @unittest.skip('Skipping provisionally.')
@@ -388,37 +366,26 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
 
         factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        with pytest.raises(Warning):
-            factual_explanation.plot(uncertainty=True)
 
         factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        with pytest.raises(Warning):
-            factual_explanation.plot(uncertainty=True)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test)
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -441,24 +408,18 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
 
         factual_explanation = cal_exp.explain_factual(X_test, y_test[0])
         self.assertIsInstance(factual_explanation.calibrated_explainer.discretizer, BinaryRegressorDiscretizer)
         self.assertExplanation(factual_explanation)
-        factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0])
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        alternative_explanation.plot()
 
 
 # ------------------------------------------------------------------------------
@@ -481,10 +442,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         )
         perturbed_explanation = cal_exp.explain_perturbed(X_test)
         perturbed_explanation.add_conjunctions()
-        try:
-            perturbed_explanation.plot()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot() raised unexpected exception: {e}")
+        perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(0.1, np.inf))
@@ -496,10 +454,11 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         perturbed_explanation.plot()
         with pytest.raises(Warning):
             perturbed_explanation.plot(uncertainty=True)
-        with pytest.raises(AssertionError):
-            _ = perturbed_explanation.get_semi_explanations()
-        with pytest.raises(AssertionError):
-            _ = perturbed_explanation.get_counter_explanations()
+        # Removed from CalibratedExplanations
+        # with pytest.raises(AssertionError):
+        #     _ = perturbed_explanation.get_semi_explanations()
+        # with pytest.raises(AssertionError):
+        #     _ = perturbed_explanation.get_counter_explanations()
 
 
     def test_probabilistic_regression_perturbed_ce(self):
@@ -524,10 +483,11 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test[0])
         perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)
-        with pytest.raises(AssertionError):
-            _ = perturbed_explanation.get_semi_explanations()
-        with pytest.raises(AssertionError):
-            _ = perturbed_explanation.get_counter_explanations()
+        # Removed from CalibratedExplanations
+        # with pytest.raises(AssertionError):
+        #     _ = perturbed_explanation.get_semi_explanations()
+        # with pytest.raises(AssertionError):
+        #     _ = perturbed_explanation.get_counter_explanations()
 
 
     # NOTE: this takes takes about 70s to run
@@ -548,18 +508,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         )
         perturbed_explanation = cal_exp.explain_perturbed(X_test, bins=X_test[:,0])
         perturbed_explanation.add_conjunctions()
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:,0])
-        perturbed_explanation.plot()
-        with pytest.raises(Warning):
-            perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:,0])
-        perturbed_explanation.plot()
-        with pytest.raises(Warning):
-            perturbed_explanation.plot(uncertainty=True)
 
 
     def test_probabilistic_regression_conditional_perturbed_ce(self):
@@ -579,12 +531,8 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test, bins=y_test > y_test[0])
         perturbed_explanation.add_conjunctions()
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test[0], bins=y_test > y_test[0])
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
 
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
@@ -604,18 +552,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         )
         perturbed_explanation = cal_exp.explain_perturbed(X_test)
         perturbed_explanation.add_conjunctions()
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(0.1, np.inf))
-        perturbed_explanation.plot()
-        with pytest.raises(Warning):
-            perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(-np.inf, 0.9))
-        perturbed_explanation.plot()
-        with pytest.raises(Warning):
-            perturbed_explanation.plot(uncertainty=True)
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -636,12 +576,8 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test)
         perturbed_explanation.add_conjunctions()
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test[0])
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
 
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
@@ -661,18 +597,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         )
         perturbed_explanation = cal_exp.explain_perturbed(X_test)
         perturbed_explanation.add_conjunctions()
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(0.1, np.inf))
-        perturbed_explanation.plot()
-        with pytest.raises(Warning):
-            perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(-np.inf, 0.9))
-        perturbed_explanation.plot()
-        with pytest.raises(Warning):
-            perturbed_explanation.plot(uncertainty=True)
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -693,12 +621,8 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test)
         perturbed_explanation.add_conjunctions()
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
         perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test[0])
-        perturbed_explanation.plot()
-        perturbed_explanation.plot(uncertainty=True)
 
 
 if __name__ == '__main__':

@@ -142,18 +142,13 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         factual_explanation.add_conjunctions()
         self.assertExplanation(factual_explanation)
         factual_explanation.remove_conjunctions()
-        try:
-            factual_explanation.plot()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot() raised unexpected exception: {e}")
-        try:
-            factual_explanation.plot(uncertainty=True)
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"factual_explanation.plot(uncertainty=True) raised unexpected exception: {e}")
-        with pytest.raises(AssertionError):
-            semi = factual_explanation.get_semi_explanations()
-        with pytest.raises(AssertionError):
-            counter = factual_explanation.get_counter_explanations()
+        factual_explanation.plot()
+        factual_explanation.plot(uncertainty=True)
+        # Removed from CalibratedExplanations
+        # with pytest.raises(AssertionError):
+        #     semi = factual_explanation.get_semi_explanations()
+        # with pytest.raises(AssertionError):
+        #     counter = factual_explanation.get_counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test)
@@ -168,14 +163,8 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         alternative_explanation.add_conjunctions()
         self.assertExplanation(alternative_explanation)
         alternative_explanation.remove_conjunctions()
-        try:
-            alternative_explanation.plot()
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"alternative_explanation.plot() raised unexpected exception: {e}")
-        try:
-            alternative_explanation.plot(style='triangular')
-        except Exception as e: # pylint: disable=broad-except
-            pytest.fail(f"alternative_explanation.plot() raised unexpected exception: {e}")
+        alternative_explanation.plot()
+        alternative_explanation.plot(style='triangular')
         semi = alternative_explanation.get_semi_explanations()
         self.assertExplanation(semi)
         counter = alternative_explanation.get_counter_explanations()
@@ -217,11 +206,12 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.remove_conjunctions()
         factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)
-        with pytest.raises(AssertionError):
-            semi = factual_explanation.get_semi_explanations()
-        with pytest.raises(AssertionError):
-            counter = factual_explanation.get_counter_explanations()
+        factual_explanation.plot(uncertainty=True)        
+        # Removed from CalibratedExplanations
+        # with pytest.raises(AssertionError):
+        #     semi = factual_explanation.get_semi_explanations()
+        # with pytest.raises(AssertionError):
+        #     counter = factual_explanation.get_counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test)
@@ -337,10 +327,11 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         perturbed_explanation.remove_conjunctions()
         perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)
-        with pytest.raises(AssertionError):
-            _ = perturbed_explanation.get_semi_explanations()
-        with pytest.raises(AssertionError):
-            _ = perturbed_explanation.get_counter_explanations()
+        # Removed from CalibratedExplanations
+        # with pytest.raises(AssertionError):
+        #     _ = perturbed_explanation.get_semi_explanations()
+        # with pytest.raises(AssertionError):
+        #     _ = perturbed_explanation.get_counter_explanations()
         perturbed_explanation.add_conjunctions(max_rule_size=3)
 
 
@@ -364,10 +355,11 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         perturbed_explanation.remove_conjunctions()
         perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)
-        with pytest.raises(AssertionError):
-            _ = perturbed_explanation.get_semi_explanations()
-        with pytest.raises(AssertionError):
-            _ = perturbed_explanation.get_counter_explanations()
+        # Removed from CalibratedExplanations
+        # with pytest.raises(AssertionError):
+        #     _ = perturbed_explanation.get_semi_explanations()
+        # with pytest.raises(AssertionError):
+        #     _ = perturbed_explanation.get_counter_explanations()
         perturbed_explanation.add_conjunctions(max_rule_size=3)
 
 

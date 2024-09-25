@@ -153,6 +153,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
+        if self._is_alternative():
+            return self.__convert_to_AlternativeExplanations()
+        return self
+
+    def __convert_to_AlternativeExplanations(self):
+        alternative_explanations = AlternativeExplanations.__new__(AlternativeExplanations)
+        alternative_explanations.__dict__.update(self.__dict__)
+        return alternative_explanations
 
 
     # pylint: disable=too-many-arguments
@@ -329,147 +337,6 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
                                         )
 
 
-    def get_super_explanations(self, class_label=None, only_ensured=False, include_potential=True):
-        '''
-        The function `get_super_explanations` returns a copy of this :class:`.CalibratedExplanations` object with only super-explanations.
-        Super-explanations are individual rules with higher probability that support the predicted class (or the class represented by class_label). 
-
-        Parameters
-        ----------
-        class_label : int, default=None
-            The `class_label` parameter is an integer that represents the class label for which you want to get super-explanations.
-            If None, the function will return super-explanations for the predicted class.
-        only_ensured : bool, default=False
-            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
-            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
-            explanations. If set to `False`, the function will return all super-explanations. 
-        include_potential : bool, default=True
-            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations in the
-            super-explanations. If set to `True`, the function will include super-potential explanations in the super-explanations.
-            If set to `False`, the function will only include super-factual explanations.
-
-        Returns
-        -------
-        super-explanations : :class:`.CalibratedExplanations`
-            A new :class:`.CalibratedExplanations` object containing :class:`.AlternativeExplanation` objects only containing super-factual 
-            or super-potential explanations. 
-
-        Notes
-        -----
-        Super-explanations are only available for :class:`.AlternativeExplanation` explanations.
-
-        Notes
-        -----
-        only_ensured and include_potential can interact in the following way:
-        - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
-            is potential, no potential explanations will be included
-        '''
-        assert self._is_alternative(), 'Super-explanations are only available for alternative explanations'
-        super_explanations = deepcopy(self)
-        for explanation in super_explanations.explanations:
-            explanation.get_super_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
-        return super_explanations
-
-
-    def get_semi_explanations(self, class_label=None, only_ensured=False, include_potential=True):
-        '''
-        The function `get_semi_explanations` returns a copy of this :class:`.CalibratedExplanations` object with only semi-explanations.
-        Semi-explanations are individual rules with lower probability that support the predicted class (or the class represented by class_label). 
-
-        Parameters
-        ----------
-        class_label : int, default=None
-            The `class_label` parameter is an integer that represents the class label for which you want to get semi-explanations.
-            If None, the function will return semi-explanations for the predicted class.
-        only_ensured : bool, default=False
-            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
-            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
-            explanations. If set to `False`, the function will return all semi-explanations. 
-        include_potential : bool, default=True
-            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations in the
-            semi-explanations. If set to `True`, the function will include semi-potential explanations in the semi-explanations.
-            If set to `False`, the function will only include semi-factual explanations.
-
-        Returns
-        -------
-        semi-explanations : :class:`.CalibratedExplanations`
-            A new :class:`.CalibratedExplanations` object containing :class:`.AlternativeExplanation` objects only containing semi-factual 
-            or semi-potential explanations. 
-
-        Notes
-        -----
-        Semi-explanations are only available for :class:`.AlternativeExplanation` explanations.
-
-        Notes
-        -----
-        only_ensured and include_potential can interact in the following way:
-        - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
-            is potential, no potential explanations will be included
-        '''
-        assert self._is_alternative(), 'Semi-explanations are only available for alternative explanations'
-        semi_explanations = deepcopy(self)
-        for explanation in semi_explanations.explanations:
-            explanation.get_semi_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
-        return semi_explanations
-
-
-    def get_counter_explanations(self, class_label=None, only_ensured=False, include_potential=True):
-        '''
-        The function `get_counter_explanations` returns a copy of this :class:`.CalibratedExplanations` object with only counter-explanations.
-        Counter-explanations are individual rules that does not support the predicted class (or the class represented by class_label). 
-
-        Parameters
-        ----------
-        class_label : int, default=None
-            The `class_label` parameter is an integer that represents the class label for which you want to get counter-explanations.
-            If None, the function will return counter-explanations for the predicted class.
-        only_ensured : bool, default=False
-            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
-            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
-            explanations. If set to `False`, the function will return all counter-explanations.
-        include_potential : bool, default=True
-            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations in the
-            counter-explanations. If set to `True`, the function will include counter-potential explanations in the counter-explanations.
-            If set to `False`, the function will only include counter-factual explanations.
-
-        Returns
-        -------
-        counter-explanations : :class:`.CalibratedExplanations`
-            A new :class:`.CalibratedExplanations` object containing :class:`.AlternativeExplanation` objects only containing counter-factual 
-            or counter-potential explanations. 
-
-        Notes
-        -----
-        Counter-explanations are only available for :class:`.AlternativeExplanation` explanations.
-
-        Notes
-        -----
-        only_ensured and include_potential can interact in the following way:
-        - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
-            is potential, no potential explanations will be included
-        '''
-        assert self._is_alternative(), 'Counter-explanations are only available for alternative explanations'
-        counter_explanations = deepcopy(self)
-        for explanation in counter_explanations.explanations:
-            explanation.get_counter_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
-        return counter_explanations
-
-    def get_ensured_explanations(self):
-        '''
-        The function `get_ensured_explanations` returns a copy of this :class:`.CalibratedExplanations` object with only ensured explanations.
-        Ensured explanations are individual rules that have a smaller confidence interval. 
-
-        Returns
-        -------
-        ensured-explanations : CalibratedExplanations
-            A new :class:`.CalibratedExplanations` object containing :class:`.AlternativeExplanation` objects only containing ensured 
-            explanations. 
-        '''
-        assert self._is_alternative(), 'Ensured explanations are only available for alternative explanations'
-        ensured_explanations = deepcopy(self)
-        for explanation in ensured_explanations.explanations:
-            explanation.get_ensured_explanations()
-        return ensured_explanations
 
     # pylint: disable=protected-access
     def as_lime(self, num_features_to_show=None):
@@ -523,6 +390,153 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             for f in range(len(self.X_test[0, :])):
                 shap_exp.values[i][f] = -explanation.feature_weights['predict'][f]
         return shap_exp
+
+class AlternativeExplanations(CalibratedExplanations):
+    '''
+    A class for storing and visualizing alternative explanations, separating methods that are explicit for :class:`.AlternativeExplanation`.
+    '''
+    def get_super_explanations(self, class_label=None, only_ensured=False, include_potential=True):
+        '''
+        The function `get_super_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only super-explanations.
+        Super-explanations are individual rules with higher probability that support the predicted class (or the class represented by class_label). 
+
+        Parameters
+        ----------
+        class_label : int, default=None
+            The `class_label` parameter is an integer that represents the class label for which you want to get super-explanations.
+            If None, the function will return super-explanations for the predicted class.
+        only_ensured : bool, default=False
+            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
+            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
+            explanations. If set to `False`, the function will return all super-explanations. 
+        include_potential : bool, default=True
+            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations in the
+            super-explanations. If set to `True`, the function will include super-potential explanations in the super-explanations.
+            If set to `False`, the function will only include super-factual explanations.
+
+        Returns
+        -------
+        super-explanations : :class:`.AlternativeExplanations`
+            A new :class:`.AlternativeExplanations` object containing :class:`.AlternativeExplanation` objects only containing super-factual 
+            or super-potential explanations. 
+
+        Notes
+        -----
+        Super-explanations are only available for :class:`.AlternativeExplanation` explanations.
+
+        Notes
+        -----
+        only_ensured and include_potential can interact in the following way:
+        - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
+            is potential, no potential explanations will be included
+        '''
+        assert self._is_alternative(), 'Super-explanations are only available for alternative explanations'
+        super_explanations = deepcopy(self)
+        for explanation in super_explanations.explanations:
+            explanation.get_super_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
+        return super_explanations
+
+
+    def get_semi_explanations(self, class_label=None, only_ensured=False, include_potential=True):
+        '''
+        The function `get_semi_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only semi-explanations.
+        Semi-explanations are individual rules with lower probability that support the predicted class (or the class represented by class_label). 
+
+        Parameters
+        ----------
+        class_label : int, default=None
+            The `class_label` parameter is an integer that represents the class label for which you want to get semi-explanations.
+            If None, the function will return semi-explanations for the predicted class.
+        only_ensured : bool, default=False
+            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
+            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
+            explanations. If set to `False`, the function will return all semi-explanations. 
+        include_potential : bool, default=True
+            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations in the
+            semi-explanations. If set to `True`, the function will include semi-potential explanations in the semi-explanations.
+            If set to `False`, the function will only include semi-factual explanations.
+
+        Returns
+        -------
+        semi-explanations : :class:`.AlternativeExplanations`
+            A new :class:`.AlternativeExplanations` object containing :class:`.AlternativeExplanation` objects only containing semi-factual 
+            or semi-potential explanations. 
+
+        Notes
+        -----
+        Semi-explanations are only available for :class:`.AlternativeExplanation` explanations.
+
+        Notes
+        -----
+        only_ensured and include_potential can interact in the following way:
+        - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
+            is potential, no potential explanations will be included
+        '''
+        assert self._is_alternative(), 'Semi-explanations are only available for alternative explanations'
+        semi_explanations = deepcopy(self)
+        for explanation in semi_explanations.explanations:
+            explanation.get_semi_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
+        return semi_explanations
+
+
+    def get_counter_explanations(self, class_label=None, only_ensured=False, include_potential=True):
+        '''
+        The function `get_counter_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only counter-explanations.
+        Counter-explanations are individual rules that does not support the predicted class (or the class represented by class_label). 
+
+        Parameters
+        ----------
+        class_label : int, default=None
+            The `class_label` parameter is an integer that represents the class label for which you want to get counter-explanations.
+            If None, the function will return counter-explanations for the predicted class.
+        only_ensured : bool, default=False
+            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
+            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
+            explanations. If set to `False`, the function will return all counter-explanations.
+        include_potential : bool, default=True
+            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations in the
+            counter-explanations. If set to `True`, the function will include counter-potential explanations in the counter-explanations.
+            If set to `False`, the function will only include counter-factual explanations.
+
+        Returns
+        -------
+        counter-explanations : :class:`.AlternativeExplanations`
+            A new :class:`.AlternativeExplanations` object containing :class:`.AlternativeExplanation` objects only containing counter-factual 
+            or counter-potential explanations. 
+
+        Notes
+        -----
+        Counter-explanations are only available for :class:`.AlternativeExplanation` explanations.
+
+        Notes
+        -----
+        only_ensured and include_potential can interact in the following way:
+        - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
+            is potential, no potential explanations will be included
+        '''
+        assert self._is_alternative(), 'Counter-explanations are only available for alternative explanations'
+        counter_explanations = deepcopy(self)
+        for explanation in counter_explanations.explanations:
+            explanation.get_counter_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
+        return counter_explanations
+
+    def get_ensured_explanations(self):
+        '''
+        The function `get_ensured_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only ensured explanations.
+        Ensured explanations are individual rules that have a smaller confidence interval. 
+
+        Returns
+        -------
+        ensured-explanations : AlternativeExplanations
+            A new :class:`.AlternativeExplanations` object containing :class:`.AlternativeExplanation` objects only containing ensured 
+            explanations. 
+        '''
+        assert self._is_alternative(), 'Ensured explanations are only available for alternative explanations'
+        ensured_explanations = deepcopy(self)
+        for explanation in ensured_explanations.explanations:
+            explanation.get_ensured_explanations()
+        return ensured_explanations
+
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class CalibratedExplanation(ABC):
@@ -1495,7 +1509,7 @@ class AlternativeExplanation(CalibratedExplanation):
         '''
         show = kwargs.get('show', False)
         filename = kwargs.get('filename', '')
-        ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
+        ranking_metric = kwargs.get('ranking_metric', 'weighted_sum')
         ranking_weight = kwargs.get('ranking_weight', 0.5)
         sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
         if sort_on_uncertainty or ranking_metric == 'uncertainty':
