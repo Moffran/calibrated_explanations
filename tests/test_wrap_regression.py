@@ -305,8 +305,8 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         explanation = cal_exp.explore_alternatives(X_test)
         explanation = cal_exp.explain_factual(X_test, threshold=y_test)
         explanation = cal_exp.explore_alternatives(X_test, threshold=y_test)
-        explanation = cal_exp.explain_perturbed(X_test)
-        explanation = cal_exp.explain_perturbed(X_test, threshold=y_test)
+        explanation = cal_exp.explain_fast(X_test)
+        explanation = cal_exp.explain_fast(X_test, threshold=y_test)
 
         # predict_proba without a threshold is not supported for regression models, regardless of calibration
         with pytest.raises(ValueError):

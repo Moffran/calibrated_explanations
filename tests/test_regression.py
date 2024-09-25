@@ -440,17 +440,17 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             mode='regression',
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(X_test)
+        perturbed_explanation = cal_exp.explain_fast(X_test)
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(0.1, np.inf))
+        perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
         perturbed_explanation.plot()
         with pytest.raises(Warning):
             perturbed_explanation.plot(uncertainty=True)
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(-np.inf, 0.9))
+        perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
         perturbed_explanation.plot()
         with pytest.raises(Warning):
             perturbed_explanation.plot(uncertainty=True)
@@ -475,12 +475,12 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             perturb=True
         )
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test)
+        perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test[0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0])
         perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
@@ -506,12 +506,12 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             bins=X_cal[:,0],
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, bins=X_test[:,0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, bins=X_test[:,0])
         perturbed_explanation.add_conjunctions()
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:,0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:,0])
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:,0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:,0])
 
 
     def test_probabilistic_regression_conditional_perturbed_ce(self):
@@ -529,10 +529,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             perturb=True
         )
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test, bins=y_test > y_test[0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, y_test, bins=y_test > y_test[0])
         perturbed_explanation.add_conjunctions()
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test[0], bins=y_test > y_test[0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0], bins=y_test > y_test[0])
 
 
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
@@ -550,12 +550,12 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True),
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(X_test)
+        perturbed_explanation = cal_exp.explain_fast(X_test)
         perturbed_explanation.add_conjunctions()
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(0.1, np.inf))
+        perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(-np.inf, 0.9))
+        perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -574,10 +574,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             perturb=True
         )
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test)
+        perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
         perturbed_explanation.add_conjunctions()
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test[0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0])
 
 
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
@@ -595,12 +595,12 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True),
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(X_test)
+        perturbed_explanation = cal_exp.explain_fast(X_test)
         perturbed_explanation.add_conjunctions()
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(0.1, np.inf))
+        perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, low_high_percentiles=(-np.inf, 0.9))
+        perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
@@ -619,10 +619,10 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             perturb=True
         )
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test)
+        perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
         perturbed_explanation.add_conjunctions()
 
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, y_test[0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0])
 
 
 if __name__ == '__main__':

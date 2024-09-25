@@ -10,7 +10,7 @@ by Helena Löfström et al.
 from .core import CalibratedExplainer, WrapCalibratedExplainer, __version__
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                     RegressorDiscretizer, BinaryRegressorDiscretizer
-from .explanations import CalibratedExplanations, CalibratedExplanation, \
-                    FactualExplanation, AlternativeExplanation, PerturbedExplanation
+from .explanations import CalibratedExplanations, AlternativeExplanations, CalibratedExplanation, \
+                    FactualExplanation, AlternativeExplanation, FastExplanation
 from ._VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor

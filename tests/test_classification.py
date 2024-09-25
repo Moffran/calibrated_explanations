@@ -321,7 +321,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             mode='classification',
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(X_test)
+        perturbed_explanation = cal_exp.explain_fast(X_test)
         print(perturbed_explanation[0])
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.remove_conjunctions()
@@ -350,7 +350,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             perturb=True
         )
         print(cal_exp)
-        perturbed_explanation = cal_exp.explain_perturbed(X_test)
+        perturbed_explanation = cal_exp.explain_fast(X_test)
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.remove_conjunctions()
         perturbed_explanation.plot()
@@ -379,7 +379,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             bins=X_cal[:,0],
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, bins=X_test[:,0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, bins=X_test[:,0])
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)
@@ -401,7 +401,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
             bins=X_cal[:,0],
             perturb=True
         )
-        perturbed_explanation = cal_exp.explain_perturbed(X_test, bins=X_test[:,0])
+        perturbed_explanation = cal_exp.explain_fast(X_test, bins=X_test[:,0])
         perturbed_explanation.add_conjunctions()
         perturbed_explanation.plot()
         perturbed_explanation.plot(uncertainty=True)

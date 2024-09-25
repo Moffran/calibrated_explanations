@@ -61,7 +61,7 @@ class CalibratedExplainer:
                 # sample_percentiles = None,
                 # random_state = 42,
                 # verbose = False,
-                # perturb = False,
+                # fast = False,
                 # reject=False,
                 # ) -> None:
         # pylint: disable=line-too-long
@@ -111,9 +111,8 @@ class CalibratedExplainer:
             A boolean parameter that determines whether additional printouts should be enabled during the
             operation of the class. If set to True, it will print out additional information during the
             execution of the code. If set to False, it will not print out any additional information.
-        perturb : bool, default=False
-            A boolean parameter that determines whether the explainer should perturb the calibration set to 
-            enable perturbed explanations.
+        fast : bool, default=False
+            A boolean parameter that determines whether the explainer should initiate the Fast Calibrated Explanations.
         reject : bool, default=False
             A boolean parameter that determines whether the explainer should reject explanations that are
             deemed too difficult to explain. If set to True, the explainer will reject explanations that are
@@ -143,7 +142,7 @@ class CalibratedExplainer:
         self.verbose = kwargs.get('verbose', False)
         self.bins = bins
 
-        self.__perturb = kwargs.get('perturb', False)
+        self.__fast = kwargs.get('fast', False)
         self.__noise_type = kwargs.get('noise_type', 'uniform')
         self.__scale_factor = kwargs.get('scale_factor', 5)
         self.__severity = kwargs.get('severity', 1)
@@ -274,11 +273,11 @@ class CalibratedExplainer:
         #     Mondrian categories
         # """
         assert self.__initialized, "The learner must be initialized before calling predict."
-        if feature is None and self.is_perturbed():
+        if feature is None and self.is_fast():
             feature = self.num_features # Use the calibrator defined using X_cal
         if self.mode == 'classification':
             if self.is_multiclass():
-                if self.is_perturbed():
+                if self.is_fast():
                     predict, low, high, new_classes = self.interval_learner[feature].predict_proba(X_test,
                                                                                     output_interval=True,
                                                                                     classes=classes,
@@ -294,7 +293,7 @@ class CalibratedExplainer:
                     classes = [classes]
                 return [predict[i,c] for i,c in enumerate(classes)], low, high, None
 
-            if self.is_perturbed():
+            if self.is_fast():
                 predict, low, high = self.interval_learner[feature].predict_proba(X_test, output_interval=True, bins=bins)
             else:
                 predict, low, high = self.interval_learner.predict_proba(X_test, output_interval=True, bins=bins)
@@ -314,13 +313,13 @@ class CalibratedExplainer:
                 low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
                 high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
-                if self.is_perturbed():
+                if self.is_fast():
                     return self.interval_learner[feature].predict_uncertainty(X_test, low_high_percentiles, bins=bins)
                 return self.interval_learner.predict_uncertainty(X_test, low_high_percentiles, bins=bins)
 
             # regression with threshold condition
             assert_threshold(threshold, X_test)
-            if self.is_perturbed():
+            if self.is_fast():
                 return self.interval_learner[feature].predict_probability(X_test, threshold, bins=bins)
             # pylint: disable=unexpected-keyword-arg
             return self.interval_learner.predict_probability(X_test, threshold, bins=bins)
@@ -815,7 +814,7 @@ class CalibratedExplainer:
         return explanation
 
 
-    def explain_perturbed(self,
+    def explain_fast(self,
                                 X_test,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
@@ -840,20 +839,20 @@ class CalibratedExplainer:
         Warning: The threshold-parameter is only supported for mode='regression'.
         ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
             instances in X_test.
-        RuntimeError: Perturbed explanations are only possible if the explainer is perturbed.
+        RuntimeError: Fast explanations are only possible if the explainer is a Fast Calibrated Explainer.
 
         Returns
         -------
         :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
             intervals. 
         """
-        if not self.is_perturbed():
+        if not self.is_fast():
             try:
-                self.__perturb = True
-                self.__initialize_interval_learner_for_perturbed()
+                self.__fast = True
+                self.__initialize_interval_learner_for_fast_explainer()
             except Exception as exc:
-                self.__perturb = False
-                raise RuntimeError("Perturbed explanations are only possible if the explainer is perturbed.") from exc
+                self.__fast = False
+                raise RuntimeError("Fast explanations are only possible if the explainer is a Fast Calibrated Explainer.") from exc
         total_time = time()
         instance_time = []
         if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
@@ -925,7 +924,7 @@ class CalibratedExplainer:
         instance_time = [feature_time / X_test.shape[0]]*X_test.shape[0]
 
 
-        explanation.finalize_perturbed(feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
+        explanation.finalize_fast(feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
         self.latest_explanation = explanation
         return explanation
 
@@ -946,14 +945,14 @@ class CalibratedExplainer:
         return self.num_classes > 2
 
 
-    def is_perturbed(self):
-        """test if the explainer is perturbed
+    def is_fast(self):
+        """test if the explainer is fast
 
         Returns
         -------
-        bool: True if perturbed
+        bool: True if fast
         """
-        return self.__perturb
+        return self.__fast
 
 
     def rule_boundaries(self, instances, perturbed_instances=None):
@@ -1104,8 +1103,8 @@ class CalibratedExplainer:
 
 
     def __initialize_interval_learner(self) -> None:
-        if self.is_perturbed():
-            self.__initialize_interval_learner_for_perturbed()
+        if self.is_fast():
+            self.__initialize_interval_learner_for_fast_explainer()
         elif self.mode == 'classification':
             self.interval_learner = VennAbers(self.learner.predict_proba(self.X_cal), self.y_cal, self.learner, self.bins)
         elif 'regression' in self.mode:
@@ -1113,22 +1112,22 @@ class CalibratedExplainer:
         self.__initialized = True
 
 # pylint: disable=attribute-defined-outside-init
-    def __initialize_interval_learner_for_perturbed(self):
+    def __initialize_interval_learner_for_fast_explainer(self):
         self.interval_learner = []
         X_cal, y_cal, bins = self.X_cal, self.y_cal, self.bins
-        self.perturbed_X_cal, self.scaled_X_cal, self.scaled_y_cal, scale_factor = \
+        self.fast_X_cal, self.scaled_X_cal, self.scaled_y_cal, scale_factor = \
                 perturb_dataset(self.X_cal, self.y_cal, self.categorical_features,
                                 noise_type=self.__noise_type,
                                 scale_factor=self.__scale_factor,
                                 severity=self.__severity)
         self.bins = np.tile(self.bins.copy(), scale_factor) if self.bins is not None else None
         for f in range(self.num_features):
-            perturbed_X_cal = self.scaled_X_cal.copy()
-            perturbed_X_cal[:,f] = self.perturbed_X_cal[:,f]
+            fast_X_cal = self.scaled_X_cal.copy()
+            fast_X_cal[:,f] = self.fast_X_cal[:,f]
             if self.mode == 'classification':
-                self.interval_learner.append(VennAbers(self.learner.predict_proba(perturbed_X_cal), self.scaled_y_cal, self.learner, self.bins))
+                self.interval_learner.append(VennAbers(self.learner.predict_proba(fast_X_cal), self.scaled_y_cal, self.learner, self.bins))
             elif 'regression' in self.mode:
-                self.X_cal = perturbed_X_cal
+                self.X_cal = fast_X_cal
                 self.y_cal = self.scaled_y_cal
                 self.interval_learner.append(IntervalRegressor(self))
 
@@ -1900,9 +1899,9 @@ class WrapCalibratedExplainer():
         kwargs['bins'] = bins
         return self.explainer.explore_alternatives(X_test, **kwargs)
 
-    def explain_perturbed(self, X_test, **kwargs):
+    def explain_fast(self, X_test, **kwargs):
         """
-        Generates a :class:`.CalibratedExplanations` object for the provided test data, provided that the :class:`.CalibratedExplainer` has been perturbed (using the parameter perturb=True).
+        Generates a :class:`.CalibratedExplanations` object for the provided test data, provided that the :class:`.CalibratedExplainer` has been initialised as fast (using the parameter fast=True).
 
         Parameters
         ----------
@@ -1940,13 +1939,13 @@ class WrapCalibratedExplainer():
         
         .. code-block:: python
         
-            w.explain_perturbed(X_test, threshold=0.05)
+            w.explain_fast(X_test, threshold=0.05)
 
         Generate explanations using custom percentile values for interval calculation:
         
         .. code-block:: python
         
-            w.explain_perturbed(X_test, low_high_percentiles=(10, 90))
+            w.explain_fast(X_test, low_high_percentiles=(10, 90))
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
@@ -1959,7 +1958,7 @@ class WrapCalibratedExplainer():
         else:
             bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
-        return self.explainer.explain_perturbed(X_test, **kwargs)
+        return self.explainer.explain_fast(X_test, **kwargs)
 
 
     # pylint: disable=too-many-return-statements

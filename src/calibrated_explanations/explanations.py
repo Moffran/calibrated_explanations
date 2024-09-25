@@ -162,12 +162,12 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
 
 
     # pylint: disable=too-many-arguments
-    def finalize_perturbed(self, feature_weights, feature_predict, prediction, instance_time=None, total_time=None) -> None:
+    def finalize_fast(self, feature_weights, feature_predict, prediction, instance_time=None, total_time=None) -> None:
         """finalize the explanation by adding the binned data and the feature weights
         """
         for i, instance in enumerate(self.X_test):
             instance_bin = self.bins[i] if self.bins is not None else None
-            explanation = PerturbedExplanation(self, i, instance, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
+            explanation = FastExplanation(self, i, instance, feature_weights, feature_predict, prediction, self.y_threshold, instance_bin=instance_bin)
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
@@ -1580,7 +1580,7 @@ class AlternativeExplanation(CalibratedExplanation):
 
 
 
-class PerturbedExplanation(CalibratedExplanation):
+class FastExplanation(CalibratedExplanation):
     """
     Perturbed Explanation class, representing shap-like explanations.
     """
@@ -1590,23 +1590,23 @@ class PerturbedExplanation(CalibratedExplanation):
         self._get_rules()
 
     def __repr__(self):
-        perturbed = self._get_rules()
+        fast = self._get_rules()
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
-            f"   {perturbed['base_predict'][0]:5.3f}   [{perturbed['base_predict_low'][0]:5.3f}, {perturbed['base_predict_high'][0]:5.3f}]",
+            f"   {fast['base_predict'][0]:5.3f}   [{fast['base_predict_low'][0]:5.3f}, {fast['base_predict_high'][0]:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]",
         ]
-        feature_order = self._rank_features(perturbed['weight'],
-                                width=np.array(perturbed['weight_high']) - np.array(perturbed['weight_low']),
-                                num_to_show=len(perturbed['rule']))
-        # feature_order = range(len(perturbed['rule']))
+        feature_order = self._rank_features(fast['weight'],
+                                width=np.array(fast['weight_high']) - np.array(fast['weight_low']),
+                                num_to_show=len(fast['rule']))
+        # feature_order = range(len(fast['rule']))
         output.extend(
-            f"{perturbed['value'][f]:6}: {perturbed['rule'][f]:40s} {perturbed['weight'][f]:>6.3f} [{perturbed['weight_low'][f]:>6.3f}, {perturbed['weight_high'][f]:>6.3f}]"
+            f"{fast['value'][f]:6}: {fast['rule'][f]:40s} {fast['weight'][f]:>6.3f} [{fast['weight_low'][f]:>6.3f}, {fast['weight_high'][f]:>6.3f}]"
             for f in reversed(feature_order)
         )
-        # sum_weights = np.sum((perturbed['weight']))
-        # sum_weights_low = np.sum((perturbed['weight_low']))
-        # sum_weights_high = np.sum((perturbed['weight_high']))
+        # sum_weights = np.sum((fast['weight']))
+        # sum_weights_low = np.sum((fast['weight_low']))
+        # sum_weights_high = np.sum((fast['weight_high']))
         # output.append(f"{'Mean':6}: {'':40s} {sum_weights:>6.3f} [{sum_weights_low:>6.3f}, {sum_weights_high:>6.3f}]")
         return "\n".join(output) + "\n"
 
@@ -1635,7 +1635,7 @@ class PerturbedExplanation(CalibratedExplanation):
         self._has_rules = False
         # i = self.index
         instance = deepcopy(self.X_test)
-        perturbed = {
+        fast = {
             'base_predict': [],
             'base_predict_low': [],
             'base_predict_high': [],
@@ -1652,32 +1652,32 @@ class PerturbedExplanation(CalibratedExplanation):
             'is_conjunctive': [],
             'classes': self.prediction['classes'],
         }
-        perturbed['base_predict'].append(self.prediction['predict'])
-        perturbed['base_predict_low'].append(self.prediction['low'])
-        perturbed['base_predict_high'].append(self.prediction['high'])
+        fast['base_predict'].append(self.prediction['predict'])
+        fast['base_predict_low'].append(self.prediction['low'])
+        fast['base_predict_high'].append(self.prediction['high'])
         rules = self._define_conditions()
         for f,_ in enumerate(instance): # pylint: disable=invalid-name
             if self.prediction['predict'] == self.feature_predict['predict'][f]:
                 continue
-            perturbed['predict'].append(self.feature_predict['predict'][f])
-            perturbed['predict_low'].append(self.feature_predict['low'][f])
-            perturbed['predict_high'].append(self.feature_predict['high'][f])
-            perturbed['weight'].append(self.feature_weights['predict'][f])
-            perturbed['weight_low'].append(self.feature_weights['low'][f])
-            perturbed['weight_high'].append(self.feature_weights['high'][f])
+            fast['predict'].append(self.feature_predict['predict'][f])
+            fast['predict_low'].append(self.feature_predict['low'][f])
+            fast['predict_high'].append(self.feature_predict['high'][f])
+            fast['weight'].append(self.feature_weights['predict'][f])
+            fast['weight_low'].append(self.feature_weights['low'][f])
+            fast['weight_high'].append(self.feature_weights['high'][f])
             if f in self._get_explainer().categorical_features:
                 if self._get_explainer().categorical_labels is not None:
-                    perturbed['value'].append(
+                    fast['value'].append(
                         self._get_explainer().categorical_labels[f][int(instance[f])])
                 else:
-                    perturbed['value'].append(str(instance[f]))
+                    fast['value'].append(str(instance[f]))
             else:
-                perturbed['value'].append(str(np.around(instance[f],decimals=2)))
-            perturbed['rule'].append(rules[f])
-            perturbed['feature'].append(f)
-            perturbed['feature_value'].append(None)
-            perturbed['is_conjunctive'].append(False)
-        self.rules = perturbed
+                fast['value'].append(str(np.around(instance[f],decimals=2)))
+            fast['rule'].append(rules[f])
+            fast['feature'].append(f)
+            fast['feature_value'].append(None)
+            fast['is_conjunctive'].append(False)
+        self.rules = fast
         self._has_rules = True
         return self.rules
 
