@@ -234,7 +234,11 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
 
 
 # pylint: disable=duplicate-code
-def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertainty, num_to_show):
+def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertainty,
+                     num_to_show, title, path, show, save_ext=None):
+    """plots triangular explanations"""
+    if save_ext is None:
+        save_ext=['svg','pdf','png']
     # assert self._get_explainer().mode == 'classification' or \
     #     (self._get_explainer().mode == 'regression' and self._is_thresholded()), \
     #     'Triangular plot is only available for classification or thresholded regression'
@@ -279,7 +283,11 @@ def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertain
 
     # Add legend
     plt.legend()
-    plt.show()
+
+    for ext in save_ext:
+        plt.savefig(path + title + ext, bbox_inches='tight')
+    if show:
+        plt.show()
 
 # `__plot_triangular`
 def __plot_proba_triangle():
