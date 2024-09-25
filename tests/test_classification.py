@@ -206,7 +206,7 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         factual_explanation.remove_conjunctions()
         factual_explanation.plot()
-        factual_explanation.plot(uncertainty=True)        
+        factual_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
         #     semi = factual_explanation.get_semi_explanations()

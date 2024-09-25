@@ -306,7 +306,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf))
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
-        
+
         alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9))
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
