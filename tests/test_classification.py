@@ -146,9 +146,9 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         factual_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
-        #     semi = factual_explanation.get_semi_explanations()
+        #     semi = factual_explanation.semi_explanations()
         # with pytest.raises(AssertionError):
-        #     counter = factual_explanation.get_counter_explanations()
+        #     counter = factual_explanation.counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test)
@@ -165,11 +165,11 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         alternative_explanation.remove_conjunctions()
         alternative_explanation.plot()
         alternative_explanation.plot(style='triangular')
-        semi = alternative_explanation.get_semi_explanations()
+        semi = alternative_explanation.semi_explanations()
         self.assertExplanation(semi)
-        counter = alternative_explanation.get_counter_explanations()
+        counter = alternative_explanation.counter_explanations()
         self.assertExplanation(counter)
-        counter = alternative_explanation.get_ensured_explanations()
+        counter = alternative_explanation.ensured_explanations()
         self.assertExplanation(counter)
         alternative_explanation.add_conjunctions(max_rule_size=3)
 
@@ -209,9 +209,9 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         factual_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
-        #     semi = factual_explanation.get_semi_explanations()
+        #     semi = factual_explanation.semi_explanations()
         # with pytest.raises(AssertionError):
-        #     counter = factual_explanation.get_counter_explanations()
+        #     counter = factual_explanation.counter_explanations()
         factual_explanation.add_conjunctions(max_rule_size=3)
 
         alternative_explanation = cal_exp.explore_alternatives(X_test)
@@ -222,14 +222,14 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         alternative_explanation.remove_conjunctions()
         alternative_explanation.plot()
         alternative_explanation.plot(style='triangular')
-        semi = alternative_explanation.get_semi_explanations()
+        semi = alternative_explanation.semi_explanations()
         self.assertExplanation(semi)
-        counter = alternative_explanation.get_counter_explanations()
+        counter = alternative_explanation.counter_explanations()
         self.assertExplanation(counter)
         alternative_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
-        semi = alternative_explanation.get_semi_explanations(only_ensured=True)
+        semi = alternative_explanation.semi_explanations(only_ensured=True)
         self.assertExplanation(semi)
-        counter = alternative_explanation.get_counter_explanations(only_ensured=True)
+        counter = alternative_explanation.counter_explanations(only_ensured=True)
         self.assertExplanation(counter)
 
 
@@ -329,9 +329,9 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         perturbed_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
-        #     _ = perturbed_explanation.get_semi_explanations()
+        #     _ = perturbed_explanation.semi_explanations()
         # with pytest.raises(AssertionError):
-        #     _ = perturbed_explanation.get_counter_explanations()
+        #     _ = perturbed_explanation.counter_explanations()
         perturbed_explanation.add_conjunctions(max_rule_size=3)
 
 
@@ -357,9 +357,9 @@ class TestCalibratedExplainer_classification(unittest.TestCase):
         perturbed_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
-        #     _ = perturbed_explanation.get_semi_explanations()
+        #     _ = perturbed_explanation.semi_explanations()
         # with pytest.raises(AssertionError):
-        #     _ = perturbed_explanation.get_counter_explanations()
+        #     _ = perturbed_explanation.counter_explanations()
         perturbed_explanation.add_conjunctions(max_rule_size=3)
 
 

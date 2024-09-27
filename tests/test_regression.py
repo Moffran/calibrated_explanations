@@ -108,9 +108,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             factual_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
-        #     semi = factual_explanation.get_semi_explanations()
+        #     semi = factual_explanation.semi_explanations()
         # with pytest.raises(AssertionError):
-        #     counter = factual_explanation.get_counter_explanations()
+        #     counter = factual_explanation.counter_explanations()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test)
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
@@ -126,9 +126,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
         alternative_explanation.plot()
-        semi = alternative_explanation.get_semi_explanations()
+        semi = alternative_explanation.semi_explanations()
         self.assertExplanation(semi)
-        counter = alternative_explanation.get_counter_explanations()
+        counter = alternative_explanation.counter_explanations()
         self.assertExplanation(counter)
 
 
@@ -161,9 +161,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertExplanation(factual_explanation)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
-        #     semi = factual_explanation.get_semi_explanations()
+        #     semi = factual_explanation.semi_explanations()
         # with pytest.raises(AssertionError):
-        #     counter = factual_explanation.get_counter_explanations()
+        #     counter = factual_explanation.counter_explanations()
 
         alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
@@ -174,9 +174,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertIsInstance(alternative_explanation.calibrated_explainer.discretizer, RegressorDiscretizer)
         self.assertExplanation(alternative_explanation)
         alternative_explanation.plot()
-        semi = alternative_explanation.get_semi_explanations()
+        semi = alternative_explanation.semi_explanations()
         self.assertExplanation(semi)
-        counter = alternative_explanation.get_counter_explanations()
+        counter = alternative_explanation.counter_explanations()
         self.assertExplanation(counter)
 
 
@@ -456,9 +456,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
             perturbed_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
-        #     _ = perturbed_explanation.get_semi_explanations()
+        #     _ = perturbed_explanation.semi_explanations()
         # with pytest.raises(AssertionError):
-        #     _ = perturbed_explanation.get_counter_explanations()
+        #     _ = perturbed_explanation.counter_explanations()
 
 
     def test_probabilistic_regression_perturbed_ce(self):
@@ -485,9 +485,9 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         perturbed_explanation.plot(uncertainty=True)
         # Removed from CalibratedExplanations
         # with pytest.raises(AssertionError):
-        #     _ = perturbed_explanation.get_semi_explanations()
+        #     _ = perturbed_explanation.semi_explanations()
         # with pytest.raises(AssertionError):
-        #     _ = perturbed_explanation.get_counter_explanations()
+        #     _ = perturbed_explanation.counter_explanations()
 
 
     # NOTE: this takes takes about 70s to run

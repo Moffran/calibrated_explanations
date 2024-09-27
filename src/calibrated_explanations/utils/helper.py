@@ -312,7 +312,7 @@ def calculate_metrics(uncertainty=None,
         If `metric` is set to None, the function will calculate all available metrics.
         If `metric` is set to a list of metrics, the function will calculate only those
         metrics. The available metrics are:
-        - 'weighted_sum' : Weighted Sum Method 
+        - 'ensured' : Weighted Sum Method 
         - 'pareto_efficiency' : Pareto Efficiency Method (simplified as sum of normalized values)
         - 'arithmetic_mean' : Arithmetic Mean Method
         - 'min_max_normalization' : Min-Max Normalization Method
@@ -339,7 +339,7 @@ def calculate_metrics(uncertainty=None,
 
     # Count the number of arguments passed
     if uncertainty is None and prediction is None:
-        return ['weighted_sum', #'geometric_mean', #'harmonic_mean', #'weighted_product',
+        return ['ensured', #'geometric_mean', #'harmonic_mean', #'weighted_product',
                 'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
                 'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
                 #'penalty_high_uncertainty', 'exponential_penalty', 'logarithmic_penalty',
@@ -357,7 +357,7 @@ def calculate_metrics(uncertainty=None,
         w = -w
         inverse_prediction = True
     if metric is None:
-        metric = ['weighted_sum', #'geometric_mean', #'harmonic_mean', #'weighted_product',
+        metric = ['ensured', #'geometric_mean', #'harmonic_mean', #'weighted_product',
                 'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
                 'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
                 #'penalty_high_uncertainty', 'exponential_penalty', 'logarithmic_penalty',
@@ -372,8 +372,8 @@ def calculate_metrics(uncertainty=None,
         prediction = (prediction - min_prediction) / (max_prediction - min_prediction)
     prediction = -1*prediction if inverse_prediction and prediction is not None else prediction
 
-    if 'weighted_sum' in metric:
-        metrics['weighted_sum'] = (1-w) * (1 - uncertainty) + w * (prediction)
+    if 'ensured' in metric:
+        metrics['ensured'] = (1-w) * (1 - uncertainty) + w * (prediction)
 
     if 'geometric_mean' in metric:
         metrics['geometric_mean'] = np.sqrt((1 - uncertainty) * prediction)

@@ -42,7 +42,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         return result
 
     def __len__(self):
-        return len(self.X_test[:,0])
+        return len(self.X_test[:, 0])
 
     def __getitem__(self, key):
         '''
@@ -247,15 +247,14 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments, too-many-locals, unused-argument
     def plot(self,
                 index=None,
-                n_features_to_show=10,
-                sort_on_uncertainty=False,
+                filter_top=10,
                 show=False,
                 filename='',
                 uncertainty=False,
                 style='regular',
-                ranking_metric='feature_weight',
-                ranking_weight=0.5,
-                ranking_inverse=False,
+                rnk_metric='feature_weight',
+                rnk_weight=0.5,
+                sort_on_uncertainty=False,
                 interactive=False):
         '''The function `plot` plots either alternative or factual explanations for a given
         instance, with the option to show or save the plots.
@@ -264,17 +263,10 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         ----------
         index : int or None, default=None
             The index of the instance for which you want to plot the explanation. If None, the function will plot all the explanations.
-        n_features_to_show :  int or None, default=10
-            The parameter `n_features_to_show` determines the number of top features to display in the
+        filter_top :  int or None, default=10
+            The parameter `filter_top` determines the number of top features to display in the
             plot. It specifies how many of the most important features should be shown in the plot. If set to
             `None`, all the features will be shown. 
-        sort_on_uncertainty : bool, default=False
-            This parameter is deprecated and will be removed in future versions. Is superseded by the 
-            `ranking_metric` parameter with 'uncertainty.
-            The `sort_on_uncertainty` parameter is a boolean flag that determines whether to sort the
-            features based on the uncertainty intervals. If `sort_on_uncertainty` is set to `True`, the
-            features will be sorted based on the uncertainty intervals, with smallest on top. If `sort_on_uncertainty` is set to
-            `False`, the features will be sorted based on the feature weights (default).
         show : bool, default=False
             The `show` parameter determines whether the plots should be displayed immediately after they
             are generated. If set to True, the plots will be shown; if set to False, the plots will not be
@@ -293,17 +285,17 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             The `style` parameter is a string that determines the style of the plot. The following styles are supported: 
             - 'regular': The plot will show the feature weights as bars with the uncertainty intervals as lighter bars.
             - 'triangular': Experimental.
-        ranking_metric : str, default='feature_weight'
-            The `ranking_metric` parameter is a string that determines the metric used to rank the features. 
+        rnk_metric : str, default='feature_weight'
+            The `rnk_metric` parameter is a string that determines the metric used to rank the features. 
             The following metrics are supported:
-            - 'weighted_sum': The weighted sum of the feature weights and the uncertainty intervals. The `ranking_weight` 
+            - 'ensured': The weighted sum of the feature weights and the uncertainty intervals. The `rnk_weight` 
             parameter can be used to balance the importance of the prediction and the uncertainty.
             - 'feature_weight': The feature weights only. High feature weights are better.
             - 'uncertainty': The uncertainty intervals only. Low uncertainty is better. Is the same as 
-            'weighted_sum' with ranking_weight=1.
-        ranking_weight : float, default=0.5
-            The `ranking_weight` parameter is a float that determines the weight of the uncertainty in the 
-            ranking. Used with the 'weighted_sum' ranking metric. 
+            'ensured' with rnk_weight=0.
+        rnk_weight : float, default=0.5
+            The `rnk_weight` parameter is a float that determines the weight of the uncertainty in the 
+            ranking. Used with the 'ensured' ranking metric. 
         '''
         # Check for deprecated parameters and issue warnings
         if sort_on_uncertainty is not None:
@@ -319,19 +311,17 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         if index is not None:
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
-            self.get_explanation(index).plot(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
+            self.get_explanation(index).plot(filter_top=filter_top,
                                         show=show, filename=filename, uncertainty=uncertainty, style=style,
-                                        ranking_metric=ranking_metric, ranking_weight=ranking_weight,
-                                        ranking_inverse=ranking_inverse,
+                                        rnk_metric=rnk_metric, rnk_weight=rnk_weight,
                                         )
         else:
             for i, explanation in enumerate(self.explanations):
                 if len(filename) > 0:
                     filename = path + title + str(i) + ext
-                explanation.plot(n_features_to_show=n_features_to_show, sort_on_uncertainty=sort_on_uncertainty,
+                explanation.plot(filter_top=filter_top,
                                         show=show, filename=filename, uncertainty=uncertainty, style=style,
-                                        ranking_metric=ranking_metric, ranking_weight=ranking_weight,
-                                        ranking_inverse=ranking_inverse,
+                                        rnk_metric=rnk_metric, rnk_weight=rnk_weight,
                                         )
 
 
@@ -384,7 +374,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.X_test[0, :])))
         shap_exp.data = self.X_test
         for i, explanation in enumerate(self.explanations): #range(len(self.X_test[:,0])):
-            shap_exp.base_values[i] = explanation.prediction['predict']
+            # shap_exp.base_values[i] = explanation.prediction['predict']
             for f in range(len(self.X_test[0, :])):
                 shap_exp.values[i][f] = -explanation.feature_weights['predict'][f]
         return shap_exp
@@ -393,16 +383,13 @@ class AlternativeExplanations(CalibratedExplanations):
     '''
     A class for storing and visualizing alternative explanations, separating methods that are explicit for :class:`.AlternativeExplanation`.
     '''
-    def get_super_explanations(self, class_label=None, only_ensured=False, include_potential=True):
+    def super_explanations(self, only_ensured=False, include_potential=True):
         '''
-        The function `get_super_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only super-explanations.
-        Super-explanations are individual rules with higher probability that support the predicted class (or the class represented by class_label). 
+        The function `super_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only super-explanations.
+        Super-explanations are individual rules with higher probability that support the predicted class. 
 
         Parameters
         ----------
-        class_label : int, default=None
-            The `class_label` parameter is an integer that represents the class label for which you want to get super-explanations.
-            If None, the function will return super-explanations for the predicted class.
         only_ensured : bool, default=False
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
@@ -431,20 +418,17 @@ class AlternativeExplanations(CalibratedExplanations):
         assert self._is_alternative(), 'Super-explanations are only available for alternative explanations'
         super_explanations = deepcopy(self)
         for explanation in super_explanations.explanations:
-            explanation.get_super_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
+            explanation.super_explanations(only_ensured=only_ensured, include_potential=include_potential)
         return super_explanations
 
 
-    def get_semi_explanations(self, class_label=None, only_ensured=False, include_potential=True):
+    def semi_explanations(self, only_ensured=False, include_potential=True):
         '''
-        The function `get_semi_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only semi-explanations.
-        Semi-explanations are individual rules with lower probability that support the predicted class (or the class represented by class_label). 
+        The function `semi_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only semi-explanations.
+        Semi-explanations are individual rules with lower probability that support the predicted class. 
 
         Parameters
         ----------
-        class_label : int, default=None
-            The `class_label` parameter is an integer that represents the class label for which you want to get semi-explanations.
-            If None, the function will return semi-explanations for the predicted class.
         only_ensured : bool, default=False
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
@@ -473,20 +457,17 @@ class AlternativeExplanations(CalibratedExplanations):
         assert self._is_alternative(), 'Semi-explanations are only available for alternative explanations'
         semi_explanations = deepcopy(self)
         for explanation in semi_explanations.explanations:
-            explanation.get_semi_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
+            explanation.semi_explanations(only_ensured=only_ensured, include_potential=include_potential)
         return semi_explanations
 
 
-    def get_counter_explanations(self, class_label=None, only_ensured=False, include_potential=True):
+    def counter_explanations(self, only_ensured=False, include_potential=True):
         '''
-        The function `get_counter_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only counter-explanations.
-        Counter-explanations are individual rules that does not support the predicted class (or the class represented by class_label). 
+        The function `counter_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only counter-explanations.
+        Counter-explanations are individual rules that does not support the predicted class. 
 
         Parameters
         ----------
-        class_label : int, default=None
-            The `class_label` parameter is an integer that represents the class label for which you want to get counter-explanations.
-            If None, the function will return counter-explanations for the predicted class.
         only_ensured : bool, default=False
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
@@ -515,12 +496,12 @@ class AlternativeExplanations(CalibratedExplanations):
         assert self._is_alternative(), 'Counter-explanations are only available for alternative explanations'
         counter_explanations = deepcopy(self)
         for explanation in counter_explanations.explanations:
-            explanation.get_counter_explanations(class_label=class_label, only_ensured=only_ensured, include_potential=include_potential)
+            explanation.counter_explanations(only_ensured=only_ensured, include_potential=include_potential)
         return counter_explanations
 
-    def get_ensured_explanations(self):
+    def ensured_explanations(self):
         '''
-        The function `get_ensured_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only ensured explanations.
+        The function `ensured_explanations` returns a copy of this :class:`.AlternativeExplanations` object with only ensured explanations.
         Ensured explanations are individual rules that have a smaller confidence interval. 
 
         Returns
@@ -532,7 +513,7 @@ class AlternativeExplanations(CalibratedExplanations):
         assert self._is_alternative(), 'Ensured explanations are only available for alternative explanations'
         ensured_explanations = deepcopy(self)
         for explanation in ensured_explanations.explanations:
-            explanation.get_ensured_explanations()
+            explanation.ensured_explanations()
         return ensured_explanations
 
 
@@ -636,12 +617,28 @@ class CalibratedExplanation(ABC):
         """
         return self.y_threshold is not None
 
+    def is_regression(self) -> bool:
+        """test if the explanation is for regression
+
+        Returns:
+            bool: True if mode is 'regression'
+        """
+        return 'regression' in self._get_explainer().mode
+
+    def is_probabilistic(self) -> bool:
+        """test if the explanation is probabilistic
+
+        Returns:
+            bool: True if mode is 'classification' or is_thresholded and is_regression are True
+        """
+        return 'classification' in self._get_explainer().mode or (self.is_regression() and self.is_thresholded())
+
     @abstractmethod
     def __repr__(self):
         pass
 
     @abstractmethod
-    def plot(self, n_features_to_show=None, **kwargs):
+    def plot(self, filter_top=None, **kwargs):
         '''The `plot` function plots explanations for a given
         instance, with the option to show or save the plots.
         '''
@@ -755,14 +752,17 @@ class FactualExplanation(CalibratedExplanation):
             f"{factual['base_predict'][0]:5.3f} [{factual['base_predict_low'][0]:5.3f}, {factual['base_predict_high'][0]:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Weight':6} [{' Low':6}, {' High':6}]",
         ]
+        feature_order = self._rank_features(factual['weight'],
+                                width=np.array(factual['weight_high']) - np.array(factual['weight_low']),
+                                num_to_show=len(factual['rule']))
         output.extend(
-            f"{factual['value'][f]:6}: {rule:40s} {factual['weight'][f]:>6.3f} [{factual['weight_low'][f]:>6.3f}, {factual['weight_high'][f]:>6.3f}]"
-            for f, rule in enumerate(factual['rule'])
+            f"{factual['value'][f]:6}: {factual['rule'][f]:40s} {factual['weight'][f]:>6.3f} [{factual['weight_low'][f]:>6.3f}, {factual['weight_high'][f]:>6.3f}]"
+            for f in reversed(feature_order)
         )
         return "\n".join(output) + "\n"
 
     def _check_preconditions(self):
-        if 'regression' in self._get_explainer().mode:
+        if self.is_regression():
             if not isinstance(self._get_explainer().discretizer, BinaryRegressorDiscretizer):
                 warnings.warn('Factual explanations for regression recommend using the binaryRegressor ' +\
                                     'discretizer. Consider extracting factual explanations using ' +\
@@ -933,14 +933,14 @@ class FactualExplanation(CalibratedExplanation):
         self._has_conjunctive_rules = True
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
-    def plot(self, n_features_to_show=None, **kwargs):
+    def plot(self, filter_top=None, **kwargs):
         '''This function plots the factual explanation for a given instance using either probabilistic or
         regression plots.
         
         Parameters
         ----------
-        n_features_to_show : int, default=10
-            The `n_features_to_show` parameter determines the number of top features to display in the
+        filter_top : int, default=10
+            The `filter_top` parameter determines the number of top features to display in the
             plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
             number of features, up to the total number of features available.
         show : bool, default=False
@@ -962,21 +962,20 @@ class FactualExplanation(CalibratedExplanation):
         show = kwargs.get('show', False)
         filename = kwargs.get('filename', '')
         uncertainty = kwargs.get('uncertainty', False)
-        ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
-        ranking_weight = kwargs.get('ranking_weight', 0.5)
-        sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
-        if sort_on_uncertainty or ranking_metric == 'uncertainty':
-            ranking_weight = 1.0
-            ranking_metric = 'weighted_sum'
+        rnk_metric = kwargs.get('rnk_metric', 'feature_weight')
+        rnk_weight = kwargs.get('rnk_weight', 0.5)
+        if rnk_metric == 'uncertainty':
+            rnk_weight = 1.0
+            rnk_metric = 'ensured'
 
         factual = self._get_rules() #get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         num_features_to_show = len(factual['weight'])
-        if n_features_to_show is None:
-            n_features_to_show = num_features_to_show
-        n_features_to_show = np.min([num_features_to_show, n_features_to_show])
-        if n_features_to_show <= 0:
+        if filter_top is None:
+            filter_top = num_features_to_show
+        filter_top = np.min([num_features_to_show, filter_top])
+        if filter_top <= 0:
             warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.index}')
             return
 
@@ -1000,27 +999,27 @@ class FactualExplanation(CalibratedExplanation):
         width = np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
                         (len(factual['weight'])))
 
-        if ranking_metric == 'feature_weight':
+        if rnk_metric == 'feature_weight':
             features_to_plot = self._rank_features(factual['weight'],
                                                 width=width,
-                                                num_to_show=n_features_to_show)
+                                                num_to_show=filter_top)
         else:
             ranking = calculate_metrics(uncertainty=[factual['predict_high'][i]-factual['predict_low'][i] for i in range(len(factual['weight']))],
                                                 prediction=factual['predict'],
-                                                w=ranking_weight,
-                                                metric=ranking_metric,
+                                                w=rnk_weight,
+                                                metric=rnk_metric,
                                                 )
             features_to_plot = self._rank_features(width=ranking,
-                                                num_to_show=n_features_to_show)
+                                                num_to_show=filter_top)
 
         column_names = factual['rule']
         if 'classification' in self._get_explainer().mode or self.is_thresholded():
             _plot_probabilistic(self, factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
+                        filter_top, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext)
         else:
             _plot_regression(self, factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
+                        filter_top, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext)
 
 
@@ -1045,14 +1044,17 @@ class AlternativeExplanation(CalibratedExplanation):
             f"{alternative['base_predict'][0]:5.3f} [{alternative['base_predict_low'][0]:5.3f}, {alternative['base_predict_high'][0]:5.3f}]",
             f"{'Value':6}: {'Feature':40s} {'Prediction':10} [{' Low':6}, {' High':6}]",
         ]
+        feature_order = self._rank_features(alternative['weight'],
+                                width=np.array(alternative['weight_high']) - np.array(alternative['weight_low']),
+                                num_to_show=len(alternative['rule']))
         output.extend(
-            f"{alternative['value'][f]:6}: {rule:40s} {alternative['predict'][f]:>6.3f}     [{alternative['predict_low'][f]:>6.3f}, {alternative['predict_high'][f]:>6.3f}]"
-            for f, rule in enumerate(alternative['rule'])
+            f"{alternative['value'][f]:6}: {alternative['rule'][f]:40s} {alternative['predict'][f]:>6.3f}     [{alternative['predict_low'][f]:>6.3f}, {alternative['predict_high'][f]:>6.3f}]"
+            for f in reversed(feature_order)
         )
         return "\n".join(output) + "\n"
 
     def _check_preconditions(self):
-        if 'regression' in self._get_explainer().mode:
+        if self.is_regression():
             if not isinstance(self._get_explainer().discretizer, RegressorDiscretizer):
                 warnings.warn('Alternative explanations for regression recommend using the ' +\
                                     'regressor discretizer. Consider extracting alternative ' +\
@@ -1202,15 +1204,14 @@ class AlternativeExplanation(CalibratedExplanation):
         '''
         return self.__is_counter_explanation
 
-    def __filter_rules(self, class_label=None, only_ensured=False, make_super=False, make_semi=False, make_counter=False, include_potential=False):
+    def __filter_rules(self, only_ensured=False, make_super=False, make_semi=False, make_counter=False, include_potential=False):
         '''
         This is a support function to semi and counter explanations. It filters out rules that are not
         relevant to the explanation. 
         '''
-        if class_label is None:
-            positive_class = self.prediction['predict'] > 0.5
-        else:
-            positive_class = class_label == 1
+        if self.is_regression() and not self.is_probabilistic():
+            warnings.warn('Regression explanations are not probabilistic. Filtering rules may not be effective.')
+        positive_class = self.prediction['predict'] > 0.5
         initial_uncertainty = np.abs(self.prediction['high'] - self.prediction['low'])
 
         new_rules = self.__set_up_result()
@@ -1302,7 +1303,7 @@ class AlternativeExplanation(CalibratedExplanation):
         new_rules['feature_value'] = [value for i, value in enumerate(new_rules['feature_value']) if not new_rules['is_conjunctive'][i]]
         new_rules['is_conjunctive'] = [value for i, value in enumerate(new_rules['is_conjunctive']) if not new_rules['is_conjunctive'][i]]
 
-    def get_super_explanations(self, class_label=None, only_ensured=False, include_potential=False):
+    def super_explanations(self, only_ensured=False, include_potential=False):
         '''
         This function returns the super-explanations from this alternative explanation. 
         Super-explanations are individual rules that support the predicted class. 
@@ -1312,18 +1313,22 @@ class AlternativeExplanation(CalibratedExplanation):
         only_ensured : bool, default=False            
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
-            explanations. If set to `False`, the function will return all semi-explanations. 
+            explanations. If set to `False`, the function will return all super-explanations. 
+        include_potential : bool, default=False            
+            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations, 
+            i.e., explanations with a confidence interval covering 0.5. If set to `True`, the function will include potential
+            explanations. If set to `False`, the function will return only super-factual explanations. 
         
         Returns
         -------
         self : :class:`.AlternativeExplanation`
             Returns self filtered to only contain super-factual or super-potential explanations. 
         '''
-        self.__filter_rules(class_label=class_label, only_ensured=only_ensured, make_super=True, include_potential=include_potential)
+        self.__filter_rules(only_ensured=only_ensured, make_super=True, include_potential=include_potential)
         self.__is_super_explanation = True
         return self
 
-    def get_semi_explanations(self, class_label=None, only_ensured=False, include_potential=False):
+    def semi_explanations(self, only_ensured=False, include_potential=False):
         '''
         This function returns the semi-explanations from this alternative explanation. 
         Semi-explanations are individual rules that support the predicted class. 
@@ -1334,17 +1339,21 @@ class AlternativeExplanation(CalibratedExplanation):
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
             explanations. If set to `False`, the function will return all semi-explanations. 
+        include_potential : bool, default=False            
+            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations, 
+            i.e., explanations with a confidence interval covering 0.5. If set to `True`, the function will include potential
+            explanations. If set to `False`, the function will return only semi-factual explanations.
         
         Returns
         -------
         self : :class:`.AlternativeExplanation`
             Returns self filtered to only contain semi-factual or semi-potential explanations. 
         '''
-        self.__filter_rules(class_label=class_label, only_ensured=only_ensured, make_semi=True, include_potential=include_potential)
+        self.__filter_rules(only_ensured=only_ensured, make_semi=True, include_potential=include_potential)
         self.__is_semi_explanation = True
         return self
 
-    def get_counter_explanations(self, class_label=None, only_ensured=False, include_potential=False):
+    def counter_explanations(self, only_ensured=False, include_potential=False):
         '''
         This function returns the counter-explanations from this alternative explanation. 
         Counter-explanations are individual rules that does not support the predicted class. 
@@ -1354,28 +1363,39 @@ class AlternativeExplanation(CalibratedExplanation):
         only_ensured : bool, default=False            
             The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations, 
             i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
-            explanations. If set to `False`, the function will return all semi-explanations. 
+            explanations. If set to `False`, the function will return all counter-explanations. 
+        include_potential : bool, default=False            
+            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations, 
+            i.e., explanations with a confidence interval covering 0.5. If set to `True`, the function will include potential
+            explanations. If set to `False`, the function will return only counter-factual explanations.
 
         Returns
         -------
         self : :class:`.AlternativeExplanation`
             Returns self filtered to only contain counter-factual or counter-potential explanations. 
         '''
-        self.__filter_rules(class_label=class_label, only_ensured=only_ensured, make_counter=True, include_potential=include_potential)
+        self.__filter_rules(only_ensured=only_ensured, make_counter=True, include_potential=include_potential)
         self.__is_counter_explanation = True
         return self
 
-    def get_ensured_explanations(self):
+    def ensured_explanations(self, include_potential=False):
         '''
         This function returns the ensured explanations from this alternative explanation. 
         Ensured explanations are individual rules that have a smaller confidence interval. 
+        
+        Parameters
+        ----------        
+        include_potential : bool, default=False            
+            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations, 
+            i.e., explanations with a confidence interval covering 0.5. If set to `True`, the function will include potential
+            explanations. If set to `False`, the function will return only ensured factual explanations.
 
         Returns
         -------
         self : :class:`.AlternativeExplanation`
             Returns self filtered to only contain ensured explanations. 
         '''
-        self.__filter_rules(only_ensured=True)
+        self.__filter_rules(only_ensured=True, include_potential=include_potential)
         return self
 
     # pylint: disable=too-many-locals
@@ -1479,14 +1499,14 @@ class AlternativeExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size-1)
 
     # pylint: disable=consider-iterating-dictionary
-    def plot(self, n_features_to_show=None, **kwargs):
+    def plot(self, filter_top=None, **kwargs):
         '''The function `plot_alternative` plots the alternative explanation for a given instance in
         a dataset.
 
         Parameters
         ----------
-        n_features_to_show : int, default=10
-            The `n_features_to_show` parameter determines the number of top features to display in the
+        filter_top : int, default=10
+            The `filter_top` parameter determines the number of top features to display in the
             plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
             number of features, up to the total number of features available.
         show : bool, default=False
@@ -1496,10 +1516,6 @@ class AlternativeExplanation(CalibratedExplanation):
             The filename parameter is a string that represents the full path and filename of the plot
             image file that will be saved. If this parameter is not provided or is an empty string, the plot
             will not be saved as an image file.
-        sort_on_uncertainty : bool, default=False
-            A boolean parameter that determines whether to sort the features based on the uncertainty
-            values. If set to True, the features will be sorted based on the uncertainty values. If set to
-            False, the features will not be sorted based on the uncertainty values.
         style : str, default='regular'
             The `style` parameter is a string that determines the style of the plot. Possible styles for :class:`.AlternativeExplanation`:
             * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
@@ -1507,12 +1523,11 @@ class AlternativeExplanation(CalibratedExplanation):
         '''
         show = kwargs.get('show', False)
         filename = kwargs.get('filename', '')
-        ranking_metric = kwargs.get('ranking_metric', 'weighted_sum')
-        ranking_weight = kwargs.get('ranking_weight', 0.5)
-        sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
-        if sort_on_uncertainty or ranking_metric == 'uncertainty':
-            ranking_weight = 1.0
-            ranking_metric = 'weighted_sum'
+        rnk_metric = kwargs.get('rnk_metric', 'ensured')
+        rnk_weight = kwargs.get('rnk_weight', 0.5)
+        if rnk_metric == 'uncertainty':
+            rnk_weight = 1.0
+            rnk_metric = 'ensured'
 
         alternative = self._get_rules() #get_explanation(index)
         self._check_preconditions()
@@ -1537,14 +1552,14 @@ class AlternativeExplanation(CalibratedExplanation):
                             np.array(alternative['weight_low']),
                             (len(alternative['weight'])))
         num_rules = len(alternative['rule'])
-        if n_features_to_show is None:
-            n_features_to_show = num_rules
-        num_to_show_ = np.min([num_rules, n_features_to_show])
+        if filter_top is None:
+            filter_top = num_rules
+        num_to_show_ = np.min([num_rules, filter_top])
         if num_to_show_ <= 0:
             warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.index}')
             return
 
-        if ranking_metric == 'feature_weight':
+        if rnk_metric == 'feature_weight':
             features_to_plot = self._rank_features(feature_weights,
                                                 width=width,
                                                 num_to_show=num_to_show_)
@@ -1555,8 +1570,8 @@ class AlternativeExplanation(CalibratedExplanation):
                 prediction = prediction if predict['predict'] > 0.5 else [1-p for p in prediction]
             ranking = calculate_metrics(uncertainty=[alternative['predict_high'][i]-alternative['predict_low'][i] for i in range(num_rules)],
                                                 prediction=prediction,
-                                                w=ranking_weight,
-                                                metric=ranking_metric,
+                                                w=rnk_weight,
+                                                metric=rnk_metric,
                                                 )
             features_to_plot = self._rank_features(width=ranking,
                                                 num_to_show=num_to_show_)
@@ -1582,7 +1597,7 @@ class AlternativeExplanation(CalibratedExplanation):
 
 class FastExplanation(CalibratedExplanation):
     """
-    Perturbed Explanation class, representing shap-like explanations.
+    Fast Explanation class, representing shap-like explanations.
     """
     def __init__(self, calibrated_explanations, index, X_test, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
         super().__init__(calibrated_explanations, index, X_test, {}, feature_weights, feature_predict, prediction, y_threshold, instance_bin)
@@ -1615,7 +1630,7 @@ class FastExplanation(CalibratedExplanation):
         explanations. The conjunctive rules are added to the `conjunctive_rules` attribute of the
         `CalibratedExplanations` object.
         '''
-        warnings.warn('The add_conjunctions method is currently not supported for `PerturbedExplanation`, making this call resulting in no change.')
+        warnings.warn('The add_conjunctions method is currently not supported for `FastExplanation`, making this call resulting in no change.')
         # pass
 
     def _check_preconditions(self):
@@ -1698,14 +1713,14 @@ class FastExplanation(CalibratedExplanation):
         return self.conditions
 
 
-    def plot(self, n_features_to_show=None, **kwargs):
+    def plot(self, filter_top=None, **kwargs):
         '''This function plots the factual explanation for a given instance using either probabilistic or
         regression plots.
         
         Parameters
         ----------
-        n_features_to_show : int, default=10
-            The `n_features_to_show` parameter determines the number of top features to display in the
+        filter_top : int, default=10
+            The `filter_top` parameter determines the number of top features to display in the
             plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
             number of features, up to the total number of features available.
         show : bool, default=False
@@ -1727,21 +1742,20 @@ class FastExplanation(CalibratedExplanation):
         show = kwargs.get('show', False)
         filename = kwargs.get('filename', '')
         uncertainty = kwargs.get('uncertainty', False)
-        ranking_metric = kwargs.get('ranking_metric', 'feature_weight')
-        ranking_weight = kwargs.get('ranking_weight', 0.5)
-        sort_on_uncertainty = kwargs.get('sort_on_uncertainty', False)
-        if sort_on_uncertainty or ranking_metric == 'uncertainty':
-            ranking_weight = 1.0
-            ranking_metric = 'weighted_sum'
+        rnk_metric = kwargs.get('rnk_metric', 'feature_weight')
+        rnk_weight = kwargs.get('rnk_weight', 0.5)
+        if rnk_metric == 'uncertainty':
+            rnk_weight = 1.0
+            rnk_metric = 'ensured'
 
         factual = self._get_rules() #get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
         num_features_to_show = len(factual['weight'])
-        if n_features_to_show is None:
-            n_features_to_show = num_features_to_show
-        n_features_to_show = np.min([num_features_to_show, n_features_to_show])
-        if n_features_to_show <= 0:
+        if filter_top is None:
+            filter_top = num_features_to_show
+        filter_top = np.min([num_features_to_show, filter_top])
+        if filter_top <= 0:
             warnings.warn(f'The explanation has no rules to plot. The index of the instance is {self.index}')
             return
 
@@ -1765,25 +1779,25 @@ class FastExplanation(CalibratedExplanation):
         width = np.reshape(np.array(factual['weight_high']) - np.array(factual['weight_low']),
                         (len(factual['weight'])))
 
-        if ranking_metric == 'feature_weight':
+        if rnk_metric == 'feature_weight':
             features_to_plot = self._rank_features(factual['weight'],
                                                 width=width,
-                                                num_to_show=n_features_to_show)
+                                                num_to_show=filter_top)
         else:
             ranking = calculate_metrics(uncertainty=[factual['predict_high'][i]-factual['predict_low'][i] for i in range(len(factual['weight']))],
                                                 prediction=factual['predict'],
-                                                w=ranking_weight,
-                                                metric=ranking_metric,
+                                                w=rnk_weight,
+                                                metric=rnk_metric,
                                                 )
             features_to_plot = self._rank_features(width=ranking,
-                                                num_to_show=n_features_to_show)
+                                                num_to_show=filter_top)
 
         column_names = factual['rule']
         if 'classification' in self._get_explainer().mode or self.is_thresholded():
             _plot_probabilistic(self, factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
+                        filter_top, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext)
         else:
             _plot_regression(self, factual['value'], predict, feature_weights, features_to_plot,
-                        n_features_to_show, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
+                        filter_top, column_names, title=title, path=path, interval=uncertainty, show=show, idx=self.index,
                         save_ext=save_ext)

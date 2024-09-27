@@ -59,7 +59,7 @@ class CalibratedExplainer:
                 difficulty_estimator = None,
                 **kwargs,) -> None:
                 # sample_percentiles = None,
-                # random_state = 42,
+                # seed = 42,
                 # verbose = False,
                 # fast = False,
                 # reject=False,
@@ -102,8 +102,8 @@ class CalibratedExplainer:
             numerical features. For example, if `sample_percentiles = [25, 50, 75]`, then the values at the
             25th, 50th, and 75th percentiles within each discretized group will be sampled from the calibration 
             data for each numerical feature.
-        random_state : int, default=42
-            The random_state parameter is an integer that is used to set the random state for
+        seed : int, default=42
+            The seed parameter is an integer that is used to set the random state for
             reproducibility. It is used in various parts of the code where randomization is involved, such
             as sampling values for evaluation of numerical features or initializing the random state for
             certain operations.
@@ -137,7 +137,7 @@ class CalibratedExplainer:
         check_is_fitted(learner)
         self.learner = learner
         self.num_features = len(self.X_cal[0, :])
-        self.set_random_state(kwargs.get('random_state', 42))
+        self.set_seed(kwargs.get('seed', 42))
         self.sample_percentiles = kwargs.get('sample_percentiles', [25, 50, 75])
         self.verbose = kwargs.get('verbose', False)
         self.bins = bins
@@ -213,7 +213,7 @@ class CalibratedExplainer:
             if self.latest_explanation is not None:
                 disp_str += f"\n\ttotal_explain_time={self.latest_explanation.total_explain_time}"
             disp_str += f"\n\tsample_percentiles={self.sample_percentiles}\
-                        \n\trandom_state={self.random_state}\
+                        \n\tseed={self.seed}\
                         \n\tverbose={self.verbose}"
             if self.feature_names is not None:
                 disp_str += f"\n\tfeature_names={self.feature_names}"
@@ -1025,15 +1025,15 @@ class CalibratedExplainer:
 
 
 
-    def set_random_state(self, random_state: int) -> None:
+    def set_seed(self, seed: int) -> None:
         """changes the random seed
 
         Parameters
         ----------
-        random_state (int): a seed to the random number generator
+        seed (int): a seed to the random number generator
         """
-        self.random_state = random_state
-        np.random.seed = self.random_state
+        self.seed = seed
+        np.random.seed = self.seed
 
 
 
@@ -1281,23 +1281,23 @@ class CalibratedExplainer:
             self.discretizer = BinaryEntropyDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
-                    random_state=self.random_state)
+                    random_state=self.seed)
         elif discretizer == 'binaryRegressor':
             self.discretizer = BinaryRegressorDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
-                    random_state=self.random_state)
+                    random_state=self.seed)
 
         elif discretizer == 'entropy':
             self.discretizer = EntropyDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
-                    random_state=self.random_state)
+                    random_state=self.seed)
         elif discretizer == 'regressor':
             self.discretizer = RegressorDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
-                    random_state=self.random_state)
+                    random_state=self.seed)
         self.discretized_X_cal = self._discretize(copy.deepcopy(self.X_cal))
 
         self.feature_values = {}
