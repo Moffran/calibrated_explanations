@@ -54,15 +54,15 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
     factual_explanations = ce.explain_factual(X_test)
     for i in range(num_to_test):
         predicted = factual_explanations.get_explanation(i).prediction['classes']
-        factual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_i{i}_c{y_test[i]}_p{predicted}.png")
-        factual_explanations.plot(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_i{i}_c{y_test[i]}_p{predicted}.png")
+        factual_explanations.plot(i, filter_top=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_i{i}_c{y_test[i]}_p{predicted}.png")
+        factual_explanations.plot(i, uncertainty=True, filter_top=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Factual Explanations done', end=' - ', flush=True)
 
     alternative_explanations = ce.explore_alternatives(X_test)
     for i in range(num_to_test):
         predicted = alternative_explanations.get_explanation(i).prediction['classes']
-        alternative_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_alternative_i{i}_c{y_test[i]}_p{predicted}.png")
+        alternative_explanations.plot(i, filter_top=features_to_plot, filename=f"{dataSet}/{dataSet}_alternative_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Alternative Explanations done', end=' - ', flush=True)
     
@@ -74,14 +74,14 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
     factual_explanations = ce.explain_factual(X_test, bins=test_p)
     for i in range(num_to_test):
         predicted = factual_explanations.get_explanation(i).prediction['classes']
-        factual_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
-        factual_explanations.plot(i, uncertainty=True, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
+        factual_explanations.plot(i, filter_top=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
+        factual_explanations.plot(i, uncertainty=True, filter_top=features_to_plot, filename=f"{dataSet}/{dataSet}_factual_uncertainty_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Mondrian Factual Explanations done', end=' - ', flush=True)
 
     alternative_explanations = ce.explore_alternatives(X_test, bins=test_p)
     for i in range(num_to_test):
         predicted = alternative_explanations.get_explanation(i).prediction['classes']
-        alternative_explanations.plot(i, n_features_to_show=features_to_plot, filename=f"{dataSet}/{dataSet}_alternative_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
+        alternative_explanations.plot(i, filter_top=features_to_plot, filename=f"{dataSet}/{dataSet}_alternative_Mondrian_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Mondrian Alternative Explanations done')

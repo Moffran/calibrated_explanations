@@ -106,7 +106,7 @@ for dataset in klara:
             try:
                 # print(f'{i}:',end='\t')
 
-                ce.set_random_state(i)
+                ce.set_seed(i)
                 tic = time.time()
                 factual_explanations = ce.explain_factual(X_test)
                 factual_explanations.add_conjunctions(max_rule_size=4)
@@ -115,7 +115,7 @@ for dataset in klara:
                 # print(f'{ct:.1f}',end='\t')
                 stability['ce'].append([f.feature_weights for f in factual_explanations])
 
-                ce.set_random_state(i)
+                ce.set_seed(i)
                 tic = time.time()
                 factual_explanation = ce.explore_alternatives(X_test)
                 ct = time.time()-tic
@@ -146,7 +146,7 @@ for dataset in klara:
 
             try:
                 # print(f'{i}:',end='\t')
-                ce.set_random_state(i)
+                ce.set_seed(i)
                 tic = time.time()
                 factual_explanations = ce.explain_factual(X_test)
                 factual_explanations.add_conjunctions(max_rule_size=3)
@@ -155,7 +155,7 @@ for dataset in klara:
                 # print(f'{ct:.1f}',end='\t')
                 robustness['ce'].append([f.feature_weights for f in factual_explanations])
 
-                ce.set_random_state(i)
+                ce.set_seed(i)
                 tic = time.time()
                 factual_explanation = ce.explore_alternatives(X_test)
                 ct = time.time()-tic

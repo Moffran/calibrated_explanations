@@ -108,7 +108,7 @@ for dataset in klara:
             try:
                 # print(f'{i}:',end='\t')
 
-                ce.set_random_state(i)
+                ce.set_seed(i)
                 tic = time.time()
                 explanations = ce.explore_alternatives(X_test)
                 ct = time.time()-tic
@@ -116,7 +116,7 @@ for dataset in klara:
                 # print(f'{ct:.1f}',end='\t')
                 stability['ce'].append([f.feature_weights for f in explanations])
 
-                ce.set_random_state(i)
+                ce.set_seed(i)
                 tic = time.time()
                 explanations = ce.explain_factual(X_test)
                 ct = time.time()-tic
