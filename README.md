@@ -452,6 +452,8 @@ We have used both the `ConformalPredictiveSystem` and `DifficultyEstimator` clas
 
 We have used the `VennAbers` class from [Ivan Petej](https://github.com/ip200)s [venn-abers](https://github.com/ip200/venn-abers) package to provide support for probabilistic explanations (both classification and probabilistic regression). 
 
+The `FastExplanation`, created using the `explain_fast` method, is incorporating ideas and code from [ConformaSight](https://github.com/rabia174/ConformaSight) developed by [Fatima Rabia Yapicioglu](https://github.com/rabia174), Allesandra Stramiglio, and Fabio Vitali. 
+
 We are using Decision Trees from `scikit-learn` in the discretizers.
 
 We have copied code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Discretizer` class.
