@@ -13,12 +13,6 @@ from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassif
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
-import sys
-
-# Add the project root to the Python path
-sys.path.append(r'C:\Users\loftuw\Documents\Github\calibrated_explanations')
-sys.path.append(r'C:\Users\loftuw\Documents\Github\calibrated_explanations\src')
-
 from calibrated_explanations import CalibratedExplainer
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 

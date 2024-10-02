@@ -6,7 +6,6 @@ import time
 import warnings
 import pickle
 import os
-from click import progressbar
 import numpy as np
 import pandas as pd
 import shap
@@ -19,13 +18,6 @@ from crepes import ConformalPredictiveSystem
 from crepes.extras import DifficultyEstimator
 
 from lime.lime_tabular import LimeTabularExplainer
-import sys
-
-# Add the project root to the Python path
-sys.path.append(r'C:\Users\loftuw\Documents\Github\calibrated_explanations')
-sys.path.append(r'C:\Users\loftuw\Documents\Github\calibrated_explanations\src')
-
-
 from calibrated_explanations import CalibratedExplainer
 
 # Ignore all warnings
@@ -75,6 +67,9 @@ path = 'data/reg'
 if isinstance(path,str) and os.path.isdir(path):
     filenames = [os.path.join(path,file) for file in os.listdir(os.path.join(os.getcwd(),path)) if file.endswith(".txt")]
     datasets = [file.rsplit( ".", 1 )[ 0 ] for file in os.listdir(os.path.join(os.getcwd(),path)) if file.endswith(".txt")]
+else:
+    filenames = ['data/reg/housing.txt']
+    datasets = ['housing']
 
 # pylint: disable=line-too-long
 # datasets = {1:"housing"}
@@ -93,7 +88,7 @@ for dataSet, filename in zip(datasets, filenames):
     delimiter = ';'
     categorical_labels = {8: {0: 'INLAND', 1: 'NEAR BAY', 2: '<1H OCEAN', 3: 'NEAR OCEAN', 4: 'ISLAND'}}
 
-    df = pd.read_csv(filename, usecols = lambda x: False if (x == "ID" or x.startswith("IGNORE")) else True)
+    df = pd.read_csv(filename, usecols = lambda x: not (x == "ID" or x.startswith("IGNORE")))
     target = 'REGRESSION'
     df.dropna(inplace=True)
     Xn, y = df.drop(target,axis=1), df[target]
