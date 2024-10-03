@@ -6,9 +6,9 @@ Experiment used in the introductory paper to evaluate the stability and robustne
 import time
 import warnings
 import pickle
+from copy import deepcopy
 import numpy as np
 import pandas as pd
-from copy import deepcopy
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
@@ -134,7 +134,7 @@ for loader in datasets:
     abl_timer = {}
 
     for cal_size in calibration_sizes:
-        for metric in ablation:
+        for metric in ablation: # pylint: disable=consider-using-dict-items
             ablation[metric][cal_size] = {'explore':[], 'conjugate':[]}
         abl_timer[cal_size] = {'explore':[], 'conjugate':[]}
 
