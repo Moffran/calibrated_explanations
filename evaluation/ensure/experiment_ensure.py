@@ -3,7 +3,6 @@
 Experiment used in the introductory paper to evaluate the stability and robustness of the explanations
 """
 
-import sys
 import time
 import warnings
 import pickle
@@ -23,81 +22,82 @@ def debug_print(message, debug=True):
     if debug:
         print(message)
 
-
+# pylint: disable=missing-function-docstring, no-member
 def wine():
     ds = fetch_openml(name="wine", version=7, as_frame=True, parser='pandas')
 
-    X = ds.data.values.astype(float)
-    y = (ds.target.values == 'True').astype(int)
+    X_ = ds.data.values.astype(float)
+    y_ = (ds.target.values == 'True').astype(int)
 
-    feature_names = ds.feature_names
+    feature_names_ = ds.feature_names
 
     # Create a DataFrame from X
-    df = pd.DataFrame(X, columns=feature_names)
+    df = pd.DataFrame(X_, columns=feature_names_)
 
     # Add the target column to the DataFrame
-    df['target'] = y
+    target = 'target'
+    df[target] = y_
 
-    df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(df, target='target')
-    X = df.drop(columns=['target']).values
-    y = df['target'].values
-    return X, y, feature_names, categorical_features, categorical_labels, target_labels, 'wine', True, None
+    df, categorical_features_, categorical_labels_, target_labels_, _ = transform_to_numeric(df, target=target)
+    X_ = df.drop(columns=[target]).values
+    y_ = df[target].values
+    return X_, y_, feature_names_, categorical_features_, categorical_labels_, target_labels_, 'wine', True, None
 
 def iris():
-    dataset = fetch_openml(name="iris", version=1, as_frame=True, parser='auto')
+    ds = fetch_openml(name="iris", version=1, as_frame=True, parser='auto')
 
-    X = dataset.data.values.astype(float)
-    y = dataset.target.values
+    X_ = ds.data.values.astype(float)
+    y_ = ds.target.values
 
-    feature_names = dataset.feature_names
+    feature_names_ = ds.feature_names
 
     # Create a DataFrame from X
-    df = pd.DataFrame(X, columns=feature_names)
+    df = pd.DataFrame(X_, columns=feature_names_)
 
     # Add the target column to the DataFrame
-    df['target'] = y
     target = 'target'
+    df[target] = y_
 
-    df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(df, target=target)
-    X = df.drop(columns=[target]).values
-    y = df[target].values
-    return X, y, feature_names, categorical_features, categorical_labels, target_labels, 'iris', True, None
+    df, categorical_features_, categorical_labels_, target_labels_, _ = transform_to_numeric(df, target=target)
+    X_ = df.drop(columns=[target]).values
+    y_ = df[target].values
+    return X_, y_, feature_names_, categorical_features_, categorical_labels_, target_labels_, 'iris', True, None
 
 def housing():
-    dataset = fetch_openml(name="house_sales", version=3)
+    ds = fetch_openml(name="house_sales", version=3)
 
-    X = dataset.data.values.astype(float)
-    y = dataset.target.values/1000
+    X_ = ds.data.values.astype(float)
+    y_ = ds.target.values/1000
 
-    feature_names = dataset.feature_names
+    feature_names_ = ds.feature_names
 
     # Create a DataFrame from X
-    df = pd.DataFrame(X, columns=feature_names)
+    df = pd.DataFrame(X_, columns=feature_names_)
 
     # Add the target column to the DataFrame
-    df['target'] = y
     target = 'target'
+    df[target] = y_
 
-    df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(df, target=target)
-    X = df.drop(columns=[target]).values
-    y = df[target].values
-    return X, y, feature_names, categorical_features, categorical_labels, target_labels, 'housing', False, np.percentile(y, 50)
+    df, categorical_features_, categorical_labels_, target_labels_, _ = transform_to_numeric(df, target=target)
+    X_ = df.drop(columns=[target]).values
+    y_ = df[target].values
+    return X_, y_, feature_names_, categorical_features_, categorical_labels_, target_labels_, 'housing', False, np.percentile(y, 50)
 
 def glass():
-    dataset = 'glass'
+    ds = 'glass'
     delimiter = ','
 
-    fileName = f'data/Multiclass/{dataset}.csv'
+    fileName = f'data/Multiclass/{ds}.csv'
     df = pd.read_csv(fileName, delimiter=delimiter)
     target = 'Type'
 
     df = df.dropna()
 
-    df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(df, target=target)
-    X = df.drop(columns=[target]).values
-    y = df[target].values
-    feature_names = df.drop(columns=[target]).columns
-    return X, y, feature_names, categorical_features, categorical_labels, target_labels, 'glass', True, None
+    df, categorical_features_, categorical_labels_, target_labels_, _ = transform_to_numeric(df, target=target)
+    X_ = df.drop(columns=[target]).values
+    y_ = df[target].values
+    feature_names_ = df.drop(columns=[target]).columns
+    return X_, y_, feature_names_, categorical_features_, categorical_labels_, target_labels_, 'glass', True, None
 # ------------------------------------------------------
 
 test_size = 100 # number of test samples per dataset
@@ -141,10 +141,9 @@ for loader in datasets:
         cal_prop = int(max(calibration_sizes)/cal_size)
         X_cal_sample = X_cal[0::cal_prop,:]
         y_cal_sample = y_cal[0::cal_prop]
-        model.calibrate(X_cal_sample, y_cal_sample, \
-            feature_names=feature_names, categorical_features=categorical_features) if classification else \
-                model.calibrate(X_cal_sample, y_cal_sample, mode='regression',\
-                    feature_names=feature_names, categorical_features=categorical_features)
+        mode = 'classification' if classification else 'regression'
+        model.calibrate(X_cal_sample, y_cal_sample, mode=mode,\
+            feature_names=feature_names, categorical_features=categorical_features)
 
         tic = time.time()
         explanations = model.explore_alternatives(X_test, threshold=threshold)
