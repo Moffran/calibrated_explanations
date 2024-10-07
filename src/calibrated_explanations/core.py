@@ -19,7 +19,7 @@ from sklearn.metrics import confusion_matrix
 from crepes import ConformalClassifier
 from crepes.extras import hinge, MondrianCategorizer
 
-from .explanations import CalibratedExplanations
+from .explanations import AlternativeExplanations, CalibratedExplanations
 from ._VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
@@ -369,31 +369,9 @@ class CalibratedExplainer:
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
                                 bins = None,
-                                ) -> CalibratedExplanations:
+                                ) -> AlternativeExplanations:
         """
-        Creates a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
-
-        Parameters
-        ----------
-        X_test : A set with n_samples of test objects to predict
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
-        low_high_percentiles : a tuple of floats, default=(5, 95)
-            The low and high percentile used to calculate the interval. Applicable to regression.
-        bins : array-like of shape (n_samples,), default=None
-            Mondrian categories
-
-        Raises
-        ------
-        ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The threshold-parameter is only supported for mode='regression'.
-        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
-            instances in X_test.
-
-        Returns
-        -------
-        :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
-            intervals. 
+        See documentation for the `explore_alternatives` method.
 
         Note
         ----
@@ -406,9 +384,9 @@ class CalibratedExplainer:
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
                                 bins = None,
-                                ) -> CalibratedExplanations:
+                                ) -> AlternativeExplanations:
         """
-        Creates a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
+        Creates a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
         Parameters
         ----------
@@ -429,7 +407,7 @@ class CalibratedExplainer:
 
         Returns
         -------
-        :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing one :class:`.AlternativeExplanation` for each instance. 
+        :class:`.AlternativeExplanations` : A :class:`.AlternativeExplanations` object containing one :class:`.AlternativeExplanation` for each instance. 
 
         Note
         ----
@@ -503,16 +481,16 @@ class CalibratedExplainer:
 
         # Step 1: Predict the test set to get the predictions and intervals
         assert_threshold(threshold, X_test)
-        if threshold is not None:
-            if isinstance(threshold, (list, np.ndarray)):
-                if isinstance(threshold[0], tuple):
-                    perturbed_threshold = np.empty((0,), dtype=tuple)
-                else:
-                    perturbed_threshold = np.empty((0,))
-            else:
-                perturbed_threshold = threshold
-        else:
+        if threshold is None:
             perturbed_threshold = None
+        elif isinstance(threshold, (list, np.ndarray)):
+            perturbed_threshold = (
+                np.empty((0,), dtype=tuple)
+                if isinstance(threshold[0], tuple)
+                else np.empty((0,))
+            )
+        else:
+            perturbed_threshold = threshold
         perturbed_bins = np.empty((0,)) if bins is not None else None
         perturbed_X = np.empty((0, self.num_features))
         perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
@@ -549,18 +527,18 @@ class CalibratedExplainer:
             else:
                 X_copy = copy.deepcopy(X_test)
                 feature_values = np.unique(np.array(X_cal[:,f]))
-                lesser = rule_boundaries[:,f,0]
-                greater = rule_boundaries[:,f,1]
+                lower_boundary = rule_boundaries[:,f,0]
+                upper_boundary = rule_boundaries[:,f,1]
                 for i in range(len(X_test)):
-                    lesser[i] = lesser[i] if np.any(feature_values < lesser[i]) else -np.inf
-                    greater[i] = greater[i] if np.any(feature_values > greater[i]) else np.inf
+                    lower_boundary[i] = lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
+                    upper_boundary[i] = upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
 
                 lesser_values[f] = {}
                 greater_values[f] = {}
                 covered_values[f] = {}
-                for j, val in enumerate(np.unique(lesser)):
+                for j, val in enumerate(np.unique(lower_boundary)):
                     lesser_values[f][j] = (np.unique(self.__get_lesser_values(f, val)), val)
-                    indices = np.where(lesser == val)[0]
+                    indices = np.where(lower_boundary == val)[0]
                     for value in lesser_values[f][j][0]:
                         X_local = copy.deepcopy(X_test[indices,:])
                         X_local[:,f] = value
@@ -569,9 +547,9 @@ class CalibratedExplainer:
                         perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
                         perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
                         perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
-                for j, val in enumerate(np.unique(greater)):
+                for j, val in enumerate(np.unique(upper_boundary)):
                     greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
-                    indices = np.where(greater == val)[0]
+                    indices = np.where(upper_boundary == val)[0]
                     for value in greater_values[f][j][0]:
                         X_local = copy.deepcopy(X_test[indices,:])
                         X_local[:,f] = value
@@ -582,7 +560,7 @@ class CalibratedExplainer:
                         perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
                 indices = range(len(X_test))
                 for i in indices:
-                    covered_values[f][i] = (self.__get_covered_values(f, lesser[i], greater[i]), (lesser[i], greater[i]))
+                    covered_values[f][i] = (self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]), (lower_boundary[i], upper_boundary[i]))
                     for value in covered_values[f][i][0]:
                         X_local = copy.deepcopy(X_test[i])
                         X_local[f] = value
@@ -677,16 +655,16 @@ class CalibratedExplainer:
                         instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
             else:
                 feature_values = np.unique(np.array(X_cal[:,f]))
-                lesser = rule_boundaries[:,f,0]
-                greater = rule_boundaries[:,f,1]
+                lower_boundary = rule_boundaries[:,f,0]
+                upper_boundary = rule_boundaries[:,f,1]
 
                 average_predict, low_predict, high_predict, counts, rule_value = {},{},{},{},{}
                 for i in range(len(X_test)):
-                    lesser[i] = lesser[i] if np.any(feature_values < lesser[i]) else -np.inf
-                    greater[i] = greater[i] if np.any(feature_values > greater[i]) else np.inf
+                    lower_boundary[i] = lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
+                    upper_boundary[i] = upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
                     num_bins = 1
-                    num_bins += 1 if lesser[i] != -np.inf else 0
-                    num_bins += 1 if greater[i] != np.inf else 0
+                    num_bins += 1 if lower_boundary[i] != -np.inf else 0
+                    num_bins += 1 if upper_boundary[i] != np.inf else 0
                     average_predict[i] = np.zeros(num_bins)
                     low_predict[i] = np.zeros(num_bins)
                     high_predict[i] = np.zeros(num_bins)
@@ -695,10 +673,10 @@ class CalibratedExplainer:
 
                 bin_value = np.zeros(len(X_test), dtype=int)
                 current_bin = -np.ones(len(X_test), dtype=int)
-                for j, val in enumerate(np.unique(lesser)):
+                for j, val in enumerate(np.unique(lower_boundary)):
                     if lesser_values[f][j][0].shape[0] == 0:
                         continue
-                    for i in np.where(lesser == val)[0]:
+                    for i in np.where(lower_boundary == val)[0]:
                         index = [p_i for p_i in range(len(perturbed_feature)) if
                                     perturbed_feature[p_i,0] == f and
                                     perturbed_feature[p_i,1] == i and
@@ -714,10 +692,10 @@ class CalibratedExplainer:
                         # print(perturbed_X[index], 'lesser')
                         # print(i, f, average_predict[i], low_predict[i], high_predict[i], counts[i])
 
-                for j, val in enumerate(np.unique(greater)):
+                for j, val in enumerate(np.unique(upper_boundary)):
                     if greater_values[f][j][0].shape[0] == 0:
                         continue
-                    for i in np.where(greater == val)[0]:
+                    for i in np.where(upper_boundary == val)[0]:
                         index = [p_i for p_i in range(len(perturbed_feature)) if
                                     perturbed_feature[p_i,0] == f and
                                     perturbed_feature[p_i,1] == i and
@@ -735,7 +713,7 @@ class CalibratedExplainer:
 
                 indices = range(len(X_test))
                 for i in indices:
-                    for j, (l,g) in enumerate(np.unique(list(zip(lesser, greater)), axis=0)):
+                    for j, (l,g) in enumerate(np.unique(list(zip(lower_boundary, upper_boundary)), axis=0)):
                         index = [p_i for p_i in range(len(perturbed_feature)) if
                                     perturbed_feature[p_i,0] == f and
                                     perturbed_feature[p_i,1] == i and
