@@ -545,7 +545,10 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     else:
         plt.ylabel('Uncertainty')
         if 'predict_proba' not in dir(explainer.learner):
-            plt.xlabel(f'Probability of Y < {threshold}')
+            if np.isscalar(threshold):
+                plt.xlabel(f'Probability of Y < {threshold}')
+            else:
+                plt.xlabel(f'Probability of {threshold[0]} <= Y < {threshold[1]}')
         elif explainer.is_multiclass(): # pylint: disable=protected-access
             if y_test is None:
                 plt.xlabel('Probability of Y = predicted class')
