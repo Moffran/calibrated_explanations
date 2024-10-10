@@ -1011,7 +1011,7 @@ class CalibratedExplainer:
         seed (int): a seed to the random number generator
         """
         self.seed = seed
-        np.random.seed = self.seed
+        np.random.seed(self.seed)
 
 
 
