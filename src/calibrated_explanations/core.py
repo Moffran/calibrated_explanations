@@ -481,16 +481,7 @@ class CalibratedExplainer:
 
         # Step 1: Predict the test set to get the predictions and intervals
         assert_threshold(threshold, X_test)
-        if threshold is None:
-            perturbed_threshold = None
-        elif isinstance(threshold, (list, np.ndarray)):
-            perturbed_threshold = (
-                np.empty((0,), dtype=tuple)
-                if isinstance(threshold[0], tuple)
-                else np.empty((0,))
-            )
-        else:
-            perturbed_threshold = threshold
+        perturbed_threshold = self.assign_threshold(threshold)
         perturbed_bins = np.empty((0,)) if bins is not None else None
         perturbed_X = np.empty((0, self.num_features))
         perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
@@ -905,6 +896,24 @@ class CalibratedExplainer:
         explanation.finalize_fast(feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
         self.latest_explanation = explanation
         return explanation
+
+
+
+    def assign_threshold(self, threshold):
+        '''
+        Assigns the threshold for the explainer. The threshold is used to calculate the p-values for the predictions.
+        '''
+        if threshold is None:
+            perturbed_threshold = None
+        elif isinstance(threshold, (list, np.ndarray)):
+            perturbed_threshold = (
+                np.empty((0,), dtype=tuple)
+                if isinstance(threshold[0], tuple)
+                else np.empty((0,))
+            )
+        else:
+            perturbed_threshold = threshold
+        return perturbed_threshold
 
 
     def _assign_weight(self, instance_predict, prediction):
