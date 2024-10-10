@@ -415,7 +415,6 @@ class AlternativeExplanations(CalibratedExplanations):
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
         '''
-        assert self._is_alternative(), 'Super-explanations are only available for alternative explanations'
         super_explanations = deepcopy(self)
         for explanation in super_explanations.explanations:
             explanation.super_explanations(only_ensured=only_ensured, include_potential=include_potential)
@@ -454,7 +453,6 @@ class AlternativeExplanations(CalibratedExplanations):
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
         '''
-        assert self._is_alternative(), 'Semi-explanations are only available for alternative explanations'
         semi_explanations = deepcopy(self)
         for explanation in semi_explanations.explanations:
             explanation.semi_explanations(only_ensured=only_ensured, include_potential=include_potential)
@@ -493,7 +491,6 @@ class AlternativeExplanations(CalibratedExplanations):
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
         '''
-        assert self._is_alternative(), 'Counter-explanations are only available for alternative explanations'
         counter_explanations = deepcopy(self)
         for explanation in counter_explanations.explanations:
             explanation.counter_explanations(only_ensured=only_ensured, include_potential=include_potential)
@@ -510,7 +507,6 @@ class AlternativeExplanations(CalibratedExplanations):
             A new :class:`.AlternativeExplanations` object containing :class:`.AlternativeExplanation` objects only containing ensured 
             explanations. 
         '''
-        assert self._is_alternative(), 'Ensured explanations are only available for alternative explanations'
         ensured_explanations = deepcopy(self)
         for explanation in ensured_explanations.explanations:
             explanation.ensured_explanations()
@@ -778,16 +774,7 @@ class CalibratedExplanation(ABC):
             return self
 
         threshold = self.y_threshold
-        if threshold is None:
-            perturbed_threshold = None
-        elif isinstance(threshold, (list, np.ndarray)):
-            perturbed_threshold = (
-                np.empty((0,), dtype=tuple)
-                if isinstance(threshold[0], tuple)
-                else np.empty((0,))
-            )
-        else:
-            perturbed_threshold = threshold
+        perturbed_threshold = self._get_explainer().assign_threshold(threshold)
         perturbed_bins = np.empty((0,)) if self.bin is not None else None
         perturbed_X = np.empty((0, self._get_explainer().num_features))
         perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
@@ -1647,135 +1634,6 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def _is_lesser(self, rule_boundary, instance_value):
         return rule_boundary < instance_value
-
-    # def add_new_explanation(self, feature, rule_boundary):
-    #     """creates an explanation for a feature or a set of features with user defined values
-
-    #     Parameters
-    #     ----------
-    #     feature : int or str
-    #         the feature to focus attention on
-    #     rule_boundary: int, float, str, or categorical
-    #         the value to define as rule condition
-
-    #     Returns
-    #     -------
-    #     :class:`.AlternativeExplanation`
-    #     """
-    #     try:
-    #         f = feature if isinstance(feature, int)\
-    #                                 else self._get_explainer().feature_names.index(feature)
-    #     except ValueError:
-    #         warnings.warn(f'Feature {feature} not found')
-    #         return self
-    #     if self._get_explainer().categorical_features is not None and f in self._get_explainer().categorical_features:
-    #         warnings.warn('Alternatives for all categorical features are already included')
-    #         return self
-
-    #     threshold = self.y_threshold
-    #     if threshold is None:
-    #         perturbed_threshold = None
-    #     elif isinstance(threshold, (list, np.ndarray)):
-    #         perturbed_threshold = (
-    #             np.empty((0,), dtype=tuple)
-    #             if isinstance(threshold[0], tuple)
-    #             else np.empty((0,))
-    #         )
-    #     else:
-    #         perturbed_threshold = threshold
-    #     perturbed_bins = np.empty((0,)) if self.bin is not None else None
-    #     perturbed_X = np.empty((0, self._get_explainer().num_features))
-    #     perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
-    #     perturbed_class = np.empty((0,),dtype=int)
-
-    #     X_copy = deepcopy(self.X_test[f])
-    #     cal_X_f = self._get_explainer().X_cal[:,f]
-    #     is_lesser = rule_boundary < X_copy
-    #     feature_values = np.unique(np.array(cal_X_f))
-    #     sample_percentiles = self._get_explainer().sample_percentiles
-
-    #     if is_lesser:
-    #         if not np.any(feature_values < rule_boundary):
-    #             warnings.warn(f'Lowest feature value for feature {feature} is {np.min(feature_values)}')
-    #             return self
-    #         values = np.percentile(cal_X_f[cal_X_f < rule_boundary],
-    #                                 sample_percentiles)
-    #         covered = np.percentile(cal_X_f[cal_X_f >= rule_boundary],
-    #                                 sample_percentiles)
-    #     else:
-    #         if not np.any(feature_values > rule_boundary):
-    #             warnings.warn(f'Highest feature value for feature {feature} is {np.max(feature_values)}')
-    #             return self
-    #         values = np.percentile(cal_X_f[cal_X_f > rule_boundary],
-    #                                 sample_percentiles)
-    #         covered = np.percentile(cal_X_f[cal_X_f <= rule_boundary],
-    #                                 sample_percentiles)
-
-    #     for value in values:
-    #         X_local = np.reshape(deepcopy(self.X_test), (1,-1))
-    #         X_local[0,f] = value
-    #         perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
-    #         perturbed_feature = np.concatenate((perturbed_feature, [(f, 0, None, is_lesser)]))
-    #         perturbed_bins = np.concatenate((perturbed_bins, self.bin)) if self.bin is not None else None
-    #         perturbed_class = np.concatenate((perturbed_class, np.array([self.prediction['classes']])))
-    #         if isinstance(threshold, tuple):
-    #             perturbed_threshold = threshold
-    #         else:
-    #             perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
-
-    #     for value in covered:
-    #         X_local = np.reshape(deepcopy(self.X_test), (1,-1))
-    #         X_local[0,f] = value
-    #         perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
-    #         perturbed_feature = np.concatenate((perturbed_feature, [(f, 0, None, None)]))
-    #         perturbed_bins = np.concatenate((perturbed_bins, self.bin)) if self.bin is not None else None
-    #         perturbed_class = np.concatenate((perturbed_class, np.array([self.prediction['classes']])))
-    #         if isinstance(threshold, tuple):
-    #             perturbed_threshold = threshold
-    #         else:
-    #             perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
-
-    #     predict, low, high, _ = self._get_explainer()._predict(perturbed_X, threshold=perturbed_threshold, low_high_percentiles=self.calibrated_explanations.low_high_percentiles, classes=perturbed_class, bins=perturbed_bins)
-    #     instance_predict = [predict[i] for i in range(len(predict)) if perturbed_feature[i][3] is None]
-    #     rule_predict = [predict[i] for i in range(len(predict)) if perturbed_feature[i][3] is not None]
-    #     rule_low = [low[i] for i in range(len(low)) if perturbed_feature[i][3] is not None]
-    #     rule_high = [high[i] for i in range(len(high)) if perturbed_feature[i][3] is not None]
-
-    #     new_rule = self._get_rules()
-
-    #     # skip if identical to original
-    #     if self.prediction['low'] == np.mean(rule_low) and self.prediction['high'] == np.mean(rule_high):
-    #         warnings.warn('The alternative explanation is identical to the original explanation')
-    #         return self
-    #     new_rule['predict'].append(np.mean(rule_predict))
-    #     new_rule['predict_low'].append(np.mean(rule_low))
-    #     new_rule['predict_high'].append(np.mean(rule_high))
-    #     new_rule['weight'].append(np.mean(rule_predict) - \
-    #                                                     np.mean(instance_predict))
-    #     new_rule['weight_low'].append(
-    #                     np.mean(rule_low) -
-    #                     np.mean(instance_predict) \
-    #                             if rule_low != -np.inf \
-    #                             else rule_low)
-    #     new_rule['weight_high'].append(
-    #                     np.mean(rule_high) -
-    #                     np.mean(instance_predict) \
-    #                             if rule_high != np.inf \
-    #                             else rule_high)
-    #     new_rule['value'].append(str(np.around(X_copy, decimals=2)))
-    #     new_rule['feature'].append(f)
-    #     new_rule['feature_value'].append(
-    #                     self.binned['rule_values'][f][0][0])
-    #     new_rule['is_conjunctive'].append(False)
-
-    #     if is_lesser:
-    #         new_rule['rule'].append(
-    #                     f'{self._get_explainer().feature_names[f]} < {rule_boundary:.2f}')
-    #     else:
-    #         new_rule['rule'].append(
-    #                     f'{self._get_explainer().feature_names[f]} > {rule_boundary:.2f}')
-    #     self.rules = new_rule
-    #     return self
 
     # pylint: disable=consider-iterating-dictionary
     def plot(self, filter_top=None, **kwargs):
