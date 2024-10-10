@@ -44,7 +44,7 @@ abstract: >-
   The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
   * Fast, reliable, stable and robust feature importance explanations for:
     - Binary classification models ([read paper](https://doi.org/10.1016/j.eswa.2024.123154))
-    - Multi-class classification models ([read paper](https://easychair.org/publications/preprint/rqdD))
+    - Multi-class classification models ([read paper](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf))
     - Regression models ([read paper](https://arxiv.org/abs/2308.16245))
       * Including probabilistic explanations of the probability that the target exceeds a user-defined threshold 
       * With difficulty adaptable explanations (conformal normalization) 
