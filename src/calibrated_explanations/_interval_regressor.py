@@ -38,9 +38,9 @@ class IntervalRegressor:
         self.sigma_cal = self.ce._get_sigma_test(X=self.ce.X_cal)  # pylint: disable=protected-access
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
-            cps.fit(residuals=self.residual_cal, sigmas=self.sigma_cal, bins=self.bins)
+            cps.fit(residuals=self.residual_cal, sigmas=self.sigma_cal, bins=self.bins, seed=self.ce.seed)
         else:
-            cps.fit(residuals=self.residual_cal, bins=self.bins)
+            cps.fit(residuals=self.residual_cal, bins=self.bins, seed=self.ce.seed)
         self.cps = cps
         self.venn_abers = None
         self.proba_cal = None
@@ -198,11 +198,11 @@ class IntervalRegressor:
         self.split['cps'] = crepes.ConformalPredictiveSystem()
         if self.bins is None:
             self.split['cps'].fit(residuals=self.residual_cal[cal_cps],
-                            sigmas=self.sigma_cal[cal_cps])
+                            sigmas=self.sigma_cal[cal_cps], seed=self.ce.seed)
         else:
             self.split['cps'].fit(residuals=self.residual_cal[cal_cps],
                             sigmas=self.sigma_cal[cal_cps],
-                            bins=self.bins[cal_cps])
+                            bins=self.bins[cal_cps], seed=self.ce.seed)
 
     def compute_proba_cal(self, y_threshold: float):
         '''The `compute_proba_cal` function calculates the probability calibration for a given threshold.
