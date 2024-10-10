@@ -263,7 +263,7 @@ for dataSet, filename in zip(datasets, filenames):
         i = 0
         while i < num_rep:
             print(f'Robustness {i+1} - {len(X_test)}:',end='\n', flush=True)
-            np.random.seed = i
+            np.random.seed(i)
             model = RandomForestRegressor(n_estimators=100, oob_score=True, random_state=i)
             X_train, X_cal, y_train, y_cal = train_test_split(X_trainCal, y_trainCal, test_size=cal_size,random_state=i)
             # X_train = X_train[:1000]
