@@ -5,6 +5,7 @@
 ### Features
 - Improved the introduction in README.
 - Added `calibrated_confusion_matrix` in `CalibratedExplainer` and `WrapCalibratedExplainer`, providing a leave-one-out calibrated confusion matrix using the calibration set. The insights from the confusion matrix are useful when analyzing explanations, to determine general prediction and error distributions of the model.
+- Embraced the update of `crepes` version 0.7.1, making it possible to add a seed when fitting. Addresses issue #43.
 - Updating terminology and functionality:
   - Introducing the concept of _ensured_ explanations. 
     - Changed the name of `CounterfactualExplanation` to `AlternativeExplanation`, as it better reflects the purpose and functionality of the class. 
@@ -16,9 +17,12 @@
   - Introduced _fast_ explanations 
     - Introduced a new type of explanation called `FastExplanation` which can be extracted using the `explain_fast` method. It differs from a `FactualExplanation` in that it does not define a rule condition but only provides a feature weight.
     - The new type of explanation is using ideas from [ConformaSight](https://github.com/rabia174/ConformaSight), a recently proposed algorithm based on conformal classification. Acknowledgements have been added.
+  - Parameter naming:
+    - The parameter indicating the number of rules to plot is renamed to `filter_top` (previously `n_features_to_show`), making the call including all rules (`filter_top=None`) makes a lot more sense.
 ### Fixes
 - Added checks to ensure that the learner is not called unless the `WrapCalibratedExplainer` is fitted.
 - Added checks to ensure that the explainer is not called unless the `WrapCalibratedExplainer` is calibrated.
+- Fixed incorrect use of `np.random.seed`.
 
 ## [v0.4.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.4.0) - 2024-08-23
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...v0.4.0)
