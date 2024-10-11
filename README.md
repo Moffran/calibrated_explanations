@@ -39,7 +39,7 @@ Calibrated Explanations offers a range of features designed to enhance both the 
     - **Probabilistic explanations**: Provides the probability that the target exceeds a user-defined threshold.
     - **Difficulty-adaptable explanations**: Adjust explanations based on conformal normalization for varying levels of data difficulty.
 
-* **Aleatoric and epistemic uncertainty estimates**: These estimates are provided by **Venn-Abers** for probabilistic explanations and by **Conformal Predictive Systems** for regression tasks. Both types of uncertainty are grounded in solid theoretical foundations, leveraging **conformal prediction** and **Venn prediction** to ensure reliability and robustness in uncertainty quantification.
+* **Aleatoric and epistemic uncertainty estimates**: These estimates are provided by **Venn-Abers** for probabilistic explanations and by **Conformal Predictive Systems** for regression tasks. Both these techniques are grounded in solid theoretical foundations, leveraging **conformal prediction** and **Venn prediction** to ensure reliability and robustness in uncertainty quantification.
 
 * **Calibration of the underlying model**: Ensures that predictions accurately reflect reality, improving trust in model outputs.
 
