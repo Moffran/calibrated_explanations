@@ -736,19 +736,29 @@ class CalibratedExplanation(ABC):
         pass
 
     # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-return-statements
-    def add_new_explanation(self, feature, rule_boundary):
-        """creates an explanation for a feature or a set of features with user defined values
+    def add_new_rule_condition(self, feature, rule_boundary):
+        """
+        Creates an rule condition for a numerical feature with user defined values.
+        All possible rules for categorical features are already included.
 
         Parameters
         ----------
         feature : int or str
-            the feature to focus attention on
-        rule_boundary: int, float, str, or categorical
-            the value to define as rule condition
+            the feature to focus attention on. Can be the index of the feature or the name of the feature (if feature names are available)
+        rule_boundary: int or float
+            the value to define as rule condition. If  :class:`.FactualExplanation`, the rule condition will include the instance values and if  :class:`.AlternativeExplanation`, the rule condition will exclude the instance value.
 
         Returns
         -------
         :class:`.CalibratedExplanation`
+        
+        Note
+        ----
+        The function will return the same explanation if the rule is already included or if the feature is categorical.
+        
+        Note
+        ----
+        No implementation is provided for the :class:`.FastExplanation` class.
         """
         try:
             f = feature if isinstance(feature, int)\
@@ -763,13 +773,8 @@ class CalibratedExplanation(ABC):
         X_copy = deepcopy(self.X_test[f])
         is_lesser = self._is_lesser(rule_boundary, X_copy)
         new_rule = self._get_rules()
-        exists = False
-        if is_lesser:
-            if np.any([new_rule['rule'][i] == f'{feature} < {rule_boundary:.2f}' for i in range(len(new_rule['rule']))]):
-                exists = True
-        elif np.any([new_rule['rule'][i] == f'{feature} > {rule_boundary:.2f}' for i in range(len(new_rule['rule']))]):
-            exists = True
-        if exists:
+        rule = self._get_rule_str(is_lesser, f, rule_boundary)
+        if np.any([new_rule['rule'][i] == rule for i in range(len(new_rule['rule']))]):
             warnings.warn('Rule already included')
             return self
 
@@ -857,14 +862,14 @@ class CalibratedExplanation(ABC):
                         self.binned['rule_values'][f][0][0])
         new_rule['is_conjunctive'].append(False)
 
-        if is_lesser:
-            new_rule['rule'].append(
-                        f'{self._get_explainer().feature_names[f]} < {rule_boundary:.2f}')
-        else:
-            new_rule['rule'].append(
-                        f'{self._get_explainer().feature_names[f]} > {rule_boundary:.2f}')
+        new_rule['rule'].append(rule)
         self.rules = new_rule
         return self
+
+    def _get_rule_str(self, is_lesser, feature, rule_boundary):
+        if is_lesser:
+            return f'{self._get_explainer().feature_names[feature]} < {rule_boundary:.2f}'
+        return f'{self._get_explainer().feature_names[feature]} > {rule_boundary:.2f}'
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class FactualExplanation(CalibratedExplanation):
@@ -1773,21 +1778,10 @@ class FastExplanation(CalibratedExplanation):
     def _is_lesser(self, rule_boundary, instance_value):
         pass
 
-    def add_new_explanation(self, feature, rule_boundary):
-        """creates an explanation for a feature or a set of features with user defined values
-
-        Parameters
-        ----------
-        feature : int or str
-            the feature to focus attention on
-        rule_boundary: int, float, str, or categorical
-            the value to define as rule condition
-
-        Returns
-        -------
-        :class:`.FastExplanation`
+    def add_new_rule_condition(self, feature, rule_boundary):
+        """is not supported for FastExplanation
         """
-        warnings.warn('The add_new_explanation method is currently not supported for `FastExplanation`, making this call resulting in no change.')
+        warnings.warn('The add_new_rule_condition method is currently not supported for `FastExplanation`, making this call resulting in no change.')
         # pass
 
     def _check_preconditions(self):
