@@ -39,7 +39,7 @@ Calibrated Explanations offers a range of features designed to enhance both the 
     - **Probabilistic explanations**: Provides the probability that the target exceeds a user-defined threshold.
     - **Difficulty-adaptable explanations**: Adjust explanations based on conformal normalization for varying levels of data difficulty.
 
-* **Aleatoric and epistemic uncertainty estimates**: These estimates are provided by **Venn-Abers** for probabilistic explanations and by **Conformal Predictive Systems** for regression tasks. Both types of uncertainty are grounded in solid theoretical foundations, leveraging **conformal prediction** and **Venn prediction** to ensure reliability and robustness in uncertainty quantification.
+* **Aleatoric and epistemic uncertainty estimates**: These estimates are provided by **Venn-Abers** for probabilistic explanations and by **Conformal Predictive Systems** for regression tasks. Both these techniques are grounded in solid theoretical foundations, leveraging **conformal prediction** and **Venn prediction** to ensure reliability and robustness in uncertainty quantification.
 
 * **Calibration of the underlying model**: Ensures that predictions accurately reflect reality, improving trust in model outputs.
 
@@ -440,8 +440,8 @@ The paper that originated the idea of `calibrated-explanations` is:
 - [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18. [Code and results](https://github.com/tuvelofstrom/calibrating-explanations).
 
 ### Preprints: 
-- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2024). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245. Accepted to Machine Learning. In press.
-- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479. 
+- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2024). [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245). arXiv preprint arXiv:2308.16245. 
+- [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479. 
 
 ### Citing and bibtex
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the papers above. Bibtex entries can be found in [citing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md#bibtex-entries).

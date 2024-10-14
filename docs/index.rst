@@ -80,7 +80,7 @@ Here is a basic example to get you started:
    # Initialize the CalibratedExplainer
    classifier.calibrate(X_calibration, y_calibration)
    regressor.calibrate(X_calibration, y_calibration)
-
+ 
    # Factual Explanations
    # Create factual explanations for classification
    factual_explanations = classifier.explain_factual(X_test)
