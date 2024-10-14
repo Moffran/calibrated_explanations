@@ -28,7 +28,7 @@ from .utils.helper import safe_isinstance, safe_import, check_is_fitted, assert_
 from .utils.perturbation import perturb_dataset
 from ._plots import _plot_global
 
-__version__ = 'v0.4.1a'
+__version__ = 'v0.5.0a'
 
 
 
