@@ -4,19 +4,46 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.4.0...main)
 ### Features
 - Improved the introduction in README.
-- Added `calibrated_confusion_matrix` in `CalibratedExplainer` and `WrapCalibratedExplainer`, providing a leave-one-out calibrated confusion matrix using the calibration set. The insights from the confusion matrix are useful when analyzing explanations, to determine general prediction and error distributions of the model.
+- Added `calibrated_confusion_matrix` in `CalibratedExplainer` and `WrapCalibratedExplainer`, providing a leave-one-out calibrated confusion matrix using the calibration set. The insights from the confusion matrix are useful when analyzing explanations, to determine general prediction and error distributions of the model. An example of using the confusion matrix in the analysis is given in paper [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf).
 - Embraced the update of `crepes` version 0.7.1, making it possible to add a seed when fitting. Addresses issue #43.
 - Updating terminology and functionality:
   - Introducing the concept of _ensured_ explanations. 
     - Changed the name of `CounterfactualExplanation` to `AlternativeExplanation`, as it better reflects the purpose and functionality of the class. 
-    - Added a subclass `AlternativeExplanations` inheriting from `CalibratedExplanations`, which is used for collections of `AlternativeExplanation`'s. Collection methods referring to methods only available in the `AlternativeExplanation` are included in the new class.  
+    - Added a collection subclass `AlternativeExplanations` inheriting from `CalibratedExplanations`, which is used for collections of `AlternativeExplanation`'s. Collection methods referring to methods only available in the `AlternativeExplanation` are included in the new collection class.  
     - Added an `explore_alternatives` method in `CalibratedExplainer` and `WrapCalibratedExplainer` to be used instead of `explain_counterfactual`, as the name of the later is ambiguous. The `explain_counterfactual` is still kept for compatibility reasons but only forwards the call to `explore_alternatives`. All files and notebooks have been updated to only call `explore_alternatives`. All references to counterfactuals have been changed to alternatives, with obvious exceptions. 
     - Added both filtering methods and a ranking metric that can help filter out ensured explanations. 
       - The parameters `rnk_metric` and `rnk_weight` has been added to the plotting functions and is applicable to all kinds of plots. 
-      - Both the `AlternativeExplanation` class (for an individual instance) and the subclass `AlternativeExplanations` contains filter functions only applicable to alternative explanations, such as `counter_explanations`, `semi_explanations`, `super_explanations`, and `ensured_explanations`.
+      - Both the `AlternativeExplanation` class (for an individual instance) and the collection subclass `AlternativeExplanations` contains filter functions only applicable to alternative explanations, such as `counter_explanations`, `semi_explanations`, `super_explanations`, and `ensured_explanations`.
+        - `counter_explanations` removes all alternatives except those changing prediction. 
+        - `semi_explanations` removes all alternatives except those reducing the probability while not changing prediction.
+        - `super_explanations` removes all alternatives except those increasing the probability for the prediction.
+        - The concept of potential (uncertain) explanations is introduced. When the uncertainty interval spans across probability 0.5, an explanation is considered a potential. It will normally only be counter-potential and semi-potential, but can in some cases also be super-potential. Potential alternatives can be included or excluded from the above methods using the boolean parameter `include_potentials`. 
+        - `ensured_explanations` removes all alternatives except those with lower uncertainty (i.e. smaller uncertainty interval) than the original prediction.
+    - Added a new form of plot for probabilistic predictions is added, clearly visualizing both the aleatoric and the epistemic uncertainty. 
+      - A global plot is added, plotting all test instances with probability and uncertainty as the x- and y-axes. The area corresponding to potential (uncertain) predictions is marked. The plot can be invoked using the `plot(X_test)` or `plot(X_test, y_test)` call.
+      - A local plot for alternative explanations, with probability and uncertainty as the x- and y-axes, is added, which can be invoked from an `AlternativeExplanation` or a `AlternativeExplanations` using `plot(style='triangular')`. The optimal use is when combined with the `filter_top` parameter (see below), to include all alternatives, as follows: `plot(style='triangular', filter_top=None)`.
+    - Added prerpint and bibtex to the paper introducing _ensured_ explanations:
+      - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479. 
+      - Bibtex: 
+        ```bibtex
+        @misc{lofstrom2024ce_ensured,
+          title = 	      {Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions},
+          author =          {L\"ofstr\"om, Helena and L\"ofstr\"om, Tuwe and Hallberg Szabadvary, Johan},
+          year =            {2024},
+          eprint =          {2410.05479},
+          archivePrefix =   {arXiv},
+          primaryClass =    {cs.LG}
+        }
+        ```
   - Introduced _fast_ explanations 
     - Introduced a new type of explanation called `FastExplanation` which can be extracted using the `explain_fast` method. It differs from a `FactualExplanation` in that it does not define a rule condition but only provides a feature weight.
-    - The new type of explanation is using ideas from [ConformaSight](https://github.com/rabia174/ConformaSight), a recently proposed algorithm based on conformal classification. Acknowledgements have been added.
+    - The new type of explanation is using ideas from [ConformaSight](https://github.com/rabia174/ConformaSight), a recently proposed global explanation algorithm based on conformal classification. Acknowledgements have been added.
+  - Introduced a new form av probabilistic regression explanation:
+    - Introduced the possibility to get explanations for the probability of being inside an interval. This is achieved by assigning a tuple with lower and upper bounds as threshold, e.g., `threshold=(low,high)` to get the probability of the prediction falling inside the interval (low, high].
+    - To the best of our knowledge, this is the only package that provide this functionality with epistemic uncertainty. 
+  - Introduced the possibility to add new user defined rule conditions, using the `add_new_rule_condition` method. This is only applicable to numerical features. 
+    - Factual explanations will create new conditions covering the instance value. Categorical features already get a condition for the instance value during the invocation of `explain_factual`. 
+    - Alternative explanations will create new conditions that exclude the instance value. Categorical features already get conditions for all alternative categories during the invocation of `explore_alternatives`.   
   - Parameter naming:
     - The parameter indicating the number of rules to plot is renamed to `filter_top` (previously `n_features_to_show`), making the call including all rules (`filter_top=None`) makes a lot more sense.
 ### Fixes
