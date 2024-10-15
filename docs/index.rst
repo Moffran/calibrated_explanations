@@ -22,13 +22,12 @@ Contents
 --------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     :caption: Contents:
 
     getting_started
     citing
     calibrated_explanations
-    api_reference
 
 Introduction
 ------------
@@ -55,18 +54,3 @@ Example
 Below is an example of a probabilistic alternative explanation for an instance of the regression dataset California Housing (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
 
 .. image:: images/counterfactual_probabilistic_house_regression.png
-
-Getting Started
----------------
-
-To get started with `calibrated-explanations`, follow the instructions in the `Getting Started <getting_started.md>`_ guide.
-
-Citing Calibrated Explanations
-------------------------------
-
-If you use `calibrated-explanations` in your research, please cite the relevant papers as described in the `Citing calibrated-explanations <citing.md>`_ section.
-
-The Calibrated Explanations Package
------------------------------------
-
-For an overview of the package, see `The calibrated-explanations package <calibrated_explanations>`_ section.
