@@ -4,15 +4,8 @@
 .. currentmodule:: calibrated_explanations.explanations
 
 .. autoclass:: FastExplanation
-
-   
-   .. automethod:: __init__
-
-   
-   .. rubric:: Methods
-
-   .. autosummary::
-      :toctree: _autosummary
+   :no-members:   Methods
+   -------
    
       ~FastExplanation.__init__
       ~FastExplanation.plot

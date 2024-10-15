@@ -4,15 +4,8 @@
 .. currentmodule:: calibrated_explanations.explanations
 
 .. autoclass:: FactualExplanation
-
-   
-   .. automethod:: __init__
-
-   
-   .. rubric:: Methods
-
-   .. autosummary::
-      :toctree: _autosummary
+   :no-members:   Methods
+   -------
    
       ~FactualExplanation.__init__
       ~FactualExplanation.add_conjunctions

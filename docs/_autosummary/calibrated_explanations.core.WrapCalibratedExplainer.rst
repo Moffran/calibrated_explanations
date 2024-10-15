@@ -4,15 +4,8 @@ calibrated\_explanations.core.WrapCalibratedExplainer
 .. currentmodule:: calibrated_explanations.core
 
 .. autoclass:: WrapCalibratedExplainer
-
-   
-   .. automethod:: __init__
-
-   
-   .. rubric:: Methods
-
-   .. autosummary::
-      :toctree: _autosummary
+   :no-members:   Methods
+   -------
    
       ~WrapCalibratedExplainer.__init__
       ~WrapCalibratedExplainer.fit

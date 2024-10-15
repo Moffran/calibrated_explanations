@@ -4,15 +4,11 @@
 .. currentmodule:: calibrated_explanations.core
 
 .. autoclass:: CalibratedExplainer
+   :no-members:
 
    
-   .. automethod:: __init__
-
-   
-   .. rubric:: Methods
-
-   .. autosummary::
-      :toctree: _autosummary
+   Methods
+   -------
    
       ~CalibratedExplainer.__init__
       ~CalibratedExplainer.predict
