@@ -113,5 +113,5 @@ autoclass_member_order = 'bysource'
 autosummary_generate = True
 autosummary_imported_members = True
 
-# Todo extension settings
+# The todo extension settings
 todo_include_todos = True
