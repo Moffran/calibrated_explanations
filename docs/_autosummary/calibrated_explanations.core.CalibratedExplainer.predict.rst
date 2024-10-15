@@ -1,4 +1,4 @@
-calibrated\_explanations.core.CalibratedExplainer.predict
+﻿calibrated\_explanations.core.CalibratedExplainer.predict
 =========================================================
 
 .. currentmodule:: calibrated_explanations.core

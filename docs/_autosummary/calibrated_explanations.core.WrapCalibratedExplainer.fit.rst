@@ -1,4 +1,4 @@
-calibrated\_explanations.core.WrapCalibratedExplainer.fit
+﻿calibrated\_explanations.core.WrapCalibratedExplainer.fit
 =========================================================
 
 .. currentmodule:: calibrated_explanations.core

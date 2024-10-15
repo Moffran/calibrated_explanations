@@ -1,4 +1,4 @@
-calibrated\_explanations.core.WrapCalibratedExplainer.set\_difficulty\_estimator
+﻿calibrated\_explanations.core.WrapCalibratedExplainer.set\_difficulty\_estimator
 ================================================================================
 
 .. currentmodule:: calibrated_explanations.core

@@ -1,4 +1,4 @@
-calibrated\_explanations.core.CalibratedExplainer.\_\_init\_\_
+﻿calibrated\_explanations.core.CalibratedExplainer.\_\_init\_\_
 ==============================================================
 
 .. currentmodule:: calibrated_explanations.core
