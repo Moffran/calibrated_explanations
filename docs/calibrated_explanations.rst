@@ -12,8 +12,14 @@ The calibrated-explanations package
 .. autoclass:: calibrated_explanations.CalibratedExplanations
    :members:
 
+.. autoclass:: calibrated_explanations.AlternativeExplanationsExplanations
+   :members:
+
 .. autoclass:: calibrated_explanations.FactualExplanation
    :members:
 
 .. autoclass:: calibrated_explanations.AlternativeExplanation
+   :members:
+
+.. autoclass:: calibrated_explanations.FastExplanation
    :members:

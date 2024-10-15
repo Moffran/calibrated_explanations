@@ -1,5 +1,63 @@
-Getting started
----------------
+# Getting started
+
+Here is a very condensed example to get you started:
+
+```python
+   from calibrated_explanations import WrapCalibratedExplainer
+   # Load and pre-process your data
+   # Divide it into proper training, calibration, and test sets
+
+   # Initialize the WrapCalibratedExplainer with your model
+   classifier = WrapCalibratedExplainer(ClassifierOfYourChoice())
+   regressor = WrapCalibratedExplainer(RegressorOfYourChoice())
+
+   # Train your model using the proper training set
+   classifier.fit(X_proper_training, y_proper_training)
+   regressor.fit(X_proper_training, y_proper_training)
+
+   # Initialize the CalibratedExplainer
+   classifier.calibrate(X_calibration, y_calibration)
+   regressor.calibrate(X_calibration, y_calibration)
+ 
+   # Factual Explanations
+   # Create factual explanations for classification
+   factual_explanations = classifier.explain_factual(X_test)
+   # Create factual standard explanations for regression with default 90 % uncertainty interval
+   factual_explanations = regressor.explain_factual(X_test) # low_high_percentiles=(5,95)
+   # Create factual standard explanations for regression with user assigned uncertainty interval
+   factual_explanations = regressor.explain_factual(X_test, low_high_percentiles=(10,90))
+   # Create factual probabilistic explanations for regression with user assigned threshold
+   your_threshold = 1000
+   factual_explanations = regressor.explain_factual(X_test, threshold=your_threshold)
+
+   # Alternative Explanations
+   # Create alternative explanations for classification
+   alternative_explanations = classifier.explore_alternatives(X_test)
+   # Create alternative standard explanations for regression with default 90 % uncertainty interval
+   alternative_explanations = regressor.explore_alternatives(X_test) # low_high_percentiles=(5,95)
+   # Create alternative standard explanations for regression with user assigned uncertainty interval
+   alternative_explanations = regressor.explore_alternatives(X_test, low_high_percentiles=(10,90))
+   # Create alternative probabilistic explanations for regression with user assigned threshold
+   alternative_explanations = regressor.explore_alternatives(X_test, threshold=your_threshold)
+   
+   # Plot the explanations
+   factual_explanations.plot()
+   factual_explanations.plot(uncertainty=True)
+   alternative_explanations.plot()
+
+   # Add conjunctions to the explanations
+   factual_conjunctions.add_conjunctions()
+   alternative_conjunctions.add_conjunctions()
+
+   # One-sided explanations for regression are easily created
+   factual_upper_bounded = regressor.explain_factual(X_test, 
+                              low_high_percentiles=(-np.inf,90))
+   alternative_lower_bounded = regressor.explore_alternatives(X_test, 
+                              low_high_percentiles=(10,np.inf))
+```
+
+## Notebook examples
+
 The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb), using the `WrapCalibratedExplainer` class, is similar to this Getting Started, including plots and output.
 
 The notebooks listed below are using the `CalibratedExplainer` class. They showcase a number of different use cases, as indicated by their names:
@@ -10,6 +68,7 @@ The notebooks listed below are using the `CalibratedExplainer` class. They showc
 * [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) - with examples for regression with thresholds
 * [demo_under_the_hood](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_under_the_hood.ipynb) - illustrating how to access the information composing the explanations
 
+## Detailed walkthrough
 ### Classification
 Let us illustrate how we may use `calibrated_explanations` to generate explanations from a classifier trained on a dataset from
 [www.openml.org](https://www.openml.org), which we first split into a
