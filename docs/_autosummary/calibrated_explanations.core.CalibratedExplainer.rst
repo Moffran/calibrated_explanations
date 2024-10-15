@@ -6,9 +6,10 @@
 .. autoclass:: CalibratedExplainer
    :no-members:
 
-   
-   Methods
-   -------
+.. automethod:: __init__
+
+Methods
+-------
    
       ~CalibratedExplainer.__init__
       ~CalibratedExplainer.predict

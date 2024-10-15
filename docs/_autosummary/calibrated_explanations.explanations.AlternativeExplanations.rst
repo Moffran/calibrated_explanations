@@ -6,9 +6,10 @@
 .. autoclass:: AlternativeExplanations
    :no-members:
 
-   
-   Methods
-   -------
+.. automethod:: __init__
+
+Methods
+-------
    
       ~AlternativeExplanations.__init__
       ~AlternativeExplanations.add_conjunctions

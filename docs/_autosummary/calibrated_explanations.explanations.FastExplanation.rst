@@ -6,9 +6,10 @@
 .. autoclass:: FastExplanation
    :no-members:
 
-   
-   Methods
-   -------
+.. automethod:: __init__
+
+Methods
+-------
    
       ~FastExplanation.__init__
       ~FastExplanation.plot

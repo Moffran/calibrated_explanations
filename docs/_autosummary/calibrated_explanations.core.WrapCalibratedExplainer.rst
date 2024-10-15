@@ -6,9 +6,10 @@ calibrated\_explanations.core.WrapCalibratedExplainer
 .. autoclass:: WrapCalibratedExplainer
    :no-members:
 
-   
-   Methods
-   -------
+.. automethod:: __init__
+
+Methods
+-------
    
       ~WrapCalibratedExplainer.__init__
       ~WrapCalibratedExplainer.fit

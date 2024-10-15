@@ -6,9 +6,10 @@
 .. autoclass:: CalibratedExplanations
    :no-members:
 
-   
-   Methods
-   -------
+.. automethod:: __init__
+
+Methods
+-------
    
       ~CalibratedExplanations.__init__
       ~CalibratedExplanations.add_conjunctions

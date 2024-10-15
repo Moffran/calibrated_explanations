@@ -6,9 +6,10 @@
 .. autoclass:: FactualExplanation
    :no-members:
 
-   
-   Methods
-   -------
+.. automethod:: __init__
+
+Methods
+-------
    
       ~FactualExplanation.__init__
       ~FactualExplanation.add_conjunctions
