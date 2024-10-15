@@ -4,7 +4,10 @@
 .. currentmodule:: calibrated_explanations.explanations
 
 .. autoclass:: FactualExplanation
-   :no-members:   Methods
+   :no-members:
+
+   
+   Methods
    -------
    
       ~FactualExplanation.__init__

@@ -4,7 +4,10 @@ calibrated\_explanations.core.WrapCalibratedExplainer
 .. currentmodule:: calibrated_explanations.core
 
 .. autoclass:: WrapCalibratedExplainer
-   :no-members:   Methods
+   :no-members:
+
+   
+   Methods
    -------
    
       ~WrapCalibratedExplainer.__init__
