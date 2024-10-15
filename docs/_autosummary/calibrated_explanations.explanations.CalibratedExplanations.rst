@@ -4,8 +4,11 @@
 .. currentmodule:: calibrated_explanations.explanations
 
 .. autoclass:: CalibratedExplanations
-   :no-members:   Methods
-   -------
+   :no-members:
+
+
+Methods
+-------
    
       ~CalibratedExplanations.__init__
       ~CalibratedExplanations.add_conjunctions

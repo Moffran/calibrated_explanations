@@ -4,8 +4,11 @@
 .. currentmodule:: calibrated_explanations.explanations
 
 .. autoclass:: FastExplanation
-   :no-members:   Methods
-   -------
+   :no-members:
+
+
+Methods
+-------
    
       ~FastExplanation.__init__
       ~FastExplanation.plot
