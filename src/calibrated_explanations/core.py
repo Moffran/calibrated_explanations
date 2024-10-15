@@ -118,8 +118,8 @@ class CalibratedExplainer:
             deemed too difficult to explain. If set to True, the explainer will reject explanations that are
             deemed too difficult to explain. If set to False, the explainer will not reject any explanations.
         
-        Return
-        ------
+        Returns
+        -------
         :class:`.CalibratedExplainer` : A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
         
         '''
@@ -193,8 +193,8 @@ class CalibratedExplainer:
         learner : predictive learner
             A predictive learner that can be used to predict the target variable. The learner must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
         
-        Return
-        ------
+        Returns
+        -------
         :class:`.CalibratedExplainer` : A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
         
         """
@@ -373,8 +373,8 @@ class CalibratedExplainer:
         """
         See documentation for the `explore_alternatives` method.
 
-        Note
-        ----
+        Notes
+        -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
         """
         return self.explore_alternatives(X_test, threshold, low_high_percentiles, bins)
@@ -409,8 +409,8 @@ class CalibratedExplainer:
         -------
         :class:`.AlternativeExplanations` : A :class:`.AlternativeExplanations` object containing one :class:`.AlternativeExplanation` for each instance. 
 
-        Note
-        ----
+        Notes
+        -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.  
         """
         discretizer = 'regressor' if 'regression' in self.mode else 'entropy'
@@ -1360,8 +1360,8 @@ class CalibratedExplainer:
         
             w.predict(X_test, uq_interval=True)
 
-        Note
-        ----
+        Notes
+        -----
         The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
         """
         if self.mode in 'regression':
@@ -1440,8 +1440,8 @@ class CalibratedExplainer:
         
             w.predict_proba(X_test, uq_interval=True)
 
-        Note
-        ----
+        Notes
+        -----
         The `threshold` parameter is only used for regression tasks.
         """
         if self.mode in 'regression':
@@ -1815,8 +1815,8 @@ class WrapCalibratedExplainer():
         
             w.explain_counterfactual(X_test, low_high_percentiles=(10, 90))
 
-        Note
-        ----
+        Notes
+        -----
         The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         return self.explore_alternatives(X_test, **kwargs)
@@ -1869,8 +1869,8 @@ class WrapCalibratedExplainer():
         
             w.explore_alternatives(X_test, low_high_percentiles=(10, 90))
 
-        Note
-        ----
+        Notes
+        -----
         The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         if not self.fitted:
@@ -1997,8 +1997,8 @@ class WrapCalibratedExplainer():
         
             w.predict(X_test, uq_interval=True)
 
-        Note
-        ----
+        Notes
+        -----
         The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
         """
         if not self.fitted:
@@ -2069,8 +2069,8 @@ class WrapCalibratedExplainer():
         
             w.predict_proba(X_test, uq_interval=True)
 
-        Note
-        ----
+        Notes
+        -----
         The `threshold` parameter is only used for regression tasks.
         """
         if not self.fitted:

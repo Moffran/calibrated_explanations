@@ -752,12 +752,12 @@ class CalibratedExplanation(ABC):
         -------
         :class:`.CalibratedExplanation`
         
-        Note
-        ----
+        Notes
+        -----
         The function will return the same explanation if the rule is already included or if the feature is categorical.
         
-        Note
-        ----
+        Notes
+        -----
         No implementation is provided for the :class:`.FastExplanation` class.
         """
         try:
