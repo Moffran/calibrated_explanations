@@ -1,4 +1,4 @@
-﻿calibrated\_explanations.core.WrapCalibratedExplainer
+calibrated\_explanations.core.WrapCalibratedExplainer
 =====================================================
 
 .. currentmodule:: calibrated_explanations.core
@@ -14,18 +14,15 @@
    .. autosummary::
    
       ~WrapCalibratedExplainer.__init__
-      ~WrapCalibratedExplainer.calibrate
-      ~WrapCalibratedExplainer.calibrated_confusion_matrix
-      ~WrapCalibratedExplainer.explain_counterfactual
-      ~WrapCalibratedExplainer.explain_factual
-      ~WrapCalibratedExplainer.explain_fast
-      ~WrapCalibratedExplainer.explore_alternatives
       ~WrapCalibratedExplainer.fit
-      ~WrapCalibratedExplainer.initialize_reject_learner
-      ~WrapCalibratedExplainer.plot
+      ~WrapCalibratedExplainer.calibrate
       ~WrapCalibratedExplainer.predict
       ~WrapCalibratedExplainer.predict_proba
-      ~WrapCalibratedExplainer.predict_reject
+      ~WrapCalibratedExplainer.explain_factual
+      ~WrapCalibratedExplainer.explore_alternatives
+      ~WrapCalibratedExplainer.explain_fast
+      ~WrapCalibratedExplainer.plot
+      ~WrapCalibratedExplainer.calibrated_confusion_matrix
       ~WrapCalibratedExplainer.set_difficulty_estimator
    
    

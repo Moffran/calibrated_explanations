@@ -15,16 +15,10 @@
    
       ~CalibratedExplanations.__init__
       ~CalibratedExplanations.add_conjunctions
+      ~CalibratedExplanations.remove_conjunctions
+      ~CalibratedExplanations.plot
       ~CalibratedExplanations.as_lime
       ~CalibratedExplanations.as_shap
-      ~CalibratedExplanations.finalize
-      ~CalibratedExplanations.finalize_fast
-      ~CalibratedExplanations.get_confidence
-      ~CalibratedExplanations.get_explanation
-      ~CalibratedExplanations.get_high_percentile
-      ~CalibratedExplanations.get_low_percentile
-      ~CalibratedExplanations.plot
-      ~CalibratedExplanations.remove_conjunctions
    
    
 

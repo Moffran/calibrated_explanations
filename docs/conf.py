@@ -10,11 +10,11 @@ import os
 import sys
 
 # Add project directories to sys.path
-sys.path.insert(0, os.path.abspath('../..'))
+# sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../src'))
-sys.path.insert(0, os.path.abspath('../notebooks'))
-sys.path.insert(0, os.path.abspath('../src/calibrated_explanations'))
-sys.path.insert(0, os.path.abspath('../src/calibrated_explanations/utils'))
+# sys.path.insert(0, os.path.abspath('../notebooks'))
+# sys.path.insert(0, os.path.abspath('../src/calibrated_explanations'))
+# sys.path.insert(0, os.path.abspath('../src/calibrated_explanations/utils'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
