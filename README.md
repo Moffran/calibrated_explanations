@@ -50,6 +50,10 @@ Calibrated Explanations offers a range of features designed to enhance both the 
 * **Proximity-based rules for straightforward interpretation**: Generates rules that are easily interpretable by relating instance values to feature importance weights.
 
 * **Alternative explanations with uncertainty quantification**: Provides explanations for how predicted outcomes would change if specific input features were modified, including uncertainty estimates for these alternative outcomes.
+  - **Ensured Explanations**: Ensured explanations aims to help users find alternative explanations that reduce epistemic uncertainty ([read paper](https://arxiv.org/abs/2410.05479)). This includes:
+    - Categories for uncertain explanations, such as counter-potential, semi-potential, and super-potential.
+    - A new ranking metric, called _ensured_ ranking, to help balance uncertainty and probability among alternative explanations.
+    - A new plot to help visualize uncertainties among alternative explanations. 
 
 * **Conjunctional rules**: Provides feature importance explanations for interactions between multiple features, highlighting joint contributions (discussed in detail in the [regression paper](https://arxiv.org/abs/2308.16245)).
 
