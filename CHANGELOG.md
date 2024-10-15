@@ -1,7 +1,11 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.4.0...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.0...main)
+### Features
+
+## [v0.5.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.5.0) - 2024-10-15
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.4.0...v0.5.0)
 ### Features
 - Improved the introduction in README.
 - Added `calibrated_confusion_matrix` in `CalibratedExplainer` and `WrapCalibratedExplainer`, providing a leave-one-out calibrated confusion matrix using the calibration set. The insights from the confusion matrix are useful when analyzing explanations, to determine general prediction and error distributions of the model. An example of using the confusion matrix in the analysis is given in paper [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf).
