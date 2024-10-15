@@ -12,6 +12,7 @@
    .. rubric:: Methods
 
    .. autosummary::
+      :toctree: _autosummary
    
       ~FastExplanation.__init__
       ~FastExplanation.plot

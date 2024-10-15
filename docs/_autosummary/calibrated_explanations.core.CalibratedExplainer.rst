@@ -12,6 +12,7 @@
    .. rubric:: Methods
 
    .. autosummary::
+      :toctree: _autosummary
    
       ~CalibratedExplainer.__init__
       ~CalibratedExplainer.predict

@@ -12,6 +12,7 @@
    .. rubric:: Methods
 
    .. autosummary::
+      :toctree: _autosummary
    
       ~CalibratedExplanations.__init__
       ~CalibratedExplanations.add_conjunctions

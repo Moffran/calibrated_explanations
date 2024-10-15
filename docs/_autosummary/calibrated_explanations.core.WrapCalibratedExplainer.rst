@@ -12,6 +12,7 @@ calibrated\_explanations.core.WrapCalibratedExplainer
    .. rubric:: Methods
 
    .. autosummary::
+      :toctree: _autosummary
    
       ~WrapCalibratedExplainer.__init__
       ~WrapCalibratedExplainer.fit
