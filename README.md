@@ -65,7 +65,7 @@ Below is an example of an alternative explanation for an instance from the Wine 
 * Subfigure (a): Displays all generated alternatives, including conjunctive alternative explanations, indicating the outcome when changing more than one feature.
 * Subfigures (b) and (c): Show a subset of ten alternative explanations, filtered by probability estimate (`rnk_weight=1`). The light red area in the background of (c) represents the calibrated probability interval on the original instance for the positive class, corresponding to the red dot in (a) and (b).
 
-The darker red bars for each rule (left) show the probability intervals provided by Venn-Abers, indicating how the likelihood of the outcome changes when specific feature values (right) are modified according to the rule conditions.
+The darker red bars for each rule (left) show the probability intervals provided by Venn-Abers, indicating how the likelihood of the outcome changes when specific feature values (right) are modified according to the rule conditions. As an example, if _Chloride_ is reduced to below 0.04 (instead of the instance value 0.06), the probability for the positive class is increased and the uncertainty is decreased. 
 <p align="center">
   <a href="https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest">
     <!-- <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic alternative explanation for California Housing"> -->
