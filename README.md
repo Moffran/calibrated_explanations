@@ -60,12 +60,16 @@ Calibrated Explanations offers a range of features designed to enhance both the 
 * **Conditional rules for contextual explanations**: Allows users to create explanations conditioned on specific criteria, enabling better handling of e.g. fairness and bias constraints ([Read paper](https://doi.org/10.1007/978-3-031-63787-2_17)). Using conformal terminology, this means that Mondrian categories are supported. 
   
 ### Example Explanation
-Below is an example of a probabilistic alternative explanation for an instance from the California Housing regression dataset, with a threshold set at 180,000. The light red area in the background represents the calibrated probability interval for the prediction being below the threshold, as determined by the underlying model using a Conformal Predictive System to generate a probability estimate and Venn-Abers to generate epistemic uncertainty.
+Below is an example of an alternative explanation for an instance from the Wine classification dataset. The triangular plots (subfigures (a) and (b)) show the prediction and uncertainty for the instance (red) and alternatives (blue). The uncertainty is represented by the width of the probability interval, shown in subfigure (c).
 
-The darker red bars for each rule (seen to the left) show the probability intervals provided by Venn-Abers, indicating how the likelihood of the outcome changes when specific feature values (seen to the right) are modified according to the rule conditions.
+* Subfigure (a): Displays all generated alternatives, including conjunctive alternative explanations, indicating the outcome when changing more than one feature.
+* Subfigures (b) and (c): Show a subset of ten alternative explanations, filtered by probability estimate (`rnk_weight=1`). The light red area in the background of (c) represents the calibrated probability interval on the original instance for the positive class, corresponding to the red dot in (a) and (b).
+
+The darker red bars for each rule (left) show the probability intervals provided by Venn-Abers, indicating how the likelihood of the outcome changes when specific feature values (right) are modified according to the rule conditions.
 <p align="center">
   <a href="https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest">
-    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic alternative explanation for California Housing">
+    <!-- <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic alternative explanation for California Housing"> -->
+    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/alternatives_wine_ensured.jpg" alt="Alternative explanations for Wine (classification)">
   </a>
 </p>
 
