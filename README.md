@@ -69,7 +69,7 @@ The darker red bars for each rule (left) show the probability intervals provided
 <p align="center">
   <a href="https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest">
     <!-- <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/counterfactual_probabilistic_house_regression.jpg" alt="Probabilistic alternative explanation for California Housing"> -->
-    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/alternatives_wine_ensured.jpg" alt="Alternative explanations for Wine (classification)">
+    <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/alternatives_wine_ensured.png" alt="Alternative explanations for Wine (classification)">
   </a>
 </p>
 
