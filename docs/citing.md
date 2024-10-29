@@ -14,6 +14,7 @@ The paper that originated the idea of `calibrated-explanations` is:
 
 ## Preprints: 
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479. 
+- [Löfström, T](https://github.com/tuvelofstrom)., [Rabia Yapicioglu, F](https://github.com/rabia174)., Stramiglio A., [Löfström, H](https://github.com/Moffran)., and Vitali F. (2024). [Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://arxiv.org/abs/2410.21129). arXiv preprint arXiv:2410.21129. 
 
 # Bibtex Entries
 ## Published papers
@@ -117,6 +118,20 @@ Bibtex entry for the ensured paper:
 	eprint =          {2410.05479},
 	archivePrefix =   {arXiv},
 	primaryClass =    {cs.LG}
+}
+```
+
+Bibtex entry for the fast paper:
+
+```bibtex
+@misc{lofstrom2024ce_fast,
+	title={Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models}, 
+	author={Tuwe Löfström and Fatima Rabia Yapicioglu and Alessandra Stramiglio and Helena Löfström and Fabio Vitali},
+	year={2024},
+	eprint={2410.21129},
+	archivePrefix={arXiv},
+	primaryClass={cs.LG},
+	url={https://arxiv.org/abs/2410.21129}, 
 }
 ```
 
