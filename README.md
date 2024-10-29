@@ -133,8 +133,10 @@ The `WrapCalibratedExplainer` class has a `predict` and a `predict_proba` method
 
 
 ```python
+predict = classifier.predict(X_test)
+proba = classifier.predict_proba(X_test)
 print('Uncalibrated prediction (probability estimates):')
-print(f'{classifier.predict(X_test)} ({classifier.predict_proba(X_test)})')
+print(f'{predict} ({proba})')
 ```
 
 Before we can generate explanations, we need to calibrate our model using the calibration set. 
@@ -149,9 +151,10 @@ Once the model is calibrated, the `predict` and `predict_proba` methods produce 
 
 
 ```python
+predict = classifier.predict(X_test)
 proba, (low, high) = classifier.predict_proba(X_test, uq_interval=True)
 print('Calibrated prediction (probability estimates):')
-print(f'{classifier.predict(X_test)} ({proba})')
+print(f'{predict} ({proba})')
 print('Calibrated uncertainty interval for the positive class:')
 print([(low[i], high[i]) for i in range(len(low))])
 ```
@@ -165,23 +168,28 @@ factual_explanations = classifier.explain_factual(X_test)
 display(classifier)
 ```
 
-Once we have the explanations, we can plot all of them using the `plot` function. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. To plot only a single instance, the `plot` function can be called, submitting the index of the test instance to plot.
+Once we have the explanations, we can plot all of them using the `plot` function. Default, a regular plot, without uncertainty intervals included, is created. To include uncertainty intervals, change the parameter `uncertainty=True`. 
 
 
 ```python
 factual_explanations.plot()
 factual_explanations.plot(uncertainty=True)
-
-factual_explanations.plot(0, uncertainty=True)
 ```
 
 You can also add and remove conjunctive rules.
 
 
 ```python
-factual_explanations.add_conjunctions().plot(0)
-factual_explanations.plot(0, uncertainty=True)
-factual_explanations.remove_conjunctions().plot(0, uncertainty=True)
+factual_explanations.add_conjunctions().plot(uncertainty=True)
+factual_explanations.remove_conjunctions().plot(uncertainty=True)
+```
+
+All explanations support indexing using integer indexing, slices or boolean indexing.
+
+
+```python
+factual_explanations[0].plot(uncertainty=True)
+factual_explanations[:1].plot(uncertainty=True)
 ```
 
 #### Explore Alternative Explanations
@@ -193,14 +201,12 @@ alternative_explanations = classifier.explore_alternatives(X_test)
 display(classifier)
 ```
 
-Alternatives are also visualized using the `plot` function. Plotting an individual alternative explanation is done using `plot`, submitting the index to plot. Adding or removing conjunctions is done as before. 
+Alternatives are also visualized using the `plot` function. Plotting an individual alternative explanation is easiest done using indexing. Adding or removing conjunctions is done as before. 
 
 
 ```python
 alternative_explanations.plot()
 alternative_explanations.add_conjunctions().plot()
-
-alternative_explanations.plot(0)
 ```
 
 `calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
@@ -243,8 +249,8 @@ The `WrapCalibratedExplainer` class has a `predict` method that returns the pred
 
 
 ```python
-print('Uncalibrated model prediction:')
-print(regressor.predict(X_test))
+predict = regressor.predict(X_test)
+print(f'Uncalibrated model prediction: \n{predict}')
 ```
 
 Before we can generate explanations, we need to calibrate our model using the calibration set. 
@@ -283,6 +289,7 @@ You can also get the probability of the prediction being below a certain thresho
 
 
 ```python
+import numpy as np
 prediction = regressor.predict(X_test, threshold=200)
 print('Calibrated probabilistic prediction:')
 print(prediction)
@@ -290,8 +297,8 @@ print(prediction)
 proba, (low, high) = regressor.predict_proba(X_test, uq_interval=True, threshold=200)
 print('Calibrated probabilistic probability estimate [y_hat > threshold, y_hat <= threshold]:')
 print(proba)
-print('Calibrated probabilistic uncertainty interval for y_hat <= threshold:')
-print([(low[i], high[i]) for i in range(len(low))])
+print('Calibrated probabilistic uncertainty interval for y_hat <= threshold ([lower_bound, upper_bound]):')
+print(np.array([(low[i], high[i]) for i in range(len(low))]))
 ```
 
 #### Factual Explanations
@@ -355,8 +362,6 @@ probabilistic_alternative_explanations.plot()
 ```
 
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
-
-### Alternative ways to initialize WrapCalibratedExplainer
 
 A `WrapCalibratedExplainer` can also be initialized with a trained model or with a `CalibratedExplainer` object, as is examplified below. 
 
