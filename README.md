@@ -92,7 +92,7 @@ Here is a very condensed example to get you started:
    # Initialize the CalibratedExplainer
    classifier.calibrate(X_calibration_cls, y_calibration_cls)
    regressor.calibrate(X_calibration_reg, y_calibration_reg)
- 
+
    # Factual Explanations
    # Create factual explanations for classification
    factual_explanations = classifier.explain_factual(X_test_cls)
@@ -127,6 +127,43 @@ Here is a very condensed example to get you started:
    factual_upper_bounded = regressor.explain_factual(X_test_reg, low_high_percentiles=(-np.inf,90))
    alternative_lower_bounded = regressor.explore_alternatives(X_test_reg, low_high_percentiles=(10,np.inf))
    alternative_asymmetric = regressor.explore_alternatives(X_test_reg, low_high_percentiles=(10,70))
+```
+It is easy to access the predictions and probabilities from the calibrator and model.
+
+```python
+   # Train your model using the proper training set
+   classifier.fit(X_proper_training_cls, y_proper_training_cls)
+   regressor.fit(X_proper_training_reg, y_proper_training_reg)
+
+   # Output the model predictions and probabilities (without calibration)
+   uncal_proba_cls = classifier.predict_proba(X_test_cls)
+   uncal_y_hat_cls = classifier.predict(X_test_cls)
+   uncal_y_hat_reg = regressor.predict(X_test_reg)
+
+   # Initialize the CalibratedExplainer
+   classifier.calibrate(X_calibration_cls, y_calibration_cls)
+   regressor.calibrate(X_calibration_reg, y_calibration_reg)
+
+   # Output the model predictions and probabilities (without calibration)
+   uncal_proba_cls = classifier.predict_proba(X_test_cls, calibrated=False)
+   uncal_y_hat_cls = classifier.predict(X_test_cls, calibrated=False)
+   uncal_y_hat_reg = regressor.predict(X_test_reg, calibrated=False)
+
+   # Output the calibrated predictions and probabilities
+   cal_proba_cls = classifier.predict_proba(X_test_cls)
+   cal_y_hat_cls = classifier.predict(X_test_cls)
+   cal_y_hat_reg = regressor.predict(X_test_reg)
+   # Get thresholded regression predictions and probabilities for labels 'y_hat > threshold' and 'y_hat <= threshold'
+   your_threshold = 1000
+   thr_y_hat_reg = regressor.predict(X_test_reg, threshold=your_threshold)
+   thr_proba_reg = regressor.predict_proba(X_test_reg, threshold=your_threshold)
+   # Include uncertainty interval, outputted as a tuple (low, high)
+   cal_proba_cls, low_high = classifier.predict_proba(X_test_cls, uq_interval=True)
+   cal_y_hat_cls, (low, high) = classifier.predict(X_test_cls, uq_interval=True)
+   cal_y_hat_reg, low_high = regressor.predict(X_test_reg, uq_interval=True) # default low_high_percentiles=(5, 95)
+   cal_y_hat_reg, low_high = regressor.predict(X_test_reg, low_high_percentiles=(10,90), uq_interval=True)
+   thr_y_hat_reg, low_high = regressor.predict(X_test_reg, threshold=your_threshold, uq_interval=True)
+   thr_proba_reg, (low, high) = regressor.predict_proba(X_test_reg, threshold=your_threshold, uq_interval=True)
 ```
 
 ## Getting Started
