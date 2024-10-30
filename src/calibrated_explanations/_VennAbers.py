@@ -1,11 +1,12 @@
 """contains the VennAbers class which is used to calibrate the predictions of a model
 
 """
-# pylint: disable=invalid-name, line-too-long
+# pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
 # flake8: noqa: E501
 import warnings
 import numpy as np
 import venn_abers as va
+from scipy.special import logit, expit
 
 class VennAbers:
     """a class to calibrate the predictions of a model using the VennABERS method
@@ -251,8 +252,6 @@ def sigmoid_scaling_list(probs, difficulties, alpha=10):
         scaled_probs.append(final_scaled_p)
 
     return scaled_probs
-
-from scipy.special import logit, expit
 
 def logit_based_scaling_list(probs, difficulties, gamma=2):
     """
