@@ -19,7 +19,7 @@
 
 By providing estimates for both aleatoric and epistemic uncertainty, **Calibrated Explanations** offers a more comprehensive understanding of predictions, both in terms of accuracy and confidence. This is particularly valuable in high-stakes environments where model reliability and interpretability are essential, such as in healthcare, finance, and autonomous systems.
 
-For an in-depth guide on how to start using Calibrated Explanations, refer to the [Getting Started](#getting-started) section below.
+To get a very condensed example on how Calibrated Explanations can be used, see the [Quick Overview](#quick-overview). For an in-depth guide on how to start using Calibrated Explanations, refer to the [Getting Started](#getting-started) section below.
 
 ### Core Features:
 - **Calibrated Prediction Confidence**: Obtain well-calibrated uncertainty estimates for predictions, helping users make informed decisions based on the model’s confidence.
@@ -73,8 +73,64 @@ The darker red bars for each rule (left) show the probability intervals provided
   </a>
 </p>
 
-## Getting started
-The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb), using the `WrapCalibratedExplainer` class, is similar to this Getting Started, including plots and output.
+## Quick Overview
+Here is a very condensed example to get you started:
+
+```python
+   from calibrated_explanations import WrapCalibratedExplainer
+   # Load and pre-process your data
+   # Divide it into proper training, calibration, and test sets
+
+   # Initialize the WrapCalibratedExplainer with your model
+   classifier = WrapCalibratedExplainer(ClassifierOfYourChoice())
+   regressor = WrapCalibratedExplainer(RegressorOfYourChoice())
+
+   # Train your model using the proper training set
+   classifier.fit(X_proper_training_cls, y_proper_training_cls)
+   regressor.fit(X_proper_training_reg, y_proper_training_reg)
+
+   # Initialize the CalibratedExplainer
+   classifier.calibrate(X_calibration_cls, y_calibration_cls)
+   regressor.calibrate(X_calibration_reg, y_calibration_reg)
+ 
+   # Factual Explanations
+   # Create factual explanations for classification
+   factual_explanations = classifier.explain_factual(X_test_cls)
+   # Create factual standard explanations for regression with default 90 % uncertainty interval
+   factual_explanations = regressor.explain_factual(X_test_reg) # low_high_percentiles=(5,95)
+   # Create factual standard explanations for regression with user assigned uncertainty interval
+   factual_explanations = regressor.explain_factual(X_test_reg, low_high_percentiles=(10,90))
+   # Create factual probabilistic explanations for regression with user assigned threshold
+   your_threshold = 1000
+   factual_explanations = regressor.explain_factual(X_test_reg, threshold=your_threshold)
+
+   # Alternative Explanations
+   # Create alternative explanations for classification
+   alternative_explanations = classifier.explore_alternatives(X_test_cls)
+   # Create alternative standard explanations for regression with default 90 % uncertainty interval
+   alternative_explanations = regressor.explore_alternatives(X_test_reg) # low_high_percentiles=(5,95)
+   # Create alternative standard explanations for regression with user assigned uncertainty interval
+   alternative_explanations = regressor.explore_alternatives(X_test_reg, low_high_percentiles=(10,90))
+   # Create alternative probabilistic explanations for regression with user assigned threshold
+   alternative_explanations = regressor.explore_alternatives(X_test_reg, threshold=your_threshold)
+   
+   # Plot the explanations, works the same for classification and regression
+   factual_explanations.plot()
+   factual_explanations.plot(uncertainty=True)
+   alternative_explanations.plot()
+
+   # Add conjunctions to the explanations, works the same for classification and regression
+   factual_conjunctions.add_conjunctions()
+   alternative_conjunctions.add_conjunctions()
+
+   # One-sided and asymmetric explanations for regression are easily created
+   factual_upper_bounded = regressor.explain_factual(X_test_reg, low_high_percentiles=(-np.inf,90))
+   alternative_lower_bounded = regressor.explore_alternatives(X_test_reg, low_high_percentiles=(10,np.inf))
+   alternative_asymmetric = regressor.explore_alternatives(X_test_reg, low_high_percentiles=(10,70))
+```
+
+## Getting Started
+The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) notebook, using the `WrapCalibratedExplainer` class, is similar to this Getting Started in structure and includes plots and output.
 
 The notebooks listed below are using the `CalibratedExplainer` class. They showcase a number of different use cases, as indicated by their names:
 * [quickstart](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart.ipynb) - similar to this Getting Started, but without a wrapper class.
@@ -363,6 +419,8 @@ probabilistic_alternative_explanations.plot()
 
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
 
+### Initializing `WrapCalibratedExplainer`s 
+
 A `WrapCalibratedExplainer` can also be initialized with a trained model or with a `CalibratedExplainer` object, as is examplified below. 
 
 ```python
@@ -439,10 +497,10 @@ For documentation, see [calibrated-explanations.readthedocs.io](https://calibrat
 [Top](#calibrated-explanations-documentation)
 
 
-## Further reading and citing
+## Further Reading and Citing
 
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
-### Published papers
+### Published Papers
 - [Löfström, H](https://github.com/Moffran). (2023). [Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440&dswid=6197) (Doctoral dissertation, Jönköping University, Jönköping International Business School).
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27.
 - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2024). [Calibrated Explanations for Regression (preprint)](https://arxiv.org/abs/2308.16245). Machine Learning. In press.
@@ -457,7 +515,7 @@ The paper that originated the idea of `calibrated-explanations` is:
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479. 
 - [Löfström, T](https://github.com/tuvelofstrom)., [Rabia Yapicioglu, F](https://github.com/rabia174)., Stramiglio A., [Löfström, H](https://github.com/Moffran)., and Vitali F. (2024). [Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://arxiv.org/abs/2410.21129). arXiv preprint arXiv:2410.21129. 
 
-### Citing and bibtex
+### Citing and Bibtex
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the papers above. Bibtex entries can be found in [citing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md#bibtex-entries).
   
 [Top](#calibrated-explanations-documentation)
