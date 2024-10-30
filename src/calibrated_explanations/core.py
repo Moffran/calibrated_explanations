@@ -1093,7 +1093,7 @@ class CalibratedExplainer:
         if self.is_fast():
             self.__initialize_interval_learner_for_fast_explainer()
         elif self.mode == 'classification':
-            self.interval_learner = VennAbers(self.learner.predict_proba(self.X_cal), self.y_cal, self.learner, self.bins)
+            self.interval_learner = VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator)
         elif 'regression' in self.mode:
             self.interval_learner = IntervalRegressor(self)
         self.__initialized = True
@@ -1112,7 +1112,7 @@ class CalibratedExplainer:
             fast_X_cal = self.scaled_X_cal.copy()
             fast_X_cal[:,f] = self.fast_X_cal[:,f]
             if self.mode == 'classification':
-                self.interval_learner.append(VennAbers(self.learner.predict_proba(fast_X_cal), self.scaled_y_cal, self.learner, self.bins))
+                self.interval_learner.append(VennAbers(fast_X_cal, self.scaled_y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator))
             elif 'regression' in self.mode:
                 self.X_cal = fast_X_cal
                 self.y_cal = self.scaled_y_cal
@@ -1120,7 +1120,7 @@ class CalibratedExplainer:
 
         self.X_cal, self.y_cal, self.bins = X_cal, y_cal, bins
         if self.mode == 'classification':
-            self.interval_learner.append(VennAbers(self.learner.predict_proba(self.X_cal), self.y_cal, self.learner, self.bins))
+            self.interval_learner.append(VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator))
         elif 'regression' in self.mode:
             # Add a reference learner using the original calibration data last
             self.interval_learner.append(IntervalRegressor(self))
@@ -1312,7 +1312,7 @@ class CalibratedExplainer:
 
 
     # pylint: disable=too-many-return-statements
-    def predict(self, X_test, uq_interval=False, **kwargs):
+    def predict(self, X_test, uq_interval=False, calibrated=True, **kwargs):
         """
         Generates a calibrated prediction for the given test data. If the learner is not calibrated, the prediction remains uncalibrated.
 
@@ -1322,6 +1322,8 @@ class CalibratedExplainer:
             The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
         uq_interval : bool, default=False
             If True, returns the uncertainty quantification interval along with the calibrated prediction. 
+        calibrated : bool, default=True
+            If True, the calibrator is used for prediction. If False, the underlying learner is used for prediction.
         **kwargs : Various types, optional
             Additional parameters to customize the explanation process. Supported parameters include:
 
@@ -1364,6 +1366,13 @@ class CalibratedExplainer:
         -----
         The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
         """
+        if not calibrated:
+            if 'threshold' in kwargs:
+                raise ValueError("A thresholded prediction is not possible for uncalibrated predictions.")
+            if uq_interval:
+                predict = self.learner.predict(X_test)
+                return predict, (predict, predict)
+            return self.learner.predict(X_test)
         if self.mode in 'regression':
             predict, low, high, _ = self._predict(X_test, **kwargs)
             if 'threshold' in kwargs:
@@ -1392,7 +1401,7 @@ class CalibratedExplainer:
 
 
 
-    def predict_proba(self, X_test, uq_interval=False, threshold=None, **kwargs):
+    def predict_proba(self, X_test, uq_interval=False, calibrated=True, threshold=None, **kwargs):
         """
         A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
         prediction is not calibrated either.
@@ -1403,6 +1412,8 @@ class CalibratedExplainer:
             The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
         uq_interval : bool, default=False
             If true, then the prediction interval is returned as well.
+        calibrated : bool, default=True
+            If True, the calibrator is used for prediction. If False, the underlying learner is used for prediction.
         threshold : float, int or array-like of shape (n_samples,), optional, default=None
             Threshold values used with regression to get probability of being below the threshold. Only applicable to regression.
 
@@ -1444,6 +1455,16 @@ class CalibratedExplainer:
         -----
         The `threshold` parameter is only used for regression tasks.
         """
+        if not calibrated:
+            if threshold is not None:
+                raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
+            warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
+            if uq_interval:
+                proba = self.learner.predict_proba(X_test)
+                if proba.shape[1] > 2:
+                    return proba, (proba, proba)
+                return proba, (proba[:,1], proba[:,1])
+            return self.learner.predict_proba(X_test)
         if self.mode in 'regression':
             if isinstance(self.interval_learner, list):
                 proba_1, low, high, _ = self.interval_learner[-1].predict_probability(X_test, y_threshold=threshold, **kwargs)
@@ -1562,7 +1583,7 @@ class CalibratedExplainer:
         assert self.mode == 'classification', "The confusion matrix is only available for classification tasks."
         cal_predicted_classes = np.zeros(len(self.y_cal))
         for i in range(len(self.y_cal)):
-            va = VennAbers(self.learner.predict_proba(np.concatenate((self.X_cal[:i], self.X_cal[i+1:]), axis=0)),
+            va = VennAbers(np.concatenate((self.X_cal[:i], self.X_cal[i+1:]), axis=0),
                            np.concatenate((self.y_cal[:i], self.y_cal[i+1:])),
                            self.learner)
             _, _, _, predict = va.predict_proba([self.X_cal[i]], output_interval=True)
@@ -1949,7 +1970,7 @@ class WrapCalibratedExplainer():
 
 
     # pylint: disable=too-many-return-statements
-    def predict(self, X_test, uq_interval=False, **kwargs):
+    def predict(self, X_test, uq_interval=False, calibrated=True, **kwargs):
         """
         Generates a calibrated prediction for the given test data. If the learner is not calibrated, the prediction remains uncalibrated.
 
@@ -1959,6 +1980,8 @@ class WrapCalibratedExplainer():
             The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
         uq_interval : bool, default=False
             If True, returns the uncertainty quantification interval along with the calibrated prediction. 
+        calibrated : bool, default=True
+            If True, the calibrator is used for prediction. If False, the underlying learner is used for prediction.
         **kwargs : Various types, optional
             Additional parameters to customize the explanation process. Supported parameters include:
 
@@ -2018,9 +2041,9 @@ class WrapCalibratedExplainer():
         else:
             bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
-        return self.explainer.predict(X_test, uq_interval=uq_interval, **kwargs)
+        return self.explainer.predict(X_test, uq_interval=uq_interval, calibrated=calibrated, **kwargs)
 
-    def predict_proba(self, X_test, uq_interval=False, threshold=None, **kwargs):
+    def predict_proba(self, X_test, uq_interval=False, calibrated=True, threshold=None, **kwargs):
         """
         A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
         prediction is not calibrated either.
@@ -2031,6 +2054,8 @@ class WrapCalibratedExplainer():
             The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
         uq_interval : bool, default=False
             If true, then the prediction interval is returned as well.
+        calibrated : bool, default=True
+            If True, the calibrator is used for prediction. If False, the underlying learner is used for prediction.
         threshold : float, int or array-like of shape (n_samples,), optional, default=None
             Threshold values used with regression to get probability of being below the threshold. Only applicable to regression.
 
@@ -2081,6 +2106,8 @@ class WrapCalibratedExplainer():
             if not self.calibrated:
                 raise RuntimeError("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities for regression.")
         if not self.calibrated:
+            if threshold is not None:
+                raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
             if uq_interval:
                 proba = self.learner.predict_proba(X_test)
@@ -2095,7 +2122,7 @@ class WrapCalibratedExplainer():
         else:
             bins = kwargs.get('bins', None)
         kwargs['bins'] = bins
-        return self.explainer.predict_proba(X_test, uq_interval=uq_interval, threshold=threshold, **kwargs)
+        return self.explainer.predict_proba(X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
         """

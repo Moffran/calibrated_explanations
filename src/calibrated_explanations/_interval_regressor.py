@@ -225,7 +225,8 @@ class IntervalRegressor:
                                 sigmas=self.sigma_cal[cal_va],
                                 bins=bins)
         self.split['proba'] = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
-        self.split['va'] = VennAbers(self.split['proba'],
+        self.split['va'] = VennAbers(None,
                                         (self.ce.y_cal[cal_va] <= y_threshold).astype(int),
                                         self,
-                                        bins=bins)
+                                        bins=bins,
+                                        cprobs=self.split['proba'])

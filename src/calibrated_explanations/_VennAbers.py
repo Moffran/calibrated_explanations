@@ -10,10 +10,14 @@ import venn_abers as va
 class VennAbers:
     """a class to calibrate the predictions of a model using the VennABERS method
     """
-    def __init__(self, cprobs, y_cal, learner, bins=None):
-        self.cprobs = cprobs
-        self.ctargets = y_cal
+    def __init__(self, X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
+        self.de = difficulty_estimator
         self.learner = learner
+        self.X_cal = X_cal
+        self.ctargets = y_cal
+        self.__is_multiclass = len(np.unique(y_cal)) > 2
+        cprobs = self.__predict_proba_with_difficulty(X_cal) if cprobs is None else cprobs
+        self.cprobs = cprobs
         self.bins = bins
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         if self.is_mondrian():
@@ -47,6 +51,23 @@ class VennAbers:
             self.va.fit(cprobs, self.ctargets, precision=4)
         warnings.filterwarnings("default", category=RuntimeWarning)
 
+    def __predict_proba_with_difficulty(self, X, bins=None):
+        if 'bins' in self.learner.predict_proba.__code__.co_varnames:
+            probs = self.learner.predict_proba(X, bins=bins)
+        else:
+            probs = self.learner.predict_proba(X)
+        if self.de is not None:
+            difficulty = self.de.apply(X)
+            # method = logit_based_scaling_list
+            method = exponent_scaling_list
+            # method = sigmoid_scaling_list
+            if self.is_multiclass():
+                probs_tmp = method(probs, difficulty)
+            else:
+                probs_tmp = method(probs, np.repeat(difficulty, 2).reshape(-1,2))
+            probs = np.array([np.asarray(tmp) for tmp in probs_tmp])
+        return probs
+
     def predict(self, X_test, bins=None):
         """a function to predict the class of the test samples
 
@@ -57,16 +78,6 @@ class VennAbers:
         Returns:
             predicted classes (n_test_samples,): predicted classes based on the regularized VennABERS probabilities. If multiclass, the predicted class is 1 if the prediction from the underlying model is the same after calibration and 0 otherwise.
         """
-        # tprobs, _ = self.get_p_value(self.learner.predict_proba(X_test))
-        # if self.is_mondrian():
-        #     p0p1 = np.zeros((tprobs.shape[0],2))
-        #     for va_bin, b in self.va:
-        #         p0p1[bins == b,:] = va_bin.predict_proba(tprobs[bins == b,:])[1]
-        # else:
-        #     _, p0p1 = self.va.predict_proba(tprobs)
-        # low, high = p0p1[:,0], p0p1[:,1]
-        # tmp = high / (1-low + high)
-
         if self.is_multiclass():
             tmp, _ = self.predict_proba(X_test, bins=bins)
             return np.asarray(np.round(tmp[:,1]))
@@ -90,10 +101,7 @@ class VennAbers:
                 high (n_test_samples,): upper bounds of the VennABERS interval for each test sample
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
-        if 'bins' in self.learner.predict_proba.__code__.co_varnames:
-            tprobs = self.learner.predict_proba(X_test, bins=bins)
-        else:
-            tprobs = self.learner.predict_proba(X_test)
+        tprobs = self.__predict_proba_with_difficulty(X_test, bins=bins)
         p0p1 = np.zeros((tprobs.shape[0],2))
         va_proba = np.zeros(tprobs.shape)
 
@@ -145,7 +153,7 @@ class VennAbers:
         Returns:
             bool: true if more than two classes
         """
-        return len(self.cprobs[0,:]) > 2
+        return self.__is_multiclass
 
     def is_mondrian(self) -> bool:
         """returns true if Mondrian
@@ -154,3 +162,142 @@ class VennAbers:
             bool: true if Mondrian
         """
         return self.bins is not None
+
+def mixture_of_experts_scaling(p, difficulty):
+    """
+    Use a mixture of experts approach to scale the probability.
+    
+    Args:
+        p (float): Original predicted probability (between 0 and 1).
+        difficulty (float): Difficulty of the instance (0 = easy, 1 = hard).
+        
+    Returns:
+        float: Scaled probability.
+    """
+    # Weighting function based on difficulty
+    weight = 1 - difficulty
+
+    # Scale the probability as a mixture of the original and 0.5
+    return weight * p + (1 - weight) * 0.5
+
+def linear_interpolation_with_half(p, difficulty):
+    """
+    Linearly interpolate the probability with 0.5 based on difficulty.
+    
+    Args:
+        p (float): Original predicted probability (between 0 and 1).
+        difficulty (float): Difficulty of the instance (0 = easy, 1 = hard).
+        
+    Returns:
+        float: Scaled probability.
+    """
+    # Interpolate between p and 0.5 based on difficulty
+    return (1 - difficulty) * p + difficulty * 0.5
+
+def temperature_scaling(p, difficulty, base_temperature=1.0):
+    """
+    Scale the probability using temperature scaling.
+    
+    Args:
+        p (float): Original predicted probability (between 0 and 1).
+        difficulty (float): Difficulty of the instance (0 = easy, 1 = hard).
+        base_temperature (float): Base temperature value (default is 1.0).
+        
+    Returns:
+        float: Scaled probability.
+    """
+    # Higher difficulty should increase temperature
+    T = base_temperature + difficulty
+
+    # Apply temperature scaling
+    return p ** (1 / T) / (p ** (1 / T) + (1 - p) ** (1 / T))
+
+def regularized_probability(p, difficulty, lambda_reg=1.0):
+    """
+    Regularize the probability based on difficulty.
+    
+    Args:
+        p (float): Original predicted probability (between 0 and 1).
+        difficulty (float): Difficulty of the instance (0 = easy, 1 = hard).
+        lambda_reg (float): Regularization strength.
+        
+    Returns:
+        float: Scaled probability.
+    """
+    # Regularize the probability towards 0.5
+    return p - lambda_reg * difficulty * (p - 0.5)
+
+def sigmoid_scaling_list(probs, difficulties, alpha=10):
+    """
+    Scale a list of probabilities using sigmoid-based scaling.
+    
+    Args:
+        probs (list of float): List of predicted probabilities (between 0 and 1).
+        difficulties (list of float): List of difficulties (0 = easy, 1 = hard).
+        alpha (float): Controls the steepness of the sigmoid scaling (default is 10).
+        
+    Returns:
+        list of float: Scaled probabilities.
+    """
+    scaled_probs = []
+    for p, difficulty in zip(probs, difficulties):
+        if p[0] < 0.5:
+            scaled_p = p ** (1 + alpha * (1 - difficulty))
+        else:
+            scaled_p = 1 - (1 - p) ** (1 + alpha * (1 - difficulty))
+
+        final_scaled_p = (1 - difficulty) * scaled_p + difficulty * 0.5
+        final_scaled_p = final_scaled_p / np.sum(final_scaled_p)
+        scaled_probs.append(final_scaled_p)
+
+    return scaled_probs
+
+from scipy.special import logit, expit
+
+def logit_based_scaling_list(probs, difficulties, gamma=2):
+    """
+    Use logit-based scaling to adjust a list of probabilities based on difficulties.
+    
+    Args:
+        probs (list of float): List of predicted probabilities (between 0 and 1).
+        difficulties (list of float): List of difficulties (0 = easy, 1 = hard).
+        gamma (float): Scaling factor to control the effect of difficulty.
+        
+    Returns:
+        list of float: Scaled probabilities.
+    """
+    scaled_probs = []
+    for p, difficulty in zip(probs, difficulties):
+        logit_p = logit(p)
+        scaled_logit = logit_p * (1 - difficulty) * gamma
+        scaled_p = expit(scaled_logit)
+        final_scaled_p = (1 - difficulty) * scaled_p + difficulty * 0.5
+        final_scaled_p = final_scaled_p / np.sum(final_scaled_p)
+        scaled_probs.append(final_scaled_p)
+
+    return scaled_probs
+
+def exponent_scaling_list(probs, difficulties, beta=5):
+    """
+    Exponentially scale a list of probabilities towards 0/1 for low difficulty, and towards 0.5 for high difficulty.
+    
+    Args:
+        probs (list of float): List of predicted probabilities (between 0 and 1).
+        difficulties (list of float): List of difficulties (0 = easy, 1 = hard).
+        beta (float): Scaling factor to control the effect of difficulty (default is 5).
+        
+    Returns:
+        list of float: Scaled probabilities.
+    """
+    scaled_probs = []
+    for p, difficulty in zip(probs, difficulties):
+        if p[0] < 0.5:
+            scaled_p = p ** (1 + beta * (1 - difficulty))
+        else:
+            scaled_p = 1 - (1 - p) ** (1 + beta * (1 - difficulty))
+
+        final_scaled_p = (1 - difficulty) * scaled_p + difficulty * 0.5
+        final_scaled_p = final_scaled_p / np.sum(final_scaled_p)
+        scaled_probs.append(final_scaled_p)
+
+    return scaled_probs
