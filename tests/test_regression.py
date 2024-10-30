@@ -427,7 +427,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
     # NOTE: this takes takes about 70s to run
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
-    def test_regression_perturbed_ce(self):
+    def test_regression_fast_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
@@ -461,7 +461,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         #     _ = perturbed_explanation.counter_explanations()
 
 
-    def test_probabilistic_regression_perturbed_ce(self):
+    def test_probabilistic_regression_fast_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
@@ -536,7 +536,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
 
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
-    def test_knn_normalized_regression_perturbed_ce(self):
+    def test_knn_normalized_regression_fast_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
@@ -559,7 +559,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
-    def test_knn_normalized_probabilistic_regression_perturbed_ce(self):
+    def test_knn_normalized_probabilistic_regression_fast_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
@@ -581,7 +581,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
 
     # @unittest.skip('Test fails online but passes locally. Error/warning raised by crepes. Skipping provisionally.')
-    def test_var_normalized_regression_perturbed_ce(self):
+    def test_var_normalized_regression_fast_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(
@@ -604,7 +604,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
 
     # @unittest.skip('Test passes but is extremely slow.  Skipping provisionally.')
-    def test_var_normalized_probabilistic_regression_perturbed_ce(self):
+    def test_var_normalized_probabilistic_regression_fast_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         model, _ = get_regression_model('RF', X_prop_train, y_prop_train) # pylint: disable=redefined-outer-name
         cal_exp = CalibratedExplainer(

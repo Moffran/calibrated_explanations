@@ -272,7 +272,7 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
 
 
     # pylint: disable=unused-variable, unsubscriptable-object
-    def test_wrap_regression_perturbed_ce(self):
+    def test_wrap_regression_fast_ce(self):
         X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, categorical_labels, feature_names = load_regression_dataset()
         cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
         cal_exp.fit(X_prop_train, y_prop_train)
