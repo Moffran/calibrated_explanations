@@ -71,10 +71,17 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         print(cal_exp)
         y_test_hat1 = cal_exp.predict(X_test)
         y_test_hat2, (low, high) = cal_exp.predict(X_test, uq_interval=True)
-        for i, y_hat in enumerate(y_test_hat2):
-            self.assertEqual(y_test_hat1[i], y_hat)
+        y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
+        y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
+        for i, y_hat in enumerate(y_test_hat1):
+            self.assertEqual(y_test_hat2[i], y_hat)
+            self.assertEqual(y_test_hat3[i], y_hat)
+            self.assertEqual(y_test_hat4[i], y_hat)
             self.assertEqual(low[i], y_hat)
             self.assertEqual(high[i], y_hat)
+            self.assertEqual(low4[i], y_hat)
+            self.assertEqual(high4[i], y_hat)
+
         # An uncalibrated regression model does not support predict thresholded labels as no conformal predictive system is available
         with pytest.raises(ValueError):
             y_test_hat = cal_exp.predict(X_test, threshold=y_test)
@@ -109,6 +116,14 @@ class TestCalibratedExplainer_regression(unittest.TestCase):
         self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
         print(cal_exp)
+        # predict uncalibrated
+        y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
+        y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
+        for i, y_hat in enumerate(y_test_hat1):
+            self.assertEqual(y_test_hat3[i], y_hat)
+            self.assertEqual(y_test_hat4[i], y_hat)
+            self.assertEqual(low4[i], y_hat)
+            self.assertEqual(high4[i], y_hat)
         # predict calibrated regression output using the conformal predictive system
         y_test_hat1 = cal_exp.predict(X_test)
         # predict calibrated regression output using the conformal predictive system, with uncertainty quantification

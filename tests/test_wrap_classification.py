@@ -123,22 +123,51 @@ class TestWrapCalibratedExplainer_classification(unittest.TestCase):
         print(cal_exp)
         y_test_hat1 = cal_exp.predict(X_test)
         y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            self.assertEqual(y_test_hat1[i], y_hat)
+        y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
+        y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
+        for i, y_hat in enumerate(y_test_hat1):
+            self.assertEqual(y_test_hat2[i], y_hat)
+            self.assertEqual(y_test_hat3[i], y_hat)
+            self.assertEqual(y_test_hat4[i], y_hat)
             self.assertEqual(low[i], y_hat)
             self.assertEqual(high[i], y_hat)
-        y_test_hat1 = cal_exp.predict_proba(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            for j, y_hat_j in enumerate(y_hat):
-                self.assertEqual(y_test_hat1[i][j], y_hat_j)
-            self.assertEqual(low[i], y_test_hat2[i,1])
-            self.assertEqual(high[i], y_test_hat2[i,1])
+            self.assertEqual(low4[i], y_hat)
+            self.assertEqual(high4[i], y_hat)
+        y_test_proba1 = cal_exp.predict_proba(X_test)
+        y_test_proba2, (low_proba, high_proba) = cal_exp.predict_proba(X_test, True)
+        y_test_proba3 = cal_exp.predict_proba(X_test, calibrated=False)
+        y_test_proba4, (low_proba4, high_proba4) = cal_exp.predict_proba(X_test, True, calibrated=False)
+        for i, y_proba in enumerate(y_test_proba1):
+            for j, y_proba_j in enumerate(y_proba):
+                self.assertEqual(y_test_proba2[i][j], y_proba_j)
+                self.assertEqual(y_test_proba3[i][j], y_proba_j)
+                self.assertEqual(y_test_proba4[i][j], y_proba_j)
+            self.assertEqual(low_proba[i], y_test_proba1[i,1])
+            self.assertEqual(high_proba[i], y_test_proba1[i,1])
+            self.assertEqual(low_proba4[i], y_test_proba1[i,1])
+            self.assertEqual(high_proba4[i], y_test_proba1[i,1])
 
         cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
         self.assertTrue(cal_exp.fitted)
         self.assertTrue(cal_exp.calibrated)
         print(cal_exp)
+        # predict uncalibrated
+        y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
+        y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
+        for i, y_hat in enumerate(y_test_hat1):
+            self.assertEqual(y_test_hat3[i], y_hat)
+            self.assertEqual(y_test_hat4[i], y_hat)
+            self.assertEqual(low4[i], y_hat)
+            self.assertEqual(high4[i], y_hat)
+        y_test_proba3 = cal_exp.predict_proba(X_test, calibrated=False)
+        y_test_proba4, (low_proba4, high_proba4) = cal_exp.predict_proba(X_test, True, calibrated=False)
+        for i, y_proba in enumerate(y_test_proba1):
+            for j, y_proba_j in enumerate(y_proba):
+                self.assertEqual(y_test_proba3[i][j], y_proba_j)
+                self.assertEqual(y_test_proba4[i][j], y_proba_j)
+            self.assertEqual(low_proba4[i], y_test_proba1[i,1])
+            self.assertEqual(high_proba4[i], y_test_proba1[i,1])
+        # Predict calibrated
         y_test_hat1 = cal_exp.predict(X_test)
         y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
         for i, y_hat in enumerate(y_test_hat2):
