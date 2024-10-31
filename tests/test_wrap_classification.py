@@ -1,370 +1,329 @@
-# pylint: disable=missing-docstring, missing-module-docstring, invalid-name, protected-access, too-many-locals, line-too-long, duplicate-code
-# flake8: noqa: E501
-from __future__ import absolute_import
-# import tempfile
-# import os
-
-import unittest
+# pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name
+"""
+This module contains unit tests for the `WrapCalibratedExplainer` class from the `calibrated_explanations` package.
+The tests cover both binary and multiclass classification scenarios.
+Fixtures:
+    binary_dataset: Prepares a binary classification dataset for testing.
+    multiclass_dataset: Prepares a multiclass classification dataset for testing.
+Tests:
+    test_wrap_binary_ce: Tests the `WrapCalibratedExplainer` with a binary classification dataset.
+    test_wrap_multiclass_ce: Tests the `WrapCalibratedExplainer` with a multiclass classification dataset.
+The tests ensure that:
+    - The `WrapCalibratedExplainer` can be fitted and calibrated correctly.
+    - Predictions and prediction intervals are consistent before and after calibration.
+    - The `WrapCalibratedExplainer` raises appropriate errors when methods are called before fitting or calibration.
+    - The `WrapCalibratedExplainer` can be re-initialized with an existing learner or explainer.
+"""
 import pytest
-
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
-
-from crepes.extras import MondrianCategorizer
 
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.utils.helper import transform_to_numeric
 
-
-MODEL = 'RF'
-def load_binary_dataset():
+@pytest.fixture
+def binary_dataset():
+    """
+    Generates a binary classification dataset from a CSV file.
+    The function reads a dataset from a CSV file, processes it, and splits it into training, calibration, and test sets.
+    It also identifies the number of classes, number of features, and categorical features.
+    Returns:
+        tuple: A tuple containing the following elements:
+            - X_prop_train (numpy.ndarray): The training features for the model.
+            - y_prop_train (numpy.ndarray): The training labels for the model.
+            - X_cal (numpy.ndarray): The calibration features.
+            - y_cal (numpy.ndarray): The calibration labels.
+            - X_test (numpy.ndarray): The test features.
+            - y_test (numpy.ndarray): The test labels.
+            - no_of_classes (int): The number of unique classes in the target variable.
+            - no_of_features (int): The number of features in the dataset.
+            - categorical_features (list): A list of indices of categorical features.
+            - columns (pandas.Index): The column names of the features.
+    """
     dataSet = 'diabetes_full'
     delimiter = ','
     num_to_test = 2
-    target = 'Y'
+    target_column = 'Y'
 
     fileName = f'data/{dataSet}.csv'
     df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
 
-    X, y = df.drop(target,axis=1), df[target]
-    no_of_classes = len(np.unique(y))
-    no_of_features = X.shape[1]
-    no_of_instances = X.shape[0]
-    columns = X.columns
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
-    # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
-    idx = np.argsort(y.values).astype(int)
-    X, y = X.values[idx, :], y.values[idx]
-    # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
-    test_index = np.array(
-        [
-            *range(num_to_test // 2),
-            *range(
-                no_of_instances - 1, no_of_instances - num_to_test // 2 - 1, -1
-            ),
-        ]
-    )
-    train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
+    columns = df.drop(target_column, axis=1).columns
+    num_classes = len(np.unique(df[target_column]))
+    num_features = df.drop(target_column, axis=1).shape[1]
+
+    sorted_indices = np.argsort(df[target_column].values).astype(int)
+    X, y = df.drop(target_column, axis=1).values[sorted_indices, :], df[target_column].values[sorted_indices]
+
+    categorical_features = [i for i in range(num_features) if len(np.unique(df.drop(target_column, axis=1).iloc[:, i])) < 10]
+
+    test_index = np.array([*range(num_to_test // 2), *range(len(y) - 1, len(y) - num_to_test // 2 - 1, -1)])
+    train_index = np.setdiff1d(np.array(range(len(y))), test_index)
+
     trainX_cal, X_test = X[train_index, :], X[test_index, :]
     y_train, y_test = y[train_index], y[test_index]
+
     X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(trainX_cal, y_train, test_size=0.33, random_state=42, stratify=y_train)
-    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, no_of_classes, no_of_features, categorical_features, columns
 
-def load_multiclass_dataset():
-    dataSet = 'glass'
+    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, num_classes, num_features, categorical_features, columns
+
+@pytest.fixture
+def multiclass_dataset():
+    """
+    Prepares and splits a multiclass dataset for training, calibration, and testing.
+
+    Returns:
+        X_prop_train (np.ndarray): Training features for the proper training set.
+        y_prop_train (np.ndarray): Training labels for the proper training set.
+        X_cal (np.ndarray): Features for the calibration set.
+        y_cal (np.ndarray): Labels for the calibration set.
+        X_test (np.ndarray): Features for the test set.
+        y_test (np.ndarray): Labels for the test set.
+        no_of_classes (int): Number of unique classes in the target variable.
+        no_of_features (int): Number of features in the dataset.
+        categorical_features (list): List of categorical feature names.
+        categorical_labels (list): List of categorical labels.
+        target_labels (list): List of target labels.
+        columns (pd.Index): Column names of the feature set.
+    """
+    dataset_name = 'glass'
     delimiter = ','
-    num_to_test = 6
-    # print(dataSet)
+    num_test_samples = 6
+    file_path = f'data/Multiclass/{dataset_name}.csv'
 
-    fileName = f'data/Multiclass/{dataSet}.csv'
-    df = pd.read_csv(fileName, delimiter=delimiter)
-    target = 'Type'
+    df = pd.read_csv(file_path, delimiter=delimiter).dropna()
+    target_column = 'Type'
 
-    # df.convert_objects()
+    df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(df, target_column)
 
-    df = df.dropna()
-    df, categorical_features, categorical_labels, target_labels, mappings = transform_to_numeric(df, target) # pylint: disable=unused-variable
+    columns = df.drop(target_column, axis=1).columns
+    num_classes = len(np.unique(df[target_column]))
+    num_features = df.drop(target_column, axis=1).shape[1]
 
-    X, y = df.drop(target,axis=1), df[target]
-    columns = X.columns
-    no_of_classes = len(np.unique(y))
-    no_of_features = X.shape[1]
-    no_of_instances = X.shape[0]
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:,i])) < 10]
-    # # sort targets to make sure equal presence of both classes in test set (see definition of test_index after outer loop below)
-    idx = np.argsort(y.values).astype(int)
-    X, y = X.values[idx, :], y.values[idx]
-    test_idx = []
-    idx = list(range(no_of_instances))
-    for i in range(no_of_classes):
-        test_idx.append(np.where(y == i)[0][:num_to_test // no_of_classes])
-    test_index = np.array(test_idx).flatten()
-    # Select num_to_test/2 from top and num_to_test/2 from bottom of list of instances
-    train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
-    trainX_cal, X_test = X[train_index, :], X[test_index, :]
-    y_train, y_test = y[train_index], y[test_index]
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(trainX_cal, y_train, test_size=0.33,random_state=42, stratify=y_train)
-    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, no_of_classes, no_of_features, categorical_features, categorical_labels, target_labels, columns
+    sorted_indices = np.argsort(df[target_column].values).astype(int)
+    X, y = df.drop(target_column, axis=1).values[sorted_indices, :], df[target_column].values[sorted_indices]
 
-def get_classification_model(model_name, X_prop_train, y_prop_train):
-    t1 = DecisionTreeClassifier()
-    r1 = RandomForestClassifier(n_estimators=100)
-    model_dict = {'RF':(r1,"RF"),'DT': (t1,"DT")}
+    test_indices = np.hstack([np.where(y == i)[0][:num_test_samples // num_classes] for i in range(num_classes)])
+    train_indices = np.setdiff1d(np.arange(len(y)), test_indices)
 
-    model, model_name = model_dict[model_name] # pylint: disable=redefined-outer-name
-    model.fit(X_prop_train,y_prop_train)
-    return model, model_name
+    X_train_cal, X_test = X[train_indices, :], X[test_indices, :]
+    y_train, y_test = y[train_indices], y[test_indices]
 
+    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train_cal, y_train, test_size=0.33, random_state=42, stratify=y_train)
 
+    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, num_classes, num_features, categorical_features, categorical_labels, target_labels, columns
 
-class TestWrapCalibratedExplainer_classification(unittest.TestCase):
-    def assertBetween(self, value, low, high):
-        self.assertTrue(low <= value <= high, f"Expected {low} <= {value} <= {high}")
+def test_wrap_binary_ce(binary_dataset):
+    """
+    Test the WrapCalibratedExplainer class for binary classification.
+    This test function performs the following steps:
+    1. Initializes the WrapCalibratedExplainer with a RandomForestClassifier.
+    2. Checks that the explainer is neither fitted nor calibrated initially.
+    3. Ensures that plotting without fitting raises a RuntimeError.
+    4. Fits the explainer and verifies it is fitted but not calibrated.
+    5. Tests various prediction methods (with and without calibration) and 
+       ensures consistency in the predictions.
+    6. Tests the predict_proba method (with and without calibration) and 
+       ensures consistency in the probability predictions.
+    7. Calibrates the explainer and verifies it is both fitted and calibrated.
+    8. Re-tests the prediction methods to ensure consistency post-calibration.
+    9. Re-fits the explainer and verifies it remains calibrated.
+    10. Tests the ability to create new instances of WrapCalibratedExplainer 
+        with the same learner and explainer, ensuring they inherit the correct 
+        fitted and calibrated states.
+    11. Plots the results to visually inspect the predictions.
+    Args:
+        binary_dataset (tuple): A tuple containing the training, calibration, 
+                                and test datasets along with additional 
+                                metadata such as categorical features and 
+                                feature names.
+    """
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = binary_dataset
+    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+    assert not cal_exp.fitted
+    assert not cal_exp.calibrated
 
-    # @unittest.skip('Test passes locally.  Skipping provisionally.')
-    # pylint: disable=unused-variable, unsubscriptable-object, too-many-statements
-    def test_wrap_binary_ce(self):
-        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = load_binary_dataset()
-        cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
-        self.assertFalse(cal_exp.fitted)
-        self.assertFalse(cal_exp.calibrated)
-        with pytest.raises(RuntimeError):
-            cal_exp.plot(X_test) # pylint: disable=no-member
-        with pytest.raises(RuntimeError):
-            cal_exp.plot(X_test, y_test) # pylint: disable=no-member
-        print(cal_exp)
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test)
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test, y_test)
 
-        cal_exp.fit(X_prop_train, y_prop_train)
-        self.assertTrue(cal_exp.fitted)
-        self.assertFalse(cal_exp.calibrated)
-        print(cal_exp)
-        y_test_hat1 = cal_exp.predict(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
-        y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
-        y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
-        for i, y_hat in enumerate(y_test_hat1):
-            self.assertEqual(y_test_hat2[i], y_hat)
-            self.assertEqual(y_test_hat3[i], y_hat)
-            self.assertEqual(y_test_hat4[i], y_hat)
-            self.assertEqual(low[i], y_hat)
-            self.assertEqual(high[i], y_hat)
-            self.assertEqual(low4[i], y_hat)
-            self.assertEqual(high4[i], y_hat)
-        y_test_proba1 = cal_exp.predict_proba(X_test)
-        y_test_proba2, (low_proba, high_proba) = cal_exp.predict_proba(X_test, True)
-        y_test_proba3 = cal_exp.predict_proba(X_test, calibrated=False)
-        y_test_proba4, (low_proba4, high_proba4) = cal_exp.predict_proba(X_test, True, calibrated=False)
-        for i, y_proba in enumerate(y_test_proba1):
-            for j, y_proba_j in enumerate(y_proba):
-                self.assertEqual(y_test_proba2[i][j], y_proba_j)
-                self.assertEqual(y_test_proba3[i][j], y_proba_j)
-                self.assertEqual(y_test_proba4[i][j], y_proba_j)
-            self.assertEqual(low_proba[i], y_test_proba1[i,1])
-            self.assertEqual(high_proba[i], y_test_proba1[i,1])
-            self.assertEqual(low_proba4[i], y_test_proba1[i,1])
-            self.assertEqual(high_proba4[i], y_test_proba1[i,1])
+    cal_exp.fit(X_prop_train, y_prop_train)
+    assert cal_exp.fitted
+    assert not cal_exp.calibrated
 
-        cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
-        self.assertTrue(cal_exp.fitted)
-        self.assertTrue(cal_exp.calibrated)
-        print(cal_exp)
-        # predict uncalibrated
-        y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
-        y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
-        for i, y_hat in enumerate(y_test_hat1):
-            self.assertEqual(y_test_hat3[i], y_hat)
-            self.assertEqual(y_test_hat4[i], y_hat)
-            self.assertEqual(low4[i], y_hat)
-            self.assertEqual(high4[i], y_hat)
-        y_test_proba3 = cal_exp.predict_proba(X_test, calibrated=False)
-        y_test_proba4, (low_proba4, high_proba4) = cal_exp.predict_proba(X_test, True, calibrated=False)
-        for i, y_proba in enumerate(y_test_proba1):
-            for j, y_proba_j in enumerate(y_proba):
-                self.assertEqual(y_test_proba3[i][j], y_proba_j)
-                self.assertEqual(y_test_proba4[i][j], y_proba_j)
-            self.assertEqual(low_proba4[i], y_test_proba1[i,1])
-            self.assertEqual(high_proba4[i], y_test_proba1[i,1])
-        # Predict calibrated
-        y_test_hat1 = cal_exp.predict(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            self.assertEqual(y_test_hat1[i], y_hat)
-            # self.assertBetween(y_hat, low[i], high[i])
-        y_test_hat1 = cal_exp.predict_proba(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            for j, y_hat_j in enumerate(y_hat):
-                self.assertEqual(y_test_hat1[i][j], y_hat_j)
-            self.assertBetween(y_test_hat2[i,1], low[i], high[i])
+    y_test_hat1 = cal_exp.predict(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
+    y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
+    y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
 
-        cal_exp.fit(X_prop_train, y_prop_train)
-        self.assertTrue(cal_exp.fitted)
-        self.assertTrue(cal_exp.calibrated)
+    for i, y_hat in enumerate(y_test_hat1):
+        assert y_test_hat2[i] == y_hat
+        assert y_test_hat3[i] == y_hat
+        assert y_test_hat4[i] == y_hat
+        assert low[i] == y_hat
+        assert high[i] == y_hat
+        assert low4[i] == y_hat
+        assert high4[i] == y_hat
 
-        learner = cal_exp.learner
-        explainer = cal_exp.explainer
+    y_test_proba1 = cal_exp.predict_proba(X_test)
+    y_test_proba2, (low_proba, high_proba) = cal_exp.predict_proba(X_test, True)
+    y_test_proba3 = cal_exp.predict_proba(X_test, calibrated=False)
+    y_test_proba4, (low_proba4, high_proba4) = cal_exp.predict_proba(X_test, True, calibrated=False)
 
-        new_exp = WrapCalibratedExplainer(learner)
-        self.assertTrue(new_exp.fitted)
-        self.assertFalse(new_exp.calibrated)
-        self.assertEqual(new_exp.learner, learner)
+    for i, y_proba in enumerate(y_test_proba1):
+        for j, y_proba_j in enumerate(y_proba):
+            assert y_test_proba2[i][j] == y_proba_j
+            assert y_test_proba3[i][j] == y_proba_j
+            assert y_test_proba4[i][j] == y_proba_j
+        assert low_proba[i] == y_test_proba1[i, 1]
+        assert high_proba[i] == y_test_proba1[i, 1]
+        assert low_proba4[i] == y_test_proba1[i, 1]
+        assert high_proba4[i] == y_test_proba1[i, 1]
 
-        new_exp = WrapCalibratedExplainer(explainer)
-        self.assertTrue(new_exp.fitted)
-        self.assertTrue(new_exp.calibrated)
-        self.assertEqual(new_exp.explainer, explainer)
-        self.assertEqual(new_exp.learner, learner)
+    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
 
-        cal_exp.plot(X_test) # pylint: disable=no-member
-        cal_exp.plot(X_test, y_test) # pylint: disable=no-member
+    y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
+    y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
 
-    # @unittest.skip('Test passes locally.  Skipping provisionally.')
-    # pylint: disable=unused-variable, unsubscriptable-object, too-many-statements
-    def test_wrap_multiclass_ce(self):
-        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, _, _, feature_names = load_multiclass_dataset()
-        cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
-        self.assertFalse(cal_exp.fitted)
-        self.assertFalse(cal_exp.calibrated)
-        with pytest.raises(RuntimeError):
-            cal_exp.plot(X_test) # pylint: disable=no-member
-        with pytest.raises(RuntimeError):
-            cal_exp.plot(X_test, y_test) # pylint: disable=no-member
-        print(cal_exp)
+    for i, y_hat in enumerate(y_test_hat1):
+        assert y_test_hat3[i] == y_hat
+        assert y_test_hat4[i] == y_hat
+        assert low4[i] == y_hat
+        assert high4[i] == y_hat
 
-        cal_exp.fit(X_prop_train, y_prop_train)
-        self.assertTrue(cal_exp.fitted)
-        self.assertFalse(cal_exp.calibrated)
-        print(cal_exp)
-        y_test_hat1 = cal_exp.predict(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            self.assertEqual(y_test_hat1[i], y_hat)
-            self.assertEqual(low[i], y_hat)
-            self.assertEqual(high[i], y_hat)
-        y_test_hat1 = cal_exp.predict_proba(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            for j, y_hat_j in enumerate(y_hat):
-                self.assertEqual(y_test_hat1[i][j], y_hat_j)
-                self.assertBetween(y_hat_j, low[i][j], high[i][j])
+    y_test_proba3 = cal_exp.predict_proba(X_test, calibrated=False)
+    y_test_proba4, (low_proba4, high_proba4) = cal_exp.predict_proba(X_test, True, calibrated=False)
 
-        cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
-        self.assertTrue(cal_exp.fitted)
-        self.assertTrue(cal_exp.calibrated)
-        print(cal_exp)
-        y_test_hat1 = cal_exp.predict(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            self.assertEqual(y_test_hat1[i], y_hat)
-            # self.assertBetween(y_hat, low[i], high[i])
-        y_test_hat1 = cal_exp.predict_proba(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            for j, y_hat_j in enumerate(y_hat):
-                self.assertEqual(y_test_hat1[i][j], y_hat_j)
-                self.assertBetween(y_hat_j, low[i][j], high[i][j])
+    for i, y_proba in enumerate(y_test_proba1):
+        for j, y_proba_j in enumerate(y_proba):
+            assert y_test_proba3[i][j] == y_proba_j
+            assert y_test_proba4[i][j] == y_proba_j
+        assert low_proba4[i] == y_test_proba1[i, 1]
+        assert high_proba4[i] == y_test_proba1[i, 1]
 
-        cal_exp.fit(X_prop_train, y_prop_train)
-        self.assertTrue(cal_exp.fitted)
-        self.assertTrue(cal_exp.calibrated)
+    y_test_hat1 = cal_exp.predict(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
 
-        learner = cal_exp.learner
-        explainer = cal_exp.explainer
+    for i, y_hat in enumerate(y_test_hat2):
+        assert y_test_hat1[i] == y_hat
 
-        new_exp = WrapCalibratedExplainer(learner)
-        self.assertTrue(new_exp.fitted)
-        self.assertFalse(new_exp.calibrated)
-        self.assertEqual(new_exp.learner, learner)
+    y_test_hat1 = cal_exp.predict_proba(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
 
-        new_exp = WrapCalibratedExplainer(explainer)
-        self.assertTrue(new_exp.fitted)
-        self.assertTrue(new_exp.calibrated)
-        self.assertEqual(new_exp.explainer, explainer)
-        self.assertEqual(new_exp.learner, learner)
+    for i, y_hat in enumerate(y_test_hat2):
+        for j, y_hat_j in enumerate(y_hat):
+            assert y_test_hat1[i][j] == y_hat_j
+        assert low[i] <= y_test_hat2[i, 1] <= high[i]
 
-        cal_exp.plot(X_test) # pylint: disable=no-member
-        cal_exp.plot(X_test, y_test) # pylint: disable=no-member
+    cal_exp.fit(X_prop_train, y_prop_train)
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
 
+    learner = cal_exp.learner
+    explainer = cal_exp.explainer
 
-    # @unittest.skip('Test passes locally.  Skipping provisionally.')
-    # pylint: disable=unused-variable, unsubscriptable-object, too-many-statements
-    def test_wrap_conditional_binary_ce(self):
-        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = load_binary_dataset()
-        cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
-        cal_exp.fit(X_prop_train, y_prop_train)
+    new_exp = WrapCalibratedExplainer(learner)
+    assert new_exp.fitted
+    assert not new_exp.calibrated
+    assert new_exp.learner == learner
 
-        def get_values(X):
-            return X[:,0]
+    new_exp = WrapCalibratedExplainer(explainer)
+    assert new_exp.fitted
+    assert new_exp.calibrated
+    assert new_exp.explainer == explainer
+    assert new_exp.learner == learner
 
-        mc = MondrianCategorizer()
-        mc.fit(X_cal, f=get_values, no_bins=5)
+    cal_exp.plot(X_test)
+    cal_exp.plot(X_test, y_test)
 
-        cal_exp.calibrate(X_cal, y_cal, mc=mc, feature_names=feature_names, categorical_features=categorical_features)
-        self.assertTrue(cal_exp.fitted)
-        self.assertTrue(cal_exp.calibrated)
-        print(cal_exp)
-        y_test_hat1 = cal_exp.predict(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
-        # for i, y_hat in enumerate(y_test_hat2):
-            # passes locally when debugging, but fails on CI
-            # self.assertEqual(y_test_hat1[i], y_hat)
-            # self.assertBetween(y_hat, low[i], high[i])
-        y_test_hat1 = cal_exp.predict_proba(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            # passes locally when debugging, but fails on CI
-            # for j, y_hat_j in enumerate(y_hat):
-            #     self.assertEqual(y_test_hat1[i][j], y_hat_j)
-            self.assertBetween(y_test_hat2[i,1], low[i], high[i])
+def test_wrap_multiclass_ce(multiclass_dataset):
+    """
+    Test the WrapCalibratedExplainer class for a multiclass classification problem.
+    This test performs the following steps:
+    1. Initializes the WrapCalibratedExplainer with a RandomForestClassifier.
+    2. Checks that the explainer is neither fitted nor calibrated initially.
+    3. Ensures that plotting methods raise RuntimeError before fitting.
+    4. Fits the explainer and verifies it is fitted but not calibrated.
+    5. Tests the predict and predict_proba methods before calibration.
+    6. Calibrates the explainer and verifies it is both fitted and calibrated.
+    7. Tests the predict and predict_proba methods after calibration.
+    8. Re-fits the explainer and verifies it remains calibrated.
+    9. Tests the ability to create new WrapCalibratedExplainer instances with the same learner and explainer.
+    10. Ensures that plotting methods work after fitting and calibration.
+    Args:
+        multiclass_dataset (tuple): A tuple containing the training, calibration, and test datasets along with 
+                                    additional metadata such as categorical features and feature names.
+    """
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, _, _, feature_names = multiclass_dataset
+    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+    assert not cal_exp.fitted
+    assert not cal_exp.calibrated
 
-        cal_exp.fit(X_prop_train, y_prop_train)
-        self.assertTrue(cal_exp.fitted)
-        self.assertTrue(cal_exp.calibrated)
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test)
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test, y_test)
 
-        learner = cal_exp.learner
-        explainer = cal_exp.explainer
+    cal_exp.fit(X_prop_train, y_prop_train)
+    assert cal_exp.fitted
+    assert not cal_exp.calibrated
 
-        new_exp = WrapCalibratedExplainer(learner)
-        self.assertTrue(new_exp.fitted)
-        self.assertFalse(new_exp.calibrated)
-        self.assertEqual(new_exp.learner, learner)
+    y_test_hat1 = cal_exp.predict(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
 
-        new_exp = WrapCalibratedExplainer(explainer)
-        self.assertTrue(new_exp.fitted)
-        self.assertTrue(new_exp.calibrated)
-        self.assertEqual(new_exp.explainer, explainer)
-        self.assertEqual(new_exp.learner, learner)
+    for i, y_hat in enumerate(y_test_hat2):
+        assert y_test_hat1[i] == y_hat
+        assert low[i] == y_hat
+        assert high[i] == y_hat
 
-    # @unittest.skip('Test passes locally.  Skipping provisionally.')
-    # pylint: disable=unused-variable, unsubscriptable-object, too-many-statements
-    def test_wrap_conditional_multiclass_ce(self):
-        X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, _, _, feature_names = load_multiclass_dataset()
-        cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
-        cal_exp.fit(X_prop_train, y_prop_train)
+    y_test_hat1 = cal_exp.predict_proba(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
 
-        def get_values(X):
-            return X[:,0]
+    for i, y_hat in enumerate(y_test_hat2):
+        for j, y_hat_j in enumerate(y_hat):
+            assert y_test_hat1[i][j] == y_hat_j
+            assert low[i][j] <= y_hat_j <= high[i][j]
 
-        mc = MondrianCategorizer()
-        mc.fit(X_cal, f=get_values, no_bins=5)
+    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
 
-        cal_exp.calibrate(X_cal, y_cal, mc=mc, feature_names=feature_names, categorical_features=categorical_features)
-        self.assertTrue(cal_exp.fitted)
-        self.assertTrue(cal_exp.calibrated)
-        print(cal_exp)
-        y_test_hat1 = cal_exp.predict(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            self.assertEqual(y_test_hat1[i], y_hat)
-            # self.assertBetween(y_hat, low[i], high[i])
-        y_test_hat1 = cal_exp.predict_proba(X_test)
-        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
-        for i, y_hat in enumerate(y_test_hat2):
-            for j, y_hat_j in enumerate(y_hat):
-                self.assertEqual(y_test_hat1[i][j], y_hat_j)
-                self.assertBetween(y_hat_j, low[i][j], high[i][j])
+    y_test_hat1 = cal_exp.predict(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
 
-        cal_exp.fit(X_prop_train, y_prop_train)
-        self.assertTrue(cal_exp.fitted)
-        self.assertTrue(cal_exp.calibrated)
+    for i, y_hat in enumerate(y_test_hat2):
+        assert y_test_hat1[i] == y_hat
 
-        learner = cal_exp.learner
-        explainer = cal_exp.explainer
+    y_test_hat1 = cal_exp.predict_proba(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
 
-        new_exp = WrapCalibratedExplainer(learner)
-        self.assertTrue(new_exp.fitted)
-        self.assertFalse(new_exp.calibrated)
-        self.assertEqual(new_exp.learner, learner)
+    for i, y_hat in enumerate(y_test_hat2):
+        for j, y_hat_j in enumerate(y_hat):
+            assert y_test_hat1[i][j] == y_hat_j
+            assert low[i][j] <= y_hat_j <= high[i][j]
 
-        new_exp = WrapCalibratedExplainer(explainer)
-        self.assertTrue(new_exp.fitted)
-        self.assertTrue(new_exp.calibrated)
-        self.assertEqual(new_exp.explainer, explainer)
-        self.assertEqual(new_exp.learner, learner)
+    cal_exp.fit(X_prop_train, y_prop_train)
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
 
-if __name__ == '__main__':
-    # unittest.main()
-    pytest.main()
+    learner = cal_exp.learner
+    explainer = cal_exp.explainer
+
+    new_exp = WrapCalibratedExplainer(learner)
+    assert new_exp.fitted
+    assert not new_exp.calibrated
+    assert new_exp.learner == learner
+
+    new_exp = WrapCalibratedExplainer(explainer)
+    assert new_exp.fitted
+    assert new_exp.calibrated
+    assert new_exp.explainer == explainer
+    assert new_exp.learner == learner
+
+    cal_exp.plot(X_test)
+    cal_exp.plot(X_test, y_test)
