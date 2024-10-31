@@ -20,6 +20,7 @@ from sklearn.ensemble import RandomForestClassifier
 from calibrated_explanations import CalibratedExplainer
 from calibrated_explanations.utils.helper import safe_import, check_is_fitted, make_directory, is_notebook
 from tests.test_classification import binary_dataset, get_classification_model
+from tests.test_regression import regression_dataset, get_regression_model
 
 def test_failure():
     """
@@ -77,7 +78,7 @@ def test_is_notebook_false(mock_get_ipython):
     mock_get_ipython.return_value = None
     assert not is_notebook()
 
-def test_explanation_functions(binary_dataset):
+def test_explanation_functions(binary_dataset, regression_dataset):
     """
     Tests various explanation functions of `CalibratedExplainer`.
     Args:
@@ -86,6 +87,29 @@ def test_explanation_functions(binary_dataset):
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, _ = binary_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
     ce = CalibratedExplainer(model, X_cal, y_cal, verbose=True)
+
+    factual_explanations = ce.explain_factual(X_test)
+    factual_explanations._get_rules()
+    factual_explanations._is_alternative()
+    factual_explanations._is_one_sided()
+    factual_explanations._is_thresholded()
+    factual_explanations.as_lime()
+    factual_explanations.as_shap()
+
+    alternative_explanations = ce.explore_alternatives(X_test)
+    alternative_explanations._get_rules()
+    alternative_explanations._is_alternative()
+    alternative_explanations._is_one_sided()
+    alternative_explanations._is_thresholded()
+
+    ce._preload_lime()
+    ce._preload_shap()
+
+    print(ce)
+
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
+    model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
+    ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', verbose=True)
 
     factual_explanations = ce.explain_factual(X_test)
     factual_explanations._get_rules()

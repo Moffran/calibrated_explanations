@@ -115,6 +115,7 @@ def test_regression_ce(regression_dataset):
     factual_explanation.add_conjunctions()
     factual_explanation.plot()
     factual_explanation[0].plot(uncertainty=True)
+    factual_explanation.plot(filename='test.png')
 
     factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf))
     factual_explanation.plot()
