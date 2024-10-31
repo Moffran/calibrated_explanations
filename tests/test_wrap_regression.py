@@ -19,6 +19,21 @@ from calibrated_explanations import WrapCalibratedExplainer
 from tests.test_regression import regression_dataset
 
 def generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
+    """
+    Tests the functionality of a calibrated explainer.
+    This function performs a series of assertions to ensure that the 
+    calibrated explainer (`cal_exp`) is properly fitted and calibrated. 
+    It also checks the behavior of the `WrapCalibratedExplainer` class 
+    when initialized with the learner and explainer from `cal_exp`.
+    Parameters:
+    cal_exp (object): The calibrated explainer to be tested.
+    X_prop_train (array-like): Training data features for the explainer.
+    y_prop_train (array-like): Training data labels for the explainer.
+    X_test (array-like): Test data features for plotting.
+    y_test (array-like): Test data labels for plotting.
+    Returns:
+    object: The fitted and calibrated explainer (`cal_exp`).
+    """
     cal_exp.fit(X_prop_train, y_prop_train)
     assert cal_exp.fitted
     assert cal_exp.calibrated
