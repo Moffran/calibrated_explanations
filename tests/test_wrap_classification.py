@@ -246,7 +246,10 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
     assert not cal_exp.fitted
     assert not cal_exp.calibrated
+    repr(cal_exp)
 
+    with pytest.raises(RuntimeError):
+        cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
     with pytest.raises(RuntimeError):
         cal_exp.plot(X_test)
     with pytest.raises(RuntimeError):
@@ -261,6 +264,7 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     cal_exp.fit(X_prop_train, y_prop_train)
     assert cal_exp.fitted
     assert not cal_exp.calibrated
+    repr(cal_exp)
 
     with pytest.raises(RuntimeError):
         cal_exp.plot(X_test)
@@ -289,9 +293,10 @@ def test_wrap_multiclass_ce(multiclass_dataset):
             assert y_test_hat1[i][j] == y_hat_j
             assert low[i][j] <= y_hat_j <= high[i][j]
 
-    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
+    cal_exp.calibrate(X_cal, y_cal, mode='classification', feature_names=feature_names, categorical_features=categorical_features)
     assert cal_exp.fitted
     assert cal_exp.calibrated
+    repr(cal_exp)
 
     cal_exp.calibrated_confusion_matrix()
     cal_exp.initialize_reject_learner()
