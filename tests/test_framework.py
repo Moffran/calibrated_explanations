@@ -98,6 +98,10 @@ def test_explanation_functions(binary_dataset, regression_dataset):
     factual_explanations.as_lime()
     factual_explanations.as_shap()
 
+    de = DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True)
+    ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', difficulty_estimator=de, verbose=True)
+    ce.predict(X_test)
+
     alternative_explanations = ce.explore_alternatives(X_test)
     alternative_explanations._get_rules()
     alternative_explanations._is_alternative()
@@ -121,10 +125,6 @@ def test_explanation_functions(binary_dataset, regression_dataset):
     factual_explanations[0].is_multiclass()
     factual_explanations.as_lime()
     factual_explanations.as_shap()
-    
-    de = DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True)
-    ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', difficulty_estimator=de, verbose=True)
-    ce.predict(X_test)
 
     alternative_explanations = ce.explore_alternatives(X_test)
     alternative_explanations._get_rules()

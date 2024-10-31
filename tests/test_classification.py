@@ -204,6 +204,9 @@ def test_multiclass_ce(multiclass_dataset):
     cal_exp.initialize_reject_learner()
     cal_exp.predict_reject(X_test)
 
+    cal_exp.predict(X_test)
+    cal_exp.predict_proba(X_test)
+
     factual_explanation = cal_exp.explain_factual(X_test)
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
