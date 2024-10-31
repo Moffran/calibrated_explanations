@@ -101,6 +101,7 @@ def test_explanation_functions(binary_dataset, regression_dataset):
     de = DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True)
     ce = CalibratedExplainer(model, X_cal, y_cal, difficulty_estimator=de, verbose=True)
     ce.predict(X_test)
+    ce.predict_proba(X_test)
 
     alternative_explanations = ce.explore_alternatives(X_test)
     alternative_explanations._get_rules()
