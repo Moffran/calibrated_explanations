@@ -174,6 +174,7 @@ def test_binary_ce(binary_dataset):
     cal_exp.predict_reject(X_test)
 
     factual_explanation = cal_exp.explain_factual(X_test)
+    factual_explanation[0].add_new_rule_condition(feature_names[0], X_cal[0,0])
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
     factual_explanation[:1].plot()

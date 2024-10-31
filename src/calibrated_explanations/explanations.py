@@ -815,6 +815,8 @@ class CalibratedExplanation(ABC):
             perturbed_class = np.concatenate((perturbed_class, np.array([self.prediction['classes']])))
             if isinstance(threshold, tuple):
                 perturbed_threshold = threshold
+            elif threshold is None:
+                perturbed_threshold = None
             else:
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 
@@ -827,6 +829,8 @@ class CalibratedExplanation(ABC):
             perturbed_class = np.concatenate((perturbed_class, np.array([self.prediction['classes']])))
             if isinstance(threshold, tuple):
                 perturbed_threshold = threshold
+            elif threshold is None:
+                perturbed_threshold = None
             else:
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 
