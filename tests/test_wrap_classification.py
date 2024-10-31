@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name
+# pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name, duplicate-code
 """
 This module contains unit tests for the `WrapCalibratedExplainer` class from the `calibrated_explanations` package.
 The tests cover both binary and multiclass classification scenarios.
@@ -22,6 +22,8 @@ from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.utils.helper import transform_to_numeric
+
+from tests.test_wrap_regression import generic_test
 
 @pytest.fixture
 def binary_dataset():
@@ -220,26 +222,7 @@ def test_wrap_binary_ce(binary_dataset):
             assert y_test_hat1[i][j] == y_hat_j
         assert low[i] <= y_test_hat2[i, 1] <= high[i]
 
-    cal_exp.fit(X_prop_train, y_prop_train)
-    assert cal_exp.fitted
-    assert cal_exp.calibrated
-
-    learner = cal_exp.learner
-    explainer = cal_exp.explainer
-
-    new_exp = WrapCalibratedExplainer(learner)
-    assert new_exp.fitted
-    assert not new_exp.calibrated
-    assert new_exp.learner == learner
-
-    new_exp = WrapCalibratedExplainer(explainer)
-    assert new_exp.fitted
-    assert new_exp.calibrated
-    assert new_exp.explainer == explainer
-    assert new_exp.learner == learner
-
-    cal_exp.plot(X_test)
-    cal_exp.plot(X_test, y_test)
+    generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
 def test_wrap_multiclass_ce(multiclass_dataset):
     """
@@ -307,23 +290,4 @@ def test_wrap_multiclass_ce(multiclass_dataset):
             assert y_test_hat1[i][j] == y_hat_j
             assert low[i][j] <= y_hat_j <= high[i][j]
 
-    cal_exp.fit(X_prop_train, y_prop_train)
-    assert cal_exp.fitted
-    assert cal_exp.calibrated
-
-    learner = cal_exp.learner
-    explainer = cal_exp.explainer
-
-    new_exp = WrapCalibratedExplainer(learner)
-    assert new_exp.fitted
-    assert not new_exp.calibrated
-    assert new_exp.learner == learner
-
-    new_exp = WrapCalibratedExplainer(explainer)
-    assert new_exp.fitted
-    assert new_exp.calibrated
-    assert new_exp.explainer == explainer
-    assert new_exp.learner == learner
-
-    cal_exp.plot(X_test)
-    cal_exp.plot(X_test, y_test)
+    generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)

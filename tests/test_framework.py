@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name, protected-access, too-many-locals, line-too-long, redefined-outer-name
+# pylint: disable=invalid-name, protected-access, too-many-locals, line-too-long, redefined-outer-name, unused-import
 """
 This module contains unit tests for the `CalibratedExplainer` class and utility functions from the `calibrated_explanations` package.
 Fixtures:
@@ -13,8 +13,8 @@ Tests:
     test_explanation_functions: Tests various explanation functions of `CalibratedExplainer`.
 """
 
-import pytest
 from unittest.mock import patch
+import pytest
 from sklearn.ensemble import RandomForestClassifier
 
 from calibrated_explanations import CalibratedExplainer

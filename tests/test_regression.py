@@ -33,7 +33,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 from crepes.extras import DifficultyEstimator
 
-from calibrated_explanations import CalibratedExplainer
+from tests.test_classification import initiate_explainer
 
 @pytest.fixture
 def regression_dataset():
@@ -95,7 +95,7 @@ def test_failure_regression(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, _, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(model, X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features, mode='regression')
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression')
     with pytest.raises(RuntimeError):
         cal_exp.set_difficulty_estimator(DifficultyEstimator())
     with pytest.raises(RuntimeError):
@@ -109,14 +109,8 @@ def test_regression_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression'
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression')
+
     factual_explanation = cal_exp.explain_factual(X_test)
     factual_explanation.add_conjunctions()
     factual_explanation.plot()
@@ -151,14 +145,7 @@ def test_probabilistic_regression_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression'
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression')
 
     cal_exp.initialize_reject_learner(threshold=0.5)
     cal_exp.predict_reject(X_test)
@@ -186,15 +173,8 @@ def test_regression_conditional_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        bins=X_cal[:, 0]
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', bins=X_cal[:, 0])
+
     factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:, 0])
     factual_explanation.add_conjunctions()
     factual_explanation.plot()
@@ -227,15 +207,7 @@ def test_probabilistic_regression_conditional_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        bins=X_cal[:, 0]
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', bins=X_cal[:, 0])
 
     cal_exp.initialize_reject_learner(threshold=0.5)
     cal_exp.predict_reject(X_test, bins=X_test[:, 0])
@@ -259,15 +231,8 @@ def test_knn_normalized_regression_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True),
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True))
+
     factual_explanation = cal_exp.explain_factual(X_test)
     factual_explanation.add_conjunctions()
 
@@ -289,15 +254,7 @@ def test_knn_normalized_probabilistic_regression_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True),
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True))
 
     factual_explanation = cal_exp.explain_factual(X_test, y_test)
     factual_explanation.add_conjunctions()
@@ -316,15 +273,8 @@ def test_var_normalized_regression_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True),
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True))
+
     factual_explanation = cal_exp.explain_factual(X_test)
     factual_explanation.add_conjunctions()
 
@@ -346,15 +296,7 @@ def test_var_normalized_probabilistic_regression_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True),
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True))
 
     factual_explanation = cal_exp.explain_factual(X_test, y_test)
     factual_explanation.add_conjunctions()
@@ -373,15 +315,8 @@ def test_regression_fast_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', fast=True)
+
     perturbed_explanation = cal_exp.explain_fast(X_test)
     perturbed_explanation.add_conjunctions()
     perturbed_explanation.plot()
@@ -405,15 +340,7 @@ def test_probabilistic_regression_fast_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', fast=True)
 
     perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
     perturbed_explanation.add_conjunctions()
@@ -432,16 +359,8 @@ def test_regression_conditional_perturbed_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        bins=X_cal[:,0],
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', bins=X_cal[:,0], fast=True)
+
     perturbed_explanation = cal_exp.explain_fast(X_test, bins=X_test[:,0])
     perturbed_explanation.add_conjunctions()
 
@@ -457,16 +376,7 @@ def test_probabilistic_regression_conditional_perturbed_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        bins=y_cal > y_test[0],
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', bins=y_cal > y_test[0], fast=True)
 
     perturbed_explanation = cal_exp.explain_fast(X_test, y_test, bins=y_test > y_test[0])
     perturbed_explanation.add_conjunctions()
@@ -481,16 +391,8 @@ def test_knn_normalized_regression_fast_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True),
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True), fast=True)
+
     perturbed_explanation = cal_exp.explain_fast(X_test)
     perturbed_explanation.add_conjunctions()
 
@@ -506,16 +408,7 @@ def test_knn_normalized_probabilistic_regression_fast_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True),
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True), fast=True)
 
     perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
     perturbed_explanation.add_conjunctions()
@@ -530,16 +423,8 @@ def test_var_normalized_regression_fast_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True),
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True), fast=True)
+
     perturbed_explanation = cal_exp.explain_fast(X_test)
     perturbed_explanation.add_conjunctions()
 
@@ -555,16 +440,7 @@ def test_var_normalized_probabilistic_regression_fast_ce(regression_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='regression',
-        difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True),
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True), fast=True)
 
     perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
     perturbed_explanation.add_conjunctions()

@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name, protected-access, too-many-locals, line-too-long, redefined-outer-name
+# pylint: disable=invalid-name, protected-access, too-many-locals, too-many-arguments, too-many-positional-arguments, line-too-long, redefined-outer-name, no-member
 """
 This module contains unit tests for the `CalibratedExplainer` class from the `calibrated_explanations` package.
 The tests cover both binary and multiclass classification scenarios.
@@ -10,10 +10,10 @@ Tests:
     test_multiclass_ce: Tests the `CalibratedExplainer` with a multiclass classification dataset.
     test_binary_conditional_ce: Tests the `CalibratedExplainer` with a binary classification dataset and conditional bins.
     test_multiclass_conditional_ce: Tests the `CalibratedExplainer` with a multiclass classification dataset and conditional bins.
-    test_binary_perturbed_ce: Tests the `CalibratedExplainer` with a binary classification dataset and perturbation.
-    test_multiclass_perturbed_ce: Tests the `CalibratedExplainer` with a multiclass classification dataset and perturbation.
-    test_binary_conditional_perturbed_ce: Tests the `CalibratedExplainer` with a binary classification dataset, conditional bins, and perturbation.
-    test_multiclass_perturbed_conditional_ce: Tests the `CalibratedExplainer` with a multiclass classification dataset, conditional bins, and perturbation.
+    test_binary_fast_ce: Tests the `CalibratedExplainer` with a binary classification dataset and perturbation.
+    test_multiclass_fast_ce: Tests the `CalibratedExplainer` with a multiclass classification dataset and perturbation.
+    test_binary_conditional_fast_ce: Tests the `CalibratedExplainer` with a binary classification dataset, conditional bins, and perturbation.
+    test_multiclass_fast_conditional_ce: Tests the `CalibratedExplainer` with a multiclass classification dataset, conditional bins, and perturbation.
 """
 
 import pytest
@@ -113,6 +113,53 @@ def get_classification_model(model_name, X_prop_train, y_prop_train):
     model.fit(X_prop_train, y_prop_train)
     return model, model_name
 
+def initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode, class_labels=None, difficulty_estimator=None, bins=None, fast=False, verbose=False):
+    """
+    Initialize a CalibratedExplainer instance.
+
+    Parameters:
+    model : object
+        The machine learning model to be explained.
+    X_cal : array-like
+        The calibration dataset features.
+    y_cal : array-like
+        The calibration dataset labels.
+    feature_names : list of str
+        The names of the features.
+    categorical_features : list of str
+        The names of the categorical features.
+    mode : str
+        The mode of the explainer, e.g., 'classification' or 'regression'.
+    class_labels : list of str, optional
+        The class labels for classification tasks. Default is None.
+    difficulty_estimator : object, optional
+        The difficulty estimator object. Default is None.
+    bins : int, optional
+        The number of bins for calibration. Default is None.
+    fast : bool, optional
+        Whether to use a faster, less accurate method. Default is False.
+    verbose : bool, optional
+        Whether to print detailed information during initialization. Default is False.
+
+    Returns:
+    CalibratedExplainer
+        An instance of the CalibratedExplainer class.
+    """
+    cal_exp = CalibratedExplainer(
+        model,
+        X_cal,
+        y_cal,
+        feature_names=feature_names,
+        categorical_features=categorical_features,
+        mode=mode,
+        class_labels=class_labels,
+        bins=bins,
+        fast=fast,
+        difficulty_estimator=difficulty_estimator,
+        verbose=verbose
+    )
+    return cal_exp
+
 def test_binary_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset.
@@ -121,14 +168,7 @@ def test_binary_ce(binary_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = binary_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='classification',
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='classification')
 
     cal_exp.initialize_reject_learner()
     cal_exp.predict_reject(X_test)
@@ -158,16 +198,7 @@ def test_multiclass_ce(multiclass_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = multiclass_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_labels=categorical_labels,
-        class_labels=target_labels,
-        mode='classification',
-        verbose=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_labels, mode='classification', class_labels=target_labels, verbose=True)
 
     cal_exp.initialize_reject_learner()
     cal_exp.predict_reject(X_test)
@@ -199,16 +230,7 @@ def test_binary_conditional_ce(binary_dataset):
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = binary_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
     target_labels = ['No', 'Yes']
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        class_labels=target_labels,
-        mode='classification',
-        bins=X_cal[:, 0]
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='classification', class_labels=target_labels, bins=X_cal[:, 0])
 
     cal_exp.initialize_reject_learner()
     cal_exp.predict_reject(X_test, bins=X_test[:, 0])
@@ -230,15 +252,7 @@ def test_multiclass_conditional_ce(multiclass_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, _, feature_names = multiclass_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_labels=categorical_labels,
-        mode='classification',
-        bins=X_cal[:, 0]
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_labels, mode='classification', bins=X_cal[:, 0])
 
     factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:, 0])
     factual_explanation.add_conjunctions()
@@ -249,7 +263,7 @@ def test_multiclass_conditional_ce(multiclass_dataset):
     alternative_explanation.add_conjunctions()
     alternative_explanation.plot()
 
-def test_binary_perturbed_ce(binary_dataset):
+def test_binary_fast_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset and perturbation.
     Args:
@@ -257,15 +271,7 @@ def test_binary_perturbed_ce(binary_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = binary_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        mode='classification',
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='classification', fast=True)
 
     fast_explanation = cal_exp.explain_fast(X_test)
     fast_explanation.add_conjunctions()
@@ -274,7 +280,7 @@ def test_binary_perturbed_ce(binary_dataset):
     fast_explanation[0].plot(uncertainty=True)
     fast_explanation.add_conjunctions(max_rule_size=3)
 
-def test_multiclass_perturbed_ce(multiclass_dataset):
+def test_multiclass_fast_ce(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset and perturbation.
     Args:
@@ -282,17 +288,7 @@ def test_multiclass_perturbed_ce(multiclass_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = multiclass_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_labels=categorical_labels,
-        class_labels=target_labels,
-        mode='classification',
-        verbose=True,
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_labels, mode='classification', class_labels=target_labels, verbose=True, fast=True)
 
     fast_explanation = cal_exp.explain_fast(X_test)
     fast_explanation.add_conjunctions()
@@ -301,7 +297,7 @@ def test_multiclass_perturbed_ce(multiclass_dataset):
     fast_explanation[0].plot(uncertainty=True)
     fast_explanation.add_conjunctions(max_rule_size=3)
 
-def test_binary_conditional_perturbed_ce(binary_dataset):
+def test_binary_conditional_fast_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset, conditional bins, and perturbation.
     Args:
@@ -310,24 +306,14 @@ def test_binary_conditional_perturbed_ce(binary_dataset):
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = binary_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
     target_labels = ['No', 'Yes']
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        class_labels=target_labels,
-        mode='classification',
-        bins=X_cal[:, 0],
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='classification', class_labels=target_labels, bins=X_cal[:, 0], fast=True)
 
     fast_explanation = cal_exp.explain_fast(X_test, bins=X_test[:, 0])
     fast_explanation.add_conjunctions()
     fast_explanation[:1].plot()
     fast_explanation[0].plot(uncertainty=True)
 
-def test_multiclass_perturbed_conditional_ce(multiclass_dataset):
+def test_multiclass_fast_conditional_ce(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset, conditional bins, and perturbation.
     Args:
@@ -335,16 +321,7 @@ def test_multiclass_perturbed_conditional_ce(multiclass_dataset):
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, _, feature_names = multiclass_dataset
     model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
-    cal_exp = CalibratedExplainer(
-        model,
-        X_cal,
-        y_cal,
-        feature_names=feature_names,
-        categorical_labels=categorical_labels,
-        mode='classification',
-        bins=X_cal[:, 0],
-        perturb=True
-    )
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_labels, mode='classification', bins=X_cal[:, 0], fast=True)
 
     fast_explanation = cal_exp.explain_fast(X_test, bins=X_test[:, 0])
     fast_explanation.add_conjunctions()
