@@ -251,10 +251,27 @@ def test_wrap_multiclass_ce(multiclass_dataset):
         cal_exp.plot(X_test)
     with pytest.raises(RuntimeError):
         cal_exp.plot(X_test, y_test)
+    with pytest.raises(RuntimeError):
+        cal_exp.calibrated_confusion_matrix()
+    with pytest.raises(RuntimeError):
+        cal_exp.initialize_reject_learner()
+    with pytest.raises(RuntimeError):
+        cal_exp.predict_reject(X_test)
 
     cal_exp.fit(X_prop_train, y_prop_train)
     assert cal_exp.fitted
     assert not cal_exp.calibrated
+
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test)
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test, y_test)
+    with pytest.raises(RuntimeError):
+        cal_exp.calibrated_confusion_matrix()
+    with pytest.raises(RuntimeError):
+        cal_exp.initialize_reject_learner()
+    with pytest.raises(RuntimeError):
+        cal_exp.predict_reject(X_test)
 
     y_test_hat1 = cal_exp.predict(X_test)
     y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
@@ -275,6 +292,10 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
     assert cal_exp.fitted
     assert cal_exp.calibrated
+
+    cal_exp.calibrated_confusion_matrix()
+    cal_exp.initialize_reject_learner()
+    cal_exp.predict_reject(X_test)
 
     y_test_hat1 = cal_exp.predict(X_test)
     y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
