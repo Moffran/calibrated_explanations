@@ -107,7 +107,7 @@ def test_explanation_functions(binary_dataset, regression_dataset):
 
     print(ce)
 
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _ = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', verbose=True)
 
@@ -116,6 +116,7 @@ def test_explanation_functions(binary_dataset, regression_dataset):
     factual_explanations._is_alternative()
     factual_explanations._is_one_sided()
     factual_explanations._is_thresholded()
+    factual_explanations[0].is_multiclass()
     factual_explanations.as_lime()
     factual_explanations.as_shap()
 
