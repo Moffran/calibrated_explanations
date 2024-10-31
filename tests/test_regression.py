@@ -156,15 +156,16 @@ def test_probabilistic_regression_ce(regression_dataset):
     factual_explanation.plot(uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(X_test, y_test[0])
+    factual_explanation = cal_exp.explain_factual(X_test, (y_test[0], y_test[0]))
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
     alternative_explanation.plot()
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0])
     alternative_explanation.plot()
+    alternative_explanation.super_explanations()
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
-
 def test_regression_conditional_ce(regression_dataset):
     """
     Tests conditional explanations for regression models.
@@ -179,6 +180,7 @@ def test_regression_conditional_ce(regression_dataset):
     factual_explanation.add_conjunctions()
     factual_explanation.plot()
     factual_explanation.plot(uncertainty=True)
+    repr(factual_explanation)
 
     factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:, 0])
     factual_explanation.plot()
@@ -198,6 +200,7 @@ def test_regression_conditional_ce(regression_dataset):
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:, 0])
     alternative_explanation.plot()
+    repr(alternative_explanation)
 
 def test_probabilistic_regression_conditional_ce(regression_dataset):
     """
