@@ -1,13 +1,13 @@
+# pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
 """contains the VennAbers class which is used to calibrate the predictions of a model
 Contains the VennAbers class which is used to calibrate the predictions of a model using the Venn-ABERS method.
 Classes:
     VennAbers: A class to calibrate the predictions of a model using the Venn-ABERS method.
 """
-# pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
 import warnings
 import numpy as np
 import venn_abers as va
-from scipy.special import logit, expit
+# from scipy.special import logit, expit
 
 class VennAbers:
     """
