@@ -191,6 +191,74 @@ def test_binary_ce(binary_dataset):
     alternative_explanation.ensured_explanations()
     alternative_explanation.add_conjunctions(max_rule_size=3)
 
+@pytest.mark.skip(reason="Skipping this test for now")
+def test_multiclass_ce_str_target(multiclass_dataset):
+    """
+    Tests the CalibratedExplainer with a multiclass classification dataset.
+    Args:
+        multiclass_dataset (tuple): The multiclass classification dataset.
+    """
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, categorical_labels, target_labels, feature_names = multiclass_dataset
+    y_prop_train = y_prop_train.astype(str)
+    y_cal = y_cal.astype(str)
+    model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_labels, mode='classification', class_labels=target_labels, verbose=True)
+
+    cal_exp.initialize_reject_learner()
+    cal_exp.predict_reject(X_test)
+
+    factual_explanation = cal_exp.explain_factual(X_test)
+    factual_explanation.add_conjunctions()
+    factual_explanation.remove_conjunctions()
+    factual_explanation[:1].plot()
+    factual_explanation[0].plot(uncertainty=True)
+    factual_explanation.add_conjunctions(max_rule_size=3)
+
+    alternative_explanation = cal_exp.explore_alternatives(X_test)
+    alternative_explanation.add_conjunctions()
+    alternative_explanation.remove_conjunctions()
+    alternative_explanation[:1].plot()
+    alternative_explanation[X_test==X_test[0]].plot(style='triangular')
+    alternative_explanation.semi_explanations()
+    alternative_explanation.counter_explanations()
+    alternative_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
+    alternative_explanation.semi_explanations(only_ensured=True)
+    alternative_explanation.counter_explanations(only_ensured=True)
+
+@pytest.mark.skip(reason="Skipping this test for now")
+def test_binary_ce_str_target(binary_dataset):
+    """
+    Tests the CalibratedExplainer with a binary classification dataset.
+    Args:
+        binary_dataset (tuple): The binary classification dataset.
+    """
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, categorical_features, feature_names = binary_dataset
+    y_prop_train = y_prop_train.astype(str)
+    y_cal = y_cal.astype(str)
+    model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='classification')
+
+    cal_exp.initialize_reject_learner()
+    cal_exp.predict_reject(X_test)
+
+    factual_explanation = cal_exp.explain_factual(X_test)
+    factual_explanation[0].add_new_rule_condition(feature_names[0], X_cal[0,0])
+    factual_explanation.add_conjunctions()
+    factual_explanation.remove_conjunctions()
+    factual_explanation[:1].plot()
+    factual_explanation[0].plot(uncertainty=True)
+    factual_explanation.add_conjunctions(max_rule_size=3)
+
+    alternative_explanation = cal_exp.explore_alternatives(X_test)
+    alternative_explanation.add_conjunctions()
+    alternative_explanation.remove_conjunctions()
+    alternative_explanation[:1].plot()
+    alternative_explanation[X_test==X_test[0]].plot(style='triangular')
+    alternative_explanation.semi_explanations()
+    alternative_explanation.counter_explanations()
+    alternative_explanation.ensured_explanations()
+    alternative_explanation.add_conjunctions(max_rule_size=3)
+
 def test_multiclass_ce(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset.
