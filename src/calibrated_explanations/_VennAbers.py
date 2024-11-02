@@ -59,18 +59,18 @@ class VennAbers:
     def __init__(self, X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
         self.y_cal_numeric, self.label_map = self.__convert_targets_to_numeric(y_cal)
         self.original_labels = y_cal
-        
+
         self.de = difficulty_estimator
         self.learner = learner
         self.X_cal = X_cal
         self.__is_multiclass = len(np.unique(self.y_cal_numeric)) > 2
-        
+
         cprobs = self.__predict_proba_with_difficulty(X_cal) if cprobs is None else cprobs
         self.cprobs = cprobs
         self.bins = bins
-        
+
         self.ctargets = self.y_cal_numeric
-        
+
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         if self.is_mondrian():
             self.va = {}
@@ -82,8 +82,8 @@ class VennAbers:
                     tmp_probs[:,1] = cprobs[:,c]
                     for b in np.unique(self.bins):
                         va_class_bin = va.VennAbers()
-                        va_class_bin.fit(tmp_probs[self.bins == b,:], 
-                                       np.multiply(c == self.ctargets[self.bins == b], 1), 
+                        va_class_bin.fit(tmp_probs[self.bins == b,:],
+                                       np.multiply(c == self.ctargets[self.bins == b], 1),
                                        precision=4)
                         self.va[c][b] = va_class_bin
             else:
