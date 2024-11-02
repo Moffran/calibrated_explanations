@@ -158,6 +158,7 @@ It is easy to access the predictions and probabilities from the calibrator and m
    your_threshold = 1000
    thr_y_hat_reg = regressor.predict(X_test_reg, threshold=your_threshold)
    thr_proba_reg = regressor.predict_proba(X_test_reg, threshold=your_threshold)
+   
    # Include uncertainty interval, outputted as a tuple (low, high)
    cal_proba_cls, low_high = classifier.predict_proba(X_test_cls, uq_interval=True)
    cal_y_hat_cls, (low, high) = classifier.predict(X_test_cls, uq_interval=True)
