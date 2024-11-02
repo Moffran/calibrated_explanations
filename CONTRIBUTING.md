@@ -13,8 +13,9 @@ File a new bug report by opening an issue and using the bug report template. Ple
 ## Pull requests
 Please send pull requests through the
 [PR tracker on GitHub](https://github.com/Moffran/calibrated_explanations/pulls).
+Include tests to ensure your contribution is compatible with the tested use cases.
 We have CI set up,
 so watch out for the automated test results.
 
 ## Testing and Code Coverage
-We use pytest as our testing framework and aim to achieve a code coverage of above 90% in our tests. This ensures that our code is thoroughly tested and helps identify any potential issues or bugs. We encourage contributors to write comprehensive tests and strive for high code coverage. Code coverage tests are added and monitored at [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations).
+We use pytest as our testing framework and aim to achieve a code coverage of about 90% in our tests. This ensures that our code is thoroughly tested and helps identify any potential issues or bugs. We encourage contributors to write comprehensive tests and strive for high code coverage. Code coverage tests are added and monitored at [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations).
