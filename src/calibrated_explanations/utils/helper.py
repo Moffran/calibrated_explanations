@@ -423,3 +423,22 @@ def calculate_metrics(uncertainty=None,
         metrics['quadratic_penalty'] = prediction - w * uncertainty ** 2
 
     return metrics if len(metrics) > 1 else metrics[list(metrics.keys())[0]]
+
+def convert_targets_to_numeric(y):
+    """Convert string/categorical targets to numeric values while preserving labels.
+    
+    Args:
+        y (array-like): Array of target values that may be strings or categorical.
+        
+    Returns:
+        tuple:
+            - array-like: Numeric version of the target values
+            - dict or None: Mapping of original labels to numeric values if conversion was needed
+    """
+    if (any(isinstance(val, str) for val in y) or
+            any(isinstance(val, (np.str_, np.object_)) for val in y)):
+        unique_labels = np.unique(y)
+        label_map = {label: i for i, label in enumerate(unique_labels)}
+        numeric_y = np.array([label_map[label] for label in y])
+        return numeric_y, label_map
+    return y, None

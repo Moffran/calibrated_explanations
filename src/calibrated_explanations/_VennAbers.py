@@ -7,6 +7,7 @@ Classes:
 import warnings
 import numpy as np
 import venn_abers as va
+from .utils.helper import convert_targets_to_numeric
 # from scipy.special import logit, expit
 
 class VennAbers:
@@ -24,8 +25,6 @@ class VennAbers:
     Methods:
         __init__(X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
             Initializes the VennAbers class with calibration data and model.
-        __convert_targets_to_numeric(y):
-            Converts string/categorical target values to numeric while preserving label mapping.
         __predict_proba_with_difficulty(X, bins=None):
             Predicts probabilities with difficulty adjustment.
         predict(X_test, bins=None):
@@ -37,27 +36,8 @@ class VennAbers:
         is_mondrian() -> bool:
             Returns true if Mondrian categories are used.
     """
-    @staticmethod
-    def __convert_targets_to_numeric(y):
-        """Convert string/categorical targets to numeric values while preserving labels.
-        
-        Args:
-            y (array-like): Array of target values that may be strings or categorical.
-            
-        Returns:
-            tuple:
-                - array-like: Numeric version of the target values
-                - dict or None: Mapping of original labels to numeric values if conversion was needed, None otherwise
-        """
-        if any(isinstance(val, str) for val in y) or any(isinstance(val, (np.str_, np.object_)) for val in y):
-            unique_labels = np.unique(y)
-            label_map = {label: i for i, label in enumerate(unique_labels)}
-            numeric_y = np.array([label_map[label] for label in y])
-            return numeric_y, label_map
-        return y, None
-
     def __init__(self, X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
-        self.y_cal_numeric, self.label_map = self.__convert_targets_to_numeric(y_cal)
+        self.y_cal_numeric, self.label_map = convert_targets_to_numeric(y_cal)
         self.original_labels = y_cal
 
         self.de = difficulty_estimator
