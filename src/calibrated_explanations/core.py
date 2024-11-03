@@ -24,7 +24,7 @@ from ._VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                 RegressorDiscretizer, BinaryRegressorDiscretizer
-from .utils.helper import safe_isinstance, safe_import, check_is_fitted, assert_threshold
+from .utils.helper import safe_isinstance, convert_targets_to_numeric, safe_import, check_is_fitted, assert_threshold
 from .utils.perturbation import perturb_dataset
 from ._plots import _plot_global
 
@@ -161,6 +161,20 @@ class CalibratedExplainer:
         if feature_names is None:
             feature_names = [str(i) for i in range(self.num_features)]
         self.feature_names = list(feature_names)
+
+        if mode == 'classification':
+            if any(isinstance(val, str) for val in self.y_cal) or any(isinstance(val, (np.str_, np.object_)) for val in self.y_cal):
+                self.y_cal_numeric, self.label_map = convert_targets_to_numeric(self.y_cal)
+                self.y_cal = self.y_cal_numeric
+                if self.class_labels is None:
+                    self.class_labels = {v: k for k, v in self.label_map.items()}
+            else:
+                self.label_map = None
+                if self.class_labels is None:
+                    self.class_labels = {int(label): str(label) for label in np.unique(self.y_cal)}
+        else:
+            self.label_map = None
+            self.class_labels = None
 
         self.discretizer = None
         self.discretized_X_cal = None
@@ -1395,6 +1409,10 @@ class CalibratedExplainer:
         predict, low, high, new_classes = self._predict(X_test, **kwargs)
         if new_classes is None:
             new_classes = (predict >= 0.5).astype(int)
+        if self.label_map is not None:
+            new_classes = np.array([self.class_labels[c] for c in new_classes])
+        elif self.class_labels is not None:
+            new_classes = np.array([self.class_labels[c] for c in new_classes])
         if uq_interval:
             return new_classes, (low, high)
         return new_classes

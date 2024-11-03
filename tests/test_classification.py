@@ -191,7 +191,6 @@ def test_binary_ce(binary_dataset):
     alternative_explanation.ensured_explanations()
     alternative_explanation.add_conjunctions(max_rule_size=3)
 
-@pytest.mark.skip(reason="Skipping this test for now")
 def test_multiclass_ce_str_target(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset.
@@ -225,7 +224,6 @@ def test_multiclass_ce_str_target(multiclass_dataset):
     alternative_explanation.semi_explanations(only_ensured=True)
     alternative_explanation.counter_explanations(only_ensured=True)
 
-@pytest.mark.skip(reason="Skipping this test for now")
 def test_binary_ce_str_target(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset.
