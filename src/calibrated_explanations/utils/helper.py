@@ -313,9 +313,6 @@ def calculate_metrics(uncertainty=None,
         If `metric` is set to a list of metrics, the function will calculate only those
         metrics. The available metrics are:
         - 'ensured' : Weighted Sum Method 
-        - 'pareto_efficiency' : Pareto Efficiency Method (simplified as sum of normalized values)
-        - 'arithmetic_mean' : Arithmetic Mean Method
-        - 'min_max_normalization' : Min-Max Normalization Method
     normalize : bool, default=False
         The `normalize` parameter is a boolean value that represents whether to normalize the 
         uncertainty and prediction values. The default value is False.
@@ -358,8 +355,8 @@ def calculate_metrics(uncertainty=None,
         inverse_prediction = True
     if metric is None:
         metric = ['ensured', #'geometric_mean', #'harmonic_mean', #'weighted_product',
-                'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
-                'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
+                # 'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
+                # 'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
                 #'penalty_high_uncertainty', 'exponential_penalty', 'logarithmic_penalty',
                 #'quadratic_penalty'
                 ]
@@ -375,52 +372,52 @@ def calculate_metrics(uncertainty=None,
     if 'ensured' in metric:
         metrics['ensured'] = (1-w) * (1 - uncertainty) + w * (prediction)
 
-    if 'geometric_mean' in metric:
-        metrics['geometric_mean'] = np.sqrt((1 - uncertainty) * prediction)
+    # if 'geometric_mean' in metric:
+    #     metrics['geometric_mean'] = np.sqrt((1 - uncertainty) * prediction)
 
-    if 'harmonic_mean' in metric:
-        metrics['harmonic_mean'] = 2 * (1 - uncertainty) * prediction \
-                                    / ((1 - uncertainty) + prediction)
+    # if 'harmonic_mean' in metric:
+    #     metrics['harmonic_mean'] = 2 * (1 - uncertainty) * prediction \
+    #                                 / ((1 - uncertainty) + prediction)
 
-    if 'weighted_product' in metric:
-        metrics['weighted_product'] = (1 - uncertainty) ** w * prediction ** (1-w)
+    # if 'weighted_product' in metric:
+    #     metrics['weighted_product'] = (1 - uncertainty) ** w * prediction ** (1-w)
 
-    if 'pareto_efficiency' in metric:
-        metrics['pareto_efficiency'] = (1 - uncertainty) + prediction
+    # if 'pareto_efficiency' in metric:
+    #     metrics['pareto_efficiency'] = (1 - uncertainty) + prediction
 
-    if 'arithmetic_mean' in metric:
-        metrics['arithmetic_mean'] = ((1 - uncertainty) + prediction) / 2
+    # if 'arithmetic_mean' in metric:
+    #     metrics['arithmetic_mean'] = ((1 - uncertainty) + prediction) / 2
 
-    if 'min_max_normalization' in metric:
-        min_uncertainty, max_uncertainty = 0, 1
-        min_prediction, max_prediction = 0, 1
-        norm_uncertainty = (1 - uncertainty - min_uncertainty) / (max_uncertainty - min_uncertainty)
-        norm_prediction = (prediction - min_prediction) / (max_prediction - min_prediction)
-        metrics['min_max_normalization'] = norm_uncertainty + norm_prediction
+    # if 'min_max_normalization' in metric:
+    #     min_uncertainty, max_uncertainty = 0, 1
+    #     min_prediction, max_prediction = 0, 1
+    #     norm_uncertainty = (1 - uncertainty - min_uncertainty) / (max_uncertainty - min_uncertainty)
+    #     norm_prediction = (prediction - min_prediction) / (max_prediction - min_prediction)
+    #     metrics['min_max_normalization'] = norm_uncertainty + norm_prediction
 
-    if 'exponential' in metric:
-        metrics['exponential'] = np.exp(1 - uncertainty) * np.exp(prediction)
+    # if 'exponential' in metric:
+    #     metrics['exponential'] = np.exp(1 - uncertainty) * np.exp(prediction)
 
-    if 'logarithmic' in metric:
-        metrics['logarithmic'] = np.log(1 + (1 - uncertainty)) + np.log(1 + prediction)
+    # if 'logarithmic' in metric:
+    #     metrics['logarithmic'] = np.log(1 + (1 - uncertainty)) + np.log(1 + prediction)
 
-    if 'quadratic_mean' in metric:
-        metrics['quadratic_mean'] = np.sqrt(((1 - uncertainty) ** 2 + prediction ** 2) / 2)
+    # if 'quadratic_mean' in metric:
+    #     metrics['quadratic_mean'] = np.sqrt(((1 - uncertainty) ** 2 + prediction ** 2) / 2)
 
-    if 'inverse_uncertainty' in metric:
-        metrics['inverse_uncertainty'] = - (uncertainty / prediction+1e-6)
+    # if 'inverse_uncertainty' in metric:
+    #     metrics['inverse_uncertainty'] = - (uncertainty / prediction+1e-6)
 
-    if 'penalty_high_uncertainty' in metric:
-        metrics['penalty_high_uncertainty'] = prediction - w * uncertainty
+    # if 'penalty_high_uncertainty' in metric:
+    #     metrics['penalty_high_uncertainty'] = prediction - w * uncertainty
 
-    if 'exponential_penalty' in metric:
-        metrics['exponential_penalty'] = prediction * np.exp(-w * uncertainty)
+    # if 'exponential_penalty' in metric:
+    #     metrics['exponential_penalty'] = prediction * np.exp(-w * uncertainty)
 
-    if 'logarithmic_penalty' in metric:
-        metrics['logarithmic_penalty'] = prediction - np.log(1 + w * uncertainty)
+    # if 'logarithmic_penalty' in metric:
+    #     metrics['logarithmic_penalty'] = prediction - np.log(1 + w * uncertainty)
 
-    if 'quadratic_penalty' in metric:
-        metrics['quadratic_penalty'] = prediction - w * uncertainty ** 2
+    # if 'quadratic_penalty' in metric:
+    #     metrics['quadratic_penalty'] = prediction - w * uncertainty ** 2
 
     return metrics if len(metrics) > 1 else metrics[list(metrics.keys())[0]]
 
