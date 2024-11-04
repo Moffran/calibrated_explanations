@@ -352,8 +352,8 @@ def calculate_metrics(uncertainty=None,
     # Count the number of arguments passed
     if uncertainty is None and prediction is None:
         return ['ensured', #'geometric_mean', #'harmonic_mean', #'weighted_product',
-                'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
-                'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
+                # 'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
+                # 'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
                 #'penalty_high_uncertainty', 'exponential_penalty', 'logarithmic_penalty',
                 #'quadratic_penalty'
                 ]
@@ -369,12 +369,7 @@ def calculate_metrics(uncertainty=None,
         w = -w
         inverse_prediction = True
     if metric is None:
-        metric = ['ensured', #'geometric_mean', #'harmonic_mean', #'weighted_product',
-                # 'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
-                # 'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
-                #'penalty_high_uncertainty', 'exponential_penalty', 'logarithmic_penalty',
-                #'quadratic_penalty'
-                ]
+        metric = calculate_metrics()
     elif isinstance(metric, str):
         metric = [metric]
     if normalize:
