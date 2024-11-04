@@ -151,21 +151,21 @@ It is easy to access the predictions and probabilities from the calibrator and m
    uncal_y_hat_reg = regressor.predict(X_test_reg, calibrated=False)
 
    # Output the calibrated predictions and probabilities
-   cal_proba_cls = classifier.predict_proba(X_test_cls)
-   cal_y_hat_cls = classifier.predict(X_test_cls)
-   cal_y_hat_reg = regressor.predict(X_test_reg)
+   calib_proba_cls = classifier.predict_proba(X_test_cls)
+   calib_y_hat_cls = classifier.predict(X_test_cls)
+   calib_y_hat_reg = regressor.predict(X_test_reg)
    # Get thresholded regression predictions and probabilities for labels 'y_hat > threshold' and 'y_hat <= threshold'
    your_threshold = 1000
-   thr_y_hat_reg = regressor.predict(X_test_reg, threshold=your_threshold)
-   thr_proba_reg = regressor.predict_proba(X_test_reg, threshold=your_threshold)
-   
+   thrld_y_hat_reg = regressor.predict(X_test_reg, threshold=your_threshold)
+   thrld_proba_reg = regressor.predict_proba(X_test_reg, threshold=your_threshold)
+
    # Include uncertainty interval, outputted as a tuple (low, high)
-   cal_proba_cls, low_high = classifier.predict_proba(X_test_cls, uq_interval=True)
-   cal_y_hat_cls, (low, high) = classifier.predict(X_test_cls, uq_interval=True)
-   cal_y_hat_reg, low_high = regressor.predict(X_test_reg, uq_interval=True) # default low_high_percentiles=(5, 95)
-   cal_y_hat_reg, low_high = regressor.predict(X_test_reg, low_high_percentiles=(10,90), uq_interval=True)
-   thr_y_hat_reg, low_high = regressor.predict(X_test_reg, threshold=your_threshold, uq_interval=True)
-   thr_proba_reg, (low, high) = regressor.predict_proba(X_test_reg, threshold=your_threshold, uq_interval=True)
+   calib_proba_cls, low_high = classifier.predict_proba(X_test_cls, uq_interval=True)
+   calib_y_hat_cls, (low, high) = classifier.predict(X_test_cls, uq_interval=True)
+   calib_y_hat_reg, low_high = regressor.predict(X_test_reg, uq_interval=True) # default low_high_percentiles=(5, 95)
+   calib_y_hat_reg, low_high = regressor.predict(X_test_reg, low_high_percentiles=(10,90), uq_interval=True)
+   thrld_y_hat_reg, low_high = regressor.predict(X_test_reg, threshold=your_threshold, uq_interval=True)
+   thrld_proba_reg, (low, high) = regressor.predict_proba(X_test_reg, threshold=your_threshold, uq_interval=True)
 ```
 
 ## Getting Started
