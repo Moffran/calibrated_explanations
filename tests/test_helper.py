@@ -17,7 +17,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.base import BaseEstimator
-from calibrated_explanations.utils.helper import safe_import, safe_isinstance, check_is_fitted
+from calibrated_explanations.utils.helper import safe_import, safe_isinstance, check_is_fitted, calculate_metrics
 
 
 class MockEstimator(BaseEstimator):
@@ -133,3 +133,56 @@ def test_check_is_fitted_with_no_attributes():
     estimator = MockEstimator()
     estimator.fit(None, None)
     check_is_fitted(estimator)
+
+def test_calculate_metrics_no_arguments():
+    """Test calculate_metrics with no arguments."""
+    available_metrics = calculate_metrics()
+    assert 'ensured' in available_metrics
+
+def test_calculate_metrics_ensured():
+    """Test calculate_metrics with 'ensured' metric."""
+    uncertainty = [0.1, 0.2, 0.3]
+    prediction = [0.9, 0.8, 0.7]
+    result = calculate_metrics(uncertainty, prediction, metric='ensured')
+    expected = (1 - 0.5) * (1 - np.array(uncertainty)) + 0.5 * np.array(prediction)
+    assert np.allclose(result, expected)
+
+def test_calculate_metrics_with_weight():
+    """Test calculate_metrics with a custom weight."""
+    uncertainty = [0.1, 0.2, 0.3]
+    prediction = [0.9, 0.8, 0.7]
+    result = calculate_metrics(uncertainty, prediction, w=0.7, metric='ensured')
+    expected = (1 - 0.7) * (1 - np.array(uncertainty)) + 0.7 * np.array(prediction)
+    assert np.allclose(result, expected)
+
+def test_calculate_metrics_with_negative_weight():
+    """Test calculate_metrics with a negative weight."""
+    uncertainty = [0.1, 0.2, 0.3]
+    prediction = [0.9, 0.8, 0.7]
+    result = calculate_metrics(uncertainty, prediction, w=-0.5, metric='ensured')
+    expected = (1 - 0.5) * (1 - np.array(uncertainty)) + 0.5 * (-np.array(prediction))
+    assert np.allclose(result, expected)
+
+def test_calculate_metrics_with_normalization():
+    """Test calculate_metrics with normalization."""
+    uncertainty = [0.1, 0.2, 0.3]
+    prediction = [0.9, 0.8, 0.7]
+    result = calculate_metrics(uncertainty, prediction, metric='ensured', normalize=True)
+    norm_uncertainty = (np.array(uncertainty) - np.min(uncertainty)) / (np.max(uncertainty) - np.min(uncertainty))
+    norm_prediction = (np.array(prediction) - np.min(prediction)) / (np.max(prediction) - np.min(prediction))
+    expected = (1 - 0.5) * (1 - norm_uncertainty) + 0.5 * norm_prediction
+    assert np.allclose(result, expected)
+
+def test_calculate_metrics_invalid_weight():
+    """Test calculate_metrics with an invalid weight."""
+    uncertainty = [0.1, 0.2, 0.3]
+    prediction = [0.9, 0.8, 0.7]
+    with pytest.raises(AssertionError) as excinfo:
+        calculate_metrics(uncertainty, prediction, w=1.5, metric='ensured')
+    assert "The weight must be between -1 and 1." in str(excinfo.value)
+
+def test_calculate_metrics_missing_arguments():
+    """Test calculate_metrics with missing uncertainty or prediction."""
+    with pytest.raises(AssertionError) as excinfo:
+        calculate_metrics(uncertainty=[0.1, 0.2, 0.3])
+    assert "Both uncertainty and prediction must be provided if any other argument is provided" in str(excinfo.value)
