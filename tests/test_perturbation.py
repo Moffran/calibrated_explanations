@@ -1,4 +1,4 @@
-# pylint: disable=line-too-long
+# pylint: disable=line-too-long, unused-import
 """
 This module contains unit tests for the `uniform_perturbation` function from the
 `calibrated_explanations.utils.perturbation` module.
