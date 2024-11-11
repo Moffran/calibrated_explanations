@@ -24,7 +24,7 @@ from ._VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                 RegressorDiscretizer, BinaryRegressorDiscretizer
-from .utils.helper import safe_isinstance, convert_targets_to_numeric, safe_import, check_is_fitted, assert_threshold
+from .utils.helper import safe_isinstance, convert_targets_to_numeric, safe_import, check_is_fitted, assert_threshold, concatenate_thresholds
 from .utils.perturbation import perturb_dataset
 from ._plots import _plot_global
 
@@ -493,7 +493,8 @@ class CalibratedExplainer:
         else:
             prediction['classes'] = np.ones(predict.shape)
 
-        # Step 1: Predict the test set to get the predictions and intervals
+        # Step 1: Predict the test set and the perturbed instances to get the predictions and intervals
+        # Substep 1.a: Add the test set
         assert_threshold(threshold, X_test)
         perturbed_threshold = self.assign_threshold(threshold)
         perturbed_bins = np.empty((0,)) if bins is not None else None
@@ -503,17 +504,7 @@ class CalibratedExplainer:
         X_perturbed = self._discretize(copy.deepcopy(X_test))
         rule_boundaries = self.rule_boundaries(X_test, X_perturbed)
 
-        def concatenate_thresholds(perturbed_threshold, threshold, indices):
-            if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                if isinstance(threshold[0], tuple):
-                    if len(perturbed_threshold) == 0:
-                        perturbed_threshold = [threshold[i] for i in indices]
-                    else:
-                        perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i] for i in indices]))
-                else:
-                    perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indices]))
-            return perturbed_threshold
-        # Step 2: prepare the perturbed test instances
+        # Substep 1.b: prepare and add the perturbed test instances
         lesser_values = {}
         greater_values = {}
         covered_values = {}
@@ -582,16 +573,16 @@ class CalibratedExplainer:
                             else:
                                 perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
 
+        # Substep 1.c: Predict and convert to numpy arrays to allow boolean indexing
         if threshold is not None and isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
             perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
         predict, low, high, _ = self._predict(perturbed_X, threshold=perturbed_threshold, low_high_percentiles=low_high_percentiles, classes=perturbed_class, bins=perturbed_bins)
-        # Predict and other arrays should be numpy arrays to allow boolean indexing
         predict = np.array(predict)
         low = np.array(low)
         high = np.array(high)
         predicted_class = np.array(perturbed_class)
 
-        # Step 3: For each feature and instance, create the rules
+        # Step 2: For each feature and instance, create the rules
         feature_weights =  {'predict': [],'low': [],'high': [],}
         feature_predict =  {'predict': [],'low': [],'high': [],}
         binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': [], 'fractions': []}
@@ -693,9 +684,6 @@ class CalibratedExplainer:
                         counts[i][bin_value[i]] = len(np.where(X_cal[:,f] < val)[0])
                         rule_value[i].append(lesser_values[f][j][0])
                         bin_value[i] += 1
-                        # print(predict[index], 'lesser')
-                        # print(perturbed_X[index], 'lesser')
-                        # print(i, f, average_predict[i], low_predict[i], high_predict[i], counts[i])
 
                 for j, val in enumerate(np.unique(upper_boundary)):
                     if greater_values[f][j][0].shape[0] == 0:
@@ -712,9 +700,6 @@ class CalibratedExplainer:
                         counts[i][bin_value[i]] = len(np.where(X_cal[:,f] > val)[0])
                         rule_value[i].append(greater_values[f][j][0])
                         bin_value[i] += 1
-                        # print(predict[index], 'greater')
-                        # print(perturbed_X[index], 'greater')
-                        # print(i, f, average_predict[i], low_predict[i], high_predict[i], counts[i])
 
                 indices = range(len(X_test))
                 for i in indices:
@@ -730,13 +715,8 @@ class CalibratedExplainer:
                         counts[i][bin_value[i]] = len(np.where((X_cal[:,f] >= l) & (X_cal[:,f] <= g))[0])
                         rule_value[i].append(covered_values[f][j][0])
                         current_bin[i] = bin_value[i]
-                        # print(predict[index], 'covered')
-                        # print(perturbed_X[index], 'covered')
-                        # print(i, f, average_predict[i], low_predict[i], high_predict[i], counts[i])
 
                 for i in range(len(X_test)):
-                    # print(i, f, average_predict[i], low_predict[i], high_predict[i], counts[i])
-
                     rule_values[i][f] = (rule_value[i], X_test[i,f], X_test[i,f])
                     uncovered = np.setdiff1d(np.arange(len(average_predict[i])), current_bin[i])
 

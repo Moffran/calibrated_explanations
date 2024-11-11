@@ -449,3 +449,27 @@ def convert_targets_to_numeric(y):
         numeric_y = np.array([label_map[label] for label in y])
         return numeric_y, label_map
     return y, None
+
+def concatenate_thresholds(perturbed_threshold, threshold, indices):
+    """
+    Concatenates the given threshold values to the perturbed_threshold based on the provided indices.
+
+    Parameters:
+    ----------
+    perturbed_threshold (list or np.ndarray): The initial list or array of perturbed threshold values.
+    threshold (list, tuple, or np.ndarray): The threshold values to be concatenated.
+    indices (list or np.ndarray): The indices of the threshold values to be concatenated.
+
+    Returns:
+    --------
+    list or np.ndarray: The updated list or array of perturbed threshold values after concatenation.
+    """
+    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+        if isinstance(threshold[0], tuple):
+            if len(perturbed_threshold) == 0:
+                perturbed_threshold = [threshold[i] for i in indices]
+            else:
+                perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i] for i in indices]))
+        else:
+            perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indices]))
+    return perturbed_threshold
