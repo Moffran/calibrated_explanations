@@ -336,26 +336,10 @@ def calculate_metrics(uncertainty=None,
     ----
     If the method is called with no arguments, it will return the list of available metrics.
     '''
-    # Discarded metrics:
-        # - 'geometric_mean' : Geometric Mean Method
-        # - 'harmonic_mean' : Harmonic Mean Method
-        # - 'weighted_product' : Customizable Weighted Product Method
-        # - 'logarithmic' : Logarithmic Method
-        # - 'quadratic_mean' : Quadratic Mean Method
-        # - 'inverse_uncertainty' : Inverse Uncertainty Method
-        # - 'exponential' : Exponential Weighted Method
-        # - 'penalty_high_uncertainty' : Penalty for High Uncertainty Method
-        # - 'exponential_penalty' : Exponential Penalty Method
-        # - 'logarithmic_penalty' : Logarithmic Penalty Method
-        # - 'quadratic_penalty' : Quadratic Penalty Method
 
     # Count the number of arguments passed
     if uncertainty is None and prediction is None:
-        return ['ensured', #'geometric_mean', #'harmonic_mean', #'weighted_product',
-                # 'pareto_efficiency', 'arithmetic_mean', 'min_max_normalization',
-                # 'exponential', #'logarithmic', #'quadratic_mean', #'inverse_uncertainty',
-                #'penalty_high_uncertainty', 'exponential_penalty', 'logarithmic_penalty',
-                #'quadratic_penalty'
+        return ['ensured'
                 ]
 
     assert uncertainty is not None and prediction is not None, \
@@ -382,65 +366,20 @@ def calculate_metrics(uncertainty=None,
     if 'ensured' in metric:
         metrics['ensured'] = (1-w) * (1 - uncertainty) + w * (prediction)
 
-    # if 'geometric_mean' in metric:
-    #     metrics['geometric_mean'] = np.sqrt((1 - uncertainty) * prediction)
-
-    # if 'harmonic_mean' in metric:
-    #     metrics['harmonic_mean'] = 2 * (1 - uncertainty) * prediction \
-    #                                 / ((1 - uncertainty) + prediction)
-
-    # if 'weighted_product' in metric:
-    #     metrics['weighted_product'] = (1 - uncertainty) ** w * prediction ** (1-w)
-
-    # if 'pareto_efficiency' in metric:
-    #     metrics['pareto_efficiency'] = (1 - uncertainty) + prediction
-
-    # if 'arithmetic_mean' in metric:
-    #     metrics['arithmetic_mean'] = ((1 - uncertainty) + prediction) / 2
-
-    # if 'min_max_normalization' in metric:
-    #     min_uncertainty, max_uncertainty = 0, 1
-    #     min_prediction, max_prediction = 0, 1
-    #     norm_uncertainty = (1 - uncertainty - min_uncertainty) / (max_uncertainty - min_uncertainty)
-    #     norm_prediction = (prediction - min_prediction) / (max_prediction - min_prediction)
-    #     metrics['min_max_normalization'] = norm_uncertainty + norm_prediction
-
-    # if 'exponential' in metric:
-    #     metrics['exponential'] = np.exp(1 - uncertainty) * np.exp(prediction)
-
-    # if 'logarithmic' in metric:
-    #     metrics['logarithmic'] = np.log(1 + (1 - uncertainty)) + np.log(1 + prediction)
-
-    # if 'quadratic_mean' in metric:
-    #     metrics['quadratic_mean'] = np.sqrt(((1 - uncertainty) ** 2 + prediction ** 2) / 2)
-
-    # if 'inverse_uncertainty' in metric:
-    #     metrics['inverse_uncertainty'] = - (uncertainty / prediction+1e-6)
-
-    # if 'penalty_high_uncertainty' in metric:
-    #     metrics['penalty_high_uncertainty'] = prediction - w * uncertainty
-
-    # if 'exponential_penalty' in metric:
-    #     metrics['exponential_penalty'] = prediction * np.exp(-w * uncertainty)
-
-    # if 'logarithmic_penalty' in metric:
-    #     metrics['logarithmic_penalty'] = prediction - np.log(1 + w * uncertainty)
-
-    # if 'quadratic_penalty' in metric:
-    #     metrics['quadratic_penalty'] = prediction - w * uncertainty ** 2
-
     return metrics if len(metrics) > 1 else metrics[list(metrics.keys())[0]]
 
 def convert_targets_to_numeric(y):
     """Convert string/categorical targets to numeric values while preserving labels.
     
-    Args:
-        y (array-like): Array of target values that may be strings or categorical.
+    Parameters:
+    -----------
+    y (array-like): Array of target values that may be strings or categorical.
         
     Returns:
-        tuple:
-            - array-like: Numeric version of the target values
-            - dict or None: Mapping of original labels to numeric values if conversion was needed
+    --------
+    tuple:
+        - array-like: Numeric version of the target values
+        - dict or None: Mapping of original labels to numeric values if conversion was needed
     """
     if (any(isinstance(val, str) for val in y) or
             any(isinstance(val, (np.str_, np.object_)) for val in y)):
