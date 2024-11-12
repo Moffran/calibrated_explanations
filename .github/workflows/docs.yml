@@ -1,7 +1,5 @@
 name: Build and Deploy Docs
-
-on: [push, pull_request]
-
+on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
