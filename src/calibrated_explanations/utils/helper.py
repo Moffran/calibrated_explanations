@@ -22,7 +22,7 @@ import sys
 import importlib
 from inspect import isclass
 import numpy as np
-from pandas.api.types import is_categorical_dtype
+from pandas import CategoricalDtype
 
 def make_directory(path: str, save_ext=None) -> None:    # pylint: disable=unused-private-member
     """ create directory if it does not exist
@@ -256,11 +256,11 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
     categorical_labels = {}
     target_labels = None
     for c, col in enumerate(df.columns):
-        if is_categorical_dtype(df[col]) or df[col].dtype in (object, str):
+        if isinstance(df[col], CategoricalDtype) or df[col].dtype in (object, str):
             df[col] = df[col].astype(str)
             df[col] = df[col].str.replace("'", "")
             df[col] = df[col].str.replace('"', '')
-            if is_categorical_dtype(df[col]) and 'nan' not in df[col].cat.categories:
+            if isinstance(df[col], CategoricalDtype) and 'nan' not in df[col].cat.categories:
                 df[col] = df[col].cat.add_categories(['nan'])
             df[col] = df[col].fillna('nan')
             df[col] = df[col].astype('category')
