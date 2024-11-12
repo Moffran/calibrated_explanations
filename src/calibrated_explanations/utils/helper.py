@@ -181,7 +181,12 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
 
 def is_notebook():
     '''
-    Check if the code is running in a Jupyter notebook
+    Check if the code is running in a Jupyter notebook.
+
+    This returns False when not running from a notebook:
+
+    >>> is_notebook()
+    False
     '''
     try:
         # pylint: disable=import-outside-toplevel
@@ -412,3 +417,11 @@ def concatenate_thresholds(perturbed_threshold, threshold, indices):
         else:
             perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indices]))
     return perturbed_threshold
+
+
+if __name__ == "__main__":
+    import doctest
+    import sys
+    (failures, _) = doctest.testmod()
+    if failures:
+        sys.exit(1)
