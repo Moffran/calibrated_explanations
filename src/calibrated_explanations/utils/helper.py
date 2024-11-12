@@ -301,22 +301,49 @@ def transform_to_numeric(df, target, mappings=None):
             mappings[col] = mapping
             df[col] = df[col].map(mapping)
     if categorical_features:
-        return df, categorical_features , categorical_labels, target_labels, mappings
+        return df, categorical_features, categorical_labels, target_labels, mappings
     return df, None, None, target_labels, mappings
 
 def assert_threshold(threshold, x):
     '''
-    Test if the thresholds are valid
-    
+    Test if the thresholds are valid.
     Parameters
     ----------
-    thresholds : list
-        The list of thresholds
+    threshold : int, float, tuple, list, or np.ndarray
+        The threshold(s) to be validated. It can be a scalar (int or float), 
+        a tuple with two values, or a list/np.ndarray of scalars or tuples.
+    x : list or np.ndarray
+        The data against which the thresholds are validated. Used to check 
+        the length of list/np.ndarray thresholds.
     
     Returns
     -------
-    list
-        The list of thresholds
+    int, float, tuple, or list
+        The validated threshold(s).
+    
+    Raises
+    ------
+    AssertionError
+        If the length of the list/np.ndarray threshold is not equal to the number of samples.
+        if the tuple threshold does not have two values.
+    ValueError
+        If the threshold is not a scalar, binary tuple, or list of scalars or binary tuples.
+    
+    Examples
+    --------
+    >>> assert_threshold(0.5, [1, 2, 3])
+    0.5
+    >>> assert_threshold((0.2, 0.8), [1, 2, 3])
+    (0.2, 0.8)
+    >>> assert_threshold([0.1, 0.2, 0.3], [1, 2, 3])
+    [0.1, 0.2, 0.3]
+    >>> assert_threshold([(0.1, 0.9), (0.2, 0.8)], [1, 2])
+    [(0.1, 0.9), (0.2, 0.8)]
+    >>> assert_threshold(None, [1, 2, 3])
+    >>> assert_threshold([0.1, 0.2], [1])
+    Traceback (most recent call last):
+        ...
+    AssertionError: list thresholds must have the same length as the number of samples
     '''
     if threshold is None:
         return threshold
