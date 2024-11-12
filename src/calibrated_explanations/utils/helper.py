@@ -225,6 +225,28 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
         A dictionary with target label-index pairs
     Mappings
         A dictionary with the mapping of each categorical feature and the target
+    
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({'target': ['a','b']}) 
+    >>> transform_to_numeric(df,'target')        
+    (  target
+    0      0
+    1      1, None, None, {0: 'a', 1: 'b'}, {'target': {'a': 0, 'b': 1}})
+    
+    >>> df = pd.DataFrame({'nominal': ['c','d'], 'target': ['a','b']})
+    >>> ndf, categorical_features, categorical_labels, target_labels, mappings = transform_to_numeric(df,'target')
+    >>> ndf
+      nominal target
+    0       0      0
+    1       1      1
+    >>> categorical_features
+    [0]
+    >>> categorical_labels
+    {0: {0: 'c', 1: 'd'}}
+    >>> target_labels
+    {0: 'a', 1: 'b'}
+    >>> mappings
+    {'nominal': {'c': 0, 'd': 1}, 'target': {'a': 0, 'b': 1}}
     '''
     if categorical_features is None:
         categorical_features = []
