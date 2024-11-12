@@ -421,7 +421,6 @@ def concatenate_thresholds(perturbed_threshold, threshold, indices):
 
 if __name__ == "__main__":
     import doctest
-    import sys
     (failures, _) = doctest.testmod()
     if failures:
         sys.exit(1)
