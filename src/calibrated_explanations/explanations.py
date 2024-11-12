@@ -409,8 +409,6 @@ class AlternativeExplanations(CalibratedExplanations):
         -----
         Super-explanations are only available for :class:`.AlternativeExplanation` explanations.
 
-        Notes
-        -----
         only_ensured and include_potential can interact in the following way:
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
@@ -447,8 +445,6 @@ class AlternativeExplanations(CalibratedExplanations):
         -----
         Semi-explanations are only available for :class:`.AlternativeExplanation` explanations.
 
-        Notes
-        -----
         only_ensured and include_potential can interact in the following way:
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
@@ -485,8 +481,6 @@ class AlternativeExplanations(CalibratedExplanations):
         -----
         Counter-explanations are only available for :class:`.AlternativeExplanation` explanations.
 
-        Notes
-        -----
         only_ensured and include_potential can interact in the following way:
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
@@ -756,8 +750,6 @@ class CalibratedExplanation(ABC):
         -----
         The function will return the same explanation if the rule is already included or if the feature is categorical.
         
-        Notes
-        -----
         No implementation is provided for the :class:`.FastExplanation` class.
         """
         try:
