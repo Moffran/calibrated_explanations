@@ -22,7 +22,7 @@ import sys
 import importlib
 from inspect import isclass
 import numpy as np
-from pandas.api.types import is_categorical_dtype
+from pandas import CategoricalDtype
 
 def make_directory(path: str, save_ext=None) -> None:    # pylint: disable=unused-private-member
     """ create directory if it does not exist
@@ -181,7 +181,12 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
 
 def is_notebook():
     '''
-    Check if the code is running in a Jupyter notebook
+    Check if the code is running in a Jupyter notebook.
+
+    This returns False when not running from a notebook:
+
+    >>> is_notebook()
+    False
     '''
     try:
         # pylint: disable=import-outside-toplevel
@@ -220,6 +225,28 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
         A dictionary with target label-index pairs
     Mappings
         A dictionary with the mapping of each categorical feature and the target
+    
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({'target': ['a','b']}) 
+    >>> transform_to_numeric(df,'target')        
+    (  target
+    0      0
+    1      1, None, None, {0: 'a', 1: 'b'}, {'target': {'a': 0, 'b': 1}})
+    
+    >>> df = pd.DataFrame({'nominal': ['c','d'], 'target': ['a','b']})
+    >>> ndf, categorical_features, categorical_labels, target_labels, mappings = transform_to_numeric(df,'target')
+    >>> ndf
+      nominal target
+    0       0      0
+    1       1      1
+    >>> categorical_features
+    [0]
+    >>> categorical_labels
+    {0: {0: 'c', 1: 'd'}}
+    >>> target_labels
+    {0: 'a', 1: 'b'}
+    >>> mappings
+    {'nominal': {'c': 0, 'd': 1}, 'target': {'a': 0, 'b': 1}}
     '''
     if categorical_features is None:
         categorical_features = []
@@ -229,11 +256,11 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
     categorical_labels = {}
     target_labels = None
     for c, col in enumerate(df.columns):
-        if is_categorical_dtype(df[col]) or df[col].dtype in (object, str):
+        if isinstance(df[col], CategoricalDtype) or df[col].dtype in (object, str):
             df[col] = df[col].astype(str)
             df[col] = df[col].str.replace("'", "")
             df[col] = df[col].str.replace('"', '')
-            if is_categorical_dtype(df[col]) and 'nan' not in df[col].cat.categories:
+            if isinstance(df[col], CategoricalDtype) and 'nan' not in df[col].cat.categories:
                 df[col] = df[col].cat.add_categories(['nan'])
             df[col] = df[col].fillna('nan')
             df[col] = df[col].astype('category')
@@ -412,3 +439,10 @@ def concatenate_thresholds(perturbed_threshold, threshold, indices):
         else:
             perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indices]))
     return perturbed_threshold
+
+
+if __name__ == "__main__":
+    import doctest
+    (failures, _) = doctest.testmod()
+    if failures:
+        sys.exit(1)
