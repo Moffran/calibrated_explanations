@@ -198,7 +198,7 @@ def is_notebook():
     return True
 
 # pylint: disable=too-many-locals, too-many-branches
-def transform_to_numeric(df, target, categorical_features=None, mappings=None):
+def transform_to_numeric(df, target, mappings=None):
     '''
     Transform the categorical features to numeric
     
@@ -247,16 +247,28 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
     {0: 'a', 1: 'b'}
     >>> mappings
     {'nominal': {'c': 0, 'd': 1}, 'target': {'a': 0, 'b': 1}}
+    >>> ddf = pd.DataFrame({'nominal': ['d','c'], 'target': ['b','a']})
+    >>> nddf, _, _, _, _ = transform_to_numeric(ddf,'target', mappings)
+    >>> nddf
+       nominal  target
+    0        1       1
+    1        0       0
     '''
-    if categorical_features is None:
+    if mappings is None:
         categorical_features = []
+        categorical_labels = {}
+        target_labels = None
         mappings = {}
     else:
-        assert mappings is not None, 'mapping must be provided if categorical_features is provided'
-    categorical_labels = {}
-    target_labels = None
+        categorical_features = [c for c in range(len(df.columns)) if df.columns[c] in mappings and df.columns[c] != target]
+        categorical_labels = {c:mappings[df.columns[c]] for c in categorical_features}
+        target_labels = mappings.get(target)
     for c, col in enumerate(df.columns):
-        if isinstance(df[col], CategoricalDtype) or df[col].dtype in (object, str):
+        if col in mappings:
+            df[col] = df[col].fillna('nan')
+            df[col] = df[col].astype(str)
+            df[col] = df[col].map(mappings[col])
+        elif isinstance(df[col], CategoricalDtype) or df[col].dtype in (object, str):
             df[col] = df[col].astype(str)
             df[col] = df[col].str.replace("'", "")
             df[col] = df[col].str.replace('"', '')
@@ -288,11 +300,7 @@ def transform_to_numeric(df, target, categorical_features=None, mappings=None):
                     mapping[key] = idx
             mappings[col] = mapping
             df[col] = df[col].map(mapping)
-        elif c in categorical_features:
-            df[col] = df[col].fillna('nan')
-            df[col] = df[col].astype(str)
-            df[col] = df[col].map(mappings[col])
-    if len(categorical_features) > 0:
+    if categorical_features:
         return df, categorical_features , categorical_labels, target_labels, mappings
     return df, None, None, target_labels, mappings
 
@@ -318,7 +326,7 @@ def assert_threshold(threshold, x):
         assert len(threshold) == 2, 'tuple thresholds must be a tuple with two values'
         return threshold
     if isinstance(threshold, (list, np.ndarray)):
-        assert len(threshold) == x.shape[0], \
+        assert len(threshold) == np.asarray(x).shape[0], \
             'list thresholds must have the same length as the number of samples'
         return [assert_threshold(t, [x[i]]) for i,t in enumerate(threshold)]
     raise ValueError(
