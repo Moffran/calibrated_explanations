@@ -226,6 +226,8 @@ def transform_to_numeric(df, target, mappings=None):
     Mappings
         A dictionary with the mapping of each categorical feature and the target
     
+    Examples
+    --------
     >>> import pandas as pd
     >>> df = pd.DataFrame({'target': ['a','b']}) 
     >>> transform_to_numeric(df,'target')        
@@ -247,6 +249,7 @@ def transform_to_numeric(df, target, mappings=None):
     {0: 'a', 1: 'b'}
     >>> mappings
     {'nominal': {'c': 0, 'd': 1}, 'target': {'a': 0, 'b': 1}}
+    
     >>> ddf = pd.DataFrame({'nominal': ['d','c'], 'target': ['b','a']})
     >>> nddf, _, _, _, _ = transform_to_numeric(ddf,'target', mappings)
     >>> nddf
@@ -307,6 +310,7 @@ def transform_to_numeric(df, target, mappings=None):
 def assert_threshold(threshold, x):
     '''
     Test if the thresholds are valid.
+    
     Parameters
     ----------
     threshold : int, float, tuple, list, or np.ndarray
@@ -394,8 +398,8 @@ def calculate_metrics(uncertainty=None,
         The `normalize` parameter is a boolean value that represents whether to normalize the 
         uncertainty and prediction values. The default value is False.
 
-    Note
-    ----
+    Notes
+    -----
     If the method is called with no arguments, it will return the list of available metrics.
     '''
 
@@ -433,12 +437,12 @@ def calculate_metrics(uncertainty=None,
 def convert_targets_to_numeric(y):
     """Convert string/categorical targets to numeric values while preserving labels.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     y (array-like): Array of target values that may be strings or categorical.
         
-    Returns:
-    --------
+    Returns
+    -------
     tuple:
         - array-like: Numeric version of the target values
         - dict or None: Mapping of original labels to numeric values if conversion was needed
@@ -455,14 +459,14 @@ def concatenate_thresholds(perturbed_threshold, threshold, indices):
     """
     Concatenates the given threshold values to the perturbed_threshold based on the provided indices.
 
-    Parameters:
+    Parameters
     ----------
     perturbed_threshold (list or np.ndarray): The initial list or array of perturbed threshold values.
     threshold (list, tuple, or np.ndarray): The threshold values to be concatenated.
     indices (list or np.ndarray): The indices of the threshold values to be concatenated.
 
-    Returns:
-    --------
+    Returns
+    -------
     list or np.ndarray: The updated list or array of perturbed threshold values after concatenation.
     """
     if threshold is not None and isinstance(threshold, (list, np.ndarray)):

@@ -12,3 +12,4 @@ The calibrated-explanations package
    _autosummary/calibrated_explanations.explanations.FactualExplanation
    _autosummary/calibrated_explanations.explanations.AlternativeExplanation
    _autosummary/calibrated_explanations.explanations.FastExplanation
+   _autosummary/calibrated_explanations.utils.helper
