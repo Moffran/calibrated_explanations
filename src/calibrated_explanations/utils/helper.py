@@ -235,27 +235,27 @@ def transform_to_numeric(df, target, mappings=None):
     0      0
     1      1, None, None, {0: 'a', 1: 'b'}, {'target': {'a': 0, 'b': 1}})
     
-    >>> df = pd.DataFrame({'nominal': ['c','d'], 'target': ['a','b']})
+    >>> df = pd.DataFrame({'numerical': [2,3], 'nominal': ['c','d'], 'target': ['a','b']})
     >>> ndf, categorical_features, categorical_labels, target_labels, mappings = transform_to_numeric(df,'target')
     >>> ndf
-      nominal target
-    0       0      0
-    1       1      1
+       numerical nominal target
+    0          2       0      0
+    1          3       1      1
     >>> categorical_features
-    [0]
+    [1]
     >>> categorical_labels
-    {0: {0: 'c', 1: 'd'}}
+    {1: {0: 'c', 1: 'd'}}
     >>> target_labels
     {0: 'a', 1: 'b'}
     >>> mappings
     {'nominal': {'c': 0, 'd': 1}, 'target': {'a': 0, 'b': 1}}
     
-    >>> ddf = pd.DataFrame({'nominal': ['d','c'], 'target': ['b','a']})
+    >>> ddf = pd.DataFrame({'numerical': [2,3], 'nominal': ['d','c'], 'target': ['b','a']})
     >>> nddf, _, _, _, _ = transform_to_numeric(ddf,'target', mappings)
     >>> nddf
-       nominal  target
-    0        1       1
-    1        0       0
+       numerical  nominal  target
+    0          2        1       1
+    1          3        0       0
     '''
     if mappings is None:
         categorical_features = []
