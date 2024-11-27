@@ -1,9 +1,20 @@
 # Changelog
 
 ## [Unreleased]
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.0...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.1...main)
 ### Features
 ### Fixes
+
+## [v0.5.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.5.1) - 2024-11-27
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.0...v0.5.1)
+### Features
+- String Targets Support:** Added support for string targets, enhancing flexibility in handling diverse datasets. Special thanks to our new contributor [ww-jermaine](https://github.com/ww-jermaine) for the efforts on this feature ([issue #27](https://github.com/Moffran/calibrated_explanations/issues/27)).
+- Out-of-Bag Calibration: Introduced support for out-of-bag calibration when using random forests from `sklearn`, enabling improved calibration techniques directly within ensemble models. See the new [notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap_oob.ipynb) for examples.
+- Documentation Enhancements: Updated and refined [documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest), including fixes to existing sections and the addition of doctests for helper functions to ensure accuracy and reliability.
+- Minor updates: Added a `calibrated` parameter to the `predict` and `predict_proba` methods to allow uncalibrated results.
+### Fixes
+- Bug Fixes: Resolved multiple bugs to enhance stability and performance across the library.
+
 
 ## [v0.5.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.5.0) - 2024-10-15
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.4.0...v0.5.0)

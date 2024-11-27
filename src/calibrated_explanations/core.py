@@ -27,7 +27,7 @@ from .utils.helper import safe_isinstance, convert_targets_to_numeric, safe_impo
 from .utils.perturbation import perturb_dataset
 from ._plots import _plot_global
 
-__version__ = 'v0.5.0'
+__version__ = 'v0.5.1'
 
 
 
