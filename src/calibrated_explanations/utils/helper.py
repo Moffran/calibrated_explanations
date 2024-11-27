@@ -481,6 +481,24 @@ def concatenate_thresholds(perturbed_threshold, threshold, indices):
             perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i] for i in indices]))
     return perturbed_threshold
 
+def immutable_array(array):
+    """
+    Convert a numpy array to an immutable array.
+
+    Parameters
+    ----------
+    array : list or np.ndarray
+        The numpy array to convert.
+
+    Returns
+    -------
+    np.ndarray
+        The immutable numpy array.
+    """
+    array = np.asarray(array)
+    array.flags.writeable = False
+    return array
+
 
 if __name__ == "__main__":
     import doctest
