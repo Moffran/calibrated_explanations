@@ -1201,8 +1201,13 @@ class CalibratedExplainer:
 
 
     def _preprocess(self):
-        # preprocesses the calibration data by identifying constant value columns to ignore
-        constant_columns = [np.where(np.all(self.X_cal[:,f] == self.X_cal[0,f], axis=0) for f in range(self.X_cal.shape[1]))]
+        # Initialize an empty list to hold indices of constant columns
+        constant_columns = []
+        # Iterate over each feature
+        for f in range(self.X_cal.shape[1]):
+            # If all values in the feature are the same, add the index to the list
+            if np.all(self.X_cal[:,f] == self.X_cal[0,f]):
+                constant_columns.append(f)
         self.features_to_ignore = constant_columns
 
 
