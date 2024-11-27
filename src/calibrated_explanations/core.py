@@ -2032,7 +2032,8 @@ class WrapCalibratedExplainer():
         if not self.calibrated:
             if 'threshold' in kwargs:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
-            warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
+            if calibrated:
+                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
             if uq_interval:
                 predict = self.learner.predict(X_test)
                 return predict, (predict, predict)
@@ -2065,7 +2066,7 @@ class WrapCalibratedExplainer():
         Raises
         ------
         RuntimeError
-            If the learner is not fitted before predicting.
+            If the learner is not fitted before predicting probabilities.
 
         ValueError
             If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
@@ -2111,7 +2112,8 @@ class WrapCalibratedExplainer():
         if not self.calibrated:
             if threshold is not None:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
-            warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
+            if calibrated:
+                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
             if uq_interval:
                 proba = self.learner.predict_proba(X_test)
                 if proba.shape[1] > 2:
