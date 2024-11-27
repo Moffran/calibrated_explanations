@@ -775,8 +775,8 @@ class CalibratedExplanation(ABC):
             warnings.warn('Alternatives for all categorical features are already included')
             return self
 
-        X_copy = deepcopy(self.X_test[f])
-        is_lesser = self._is_lesser(rule_boundary, X_copy)
+        X_copy = np.array(self.X_test, copy=True)
+        is_lesser = self._is_lesser(rule_boundary, X_copy[f])
         new_rule = self._get_rules()
         rule = self._get_rule_str(is_lesser, f, rule_boundary)
         if np.any([new_rule['rule'][i] == rule for i in range(len(new_rule['rule']))]):
@@ -812,7 +812,7 @@ class CalibratedExplanation(ABC):
                                     sample_percentiles)
 
         for value in values:
-            X_local = np.reshape(deepcopy(self.X_test), (1,-1))
+            X_local = np.reshape(X_copy, (1,-1))
             X_local[0,f] = value
             perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
             perturbed_feature = np.concatenate((perturbed_feature, [(f, 0, None, is_lesser)]))
@@ -826,7 +826,7 @@ class CalibratedExplanation(ABC):
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 
         for value in covered:
-            X_local = np.reshape(deepcopy(self.X_test), (1,-1))
+            X_local = np.reshape(X_copy, (1,-1))
             X_local[0,f] = value
             perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
             perturbed_feature = np.concatenate((perturbed_feature, [(f, 0, None, None)]))
@@ -929,7 +929,7 @@ class FactualExplanation(CalibratedExplanation):
             return self.rules
         self._has_rules = False
         # i = self.index
-        instance = deepcopy(self.X_test)
+        instance = np.array(self.X_test, copy=True)
         factual = {
             'base_predict': [],
             'base_predict_low': [],
@@ -1225,13 +1225,14 @@ class AlternativeExplanation(CalibratedExplanation):
             return self.rules
         self.rules = []
         self.labels = {} # pylint: disable=attribute-defined-outside-init
-        instance = deepcopy(self.X_test)
-        discretized = self._get_explainer()._discretize(deepcopy(instance).reshape(1,-1))[0] # pylint: disable=protected-access
+        instance = np.array(self.X_test, copy=True)
+        instance.flags.writeable = False
+        discretized = self._get_explainer()._discretize(instance.reshape(1,-1))[0] # pylint: disable=protected-access
         instance_predict = self.binned['predict']
         instance_low = self.binned['low']
         instance_high = self.binned['high']
         alternative = self.__set_up_result()
-        rule_boundaries = self._get_explainer().rule_boundaries(deepcopy(instance))
+        rule_boundaries = self._get_explainer().rule_boundaries(instance)
         for f,_ in enumerate(instance): # pylint: disable=invalid-name
             if f in self._get_explainer().categorical_features:
                 values = np.array(self._get_explainer().feature_values[f])
@@ -1821,7 +1822,7 @@ class FastExplanation(CalibratedExplanation):
             return self.rules
         self._has_rules = False
         # i = self.index
-        instance = deepcopy(self.X_test)
+        instance = np.array(self.X_test, copy=True)
         fast = {
             'base_predict': [],
             'base_predict_low': [],
