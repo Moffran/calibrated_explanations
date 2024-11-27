@@ -8,9 +8,9 @@ import warnings
 from copy import deepcopy
 from abc import ABC, abstractmethod
 from time import time
+from types import MappingProxyType
 import numpy as np
 from pandas import Categorical
-from types import MappingProxyType
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
 from .utils.helper import make_directory, calculate_metrics
 from ._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
@@ -20,7 +20,7 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
     A class for storing and visualizing calibrated explanations.
     """
     def __init__(self, calibrated_explainer, X_test, y_threshold, bins) -> None:
-        self.calibrated_explainer = deepcopy(calibrated_explainer)
+        self.calibrated_explainer = calibrated_explainer#deepcopy(calibrated_explainer)
         self.X_test = X_test
         self.y_threshold = y_threshold
         self.low_high_percentiles = None
@@ -514,6 +514,10 @@ class CalibratedExplanation(ABC):
     A class for storing and visualizing calibrated explanations.
     '''
     def __init__(self, calibrated_explanations, index, X_test, binned, feature_weights, feature_predict, prediction, y_threshold=None, instance_bin=None):
+        binned = MappingProxyType(binned)
+        feature_weights = MappingProxyType(feature_weights)
+        feature_predict = MappingProxyType(feature_predict)
+        prediction = MappingProxyType(prediction)
         self.calibrated_explanations = calibrated_explanations
         self.index = index
         self.X_test = X_test
@@ -522,12 +526,12 @@ class CalibratedExplanation(ABC):
         self.feature_predict = {}
         self.prediction = {}
         for key in binned.keys():
-            self.binned[key] = deepcopy(binned[key][index])
+            self.binned[key] = binned[key][index]
         for key in feature_weights.keys():
-            self.feature_weights[key] = deepcopy(feature_weights[key][index])
-            self.feature_predict[key] = deepcopy(feature_predict[key][index])
+            self.feature_weights[key] = feature_weights[key][index]
+            self.feature_predict[key] = feature_predict[key][index]
         for key in prediction.keys():
-            self.prediction[key] = deepcopy(prediction[key][index])
+            self.prediction[key] = prediction[key][index]
         self.y_threshold=y_threshold if np.isscalar(y_threshold) or isinstance(y_threshold, tuple) else \
                             None if y_threshold is None else \
                             y_threshold[index]
