@@ -30,8 +30,10 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage"    = "https://github.com/Moffran/calibrated_explanations"
+"Documentation" = "https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest"
+"Changelog" = "https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/Moffran/calibrated_explanations/issues"
+"Repository" = "https://github.com/Moffran/calibrated_explanations"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
