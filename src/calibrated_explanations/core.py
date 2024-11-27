@@ -495,13 +495,14 @@ class CalibratedExplainer:
 
         # Step 1: Predict the test set and the perturbed instances to get the predictions and intervals
         # Substep 1.a: Add the test set
+        X_test.flags.writeable = False
         assert_threshold(threshold, X_test)
         perturbed_threshold = self.assign_threshold(threshold)
         perturbed_bins = np.empty((0,)) if bins is not None else None
         perturbed_X = np.empty((0, self.num_features))
         perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
         perturbed_class = np.empty((0,),dtype=int)
-        X_perturbed = self._discretize(copy.deepcopy(X_test))
+        X_perturbed = self._discretize(X_test)
         rule_boundaries = self.rule_boundaries(X_test, X_perturbed)
 
         # Substep 1.b: prepare and add the perturbed test instances
@@ -512,7 +513,7 @@ class CalibratedExplainer:
         for f in range(self.num_features):
             if f in self.categorical_features:
                 feature_values = self.feature_values[f]
-                X_copy = copy.deepcopy(X_test)
+                X_copy = np.array(X_test, copy=True)
                 for value in feature_values:
                     X_copy[:,f] = value
                     perturbed_X = np.concatenate((perturbed_X, np.array(X_copy)))
@@ -521,7 +522,7 @@ class CalibratedExplainer:
                     perturbed_class = np.concatenate((perturbed_class, prediction['predict']))
                     perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, list(range(X_test.shape[0])))
             else:
-                X_copy = copy.deepcopy(X_test)
+                X_copy = np.array(X_test, copy=True)
                 feature_values = np.unique(np.array(X_cal[:,f]))
                 lower_boundary = rule_boundaries[:,f,0]
                 upper_boundary = rule_boundaries[:,f,1]
@@ -536,7 +537,7 @@ class CalibratedExplainer:
                     lesser_values[f][j] = (np.unique(self.__get_lesser_values(f, val)), val)
                     indices = np.where(lower_boundary == val)[0]
                     for value in lesser_values[f][j][0]:
-                        X_local = copy.deepcopy(X_test[indices,:])
+                        X_local = X_copy[indices,:]
                         X_local[:,f] = value
                         perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
                         perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, True) for i in indices]))
@@ -547,7 +548,7 @@ class CalibratedExplainer:
                     greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
                     indices = np.where(upper_boundary == val)[0]
                     for value in greater_values[f][j][0]:
-                        X_local = copy.deepcopy(X_test[indices,:])
+                        X_local = X_copy[indices,:]
                         X_local[:,f] = value
                         perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
                         perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, False) for i in indices]))
@@ -558,7 +559,7 @@ class CalibratedExplainer:
                 for i in indices:
                     covered_values[f][i] = (self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]), (lower_boundary[i], upper_boundary[i]))
                     for value in covered_values[f][i][0]:
-                        X_local = copy.deepcopy(X_test[i])
+                        X_local = X_copy[i,:]
                         X_local[f] = value
                         perturbed_X = np.concatenate((perturbed_X, np.array(X_local.reshape(1,-1))))
                         perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
