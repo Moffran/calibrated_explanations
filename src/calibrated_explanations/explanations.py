@@ -1396,9 +1396,9 @@ class AlternativeExplanation(CalibratedExplanation):
                 continue
             if make_super and (
                                 positive_class
-                                and rules['predict'][rule] < self.prediction['predict']
+                                and rules['predict'][rule] <= self.prediction['predict']
                                 or not positive_class
-                                and rules['predict'][rule] > self.prediction['predict']
+                                and rules['predict'][rule] >= self.prediction['predict']
                             ):
                 continue
             if make_semi:
