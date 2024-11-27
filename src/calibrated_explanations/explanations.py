@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from time import time
 import numpy as np
 from pandas import Categorical
+from types import MappingProxyType
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, RegressorDiscretizer, BinaryRegressorDiscretizer
 from .utils.helper import make_directory, calculate_metrics
 from ._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
@@ -95,8 +96,6 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
         #     bool: True if the y_threshold is not None
         # """
         return self.y_threshold is not None
-
-
 
     def _is_one_sided(self) -> bool:
         # """test if a regression explanation is one-sided
@@ -203,7 +202,13 @@ class CalibratedExplanations: # pylint: disable=too-many-instance-attributes
             explanation.add_conjunctions(n_top_features, max_rule_size)
         return self
 
-
+    def reset(self):
+        '''
+        This function resets the explanations to its original state. 
+        '''
+        for explanation in self.explanations:
+            explanation.reset()
+        return self
 
     def remove_conjunctions(self):
         """removes any conjunctive rules"""
@@ -413,10 +418,9 @@ class AlternativeExplanations(CalibratedExplanations):
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
         '''
-        super_explanations = deepcopy(self)
-        for explanation in super_explanations.explanations:
+        for explanation in self.explanations:
             explanation.super_explanations(only_ensured=only_ensured, include_potential=include_potential)
-        return super_explanations
+        return self
 
 
     def semi_explanations(self, only_ensured=False, include_potential=True):
@@ -449,10 +453,9 @@ class AlternativeExplanations(CalibratedExplanations):
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
         '''
-        semi_explanations = deepcopy(self)
-        for explanation in semi_explanations.explanations:
+        for explanation in self.explanations:
             explanation.semi_explanations(only_ensured=only_ensured, include_potential=include_potential)
-        return semi_explanations
+        return self
 
 
     def counter_explanations(self, only_ensured=False, include_potential=True):
@@ -485,10 +488,9 @@ class AlternativeExplanations(CalibratedExplanations):
         - only_ensured=True, include_potential=True: ensured explanations takes precedence meaning that unless the original explanation 
             is potential, no potential explanations will be included
         '''
-        counter_explanations = deepcopy(self)
-        for explanation in counter_explanations.explanations:
+        for explanation in self.explanations:
             explanation.counter_explanations(only_ensured=only_ensured, include_potential=include_potential)
-        return counter_explanations
+        return self
 
     def ensured_explanations(self):
         '''
@@ -501,10 +503,9 @@ class AlternativeExplanations(CalibratedExplanations):
             A new :class:`.AlternativeExplanations` object containing :class:`.AlternativeExplanation` objects only containing ensured 
             explanations. 
         '''
-        ensured_explanations = deepcopy(self)
-        for explanation in ensured_explanations.explanations:
+        for explanation in self.explanations:
             explanation.ensured_explanations()
-        return ensured_explanations
+        return self
 
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
@@ -649,6 +650,14 @@ class CalibratedExplanation(ABC):
     @abstractmethod
     def _get_rules(self):
         pass
+
+    def reset(self):
+        '''
+        This function resets the explanation to its original state. 
+        '''
+        self._has_rules = False
+        self._get_rules()
+        return self
 
     def remove_conjunctions(self):
         """removes any conjunctive rules"""
@@ -1418,6 +1427,7 @@ class AlternativeExplanation(CalibratedExplanation):
             new_rules['feature_value'].append(rules['feature_value'][rule])
             new_rules['is_conjunctive'].append(rules['is_conjunctive'][rule])
         new_rules['classes'] = rules['classes']
+
         if self._has_conjunctive_rules: # pylint: disable=protected-access
             self.__extracted_non_conjunctive_rules(new_rules)
         self.rules = new_rules
@@ -1425,7 +1435,7 @@ class AlternativeExplanation(CalibratedExplanation):
 
     # extract non-conjunctive rules
     def __extracted_non_conjunctive_rules(self, new_rules):
-        self.conjunctive_rules = deepcopy(new_rules)
+        self.conjunctive_rules = MappingProxyType(new_rules)
         new_rules['predict'] = [value for i, value in enumerate(new_rules['predict']) if not new_rules['is_conjunctive'][i]]
         new_rules['predict_low'] = [value for i, value in enumerate(new_rules['predict_low']) if not new_rules['is_conjunctive'][i]]
         new_rules['predict_high'] = [value for i, value in enumerate(new_rules['predict_high']) if not new_rules['is_conjunctive'][i]]
@@ -1437,6 +1447,17 @@ class AlternativeExplanation(CalibratedExplanation):
         new_rules['feature'] = [value for i, value in enumerate(new_rules['feature']) if not new_rules['is_conjunctive'][i]]
         new_rules['feature_value'] = [value for i, value in enumerate(new_rules['feature_value']) if not new_rules['is_conjunctive'][i]]
         new_rules['is_conjunctive'] = [value for i, value in enumerate(new_rules['is_conjunctive']) if not new_rules['is_conjunctive'][i]]
+
+    def reset(self):
+        '''
+        This function resets the explanation to its original state. 
+        '''
+        self.__is_super_explanation = False
+        self.__is_semi_explanation = False
+        self.__is_counter_explanation = False
+        self._has_rules = False
+        self._get_rules()
+        return self
 
     def super_explanations(self, only_ensured=False, include_potential=False):
         '''
