@@ -21,6 +21,7 @@ import os
 import sys
 import importlib
 from inspect import isclass
+import numbers
 import numpy as np
 from pandas import CategoricalDtype
 
@@ -351,7 +352,7 @@ def assert_threshold(threshold, x):
     '''
     if threshold is None:
         return threshold
-    if np.isscalar(threshold) and isinstance(threshold, (int, float)):
+    if np.isscalar(threshold) and isinstance(threshold, (numbers.Integral, numbers.Real)):
         return threshold
     if isinstance(threshold, tuple):
         assert len(threshold) == 2, 'tuple thresholds must be a tuple with two values'
@@ -461,22 +462,23 @@ def concatenate_thresholds(perturbed_threshold, threshold, indices):
 
     Parameters
     ----------
-    perturbed_threshold (list or np.ndarray): The initial list or array of perturbed threshold values.
-    threshold (list, tuple, or np.ndarray): The threshold values to be concatenated.
-    indices (list or np.ndarray): The indices of the threshold values to be concatenated.
+    perturbed_threshold : np.ndarray
+        The existing perturbed thresholds.
+    threshold : list or np.ndarray
+        The original thresholds.
+    indices : np.ndarray
+        The indices to select from the threshold.
 
     Returns
     -------
-    list or np.ndarray: The updated list or array of perturbed threshold values after concatenation.
+    np.ndarray
+        The concatenated thresholds.
     """
     if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-        if isinstance(threshold[0], tuple):
-            if len(perturbed_threshold) == 0:
-                perturbed_threshold = [threshold[i] for i in indices]
-            else:
-                perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i] for i in indices]))
+        if isinstance(threshold[0], tuple) and len(perturbed_threshold) == 0:
+            perturbed_threshold = [threshold[i] for i in indices]
         else:
-            perturbed_threshold = np.concatenate((perturbed_threshold, threshold[indices]))
+            perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i] for i in indices]))
     return perturbed_threshold
 
 
