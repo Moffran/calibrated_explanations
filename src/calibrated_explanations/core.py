@@ -9,7 +9,6 @@ using Venn-Abers predictors (classification & regression) or
 conformal predictive systems (regression).
 """
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments
-import copy
 import warnings
 from time import time
 import numpy as np
@@ -24,7 +23,7 @@ from ._VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                 RegressorDiscretizer, BinaryRegressorDiscretizer
-from .utils.helper import safe_isinstance, convert_targets_to_numeric, safe_import, check_is_fitted, assert_threshold, concatenate_thresholds
+from .utils.helper import safe_isinstance, convert_targets_to_numeric, safe_import, check_is_fitted, assert_threshold, concatenate_thresholds, immutable_array
 from .utils.perturbation import perturb_dataset
 from ._plots import _plot_global
 
@@ -117,6 +116,10 @@ class CalibratedExplainer:
             A boolean parameter that determines whether the explainer should reject explanations that are
             deemed too difficult to explain. If set to True, the explainer will reject explanations that are
             deemed too difficult to explain. If set to False, the explainer will not reject any explanations.
+        oob : bool, default=False
+            A boolean parameter that determines whether the explainer should use out-of-bag samples for calibration. 
+            If set to True, the explainer will use out-of-bag samples for calibration. If set to False, the explainer
+            will not use out-of-bag samples for calibration. This requires the learner to be a RandomForestClassifier
         
         Returns
         -------
@@ -125,6 +128,27 @@ class CalibratedExplainer:
         '''
         init_time = time()
         self.__initialized = False
+        check_is_fitted(learner)
+        self.learner = learner
+        self.oob = kwargs.get('oob', False)
+        if self.oob:
+            try:
+                if mode == 'classification':
+                    y_oob_proba = self.learner.oob_decision_function_
+                    if len(y_oob_proba.shape) == 1 or y_oob_proba.shape[1] == 1:  # Binary classification
+                        y_oob = (y_oob_proba > 0.5).astype(np.dtype(y_cal.dtype))
+                    else:  # Multiclass classification
+                        y_oob = np.argmax(y_oob_proba, axis=1)
+                        if safe_isinstance(y_cal, "pandas.core.arrays.categorical.Categorical"):
+                            y_oob = y_cal.categories[y_oob]
+                        else:
+                            y_oob = y_oob.astype(np.dtype(y_cal.dtype))
+                else:
+                    y_oob = self.learner.oob_prediction_
+            except Exception as exc:
+                raise exc
+            assert len(X_cal) == len(y_oob), 'The length of the out-of-bag predictions does not match the length of X_cal.'
+            y_cal = y_oob
         if safe_isinstance(X_cal, "pandas.core.frame.DataFrame"):
             self.X_cal = X_cal.values  # pylint: disable=invalid-name
         else:
@@ -134,8 +158,6 @@ class CalibratedExplainer:
         else:
             self.y_cal = y_cal
 
-        check_is_fitted(learner)
-        self.learner = learner
         self.num_features = len(self.X_cal[0, :])
         self.set_seed(kwargs.get('seed', 42))
         self.sample_percentiles = kwargs.get('sample_percentiles', [25, 50, 75])
