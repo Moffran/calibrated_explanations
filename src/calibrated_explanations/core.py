@@ -1264,27 +1264,35 @@ class CalibratedExplainer:
 
         not_to_discretize = self.categorical_features #np.union1d(self.categorical_features, self.features_to_ignore)
         if discretizer == 'binaryEntropy':
+            if isinstance(self.discretizer, BinaryEntropyDiscretizer):
+                return
             self.discretizer = BinaryEntropyDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
                     random_state=self.seed)
         elif discretizer == 'binaryRegressor':
+            if isinstance(self.discretizer, BinaryRegressorDiscretizer):
+                return
             self.discretizer = BinaryRegressorDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
                     random_state=self.seed)
 
         elif discretizer == 'entropy':
+            if isinstance(self.discretizer, EntropyDiscretizer):
+                return
             self.discretizer = EntropyDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
                     random_state=self.seed)
         elif discretizer == 'regressor':
+            if isinstance(self.discretizer, RegressorDiscretizer):
+                return
             self.discretizer = RegressorDiscretizer(
                     X_cal, not_to_discretize,
                     self.feature_names, labels=y_cal,
                     random_state=self.seed)
-        self.discretized_X_cal = self._discretize(copy.deepcopy(self.X_cal))
+        self.discretized_X_cal = self._discretize(immutable_array(self.X_cal))
 
         self.feature_values = {}
         self.feature_frequencies = {}
