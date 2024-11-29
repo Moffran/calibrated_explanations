@@ -145,7 +145,6 @@ It is easy to access the predictions and probabilities from the calibrator and m
    regressor.calibrate(X_calibration_reg, y_calibration_reg)
 
    # Output the model predictions and probabilities (without calibration). 
-   # This option is not yet in a released version
    uncal_proba_cls = classifier.predict_proba(X_test_cls, calibrated=False)
    uncal_y_hat_cls = classifier.predict(X_test_cls, calibrated=False)
    uncal_y_hat_reg = regressor.predict(X_test_reg, calibrated=False)
