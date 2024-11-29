@@ -130,7 +130,9 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
     for ext in save_ext:
         fig.savefig(path + title + ext, bbox_inches='tight')
     if show:
-        fig.show()
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 # pylint: disable=too-many-branches, too-many-statements, too-many-locals
@@ -230,7 +232,9 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
     for ext in save_ext:
         fig.savefig(path + title + ext, bbox_inches='tight')
     if show:
-        fig.show()
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 # pylint: disable=duplicate-code
@@ -288,6 +292,8 @@ def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertain
         plt.savefig(path + title + ext, bbox_inches='tight')
     if show:
         plt.show()
+    else:
+        plt.close()
 
 # `__plot_triangular`
 def __plot_proba_triangle():
@@ -421,7 +427,9 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
     for ext in save_ext:
         fig.savefig(path + title + ext, bbox_inches='tight')
     if show:
-        fig.show()
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
