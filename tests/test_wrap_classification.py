@@ -148,9 +148,9 @@ def test_wrap_binary_ce(binary_dataset):
     assert not cal_exp.calibrated
 
     with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test)
+        cal_exp.plot(X_test, show=False)
     with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, y_test)
+        cal_exp.plot(X_test, y_test, show=False)
 
     cal_exp.fit(X_prop_train, y_prop_train)
     assert cal_exp.fitted

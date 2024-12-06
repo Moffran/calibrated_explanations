@@ -113,28 +113,28 @@ def test_regression_ce(regression_dataset):
 
     factual_explanation = cal_exp.explain_factual(X_test)
     factual_explanation.add_conjunctions()
-    factual_explanation.plot()
-    factual_explanation[0].plot(uncertainty=True)
-    factual_explanation.plot(filename='test.png')
+    factual_explanation.plot(show=False)
+    factual_explanation[0].plot(show=False, uncertainty=True)
+    factual_explanation.plot(show=False, filename='test.png')
 
     factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf))
-    factual_explanation.plot()
+    factual_explanation.plot(show=False)
     with pytest.raises(Warning):
-        factual_explanation.plot(uncertainty=True)
+        factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(-np.inf, 0.9))
-    factual_explanation.plot()
+    factual_explanation.plot(show=False)
     with pytest.raises(Warning):
-        factual_explanation.plot(uncertainty=True)
+        factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test)
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf))
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9))
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
 
@@ -153,17 +153,17 @@ def test_probabilistic_regression_ce(regression_dataset):
 
     factual_explanation = cal_exp.explain_factual(X_test, y_test)
     factual_explanation.add_conjunctions()
-    factual_explanation.plot()
-    factual_explanation.plot(uncertainty=True)
+    factual_explanation.plot(show=False)
+    factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(X_test, y_test[0])
     factual_explanation = cal_exp.explain_factual(X_test, (y_test[0], y_test[0]))
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, y_test[0])
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
     alternative_explanation.super_explanations()
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
@@ -179,28 +179,28 @@ def test_regression_conditional_ce(regression_dataset):
 
     factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:, 0])
     factual_explanation.add_conjunctions()
-    factual_explanation.plot()
-    factual_explanation.plot(uncertainty=True)
+    factual_explanation.plot(show=False)
+    factual_explanation.plot(show=False, uncertainty=True)
     repr(factual_explanation)
 
     factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:, 0])
-    factual_explanation.plot()
+    factual_explanation.plot(show=False)
     with pytest.raises(Warning):
-        factual_explanation.plot(uncertainty=True)
+        factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:, 0])
-    factual_explanation.plot()
+    factual_explanation.plot(show=False)
     with pytest.raises(Warning):
-        factual_explanation.plot(uncertainty=True)
+        factual_explanation.plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, bins=X_test[:, 0])
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:, 0])
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:, 0])
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
     repr(alternative_explanation)
 
 def test_probabilistic_regression_conditional_ce(regression_dataset):
@@ -218,12 +218,12 @@ def test_probabilistic_regression_conditional_ce(regression_dataset):
 
     factual_explanation = cal_exp.explain_factual(X_test, y_test, bins=X_test[:, 0])
     factual_explanation.add_conjunctions()
-    factual_explanation.plot()
+    factual_explanation.plot(show=False)
 
     factual_explanation = cal_exp.explain_factual(X_test, y_test[0], bins=X_test[:, 0])
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, y_test, bins=X_test[:, 0])
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
 
     cal_exp.explore_alternatives(X_test, y_test[0], bins=X_test[:, 0])
 
@@ -323,18 +323,18 @@ def test_regression_fast_ce(regression_dataset):
 
     perturbed_explanation = cal_exp.explain_fast(X_test)
     perturbed_explanation.add_conjunctions()
-    perturbed_explanation.plot()
-    perturbed_explanation.plot(uncertainty=True)
+    perturbed_explanation.plot(show=False)
+    perturbed_explanation.plot(show=False, uncertainty=True)
 
     perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
-    perturbed_explanation.plot()
+    perturbed_explanation.plot(show=False)
     with pytest.raises(Warning):
-        perturbed_explanation.plot(uncertainty=True)
+        perturbed_explanation.plot(show=False, uncertainty=True)
 
     perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
-    perturbed_explanation.plot()
+    perturbed_explanation.plot(show=False)
     with pytest.raises(Warning):
-        perturbed_explanation.plot(uncertainty=True)
+        perturbed_explanation.plot(show=False, uncertainty=True)
 
 def test_probabilistic_regression_fast_ce(regression_dataset):
     """
@@ -348,12 +348,12 @@ def test_probabilistic_regression_fast_ce(regression_dataset):
 
     perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
     perturbed_explanation.add_conjunctions()
-    perturbed_explanation.plot()
-    perturbed_explanation.plot(uncertainty=True)
+    perturbed_explanation.plot(show=False)
+    perturbed_explanation.plot(show=False, uncertainty=True)
 
     perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0])
-    perturbed_explanation.plot()
-    perturbed_explanation.plot(uncertainty=True)
+    perturbed_explanation.plot(show=False)
+    perturbed_explanation.plot(show=False, uncertainty=True)
 
 def test_regression_conditional_perturbed_ce(regression_dataset):
     """

@@ -177,15 +177,15 @@ def test_binary_ce(binary_dataset):
     factual_explanation[0].add_new_rule_condition(feature_names[0], X_cal[0,0])
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
-    factual_explanation[:1].plot()
-    factual_explanation[0].plot(uncertainty=True)
+    factual_explanation[:1].plot(show=False)
+    factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test)
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
-    alternative_explanation[:1].plot()
-    alternative_explanation[X_test==X_test[0]].plot(style='triangular')
+    alternative_explanation[:1].plot(show=False)
+    alternative_explanation[X_test==X_test[0]].plot(show=False, style='triangular')
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
     alternative_explanation.ensured_explanations()
@@ -209,15 +209,15 @@ def test_multiclass_ce_str_target(multiclass_dataset):
     factual_explanation = cal_exp.explain_factual(X_test)
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
-    factual_explanation[:1].plot()
-    factual_explanation[0].plot(uncertainty=True)
+    factual_explanation[:1].plot(show=False)
+    factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test)
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
-    alternative_explanation[:1].plot()
-    alternative_explanation[X_test==X_test[0]].plot(style='triangular')
+    alternative_explanation[:1].plot(show=False)
+    alternative_explanation[X_test==X_test[0]].plot(show=False, style='triangular')
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
     alternative_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
@@ -243,15 +243,15 @@ def test_binary_ce_str_target(binary_dataset):
     factual_explanation[0].add_new_rule_condition(feature_names[0], X_cal[0,0])
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
-    factual_explanation[:1].plot()
-    factual_explanation[0].plot(uncertainty=True)
+    factual_explanation[:1].plot(show=False)
+    factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test)
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
-    alternative_explanation[:1].plot()
-    alternative_explanation[X_test==X_test[0]].plot(style='triangular')
+    alternative_explanation[:1].plot(show=False)
+    alternative_explanation[X_test==X_test[0]].plot(show=False, style='triangular')
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
     alternative_explanation.ensured_explanations()
@@ -276,15 +276,15 @@ def test_multiclass_ce(multiclass_dataset):
     factual_explanation = cal_exp.explain_factual(X_test)
     factual_explanation.add_conjunctions()
     factual_explanation.remove_conjunctions()
-    factual_explanation[:1].plot()
-    factual_explanation[0].plot(uncertainty=True)
+    factual_explanation[:1].plot(show=False)
+    factual_explanation[0].plot(show=False, uncertainty=True)
     factual_explanation.add_conjunctions(max_rule_size=3)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test)
     alternative_explanation.add_conjunctions()
     alternative_explanation.remove_conjunctions()
-    alternative_explanation[:1].plot()
-    alternative_explanation[X_test==X_test[0]].plot(style='triangular')
+    alternative_explanation[:1].plot(show=False)
+    alternative_explanation[X_test==X_test[0]].plot(show=False, style='triangular')
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
     alternative_explanation.add_conjunctions(max_rule_size=3, n_top_features=None)
@@ -307,12 +307,12 @@ def test_binary_conditional_ce(binary_dataset):
 
     factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:, 0])
     factual_explanation.add_conjunctions()
-    factual_explanation.plot()
-    factual_explanation[0].plot(uncertainty=True)
+    factual_explanation.plot(show=False)
+    factual_explanation[0].plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, bins=X_test[:, 0])
     alternative_explanation.add_conjunctions()
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
 
 def test_multiclass_conditional_ce(multiclass_dataset):
     """
@@ -326,12 +326,12 @@ def test_multiclass_conditional_ce(multiclass_dataset):
 
     factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:, 0])
     factual_explanation.add_conjunctions()
-    factual_explanation.plot()
-    factual_explanation[0].plot(uncertainty=True)
+    factual_explanation.plot(show=False)
+    factual_explanation[0].plot(show=False, uncertainty=True)
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, bins=X_test[:, 0])
     alternative_explanation.add_conjunctions()
-    alternative_explanation.plot()
+    alternative_explanation.plot(show=False)
 
 def test_binary_fast_ce(binary_dataset):
     """
@@ -346,8 +346,8 @@ def test_binary_fast_ce(binary_dataset):
     fast_explanation = cal_exp.explain_fast(X_test)
     fast_explanation.add_conjunctions()
     fast_explanation.remove_conjunctions()
-    fast_explanation[:1].plot()
-    fast_explanation[0].plot(uncertainty=True)
+    fast_explanation[:1].plot(show=False)
+    fast_explanation[0].plot(show=False, uncertainty=True)
     fast_explanation.add_conjunctions(max_rule_size=3)
 
 def test_multiclass_fast_ce(multiclass_dataset):
@@ -363,8 +363,8 @@ def test_multiclass_fast_ce(multiclass_dataset):
     fast_explanation = cal_exp.explain_fast(X_test)
     fast_explanation.add_conjunctions()
     fast_explanation.remove_conjunctions()
-    fast_explanation[:1].plot()
-    fast_explanation[0].plot(uncertainty=True)
+    fast_explanation[:1].plot(show=False)
+    fast_explanation[0].plot(show=False, uncertainty=True)
     fast_explanation.add_conjunctions(max_rule_size=3)
 
 def test_binary_conditional_fast_ce(binary_dataset):
@@ -380,8 +380,8 @@ def test_binary_conditional_fast_ce(binary_dataset):
 
     fast_explanation = cal_exp.explain_fast(X_test, bins=X_test[:, 0])
     fast_explanation.add_conjunctions()
-    fast_explanation[:1].plot()
-    fast_explanation[0].plot(uncertainty=True)
+    fast_explanation[:1].plot(show=False)
+    fast_explanation[0].plot(show=False, uncertainty=True)
 
 def test_multiclass_fast_conditional_ce(multiclass_dataset):
     """
@@ -395,5 +395,5 @@ def test_multiclass_fast_conditional_ce(multiclass_dataset):
 
     fast_explanation = cal_exp.explain_fast(X_test, bins=X_test[:, 0])
     fast_explanation.add_conjunctions()
-    fast_explanation[:1].plot()
-    fast_explanation[0].plot(uncertainty=True)
+    fast_explanation[:1].plot(show=False)
+    fast_explanation[0].plot(show=False, uncertainty=True)
