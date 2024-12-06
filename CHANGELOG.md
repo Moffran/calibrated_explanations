@@ -4,6 +4,7 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.1...main)
 ### Features
 ### Fixes
+- [fix: ensure figures are closed when not shown in plotting functions](https://github.com/Moffran/calibrated_explanations/commit/f20a047b2c4acb0eae6b5f6aed876f2db7d4d389)
 
 ## [v0.5.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.5.1) - 2024-11-27
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.0...v0.5.1)
