@@ -1,3 +1,5 @@
+# pylint: disable=unknown-option-value
+# pylint: disable=too-many-lines, too-many-arguments, invalid-name, too-many-positional-arguments
 """
 This module contains the classes for storing and visualizing individual calibrated explanations.
 """

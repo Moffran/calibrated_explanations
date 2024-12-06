@@ -1,4 +1,5 @@
-# pylint: disable=too-many-lines, line-too-long, too-many-public-methods, invalid-name
+# pylint: disable=unknown-option-value
+# pylint: disable=too-many-lines, too-many-public-methods, invalid-name, too-many-positional-arguments
 """contains the :class:`.CalibratedExplanations` class created by :class:`.CalibratedExplainer`
 """
 import os
