@@ -494,6 +494,18 @@ def immutable_array(array):
     -------
     np.ndarray
         The immutable numpy array.
+
+    Examples
+    --------
+    >>> arr = immutable_array([1, 2, 3])
+    >>> arr.flags.writeable
+    False
+    >>> arr[0]
+    np.int64(1)
+    >>> arr[0] = 10
+    Traceback (most recent call last):
+        ...
+    ValueError: assignment destination is read-only
     """
     array = np.asarray(array)
     array.flags.writeable = False
