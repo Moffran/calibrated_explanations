@@ -25,13 +25,30 @@ import numbers
 import numpy as np
 from pandas import CategoricalDtype
 
-def make_directory(path: str, save_ext=None) -> None:    # pylint: disable=unused-private-member
-    """ create directory if it does not exist
+def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:    # pylint: disable=unused-private-member
+    """ 
+    Create directory if it does not exist
+    
+    Parameters
+    ----------
+    path : str
+        The path to the directory to create
+    save_ext : str or list, optional
+        The extension of the file to save, by default None
+    add_plots_folder : bool, optional
+        Whether to add a 'plots' folder to the path, by default True       
     """
     if save_ext is not None and len(save_ext) == 0:
         return
+    if not add_plots_folder:
+        if not os.path.isdir(path):
+            os.mkdir(path)
+        return
     if not os.path.isdir('plots'):
         os.mkdir('plots')
+        if path == 'plots':
+            return
+    path = path.removeprefix('plots/')
     if not os.path.isdir(f'plots/{path}'):
         os.mkdir(f'plots/{path}')
 
