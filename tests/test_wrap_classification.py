@@ -251,9 +251,9 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     with pytest.raises(RuntimeError):
         cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
     with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test)
+        cal_exp.plot(X_test, show=False)
     with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, y_test)
+        cal_exp.plot(X_test, y_test, show=False)
     with pytest.raises(RuntimeError):
         cal_exp.calibrated_confusion_matrix()
     with pytest.raises(RuntimeError):
@@ -267,9 +267,9 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     repr(cal_exp)
 
     with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test)
+        cal_exp.plot(X_test, show=False)
     with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, y_test)
+        cal_exp.plot(X_test, y_test, show=False)
     with pytest.raises(RuntimeError):
         cal_exp.calibrated_confusion_matrix()
     with pytest.raises(RuntimeError):
