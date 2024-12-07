@@ -10,12 +10,11 @@ from .explanation import FactualExplanation, AlternativeExplanation, FastExplana
 from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
 from ..utils.helper import make_directory
 
-
 class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     """A class for storing and visualizing calibrated explanations."""
 
     def __init__(self, calibrated_explainer, X_test, y_threshold, bins) -> None:
-        self.calibrated_explainer = calibrated_explainer  # deepcopy(calibrated_explainer)
+        self.calibrated_explainer = FrozenCalibratedExplainer(calibrated_explainer)
         self.X_test = X_test
         self.y_threshold = y_threshold
         self.low_high_percentiles = None
@@ -548,3 +547,291 @@ class AlternativeExplanations(CalibratedExplanations):
         for explanation in self.explanations:
             explanation.ensured_explanations()
         return self
+
+
+class FrozenCalibratedExplainer:
+    
+    """
+    A class that wraps an explainer to provide a read-only interface. 
+    It prevents modification of the underlying explainer, ensuring its state remains unchanged.
+
+    Args:
+        explainer: An explainer instance to be wrapped.
+
+    Attributes:
+        X_cal: The calibrated feature matrix.
+        y_cal: The calibrated target values.
+        num_features: The number of features in the dataset.
+        categorical_features: The indices of categorical features.
+        categorical_labels: The labels for categorical features.
+        feature_values: The unique values for each feature.
+        feature_names: The names of the features.
+        class_labels: The labels for the classes.
+        assign_threshold: The threshold for assigning class labels.
+        sample_percentiles: The percentiles of the samples.
+        mode: The mode of the explainer.
+        is_multiclass: A boolean indicating if the problem is multiclass.
+        discretizer: The discretizer used by the explainer.
+        rule_boundaries: The boundaries for rules in the explainer.
+        learner: The learner associated with the explainer.
+        difficulty_estimator: The estimator for difficulty levels.
+
+    Raises:
+        AttributeError: If an attempt is made to modify the instance.
+    """
+    def __init__(self, explainer):
+        """
+        Initializes a new instance of the FrozenCalibratedExplainer class.
+        
+        Args:
+            explainer: The explainer to be wrapped.
+        """
+        self._explainer = deepcopy(explainer)
+
+    @property
+    def X_cal(self):
+        """
+        Retrieves the calibrated feature matrix from the underlying explainer.
+        
+        This property provides access to the feature matrix used in the explainer, allowing users to understand the data being analyzed.
+        
+        Returns:
+            numpy.ndarray: The calibrated feature matrix.
+        """
+        return self._explainer.X_cal
+
+    @property
+    def y_cal(self):
+        """
+        Retrieves the calibrated target values from the underlying explainer.
+
+        This property provides access to the target values used in the explainer, allowing users to understand the data being analyzed.
+        
+        Returns:
+            numpy.ndarray: The calibrated target values.
+        """
+        return self._explainer.y_cal
+
+    @property
+    def num_features(self):
+        """
+        Retrieves the number of features in the dataset.
+
+        This property provides access to the count of features that the underlying explainer is using. 
+        It is useful for understanding the dimensionality of the data being analyzed.
+
+        Returns:
+            int: The number of features in the dataset.
+        """
+        return self._explainer.num_features
+
+    @property
+    def categorical_features(self):
+        """
+        Retrieves the indices of categorical features from the underlying explainer.
+        
+        This property provides access to the indices of categorical features used in the explainer, allowing users to understand the data being analyzed.
+        
+        Returns:
+            list: The indices of categorical features.
+        """
+        return self._explainer.categorical_features
+
+    @property
+    def categorical_labels(self):
+        """
+        Retrieves the labels for categorical features from the underlying explainer.
+        
+        This property provides access to the labels for categorical features used in the explainer, allowing users to understand the data being analyzed.
+        
+        Returns:
+            list: The labels for categorical features.
+        """
+        return self._explainer.categorical_labels
+
+    @property
+    def feature_values(self):
+        """
+        Retrieves the unique values for each feature from the underlying explainer.
+        
+        This property provides access to the unique values for each feature used in the explainer, allowing users to understand the data being analyzed.
+        
+        Returns:
+            list: The unique values for each feature.
+        """
+        return self._explainer.feature_values
+
+    @property
+    def feature_names(self):
+        """
+        Retrieves the names of the features from the underlying explainer.
+        
+        This property provides access to the names of the features used in the explainer, allowing users to understand the data being analyzed.
+        
+        Returns:
+            list: The names of the features.
+        """
+        return self._explainer.feature_names
+
+    @property
+    def class_labels(self):
+        """
+        Retrieves the labels for the classes from the underlying explainer.
+            
+        This property provides access to the labels for the classes used in the explainer, allowing users to understand the data being analyzed.
+        
+        Returns:
+            list: The labels for the classes.
+        """
+        return self._explainer.class_labels
+
+    @property
+    def assign_threshold(self):
+        """
+        Retrieves the threshold for assigning class labels from the underlying explainer.
+        
+        This property provides access to the threshold used for assigning class labels in the explainer, allowing users to understand the data being analyzed.
+        
+        Returns:
+            float: The threshold for assigning class labels.
+        """
+        return self._explainer.assign_threshold
+
+    @property
+    def sample_percentiles(self):
+        """
+        Retrieves the sample percentiles from the underlying explainer.
+
+        This property provides access to the percentiles of the samples used in the explainer, 
+        allowing users to understand the distribution of the data being analyzed.
+
+        Returns:
+        list: The sample percentiles as a list.
+        """
+        return self._explainer.sample_percentiles
+
+    @property
+    def mode(self):
+        """
+        Retrieves the mode of the explainer from the underlying explainer.
+        
+        This property provides access to the mode of the explainer, allowing users to understand the type of problem being analyzed.
+        
+        Returns:
+            str: The mode of the explainer.
+        """
+        return self._explainer.mode
+
+    @property
+    def is_multiclass(self):
+        """
+        Retrieves a boolean indicating if the problem is multiclass from the underlying explainer.
+        
+        This property provides access to a boolean value indicating if the problem is multiclass, allowing users to understand the type of problem being analyzed.
+        
+        Returns:
+            bool: True if the problem is multiclass, False otherwise.
+        """
+        return self._explainer.is_multiclass
+
+    @property
+    def discretizer(self):
+        """
+        Retrieves the discretizer used by the explainer from the underlying explainer.
+        
+        This property provides access to the discretizer used by the explainer, allowing users to understand the discretization process.
+        
+        Returns:
+            Discretizer: The discretizer used by the explainer.
+        """
+        return self._explainer.discretizer
+
+    @property
+    def _discretize(self):
+        """
+        Retrieves the discretize function from the underlying explainer.
+        
+        This property provides access to the discretize function used by the explainer, allowing users to understand the discretization process.
+        
+        Returns:
+            function: The discretize function used by the explainer.
+        """
+        return self._explainer._discretize # pylint: disable=protected-access
+
+    @property
+    def rule_boundaries(self):
+        """
+        Retrieves the boundaries for rules in the explainer from the underlying explainer.
+        
+        This property provides access to the boundaries for rules used in the explainer, allowing users to understand the discretization process.
+        
+        Returns:
+            list: The boundaries for rules in the explainer.
+        """
+        return self._explainer.rule_boundaries
+
+    @property
+    def learner(self):
+        """
+        Retrieves the learner associated with the explainer from the underlying explainer.
+        
+        This property provides access to the learner associated with the explainer, allowing users to understand the learning process.
+        
+        Returns:
+            object: The learner associated with the explainer.
+        """
+        return self._explainer.learner
+
+    @property
+    def difficulty_estimator(self):
+        """
+        Retrieves the estimator for difficulty levels from the underlying explainer.
+        
+        This property provides access to the estimator for difficulty levels used in the explainer, allowing users to understand the learning process.
+        
+        Returns:
+            object: The estimator for difficulty levels.
+        """
+        return self._explainer.difficulty_estimator
+
+    @property
+    def _predict(self):
+        """
+        Retrieves the predict function from the underlying explainer.
+        
+        This property provides access to the predict function used by the explainer, allowing users to understand the prediction process.
+        
+        Returns:
+            function: The predict function used by the explainer.
+        """
+        return self._explainer._predict # pylint: disable=protected-access
+
+    @property
+    def _preload_lime(self):
+        """
+        Retrieves the preload_lime function from the underlying explainer.
+        
+        This property provides access to the preload_lime function used by the explainer, allowing users to understand the prediction process.
+        
+        Returns:
+            function: The preload_lime function used by the explainer.
+        """
+        return self._explainer._preload_lime # pylint: disable=protected-access
+
+    @property
+    def _preload_shap(self):
+        """
+        Retrieves the preload_shap function from the underlying explainer.
+        
+        This property provides access to the preload_shap function used by the explainer, allowing users to understand the prediction process.
+        
+        Returns:
+            function: The preload_shap function used by the explainer.
+        """
+        return self._explainer._preload_shap # pylint: disable=protected-access
+
+    def __setattr__(self, key, value):
+        if key == '_explainer':
+            super().__setattr__(key, value)
+        else:
+            raise AttributeError("Cannot modify frozen instance")
