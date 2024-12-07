@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 # pylint: disable=unknown-option-value
-# pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments
+# pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme
 def _plot_probabilistic(explanation, instance, predict, feature_weights, features_to_plot,
                         num_to_show, column_names, title, path, show, interval=False,
                         idx=None, save_ext=None):

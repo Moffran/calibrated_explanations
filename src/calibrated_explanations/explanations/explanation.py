@@ -3,7 +3,6 @@
 """This module contains the classes for storing and visualizing individual calibrated
 explanations."""
 import contextlib
-import os
 import warnings
 from copy import deepcopy
 from abc import ABC, abstractmethod
@@ -16,7 +15,7 @@ from ..utils.discretizers import (
     RegressorDiscretizer,
     BinaryRegressorDiscretizer,
 )
-from ..utils.helper import make_directory, calculate_metrics
+from ..utils.helper import calculate_metrics, prepare_for_saving
 from .._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 
 
@@ -735,10 +734,7 @@ class FactualExplanation(CalibratedExplanation):
             return
 
         if len(filename) > 0:
-            path = f"{os.path.dirname(filename)}/"
-            filename = os.path.basename(filename)
-            title, ext = os.path.splitext(filename)
-            make_directory(path, save_ext=np.array([ext]))
+            path, filename, title, ext = prepare_for_saving(filename)
             path = f"plots/{path}"
             save_ext = [ext]
         else:
@@ -1460,10 +1456,7 @@ class AlternativeExplanation(CalibratedExplanation):
         self._check_preconditions()
         predict = self.prediction
         if len(filename) > 0:
-            path = f"{os.path.dirname(filename)}/"
-            filename = os.path.basename(filename)
-            title, ext = os.path.splitext(filename)
-            make_directory(path, save_ext=np.array([ext]))
+            path, filename, title, ext = prepare_for_saving(filename)
             path = f"plots/{path}"
             save_ext = [ext]
         else:
@@ -1752,10 +1745,7 @@ class FastExplanation(CalibratedExplanation):
             return
 
         if len(filename) > 0:
-            path = f"{os.path.dirname(filename)}/"
-            filename = os.path.basename(filename)
-            title, ext = os.path.splitext(filename)
-            make_directory(path, save_ext=np.array([ext]))
+            path, filename, title, ext = prepare_for_saving(filename)
             path = f"plots/{path}"
             save_ext = [ext]
         else:

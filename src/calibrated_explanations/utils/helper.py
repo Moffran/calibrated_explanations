@@ -511,6 +511,31 @@ def immutable_array(array):
     array.flags.writeable = False
     return array
 
+def prepare_for_saving(filename):
+    """
+    Prepare the file path, name, title, and extension for saving a file.
+    
+    Parameters
+    ----------
+    filename : str
+        The full path to the file to save.
+        
+    Returns
+    -------
+    tuple:
+        - str: The path to the file.
+        - str: The filename.
+        - str: The title of the file.
+        - str: The extension of the file.
+    """
+    if len(filename) > 0:
+        path = f"{os.path.dirname(filename)}/"
+        filename = os.path.basename(filename)
+        title, ext = os.path.splitext(filename)
+        make_directory(path, save_ext=np.array([ext]))
+        return path, filename, title, ext
+    return '', '', '', ''
+
 
 if __name__ == "__main__":
     import doctest

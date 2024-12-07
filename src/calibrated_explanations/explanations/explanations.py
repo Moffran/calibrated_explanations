@@ -1,14 +1,13 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-lines, too-many-public-methods, invalid-name, too-many-positional-arguments, line-too-long
 """Contains the :class:`.CalibratedExplanations` class created by :class:`.CalibratedExplainer`"""
-import os
 import warnings
 from copy import deepcopy
 from time import time
 import numpy as np
 from .explanation import FactualExplanation, AlternativeExplanation, FastExplanation
 from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
-from ..utils.helper import make_directory
+from ..utils.helper import prepare_for_saving
 
 class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     """A class for storing and visualizing calibrated explanations."""
@@ -335,10 +334,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 DeprecationWarning,
             )
         if len(filename) > 0:
-            path = f"{os.path.dirname(filename)}/"
-            filename = os.path.basename(filename)
-            title, ext = os.path.splitext(filename)
-            make_directory(path, save_ext=np.array([ext]))
+            path, filename, title, ext = prepare_for_saving(filename)
         if index is not None:
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
@@ -550,7 +546,6 @@ class AlternativeExplanations(CalibratedExplanations):
 
 
 class FrozenCalibratedExplainer:
-    
     """
     A class that wraps an explainer to provide a read-only interface. 
     It prevents modification of the underlying explainer, ensuring its state remains unchanged.
