@@ -7,8 +7,8 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-
-# pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments
+# pylint: disable=unknown-option-value
+# pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme
 def _plot_probabilistic(explanation, instance, predict, feature_weights, features_to_plot,
                         num_to_show, column_names, title, path, show, interval=False,
                         idx=None, save_ext=None):
@@ -451,6 +451,7 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
         The threshold value used with regression to get probability of being below the threshold.
         Only applicable to regression.
     """
+    show = kwargs.pop("show", True)
     is_regularized = True
     if 'predict_proba' not in dir(explainer.learner) and threshold is None:
         predict, (low, high) = explainer.predict(X_test, uq_interval=True, **kwargs)
@@ -467,9 +468,9 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     max_x, max_y = 1,1
     ax = None
     if is_regularized:
-        _plot_proba_triangle()
+        fig = _plot_proba_triangle()
     else:
-        _, ax = plt.subplots()
+        fig, ax = plt.subplots()
         # draw a line from (0,0) to (0.5,1) and from (1,0) to (0.5,1)
         min_x = np.min(explainer.y_cal)
         max_x = np.max(explainer.y_cal)
@@ -566,10 +567,14 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
             plt.xlabel('Probability of Y = 1')
     plt.xlim(min_x, max_x)
     plt.ylim(min_y, max_y)
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+    # TODO: Add save functionality
 
 def _plot_proba_triangle():
-    plt.figure()
+    fig = plt.figure()
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color='black')
     plt.plot(x, ((1 - x) / x), color='black')
@@ -577,6 +582,7 @@ def _plot_proba_triangle():
     plt.plot((0.5 + x - 0.5)/(1 + x - 0.5), x - 0.5, color='black')
     x = np.arange(0, 0.5, 0.005)
     plt.plot((x + 0.5 - x)/(1 + x), x, color='black')
+    return fig
 
 
 # pylint: disable=invalid-name

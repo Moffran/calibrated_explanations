@@ -1,5 +1,4 @@
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes
-# flake8: noqa: E501
 """
 This module contains the class for the interval regressors.
 """

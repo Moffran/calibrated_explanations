@@ -52,8 +52,8 @@ def generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
     assert new_exp.explainer == explainer
     assert new_exp.learner == learner
 
-    cal_exp.plot(X_test)
-    cal_exp.plot(X_test, y_test)
+    cal_exp.plot(X_test, show=False)
+    cal_exp.plot(X_test, y_test, show=False)
     return cal_exp
 
 def test_wrap_regression_ce(regression_dataset):
@@ -168,8 +168,8 @@ def test_wrap_regression_ce(regression_dataset):
         assert low[i] <= y_test_hat2[i, 1] <= high[i]
 
     cal_exp = generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
-    cal_exp.plot(X_test, threshold=y_test[0])
-    cal_exp.plot(X_test, y_test, threshold=y_test[0])
+    cal_exp.plot(X_test, show=False, threshold=y_test[0])
+    cal_exp.plot(X_test, y_test, show=False, threshold=y_test[0])
 
 def test_wrap_conditional_regression_ce(regression_dataset):
     """
@@ -284,5 +284,5 @@ def test_wrap_regression_fast_ce(regression_dataset):
         assert low[i] <= y_test_hat2[i, 1] <= high[i]
 
     cal_exp = generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
-    cal_exp.plot(X_test, threshold=y_test[0])
-    cal_exp.plot(X_test, y_test, threshold=y_test[0])
+    cal_exp.plot(X_test, show=False, threshold=y_test[0])
+    cal_exp.plot(X_test, y_test, show=False, threshold=y_test[0])
