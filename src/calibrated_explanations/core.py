@@ -19,7 +19,7 @@ from sklearn.metrics import confusion_matrix
 from crepes import ConformalClassifier
 from crepes.extras import hinge, MondrianCategorizer
 
-from .explanations.explanations import AlternativeExplanations, CalibratedExplanations
+from .explanations import AlternativeExplanations, CalibratedExplanations
 from ._VennAbers import VennAbers
 from ._interval_regressor import IntervalRegressor
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
