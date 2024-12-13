@@ -545,7 +545,10 @@ class FactualExplanation(CalibratedExplanation):
         y_threshold=None,
         instance_bin=None,
     ):
-        """
+        """Class for storing and visualizing factual explanations.
+
+        Provides factual explanations for a given instance, highlighting features that contribute to the model's prediction.
+    
         Initialize a FactualExplanation instance.
 
         Parameters
@@ -940,7 +943,10 @@ class AlternativeExplanation(CalibratedExplanation):
         y_threshold=None,
         instance_bin=None,
     ):
-        """
+        """Class representing an alternative explanation for a given instance.
+
+        Offers alternative explanations by exploring how changes to feature values could alter the model's prediction.
+    
         Initialize an AlternativeExplanation instance.
 
         Parameters
@@ -1660,7 +1666,10 @@ class FastExplanation(CalibratedExplanation):
         y_threshold=None,
         instance_bin=None,
     ):
-        """
+        """Class representing fast explanations.
+
+        Represents fast, SHAP-like explanations, enabling efficient interpretation of model behavior for large datasets.
+    
         Initialize a FastExplanation instance.
 
         Parameters

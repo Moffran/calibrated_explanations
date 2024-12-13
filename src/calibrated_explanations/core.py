@@ -57,7 +57,17 @@ class CalibratedExplainer:
                 bins = None,
                 difficulty_estimator = None,
                 **kwargs,) -> None:
-        """Initialize the :class:`.CalibratedExplainer` object for explaining the predictions of a black-box learner.
+        """The :class:`.CalibratedExplainer` class is used for explaining machine learning learners with calibrated predictions.
+
+    The calibrated explanations are based on the paper 
+    "Calibrated Explanations for Black-Box Predictions" 
+    by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
+
+    Calibrated explanations provides a way to explain the predictions of a black-box learner 
+    using Venn-Abers predictors (classification) or 
+    conformal predictive systems (regression).
+    
+    Initialize the :class:`.CalibratedExplainer` object for explaining the predictions of a black-box learner.
 
         Parameters
         ----------

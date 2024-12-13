@@ -25,7 +25,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     """
 
     def __init__(self, calibrated_explainer, X_test, y_threshold, bins) -> None:
-        """Initialize the CalibratedExplanations object.
+        """A class for storing and visualizing calibrated explanations.
+
+        This class is created by :class:`.CalibratedExplainer` and provides methods for managing
+        and accessing explanations for test instances.
+        
+        Initialize the CalibratedExplanations object.
         
         Parameters
         ----------

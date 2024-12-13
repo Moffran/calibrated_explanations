@@ -105,7 +105,7 @@ source_suffix = {
 }
 
 # Autodoc settings
-autoclass_content = 'class'
+autoclass_content = 'init'
 autodoc_member_order = 'bysource'
 autoclass_member_order = 'bysource'
 
