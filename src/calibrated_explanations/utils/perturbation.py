@@ -1,3 +1,5 @@
+# pylint: disable=unknown-option-value
+# pylint: disable=too-many-positional-arguments, line-too-long
 """
 Module for perturbing datasets for calibration purposes.
 
@@ -18,8 +20,6 @@ uniform_perturbation(column, severity)
 perturb_dataset(X_cal, y_cal, categorical_features=None, noise_type='uniform', scale_factor=5, severity=0.5)
     Perturb the dataset for the calibration process.
 """
-# pylint: disable=unknown-option-value
-# pylint: disable=too-many-positional-arguments
 # Import Libraries
 # import configparser
 import numpy as np

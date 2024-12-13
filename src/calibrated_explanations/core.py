@@ -915,14 +915,13 @@ class CalibratedExplainer:
         """
         if threshold is None:
             return None
-        elif isinstance(threshold, (list, np.ndarray)):
+        if isinstance(threshold, (list, np.ndarray)):
             return (
                 np.empty((0,), dtype=tuple)
                 if isinstance(threshold[0], tuple)
                 else np.empty((0,))
             )
-        else:
-            return threshold
+        return threshold
 
 
     def _assign_weight(self, instance_predict, prediction):
@@ -1967,7 +1966,7 @@ class WrapCalibratedExplainer():
         See Also
         --------
         :meth:`.CalibratedExplainer.predict_reject` : Refer to the docstring for predict_reject in CalibratedExplainer for more details.
-        """        
+        """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection.")
         if not self.calibrated:
