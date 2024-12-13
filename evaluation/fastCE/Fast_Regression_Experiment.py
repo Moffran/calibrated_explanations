@@ -77,20 +77,17 @@ klara = [1]
 tic_all = time.time()
 
 # -----------------------------------------------------------------------------------------------------
-results = {}
-results['num_rep'] = num_rep
-results['test_size'] = test_size
-
+results = {'num_rep': num_rep, 'test_size': test_size}
 np.random.seed(1337)
+delimiter = ';'
+target = 'REGRESSION'
 for dataSet, filename in zip(datasets, filenames):
 
     tic_data = time.time()
-    delimiter = ';'
     categorical_labels = {8: {0: 'INLAND', 1: 'NEAR BAY', 2: '<1H OCEAN', 3: 'NEAR OCEAN', 4: 'ISLAND'}}
 
     df = pd.read_csv(filename, usecols = lambda x: not (x == "ID" or x.startswith("IGNORE")))
-    target = 'REGRESSION'
-    df.dropna(inplace=True)
+    df = df.dropna()
     Xn, y = df.drop(target,axis=1), df[target]
     scaler = MinMaxScaler(feature_range=(0, 1))
     y_normalized = np.squeeze(scaler.fit_transform(y.values.reshape(-1, 1)))
@@ -108,6 +105,7 @@ for dataSet, filename in zip(datasets, filenames):
     model_dict = {'RF':(r1,r2,"RF",Xn)}#,'NN': (a1,a2,"NN",Xn)
     model_struct = [model_dict[model] for model in models]
     results[dataSet] = {}
+    de_none = None
     for c1, model, alg, X in model_struct:
         tic_algorithm = time.time()
         debug_print(dataSet+' '+alg)
@@ -125,7 +123,6 @@ for dataSet, filename in zip(datasets, filenames):
         r_test = y_test - p_test
         r_cal = y_cal - p_cal
 
-        de_none = None
         de_dist = DifficultyEstimator().fit(X=X_train[:500], scaler=True)
         de_std  = DifficultyEstimator().fit(X=X_train[:500], y=y_train[:500], scaler=True)
         de_abs  = DifficultyEstimator().fit(X=X_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True)
@@ -186,7 +183,11 @@ for dataSet, filename in zip(datasets, filenames):
             stability['lime_base'].append(explanations)
 
             for norm in normalizations:
-                if norm == '_dist':
+                if norm == '_abs':
+                    ce.set_difficulty_estimator(de_abs)
+                    predictor = predictor_abs
+                    letter = 'a'
+                elif norm == '_dist':
                     ce.set_difficulty_estimator(de_dist)
                     predictor = predictor_dist
                     letter = 'd'
@@ -194,10 +195,6 @@ for dataSet, filename in zip(datasets, filenames):
                     ce.set_difficulty_estimator(de_std)
                     predictor = predictor_std
                     letter = 's'
-                elif norm == '_abs':
-                    ce.set_difficulty_estimator(de_abs)
-                    predictor = predictor_abs
-                    letter = 'a'
                 elif norm == '_var':
                     ce.set_difficulty_estimator(de_var)
                     predictor = predictor_var
@@ -251,9 +248,9 @@ for dataSet, filename in zip(datasets, filenames):
                 stability['pfce'+norm].append([f.feature_weights for f in explanations])
             # print(f'',end='\n', flush=True)
             i += 1
-            # except Exception as e: # pylint: disable=broad-exception-caught
-            #     warnings.warn(f'Error: {e}')
-            # print('')
+                    # except Exception as e: # pylint: disable=broad-exception-caught
+                    #     warnings.warn(f'Error: {e}')
+                    # print('')
 
         results[dataSet][alg]['stability'] = stability
         results[dataSet][alg]['stab_timer'] = stab_timer
@@ -318,7 +315,11 @@ for dataSet, filename in zip(datasets, filenames):
             # try:
 
             for norm in normalizations:
-                if norm == '_dist':
+                if norm == '_abs':
+                    ce.set_difficulty_estimator(de_abs)
+                    predictor = predictor_abs
+                    letter = 'a'
+                elif norm == '_dist':
                     ce.set_difficulty_estimator(de_dist)
                     predictor = predictor_dist
                     letter = 'd'
@@ -326,10 +327,6 @@ for dataSet, filename in zip(datasets, filenames):
                     ce.set_difficulty_estimator(de_std)
                     predictor = predictor_std
                     letter = 's'
-                elif norm == '_abs':
-                    ce.set_difficulty_estimator(de_abs)
-                    predictor = predictor_abs
-                    letter = 'a'
                 elif norm == '_var':
                     ce.set_difficulty_estimator(de_var)
                     predictor = predictor_var
@@ -382,9 +379,9 @@ for dataSet, filename in zip(datasets, filenames):
                 print(f'{letter}pfce{ct/len(X_test):.4f}',end='\n', flush=True)
                 robustness['pfce'+norm].append([f.feature_weights for f in explanations])
             i += 1
-            # except Exception as e: # pylint: disable=broad-exception-caught
-            #     warnings.warn(f'Error: {e}')
-            # print('')
+                    # except Exception as e: # pylint: disable=broad-exception-caught
+                    #     warnings.warn(f'Error: {e}')
+                    # print('')
 
         results[dataSet][alg]['robustness'] = robustness
         results[dataSet][alg]['rob_timer'] = rob_timer

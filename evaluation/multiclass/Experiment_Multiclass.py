@@ -40,6 +40,9 @@ def fix_class_missing(proba, class_is_missing, unique_y, unique_train_y):
 outerloop = 10
 eval_matrix = []
 
+treeSize_noncal = 0
+treeSize_va = 0
+
 for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehicle", "cmc", "balance", "wave", "vowel", "cars", "steel", "heat", "cool", "user", "whole", "yeast" ]:
 
 # for dataSet in ["ecoli"]:
@@ -70,9 +73,6 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
     va_preds_all = np.array([])
     low = np.array([])
     high = np.array([])
-    treeSize_noncal = 0
-    treeSize_va = 0
-
     for x in range(outerloop):
         uncal_probs = np.ones((len(y), no_of_classes), dtype=np.float32)
         uncal_preds = np.zeros(len(y))
@@ -97,14 +97,14 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
             class_missing = len(uniqueTrainY) != len(uniqueY)
 
             s = len(y_prop_train)
-            
+
 
             m2.fit(X_prop_train, y_prop_train)
             # treeSize_va = treeSize_va + m2.tree_.node_count
 
             uncal_preds[test_index] = m1.predict(X_test)
             uncal_probs[test_index, :] = fix_class_missing(m1.predict_proba(X_test), class_missing, uniqueY, uniqueTrainY)
-            
+
 
             uniqueTrainY = np.unique(y_prop_train)
             class_missing = len(uniqueTrainY) != len(uniqueY)
@@ -122,14 +122,14 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
             l[test_index, :] = tmp[1]
             h[test_index, :] = tmp[2]
 
-            
+
 
         yall = np.append(yall, y)
         uncal_probs_all = np.append(uncal_probs_all, uncal_probs, axis=0)
-      
+
         va_probs_all = np.append(va_probs_all, va_probs, axis=0)
         uncal_preds_all = np.append(uncal_preds_all, uncal_preds)
-       
+
         va_preds_all = np.append(va_preds_all, va_preds)
         low = np.vstack([low, l]) if low.size else l
         high = np.vstack([high, h]) if high.size else h
@@ -156,7 +156,7 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
             y_test = uncal_corrects
             prob_pos = uncal_probs_predicted
             ec = "%.3f" % (ece(uncal_probs_predicted, fop_uncal, mpv_uncal))
-        if name == 'VA':
+        elif name == 'VA':
             y_test = va_corrects
             prob_pos = va_probs_predicted
             ec = "%.3f" % (ece(va_probs_predicted, fop_va, mpv_va))
@@ -207,7 +207,7 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
 
             ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
                         histtype="step", lw=2)
-            
+
         if name == 'VA':
             y_test = va_corrects
             prob_pos = va_probs_predicted
@@ -247,14 +247,60 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
     # plt.show()
     plt.close()
 
-    eval_matrix.append([dataSet, 'Brier', 'NoCal', brier_score_loss(uncal_corrects, uncal_probs_predicted)])
-    eval_matrix.append([dataSet, 'Acc', 'NoCal', accuracy_score(yall, uncal_preds_all)])
-    eval_matrix.append([dataSet, 'Log', 'NoCal', log_loss(uncal_corrects, uncal_probs_predicted)])
-    eval_matrix.append([dataSet, 'Diff', 'NoCal', uncal_diff])
-    eval_matrix.append([dataSet, 'ECE', 'NoCal', ece(uncal_probs_predicted, fop_uncal, mpv_uncal)])
-    eval_matrix.append([dataSet, 'treeSize', 'NoCal', (treeSize_noncal / (10 * outerloop))])
-    eval_matrix.append([dataSet, 'AUC', 'NoCal', roc_auc_score(uncal_corrects, uncal_probs_predicted)])
-    eval_matrix.append([dataSet, 'Brier', 'VA', brier_score_loss(va_corrects, va_probs_predicted)])
+    eval_matrix.extend(
+        (
+            [
+                dataSet,
+                'Brier',
+                'NoCal',
+                brier_score_loss(uncal_corrects, uncal_probs_predicted),
+            ],
+            [dataSet, 'Acc', 'NoCal', accuracy_score(yall, uncal_preds_all)],
+        )
+    )
+    eval_matrix.extend(
+        (
+            [
+                dataSet,
+                'Log',
+                'NoCal',
+                log_loss(uncal_corrects, uncal_probs_predicted),
+            ],
+            [dataSet, 'Diff', 'NoCal', uncal_diff],
+        )
+    )
+    eval_matrix.extend(
+        (
+            [
+                dataSet,
+                'ECE',
+                'NoCal',
+                ece(uncal_probs_predicted, fop_uncal, mpv_uncal),
+            ],
+            [
+                dataSet,
+                'treeSize',
+                'NoCal',
+                (treeSize_noncal / (10 * outerloop)),
+            ],
+        )
+    )
+    eval_matrix.extend(
+        (
+            [
+                dataSet,
+                'AUC',
+                'NoCal',
+                roc_auc_score(uncal_corrects, uncal_probs_predicted),
+            ],
+            [
+                dataSet,
+                'Brier',
+                'VA',
+                brier_score_loss(va_corrects, va_probs_predicted),
+            ],
+        )
+    )
     eval_matrix.append([dataSet, 'Acc', 'VA', accuracy_score(yall, va_preds_all)])
     eval_matrix.append([dataSet, 'Log', 'VA', log_loss(va_corrects, va_probs_predicted)])
     eval_matrix.append([dataSet, 'Diff', 'VA', va_diff])

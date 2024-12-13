@@ -480,7 +480,7 @@ class CalibratedExplainer:
             X_test = X_test.reshape(1, -1)
         if X_test.shape[1] != self.X_cal.shape[1]:
             raise ValueError("The number of features in the test data must be the same as in the "\
-                            +"calibration data.")
+                                +"calibration data.")
         if self._is_mondrian():
             assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
             assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
@@ -501,9 +501,8 @@ class CalibratedExplainer:
         predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
         # print(predicted_class)
 
-        prediction =  {}
+        prediction = {'predict': predict}
 
-        prediction['predict'] = predict
         prediction['low'] = low
         prediction['high'] = high
         if self.is_multiclass():
@@ -584,14 +583,13 @@ class CalibratedExplainer:
                         perturbed_bins = np.concatenate((perturbed_bins, [bins[i]])) if bins is not None else None
                         perturbed_class = np.concatenate((perturbed_class, [prediction['classes'][i]]))
                         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                            if isinstance(threshold[0], tuple):
-                                if len(perturbed_threshold) == 0:
-                                    perturbed_threshold = [threshold[i]]
-                                else:
-                                    perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
+                            if (
+                                isinstance(threshold[0], tuple)
+                                and len(perturbed_threshold) == 0
+                            ):
+                                perturbed_threshold = [threshold[i]]
                             else:
                                 perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
-
         # Substep 1.c: Predict and convert to numpy arrays to allow boolean indexing
         if threshold is not None and isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
             perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
@@ -677,8 +675,7 @@ class CalibratedExplainer:
                 for i in range(len(X_test)):
                     lower_boundary[i] = lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
                     upper_boundary[i] = upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
-                    num_bins = 1
-                    num_bins += 1 if lower_boundary[i] != -np.inf else 0
+                    num_bins = 1 + (1 if lower_boundary[i] != -np.inf else 0)
                     num_bins += 1 if upper_boundary[i] != np.inf else 0
                     average_predict[i] = np.zeros(num_bins)
                     low_predict[i] = np.zeros(num_bins)
@@ -917,16 +914,15 @@ class CalibratedExplainer:
         The threshold is used to calculate the p-values for the predictions.
         """
         if threshold is None:
-            perturbed_threshold = None
+            return None
         elif isinstance(threshold, (list, np.ndarray)):
-            perturbed_threshold = (
+            return (
                 np.empty((0,), dtype=tuple)
                 if isinstance(threshold[0], tuple)
                 else np.empty((0,))
             )
         else:
-            perturbed_threshold = threshold
-        return perturbed_threshold
+            return threshold
 
 
     def _assign_weight(self, instance_predict, prediction):
@@ -1231,13 +1227,11 @@ class CalibratedExplainer:
 
 
     def _preprocess(self):
-        # Initialize an empty list to hold indices of constant columns
-        constant_columns = []
-        # Iterate over each feature
-        for f in range(self.X_cal.shape[1]):
-            # If all values in the feature are the same, add the index to the list
-            if np.all(self.X_cal[:,f] == self.X_cal[0,f]):
-                constant_columns.append(f)
+        constant_columns = [
+            f
+            for f in range(self.X_cal.shape[1])
+            if np.all(self.X_cal[:, f] == self.X_cal[0, f])
+        ]
         self.features_to_ignore = constant_columns
 
 
@@ -1430,9 +1424,7 @@ class CalibratedExplainer:
                 else:
                     new_classes = [get_label(predict[i], threshold[i]) for i in range(len(predict))]
                 return (new_classes, (low, high)) if uq_interval else new_classes
-            if uq_interval:
-                return predict, (low, high)
-            return predict
+            return (predict, (low, high)) if uq_interval else predict
         predict, low, high, new_classes = self._predict(X_test, **kwargs)
         if new_classes is None:
             new_classes = (predict >= 0.5).astype(int)

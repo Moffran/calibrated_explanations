@@ -145,7 +145,7 @@ def initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features,
     CalibratedExplainer
         An instance of the CalibratedExplainer class.
     """
-    cal_exp = CalibratedExplainer(
+    return CalibratedExplainer(
         model,
         X_cal,
         y_cal,
@@ -156,9 +156,8 @@ def initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features,
         bins=bins,
         fast=fast,
         difficulty_estimator=difficulty_estimator,
-        verbose=verbose
+        verbose=verbose,
     )
-    return cal_exp
 
 def test_binary_ce(binary_dataset):
     """

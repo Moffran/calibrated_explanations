@@ -32,10 +32,11 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
     no_of_features = X.shape[1]
     no_of_instances = X.shape[0]
 
-    test_idx = []
     idx = list(range(no_of_instances))
-    for i in range(no_of_classes):
-        test_idx.append(np.where(y == i)[0][0:int(num_to_test/no_of_classes)])
+    test_idx = [
+        np.where(y == i)[0][: int(num_to_test / no_of_classes)]
+        for i in range(no_of_classes)
+    ]
     test_index = np.array(test_idx).flatten()
 
     train_index = np.setdiff1d(np.array(range(no_of_instances)), test_index)
@@ -65,7 +66,7 @@ for dataSet in ["balance", "wave", "vowel", "cars", "steel", "heat", "cool", "us
         alternative_explanations.plot(i, filter_top=features_to_plot, filename=f"{dataSet}/{dataSet}_alternative_i{i}_c{y_test[i]}_p{predicted}.png")
 
     print('Alternative Explanations done', end=' - ', flush=True)
-    
+
     cal_p = model.predict(X_cal)
     test_p = model.predict(X_test)
 

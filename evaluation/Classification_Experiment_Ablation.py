@@ -41,10 +41,11 @@ klara = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]
 tic_all = time.time()
 
 # -----------------------------------------------------------------------------------------------------
-results = {}
-results['calibration_sizes'] = calibration_sizes
-results['sample_percentiles'] = sample_percentiles
-results['test_size'] = test_size
+results = {
+    'calibration_sizes': calibration_sizes,
+    'sample_percentiles': sample_percentiles,
+    'test_size': test_size,
+}
 for dataset in klara:
     dataSet = datasets[dataset]
 

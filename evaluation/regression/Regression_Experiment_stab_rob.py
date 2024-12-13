@@ -65,9 +65,7 @@ klara = [1]
 tic_all = time.time()
 
 # -----------------------------------------------------------------------------------------------------
-results = {}
-results['num_rep'] = num_rep
-results['test_size'] = test_size
+results = {'num_rep': num_rep, 'test_size': test_size}
 try:
     dataSet = datasets[1]
 
@@ -78,7 +76,7 @@ try:
     fileName = 'data/reg/' + dataSet + '.csv'
     df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
     target = 'median_house_value'
-    df.dropna(inplace=True)
+    df = df.dropna()
     Xn, y = df.drop(target,axis=1), df[target]
     scaler = MinMaxScaler(feature_range=(0, 1))
     y_normalized = np.squeeze(scaler.fit_transform(y.values.reshape(-1, 1)))
@@ -94,6 +92,7 @@ try:
     model_dict = {'RF':(r1,r2,"RF",Xn)}#,'NN': (a1,a2,"NN",Xn)
     model_struct = [model_dict[model] for model in models]
     results[dataSet] = {}
+    de_none = None
     for c1, model, alg, X in model_struct:
         tic_algorithm = time.time()
         debug_print(dataSet+' '+alg)
@@ -111,7 +110,6 @@ try:
         r_test = y_test - p_test
         r_cal = y_cal - p_cal
 
-        de_none = None
         de_dist = DifficultyEstimator().fit(X=X_train[:500], scaler=True)
         de_std  = DifficultyEstimator().fit(X=X_train[:500], y=y_train[:500], scaler=True)
         de_abs  = DifficultyEstimator().fit(X=X_train[:500], residuals=y_train[:500] - model.oob_prediction_[:500], scaler=True)
@@ -176,7 +174,11 @@ try:
             stability['lime_base'].append(explanations)
 
             for norm in normalizations:
-                if norm == '_dist':
+                if norm == '_abs':
+                    ce.set_difficulty_estimator(de_abs)
+                    predictor = predictor_abs
+                    letter = 'a'
+                elif norm == '_dist':
                     ce.set_difficulty_estimator(de_dist)
                     predictor = predictor_dist
                     letter = 'd'
@@ -184,10 +186,6 @@ try:
                     ce.set_difficulty_estimator(de_std)
                     predictor = predictor_std
                     letter = 's'
-                elif norm == '_abs':
-                    ce.set_difficulty_estimator(de_abs)
-                    predictor = predictor_abs
-                    letter = 'a'
                 elif norm == '_var':
                     ce.set_difficulty_estimator(de_var)
                     predictor = predictor_var
@@ -241,17 +239,16 @@ try:
                 stability['pcce'+norm].append([f.feature_weights for f in explanations])
             # print(f'',end='\n', flush=True)
             i += 1
-            # except Exception as e: # pylint: disable=broad-exception-caught
-            #     warnings.warn(f'Error: {e}')
-            # print('')
+                    # except Exception as e: # pylint: disable=broad-exception-caught
+                    #     warnings.warn(f'Error: {e}')
+                    # print('')
 
         results[dataSet][alg]['stability'] = stability
         results[dataSet][alg]['stab_timer'] = stab_timer
         with open(resultfile, 'wb') as f:
             pickle.dump(results, f)
 
-        i = 0
-        while i < num_rep:
+        for i in range(num_rep):
             print(f'{i+1}:',end='\n', flush=True)
             np.random.seed(i)
             model = RandomForestRegressor(n_estimators=100, oob_score=True, random_state=i)
@@ -307,7 +304,11 @@ try:
             # try:
 
             for norm in normalizations:
-                if norm == '_dist':
+                if norm == '_abs':
+                    ce.set_difficulty_estimator(de_abs)
+                    predictor = predictor_abs
+                    letter = 'a'
+                elif norm == '_dist':
                     ce.set_difficulty_estimator(de_dist)
                     predictor = predictor_dist
                     letter = 'd'
@@ -315,10 +316,6 @@ try:
                     ce.set_difficulty_estimator(de_std)
                     predictor = predictor_std
                     letter = 's'
-                elif norm == '_abs':
-                    ce.set_difficulty_estimator(de_abs)
-                    predictor = predictor_abs
-                    letter = 'a'
                 elif norm == '_var':
                     ce.set_difficulty_estimator(de_var)
                     predictor = predictor_var
@@ -370,10 +367,9 @@ try:
                 rob_timer['pcce'+norm].append(ct)
                 print(f'{letter}pc{ct:.1f}',end='\n', flush=True)
                 robustness['pcce'+norm].append([f.feature_weights for f in explanations])
-            i += 1
-            # except Exception as e: # pylint: disable=broad-exception-caught
-            #     warnings.warn(f'Error: {e}')
-            # print('')
+                    # except Exception as e: # pylint: disable=broad-exception-caught
+                    #     warnings.warn(f'Error: {e}')
+                    # print('')
 
         results[dataSet][alg]['robustness'] = robustness
         results[dataSet][alg]['rob_timer'] = rob_timer

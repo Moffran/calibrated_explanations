@@ -41,9 +41,7 @@ klara = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]
 tic_all = time.time()
 
 # -----------------------------------------------------------------------------------------------------
-results = {}
-results['num_rep'] = num_rep
-results['test_size'] = test_size
+results = {'num_rep': num_rep, 'test_size': test_size}
 for dataset in klara:
     dataSet = datasets[dataset]
 
@@ -78,8 +76,7 @@ for dataset in klara:
 
         calibrators = {}
         for desc in descriptors:
-            calibrators[desc] = {}
-            calibrators[desc]['ce'] = []
+            calibrators[desc] = {'ce': []}
         X_train, X_test, y_train, y_test = train_test_split(X.values, y.values, test_size=test_size,random_state=42)
         X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train, test_size=0.33,random_state=42)
 
