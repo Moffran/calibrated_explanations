@@ -1,6 +1,37 @@
-'''
-Module containing all plotting functionality.
-'''
+"""Module containing all plotting functionality.
+
+Functions
+---------
+- _plot_probabilistic(explanation, instance, predict, feature_weights, features_to_plot,
+                      num_to_show, column_names, title, path, show, interval=False,
+                      idx=None, save_ext=None)
+    Plot regular and uncertainty explanations.
+
+- _plot_regression(explanation, instance, predict, feature_weights, features_to_plot, num_to_show,
+                   column_names, title, path, show, interval=False, idx=None,
+                   save_ext=None)
+    Plot regular and uncertainty explanations.
+
+- _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertainty,
+                   num_to_show, title, path, show, save_ext=None)
+    Plot triangular explanations.
+
+- _plot_alternative(explanation, instance, predict, feature_predict, features_to_plot,
+                    num_to_show, column_names, title, path, show, save_ext=None)
+    Plot alternative explanations.
+
+- _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs)
+    Generate a global explanation plot for the given test data.
+
+- _plot_proba_triangle()
+    Plot a probability triangle. Used internally by several other plotting functions.
+
+- __color_brew(n)
+    Generate a list of colors.
+
+- __get_fill_color(venn_abers, reduction=1)
+    Get the fill color for the plot.
+"""
 import contextlib
 import math
 import warnings
@@ -12,7 +43,38 @@ import matplotlib.colors as mcolors
 def _plot_probabilistic(explanation, instance, predict, feature_weights, features_to_plot,
                         num_to_show, column_names, title, path, show, interval=False,
                         idx=None, save_ext=None):
-    """plots regular and uncertainty explanations"""
+    """
+    Plot regular and uncertainty explanations.
+
+    Parameters
+    ----------
+    explanation : object
+        The explanation object containing the details of the explanation.
+    instance : array-like
+        The instance for which the explanation is generated.
+    predict : dict
+        The prediction details including 'predict', 'low', and 'high'.
+    feature_weights : dict or array-like
+        The weights of the features.
+    features_to_plot : list
+        The list of features to plot.
+    num_to_show : int
+        The number of features to show in the plot.
+    column_names : list
+        The names of the columns.
+    title : str
+        The title of the plot.
+    path : str
+        The path to save the plot.
+    show : bool
+        Whether to show the plot.
+    interval : bool, optional
+        Whether to plot intervals.
+    idx : int, optional
+        The index for interval plotting.
+    save_ext : list, optional
+        The list of file extensions to save the plot.
+    """
     if save_ext is None:
         save_ext=['svg','pdf','png']
     if interval is True:
@@ -139,7 +201,38 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
 def _plot_regression(explanation, instance, predict, feature_weights, features_to_plot, num_to_show,
                 column_names, title, path, show, interval=False, idx=None,
                 save_ext=None):
-    """plots regular and uncertainty explanations"""
+    """
+    Plot regular and uncertainty explanations.
+
+    Parameters
+    ----------
+    explanation : object
+        The explanation object containing the details of the explanation.
+    instance : array-like
+        The instance for which the explanation is generated.
+    predict : dict
+        The prediction details including 'predict', 'low', and 'high'.
+    feature_weights : dict or array-like
+        The weights of the features.
+    features_to_plot : list
+        The list of features to plot.
+    num_to_show : int
+        The number of features to show in the plot.
+    column_names : list
+        The names of the columns.
+    title : str
+        The title of the plot.
+    path : str
+        The path to save the plot.
+    show : bool
+        Whether to show the plot.
+    interval : bool, optional
+        Whether to plot intervals.
+    idx : int, optional
+        The index for interval plotting.
+    save_ext : list, optional
+        The list of file extensions to save the plot.
+    """
     if save_ext is None:
         save_ext=['svg','pdf','png']
     if interval is True:
@@ -240,7 +333,32 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
 # pylint: disable=duplicate-code
 def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertainty,
                      num_to_show, title, path, show, save_ext=None):
-    """plots triangular explanations"""
+    """
+    Plot triangular explanations.
+
+    Parameters
+    ----------
+    explanation : object
+        The explanation object containing the details of the explanation.
+    proba : array-like
+        The probabilities of the predictions.
+    uncertainty : array-like
+        The uncertainties of the predictions.
+    rule_proba : array-like
+        The probabilities of the rules.
+    rule_uncertainty : array-like
+        The uncertainties of the rules.
+    num_to_show : int
+        The number of rules to show in the plot.
+    title : str
+        The title of the plot.
+    path : str
+        The path to save the plot.
+    show : bool
+        Whether to show the plot.
+    save_ext : list, optional
+        The list of file extensions to save the plot.
+    """
     if save_ext is None:
         save_ext=['svg','pdf','png']
     # assert self._get_explainer().mode == 'classification' or \
@@ -309,7 +427,34 @@ def __plot_proba_triangle():
 # pylint: disable=too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
 def _plot_alternative(explanation, instance, predict, feature_predict, features_to_plot, \
                             num_to_show, column_names, title, path, show, save_ext=None):
-    """plots alternative explanations"""
+    """
+    Plot alternative explanations.
+
+    Parameters
+    ----------
+    explanation : object
+        The explanation object containing the details of the explanation.
+    instance : array-like
+        The instance for which the explanation is generated.
+    predict : dict
+        The prediction details including 'predict', 'low', and 'high'.
+    feature_predict : dict
+        The predictions for the features.
+    features_to_plot : list
+        The list of features to plot.
+    num_to_show : int
+        The number of features to show in the plot.
+    column_names : list
+        The names of the columns.
+    title : str
+        The title of the plot.
+    path : str
+        The path to save the plot.
+    show : bool
+        Whether to show the plot.
+    save_ext : list, optional
+        The list of file extensions to save the plot.
+    """
     if save_ext is None:
         save_ext=['svg','pdf','png']
     fig = plt.figure(figsize=(10,num_to_show*.5))
@@ -435,21 +580,25 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
 def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     """
-    Generates a global explanation plot for the given test data. This plot is based on the 
+    Generate a global explanation plot for the given test data.
+
+    This plot is based on the 
     probability distribution and the uncertainty quantification intervals.
     The plot is only available for calibrated probabilistic learners (both classification and 
     thresholded regression).
-    
+
     Parameters
     ----------
+    explainer : object
+        The explainer object used to generate the explanations.
     X_test : array-like
-        The test data for which predictions are to be made. This should be in a format compatible 
-        with sklearn (e.g., numpy arrays, pandas DataFrames).
+        The test data for which predictions are to be made.
     y_test : array-like, optional
-        The true labels of the test data. 
+        The true labels of the test data.
     threshold : float, int, optional
         The threshold value used with regression to get probability of being below the threshold.
-        Only applicable to regression.
+    **kwargs : dict
+        Additional keyword arguments.
     """
     show = kwargs.pop("show", True)
     is_regularized = True

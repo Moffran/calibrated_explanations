@@ -1,9 +1,24 @@
-
-"""_summary_
-
-Returns:
-    _type_: _description_
 """
+Module for perturbing datasets for calibration purposes.
+
+This module provides functions to apply various types of perturbations to 
+dataset columns, including categorical and numerical perturbations.
+
+Functions
+---------
+categorical_perturbation(column, num_permutations=5)
+    Provide categorical perturbation to datasets.
+
+gaussian_perturbation(column, severity)
+    Apply Gaussian noise as numerical perturbation to a column in a DataFrame.
+
+uniform_perturbation(column, severity)
+    Apply uniform noise as numerical perturbation to a column in a DataFrame.
+
+perturb_dataset(X_cal, y_cal, categorical_features=None, noise_type='uniform', scale_factor=5, severity=0.5)
+    Perturb the dataset for the calibration process.
+"""
+# pylint: disable=unknown-option-value
 # pylint: disable=too-many-positional-arguments
 # Import Libraries
 # import configparser
@@ -27,10 +42,12 @@ def categorical_perturbation(column, num_permutations=5):
     """
     Provide categorical perturbation to datasets.
 
-    Args:
+    Parameters
+    ----------
         X_Cal (pandas.DataFrame): Input DataFrame.
 
-    Returns:
+    Returns
+    -------
         tuple: A tuple containing lists of perturbation column names, types, 
                 severities, and perturbed datasets.
     """
@@ -46,12 +63,14 @@ def gaussian_perturbation(column, severity):
     """
     Apply Gaussian noise as numerical perturbation to a column in a DataFrame.
 
-    Args:
+    Parameters
+    ----------
         data (pandas.DataFrame): Input DataFrame.
         column_name (str): Name of the column to perturb.
         severity (float): Severity of the perturbation.
 
-    Returns:
+    Returns
+    -------
         pandas.DataFrame: DataFrame with perturbed column.
     """
     # Get the column to perturb
@@ -72,12 +91,14 @@ def uniform_perturbation(column, severity):
     """
     Apply uniform noise as numerical perturbation to a column in a DataFrame.
 
-    Args:
+    Parameters
+    ----------
         data (pandas.DataFrame): Input DataFrame.
         column_name (str): Name of the column to perturb.
         severity (float): Severity of the perturbation.
 
-    Returns:
+    Returns
+    -------
         pandas.DataFrame: DataFrame with perturbed column.
     """
     # Get the column to perturb
@@ -101,9 +122,30 @@ def perturb_dataset(X_cal,
                     noise_type='uniform',
                     scale_factor=5,
                     severity=0.5):
-    '''
-    Function used to perturb the dataset for the calibration process.
-    '''
+    """
+    Perturb the dataset for the calibration process.
+
+    Parameters
+    ----------
+    X_cal : numpy.ndarray
+        Input feature matrix.
+    y_cal : numpy.ndarray
+        Input target vector.
+    categorical_features : list, optional
+        List of indices for categorical features.
+    noise_type : str, optional
+        Type of noise to apply ('uniform' or 'gaussian').
+    scale_factor : int, optional
+        Factor by which to scale the dataset.
+    severity : float, optional
+        Severity of the perturbation.
+
+    Returns
+    -------
+    tuple
+        Tuple containing perturbed feature matrix, scaled feature matrix, 
+        scaled target vector, and scale factor.
+    """
     perturbed_X_cal = np.tile(X_cal.copy(), (scale_factor,1))
     scaled_X_cal = perturbed_X_cal.copy()
     scaled_y_cal = np.tile(y_cal.copy(), scale_factor)

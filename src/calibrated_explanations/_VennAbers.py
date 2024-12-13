@@ -1,9 +1,12 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
-"""contains the VennAbers class which is used to calibrate the predictions of a model
-Contains the VennAbers class which is used to calibrate the predictions of a model using the Venn-ABERS method.
-Classes:
-    VennAbers: A class to calibrate the predictions of a model using the Venn-ABERS method.
+"""Contains the VennAbers class which is used to calibrate the predictions of a model.
+
+This module provides the VennAbers class for calibrating model predictions using the Venn-Abers method.
+
+Classes
+-------
+    VennAbers: A class to calibrate the predictions of a model using the Venn-Abers method.
 """
 import warnings
 import numpy as np
@@ -12,8 +15,10 @@ from .utils.helper import convert_targets_to_numeric
 
 class VennAbers:
     """
-    A class to calibrate the predictions of a model using the Venn-ABERS method.
-    Attributes:
+    A class to calibrate the predictions of a model using the Venn-Abers method.
+
+    Attributes
+    ----------
         de (callable): A difficulty estimator function.
         learner (object): A machine learning model with a `predict_proba` method.
         X_cal (array-like): Calibration feature set.
@@ -22,7 +27,8 @@ class VennAbers:
         cprobs (array-like): Calibration probabilities.
         bins (array-like): Mondrian categories for calibration.
         va (dict or object): Venn-Abers model(s) for calibration.
-    Methods:
+    Methods
+    -------
         __init__(X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
             Initializes the VennAbers class with calibration data and model.
         __predict_proba_with_difficulty(X, bins=None):
@@ -36,7 +42,19 @@ class VennAbers:
         is_mondrian() -> bool:
             Returns true if Mondrian categories are used.
     """
+
     def __init__(self, X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
+        """Initialize the VennAbers class with calibration data and model.
+
+        Parameters
+        ----------
+            X_cal (array-like): Calibration feature set.
+            y_cal (array-like): Calibration target values.
+            learner (object): A machine learning model with a `predict_proba` method.
+            bins (array-like, optional): Mondrian categories for calibration. Defaults to None.
+            cprobs (array-like, optional): Calibration probabilities. Defaults to None.
+            difficulty_estimator (callable, optional): A difficulty estimator function. Defaults to None.
+        """
         self.y_cal_numeric, self.label_map = convert_targets_to_numeric(y_cal)
         self.original_labels = y_cal
 
@@ -103,14 +121,17 @@ class VennAbers:
         return probs
 
     def predict(self, X_test, bins=None):
-        """a function to predict the class of the test samples
+        """Predict the class of the test samples.
 
-        Args:
-            X_test (n_test_samples, n_features): test samples
-            bins (array-like of shape (n_samples,), optional): Mondrian categories
+        Parameters
+        ----------
+            X_test (n_test_samples, n_features): Test samples.
+            bins (array-like of shape (n_samples,), optional): Mondrian categories.
 
-        Returns:
-            predicted classes (n_test_samples,): predicted classes based on the regularized VennABERS probabilities. If multiclass, the predicted class is 1 if the prediction from the underlying model is the same after calibration and 0 otherwise.
+        Returns
+        -------
+            ndarray: Predicted classes based on the regularized VennAbers probabilities.
+                If multiclass, the predicted class is 1 if the prediction from the underlying model is the same after calibration and 0 otherwise.
         """
         if self.is_multiclass():
             tmp, _ = self.predict_proba(X_test, bins=bins)
@@ -120,19 +141,21 @@ class VennAbers:
 
     # pylint: disable=too-many-locals, too-many-branches
     def predict_proba(self, X_test, output_interval=False, classes=None, bins=None):
-        """a function to predict the probabilities of the test samples, optionally outputting the VennABERS interval
+        """Predict the probabilities of the test samples, optionally outputting the VennAbers interval.
 
-        Args:
-            X_test (n_test_samples, n_features): test samples
-            output_interval (bool, optional): if true, the VennAbers intervals are outputted. Defaults to False.
-            classes ((n_test_samples,), optional): a list of predicted classes. Defaults to None.
-            bins (array-like of shape (n_samples,), optional): Mondrian categories
+        Parameters
+        ----------
+            X_test (n_test_samples, n_features): Test samples.
+            output_interval (bool, optional): If true, the VennAbers intervals are outputted. Defaults to False.
+            classes (array-like, optional): A list of predicted classes. Defaults to None.
+            bins (array-like of shape (n_samples,), optional): Mondrian categories.
 
-        Returns:
-            proba (n_test_samples,2): regularized VennABERS probabilities for the test samples. 
-            if output_interval is true, the VennABERS intervals are also returned:
-                low (n_test_samples,): lower bounds of the VennABERS interval for each test sample
-                high (n_test_samples,): upper bounds of the VennABERS interval for each test sample
+        Returns
+        -------
+            ndarray: Regularized VennAbers probabilities for the test samples.
+            If output_interval is true, the VennAbers intervals are also returned:
+                low (n_test_samples,): Lower bounds of the VennAbers interval for each test sample.
+                high (n_test_samples,): Upper bounds of the VennAbers interval for each test sample.
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         tprobs = self.__predict_proba_with_difficulty(X_test, bins=bins)
@@ -182,143 +205,35 @@ class VennAbers:
         return np.asarray(va_proba)
 
     def is_multiclass(self) -> bool:
-        """returns true if more than two classes
+        """Return true if the problem is multiclass.
 
-        Returns:
-            bool: true if more than two classes
+        Returns
+        -------
+            bool: True if more than two classes.
         """
         return self.__is_multiclass
 
     def is_mondrian(self) -> bool:
-        """returns true if Mondrian
+        """Return true if Mondrian categories are used.
 
-        Returns:
-            bool: true if Mondrian
+        Returns
+        -------
+            bool: True if Mondrian.
         """
         return self.bins is not None
-
-# def mixture_of_experts_scaling(p, difficulty):
-#     """
-#     Use a mixture of experts approach to scale the probability.
-
-#     Args:
-#         p (float): Original predicted probability (between 0 and 1).
-#         difficulty (float): Difficulty of the instance (0 = easy, 1 = hard).
-
-#     Returns:
-#         float: Scaled probability.
-#     """
-#     # Weighting function based on difficulty
-#     weight = 1 - difficulty
-
-#     # Scale the probability as a mixture of the original and 0.5
-#     return weight * p + (1 - weight) * 0.5
-
-# def linear_interpolation_with_half(p, difficulty):
-#     """
-#     Linearly interpolate the probability with 0.5 based on difficulty.
-
-#     Args:
-#         p (float): Original predicted probability (between 0 and 1).
-#         difficulty (float): Difficulty of the instance (0 = easy, 1 = hard).
-
-#     Returns:
-#         float: Scaled probability.
-#     """
-#     # Interpolate between p and 0.5 based on difficulty
-#     return (1 - difficulty) * p + difficulty * 0.5
-
-# def temperature_scaling(p, difficulty, base_temperature=1.0):
-#     """
-#     Scale the probability using temperature scaling.
-
-#     Args:
-#         p (float): Original predicted probability (between 0 and 1).
-#         difficulty (float): Difficulty of the instance (0 = easy, 1 = hard).
-#         base_temperature (float): Base temperature value (default is 1.0).
-
-#     Returns:
-#         float: Scaled probability.
-#     """
-#     # Higher difficulty should increase temperature
-#     T = base_temperature + difficulty
-
-#     # Apply temperature scaling
-#     return p ** (1 / T) / (p ** (1 / T) + (1 - p) ** (1 / T))
-
-# def regularized_probability(p, difficulty, lambda_reg=1.0):
-#     """
-#     Regularize the probability based on difficulty.
-
-#     Args:
-#         p (float): Original predicted probability (between 0 and 1).
-#         difficulty (float): Difficulty of the instance (0 = easy, 1 = hard).
-#         lambda_reg (float): Regularization strength.
-
-#     Returns:
-#         float: Scaled probability.
-#     """
-#     # Regularize the probability towards 0.5
-#     return p - lambda_reg * difficulty * (p - 0.5)
-
-# def sigmoid_scaling_list(probs, difficulties, alpha=10):
-#     """
-#     Scale a list of probabilities using sigmoid-based scaling.
-
-#     Args:
-#         probs (list of float): List of predicted probabilities (between 0 and 1).
-#         difficulties (list of float): List of difficulties (0 = easy, 1 = hard).
-#         alpha (float): Controls the steepness of the sigmoid scaling (default is 10).
-
-#     Returns:
-#         list of float: Scaled probabilities.
-#     """
-#     scaled_probs = []
-#     for p, difficulty in zip(probs, difficulties):
-#         if p[0] < 0.5:
-#             scaled_p = p ** (1 + alpha * (1 - difficulty))
-#         else:
-#             scaled_p = 1 - (1 - p) ** (1 + alpha * (1 - difficulty))
-
-#         final_scaled_p = (1 - difficulty) * scaled_p + difficulty * 0.5
-#         final_scaled_p = final_scaled_p / np.sum(final_scaled_p)
-#         scaled_probs.append(final_scaled_p)
-
-#     return scaled_probs
-
-# def logit_based_scaling_list(probs, difficulties, gamma=2):
-#     """
-#     Use logit-based scaling to adjust a list of probabilities based on difficulties.
-
-#     Args:
-#         probs (list of float): List of predicted probabilities (between 0 and 1).
-#         difficulties (list of float): List of difficulties (0 = easy, 1 = hard).
-#         gamma (float): Scaling factor to control the effect of difficulty.
-
-#     Returns:
-#         list of float: Scaled probabilities.
-#     """
-#     scaled_probs = []
-#     for p, difficulty in zip(probs, difficulties):
-#         logit_p = logit(p)
-#         scaled_logit = logit_p * (1 - difficulty) * gamma
-#         scaled_p = expit(scaled_logit)
-#         final_scaled_p = (1 - difficulty) * scaled_p + difficulty * 0.5
-#         final_scaled_p = final_scaled_p / np.sum(final_scaled_p)
-#         scaled_probs.append(final_scaled_p)
-
-#     return scaled_probs
 
 def exponent_scaling_list(probs, difficulties, beta=5):
     """
     Exponentially scale a list of probabilities towards 0/1 for low difficulty, and towards 0.5 for high difficulty.
 
-    Args:
+    Parameters
+    ----------
         probs (list of float): List of predicted probabilities (between 0 and 1).
         difficulties (list of float): List of difficulties (0 = easy, 1 = hard).
         beta (float): Scaling factor to control the effect of difficulty (default is 5).
 
-    Returns:
+    Returns
+    -------
         list of float: Scaled probabilities.
     """
     scaled_probs = []

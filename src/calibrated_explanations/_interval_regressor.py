@@ -1,34 +1,51 @@
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes
-"""
-This module contains the class for the interval regressors.
+"""This module contains the class for the interval regressors.
+
+Classes
+-------
+IntervalRegressor
+    The main class for performing regression analysis on intervals of data.
+
+Methods
+-------
+__init__(self, calibrated_explainer)
+    Initialize an object with various attributes used for calibration and explanation extraction.
+predict_probability(self, X_test, y_threshold, bins=None)
+    Predict the probabilities for each instance in the dataset being above the threshold(s), along with confidence intervals.
+predict_uncertainty(self, X_test, low_high_percentiles, bins=None)
+    Predict the uncertainty of a given set of instances using a `ConformalPredictiveSystem`.
+predict_proba(self, X_test, bins=None)
+    Predict the probabilities for being above the y_threshold.
+pre_fit_for_probabilistic(self)
+    Split the calibration set into two parts.
+compute_proba_cal(self, y_threshold: float)
+    Calculate the probability calibration for a given threshold.
 """
 import crepes
 import numpy as np
 from ._VennAbers import VennAbers
 
 class IntervalRegressor:
-    """The IntervalRegressor class is used for regression analysis on intervals of data.
-    """
+    """The IntervalRegressor class is used for regression analysis on intervals of data."""
+
     def __init__(self, calibrated_explainer):
-        '''This function initializes an object with various attributes used for calibration and explanation
-        extraction.
-        
+        """Initialize an object with various attributes used for calibration and explanation extraction.
+
         Parameters
         ----------
         calibrated_explainer
             An object of the class `CalibratedExplainer` which is used to extract explanations. It is
-        assumed that this object has been initialized and contains the necessary methods and attributes.
+            assumed that this object has been initialized and contains the necessary methods and attributes.
         model
             The `model` parameter is an object that represents a fitted regression model. It should have a
-        `predict` method that can be used to make predictions on new instances.
+            `predict` method that can be used to make predictions on new instances.
         X_cal
             A numpy array containing the instance objects used for calibration. These are the input
-        features for the model.
+            features for the model.
         y_cal
             The instance targets used for calibration. It is a numpy array that contains the true target
-        values for the instances in the calibration set.
-        
-        '''
+            values for the instances in the calibration set.
+        """
         self.ce = calibrated_explainer
         self.bins = calibrated_explainer.bins
         self.model = self
@@ -50,28 +67,25 @@ class IntervalRegressor:
 
     # pylint: disable=too-many-locals
     def predict_probability(self, X_test, y_threshold, bins=None):
-        '''The `predict_probability` function takes in a test dataset and a threshold value, and returns
-        the predicted probabilities for each instance in the dataset being above the threshold(s), along 
-        with confidence intervals.
-        
+        """Predict the probabilities for each instance in the dataset being above the threshold(s), along with confidence intervals.
+
         Parameters
         ----------
         X_test
             X_test is a numpy.ndarray containing the instance objects for which we want to predict the
-        probability.
+            probability.
         y_threshold
             The `y_threshold` parameter is used to determine the probability of the true value being 
-        below the threshold value. If the predicted probability of the positive class is smaller than or 
-        equal to `y_threshold`, the instance is classified as positive; otherwise, it is classified as negative.
+            below the threshold value. If the predicted probability of the positive class is smaller than or 
+            equal to `y_threshold`, the instance is classified as positive; otherwise, it is classified as negative.
         bins 
             array-like of shape (n_samples,), default=None
             Mondrian categories
-        
+
         Returns
         -------
             four values: proba (y <= y_threshold), lower bound, upper bound, and None.
-        
-        '''
+        """
         if bins is not None:
             assert self.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
         self.y_threshold = y_threshold
@@ -118,30 +132,27 @@ class IntervalRegressor:
         return proba, low, high, None
 
     def predict_uncertainty(self, X_test, low_high_percentiles, bins=None):
-        '''The function `predict_uncertainty` predicts the uncertainty of a given set of instances using a
-        `ConformalPredictiveSystem` and returns the predicted values along with the lower and upper bounds of
-        the uncertainty interval.
-        
+        """Predict the uncertainty of a given set of instances using a `ConformalPredictiveSystem`.
+
         Parameters
         ----------
         X_test
             X_test is a numpy array containing the instance objects for which we want to predict the
-        uncertainty.
+            uncertainty.
         low_high_percentiles
             The `low_high_percentiles` parameter is a list containing two values. The first value
-        represents the lower percentile and the second value represents the higher percentile. These
-        percentiles are used to calculate the prediction interval for the uncertainty estimation. If the
-        first value is set to -np.inf (negative infinity), the interval will be one-sided and upper-bounded 
-        and if the second value is np.inf (infinity), the interval will be one-sided and lower-bounded.        
+            represents the lower percentile and the second value represents the higher percentile. These
+            percentiles are used to calculate the prediction interval for the uncertainty estimation. If the
+            first value is set to -np.inf (negative infinity), the interval will be one-sided and upper-bounded 
+            and if the second value is np.inf (infinity), the interval will be one-sided and lower-bounded.        
         bins 
             array-like of shape (n_samples,), default=None
             Mondrian categories
-        
+
         Returns
         -------
-            four values: median, lower bound, upper bound, and None
-                    
-        '''
+            four values: median, lower bound, upper bound, and None.
+        """
         y_test_hat = self.ce.learner.predict(X_test)
 
         sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
@@ -159,25 +170,23 @@ class IntervalRegressor:
             None
 
     def predict_proba(self, X_test, bins=None):
-        '''The function `predict_proba` takes in a set of test data and returns the predicted probabilities
-        for being above the y_threshold.
-        
+        """Predict the probabilities for being above the y_threshold.
+
         Parameters
         ----------
         X_test
             The X_test parameter is the input data for which you want to predict the probabilities. It
-        should be a numpy array or a pandas DataFrame containing the features of the test data.     
+            should be a numpy array or a pandas DataFrame containing the features of the test data.     
         bins 
             array-like of shape (n_samples,), default=None
             Mondrian categories
-        
+
         Returns
         -------
             a numpy array of shape (n_samples, 2), where each row represents the predicted probabilities
-        for being above or below the y_threshold. The first column represents the probability of the 
-        negative class (1-proba) and the second column represents the probability of the positive class (proba).
-        
-        '''
+            for being above or below the y_threshold. The first column represents the probability of the 
+            negative class (1-proba) and the second column represents the probability of the positive class (proba).
+        """
         y_test_hat = self.ce.learner.predict(X_test)
 
         sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
@@ -185,11 +194,11 @@ class IntervalRegressor:
         return np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
 
     def pre_fit_for_probabilistic(self):
-        '''
-        The `pre_fit_for_probabilistic` function is used to split the calibration set into two parts. 
+        """Split the calibration set into two parts.
+
         The first part is used to fit the `ConformalPredictiveSystem` and the second part is used to
         calculate the probability calibration for a given threshold (at prediction time).
-        '''
+        """
         n = len(self.ce.y_cal)
         cal_parts = np.random.permutation(n).tolist()
         self.split['parts'] = [cal_parts[:n//2], cal_parts[n//2:]]
@@ -204,19 +213,18 @@ class IntervalRegressor:
                             bins=self.bins[cal_cps], seed=self.ce.seed)
 
     def compute_proba_cal(self, y_threshold: float):
-        '''The `compute_proba_cal` function calculates the probability calibration for a given threshold.
-        
+        """Calculate the probability calibration for a given threshold.
+
         Parameters
         ----------
         y_threshold : float
             The `y_threshold` parameter is a float value that represents the threshold for the probability.
-        It is used in the `compute_proba_cal` method to determine the predicted probabilities of the 
-        calibration set for a given threshold value.     
+            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the 
+            calibration set for a given threshold value.     
         bins 
             array-like of shape (n_samples,), default=None
             Mondrian categories
-        
-        '''
+        """
         cal_va = self.split['parts'][1]
         bins = None if self.bins is None else self.bins[cal_va]
         proba = self.split['cps'].predict(y_hat=self.y_cal_hat[cal_va],

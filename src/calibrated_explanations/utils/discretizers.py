@@ -1,6 +1,54 @@
+# pylint: disable=unknown-option-value
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 """This module defines the discretizers used by CalibratedExplainer.
+
 The discretizers are defined using the same super class as the discretizers from the LIME package.
+
+Classes
+-------
+BaseDiscretizer
+    Abstract class for creating custom discretizers.
+EntropyDiscretizer
+    A dynamic entropy discretizer for the CalibratedExplainer.
+BinaryEntropyDiscretizer
+    A binary entropy discretizer for the CalibratedExplainer.
+RegressorDiscretizer
+    A dynamic Regressor discretizer for the CalibratedExplainer.
+BinaryRegressorDiscretizer
+    A dynamic binary Regressor discretizer for the CalibratedExplainer.
+
+Methods
+-------
+BaseDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+    Initialize the BaseDiscretizer.
+BaseDiscretizer.bins(self, data, labels)
+    To be overridden. Returns the boundaries that form each bin of the discretizer.
+BaseDiscretizer.discretize(self, data)
+    Discretizes the data.
+EntropyDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+    Initialize the EntropyDiscretizer.
+EntropyDiscretizer.__repr__(self)
+    Return a string representation of the EntropyDiscretizer.
+EntropyDiscretizer.bins(self, data, labels)
+    Calculate the bins for the EntropyDiscretizer.
+BinaryEntropyDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+    Initialize the BinaryEntropyDiscretizer.
+BinaryEntropyDiscretizer.__repr__(self)
+    Return a string representation of the BinaryEntropyDiscretizer.
+BinaryEntropyDiscretizer.bins(self, data, labels)
+    Calculate the bins for the BinaryEntropyDiscretizer.
+RegressorDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+    Initialize the RegressorDiscretizer.
+RegressorDiscretizer.__repr__(self)
+    Return a string representation of the RegressorDiscretizer.
+RegressorDiscretizer.bins(self, data, labels)
+    Calculate the bins for the RegressorDiscretizer.
+BinaryRegressorDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+    Initialize the BinaryRegressorDiscretizer.
+BinaryRegressorDiscretizer.__repr__(self)
+    Return a string representation of the BinaryRegressorDiscretizer.
+BinaryRegressorDiscretizer.bins(self, data, labels)
+    Calculate the bins for the BinaryRegressorDiscretizer.
 """
 from abc import ABCMeta, abstractmethod
 import numpy as np
@@ -10,18 +58,30 @@ from sklearn.utils import check_random_state
 # pylint: disable=too-many-instance-attributes
 class BaseDiscretizer():
     """
-    Abstract class - Build a class that inherits from this class to implement
-    a custom discretizer.
+    Abstract class. Build a class that inherits from this class to implement a custom discretizer.
+
     Method bins() is to be redefined in the child class, as it is the actual
     custom part of the discretizer.
+
+    Methods
+    -------
+    __init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+        Initialize the BaseDiscretizer.
+    bins(self, data, labels)
+        To be overridden. Returns the boundaries that form each bin of the discretizer.
+    discretize(self, data)
+        Discretizes the data.
     """
 
     __metaclass__ = ABCMeta  # abstract class
 
     # pylint: disable=too-many-locals
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
-        """Initializer
-        Args:
+        """
+        Initialize the BaseDiscretizer.
+
+        Parameters
+        ----------
             data: numpy 2d array
             categorical_features: list of indices (ints) corresponding to the
                 categorical columns. These features will not be discretized.
@@ -77,17 +137,23 @@ class BaseDiscretizer():
     @abstractmethod
     def bins(self, data, labels):
         """
-        To be overridden
+        To be overridden.
+
         Returns for each feature to discretize the boundaries
-        that form each bin of the discretizer
+        that form each bin of the discretizer.
         """
         raise NotImplementedError("Must override bins() method")
 
     def discretize(self, data):
-        """Discretizes the data.
-        Args:
+        """
+        Discretizes the data.
+
+        Parameters
+        ----------
             data: numpy 2d or 1d array
-        Returns:
+
+        Returns
+        -------
             numpy array of same dimension, discretized.
         """
         ret = data.copy()
@@ -100,9 +166,10 @@ class BaseDiscretizer():
 
 
 class EntropyDiscretizer(BaseDiscretizer):
-    """a dynamic entropy discretizer for the CalibratedExplainer
+    """A dynamic entropy discretizer for the CalibratedExplainer.
 
-    Args:        
+    Arguments
+    ---------        
         data: numpy 2d array
         categorical_features: list of indices (ints) corresponding to the
             categorical columns. These features will not be discretized.
@@ -114,18 +181,32 @@ class EntropyDiscretizer(BaseDiscretizer):
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
         labels: must have target labels of the data  
+
+    Methods
+    -------
+    __init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+        Initialize the EntropyDiscretizer.
+    __repr__(self)
+        Return a string representation of the EntropyDiscretizer.
+    bins(self, data, labels)
+        Calculate the bins for the EntropyDiscretizer.
     """
+
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
+        """Initialize the EntropyDiscretizer."""
         if labels is None:
             raise ValueError('Labels must be not None when using \
                             EntropyDiscretizer')
         BaseDiscretizer.__init__(self, data, categorical_features,
                                 feature_names, labels=labels,
                                 random_state=random_state)
+
     def __repr__(self):
+        """Return a string representation of the EntropyDiscretizer."""
         return 'EntropyDiscretizer()'
 
     def bins(self, data, labels):
+        """Calculate the bins for the EntropyDiscretizer."""
         bins = []
         for feature in self.to_discretize:
             # Entropy splitting / at most 8 bins so max_depth=3
@@ -147,9 +228,10 @@ class EntropyDiscretizer(BaseDiscretizer):
 
 
 class BinaryEntropyDiscretizer(BaseDiscretizer):
-    """a binary entropy discretizer for the CalibratedExplainer
+    """A binary entropy discretizer for the CalibratedExplainer.
 
-    Args:        
+    Arguments
+    ---------
         data: numpy 2d array
         categorical_features: list of indices (ints) corresponding to the
             categorical columns. These features will not be discretized.
@@ -161,18 +243,33 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
         labels: must have target labels of the data  
+
+    Methods
+    -------
+    __init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+        Initialize the BinaryEntropyDiscretizer.
+    __repr__(self)
+        Return a string representation of the BinaryEntropyDiscretizer.
+    bins(self, data, labels)
+        Calculate the bins for the BinaryEntropyDiscretizer.
     """
+
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
+        """Initialize the BinaryEntropyDiscretizer."""
         if labels is None:
             raise ValueError('Labels must not be None when using '+\
                             'BinaryEntropyDiscretizer')
         BaseDiscretizer.__init__(self, data, categorical_features,
                                 feature_names, labels=labels,
                                 random_state=random_state)
+
     def __repr__(self):
+        """Return a string representation of the BinaryEntropyDiscretizer."""
         return 'BinaryEntropyDiscretizer()'
+
     # pylint: disable=invalid-name
     def bins(self, data, labels):
+        """Calculate the bins for the BinaryEntropyDiscretizer."""
         bins = []
         for feature in self.to_discretize:
             # Entropy splitting / at most 2 bins so max_depth=1
@@ -194,9 +291,10 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
 
 
 class RegressorDiscretizer(BaseDiscretizer):
-    """a dynamic Regressor discretizer for the CalibratedExplainer
+    """A dynamic Regressor discretizer for the CalibratedExplainer.
 
-    Args:        
+    Arguments
+    ---------
         data: numpy 2d array
         categorical_features: list of indices (ints) corresponding to the
             categorical columns. These features will not be discretized.
@@ -208,18 +306,33 @@ class RegressorDiscretizer(BaseDiscretizer):
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
         labels: must have target values of the data
+
+    Methods
+    -------
+    __init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+        Initialize the RegressorDiscretizer.
+    __repr__(self)
+        Return a string representation of the RegressorDiscretizer.
+    bins(self, data, labels)
+        Calculate the bins for the RegressorDiscretizer.
     """
+
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
+        """Initialize the RegressorDiscretizer."""
         if labels is None:
             raise ValueError('Labels must not be None when using '+\
                             'RegressorDiscretizer')
         BaseDiscretizer.__init__(self, data, categorical_features,
                                 feature_names, labels=labels,
                                 random_state=random_state)
+
     def __repr__(self):
+        """Return a string representation of the RegressorDiscretizer."""
         return 'RegressorDiscretizer()'
+
     # pylint: disable=invalid-name
     def bins(self, data, labels):
+        """Calculate the bins for the RegressorDiscretizer."""
         bins = []
         for feature in self.to_discretize:
             # Entropy splitting / at most 2 bins so max_depth=1
@@ -241,9 +354,10 @@ class RegressorDiscretizer(BaseDiscretizer):
 
 
 class BinaryRegressorDiscretizer(BaseDiscretizer):
-    """a dynamic binary Regressor discretizer for the CalibratedExplainer
+    """A dynamic binary Regressor discretizer for the CalibratedExplainer.
 
-    Args:        
+    Arguments
+    ---------
         data: numpy 2d array
         categorical_features: list of indices (ints) corresponding to the
             categorical columns. These features will not be discretized.
@@ -255,18 +369,33 @@ class BinaryRegressorDiscretizer(BaseDiscretizer):
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
         labels: must have target values of the data
+
+    Methods
+    -------
+    __init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
+        Initialize the BinaryRegressorDiscretizer.
+    __repr__(self)
+        Return a string representation of the BinaryRegressorDiscretizer.
+    bins(self, data, labels)
+        Calculate the bins for the BinaryRegressorDiscretizer.
     """
+
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
+        """Initialize the BinaryRegressorDiscretizer."""
         if labels is None:
             raise ValueError('Labels must not be None when using '+\
                             'BinaryRegressorDiscretizer')
         BaseDiscretizer.__init__(self, data, categorical_features,
                                 feature_names, labels=labels,
                                 random_state=random_state)
+
     def __repr__(self):
+        """Return a string representation of the BinaryRegressorDiscretizer."""
         return 'BinaryRegressorDiscretizer()'
+
     # pylint: disable=invalid-name
     def bins(self, data, labels):
+        """Calculate the bins for the BinaryRegressorDiscretizer."""
         bins = []
         for feature in self.to_discretize:
             # Entropy splitting / at most 2 bins so max_depth=1

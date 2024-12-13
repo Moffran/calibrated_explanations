@@ -1,10 +1,13 @@
 # pylint: disable=line-too-long
-'''
-This module provides utility functions for various tasks such as directory creation, safe importing,
+"""This module provides utility functions for various tasks.
+
+These tasks include directory creation, safe importing,
 type checking, data transformation, and metric calculation. It includes functions to handle 
 categorical data, check if an estimator is fitted, and determine if the code is running in a 
 Jupyter notebook.
-Functions:
+
+Functions
+---------
 - make_directory: Create a directory if it does not exist.
 - safe_isinstance: Safely check if an object is an instance of a specified class.
 - safe_import: Safely import a module or class, with error handling for missing modules or classes.
@@ -14,9 +17,10 @@ Functions:
 - assert_threshold: Validate and return thresholds.
 - calculate_metrics: Calculate various metrics based on uncertainty and prediction values.
 - convert_targets_to_numeric: Convert string/categorical targets to numeric values while preserving labels.
+
 Created on 2023-07-01
 Author: Tuwe Löfström
-'''
+"""
 import os
 import sys
 import importlib
@@ -26,9 +30,8 @@ import numpy as np
 from pandas import CategoricalDtype
 
 def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:    # pylint: disable=unused-private-member
-    """ 
-    Create directory if it does not exist
-    
+    """Create directory if it does not exist.
+
     Parameters
     ----------
     path : str
@@ -55,9 +58,7 @@ def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:    
 
 # copied from shap.utils._general.safe_isinstance
 def safe_isinstance(obj, class_path_str):
-    """
-    Acts as a safe version of isinstance without having to explicitly
-    import packages which may not exist in the users environment.
+    """Acts as a safe version of isinstance without having to explicitly import packages which may not exist in the users environment.
 
     Checks if obj is an instance of type specified by class_path_str.
 
@@ -70,7 +71,7 @@ def safe_isinstance(obj, class_path_str):
         Example: `sklearn.ensemble.RandomForestRegressor`
 
     Returns
-    --------
+    -------
     bool: True if isinstance is true and the package exists, False otherwise
     """
     if isinstance(class_path_str, str):
@@ -109,8 +110,7 @@ def safe_isinstance(obj, class_path_str):
     return False
 
 def safe_import(module_name, class_name=None):
-    '''safely import a module, if it is not installed, print a message and return None
-    '''
+    """Safely import a module, if it is not installed, print a message and return None."""
     try:
         imported_module = importlib.import_module(module_name)
         if class_name is None:
@@ -198,14 +198,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         raise RuntimeError(msg % {"name": type(estimator).__name__})
 
 def is_notebook():
-    '''
-    Check if the code is running in a Jupyter notebook.
-
-    This returns False when not running from a notebook:
-
-    >>> is_notebook()
-    False
-    '''
+    """Check if the code is running in a Jupyter notebook."""
     try:
         # pylint: disable=import-outside-toplevel
         from IPython import get_ipython
@@ -217,9 +210,8 @@ def is_notebook():
 
 # pylint: disable=too-many-locals, too-many-branches
 def transform_to_numeric(df, target, mappings=None):
-    '''
-    Transform the categorical features to numeric
-    
+    """Transform the categorical features to numeric.
+
     Parameters
     ----------
     df : pd.DataFrame
@@ -274,7 +266,7 @@ def transform_to_numeric(df, target, mappings=None):
        numerical  nominal  target
     0          2        1       1
     1          3        0       0
-    '''
+    """
     if mappings is None:
         categorical_features = []
         categorical_labels = {}
@@ -326,9 +318,8 @@ def transform_to_numeric(df, target, mappings=None):
     return df, None, None, target_labels, mappings
 
 def assert_threshold(threshold, x):
-    '''
-    Test if the thresholds are valid.
-    
+    """Test if the thresholds are valid.
+
     Parameters
     ----------
     threshold : int, float, tuple, list, or np.ndarray
@@ -366,7 +357,7 @@ def assert_threshold(threshold, x):
     Traceback (most recent call last):
         ...
     AssertionError: list thresholds must have the same length as the number of samples
-    '''
+    """
     if threshold is None:
         return threshold
     if np.isscalar(threshold) and isinstance(threshold, (numbers.Integral, numbers.Real)):
@@ -387,7 +378,8 @@ def calculate_metrics(uncertainty=None,
                       w=0.5,
                       metric=None,
                       normalize=False,):
-    '''
+    """Calculate different metrics based on the uncertainty and probability values.
+    
     The function `calculate_metrics` calculates different metrics based on the uncertainty and 
     probability values.
 
@@ -419,9 +411,7 @@ def calculate_metrics(uncertainty=None,
     Notes
     -----
     If the method is called with no arguments, it will return the list of available metrics.
-    '''
-
-    # Count the number of arguments passed
+    """
     if uncertainty is None and prediction is None:
         return ['ensured'
                 ]

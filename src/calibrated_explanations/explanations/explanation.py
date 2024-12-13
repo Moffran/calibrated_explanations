@@ -1,7 +1,20 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-lines, too-many-arguments, invalid-name, too-many-positional-arguments, line-too-long
-"""This module contains the classes for storing and visualizing individual calibrated
-explanations."""
+"""This module contains classes for storing and visualizing individual calibrated explanations.
+
+Classes:
+    :class:`.CalibratedExplanation`:
+        Abstract base class for calibrated explanations. Defines the interface and shared functionality for different types of explanations.
+
+    :class:`.FactualExplanation`:
+        Provides factual explanations for a given instance, highlighting features that contribute to the model's prediction.
+
+    :class:`.AlternativeExplanation`:
+        Offers alternative explanations by exploring how changes to feature values could alter the model's prediction.
+
+    :class:`.FastExplanation`:
+        Represents fast explanations, enabling efficient interpretation of model behavior for large datasets.
+"""
 import contextlib
 import warnings
 from copy import deepcopy
@@ -21,7 +34,48 @@ from .._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class CalibratedExplanation(ABC):
-    """A class for storing and visualizing calibrated explanations."""
+    """Abstract base class for storing and visualizing calibrated explanations.
+
+    This class defines the interface and shared functionality for different types of calibrated explanations.
+
+    Parameters
+    ----------
+    calibrated_explanations : :class:`.CalibratedExplanations`
+        The parent :class:`.CalibratedExplanations` object.
+    index : int
+        The index of the instance being explained.
+    X_test : array-like
+        The test dataset containing the instances to be explained.
+    binned : dict
+        A mapping of binned feature values.
+    feature_weights : dict
+        A mapping of feature weights.
+    feature_predict : dict
+        A mapping of feature predictions.
+    prediction : dict
+        A mapping containing the prediction results.
+    y_threshold : float or tuple, optional
+        The threshold for binary classification or regression explanations.
+    instance_bin : int, optional
+        The bin index of the instance.
+
+    Methods
+    -------
+    __len__()
+        Returns the number of rules in the explanation.
+    get_mode()
+        Returns the mode of the explanation ('classification' or 'regression').
+    get_class_labels()
+        Returns the class labels.
+    is_multiclass()
+        Determines if the explanation is multiclass.
+    reset()
+        Resets the explanation to its original state.
+    remove_conjunctions()
+        Removes any conjunctive rules.
+    add_new_rule_condition(feature, rule_boundary)
+        Creates a new rule condition for a numerical feature.
+    """
 
     def __init__(
         self,
@@ -35,6 +89,30 @@ class CalibratedExplanation(ABC):
         y_threshold=None,
         instance_bin=None,
     ):
+        """
+        Initialize a CalibratedExplanation instance.
+
+        Parameters
+        ----------
+        calibrated_explanations : :class:`.CalibratedExplanations`
+            The parent :class:`.CalibratedExplanations` object.
+        index : int
+            The index of the instance being explained.
+        X_test : array-like
+            The test dataset containing the instances to be explained.
+        binned : dict
+            A mapping of binned feature values.
+        feature_weights : dict
+            A mapping of feature weights.
+        feature_predict : dict
+            A mapping of feature predictions.
+        prediction : dict
+            A mapping containing the prediction results.
+        y_threshold : float or tuple, optional
+            The threshold for binary classification or regression explanations.
+        instance_bin : int, optional
+            The bin index of the instance.
+        """
         binned = MappingProxyType(binned)
         feature_weights = MappingProxyType(feature_weights)
         feature_predict = MappingProxyType(feature_predict)
@@ -77,18 +155,19 @@ class CalibratedExplanation(ABC):
         self.focus_columns = None
 
     def __len__(self):
+        """Return the number of rules in the explanation."""
         return len(self._get_rules()["rule"])
 
     def get_mode(self):
-        """Returns the mode of the explanation (classification or regression)"""
+        """Return the mode of the explanation ('classification' or 'regression')."""
         return self._get_explainer().mode
 
     def get_class_labels(self):
-        """Returns the class labels."""
+        """Return the class labels."""
         return self._get_explainer().class_labels
 
     def is_multiclass(self):
-        """Returns whether the explanation is multiclass or not."""
+        """Determine if the explanation is multiclass."""
         return self._get_explainer().is_multiclass()
 
     def _get_explainer(self):
@@ -122,7 +201,8 @@ class CalibratedExplanation(ABC):
     def is_one_sided(self) -> bool:
         """Test if a regression explanation is one-sided.
 
-        Returns:
+        Returns
+        -------
             bool: True if one of the low or high percentiles is infinite
         """
         if self.calibrated_explanations.low_high_percentiles is None:
@@ -134,7 +214,8 @@ class CalibratedExplanation(ABC):
     def is_thresholded(self) -> bool:
         """Test if the explanation is thresholded.
 
-        Returns:
+        Returns
+        -------
             bool: True if the y_threshold is not None
         """
         return self.y_threshold is not None
@@ -142,7 +223,8 @@ class CalibratedExplanation(ABC):
     def is_regression(self) -> bool:
         """Test if the explanation is for regression.
 
-        Returns:
+        Returns
+        -------
             bool: True if mode is 'regression'
         """
         return "regression" in self._get_explainer().mode
@@ -150,7 +232,8 @@ class CalibratedExplanation(ABC):
     def is_probabilistic(self) -> bool:
         """Test if the explanation is probabilistic.
 
-        Returns:
+        Returns
+        -------
             bool: True if mode is 'classification' or is_thresholded and is_regression are True
         """
         return "classification" in self._get_explainer().mode or (
@@ -159,21 +242,36 @@ class CalibratedExplanation(ABC):
 
     @abstractmethod
     def __repr__(self):
-        pass
+        """Return a string representation of the explanation."""
 
     @abstractmethod
     def plot(self, filter_top=None, **kwargs):
-        """The `plot` function plots explanations for a given instance, with the option to show or
-        save the plots."""
-        # pass
+        """
+        Plot the explanation.
+
+        Parameters
+        ----------
+        filter_top : int, optional
+            The number of top features to display.
+        **kwargs : dict
+            Additional plotting arguments. See each subclass.
+        """
 
     @abstractmethod
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
-        """The function `add_conjunctions` adds conjunctive rules to the factual or alternative
-        explanations.
+        """
+        Add conjunctive rules to the explanation.
 
-        The conjunctive rules are added to the `conjunctive_rules` attribute of the
-        `CalibratedExplanations` object.
+        Parameters
+        ----------
+        n_top_features : int, optional
+            Number of top features to combine.
+        max_rule_size : int, optional
+            Maximum size of the conjunctions.
+
+        Returns
+        -------
+        :class:`.CalibratedExplanation`
         """
 
     @abstractmethod
@@ -185,25 +283,25 @@ class CalibratedExplanation(ABC):
         pass
 
     def reset(self):
-        """This function resets the explanation to its original state."""
+        """Reset the explanation to its original state."""
         self._has_rules = False
         self._get_rules()
         return self
 
     def remove_conjunctions(self):
-        """Removes any conjunctive rules."""
+        """Remove any conjunctive rules."""
         self._has_conjunctive_rules = False
         return self
 
     def _define_conditions(self):
-        # """defines the rule conditions for an instance
+        """
+        Define the rule conditions for an instance.
 
-        # Args:
-        #     instance (n_features,): a test instance
-
-        # Returns:
-        #     list[str]: a list of conditions for each feature in the instance
-        # """
+        Returns
+        -------
+        list[str]
+            A list of conditions for each feature in the instance.
+        """
         self.conditions = []
         # pylint: disable=invalid-name
         x = self._get_explainer().discretizer.discretize(self.X_test)
@@ -227,12 +325,33 @@ class CalibratedExplanation(ABC):
         rule_value_set,
         original_features,
         perturbed,
-        threshold,  # pylint: disable=invalid-name, too-many-locals, too-many-arguments
+        threshold,
         predicted_class,
         bins=None,
     ):
-        # """support function to calculate the prediction for a conjunctive rule
-        # """
+        """
+        Calculate the prediction for a conjunctive rule.
+
+        Parameters
+        ----------
+        rule_value_set : list
+            The set of rule values.
+        original_features : list
+            The original feature indices.
+        perturbed : array-like
+            The perturbed dataset.
+        threshold : float
+            The threshold for classification or regression.
+        predicted_class : int
+            The predicted class label.
+        bins : array-like, optional
+            The bins for discretization.
+
+        Returns
+        -------
+        tuple
+            The predicted value, lower bound, upper bound, and count.
+        """
         assert len(original_features) >= 2, "Conjunctive rules require at least two features"
         rule_predict, rule_low, rule_high, rule_count = 0, 0, 0, 0
         of1, of2, of3 = 0, 0, 0
@@ -289,15 +408,15 @@ class CalibratedExplanation(ABC):
 
     # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-return-statements
     def add_new_rule_condition(self, feature, rule_boundary):
-        """Creates an rule condition for a numerical feature with user defined values. All possible
-        rules for categorical features are already included.
+        """
+        Create a new rule condition for a numerical feature.
 
         Parameters
         ----------
         feature : int or str
-            the feature to focus attention on. Can be the index of the feature or the name of the feature (if feature names are available)
-        rule_boundary: int or float
-            the value to define as rule condition. If  :class:`.FactualExplanation`, the rule condition will include the instance values and if  :class:`.AlternativeExplanation`, the rule condition will exclude the instance value.
+            The feature index or name.
+        rule_boundary : int or float
+            The value to define as rule condition.
 
         Returns
         -------
@@ -447,7 +566,40 @@ class CalibratedExplanation(ABC):
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class FactualExplanation(CalibratedExplanation):
-    """A class for storing and visualizing factual explanations."""
+    """Class for storing and visualizing factual explanations.
+
+    Provides factual explanations for a given instance, highlighting features that contribute to the model's prediction.
+
+    Parameters
+    ----------
+    calibrated_explanations : CalibratedExplanations
+        The parent :class:`.CalibratedExplanations` object.
+    index : int
+        The index of the instance being explained.
+    X_test : array-like
+        The test dataset containing the instances to be explained.
+    binned : dict
+        A mapping of binned feature values.
+    feature_weights : dict
+        A mapping of feature weights.
+    feature_predict : dict
+        A mapping of feature predictions.
+    prediction : dict
+        A mapping containing the prediction results.
+    y_threshold : float or tuple, optional
+        The threshold for binary classification or regression explanations.
+    instance_bin : int, optional
+        The bin index of the instance.
+
+    Methods
+    -------
+    __repr__()
+        Returns a string representation of the factual explanation.
+    plot(filter_top=None, **kwargs)
+        Plots the factual explanation.
+    add_conjunctions(n_top_features=5, max_rule_size=2)
+        Adds conjunctive factual rules.
+    """
 
     def __init__(
         self,
@@ -461,6 +613,30 @@ class FactualExplanation(CalibratedExplanation):
         y_threshold=None,
         instance_bin=None,
     ):
+        """
+        Initialize a FactualExplanation instance.
+
+        Parameters
+        ----------
+        calibrated_explanations : CalibratedExplanations
+            The parent CalibratedExplanations object.
+        index : int
+            The index of the instance being explained.
+        X_test : array-like
+            The test dataset containing the instances to be explained.
+        binned : dict
+            A mapping of binned feature values.
+        feature_weights : dict
+            A mapping of feature weights.
+        feature_predict : dict
+            A mapping of feature predictions.
+        prediction : dict
+            A mapping containing the prediction results.
+        y_threshold : float or tuple, optional
+            The threshold for binary classification or regression explanations.
+        instance_bin : int, optional
+            The bin index of the instance.
+        """
         super().__init__(
             calibrated_explanations,
             index,
@@ -476,6 +652,7 @@ class FactualExplanation(CalibratedExplanation):
         self._get_rules()
 
     def __repr__(self):
+        """Return a string representation of the factual explanation."""
         factual = self._get_rules()
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
@@ -509,11 +686,14 @@ class FactualExplanation(CalibratedExplanation):
             )
 
     def _get_rules(self):
-        # """creates factual rules
+        """
+        Create factual rules.
 
-        # Returns:
-        #     List[Dict[str, List]]: a list of dictionaries containing the factual rules, one for each test instance
-        # """
+        Returns
+        -------
+        List[Dict[str, List]]
+            A list of dictionaries containing the factual rules.
+        """
         if self._has_conjunctive_rules:
             return self.conjunctive_rules
         if self._has_rules:
@@ -570,15 +750,20 @@ class FactualExplanation(CalibratedExplanation):
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
-        # """adds conjunctive factual rules
+        """
+        Add conjunctive factual rules.
 
-        # Args:
-        #     n_top_features (int, optional): the number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
-        #     max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
+        Parameters
+        ----------
+        n_top_features : int, optional
+            Number of top features to combine.
+        max_rule_size : int, optional
+            Maximum size of the conjunctions.
 
-        # Returns:
-        #     CalibratedExplanations: Returns a self reference, to allow for method chaining
-        # """
+        Returns
+        -------
+        :class:`.CalibratedExplanations`: Returns a self reference, to allow for method chaining
+        """
         if max_rule_size >= 4:
             raise ValueError("max_rule_size must be 2 or 3")
         if max_rule_size < 2:
@@ -686,30 +871,30 @@ class FactualExplanation(CalibratedExplanation):
         return instance_value < rule_boundary
 
     def plot(self, filter_top=None, **kwargs):
-        """This function plots the factual explanation for a given instance using either
-        probabilistic or regression plots.
+        """
+        Plot the factual explanation for a given instance.
 
         Parameters
         ----------
-        filter_top : int, default=10
-            The `filter_top` parameter determines the number of top features to display in the
-            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
-            number of features, up to the total number of features available.
-        show : bool, default=False
-            A boolean parameter that determines whether the plot should be displayed or not. If set to
-            True, the plot will be displayed. If set to False, the plot will not be displayed.
-        filename : str, default=''
-            The filename parameter is a string that represents the full path and filename of the plot
-            image file that will be saved. If this parameter is not provided or is an empty string, the plot
-            will not be saved as an image file.
-        uncertainty : bool, default=False
-            The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
-            intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
-            range of possible feature weights based on the lower and upper bounds of the uncertainty
-            intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
-        style : str, default='regular'
-            The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
-            * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
+        filter_top : int, optional
+            The number of top features to display.
+        **kwargs : dict
+            Additional plotting arguments, such as:
+            show : bool, default=False
+                A boolean parameter that determines whether the plot should be displayed or not. If set to
+                True, the plot will be displayed. If set to False, the plot will not be displayed.
+            filename : str, default=''
+                The filename parameter is a string that represents the full path and filename of the plot
+                image file that will be saved. If this parameter is not provided or is an empty string, the plot
+                will not be saved as an image file.
+            uncertainty : bool, default=False
+                The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
+                intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
+                range of possible feature weights based on the lower and upper bounds of the uncertainty
+                intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
+            style : str, default='regular'
+                The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
+                * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
         """
         show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")
@@ -806,10 +991,47 @@ class FactualExplanation(CalibratedExplanation):
 
 
 class AlternativeExplanation(CalibratedExplanation):
-    """This class represents an alternative explanation for a given instance.
+    """Class representing an alternative explanation for a given instance.
 
-    It is a subclass of
-    :class:`.CalibratedExplanation` and inherits all its properties and methods.
+    Offers alternative explanations by exploring how changes to feature values could alter the model's prediction.
+
+    Parameters
+    ----------
+    calibrated_explanations : CalibratedExplanations
+        The parent :class:`.CalibratedExplanations` object.
+    index : int
+        The index of the instance being explained.
+    X_test : array-like
+        The test dataset containing the instances to be explained.
+    binned : dict
+        A mapping of binned feature values.
+    feature_weights : dict
+        A mapping of feature weights.
+    feature_predict : dict
+        A mapping of feature predictions.
+    prediction : dict
+        A mapping containing the prediction results.
+    y_threshold : float or tuple, optional
+        The threshold for binary classification or regression explanations.
+    instance_bin : int, optional
+        The bin index of the instance.
+
+    Methods
+    -------
+    __repr__()
+        Returns a string representation of the alternative explanation.
+    plot(filter_top=None, **kwargs)
+        Plots the alternative explanation.
+    super_explanations(only_ensured=False, include_potential=False)
+        Returns super-explanations that support the predicted class.
+    semi_explanations(only_ensured=False, include_potential=False)
+        Returns semi-explanations that partially support the predicted class.
+    counter_explanations(only_ensured=False, include_potential=False)
+        Returns counter-explanations that do not support the predicted class.
+    ensured_explanations(include_potential=False)
+        Returns ensured explanations with smaller confidence intervals.
+    add_conjunctions(n_top_features=5, max_rule_size=2)
+        Adds conjunctive alternative rules.
     """
 
     def __init__(
@@ -824,6 +1046,30 @@ class AlternativeExplanation(CalibratedExplanation):
         y_threshold=None,
         instance_bin=None,
     ):
+        """
+        Initialize an AlternativeExplanation instance.
+
+        Parameters
+        ----------
+        calibrated_explanations : CalibratedExplanations
+            The parent CalibratedExplanations object.
+        index : int
+            The index of the instance being explained.
+        X_test : array-like
+            The test dataset containing the instances to be explained.
+        binned : dict
+            A mapping of binned feature values.
+        feature_weights : dict
+            A mapping of feature weights.
+        feature_predict : dict
+            A mapping of feature predictions.
+        prediction : dict
+            A mapping containing the prediction results.
+        y_threshold : float or tuple, optional
+            The threshold for binary classification or regression explanations.
+        instance_bin : int, optional
+            The bin index of the instance.
+        """
         super().__init__(
             calibrated_explanations,
             index,
@@ -843,6 +1089,7 @@ class AlternativeExplanation(CalibratedExplanation):
         self.__is_counter_explanation = False
 
     def __repr__(self):
+        """Return a string representation of the alternative explanation."""
         alternative = self._get_rules()
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
@@ -877,11 +1124,14 @@ class AlternativeExplanation(CalibratedExplanation):
 
     # pylint: disable=too-many-statements, too-many-branches
     def _get_rules(self):
-        # """creates alternative rules
+        """
+        Create alternative rules.
 
-        # Returns:
-        #     List[Dict[str, List]]: a list of dictionaries containing the alternative rules, one for each test instance
-        # """
+        Returns
+        -------
+        List[Dict[str, List]]
+            A list of dictionaries containing the alternative rules.
+        """
         if self._has_conjunctive_rules:
             return self.conjunctive_rules
         if self._has_rules:
@@ -1044,18 +1294,15 @@ class AlternativeExplanation(CalibratedExplanation):
         return result
 
     def is_super_explanation(self):
-        """This function returns a boolean value that indicates whether the explanation is a super-
-        explanation or not."""
+        """Determine if the explanation is a super-explanation."""
         return self.__is_super_explanation
 
     def is_semi_explanation(self):
-        """This function returns a boolean value that indicates whether the explanation is a semi-
-        explanation or not."""
+        """Determine if the explanation is a semi-explanation."""
         return self.__is_semi_explanation
 
     def is_counter_explanation(self):
-        """This function returns a boolean value that indicates whether the explanation is a
-        counter-explanation or not."""
+        """Determine if the explanation is a counter-explanation."""
         return self.__is_counter_explanation
 
     def __filter_rules(
@@ -1066,10 +1313,7 @@ class AlternativeExplanation(CalibratedExplanation):
         make_counter=False,
         include_potential=False,
     ):
-        """This is a support function to semi and counter explanations.
-
-        It filters out rules that are not relevant to the explanation.
-        """
+        """Filter rules based on the explanation type."""
         if self.is_regression() and not self.is_probabilistic():
             warnings.warn(
                 "Regression explanations are not probabilistic. Filtering rules may not be effective."
@@ -1199,7 +1443,7 @@ class AlternativeExplanation(CalibratedExplanation):
         ]
 
     def reset(self):
-        """This function resets the explanation to its original state."""
+        """Reset the explanation to its original state."""
         self.__is_super_explanation = False
         self.__is_semi_explanation = False
         self.__is_counter_explanation = False
@@ -1208,24 +1452,12 @@ class AlternativeExplanation(CalibratedExplanation):
         return self
 
     def super_explanations(self, only_ensured=False, include_potential=False):
-        """This function returns the super-explanations from this alternative explanation. Super-
-        explanations are individual rules that support the predicted class.
-
-        Parameters
-        ----------
-        only_ensured : bool, default=False
-            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations,
-            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
-            explanations. If set to `False`, the function will return all super-explanations.
-        include_potential : bool, default=False
-            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations,
-            i.e., explanations with a confidence interval covering 0.5. If set to `True`, the function will include potential
-            explanations. If set to `False`, the function will return only super-factual explanations.
+        """
+        Provide super-explanations that support the predicted class.
 
         Returns
         -------
-        self : :class:`.AlternativeExplanation`
-            Returns self filtered to only contain super-factual or super-potential explanations.
+        :class:`.AlternativeExplanation`
         """
         self.__filter_rules(
             only_ensured=only_ensured, make_super=True, include_potential=include_potential
@@ -1234,24 +1466,12 @@ class AlternativeExplanation(CalibratedExplanation):
         return self
 
     def semi_explanations(self, only_ensured=False, include_potential=False):
-        """This function returns the semi-explanations from this alternative explanation. Semi-
-        explanations are individual rules that support the predicted class.
-
-        Parameters
-        ----------
-        only_ensured : bool, default=False
-            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations,
-            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
-            explanations. If set to `False`, the function will return all semi-explanations.
-        include_potential : bool, default=False
-            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations,
-            i.e., explanations with a confidence interval covering 0.5. If set to `True`, the function will include potential
-            explanations. If set to `False`, the function will return only semi-factual explanations.
+        """
+        Provide semi-explanations that partially support the predicted class.
 
         Returns
         -------
-        self : :class:`.AlternativeExplanation`
-            Returns self filtered to only contain semi-factual or semi-potential explanations.
+        :class:`.AlternativeExplanation`
         """
         self.__filter_rules(
             only_ensured=only_ensured, make_semi=True, include_potential=include_potential
@@ -1260,24 +1480,12 @@ class AlternativeExplanation(CalibratedExplanation):
         return self
 
     def counter_explanations(self, only_ensured=False, include_potential=False):
-        """This function returns the counter-explanations from this alternative explanation.
-        Counter-explanations are individual rules that does not support the predicted class.
-
-        Parameters
-        ----------
-        only_ensured : bool, default=False
-            The `only_ensured` parameter is a boolean flag that determines whether to return only ensured explanations,
-            i.e., explanations with a smaller confidence interval. If set to `True`, the function will return only ensured
-            explanations. If set to `False`, the function will return all counter-explanations.
-        include_potential : bool, default=False
-            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations,
-            i.e., explanations with a confidence interval covering 0.5. If set to `True`, the function will include potential
-            explanations. If set to `False`, the function will return only counter-factual explanations.
+        """
+        Provide counter-explanations that do not support the predicted class.
 
         Returns
         -------
-        self : :class:`.AlternativeExplanation`
-            Returns self filtered to only contain counter-factual or counter-potential explanations.
+        :class:`.AlternativeExplanation`
         """
         self.__filter_rules(
             only_ensured=only_ensured, make_counter=True, include_potential=include_potential
@@ -1286,35 +1494,32 @@ class AlternativeExplanation(CalibratedExplanation):
         return self
 
     def ensured_explanations(self, include_potential=False):
-        """This function returns the ensured explanations from this alternative explanation. Ensured
-        explanations are individual rules that have a smaller confidence interval.
-
-        Parameters
-        ----------
-        include_potential : bool, default=False
-            The `include_potential` parameter is a boolean flag that determines whether to include potential explanations,
-            i.e., explanations with a confidence interval covering 0.5. If set to `True`, the function will include potential
-            explanations. If set to `False`, the function will return only ensured factual explanations.
+        """
+        Provide ensured explanations with smaller confidence intervals.
 
         Returns
         -------
-        self : :class:`.AlternativeExplanation`
-            Returns self filtered to only contain ensured explanations.
+        :class:`.AlternativeExplanation`
         """
         self.__filter_rules(only_ensured=True, include_potential=include_potential)
         return self
 
     # pylint: disable=too-many-locals
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
-        # """adds conjunctive alternative rules
+        """
+        Add conjunctive alternative rules.
 
-        # Args:
-        #     n_top_features (int, optional): the number of most important alternative rules to try to combine into conjunctive rules. Defaults to 5.
-        #     max_rule_size (int, optional): the maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
+        Parameters
+        ----------
+        n_top_features : int, optional
+            Number of top features to combine.
+        max_rule_size : int, optional
+            Maximum size of the conjunctions.
 
-        # Returns:
-        #     CalibratedExplanations: Returns a self reference, to allow for method chaining
-        # """
+        Returns
+        -------
+        :class:`.CalibratedExplanations`
+        """
         if max_rule_size >= 4:
             raise ValueError("max_rule_size must be 2 or 3")
         if max_rule_size < 2:
@@ -1423,26 +1628,26 @@ class AlternativeExplanation(CalibratedExplanation):
 
     # pylint: disable=consider-iterating-dictionary
     def plot(self, filter_top=None, **kwargs):
-        """The function `plot_alternative` plots the alternative explanation for a given instance in
-        a dataset.
+        """
+        Plot the alternative explanation.
 
         Parameters
         ----------
-        filter_top : int, default=10
-            The `filter_top` parameter determines the number of top features to display in the
-            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
-            number of features, up to the total number of features available.
-        show : bool, default=False
-            A boolean parameter that determines whether the plot should be displayed or not. If set to
-            True, the plot will be displayed. If set to False, the plot will not be displayed.
-        filename : str, default=''
-            The filename parameter is a string that represents the full path and filename of the plot
-            image file that will be saved. If this parameter is not provided or is an empty string, the plot
-            will not be saved as an image file.
-        style : str, default='regular'
-            The `style` parameter is a string that determines the style of the plot. Possible styles for :class:`.AlternativeExplanation`:
-            * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
-            * 'triangular' - a triangular plot for alternative explanations highlighting the interplay between the calibrated probability and the uncertainty intervals
+        filter_top : int, optional
+            The number of top features to display.
+        **kwargs : dict
+            Additional plotting arguments, such as:
+            show : bool, default=False
+                A boolean parameter that determines whether the plot should be displayed or not. If set to
+                True, the plot will be displayed. If set to False, the plot will not be displayed.
+            filename : str, default=''
+                The filename parameter is a string that represents the full path and filename of the plot
+                image file that will be saved. If this parameter is not provided or is an empty string, the plot
+                will not be saved as an image file.
+            style : str, default='regular'
+                The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
+                * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
+                * 'triangular' - a triangular plot for alternative explanations highlighting the interplay between the calibrated probability and the uncertainty intervals
         """
         show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")
@@ -1545,7 +1750,36 @@ class AlternativeExplanation(CalibratedExplanation):
 
 
 class FastExplanation(CalibratedExplanation):
-    """Fast Explanation class, representing shap-like explanations."""
+    """Class representing fast explanations.
+
+    Represents fast, SHAP-like explanations, enabling efficient interpretation of model behavior for large datasets.
+
+    Parameters
+    ----------
+    calibrated_explanations : CalibratedExplanations
+        The parent :class:`.CalibratedExplanations` object.
+    index : int
+        The index of the instance being explained.
+    X_test : array-like
+        The test dataset containing the instances to be explained.
+    feature_weights : dict
+        A mapping of feature weights.
+    feature_predict : dict
+        A mapping of feature predictions.
+    prediction : dict
+        A mapping containing the prediction results.
+    y_threshold : float or tuple, optional
+        The threshold for binary classification or regression explanations.
+    instance_bin : int, optional
+        The bin index of the instance.
+
+    Methods
+    -------
+    __repr__()
+        Returns a string representation of the fast explanation.
+    plot(filter_top=None, **kwargs)
+        Plots the fast explanation.
+    """
 
     def __init__(
         self,
@@ -1558,6 +1792,28 @@ class FastExplanation(CalibratedExplanation):
         y_threshold=None,
         instance_bin=None,
     ):
+        """
+        Initialize a FastExplanation instance.
+
+        Parameters
+        ----------
+        calibrated_explanations : CalibratedExplanations
+            The parent CalibratedExplanations object.
+        index : int
+            The index of the instance being explained.
+        X_test : array-like
+            The test dataset containing the instances to be explained.
+        feature_weights : dict
+            A mapping of feature weights.
+        feature_predict : dict
+            A mapping of feature predictions.
+        prediction : dict
+            A mapping containing the prediction results.
+        y_threshold : float or tuple, optional
+            The threshold for binary classification or regression explanations.
+        instance_bin : int, optional
+            The bin index of the instance.
+        """
         super().__init__(
             calibrated_explanations,
             index,
@@ -1573,6 +1829,7 @@ class FastExplanation(CalibratedExplanation):
         self._get_rules()
 
     def __repr__(self):
+        """Return a string representation of the fast explanation."""
         fast = self._get_rules()
         output = [
             f"{'Prediction':10} [{' Low':5}, {' High':5}]",
@@ -1596,11 +1853,19 @@ class FastExplanation(CalibratedExplanation):
         return "\n".join(output) + "\n"
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
-        """The function `add_conjunctions` adds conjunctive rules to the factual or alternative
-        explanations.
+        """
+        Add conjunctive rules to the fast explanation.
 
-        The conjunctive rules are added to the `conjunctive_rules` attribute of the
-        `CalibratedExplanations` object.
+        Parameters
+        ----------
+        n_top_features : int, optional
+            Number of top features to combine.
+        max_rule_size : int, optional
+            Maximum size of the conjunctions.
+
+        Returns
+        -------
+        :class:`.FastExplanation`
         """
         warnings.warn(
             "The add_conjunctions method is currently not supported for `FastExplanation`, making this call resulting in no change."
@@ -1611,7 +1876,7 @@ class FastExplanation(CalibratedExplanation):
         pass
 
     def add_new_rule_condition(self, feature, rule_boundary):
-        """Is not supported for FastExplanation."""
+        """Create a new rule condition for a numerical feature."""
         warnings.warn(
             "The add_new_rule_condition method is currently not supported for `FastExplanation`, making this call resulting in no change."
         )
@@ -1622,11 +1887,14 @@ class FastExplanation(CalibratedExplanation):
 
     # pylint: disable=too-many-statements, too-many-branches
     def _get_rules(self):
-        # """creates factual rules
+        """
+        Create fast explanation rules.
 
-        # Returns:
-        #     List[Dict[str, List]]: a list of dictionaries containing the factual rules, one for each test instance
-        # """
+        Returns
+        -------
+        dict
+            A dictionary containing the fast explanation rules.
+        """
         if self._has_conjunctive_rules:
             return self.conjunctive_rules
         if self._has_rules:
@@ -1682,14 +1950,14 @@ class FastExplanation(CalibratedExplanation):
         return self.rules
 
     def _define_conditions(self):
-        # """defines the rule conditions for an instance
+        """
+        Define the rule conditions for the fast explanation.
 
-        # Args:
-        #     instance (n_features,): a test instance
-
-        # Returns:
-        #     list[str]: a list of conditions for each feature in the instance
-        # """
+        Returns
+        -------
+        list[str]
+            A list of conditions for each feature.
+        """
         self.conditions = []
         for f in range(self._get_explainer().num_features):
             rule = f"{self._get_explainer().feature_names[f]}"
@@ -1697,30 +1965,30 @@ class FastExplanation(CalibratedExplanation):
         return self.conditions
 
     def plot(self, filter_top=None, **kwargs):
-        """This function plots the factual explanation for a given instance using either
-        probabilistic or regression plots.
+        """
+        Plot the fast explanation.
 
         Parameters
         ----------
-        filter_top : int, default=10
-            The `filter_top` parameter determines the number of top features to display in the
-            plot. If set to `None`, it will show all the features. Otherwise, it will show the specified
-            number of features, up to the total number of features available.
-        show : bool, default=False
-            A boolean parameter that determines whether the plot should be displayed or not. If set to
-            True, the plot will be displayed. If set to False, the plot will not be displayed.
-        filename : str, default=''
-            The filename parameter is a string that represents the full path and filename of the plot
-            image file that will be saved. If this parameter is not provided or is an empty string, the plot
-            will not be saved as an image file.
-        uncertainty : bool, default=False
-            The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
-            intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
-            range of possible feature weights based on the lower and upper bounds of the uncertainty
-            intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
-        style : str, default='regular'
-            The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
-            * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
+        filter_top : int, optional
+            The number of top features to display.
+        **kwargs : dict
+            Additional plotting arguments, such as:
+            show : bool, default=False
+                A boolean parameter that determines whether the plot should be displayed or not. If set to
+                True, the plot will be displayed. If set to False, the plot will not be displayed.
+            filename : str, default=''
+                The filename parameter is a string that represents the full path and filename of the plot
+                image file that will be saved. If this parameter is not provided or is an empty string, the plot
+                will not be saved as an image file.
+            uncertainty : bool, default=False
+                The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
+                intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
+                range of possible feature weights based on the lower and upper bounds of the uncertainty
+                intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
+            style : str, default='regular'
+                The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
+                * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
         """
         show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")

@@ -1,4 +1,4 @@
-"""Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
+"""Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
 
 The calibrated explanations explanation method is based on the paper 
 "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
@@ -33,8 +33,7 @@ __version__ = 'v0.5.1'
 
 
 class CalibratedExplainer:
-    """The :class:`.CalibratedExplainer` class is used for explaining machine learning learners with calibrated
-    predictions.
+    """The :class:`.CalibratedExplainer` class is used for explaining machine learning learners with calibrated predictions.
 
     The calibrated explanations are based on the paper 
     "Calibrated Explanations for Black-Box Predictions" 
@@ -44,8 +43,8 @@ class CalibratedExplainer:
     using Venn-Abers predictors (classification) or 
     conformal predictive systems (regression).
     """
+
     # pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
-    # pylint: disable=dangerous-default-value
     def __init__(self,
                 learner,
                 X_cal,
@@ -58,16 +57,8 @@ class CalibratedExplainer:
                 bins = None,
                 difficulty_estimator = None,
                 **kwargs,) -> None:
-                # sample_percentiles = None,
-                # seed = 42,
-                # verbose = False,
-                # fast = False,
-                # reject=False,
-                # ) -> None:
-        # pylint: disable=line-too-long
-        '''Constructor for the :class:`.CalibratedExplainer` object for explaining the predictions of a
-        black-box learner.
-        
+        """Initialize the :class:`.CalibratedExplainer` object for explaining the predictions of a black-box learner.
+
         Parameters
         ----------
         learner : predictive learner
@@ -76,7 +67,7 @@ class CalibratedExplainer:
             The calibration input data for the learner.
         y_cal : array-like of shape (n_calibrations_samples,)
             The calibration target data for the learner.
-        mode : str equal to "classification" or "regression", default="classification"
+        mode : str, default="classification"
             The mode parameter specifies the type of problem being solved.
         feature_names : list of str, default=None
             A list of feature names for the input data. Each feature name should be a string. If not
@@ -125,8 +116,7 @@ class CalibratedExplainer:
         Returns
         -------
         :class:`.CalibratedExplainer` : A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
-        
-        '''
+        """
         init_time = time()
         self.__initialized = False
         check_is_fitted(learner)
@@ -221,19 +211,19 @@ class CalibratedExplainer:
         self.init_time = time() - init_time
 
     def reinitialize(self, learner):
-        """
-        Reinitializes the explainer with a new learner. This is useful when the learner is updated or retrained and the
-        explainer needs to be reinitialized.
-        
+        """Reinitialize the explainer with a new learner.
+
+        This is useful when the learner is updated or retrained and the explainer needs to be reinitialized.
+
         Parameters
         ----------
         learner : predictive learner
             A predictive learner that can be used to predict the target variable. The learner must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
-        
+
         Returns
         -------
-        :class:`.CalibratedExplainer` : A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
-        
+        :class:`.CalibratedExplainer`
+            A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
         """
         self.__initialized = False
         check_is_fitted(learner)
@@ -243,6 +233,7 @@ class CalibratedExplainer:
 
 
     def __repr__(self):
+        """Return the string representation of the CalibratedExplainer."""
         # pylint: disable=line-too-long
         disp_str = f"CalibratedExplainer(mode={self.mode}{', conditional=True' if self.bins is not None else ''}{f', discretizer={self.discretizer}' if self.discretizer is not None else ''}, learner={self.learner}{f', difficulty_estimator={self.difficulty_estimator})' if self.mode == 'regression' else ')'}"
         if self.verbose:
@@ -272,43 +263,43 @@ class CalibratedExplainer:
                 bins = None,
                 feature = None,
                 ):
-        # """
-        # Predicts the target variable for the test data.
+        """
+        Predicts the target variable for the test data.
 
-        # Parameters
-        # ----------
-        # X_test : A set of test objects to predict
-        # threshold : float, int or array-like of shape (n_samples,), default=None
-        #     values for which p-values should be returned. Only used for probabilistic explanations for regression.
-        # low_high_percentiles : a tuple of floats, default=(5, 95)
-        #     The low and high percentile used to calculate the interval. Applicable to regression.
-        # classes : None or array-like of shape (n_samples,), default=None
-        #     The classes predicted for the original instance. None if not multiclass or regression.
+        Parameters
+        ----------
+        X_test : A set of test objects to predict
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression.
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+        classes : None or array-like of shape (n_samples,), default=None
+            The classes predicted for the original instance. None if not multiclass or regression.
 
-        # Raises
-        # ------
-        # ValueError: The length of the threshold-parameter must be either a constant or the same as the number of
-        #     instances in X_test.
+        Raises
+        ------
+        ValueError: The length of the threshold-parameter must be either a constant or the same as the number of
+            instances in X_test.
 
-        # Returns
-        # -------
-        # predict : ndarray of shape (n_samples,)
-        #     The prediction for the test data. For classification, this is the regularized probability
-        #     of the positive class, derived using the intervals from VennAbers. For regression, this is the
-        #     median prediction from the ConformalPredictiveSystem.
-        # low : ndarray of shape (n_samples,)
-        #     The lower bound of the prediction interval. For classification, this is derived using
-        #     VennAbers. For regression, this is the lower percentile given as parameter, derived from the
-        #     ConformalPredictiveSystem.
-        # high : ndarray of shape (n_samples,)
-        #     The upper bound of the prediction interval. For classification, this is derived using
-        #     VennAbers. For regression, this is the upper percentile given as parameter, derived from the
-        #     ConformalPredictiveSystem.
-        # classes : ndarray of shape (n_samples,)
-        #     The classes predicted for the original instance. None if not multiclass or regression.
-        # bins : array-like of shape (n_samples,), default=None
-        #     Mondrian categories
-        # """
+        Returns
+        -------
+        predict : ndarray of shape (n_samples,)
+            The prediction for the test data. For classification, this is the regularized probability
+            of the positive class, derived using the intervals from VennAbers. For regression, this is the
+            median prediction from the ConformalPredictiveSystem.
+        low : ndarray of shape (n_samples,)
+            The lower bound of the prediction interval. For classification, this is derived using
+            VennAbers. For regression, this is the lower percentile given as parameter, derived from the
+            ConformalPredictiveSystem.
+        high : ndarray of shape (n_samples,)
+            The upper bound of the prediction interval. For classification, this is derived using
+            VennAbers. For regression, this is the upper percentile given as parameter, derived from the
+            ConformalPredictiveSystem.
+        classes : ndarray of shape (n_samples,)
+            The classes predicted for the original instance. None if not multiclass or regression.
+        bins : array-like of shape (n_samples,), default=None
+            Mondrian categories
+        """
         assert self.__initialized, "The learner must be initialized before calling predict."
         if feature is None and self.is_fast():
             feature = self.num_features # Use the calibrator defined using X_cal
@@ -367,16 +358,15 @@ class CalibratedExplainer:
                         X_test,
                         threshold = None,
                         low_high_percentiles = (5, 95),
-                        bins = None,
-                        ) -> CalibratedExplanations:
-        """
-        Creates a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
+                        bins = None,) -> CalibratedExplanations:
+        """Create a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
         Parameters
         ----------
-        X_test : A set with n_samples of test objects to predict
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        X_test : array-like
+            A set with n_samples of test objects to predict.
+        threshold : float, int or array-like, default=None
+            Values for which p-values should be returned. Only used for probabilistic explanations for regression.
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
@@ -405,10 +395,8 @@ class CalibratedExplainer:
                                 X_test,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
-                                bins = None,
-                                ) -> AlternativeExplanations:
-        """
-        See documentation for the `explore_alternatives` method.
+                                bins = None,) -> AlternativeExplanations:
+        """See documentation for the `explore_alternatives` method.
 
         Notes
         -----
@@ -420,16 +408,15 @@ class CalibratedExplainer:
                                 X_test,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
-                                bins = None,
-                                ) -> AlternativeExplanations:
-        """
-        Creates a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
+                                bins = None,) -> AlternativeExplanations:
+        """Create a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
         Parameters
         ----------
-        X_test : A set with n_samples of test objects to predict
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        X_test : array-like
+            A set with n_samples of test objects to predict.
+        threshold : float, int or array-like, default=None
+            Values for which p-values should be returned. Only used for probabilistic explanations for regression.
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
@@ -458,11 +445,10 @@ class CalibratedExplainer:
                 X_test,
                 threshold = None,
                 low_high_percentiles = (5, 95),
-                bins = None,
-                ) -> CalibratedExplanations:
-        """
-        Calling self as a function creates a :class:`.CalibratedExplanations` object for the test data with the 
-        already assigned discretizer. Since v0.4.0, this method is equivalent to the `explain` method.
+                bins = None,) -> CalibratedExplanations:
+        """Call self as a function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
+
+        Since v0.4.0, this method is equivalent to the `explain` method.
         """
         return self.explain(X_test, threshold, low_high_percentiles, bins)
 
@@ -471,11 +457,10 @@ class CalibratedExplainer:
                 X_test,
                 threshold = None,
                 low_high_percentiles = (5, 95),
-                bins = None,
-                ) -> CalibratedExplanations:
-        """
-        Calling the explain function creates a :class:`.CalibratedExplanations` object for the test data with the 
-        already assigned discretizer. Called by the `explain_factual` and `explore_alternatives` methods. 
+                bins = None,) -> CalibratedExplanations:
+        """Call the explain function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
+        
+        Called by the `explain_factual` and `explore_alternatives` methods. 
         See their documentation for further information.
         """
         total_time = time()
@@ -805,14 +790,13 @@ class CalibratedExplainer:
                                 X_test,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
-                                bins = None,
-                                ) -> CalibratedExplanations:
-        """
-        Creates a :class:`.CalibratedExplanations` object for the test data.
+                                bins = None,) -> CalibratedExplanations:
+        """Create a :class:`.CalibratedExplanations` object for the test data.
 
         Parameters
         ----------
-        X_test : A set with n_samples of test objects to predict
+        X_test : array-like
+            A set with n_samples of test objects to predict
         threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression. 
         low_high_percentiles : a tuple of floats, default=(5, 95)
@@ -918,9 +902,10 @@ class CalibratedExplainer:
 
 
     def assign_threshold(self, threshold):
-        '''
-        Assigns the threshold for the explainer. The threshold is used to calculate the p-values for the predictions.
-        '''
+        """Assign the threshold for the explainer.
+
+        The threshold is used to calculate the p-values for the predictions.
+        """
         if threshold is None:
             perturbed_threshold = None
         elif isinstance(threshold, (list, np.ndarray)):
@@ -941,37 +926,41 @@ class CalibratedExplainer:
 
 
     def is_multiclass(self):
-        """test if it is a multiclass problem
+        """Test if it is a multiclass problem.
 
         Returns
         -------
-            bool: True if multiclass
+        bool
+            True if multiclass.
         """
         return self.num_classes > 2
 
 
     def is_fast(self):
-        """test if the explainer is fast
+        """Test if the explainer is fast.
 
         Returns
         -------
-        bool: True if fast
+        bool
+            True if fast.
         """
         return self.__fast
 
 
     def rule_boundaries(self, instances, perturbed_instances=None):
-        """
-        Extracts the rule boundaries for a set of instances.
+        """Extract the rule boundaries for a set of instances.
 
         Parameters
         ----------
-        instances (n_instances, n_features): the instances to extract boundaries for
-        perturbed_instances ((n_instances, n_features), optional): discretized versions of instances. Defaults to None.
+        instances : array-like
+            The instances to extract boundaries for.
+        perturbed_instances : array-like, optional
+            Discretized versions of instances. Defaults to None.
 
         Returns
         -------
-        (n_instances, n_features, 2): min and max values for each feature for each instance
+        array-like
+            Min and max values for each feature for each instance.
         """
         # backwards compatibility
         if len(instances.shape) == 1:
@@ -1031,11 +1020,12 @@ class CalibratedExplainer:
 
 
     def set_seed(self, seed: int) -> None:
-        """changes the random seed
+        """Change the seed used in the random number generator.
 
         Parameters
         ----------
-        seed (int): a seed to the random number generator
+        seed : int
+            The seed to be used in the random number generator.
         """
         self.seed = seed
         np.random.seed(self.seed)
@@ -1043,9 +1033,9 @@ class CalibratedExplainer:
 
 
     def set_difficulty_estimator(self, difficulty_estimator, initialize=True) -> None:
-        """assigns a :class:`crepes.extras.DifficultyEstimator` for regression. For further information, 
-        see the documentation for the :class:`crepes.extras.DifficultyEstimator` or refer to the crepes package 
-        for further information.
+        """Assign or update the difficulty estimator.
+
+        If initialized to a difficulty estimator, the explainer can be used to reject explanations that are deemed too difficult.
 
         Parameters
         ----------
@@ -1073,9 +1063,7 @@ class CalibratedExplainer:
 
 
     def _get_sigma_test(self, X: np.ndarray) -> np.ndarray:
-        # """returns the difficulty (sigma) of the test instances
-
-        # """
+        """Return the difficulty (sigma) of the test instances."""
         if self.difficulty_estimator is None:
             return self.__constant_sigma(X)
         return self.difficulty_estimator.apply(X)
@@ -1083,15 +1071,17 @@ class CalibratedExplainer:
 
 
     def __set_mode(self, mode, initialize=True) -> None:
-        # """assign the mode of the explainer. The mode can be either 'classification' or 'regression'.
+        """Assign the mode of the explainer. The mode can be either 'classification' or 'regression'.
 
-        # Args:
-        #     mode (str): The mode can be either 'classification' or 'regression'.
-        #     initialize (bool, optional): If true, then the interval learner is initialized once done. Defaults to True.
+        Parameters
+        ----------
+            mode (str): The mode can be either 'classification' or 'regression'.
+            initialize (bool, optional): If true, then the interval learner is initialized once done. Defaults to True.
 
-        # Raises:
-        #     ValueError: The mode can be either 'classification' or 'regression'.
-        # """
+        Raises
+        ------
+            ValueError: The mode can be either 'classification' or 'regression'.
+        """
         self.__initialized = False
         if mode == 'classification':
             assert 'predict_proba' in dir(self.learner), "The learner must have a predict_proba method."
@@ -1144,17 +1134,20 @@ class CalibratedExplainer:
             self.interval_learner.append(IntervalRegressor(self))
 
     def initialize_reject_learner(self, calibration_set=None, threshold=None):
-        '''
-        Initializes the reject learner for the explainer. The reject learner is a :class:`crepes.base.ConformalClassifier`
+        """Initialize the reject learner with a threshold value.
+
+        The reject learner is a :class:`crepes.base.ConformalClassifier`
         that is trained on the calibration data. The reject learner is used to determine whether a test
         instance is within the calibration data distribution. The reject learner is only available for
         classification, unless a threshold is assigned.
-        
+
         Parameters
         ----------
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression.
-        '''
+        calibration_set : array-like, optional
+            The calibration set to use. Defaults to None.
+        threshold : float, optional
+            The threshold value. Defaults to None.
+        """
         if calibration_set is None:
             X_cal, y_cal = self.X_cal, self.y_cal
         elif calibration_set is tuple:
@@ -1179,19 +1172,22 @@ class CalibratedExplainer:
         return self.reject_learner
 
     def predict_reject(self, X_test, bins=None, confidence=0.95):
-        '''
-        Predicts whether a test instance is within the calibration data distribution.
+        """Predict whether to reject the explanations for the test data.
 
         Parameters
         ----------
-        X_test : A set with n_samples of test objects to predict
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression.
+        X_test : array-like
+            The test data.
+        bins : array-like, optional
+            Mondrian categories. Defaults to None.
+        confidence : float, default=0.95
+            The confidence level.
 
         Returns
         -------
-        np.ndarray : A boolean array of shape (n_samples,) indicating whether the test instances are within the calibration data distribution.
-        '''
+        array-like
+            An array indicating whether to reject each explanation.
+        """
         if self.mode in 'regression':
             assert self.reject_threshold is not None, "The reject learner is only available for regression with a threshold."
             proba_1, _, _, _ = self.interval_learner.predict_probability(X_test, y_threshold=self.reject_threshold, bins=bins)
@@ -1236,16 +1232,19 @@ class CalibratedExplainer:
 
 
     def _discretize(self, x):
-        """
-        Applies the discretizer to a set of test instances x.
+        """Apply the discretizer to the data sample x.
+
+        For new data samples and missing values, the nearest bin is used.
 
         Parameters
         ----------
-            x (n_instances, n_features): the test instances to discretize
+        x : array-like
+            The data sample to discretize.
 
         Returns
         -------
-            (n_instances, n_features): perturbed test instances
+        array-like
+            The discretized data sample.
         """
         x = np.array(x)  # Ensure x is a numpy array
         for f in self.discretizer.to_discretize:
@@ -1256,15 +1255,16 @@ class CalibratedExplainer:
 
     # pylint: disable=too-many-branches
     def set_discretizer(self, discretizer, X_cal=None, y_cal=None) -> None:
-        """assign discretizer to the explainer. 
-        The discretizer can be either 'entropy' or 'binaryEntropy' for classification and 'regressor' or 'binaryRegressor' for regression. 
-        Once the discretizer is assigned, the calibration data is discretized.
+        """Assign the discretizer to be used.
 
         Parameters
         ----------
-            discretizer (str): _description_
-            X_cal ((n_calibration_samples,n_features), optional): calibration inputs. Defaults to None.
-            y_cal ((n_calibrations_samples), optional): calibration targets. Defaults to None.
+        discretizer : str or discretizer object
+            The discretizer to be used.
+        X_cal : array-like, optional
+            The calibration data for the discretizer.
+        y_cal : array-like, optional
+            The calibration target data for the discretizer.
         """
         if X_cal is None:
             X_cal = self.X_cal
@@ -1334,25 +1334,25 @@ class CalibratedExplainer:
 
 
     def _is_mondrian(self):
-        # """returns whether the explainer is a Mondrian explainer
+        """Return whether the explainer is a Mondrian explainer.
 
-        # Returns:
-        #     bool: True if Mondrian
-        # """
+        Returns
+        -------
+            bool: True if Mondrian
+        """
         return self.bins is not None
 
 
     # pylint: disable=too-many-return-statements
     def predict(self, X_test, uq_interval=False, calibrated=True, **kwargs):
-        """
-        Generates a calibrated prediction for the given test data. If the learner is not calibrated, the prediction remains uncalibrated.
+        """Generate predictions for the test data.
 
         Parameters
         ----------
         X_test : array-like
-            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
+            The test data.
         uq_interval : bool, default=False
-            If True, returns the uncertainty quantification interval along with the calibrated prediction. 
+            Whether to return uncertainty intervals.
         calibrated : bool, default=True
             If True, the calibrator is used for prediction. If False, the underlying learner is used for prediction.
         **kwargs : Various types, optional
@@ -1437,9 +1437,10 @@ class CalibratedExplainer:
 
 
     def predict_proba(self, X_test, uq_interval=False, calibrated=True, threshold=None, **kwargs):
-        """
-        A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
-        prediction is not calibrated either.
+        """Generate probability predictions for the test data.
+
+        This is a wrapper around the predict_proba method which is more similar to the scikit-learn predict_proba method for classification.
+        As opposed to predict_proba, this method may output uncertainty intervals.
         
         Parameters
         ----------
@@ -1470,7 +1471,7 @@ class CalibratedExplainer:
         -------
         calibrated probability : 
             The calibrated probability of the positive class (or the predicted class for multiclass).
-        (low, high) : tuple of floats, corresponding to the lower and upper bound of the prediction interval.
+        (low, high) : tuple of float lists, corresponding to the lower and upper bound of each prediction interval.
         
         Examples
         --------
@@ -1526,15 +1527,18 @@ class CalibratedExplainer:
 
 
     def _is_lime_enabled(self, is_enabled=None) -> bool:
-        # """returns whether lime export is enabled.
-        # If is_enabled is not None, then the lime export is enabled/disabled according to the value of is_enabled.
+        """Return whether lime export is enabled.
 
-        # Args:
-        #     is_enabled (bool, optional): is used to assign whether lime export is enabled or not. Defaults to None.
+        If is_enabled is not None, then the lime export is enabled/disabled according to the value of is_enabled.
 
-        # Returns:
-        #     bool: returns whether lime export is enabled
-        # """
+        Parameters
+        ----------
+            is_enabled (bool, optional): is used to assign whether lime export is enabled or not. Defaults to None.
+
+        Returns
+        -------
+            bool: returns whether lime export is enabled
+        """
         if is_enabled is not None:
             self.__lime_enabled = is_enabled
         return self.__lime_enabled
@@ -1542,15 +1546,18 @@ class CalibratedExplainer:
 
 
     def _is_shap_enabled(self, is_enabled=None) -> bool:
-        # """returns whether shap export is enabled.
-        # If is_enabled is not None, then the shap export is enabled/disabled according to the value of is_enabled.
+        """Return whether shap export is enabled.
 
-        # Args:
-        #     is_enabled (bool, optional): is used to assign whether shap export is enabled or not. Defaults to None.
+        If is_enabled is not None, then the shap export is enabled/disabled according to the value of is_enabled.
 
-        # Returns:
-        #     bool: returns whether shap export is enabled
-        # """
+        Parameters
+        ----------
+            is_enabled (bool, optional): is used to assign whether shap export is enabled or not. Defaults to None.
+
+        Returns
+        -------
+            bool: returns whether shap export is enabled
+        """
         if is_enabled is not None:
             self.__shap_enabled = is_enabled
         return self.__shap_enabled
@@ -1592,34 +1599,41 @@ class CalibratedExplainer:
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, X_test, y_test=None, threshold=None, **kwargs):
-        """
-        Generates a global explanation plot for the given test data. This plot is based on the probability distribution and the uncertainty quantification intervals.
-        The plot is only available for calibrated probabilistic learners (both classification and thresholded regression).
-        
+        """Generate plots for the test data.
+
         Parameters
         ----------
         X_test : array-like
-            The test data for which predictions are to be made. This should be in a format compatible 
-            with sklearn (e.g., numpy arrays, pandas DataFrames).
+            The test data.
         y_test : array-like, optional
             The true labels of the test data. 
         threshold : float, int, optional
             The threshold value used with regression to get probability of being below the threshold. 
-            Only applicable to regression.
+
+        Notes
+        -----
+        The `threshold` parameter is only used for regression tasks
         """
         _plot_global(self, X_test, y_test=y_test, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
-        """
+        """Generate a calibrated confusion matrix.
+        
         Generates a confusion matrix for the calibration set to provide insights about model behavior. 
         The confusion matrix is only available for classification tasks. Leave-one-out cross-validation is 
         used on the calibration set to generate the confusion matrix. 
+
+        Returns
+        -------
+        array-like
+            The calibrated confusion matrix.
         """
         assert self.mode == 'classification', "The confusion matrix is only available for classification tasks."
         cal_predicted_classes = np.zeros(len(self.y_cal))
         for i in range(len(self.y_cal)):
             va = VennAbers(np.concatenate((self.X_cal[:i], self.X_cal[i+1:]), axis=0),
                            np.concatenate((self.y_cal[:i], self.y_cal[i+1:])),
+
                            self.learner)
             _, _, _, predict = va.predict_proba([self.X_cal[i]], output_interval=True)
             cal_predicted_classes[i] = predict[0]
@@ -1627,7 +1641,7 @@ class CalibratedExplainer:
 
 
 class WrapCalibratedExplainer():
-    """Calibrated Explanations for Black-Box Predictions (calibrated-explanations)
+    """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
 
     The calibrated explanations explanation method is based on the paper 
     "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
@@ -1638,10 +1652,18 @@ class WrapCalibratedExplainer():
     conformal predictive systems (regression).
 
     :class:`.WrapCalibratedExplainer` is a wrapper class for the :class:`.CalibratedExplainer`. It allows to fit, calibrate, and explain the learner.
-    Compared to the :class:`.CalibratedExplainer`, it allow access to the predict and predict_proba methods of
+    Compared to the :class:`.CalibratedExplainer`, it allows access to the predict and predict_proba methods of
     the calibrated explainer, making it easy to get the same output as shown in the explanations.
     """
+
     def __init__(self, learner):
+        """Initialize the WrapCalibratedExplainer with a predictive learner.
+
+        Parameters
+        ----------
+        learner : predictive learner
+            A predictive learner that can be used to predict the target variable.
+        """
         # Check if the learner is a CalibratedExplainer
         if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
             explainer = learner
@@ -1666,6 +1688,7 @@ class WrapCalibratedExplainer():
             self.fitted = False
 
     def __repr__(self):
+        """Return the string representation of the WrapCalibratedExplainer."""
         if self.fitted:
             if self.calibrated:
                 return (f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, "
@@ -1674,20 +1697,15 @@ class WrapCalibratedExplainer():
         return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
 
     def fit(self, X_proper_train, y_proper_train, **kwargs):
-        '''
-        Fits the learner to the proper training data.
-        
+        """Fit the learner to the training data.
+
         Parameters
         ----------
-        X_proper_train : A set of proper training objects to fit the learner to
-        y_proper_train : The true labels of the proper training objects
-        **kwargs : Keyword arguments to be passed to the learner's fit method
-        
-        Returns
-        -------
-        :class:`.WrapCalibratedExplainer`
-            The :class:`.WrapCalibratedExplainer` object with the fitted learner.
-        '''
+        X_proper_train : array-like
+            The training input samples.
+        y_proper_train : array-like
+            The target values.
+        """
         reinitialize = bool(self.calibrated)
         self.fitted = False
         self.calibrated = False
@@ -1702,17 +1720,19 @@ class WrapCalibratedExplainer():
         return self
 
     def calibrate(self, X_calibration, y_calibration, mc=None, **kwargs):
-        '''
-        Calibrates the learner to the calibration data.
-        
+        """Calibrate the explainer with calibration data.
+
         Parameters
         ----------
-        X_calibration : A set of calibration objects to predict
-        y_calibration : The true labels of the calibration objects
-        mc : function or :class:`crepes.extras.MondrianCategorizer`, default=None
-            function or :class:`crepes.extras.MondrianCategorizer` for computing Mondrian 
-            categories
-        **kwargs : Keyword arguments to be passed to the :class:`.CalibratedExplainer`'s __init__ method
+        X_calibration : array-like
+            The calibration input samples.
+        y_calibration : array-like
+            The calibration target values.
+        mc : optional
+            Mondrian categories. Defaults to None.
+        
+        **kwargs
+            Keyword arguments to be passed to the :class:`.CalibratedExplainer`'s __init__ method
         
         Raises
         ------
@@ -1738,8 +1758,10 @@ class WrapCalibratedExplainer():
             w.calibrate(X_calibration, y_calibration, feature_names=feature_names, 
                         categorical_features=categorical_features)
         
-        Note: if mode is not explicitly set, it is automatically determined based on the the absence or presence of a predict_proba method in the learner.
-        '''
+        Notes
+        -----
+        if mode is not explicitly set, it is automatically determined based on the the absence or presence of a predict_proba method in the learner.
+        """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before calibration.")
         self.calibrated = False
@@ -1763,52 +1785,12 @@ class WrapCalibratedExplainer():
         return self
 
     def explain_factual(self, X_test, **kwargs):
-        """
-        Generates a :class:`.CalibratedExplanations` object for the provided test data, automatically selecting an appropriate discretizer for factual explanations.
+        """Generate factual explanations for the test data.
 
-        Parameters
-        ----------
-        X_test : array-like
-            The test data for which predictions and explanations are to be generated. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
-
-        **kwargs : Various types, optional
-            Additional parameters to customize the explanation process. Supported parameters include:
-
-            - threshold (float, int, or array-like of shape (n_samples,), default=None): Specifies the p-value thresholds for probabilistic explanations in regression tasks. This parameter is ignored for classification tasks.
-
-            - low_high_percentiles (tuple of two floats, default=(5, 95)): Defines the lower and upper percentiles for calculating prediction intervals in regression tasks. This is used to adjust the breadth of the intervals based on the distribution of the predictions.
-
-            Additional keyword arguments can be passed to further customize the behavior of the explanation generation. These arguments are dynamically processed based on the specific requirements of the explanation task.
-
-        Raises
-        ------
-        ValueError
-            If the number of features in `X_test` does not match the number of features in the calibration data used to initialize the CalibratedExplanations object.
-
-        Warning
-            If the `threshold` parameter is provided for a task other than regression, a warning is issued indicating that this parameter is only applicable to regression tasks.
-
-        ValueError
-            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
-
-        Returns
-        -------
-        :class:`.CalibratedExplanations`
-            An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
-
-        Examples
+        See Also
         --------
-        Generate explanations with a specific threshold for regression:
-        
-        .. code-block:: python
-        
-            w.explain_factual(X_test, threshold=0.05)
+        :meth:`.CalibratedExplainer.explain_factual` : Refer to the docstring for explain_factual in CalibratedExplainer for more details.
 
-        Generate explanations using custom percentile values for interval calculation:
-        
-        .. code-block:: python
-        
-            w.explain_factual(X_test, low_high_percentiles=(10, 90))
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
@@ -1824,110 +1806,22 @@ class WrapCalibratedExplainer():
         return self.explainer.explain_factual(X_test, **kwargs)
 
     def explain_counterfactual(self, X_test, **kwargs):
-        """
-        Generates a :class:`.CalibratedExplanations` object for the provided test data, automatically selecting an appropriate discretizer for alternative explanations.
+        """Generate counterfactual explanations for the test data.
 
-        Parameters
-        ----------
-        X_test : array-like
-            The test data for which predictions and explanations are to be generated. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
-
-        **kwargs : Various types, optional
-            Additional parameters to customize the explanation process. Supported parameters include:
-
-            - threshold (float, int, or array-like of shape (n_samples,), default=None): Specifies the p-value thresholds for probabilistic explanations in regression tasks. This parameter is ignored for classification tasks.
-
-            - low_high_percentiles (tuple of two floats, default=(5, 95)): Defines the lower and upper percentiles for calculating prediction intervals in regression tasks. This is used to adjust the breadth of the intervals based on the distribution of the predictions.
-
-            Additional keyword arguments can be passed to further customize the behavior of the explanation generation. These arguments are dynamically processed based on the specific requirements of the explanation task.
-
-        Raises
-        ------
-        ValueError
-            If the number of features in `X_test` does not match the number of features in the calibration data used to initialize the CalibratedExplanations object.
-
-        Warning
-            If the `threshold` parameter is provided for a task other than regression, a warning is issued indicating that this parameter is only applicable to regression tasks.
-
-        ValueError
-            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
-
-        Returns
-        -------
-        :class:`.CalibratedExplanations`
-            An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
-
-        Examples
+        See Also
         --------
-        Generate explanations with a specific threshold for regression:
-        
-        .. code-block:: python
-        
-            w.explain_counterfactual(X_test, threshold=0.05)
+        :meth:`.CalibratedExplainer.explain_counterfactual` : Refer to the docstring for explain_counterfactual in CalibratedExplainer for more details.
 
-        Generate explanations using custom percentile values for interval calculation:
-        
-        .. code-block:: python
-        
-            w.explain_counterfactual(X_test, low_high_percentiles=(10, 90))
-
-        Notes
-        -----
-        The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         return self.explore_alternatives(X_test, **kwargs)
 
     def explore_alternatives(self, X_test, **kwargs):
-        """
-        Generates a :class:`.CalibratedExplanations` object for the provided test data, automatically selecting an appropriate discretizer for alternative explanations.
+        """Generate alternative explanations for the test data.
 
-        Parameters
-        ----------
-        X_test : array-like
-            The test data for which predictions and explanations are to be generated. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
-
-        **kwargs : Various types, optional
-            Additional parameters to customize the explanation process. Supported parameters include:
-
-            - threshold (float, int, or array-like of shape (n_samples,), default=None): Specifies the p-value thresholds for probabilistic explanations in regression tasks. This parameter is ignored for classification tasks.
-
-            - low_high_percentiles (tuple of two floats, default=(5, 95)): Defines the lower and upper percentiles for calculating prediction intervals in regression tasks. This is used to adjust the breadth of the intervals based on the distribution of the predictions.
-
-            Additional keyword arguments can be passed to further customize the behavior of the explanation generation. These arguments are dynamically processed based on the specific requirements of the explanation task.
-
-        Raises
-        ------
-        ValueError
-            If the number of features in `X_test` does not match the number of features in the calibration data used to initialize the CalibratedExplanations object.
-
-        Warning
-            If the `threshold` parameter is provided for a task other than regression, a warning is issued indicating that this parameter is only applicable to regression tasks.
-
-        ValueError
-            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
-
-        Returns
-        -------
-        :class:`.CalibratedExplanations`
-            An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
-
-        Examples
+        See Also
         --------
-        Generate explanations with a specific threshold for regression:
-        
-        .. code-block:: python
-        
-            w.explore_alternatives(X_test, threshold=0.05)
+        :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the docstring for explore_alternatives in CalibratedExplainer for more details.
 
-        Generate explanations using custom percentile values for interval calculation:
-        
-        .. code-block:: python
-        
-            w.explore_alternatives(X_test, low_high_percentiles=(10, 90))
-
-        Notes
-        -----
-        The `explore_alternatives` is the same as `explain_counterfactual` which eventually be removed.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
@@ -1943,52 +1837,11 @@ class WrapCalibratedExplainer():
         return self.explainer.explore_alternatives(X_test, **kwargs)
 
     def explain_fast(self, X_test, **kwargs):
-        """
-        Generates a :class:`.CalibratedExplanations` object for the provided test data, provided that the :class:`.CalibratedExplainer` has been initialised as fast (using the parameter fast=True).
+        """Generate fast explanations for the test data.
 
-        Parameters
-        ----------
-        X_test : array-like
-            The test data for which predictions and explanations are to be generated. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
-
-        **kwargs : Various types, optional
-            Additional parameters to customize the explanation process. Supported parameters include:
-
-            - threshold (float, int, or array-like of shape (n_samples,), default=None): Specifies the p-value thresholds for probabilistic explanations in regression tasks. This parameter is ignored for classification tasks.
-
-            - low_high_percentiles (tuple of two floats, default=(5, 95)): Defines the lower and upper percentiles for calculating prediction intervals in regression tasks. This is used to adjust the breadth of the intervals based on the distribution of the predictions.
-
-            Additional keyword arguments can be passed to further customize the behavior of the explanation generation. These arguments are dynamically processed based on the specific requirements of the explanation task.
-
-        Raises
-        ------
-        ValueError
-            If the number of features in `X_test` does not match the number of features in the calibration data used to initialize the CalibratedExplanations object.
-
-        Warning
-            If the `threshold` parameter is provided for a task other than regression, a warning is issued indicating that this parameter is only applicable to regression tasks.
-
-        ValueError
-            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
-
-        Returns
-        -------
-        :class:`.CalibratedExplanations`
-            An object containing the generated predictions and their corresponding intervals or explanations. This object provides methods to further analyze and visualize the explanations.
-
-        Examples
+        See Also
         --------
-        Generate explanations with a specific threshold for regression:
-        
-        .. code-block:: python
-        
-            w.explain_fast(X_test, threshold=0.05)
-
-        Generate explanations using custom percentile values for interval calculation:
-        
-        .. code-block:: python
-        
-            w.explain_fast(X_test, low_high_percentiles=(10, 90))
+        :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
@@ -2006,58 +1859,11 @@ class WrapCalibratedExplainer():
 
     # pylint: disable=too-many-return-statements
     def predict(self, X_test, uq_interval=False, calibrated=True, **kwargs):
-        """
-        Generates a calibrated prediction for the given test data. If the learner is not calibrated, the prediction remains uncalibrated.
+        """Generate predictions for the test data.
 
-        Parameters
-        ----------
-        X_test : array-like
-            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
-        uq_interval : bool, default=False
-            If True, returns the uncertainty quantification interval along with the calibrated prediction. 
-        calibrated : bool, default=True
-            If True, the calibrator is used for prediction. If False, the underlying learner is used for prediction.
-        **kwargs : Various types, optional
-            Additional parameters to customize the explanation process. Supported parameters include:
-
-            - threshold : float, int, or array-like of shape (n_samples,), optional, default=None
-                Specifies the threshold(s) to get a thresholded prediction for regression tasks (prediction labels: `y_hat<=threshold-value` | `y_hat>threshold-value`). This parameter is ignored for classification tasks.
-
-            - low_high_percentiles : tuple of two floats, optional, default=(5, 95)
-                The lower and upper percentiles used to calculate the prediction interval for regression tasks. Determines the breadth of the interval based on the distribution of the predictions. This parameter is ignored for classification tasks.
-
-        Raises
-        ------
-        RuntimeError
-            If the learner has not been fitted prior to making predictions.
-
-        Warning
-            If the learner is not calibrated.
-
-        Returns
-        -------
-        calibrated_prediction : float or array-like, or str
-            The calibrated prediction. For regression tasks, this is the median of the conformal predictive system or a thresholded prediction if `threshold`is set. For classification tasks, it is the class label with the highest calibrated probability.
-        interval : tuple of floats, optional
-            A tuple (low, high) representing the lower and upper bounds of the uncertainty interval. This is returned only if `uq_interval=True`.
-
-        Examples
+        See Also
         --------
-        For a prediction without prediction intervals:
-        
-        .. code-block:: python
-        
-            w.predict(X_test)
-
-        For a prediction with uncertainty quantification intervals:
-        
-        .. code-block:: python
-        
-            w.predict(X_test, uq_interval=True)
-
-        Notes
-        -----
-        The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
+        :meth:`.CalibratedExplainer.predict` : Refer to the docstring for predict in CalibratedExplainer for more details.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting.")
@@ -2080,59 +1886,11 @@ class WrapCalibratedExplainer():
         return self.explainer.predict(X_test, uq_interval=uq_interval, calibrated=calibrated, **kwargs)
 
     def predict_proba(self, X_test, uq_interval=False, calibrated=True, threshold=None, **kwargs):
-        """
-        A predict_proba function that outputs a calibrated prediction. If the explainer is not calibrated, then the
-        prediction is not calibrated either.
-        
-        Parameters
-        ----------
-        X_test : array-like
-            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
-        uq_interval : bool, default=False
-            If true, then the prediction interval is returned as well.
-        calibrated : bool, default=True
-            If True, the calibrator is used for prediction. If False, the underlying learner is used for prediction.
-        threshold : float, int or array-like of shape (n_samples,), optional, default=None
-            Threshold values used with regression to get probability of being below the threshold. Only applicable to regression.
+        """Generate probability predictions for the test data.
 
-        Raises
-        ------
-        RuntimeError
-            If the learner is not fitted before predicting probabilities.
-
-        ValueError
-            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
-
-        RuntimeError
-            If the learner is not fitted before predicting.
-            
-        Warning
-            If the learner is not calibrated.
-            
-        Returns
-        -------
-        calibrated probability : array-like of shape (n_samples, n_classes) 
-            The calibrated probability of the positive class (or the predicted class for multiclass).
-        (low, high) : array-like of tuple of floats
-            The lower and upper bound of the prediction interval.
-        
-        Examples
+        See Also
         --------
-        For a prediction without uncertainty quantification intervals:
-        
-        .. code-block:: python
-        
-            w.predict_proba(X_test)
-
-        For a prediction with uncertainty quantification intervals:
-        
-        .. code-block:: python
-        
-            w.predict_proba(X_test, uq_interval=True)
-
-        Notes
-        -----
-        The `threshold` parameter is only used for regression tasks.
+        :meth:`.CalibratedExplainer.predict_proba` : Refer to the docstring for predict_proba in CalibratedExplainer for more details.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting probabilities.")
@@ -2162,10 +1920,11 @@ class WrapCalibratedExplainer():
         return self.explainer.predict_proba(X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
-        """
-        Generates a confusion matrix for the calibration set to provide insights about model behavior. 
-        The confusion matrix is only available for classification tasks. Leave-one-out cross-validation is 
-        used on the calibration set to generate the confusion matrix. 
+        """Generate a calibrated confusion matrix.
+
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.calibrated_confusion_matrix` : Refer to the docstring for calibrated_confusion_matrix in CalibratedExplainer for more details.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before providing a confusion matrix.")
@@ -2174,14 +1933,11 @@ class WrapCalibratedExplainer():
         return self.explainer.calibrated_confusion_matrix()
 
     def set_difficulty_estimator(self, difficulty_estimator) -> None:
-        """assigns a :class:`crepes.extras.DifficultyEstimator` for regression. For further information, 
-        see the documentation for the :class:`crepes.extras.DifficultyEstimator` or refer to the crepes package 
-        for further information.
+        """Assign or update the difficulty estimator.
 
-        Parameters
-        ----------
-        difficulty_estimator : :class:`crepes.extras.DifficultyEstimator` or None: 
-            A :class:`crepes.extras.DifficultyEstimator` object from the crepes package. To remove the :class:`crepes.extras.DifficultyEstimator`, set to None.
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.set_difficulty_estimator` : Refer to the docstring for set_difficulty_estimator in CalibratedExplainer for more details.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before assigning a difficulty estimator.")
@@ -2191,17 +1947,12 @@ class WrapCalibratedExplainer():
 
 
     def initialize_reject_learner(self, threshold=None):
-        '''
-        Initializes the reject learner for the explainer. The reject learner is a ConformalClassifier
-        that is trained on the calibration data. The reject learner is used to determine whether a test
-        instance is within the calibration data distribution. The reject learner is only available for
-        classification, unless a threshold is assigned.
-        
-        Parameters
-        ----------
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression.
-        '''
+        """Initialize the reject learner with a threshold value.
+
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.initialize_reject_learner` : Refer to the docstring for initialize_reject_learner in CalibratedExplainer for more details.
+        """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before initializing reject learner.")
         if not self.calibrated:
@@ -2209,19 +1960,12 @@ class WrapCalibratedExplainer():
         return self.explainer.initialize_reject_learner(threshold=threshold)
 
     def predict_reject(self, X_test, bins=None, confidence=0.95):
-        '''
-        Predicts whether a test instance is within the calibration data distribution.
+        """Predict whether to reject the explanations for the test data.
 
-        Parameters
-        ----------
-        X_test : A set with n_samples of test objects to predict
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression.
-
-        Returns
-        -------
-        np.ndarray : A boolean array of shape (n_samples,) indicating whether the test instances are within the calibration data distribution.
-        '''
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.predict_reject` : Refer to the docstring for predict_reject in CalibratedExplainer for more details.
+        """        
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection.")
         if not self.calibrated:
@@ -2230,18 +1974,11 @@ class WrapCalibratedExplainer():
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, X_test, y_test=None, threshold=None, **kwargs):
-        """
-        Generates a global explanation plot for the given test data. This plot is based on the probability distribution and the uncertainty quantification intervals.
-        The plot is only available for calibrated probabilistic learners (both classification and thresholded regression).
-        
-        Parameters
-        ----------
-        X_test : array-like
-            The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
-        y_test : array-like, optional
-            The true labels of the test data. 
-        threshold : float, int, optional
-            The threshold value used with regression to get probability of being below the threshold. Only applicable to regression.
+        """Generate plots for the test data.
+
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.plot` : Refer to the docstring for plot in CalibratedExplainer for more details.
         """
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before plotting.")
