@@ -17,6 +17,7 @@ The calibrated-explanations package
    :maxdepth: 1
    :caption: Explanations:
 
+   _autosummary/calibrated_explanations.explanations.CalibratedExplanation
    _autosummary/calibrated_explanations.explanations.FactualExplanation
    _autosummary/calibrated_explanations.explanations.AlternativeExplanation
    _autosummary/calibrated_explanations.explanations.FastExplanation

@@ -398,7 +398,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         filename="",
         uncertainty=False,
         style="regular",
-        rnk_metric="feature_weight",
+        rnk_metric=None,
         rnk_weight=0.5,
         sort_on_uncertainty=False,
         interactive=False,
@@ -420,10 +420,17 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             Determines whether to include uncertainty information in the plots.
         style : str, default='regular'
             The style of the plot. Supported styles are 'regular' and 'triangular' (experimental).
-        rnk_metric : str, default='feature_weight'
+        rnk_metric : str, default=None
             The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
+            If None, the default from the explanation class is used.
         rnk_weight : float, default=0.5
             The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
+        
+        See Also
+        --------
+        :meth:`.FactualExplanation.plot` : Refer to the docstring for plot in FactualExplanation for details on default ranking ('feature_weight').
+        :meth:`.AlternativeExplanation.plot` : Refer to the docstring for plot in AlternativeExplanation for details on default ranking ('ensured').
+        :meth:`.FastExplanation.plot` : Refer to the docstring for plot in FastExplanation for details on default ranking ('feature_weight').
         """
         # Check for deprecated parameters and issue warnings
         if sort_on_uncertainty is not None:

@@ -51,7 +51,10 @@ class CalibratedExplanation(ABC):
         y_threshold=None,
         instance_bin=None,
     ):
-        """
+        """Abstract base class for storing and visualizing calibrated explanations.
+
+        This class defines the interface and shared functionality for different types of calibrated explanations.
+        
         Initialize a CalibratedExplanation instance.
 
         Parameters
@@ -217,6 +220,12 @@ class CalibratedExplanation(ABC):
             The number of top features to display.
         **kwargs : dict
             Additional plotting arguments. See each subclass.
+        
+        See Also
+        --------
+        :meth:`.FactualExplanation.plot` : Refer to the docstring for plot in FactualExplanation for details.
+        :meth:`.AlternativeExplanation.plot` : Refer to the docstring for plot in AlternativeExplanation for details.
+        :meth:`.FastExplanation.plot` : Refer to the docstring for plot in FastExplanation for details.
         """
 
     @abstractmethod
@@ -697,7 +706,8 @@ class FactualExplanation(CalibratedExplanation):
 
         Returns
         -------
-        :class:`.CalibratedExplanations`: Returns a self reference, to allow for method chaining
+        self : :class:`.FactualExplanation`
+            Returns a self reference, to allow for method chaining
         """
         if max_rule_size >= 4:
             raise ValueError("max_rule_size must be 2 or 3")
@@ -815,6 +825,7 @@ class FactualExplanation(CalibratedExplanation):
             The number of top features to display.
         **kwargs : dict
             Additional plotting arguments, such as:
+            
             show : bool, default=False
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
@@ -829,7 +840,12 @@ class FactualExplanation(CalibratedExplanation):
                 intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
             style : str, default='regular'
                 The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
+                
                 * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
+            rnk_metric : str, default='feature_weight'
+                The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
+            rnk_weight : float, default=0.5
+                The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
         show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")
@@ -1029,7 +1045,7 @@ class AlternativeExplanation(CalibratedExplanation):
 
         Returns
         -------
-        List[Dict[str, List]]
+        Array-like : List[Dict[str, List]]
             A list of dictionaries containing the alternative rules.
         """
         if self._has_conjunctive_rules:
@@ -1418,7 +1434,8 @@ class AlternativeExplanation(CalibratedExplanation):
 
         Returns
         -------
-        :class:`.CalibratedExplanations`
+        self : :class:`.AlternativeExplanation`
+            Returns a self reference, to allow for method chaining
         """
         if max_rule_size >= 4:
             raise ValueError("max_rule_size must be 2 or 3")
@@ -1537,6 +1554,7 @@ class AlternativeExplanation(CalibratedExplanation):
             The number of top features to display.
         **kwargs : dict
             Additional plotting arguments, such as:
+            
             show : bool, default=False
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
@@ -1545,9 +1563,14 @@ class AlternativeExplanation(CalibratedExplanation):
                 image file that will be saved. If this parameter is not provided or is an empty string, the plot
                 will not be saved as an image file.
             style : str, default='regular'
-                The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
+                The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.AlternativeExplanation`:
+                
                 * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
                 * 'triangular' - a triangular plot for alternative explanations highlighting the interplay between the calibrated probability and the uncertainty intervals
+            rnk_metric : str, default='ensured'
+                The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
+            rnk_weight : float, default=0.5
+                The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
         show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")
@@ -1730,19 +1753,18 @@ class FastExplanation(CalibratedExplanation):
         return "\n".join(output) + "\n"
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
-        """
-        Add conjunctive rules to the fast explanation.
-
+        """This method is currently not supported for `FastExplanation`, making this call result in no change.
+        
         Parameters
         ----------
-        n_top_features : int, optional
-            Number of top features to combine.
-        max_rule_size : int, optional
-            Maximum size of the conjunctions.
+        n_top_features : int
+            The number of top features to consider for conjunctions. Default is 5.
+        max_rule_size : int
+            The maximum size of the conjunctive rules. Default is 2.
 
-        Returns
+        Warning
         -------
-        :class:`.FastExplanation`
+        This method is not supported for :class:`.FastExplanation` and will not alter the explanation.
         """
         warnings.warn(
             "The add_conjunctions method is currently not supported for `FastExplanation`, making this call resulting in no change."
@@ -1753,7 +1775,12 @@ class FastExplanation(CalibratedExplanation):
         pass
 
     def add_new_rule_condition(self, feature, rule_boundary):
-        """Create a new rule condition for a numerical feature."""
+        """Create a new rule condition for a numerical feature.
+
+        Warning
+        -------
+        This method is not supported for :class:`.FastExplanation` and will not alter the explanation.
+        """
         warnings.warn(
             "The add_new_rule_condition method is currently not supported for `FastExplanation`, making this call resulting in no change."
         )
@@ -1851,6 +1878,7 @@ class FastExplanation(CalibratedExplanation):
             The number of top features to display.
         **kwargs : dict
             Additional plotting arguments, such as:
+            
             show : bool, default=False
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
@@ -1864,8 +1892,13 @@ class FastExplanation(CalibratedExplanation):
                 range of possible feature weights based on the lower and upper bounds of the uncertainty
                 intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
             style : str, default='regular'
-                The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
+                The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FastExplanation`:
+                
                 * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
+            rnk_metric : str, default='feature_weight'
+                The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
+            rnk_weight : float, default=0.5
+                The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
         show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")
