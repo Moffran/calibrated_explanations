@@ -4,17 +4,8 @@
 .. currentmodule:: calibrated_explanations.explanations
 
 .. autoclass:: CalibratedExplanation
-   :no-members:
-
-
-Methods
--------
-   
-      ~CalibratedExplanation.__init__
-      ~CalibratedExplanation.add_conjunctions
-      ~CalibratedExplanation.remove_conjunctions
-      ~CalibratedExplanation.plot
-      ~CalibratedExplanation.add_new_rule_condition
+   :members:
+   :show-inheritance:
    
    
 

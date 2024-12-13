@@ -37,44 +37,6 @@ class CalibratedExplanation(ABC):
     """Abstract base class for storing and visualizing calibrated explanations.
 
     This class defines the interface and shared functionality for different types of calibrated explanations.
-
-    Parameters
-    ----------
-    calibrated_explanations : :class:`.CalibratedExplanations`
-        The parent :class:`.CalibratedExplanations` object.
-    index : int
-        The index of the instance being explained.
-    X_test : array-like
-        The test dataset containing the instances to be explained.
-    binned : dict
-        A mapping of binned feature values.
-    feature_weights : dict
-        A mapping of feature weights.
-    feature_predict : dict
-        A mapping of feature predictions.
-    prediction : dict
-        A mapping containing the prediction results.
-    y_threshold : float or tuple, optional
-        The threshold for binary classification or regression explanations.
-    instance_bin : int, optional
-        The bin index of the instance.
-
-    Methods
-    -------
-    __len__()
-        Returns the number of rules in the explanation.
-    get_mode()
-        Returns the mode of the explanation ('classification' or 'regression').
-    get_class_labels()
-        Returns the class labels.
-    is_multiclass()
-        Determines if the explanation is multiclass.
-    reset()
-        Resets the explanation to its original state.
-    remove_conjunctions()
-        Removes any conjunctive rules.
-    add_new_rule_condition(feature, rule_boundary)
-        Creates a new rule condition for a numerical feature.
     """
 
     def __init__(
@@ -569,36 +531,6 @@ class FactualExplanation(CalibratedExplanation):
     """Class for storing and visualizing factual explanations.
 
     Provides factual explanations for a given instance, highlighting features that contribute to the model's prediction.
-
-    Parameters
-    ----------
-    calibrated_explanations : CalibratedExplanations
-        The parent :class:`.CalibratedExplanations` object.
-    index : int
-        The index of the instance being explained.
-    X_test : array-like
-        The test dataset containing the instances to be explained.
-    binned : dict
-        A mapping of binned feature values.
-    feature_weights : dict
-        A mapping of feature weights.
-    feature_predict : dict
-        A mapping of feature predictions.
-    prediction : dict
-        A mapping containing the prediction results.
-    y_threshold : float or tuple, optional
-        The threshold for binary classification or regression explanations.
-    instance_bin : int, optional
-        The bin index of the instance.
-
-    Methods
-    -------
-    __repr__()
-        Returns a string representation of the factual explanation.
-    plot(filter_top=None, **kwargs)
-        Plots the factual explanation.
-    add_conjunctions(n_top_features=5, max_rule_size=2)
-        Adds conjunctive factual rules.
     """
 
     def __init__(
@@ -994,44 +926,6 @@ class AlternativeExplanation(CalibratedExplanation):
     """Class representing an alternative explanation for a given instance.
 
     Offers alternative explanations by exploring how changes to feature values could alter the model's prediction.
-
-    Parameters
-    ----------
-    calibrated_explanations : CalibratedExplanations
-        The parent :class:`.CalibratedExplanations` object.
-    index : int
-        The index of the instance being explained.
-    X_test : array-like
-        The test dataset containing the instances to be explained.
-    binned : dict
-        A mapping of binned feature values.
-    feature_weights : dict
-        A mapping of feature weights.
-    feature_predict : dict
-        A mapping of feature predictions.
-    prediction : dict
-        A mapping containing the prediction results.
-    y_threshold : float or tuple, optional
-        The threshold for binary classification or regression explanations.
-    instance_bin : int, optional
-        The bin index of the instance.
-
-    Methods
-    -------
-    __repr__()
-        Returns a string representation of the alternative explanation.
-    plot(filter_top=None, **kwargs)
-        Plots the alternative explanation.
-    super_explanations(only_ensured=False, include_potential=False)
-        Returns super-explanations that support the predicted class.
-    semi_explanations(only_ensured=False, include_potential=False)
-        Returns semi-explanations that partially support the predicted class.
-    counter_explanations(only_ensured=False, include_potential=False)
-        Returns counter-explanations that do not support the predicted class.
-    ensured_explanations(include_potential=False)
-        Returns ensured explanations with smaller confidence intervals.
-    add_conjunctions(n_top_features=5, max_rule_size=2)
-        Adds conjunctive alternative rules.
     """
 
     def __init__(
@@ -1753,32 +1647,6 @@ class FastExplanation(CalibratedExplanation):
     """Class representing fast explanations.
 
     Represents fast, SHAP-like explanations, enabling efficient interpretation of model behavior for large datasets.
-
-    Parameters
-    ----------
-    calibrated_explanations : CalibratedExplanations
-        The parent :class:`.CalibratedExplanations` object.
-    index : int
-        The index of the instance being explained.
-    X_test : array-like
-        The test dataset containing the instances to be explained.
-    feature_weights : dict
-        A mapping of feature weights.
-    feature_predict : dict
-        A mapping of feature predictions.
-    prediction : dict
-        A mapping containing the prediction results.
-    y_threshold : float or tuple, optional
-        The threshold for binary classification or regression explanations.
-    instance_bin : int, optional
-        The bin index of the instance.
-
-    Methods
-    -------
-    __repr__()
-        Returns a string representation of the fast explanation.
-    plot(filter_top=None, **kwargs)
-        Plots the fast explanation.
     """
 
     def __init__(

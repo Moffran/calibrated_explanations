@@ -22,38 +22,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     This class is created by :class:`.CalibratedExplainer` and provides methods for managing
     and accessing explanations for test instances.
-
-    Parameters
-    ----------
-        calibrated_explainer (:class:`.CalibratedExplainer`): The calibrated explainer that generated the explanations.
-        X_test (array-like): The test data.
-        y_threshold (array-like): The threshold values for the explanations.
-        bins (array-like): Bin information for the features.
-        explanations (list): List of explanation objects.
-        total_explain_time (float): Total time taken to explain all instances.
-        # ... other attributes ...
-
-    Methods
-    -------
-        __init__: Initializes the :class:`.CalibratedExplanations` object.
-        __iter__: Returns an iterator over the explanations.
-        __next__: Returns the next explanation in the iterator.
-        __len__: Returns the number of test instances.
-        __getitem__: Retrieves explanation(s) corresponding to the given key.
-        __repr__: Returns a string representation of the object.
-        __str__: Returns a string representation of the object.
-        get_confidence: Gets the user-assigned confidence of the explanation.
-        get_low_percentile: Retrieves the low percentile value of the explanation.
-        get_high_percentile: Retrieves the high percentile value of the explanation.
-        finalize: Finalizes the explanations by adding the binned data and feature weights.
-        finalize_fast: Quickly finalizes the explanations by adding feature weights.
-        add_conjunctions: Adds conjunctive rules to the explanations.
-        reset: Resets the explanations to their original state.
-        remove_conjunctions: Removes any conjunctive rules.
-        get_explanation: Returns the explanation corresponding to the index.
-        plot: Plots the explanations.
-        as_lime: Transforms the explanations into LIME explanation objects.
-        as_shap: Transforms the explanations into a SHAP explanation object.
     """
 
     def __init__(self, calibrated_explainer, X_test, y_threshold, bins) -> None:
@@ -551,13 +519,6 @@ class AlternativeExplanations(CalibratedExplanations):
 
     Inherits from :class:`.CalibratedExplanations` and provides methods specific to
     alternative explanations, such as filtering explanations by type.
-
-    Methods
-    -------
-        super_explanations: Returns a copy with only super-explanations.
-        semi_explanations: Returns a copy with only semi-explanations.
-        counter_explanations: Returns a copy with only counter-explanations.
-        ensured_explanations: Returns a copy with only ensured explanations.
     """
 
     def super_explanations(self, only_ensured=False, include_potential=True):
@@ -664,30 +625,6 @@ class FrozenCalibratedExplainer:
     """A class that wraps an explainer to provide a read-only interface.
 
     Prevents modification of the underlying explainer, ensuring its state remains unchanged.
-
-    Parameters
-    ----------
-        :class:`.CalibratedExplainer`: The explainer instance to be wrapped.
-
-    Attributes
-    ----------
-        X_cal (numpy.ndarray): The calibrated feature matrix.
-        y_cal (numpy.ndarray): The calibrated target values.
-        num_features (int): The number of features in the dataset.
-        categorical_features (list): Indices of categorical features.
-        categorical_labels (list): Labels for categorical features.
-        feature_values (list): Unique values for each feature.
-        feature_names (list): Names of the features.
-        class_labels (list): Labels for the classes.
-        assign_threshold (float): Threshold for assigning class labels.
-        sample_percentiles (list): Percentiles of the samples.
-        mode (str): Mode of the explainer.
-        is_multiclass (bool): Indicates if the problem is multiclass.
-        discretizer: The discretizer used by the explainer.
-
-    Methods
-    -------
-        __init__: Initializes a new instance of the FrozenCalibratedExplainer.
     """
 
     def __init__(self, explainer):
