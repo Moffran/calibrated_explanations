@@ -1630,7 +1630,7 @@ class CalibratedExplainer:
         for i in range(len(self.y_cal)):
             va = VennAbers(np.concatenate((self.X_cal[:i], self.X_cal[i+1:]), axis=0),
                            np.concatenate((self.y_cal[:i], self.y_cal[i+1:])),
-                           self.learner, 
+                           self.learner,
                            bins = np.concatenate((self.bins[:i], self.bins[i+1:])) if self.bins is not None else None)
             _, _, _, predict = va.predict_proba([self.X_cal[i]], output_interval=True, bins = [self.bins[i]] if self.bins is not None else None)
             cal_predicted_classes[i] = predict[0]

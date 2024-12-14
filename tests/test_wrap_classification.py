@@ -19,11 +19,10 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from crepes.extras import MondrianCategorizer
 
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.utils.helper import transform_to_numeric
-
-from crepes.extras import MondrianCategorizer
 
 from tests.test_wrap_regression import generic_test
 
@@ -154,7 +153,7 @@ def test_wrap_binary_ce(binary_dataset):
     cal_exp.fit(X_prop_train, y_prop_train)
     assert cal_exp.fitted
     assert not cal_exp.calibrated
-    
+
     multiple_failing_calls(cal_exp, X_test, y_test)
 
     y_test_hat1 = cal_exp.predict(X_test)
@@ -301,6 +300,7 @@ def test_wrap_multiclass_ce(multiclass_dataset):
 
 
 def multiple_failing_calls(cal_exp, X_test, y_test):
+    """Test multiple methods that should raise a RuntimeError when called before fitting or calibration."""
     with pytest.raises(RuntimeError):
         cal_exp.plot(X_test, show=False)
     with pytest.raises(RuntimeError):
