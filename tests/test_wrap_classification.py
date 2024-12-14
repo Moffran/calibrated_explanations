@@ -23,6 +23,8 @@ from sklearn.model_selection import train_test_split
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.utils.helper import transform_to_numeric
 
+from crepes.extras import MondrianCategorizer
+
 from tests.test_wrap_regression import generic_test
 
 @pytest.fixture
@@ -147,14 +149,13 @@ def test_wrap_binary_ce(binary_dataset):
     assert not cal_exp.fitted
     assert not cal_exp.calibrated
 
-    with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, show=False)
-    with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, y_test, show=False)
+    multiple_failing_calls(cal_exp, X_test, y_test)
 
     cal_exp.fit(X_prop_train, y_prop_train)
     assert cal_exp.fitted
     assert not cal_exp.calibrated
+    
+    multiple_failing_calls(cal_exp, X_test, y_test)
 
     y_test_hat1 = cal_exp.predict(X_test)
     y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
@@ -250,33 +251,13 @@ def test_wrap_multiclass_ce(multiclass_dataset):
 
     with pytest.raises(RuntimeError):
         cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
-    with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, show=False)
-    with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, y_test, show=False)
-    with pytest.raises(RuntimeError):
-        cal_exp.calibrated_confusion_matrix()
-    with pytest.raises(RuntimeError):
-        cal_exp.initialize_reject_learner()
-    with pytest.raises(RuntimeError):
-        cal_exp.predict_reject(X_test)
-
+    multiple_failing_calls(cal_exp, X_test, y_test)
     cal_exp.fit(X_prop_train, y_prop_train)
     assert cal_exp.fitted
     assert not cal_exp.calibrated
     repr(cal_exp)
 
-    with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, show=False)
-    with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, y_test, show=False)
-    with pytest.raises(RuntimeError):
-        cal_exp.calibrated_confusion_matrix()
-    with pytest.raises(RuntimeError):
-        cal_exp.initialize_reject_learner()
-    with pytest.raises(RuntimeError):
-        cal_exp.predict_reject(X_test)
-
+    multiple_failing_calls(cal_exp, X_test, y_test)
     y_test_hat1 = cal_exp.predict(X_test)
     y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
 
@@ -294,6 +275,127 @@ def test_wrap_multiclass_ce(multiclass_dataset):
             assert low[i][j] <= y_hat_j <= high[i][j]
 
     cal_exp.calibrate(X_cal, y_cal, mode='classification', feature_names=feature_names, categorical_features=categorical_features)
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
+    repr(cal_exp)
+
+    cal_exp.calibrated_confusion_matrix()
+    cal_exp.initialize_reject_learner()
+    cal_exp.predict_reject(X_test)
+
+    y_test_hat1 = cal_exp.predict(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
+
+    for i, y_hat in enumerate(y_test_hat2):
+        assert y_test_hat1[i] == y_hat
+
+    y_test_hat1 = cal_exp.predict_proba(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
+
+    for i, y_hat in enumerate(y_test_hat2):
+        for j, y_hat_j in enumerate(y_hat):
+            assert y_test_hat1[i][j] == y_hat_j
+            assert low[i][j] <= y_hat_j <= high[i][j]
+
+    generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
+
+
+def multiple_failing_calls(cal_exp, X_test, y_test):
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test, show=False)
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test, y_test, show=False)
+    with pytest.raises(RuntimeError):
+        cal_exp.calibrated_confusion_matrix()
+    with pytest.raises(RuntimeError):
+        cal_exp.initialize_reject_learner()
+    with pytest.raises(RuntimeError):
+        cal_exp.predict_reject(X_test)
+
+def test_wrap_binary_conditional_ce(binary_dataset):
+    """
+    Test the WrapCalibratedExplainer class for binary classification.
+    This test function performs the following steps:
+    1. Initializes the WrapCalibratedExplainer with a RandomForestClassifier.
+    2. Checks that the explainer is neither fitted nor calibrated initially.
+    3. Ensures that plotting without fitting raises a RuntimeError.
+    4. Fits the explainer and verifies it is fitted but not calibrated.
+    5. Tests various prediction methods (with and without calibration) and 
+       ensures consistency in the predictions.
+    6. Tests the predict_proba method (with and without calibration) and 
+       ensures consistency in the probability predictions.
+    7. Calibrates the explainer and verifies it is both fitted and calibrated.
+    8. Re-tests the prediction methods to ensure consistency post-calibration.
+    9. Re-fits the explainer and verifies it remains calibrated.
+    10. Tests the ability to create new instances of WrapCalibratedExplainer 
+        with the same learner and explainer, ensuring they inherit the correct 
+        fitted and calibrated states.
+    11. Plots the results to visually inspect the predictions.
+    Args:
+        binary_dataset (tuple): A tuple containing the training, calibration, 
+                                and test datasets along with additional 
+                                metadata such as categorical features and 
+                                feature names.
+    """
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = binary_dataset
+    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+
+    cal_exp.fit(X_prop_train, y_prop_train)
+
+    def get_values(X):
+        return X[:,0]
+
+    mc = MondrianCategorizer()
+    mc.fit(X_cal, f=get_values, no_bins=5)
+
+    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features, mc=mc)
+
+    y_test_hat1 = cal_exp.predict(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
+
+    for i, y_hat in enumerate(y_test_hat2):
+        assert y_test_hat1[i] == y_hat
+
+    y_test_hat1 = cal_exp.predict_proba(X_test)
+    y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
+
+    for i, y_hat in enumerate(y_test_hat2):
+        for j, y_hat_j in enumerate(y_hat):
+            assert y_test_hat1[i][j] == y_hat_j
+        assert low[i] <= y_test_hat2[i, 1] <= high[i]
+
+    generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
+
+def test_wrap_multiclass_conditional_ce(multiclass_dataset):
+    """
+    Test the WrapCalibratedExplainer class for a multiclass classification problem.
+    This test performs the following steps:
+    1. Initializes the WrapCalibratedExplainer with a RandomForestClassifier.
+    2. Checks that the explainer is neither fitted nor calibrated initially.
+    3. Ensures that plotting methods raise RuntimeError before fitting.
+    4. Fits the explainer and verifies it is fitted but not calibrated.
+    5. Tests the predict and predict_proba methods before calibration.
+    6. Calibrates the explainer and verifies it is both fitted and calibrated.
+    7. Tests the predict and predict_proba methods after calibration.
+    8. Re-fits the explainer and verifies it remains calibrated.
+    9. Tests the ability to create new WrapCalibratedExplainer instances with the same learner and explainer.
+    10. Ensures that plotting methods work after fitting and calibration.
+    Args:
+        multiclass_dataset (tuple): A tuple containing the training, calibration, and test datasets along with 
+                                    additional metadata such as categorical features and feature names.
+    """
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, _, _, feature_names = multiclass_dataset
+    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+
+    cal_exp.fit(X_prop_train, y_prop_train)
+
+    def get_values(X):
+        return X[:,0]
+
+    mc = MondrianCategorizer()
+    mc.fit(X_cal, f=get_values, no_bins=5)
+
+    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features, mc=mc)
     assert cal_exp.fitted
     assert cal_exp.calibrated
     repr(cal_exp)

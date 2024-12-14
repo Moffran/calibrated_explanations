@@ -480,7 +480,7 @@ class CalibratedExplainer:
             X_test = X_test.reshape(1, -1)
         if X_test.shape[1] != self.X_cal.shape[1]:
             raise ValueError("The number of features in the test data must be the same as in the "\
-                                +"calibration data.")
+                                    +"calibration data.")
         if self._is_mondrian():
             assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
             assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
@@ -501,10 +501,8 @@ class CalibratedExplainer:
         predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
         # print(predicted_class)
 
-        prediction = {'predict': predict}
+        prediction = {'predict': predict, 'low': low, 'high': high}
 
-        prediction['low'] = low
-        prediction['high'] = high
         if self.is_multiclass():
             prediction['classes'] = predicted_class
         else:
@@ -1431,9 +1429,7 @@ class CalibratedExplainer:
             new_classes = np.array([self.class_labels[c] for c in new_classes])
         elif self.class_labels is not None:
             new_classes = np.array([self.class_labels[c] for c in new_classes])
-        if uq_interval:
-            return new_classes, (low, high)
-        return new_classes
+        return (new_classes, (low, high)) if uq_interval else new_classes
 
 
 
@@ -1634,9 +1630,9 @@ class CalibratedExplainer:
         for i in range(len(self.y_cal)):
             va = VennAbers(np.concatenate((self.X_cal[:i], self.X_cal[i+1:]), axis=0),
                            np.concatenate((self.y_cal[:i], self.y_cal[i+1:])),
-
-                           self.learner)
-            _, _, _, predict = va.predict_proba([self.X_cal[i]], output_interval=True)
+                           self.learner, 
+                           bins = np.concatenate((self.bins[:i], self.bins[i+1:])) if self.bins is not None else None)
+            _, _, _, predict = va.predict_proba([self.X_cal[i]], output_interval=True, bins = [self.bins[i]] if self.bins is not None else None)
             cal_predicted_classes[i] = predict[0]
         return confusion_matrix(self.y_cal, cal_predicted_classes)
 
@@ -1766,15 +1762,10 @@ class WrapCalibratedExplainer():
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before calibration.")
         self.calibrated = False
-        if isinstance(mc, MondrianCategorizer):
+
+        if mc is not None:
             self.mc = mc
-            bins = mc.apply(X_calibration)
-        elif mc is not None:
-            self.mc = mc
-            bins = mc(X_calibration)
-        else:
-            bins = kwargs.get('bins', None)
-        kwargs['bins'] = bins
+        kwargs['bins'] = self._get_bins(X_calibration, **kwargs)
 
         if 'mode' in kwargs:
             self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, **kwargs)
@@ -1797,13 +1788,8 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
-        if isinstance(self.mc, MondrianCategorizer):
-            bins = self.mc.apply(X_test)
-        elif self.mc is not None:
-            bins = self.mc(X_test)
-        else:
-            bins = kwargs.get('bins', None)
-        kwargs['bins'] = bins
+
+        kwargs['bins'] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_factual(X_test, **kwargs)
 
     def explain_counterfactual(self, X_test, **kwargs):
@@ -1828,13 +1814,8 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
-        if isinstance(self.mc, MondrianCategorizer):
-            bins = self.mc.apply(X_test)
-        elif self.mc is not None:
-            bins = self.mc(X_test)
-        else:
-            bins = kwargs.get('bins', None)
-        kwargs['bins'] = bins
+
+        kwargs['bins'] = self._get_bins(X_test, **kwargs)
         return self.explainer.explore_alternatives(X_test, **kwargs)
 
     def explain_fast(self, X_test, **kwargs):
@@ -1848,13 +1829,8 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
-        if isinstance(self.mc, MondrianCategorizer):
-            bins = self.mc.apply(X_test)
-        elif self.mc is not None:
-            bins = self.mc(X_test)
-        else:
-            bins = kwargs.get('bins', None)
-        kwargs['bins'] = bins
+
+        kwargs['bins'] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_fast(X_test, **kwargs)
 
 
@@ -1877,13 +1853,8 @@ class WrapCalibratedExplainer():
                 predict = self.learner.predict(X_test)
                 return predict, (predict, predict)
             return self.learner.predict(X_test)
-        if isinstance(self.mc, MondrianCategorizer):
-            bins = self.mc.apply(X_test)
-        elif self.mc is not None:
-            bins = self.mc(X_test)
-        else:
-            bins = kwargs.get('bins', None)
-        kwargs['bins'] = bins
+
+        kwargs['bins'] = self._get_bins(X_test, **kwargs)
         return self.explainer.predict(X_test, uq_interval=uq_interval, calibrated=calibrated, **kwargs)
 
     def predict_proba(self, X_test, uq_interval=False, calibrated=True, threshold=None, **kwargs):
@@ -1911,13 +1882,8 @@ class WrapCalibratedExplainer():
                     return proba, (proba, proba)
                 return proba, (proba[:,1], proba[:,1])
             return self.learner.predict_proba(X_test)
-        if isinstance(self.mc, MondrianCategorizer):
-            bins = self.mc.apply(X_test)
-        elif self.mc is not None:
-            bins = self.mc(X_test)
-        else:
-            bins = kwargs.get('bins', None)
-        kwargs['bins'] = bins
+
+        kwargs['bins'] = self._get_bins(X_test, **kwargs)
         return self.explainer.predict_proba(X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
@@ -1967,6 +1933,7 @@ class WrapCalibratedExplainer():
         --------
         :meth:`.CalibratedExplainer.predict_reject` : Refer to the docstring for predict_reject in CalibratedExplainer for more details.
         """
+        bins = self._get_bins(X_test, **{'bins': bins})
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection.")
         if not self.calibrated:
@@ -1985,11 +1952,11 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before plotting.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before plotting.")
-        if isinstance(self.mc, MondrianCategorizer):
-            bins = self.mc.apply(X_test)
-        elif self.mc is not None:
-            bins = self.mc(X_test)
-        else:
-            bins = kwargs.get('bins', None)
-        kwargs['bins'] = bins
+
+        kwargs['bins'] = self._get_bins(X_test, **kwargs)
         self.explainer.plot(X_test, y_test=y_test, threshold=threshold, **kwargs)
+
+    def _get_bins(self, X_test, **kwargs):
+        if isinstance(self.mc, MondrianCategorizer):
+            return self.mc.apply(X_test)
+        return self.mc(X_test) if self.mc is not None else kwargs.get('bins', None)

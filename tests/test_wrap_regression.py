@@ -189,10 +189,33 @@ def test_wrap_conditional_regression_ce(regression_dataset):
     cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
     cal_exp.fit(X_prop_train, y_prop_train)
 
+    # test with MondrianCategorizer
     mc = MondrianCategorizer()
     mc.fit(X_cal, f=cal_exp.learner.predict, no_bins=5)
 
     cal_exp.calibrate(X_cal, y_cal, mc=mc, feature_names=feature_names)
+    conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
+
+    # test with predict as categorizer
+    cal_exp.calibrate(X_cal, y_cal, mc=cal_exp.learner.predict, feature_names=feature_names)
+    conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
+
+def conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
+    """
+    Tests the functionality of a calibrated explainer for conditional regression.
+    This function performs a series of assertions to ensure that the
+    calibrated explainer (`cal_exp`) is properly fitted and calibrated.
+    It also checks the behavior of the `WrapCalibratedExplainer` class
+    when initialized with the learner and explainer from `cal_exp`.
+    Parameters:
+    cal_exp (object): The calibrated explainer to be tested.
+    X_prop_train (array-like): Training data features for the explainer.
+    y_prop_train (array-like): Training data labels for the explainer.
+    X_test (array-like): Test data features for plotting.
+    y_test (array-like): Test data labels for plotting.
+    Returns:
+    object: The fitted and calibrated explainer (`cal_exp`).
+    """
     assert cal_exp.fitted
     assert cal_exp.calibrated
 
