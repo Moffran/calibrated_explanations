@@ -33,10 +33,10 @@ Functions
     Get the fill color for the plot.
 """
 import os
-import yaml
 import contextlib
 import math
 import warnings
+import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
