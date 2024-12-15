@@ -17,6 +17,7 @@ The tests ensure that:
 import pytest
 import numpy as np
 import pandas as pd
+from joblib import dump, load
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -258,7 +259,6 @@ def test_wrap_binary_ce(binary_dataset):
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
     # Add test for model persistence
-    from joblib import dump, load
     dump(cal_exp, 'model.joblib')
     loaded_exp = load('model.joblib')
     assert np.array_equal(cal_exp.predict(X_test), loaded_exp.predict(X_test))
@@ -339,7 +339,7 @@ def test_wrap_multiclass_ce(multiclass_dataset):
 
     # Add test for probability sum
     y_proba = cal_exp.predict_proba(X_test)
-    np.testing.assert_almost_equal(y_proba.sum(axis=1), 
+    np.testing.assert_almost_equal(y_proba.sum(axis=1),
                                  np.ones(len(X_test)),
                                  decimal=6,
                                  err_msg="Probabilities should sum to 1")
