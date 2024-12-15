@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name, duplicate-code, unused-import
+# pylint: disable=invalid-name, line-too-long, too-many-locals, too-many-statements, redefined-outer-name, duplicate-code, unused-import, too-many-instance-attributes
 """
 Module for testing the WrapCalibratedExplainer class for regression tasks.
 This module contains test functions that verify the functionality of the WrapCalibratedExplainer class
@@ -10,6 +10,7 @@ Functions:
     test_wrap_conditional_regression_ce: Tests the WrapCalibratedExplainer class for conditional regression.
     test_wrap_regression_fast_ce: Tests the WrapCalibratedExplainer class for fast regression.
 """
+import numpy as np
 import pytest
 from sklearn.ensemble import RandomForestRegressor
 
@@ -17,6 +18,77 @@ from crepes.extras import MondrianCategorizer
 from calibrated_explanations import WrapCalibratedExplainer
 
 from tests.test_regression import regression_dataset
+
+def assert_predictions_match(y_pred1, y_pred2, msg="Predictions don't match"):
+    """Helper to verify predictions match"""
+    assert len(y_pred1) == len(y_pred2), f"{msg}: Different lengths"
+    assert all(y1 == y2 for y1, y2 in zip(y_pred1, y_pred2)), msg
+
+def assert_valid_confidence_bounds(predictions, bounds, msg="Invalid confidence bounds"):
+    """Helper to verify confidence bounds are valid"""
+    low, high = bounds
+    for i, pred in enumerate(predictions):
+        assert low[i] <= pred <= high[i], f"{msg} at index {i}"
+
+class TestWrapRegressionExplainer:
+    """Tests for WrapCalibratedExplainer in regression tasks."""
+
+    def __init__(self):
+        self.X_train = None
+        self.y_train = None
+        self.X_cal = None
+        self.y_cal = None
+        self.X_test = None
+        self.y_test = None
+        self.feature_names = None
+        self.explainer = None
+
+    @pytest.fixture(autouse=True)
+    def setup(self, regression_dataset):
+        """Setup the regression dataset and explainer."""
+        self.X_train, self.y_train, self.X_cal, self.y_cal, self.X_test, self.y_test, _, _, self.feature_names = regression_dataset
+        self.explainer = WrapCalibratedExplainer(RandomForestRegressor(random_state=42))
+
+    def test_initial_state(self):
+        """Test initial unfitted state"""
+        assert not self.explainer.fitted, "Should not be fitted initially"
+        assert not self.explainer.calibrated, "Should not be calibrated initially"
+
+        with pytest.raises(RuntimeError, match="must be fitted"):
+            self.explainer.explain_factual(self.X_test)
+
+    @pytest.mark.parametrize("threshold", [
+        None,
+        0.5,
+        [0.5, 0.6, 0.7],
+        pytest.param(-1, marks=pytest.mark.xfail(raises=ValueError))
+    ])
+    def test_prediction_with_thresholds(self, threshold):
+        """Test predictions with different threshold values"""
+        self.explainer.fit(self.X_train, self.y_train)
+        self.explainer.calibrate(self.X_cal, self.y_cal)
+
+        if threshold is not None:
+            y_pred = self.explainer.predict(self.X_test, threshold=threshold)
+            assert y_pred.shape[0] == self.X_test.shape[0]
+
+    def test_edge_cases(self):
+        """Test edge cases and error conditions"""
+        self.explainer.fit(self.X_train, self.y_train)
+
+        # Test empty input
+        with pytest.raises(ValueError):
+            self.explainer.predict(np.array([]))
+
+        # Test invalid feature count
+        with pytest.raises(ValueError):
+            self.explainer.predict(np.random.rand(10, self.X_train.shape[1] + 1))
+
+        # Test NaN/Inf handling
+        X_invalid = self.X_test.copy()
+        X_invalid[0,0] = np.nan
+        with pytest.raises(ValueError):
+            self.explainer.predict(X_invalid)
 
 def generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
     """
