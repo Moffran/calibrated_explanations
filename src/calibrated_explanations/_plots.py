@@ -32,14 +32,95 @@ Functions
 - __get_fill_color(venn_abers, reduction=1)
     Get the fill color for the plot.
 """
+import os
+import yaml
 import contextlib
 import math
 import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme
+
+def load_plot_config():
+    """Load plot configuration from YAML file."""
+    config_path = os.path.join(os.path.dirname(__file__), 'plot_config.yaml')
+    default_config = {
+        'style': {'base': 'seaborn-v0_8-whitegrid'},
+        'fonts': {
+            'family': 'sans-serif',
+            'sans-serif': ['Arial'],
+            'size': {
+                'axes_label': 12,
+                'tick_label': 10,
+                'legend': 10,
+                'title': 14
+            }
+        },
+        'lines': {'width': 2},
+        'grid': {'style': '--', 'alpha': 0.5},
+        'figure': {
+            'dpi': 300,
+            'save_dpi': 300,
+            'facecolor': 'white',
+            'axes_facecolor': 'white'
+        },
+        'colors': {
+            'background': '#f8f9fa',
+            'text': '#666666',
+            'grid': '#cccccc',
+            'positive': 'red',
+            'negative': 'blue',
+            'uncertainty': 'lightgrey'
+        }
+    }
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        # Merge with defaults
+        for key, value in default_config.items():
+            if key not in config:
+                config[key] = value
+            elif isinstance(value, dict):
+                config[key] = {**value, **config[key]}
+    except (FileNotFoundError, yaml.YAMLError):
+        config = default_config
+
+    return config
+
+def __setup_plot_style():
+    """Set up plot style using configuration."""
+    config = load_plot_config()
+
+    plt.style.use(config['style']['base'])
+
+    # Font settings
+    plt.rcParams['font.family'] = config['fonts']['family']
+    plt.rcParams['font.sans-serif'] = config['fonts']['sans-serif']
+    plt.rcParams['axes.labelsize'] = config['fonts']['size']['axes_label']
+    plt.rcParams['xtick.labelsize'] = config['fonts']['size']['tick_label']
+    plt.rcParams['ytick.labelsize'] = config['fonts']['size']['tick_label']
+    plt.rcParams['legend.fontsize'] = config['fonts']['size']['legend']
+    plt.rcParams['axes.titlesize'] = config['fonts']['size']['title']
+
+    # Line settings
+    plt.rcParams['lines.linewidth'] = config['lines']['width']
+
+    # Grid settings
+    plt.rcParams['grid.linestyle'] = config['grid']['style']
+    plt.rcParams['grid.alpha'] = config['grid']['alpha']
+
+    # Figure settings
+    plt.rcParams['figure.dpi'] = config['figure']['dpi']
+    plt.rcParams['savefig.dpi'] = config['figure']['save_dpi']
+    plt.rcParams['figure.facecolor'] = config['figure']['facecolor']
+    plt.rcParams['axes.facecolor'] = config['figure']['axes_facecolor']
+
+    return config
+
 def _plot_probabilistic(explanation, instance, predict, feature_weights, features_to_plot,
                         num_to_show, column_names, title, path, show, interval=False,
                         idx=None, save_ext=None):
@@ -75,6 +156,8 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    config = __setup_plot_style()
+
     if save_ext is None:
         save_ext=['svg','pdf','png']
     if interval is True:
@@ -99,15 +182,15 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
     ph = predict['high'] if predict['high'] != np.inf \
                                 else explanation.y_minmax[1]
 
-    ax_negative.fill_betweenx(xj, 1-p, 1-p, color='b')
-    ax_negative.fill_betweenx(xj, 0, 1-ph, color='b')
-    ax_negative.fill_betweenx(xj, 1-pl, 1-ph, color='b', alpha=0.2)
+    ax_negative.fill_betweenx(xj, 1-p, 1-p, color=config['colors']['positive'])
+    ax_negative.fill_betweenx(xj, 0, 1-ph, color=config['colors']['positive'])
+    ax_negative.fill_betweenx(xj, 1-pl, 1-ph, color=config['colors']['positive'], alpha=0.2)
     ax_negative.set_xlim([0,1])
     ax_negative.set_yticks(range(1))
     ax_negative.set_xticks(np.linspace(0,1,6))
-    ax_positive.fill_betweenx(xj, p, p, color='r')
-    ax_positive.fill_betweenx(xj, 0, pl, color='r')
-    ax_positive.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
+    ax_positive.fill_betweenx(xj, p, p, color=config['colors']['negative'])
+    ax_positive.fill_betweenx(xj, 0, pl, color=config['colors']['negative'])
+    ax_positive.fill_betweenx(xj, pl, ph, color=config['colors']['negative'], alpha=0.2)
     ax_positive.set_xlim([0,1])
     ax_positive.set_yticks(range(1))
     ax_positive.set_xticks([])
@@ -169,12 +252,12 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
                 width = feature_weights[j]
                 min_val = min(width, 0)
                 max_val = max(width, 0)
-            color = 'r' if width > 0 else 'b'
+            color = config['colors']['negative'] if width > 0 else config['colors']['positive']
             ax_main.fill_betweenx(xj, min_val, max_val, color=color)
             if interval:
                 if wl < 0 < wh and explanation.get_mode() == 'classification':
-                    ax_main.fill_betweenx(xj, 0, wl, color='b', alpha=0.2)
-                    ax_main.fill_betweenx(xj, wh, 0, color='r', alpha=0.2)
+                    ax_main.fill_betweenx(xj, 0, wl, color=config['colors']['positive'], alpha=0.2)
+                    ax_main.fill_betweenx(xj, wh, 0, color=config['colors']['negative'], alpha=0.2)
                 else:
                     ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
 
@@ -189,6 +272,18 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
         ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
         ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
         ax_main_twin.set_ylabel('Instance values')
+
+    # Enhance subplot appearance
+    for ax in [ax_positive, ax_negative, ax_main]:
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+
+    # Add background colors for better readability
+    ax_main.patch.set_facecolor(config['colors']['background'])
+
+    # Enhance legend appearance
+    ax_main_twin.tick_params(axis='y', colors=config['colors']['text'])
+
     for ext in save_ext:
         fig.savefig(path + title + ext, bbox_inches='tight')
     if show:
@@ -233,6 +328,8 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    config = __setup_plot_style()
+
     if save_ext is None:
         save_ext=['svg','pdf','png']
     if interval is True:
@@ -255,8 +352,8 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
     ph = predict['high'] if predict['high'] != np.inf \
                                     else explanation.y_minmax[1]
 
-    ax_regression.fill_betweenx(xj, pl, ph, color='r', alpha=0.2)
-    ax_regression.fill_betweenx(xj, p, p, color='r')
+    ax_regression.fill_betweenx(xj, pl, ph, color=config['colors']['negative'], alpha=0.2)
+    ax_regression.fill_betweenx(xj, p, p, color=config['colors']['negative'])
     ax_regression.set_xlim([np.min([pl, explanation.y_minmax[0]]),np.max([ph, explanation.y_minmax[1]])]) # pylint: disable=line-too-long
     ax_regression.set_yticks(range(1))
 
@@ -314,14 +411,23 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
     ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
                 if column_names is not None else ax_main.set_yticks(range(num_to_show)) # pylint: disable=expression-not-assigned
     ax_main.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
-    ax_main.set_ylabel('Rules')
-    ax_main.set_xlabel('Feature weights')
+    ax_main.set_ylabel('Rules', fontweight='bold')
+    ax_main.set_xlabel('Feature weights', fontweight='bold')
     ax_main.set_xlim(x_min, x_max)
     ax_main_twin = ax_main.twinx()
     ax_main_twin.set_yticks(range(num_to_show))
     ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
     ax_main_twin.set_ylim(-0.5,x[-1]+0.5 if len(x) > 0 else 0.5)
     ax_main_twin.set_ylabel('Instance values')
+
+    # Enhance subplot appearance
+    for ax in [ax_regression, ax_main]:
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+
+    # Add subtle background color
+    ax_main.patch.set_facecolor(config['colors']['background'])
+
     for ext in save_ext:
         fig.savefig(path + title + ext, bbox_inches='tight')
     if show:
@@ -359,6 +465,8 @@ def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertain
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    config = __setup_plot_style()
+
     if save_ext is None:
         save_ext=['svg','pdf','png']
     # assert self._get_explainer().mode == 'classification' or \
@@ -391,9 +499,9 @@ def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertain
                 angles='xy', scale_units='xy', scale=1, color='lightgrey',
                 width=0.005, headwidth=3, headlength=3)
     plt.scatter(rule_proba, rule_uncertainty, label='Alternative Explanations',
-                marker='.', s=marker_size)
+                marker='.', s=marker_size, alpha=0.7)
     plt.scatter(proba, uncertainty, color='red', label='Original Prediction',
-                marker='.', s=marker_size)
+                marker='*', s=marker_size*1.5)
     if is_probabilistic:
         plt.xlabel('Probability')
     else:
@@ -404,7 +512,8 @@ def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertain
     plt.ylim(min_y, max_y)
 
     # Add legend
-    plt.legend()
+    plt.legend(frameon=True, fancybox=True, framealpha=0.95,
+              edgecolor=config['colors']['grid'], loc='best')
 
     for ext in save_ext:
         plt.savefig(path + title + ext, bbox_inches='tight')
@@ -455,6 +564,8 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    config = __setup_plot_style()
+
     if save_ext is None:
         save_ext=['svg','pdf','png']
     fig = plt.figure(figsize=(10,num_to_show*.5))
@@ -480,10 +591,10 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
         ax_main.fill_betweenx(xl, [p_l]*(2), [p_h]*(2),color=color)
         ax_main.fill_betweenx(xh, [p_l]*(2), [p_h]*(2),color=color)
         if 'regression' in explanation.get_mode():
-            ax_main.fill_betweenx(x, p, p, color='r', alpha=0.3)
+            ax_main.fill_betweenx(x, p, p, color=config['colors']['negative'], alpha=0.3)
             # Fill up to the edges
-            ax_main.fill_betweenx(xl, p, p, color='r', alpha=0.3)
-            ax_main.fill_betweenx(xh, p, p, color='r', alpha=0.3)
+            ax_main.fill_betweenx(xl, p, p, color=config['colors']['negative'], alpha=0.3)
+            ax_main.fill_betweenx(xh, p, p, color=config['colors']['negative'], alpha=0.3)
     else:
         venn_abers['predict'] = p_l
         color = __get_fill_color(venn_abers, 0.15)
@@ -508,8 +619,8 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
         venn_abers={'low_high': [p_l,p_h],'predict':p}
         # Fill each feature impact
         if 'regression' in explanation.get_mode():
-            ax_main.fill_betweenx(xj, p_l,p_h, color='r', alpha= 0.40)
-            ax_main.fill_betweenx(xj, p, p, color='r')
+            ax_main.fill_betweenx(xj, p_l,p_h, color=config['colors']['negative'], alpha= 0.40)
+            ax_main.fill_betweenx(xj, p, p, color=config['colors']['negative'])
         elif (p_l < 0.5 and p_h < 0.5) or (p_l > 0.5 and p_h > 0.5) :
             ax_main.fill_betweenx(xj, p_l,p_h,color=__get_fill_color(venn_abers, 0.99))
         else:
@@ -600,6 +711,8 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     **kwargs : dict
         Additional keyword arguments.
     """
+    config = __setup_plot_style()
+
     show = kwargs.pop("show", True)
     is_regularized = True
     if 'predict_proba' not in dir(explainer.learner) and threshold is None:
@@ -695,8 +808,10 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
                         color=colors[i],
                         label=labels[i],
                         marker=markers[i],
-                        s=marker_size)
-        plt.legend()
+                        s=marker_size,
+                        alpha=0.7)
+        plt.legend(frameon=True, fancybox=True, framealpha=0.95,
+              edgecolor=config['colors']['grid'], bbox_to_anchor=(1.05, 1), loc='upper left')
     if 'predict_proba' not in dir(explainer.learner) and threshold is None: # not probabilistic
         plt.xlabel('Predictions',loc='center')
         plt.ylabel('Uncertainty',loc='center')
@@ -716,6 +831,7 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
             plt.xlabel('Probability of Y = 1')
     plt.xlim(min_x, max_x)
     plt.ylim(min_y, max_y)
+    plt.grid(True, linestyle='--', alpha=0.3)
     if show:
         plt.show()
     else:
