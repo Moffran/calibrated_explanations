@@ -826,7 +826,7 @@ class FactualExplanation(CalibratedExplanation):
         **kwargs : dict
             Additional plotting arguments, such as:
             
-            show : bool, default=False
+            show : bool, default=True if filename is empty, False otherwise
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
             filename : str, default=''
@@ -847,10 +847,12 @@ class FactualExplanation(CalibratedExplanation):
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
-        show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")
+        show = kwargs.get("show", filename == "")
         uncertainty = kwargs.get("uncertainty", False)
         rnk_metric = kwargs.get("rnk_metric", "feature_weight")
+        if rnk_metric is None:
+            rnk_metric = "feature_weight"
         rnk_weight = kwargs.get("rnk_weight", 0.5)
         if rnk_metric == "uncertainty":
             rnk_weight = 1.0
@@ -1555,7 +1557,7 @@ class AlternativeExplanation(CalibratedExplanation):
         **kwargs : dict
             Additional plotting arguments, such as:
             
-            show : bool, default=False
+            show : bool, default=True if filename is empty, False otherwise
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
             filename : str, default=''
@@ -1572,9 +1574,11 @@ class AlternativeExplanation(CalibratedExplanation):
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
-        show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")
+        show = kwargs.get("show", filename == "")
         rnk_metric = kwargs.get("rnk_metric", "ensured")
+        if rnk_metric is None:
+            rnk_metric = "ensured"
         rnk_weight = kwargs.get("rnk_weight", 0.5)
         if rnk_metric == "uncertainty":
             rnk_weight = 1.0
@@ -1879,7 +1883,7 @@ class FastExplanation(CalibratedExplanation):
         **kwargs : dict
             Additional plotting arguments, such as:
             
-            show : bool, default=False
+            show : bool, default=True if filename is empty, False otherwise
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
             filename : str, default=''
@@ -1900,10 +1904,12 @@ class FastExplanation(CalibratedExplanation):
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
-        show = kwargs.get("show", False)
         filename = kwargs.get("filename", "")
+        show = kwargs.get("show", filename == "")
         uncertainty = kwargs.get("uncertainty", False)
         rnk_metric = kwargs.get("rnk_metric", "feature_weight")
+        if rnk_metric is None:
+            rnk_metric = "feature_weight"
         rnk_weight = kwargs.get("rnk_weight", 0.5)
         if rnk_metric == "uncertainty":
             rnk_weight = 1.0
