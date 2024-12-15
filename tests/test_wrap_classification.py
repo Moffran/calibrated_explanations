@@ -18,6 +18,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from crepes.extras import MondrianCategorizer
 
@@ -118,6 +119,36 @@ def multiclass_dataset():
 
     return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, num_classes, num_features, categorical_features, categorical_labels, target_labels, columns
 
+@pytest.fixture(autouse=True)
+def setup_teardown():
+    """Reset any global state before and after each test"""
+    # Setup
+    yield
+    # Teardown (if needed)
+
+def verify_predictions(y_pred1, y_pred2, bounds=None):
+    """Helper to verify predictions match and are within bounds"""
+    assert len(y_pred1) == len(y_pred2), "Prediction lengths don't match"
+    for i, (p1, p2) in enumerate(zip(y_pred1, y_pred2)):
+        assert p1 == p2, f"Predictions don't match at index {i}"
+        if bounds:
+            low, high = bounds
+            assert low[i] <= p1 <= high[i], f"Prediction {p1} outside bounds at index {i}"
+
+@pytest.mark.parametrize("invalid_X", [
+    None,
+    np.array([]),
+    np.array([[1,2], [3,4], [5,6]]),  # Wrong feature count
+])
+def test_invalid_inputs(binary_dataset, invalid_X):
+    """Test handling of invalid inputs"""
+    X_prop_train, y_prop_train, _, _, _, _, _, _, _, _ = binary_dataset
+    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+    cal_exp.fit(X_prop_train, y_prop_train)
+
+    with pytest.raises(ValueError):
+        cal_exp.predict(invalid_X)
+
 def test_wrap_binary_ce(binary_dataset):
     """
     Test the WrapCalibratedExplainer class for binary classification.
@@ -144,9 +175,11 @@ def test_wrap_binary_ce(binary_dataset):
                                 feature names.
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = binary_dataset
-    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
-    assert not cal_exp.fitted
-    assert not cal_exp.calibrated
+    cal_exp = WrapCalibratedExplainer(RandomForestClassifier(random_state=42))  # Add random_state
+
+    # Test initial state
+    assert not cal_exp.fitted, "Explainer should not be fitted initially"
+    assert not cal_exp.calibrated, "Explainer should not be calibrated initially"
 
     multiple_failing_calls(cal_exp, X_test, y_test)
 
@@ -224,6 +257,12 @@ def test_wrap_binary_ce(binary_dataset):
 
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
+    # Add test for model persistence
+    from joblib import dump, load
+    dump(cal_exp, 'model.joblib')
+    loaded_exp = load('model.joblib')
+    assert np.array_equal(cal_exp.predict(X_test), loaded_exp.predict(X_test))
+
 def test_wrap_multiclass_ce(multiclass_dataset):
     """
     Test the WrapCalibratedExplainer class for a multiclass classification problem.
@@ -298,19 +337,12 @@ def test_wrap_multiclass_ce(multiclass_dataset):
 
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
-
-def multiple_failing_calls(cal_exp, X_test, y_test):
-    """Test multiple methods that should raise a RuntimeError when called before fitting or calibration."""
-    with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, show=False)
-    with pytest.raises(RuntimeError):
-        cal_exp.plot(X_test, y_test, show=False)
-    with pytest.raises(RuntimeError):
-        cal_exp.calibrated_confusion_matrix()
-    with pytest.raises(RuntimeError):
-        cal_exp.initialize_reject_learner()
-    with pytest.raises(RuntimeError):
-        cal_exp.predict_reject(X_test)
+    # Add test for probability sum
+    y_proba = cal_exp.predict_proba(X_test)
+    np.testing.assert_almost_equal(y_proba.sum(axis=1), 
+                                 np.ones(len(X_test)),
+                                 decimal=6,
+                                 err_msg="Probabilities should sum to 1")
 
 def test_wrap_binary_conditional_ce(binary_dataset):
     """
@@ -419,3 +451,39 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
             assert low[i][j] <= y_hat_j <= high[i][j]
 
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
+
+    # Add test for probability sum
+    y_proba = cal_exp.predict_proba(X_test)
+    np.testing.assert_almost_equal(y_proba.sum(axis=1),
+                                 np.ones(len(X_test)),
+                                 decimal=6,
+                                 err_msg="Probabilities should sum to 1")
+
+def multiple_failing_calls(cal_exp, X_test, y_test):
+    """Test multiple methods that should raise a RuntimeError when called before fitting or calibration."""
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test, show=False)
+    with pytest.raises(RuntimeError):
+        cal_exp.plot(X_test, y_test, show=False)
+    with pytest.raises(RuntimeError):
+        cal_exp.calibrated_confusion_matrix()
+    with pytest.raises(RuntimeError):
+        cal_exp.initialize_reject_learner()
+    with pytest.raises(RuntimeError):
+        cal_exp.predict_reject(X_test)
+
+# Add new test for handling missing values
+def test_missing_values(binary_dataset):
+    """Test handling of missing values in input data"""
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, _ = binary_dataset
+
+    # Introduce some missing values
+    X_test_missing = X_test.copy()
+    X_test_missing[0,0] = np.nan
+
+    cal_exp = WrapCalibratedExplainer(LogisticRegression())
+    cal_exp.fit(X_prop_train, y_prop_train)
+    cal_exp.calibrate(X_cal, y_cal)
+
+    with pytest.raises(ValueError):
+        cal_exp.predict(X_test_missing)
