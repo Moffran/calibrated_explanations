@@ -1,5 +1,5 @@
 # pylint: disable=unknown-option-value
-# pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments
+# pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments, fixme
 """Contains the VennAbers class which is used to calibrate the predictions of a model.
 
 This module provides the VennAbers class for calibrating model predictions using the Venn-Abers method.
@@ -177,6 +177,11 @@ class VennAbers:
                 low[:,c], high[:,c] = p0p1[:,0], p0p1[:,1]
                 tmp = high[:,c] / (1-low[:,c] + high[:,c])
                 va_proba[:,c] = tmp
+            # TODO: Surprisingly, probability normalization is needed, needs looking into
+            for i in range(va_proba.shape[0]):
+                low[i] = low[i] / np.sum(va_proba[i, :])
+                high[i] = high[i] / np.sum(va_proba[i, :])
+                va_proba[i, :] = va_proba[i, :] / np.sum(va_proba[i, :])
             if classes is not None:
                 if type(classes) not in (list, np.ndarray):
                     classes = [classes]
