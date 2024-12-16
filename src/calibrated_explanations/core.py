@@ -468,134 +468,24 @@ class CalibratedExplainer:
                 threshold = None,
                 low_high_percentiles = (5, 95),
                 bins = None,) -> CalibratedExplanations:
-        """Call the explain function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
+        """Call the explain function to create a :class:`.CalibratedExplanations` object for the test data.
         
-        Called by the `explain_factual` and `explore_alternatives` methods. 
-        See their documentation for further information.
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
+        :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
         total_time = time()
-        if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
-            X_test = X_test.values  # pylint: disable=invalid-name
-        if len(X_test.shape) == 1:
-            X_test = X_test.reshape(1, -1)
-        if X_test.shape[1] != self.X_cal.shape[1]:
-            raise ValueError("The number of features in the test data must be the same as in the "\
-                                    +"calibration data.")
-        if self._is_mondrian():
-            assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
-            assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
-        explanation = CalibratedExplanations(self, X_test, threshold, bins)
 
-        if threshold is not None:
-            if not 'regression' in self.mode:
-                raise Warning("The threshold parameter is only supported for mode='regression'.")
-            if isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
-                warnings.warn("Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.")
-            assert_threshold(threshold, X_test)
-            # explanation.low_high_percentiles = low_high_percentiles
-        elif 'regression' in self.mode:
-            explanation.low_high_percentiles = low_high_percentiles
-        X_cal = self.X_cal
+        # Validate inputs and initialize explanation
+        X_test = self._validate_and_prepare_input(X_test)
+        explanation = self._initialize_explanation(X_test, low_high_percentiles, threshold, bins)
 
         instance_time = time()
-        predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
-        # print(predicted_class)
-
-        prediction = {'predict': predict, 'low': low, 'high': high}
-
-        if self.is_multiclass():
-            prediction['classes'] = predicted_class
-        else:
-            prediction['classes'] = np.ones(predict.shape)
-
-        # Step 1: Predict the test set and the perturbed instances to get the predictions and intervals
-        # Substep 1.a: Add the test set
-        X_test.flags.writeable = False
-        assert_threshold(threshold, X_test)
-        perturbed_threshold = self.assign_threshold(threshold)
-        perturbed_bins = np.empty((0,)) if bins is not None else None
-        perturbed_X = np.empty((0, self.num_features))
-        perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
-        perturbed_class = np.empty((0,),dtype=int)
-        X_perturbed = self._discretize(X_test)
-        rule_boundaries = self.rule_boundaries(X_test, X_perturbed)
-
-        # Substep 1.b: prepare and add the perturbed test instances
-        lesser_values = {}
-        greater_values = {}
-        covered_values = {}
-        # pylint: disable=too-many-nested-blocks
-        for f in range(self.num_features):
-            if f in self.categorical_features:
-                feature_values = self.feature_values[f]
-                X_copy = np.array(X_test, copy=True)
-                for value in feature_values:
-                    X_copy[:,f] = value
-                    perturbed_X = np.concatenate((perturbed_X, np.array(X_copy)))
-                    perturbed_feature = np.concatenate((perturbed_feature, [(f, i, value, None) for i in range(X_test.shape[0])]))
-                    perturbed_bins = np.concatenate((perturbed_bins, bins)) if bins is not None else None
-                    perturbed_class = np.concatenate((perturbed_class, prediction['predict']))
-                    perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, list(range(X_test.shape[0])))
-            else:
-                X_copy = np.array(X_test, copy=True)
-                feature_values = np.unique(np.array(X_cal[:,f]))
-                lower_boundary = rule_boundaries[:,f,0]
-                upper_boundary = rule_boundaries[:,f,1]
-                for i in range(len(X_test)):
-                    lower_boundary[i] = lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
-                    upper_boundary[i] = upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
-
-                lesser_values[f] = {}
-                greater_values[f] = {}
-                covered_values[f] = {}
-                for j, val in enumerate(np.unique(lower_boundary)):
-                    lesser_values[f][j] = (np.unique(self.__get_lesser_values(f, val)), val)
-                    indices = np.where(lower_boundary == val)[0]
-                    for value in lesser_values[f][j][0]:
-                        X_local = X_copy[indices,:]
-                        X_local[:,f] = value
-                        perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
-                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, True) for i in indices]))
-                        perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
-                        perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
-                        perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
-                for j, val in enumerate(np.unique(upper_boundary)):
-                    greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
-                    indices = np.where(upper_boundary == val)[0]
-                    for value in greater_values[f][j][0]:
-                        X_local = X_copy[indices,:]
-                        X_local[:,f] = value
-                        perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
-                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, False) for i in indices]))
-                        perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
-                        perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
-                        perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
-                indices = range(len(X_test))
-                for i in indices:
-                    covered_values[f][i] = (self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]), (lower_boundary[i], upper_boundary[i]))
-                    for value in covered_values[f][i][0]:
-                        X_local = X_copy[i,:]
-                        X_local[f] = value
-                        perturbed_X = np.concatenate((perturbed_X, np.array(X_local.reshape(1,-1))))
-                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
-                        perturbed_bins = np.concatenate((perturbed_bins, [bins[i]])) if bins is not None else None
-                        perturbed_class = np.concatenate((perturbed_class, [prediction['classes'][i]]))
-                        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                            if (
-                                isinstance(threshold[0], tuple)
-                                and len(perturbed_threshold) == 0
-                            ):
-                                perturbed_threshold = [threshold[i]]
-                            else:
-                                perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
-        # Substep 1.c: Predict and convert to numpy arrays to allow boolean indexing
-        if threshold is not None and isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
-            perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
-        predict, low, high, _ = self._predict(perturbed_X, threshold=perturbed_threshold, low_high_percentiles=low_high_percentiles, classes=perturbed_class, bins=perturbed_bins)
-        predict = np.array(predict)
-        low = np.array(low)
-        high = np.array(high)
-        predicted_class = np.array(perturbed_class)
+        # Step 1: Predict the target variable for the test data
+        predict, low, high, prediction, perturbed_feature,\
+            rule_boundaries, lesser_values, greater_values, covered_values, \
+                X_cal = self._explain_predict_step(X_test, threshold, low_high_percentiles, bins)
 
         # Step 2: For each feature and instance, create the rules
         feature_weights =  {'predict': [],'low': [],'high': [],}
@@ -615,7 +505,7 @@ class CalibratedExplainer:
             if f in self.features_to_ignore:
                 continue
             feature_values = self.feature_values[f]
-            perturbed = [v[1] for i, v in enumerate(perturbed_feature) if v[0] == f]
+            perturbed = [v[1] for v in perturbed_feature if v[0] == f]
             if f in self.categorical_features:
                 for i in np.unique(perturbed):
                     current_bin = -1
@@ -790,7 +680,139 @@ class CalibratedExplainer:
         self.latest_explanation = explanation
         return explanation
 
+    def _validate_and_prepare_input(self, X_test):
+        """Validate and prepare the input data."""
+        if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
+            X_test = X_test.values
+        if len(X_test.shape) == 1:
+            X_test = X_test.reshape(1, -1)
+        if X_test.shape[1] != self.X_cal.shape[1]:
+            raise ValueError("Number of features must match calibration data")
+        return X_test
 
+    def _initialize_explanation(self, X_test, low_high_percentiles, threshold, bins):
+        """Initialize the explanation object."""
+        if self._is_mondrian():
+            assert bins is not None, "Bins required for Mondrian explanations"
+            assert len(bins) == len(X_test)
+        explanation = CalibratedExplanations(self, X_test, threshold, bins)
+
+        if threshold is not None:
+            if 'regression' not in self.mode:
+                raise Warning("The threshold parameter is only supported for mode='regression'.")
+            if isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
+                warnings.warn("Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.")
+            assert_threshold(threshold, X_test)
+                # explanation.low_high_percentiles = low_high_percentiles
+        elif 'regression' in self.mode:
+            explanation.low_high_percentiles = low_high_percentiles
+        return explanation
+
+    def _explain_predict_step(self, X_test, threshold, low_high_percentiles, bins):
+        X_cal = self.X_cal
+        predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
+        # print(predicted_class)
+
+        prediction = {
+            'predict': predict,
+            'low': low,
+            'high': high,
+            'classes': (
+                predicted_class if self.is_multiclass() else np.ones(predict.shape)
+            ),
+        }
+
+        # Step 1: Predict the test set and the perturbed instances to get the predictions and intervals
+        # Substep 1.a: Add the test set
+        X_test.flags.writeable = False
+        assert_threshold(threshold, X_test)
+        perturbed_threshold = self.assign_threshold(threshold)
+        perturbed_bins = np.empty((0,)) if bins is not None else None
+        perturbed_X = np.empty((0, self.num_features))
+        perturbed_feature = np.empty((0,4)) # (feature, instance, bin_index, is_lesser)
+        perturbed_class = np.empty((0,),dtype=int)
+        X_perturbed = self._discretize(X_test)
+        rule_boundaries = self.rule_boundaries(X_test, X_perturbed)
+
+        # Substep 1.b: prepare and add the perturbed test instances
+        lesser_values = {}
+        greater_values = {}
+        covered_values = {}
+        # pylint: disable=too-many-nested-blocks
+        for f in range(self.num_features):
+            if f in self.categorical_features:
+                feature_values = self.feature_values[f]
+                X_copy = np.array(X_test, copy=True)
+                for value in feature_values:
+                    X_copy[:,f] = value
+                    perturbed_X = np.concatenate((perturbed_X, np.array(X_copy)))
+                    perturbed_feature = np.concatenate((perturbed_feature, [(f, i, value, None) for i in range(X_test.shape[0])]))
+                    perturbed_bins = np.concatenate((perturbed_bins, bins)) if bins is not None else None
+                    perturbed_class = np.concatenate((perturbed_class, prediction['predict']))
+                    perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, list(range(X_test.shape[0])))
+            else:
+                X_copy = np.array(X_test, copy=True)
+                feature_values = np.unique(np.array(X_cal[:,f]))
+                lower_boundary = rule_boundaries[:,f,0]
+                upper_boundary = rule_boundaries[:,f,1]
+                for i in range(len(X_test)):
+                    lower_boundary[i] = lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
+                    upper_boundary[i] = upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
+
+                lesser_values[f] = {}
+                greater_values[f] = {}
+                covered_values[f] = {}
+                for j, val in enumerate(np.unique(lower_boundary)):
+                    lesser_values[f][j] = (np.unique(self.__get_lesser_values(f, val)), val)
+                    indices = np.where(lower_boundary == val)[0]
+                    for value in lesser_values[f][j][0]:
+                        X_local = X_copy[indices,:]
+                        X_local[:,f] = value
+                        perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
+                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, True) for i in indices]))
+                        perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
+                        perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
+                        perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
+                for j, val in enumerate(np.unique(upper_boundary)):
+                    greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
+                    indices = np.where(upper_boundary == val)[0]
+                    for value in greater_values[f][j][0]:
+                        X_local = X_copy[indices,:]
+                        X_local[:,f] = value
+                        perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
+                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, False) for i in indices]))
+                        perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
+                        perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
+                        perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
+                indices = range(len(X_test))
+                for i in indices:
+                    covered_values[f][i] = (self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]), (lower_boundary[i], upper_boundary[i]))
+                    for value in covered_values[f][i][0]:
+                        X_local = X_copy[i,:]
+                        X_local[f] = value
+                        perturbed_X = np.concatenate((perturbed_X, np.array(X_local.reshape(1,-1))))
+                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
+                        perturbed_bins = np.concatenate((perturbed_bins, [bins[i]])) if bins is not None else None
+                        perturbed_class = np.concatenate((perturbed_class, [prediction['classes'][i]]))
+                        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                            if (
+                                isinstance(threshold[0], tuple)
+                                and len(perturbed_threshold) == 0
+                            ):
+                                perturbed_threshold = [threshold[i]]
+                            else:
+                                perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
+        # Substep 1.c: Predict and convert to numpy arrays to allow boolean indexing
+        if threshold is not None and isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
+            perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
+        predict, low, high, _ = self._predict(perturbed_X, threshold=perturbed_threshold, low_high_percentiles=low_high_percentiles, classes=perturbed_class, bins=perturbed_bins)
+        predict = np.array(predict)
+        low = np.array(low)
+        high = np.array(high)
+        predicted_class = np.array(perturbed_class)
+        return predict, low, high, prediction, perturbed_feature,\
+                rule_boundaries, lesser_values, greater_values, covered_values, \
+                X_cal
     def explain_fast(self,
                                 X_test,
                                 threshold = None,
