@@ -47,7 +47,7 @@ import matplotlib.colors as mcolors
 def load_plot_config():
     """Load plot configuration from INI file."""
     config = configparser.ConfigParser()
-    config_path = os.path.join(os.path.dirname(__file__), '../utils/configurations/plot_config.ini')
+    config_path = os.path.join(os.path.dirname(__file__), '../calibrated-explanations/utils/configurations/plot_config.ini')
 
     # Set default values
     config['style'] = {'base': 'seaborn-v0_8-whitegrid'}
@@ -92,7 +92,8 @@ def update_plot_config(new_config):
             config[section][key] = str(value)
 
     # Write updated config to file
-    config_path = os.path.join(os.path.dirname(__file__), '../utils/configurations/plot_config.ini')
+    config_path = os.path.join(os.path.dirname(__file__), '../calibrated-explanations/utils/configurations/plot_config.ini')
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)  # Ensure directory exists
     with open(config_path, 'w', encoding='utf-8') as f:
         config.write(f)
 

@@ -29,6 +29,15 @@ def test_default_plot_config():
 def test_update_plot_config():
     """Test updating plot configuration"""
     new_config = {
+        'style': {'base': 'default'},
+        'fonts': {'family': 'serif'}
+    }
+    update_plot_config(new_config)
+
+    config = load_plot_config()
+    assert config['style']['base'] == 'default'
+    assert config['fonts']['family'] == 'serif'
+    new_config = {
         'style': {'base': 'seaborn-v0_8-whitegrid'},
         'fonts': {'family': 'sans-serif'}
     }
