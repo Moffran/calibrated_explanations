@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations._plots import load_plot_config, update_plot_config
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, redefined-outer-name
 @pytest.fixture
 def styled_explainer():
     """Create a fitted and calibrated explainer for testing plot styles"""
@@ -74,9 +74,9 @@ def test_update_plot_config():
         'uncertainty': 'gray'
     })
 ])
-def test_style_override(styled_explainer_fixture, style_section, style_params):
+def test_style_override(styled_explainer, style_section, style_params):
     """Test that style overrides work for all configurable parameters"""
-    explainer, X_test, y_test = styled_explainer_fixture
+    explainer, X_test, y_test = styled_explainer
 
     # Test global plot
     explainer.plot(X_test, y_test, show=False,
@@ -95,17 +95,17 @@ def test_style_override(styled_explainer_fixture, style_section, style_params):
     # # No errors should occur with any style override
     # assert True
 
-def test_invalid_style_override(styled_explainer_fixture):
+def test_invalid_style_override(styled_explainer):
     """Test that invalid style overrides are handled gracefully"""
-    explainer, X_test, _ = styled_explainer_fixture
+    explainer, X_test, _ = styled_explainer
 
     # with pytest.raises(Warning):
     explainer.plot(X_test, show=False,
                     style_override={'invalid_section': {'param': 'value'}})
 
-def test_style_override_persistence(styled_explainer_fixture):
+def test_style_override_persistence(styled_explainer):
     """Test that style overrides don't persist between plots"""
-    explainer, X_test, _ = styled_explainer_fixture
+    explainer, X_test, _ = styled_explainer
 
     # Plot with override
     explainer.plot(X_test, show=False,
