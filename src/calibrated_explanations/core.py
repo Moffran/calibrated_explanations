@@ -1596,21 +1596,10 @@ class CalibratedExplainer:
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, X_test, y_test=None, threshold=None, **kwargs):
-        """Generate plots for the test data.
-
-        Parameters
-        ----------
-        X_test : array-like
-            The test data.
-        y_test : array-like, optional
-            The true labels of the test data. 
-        threshold : float, int, optional
-            The threshold value used with regression to get probability of being below the threshold. 
-
-        Notes
-        -----
-        The `threshold` parameter is only used for regression tasks
-        """
+        """Generate plots for the test data."""
+        # Pass any style overrides along to the plotting function
+        style_override = kwargs.pop('style_override', None)
+        kwargs['style_override'] = style_override
         _plot_global(self, X_test, y_test=y_test, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
@@ -1952,7 +1941,6 @@ class WrapCalibratedExplainer():
             raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before plotting.")
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before plotting.")
-
         kwargs['bins'] = self._get_bins(X_test, **kwargs)
         self.explainer.plot(X_test, y_test=y_test, threshold=threshold, **kwargs)
 

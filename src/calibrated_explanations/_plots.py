@@ -36,7 +36,7 @@ import os
 import contextlib
 import math
 import warnings
-import yaml
+import configparser
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -45,77 +45,91 @@ import matplotlib.colors as mcolors
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme
 
 def load_plot_config():
-    """Load plot configuration from YAML file."""
-    config_path = os.path.join(os.path.dirname(__file__), 'plot_config.yaml')
-    default_config = {
-        'style': {'base': 'seaborn-v0_8-whitegrid'},
-        'fonts': {
-            'family': 'sans-serif',
-            'sans-serif': ['Arial'],
-            'size': {
-                'axes_label': 12,
-                'tick_label': 10,
-                'legend': 10,
-                'title': 14
-            }
-        },
-        'lines': {'width': 2},
-        'grid': {'style': '--', 'alpha': 0.5},
-        'figure': {
-            'dpi': 300,
-            'save_dpi': 300,
-            'facecolor': 'white',
-            'axes_facecolor': 'white'
-        },
-        'colors': {
-            'background': '#f8f9fa',
-            'text': '#666666',
-            'grid': '#cccccc',
-            'positive': 'red',
-            'negative': 'blue',
-            'uncertainty': 'lightgrey'
-        }
+    """Load plot configuration from INI file."""
+    config = configparser.ConfigParser()
+    config_path = os.path.join(os.path.dirname(__file__), '../utils/configurations/plot_config.ini')
+
+    # Set default values
+    config['style'] = {'base': 'seaborn-v0_8-whitegrid'}
+    config['fonts'] = {
+        'family': 'sans-serif',
+        'sans_serif': 'Arial',
+        'axes_label_size': '12',
+        'tick_label_size': '10',
+        'legend_size': '10',
+        'title_size': '14'
+    }
+    config['lines'] = {'width': '2'}
+    config['grid'] = {'style': '--', 'alpha': '0.5'}
+    config['figure'] = {
+        'dpi': '300',
+        'save_dpi': '300',
+        'facecolor': 'white',
+        'axes_facecolor': 'white'
+    }
+    config['colors'] = {
+        'background': '#f8f9fa',
+        'text': '#666666',
+        'grid': '#cccccc',
+        'positive': 'red',
+        'negative': 'blue',
+        'uncertainty': 'lightgrey'
     }
 
-    try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
-        # Merge with defaults
-        for key, value in default_config.items():
-            if key not in config:
-                config[key] = value
-            elif isinstance(value, dict):
-                config[key] = {**value, **config[key]}
-    except (FileNotFoundError, yaml.YAMLError):
-        config = default_config
-
+    # Read config file if it exists
+    config.read(config_path)
     return config
 
-def __setup_plot_style():
-    """Set up plot style using configuration."""
+def update_plot_config(new_config):
+    """Update plot configuration file with new values."""
     config = load_plot_config()
+
+    # Update configuration with new values
+    for section, values in new_config.items():
+        if section not in config:
+            config[section] = {}
+        for key, value in values.items():
+            config[section][key] = str(value)
+
+    # Write updated config to file
+    config_path = os.path.join(os.path.dirname(__file__), '../utils/configurations/plot_config.ini')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        config.write(f)
+
+def __setup_plot_style(style_override=None):
+    """Set up plot style using configuration with optional runtime overrides."""
+    config = load_plot_config()
+
+    # Apply style overrides if provided
+    if style_override:
+        for section, values in style_override.items():
+            if section not in config:
+                config[section] = {}
+                warnings.warn(f'Unknown style section "{section}" in style override.', Warning)
+            for key, value in values.items():
+                config[section][key] = str(value)
 
     plt.style.use(config['style']['base'])
 
     # Font settings
     plt.rcParams['font.family'] = config['fonts']['family']
-    plt.rcParams['font.sans-serif'] = config['fonts']['sans-serif']
-    plt.rcParams['axes.labelsize'] = config['fonts']['size']['axes_label']
-    plt.rcParams['xtick.labelsize'] = config['fonts']['size']['tick_label']
-    plt.rcParams['ytick.labelsize'] = config['fonts']['size']['tick_label']
-    plt.rcParams['legend.fontsize'] = config['fonts']['size']['legend']
-    plt.rcParams['axes.titlesize'] = config['fonts']['size']['title']
+    plt.rcParams['font.sans-serif'] = [config['fonts']['sans_serif']]
+    plt.rcParams['axes.labelsize'] = float(config['fonts']['axes_label_size'])
+    plt.rcParams['xtick.labelsize'] = float(config['fonts']['tick_label_size'])
+    plt.rcParams['ytick.labelsize'] = float(config['fonts']['tick_label_size'])
+    plt.rcParams['legend.fontsize'] = float(config['fonts']['legend_size'])
+    plt.rcParams['axes.titlesize'] = float(config['fonts']['title_size'])
 
     # Line settings
-    plt.rcParams['lines.linewidth'] = config['lines']['width']
+    plt.rcParams['lines.linewidth'] = float(config['lines']['width'])
 
     # Grid settings
     plt.rcParams['grid.linestyle'] = config['grid']['style']
-    plt.rcParams['grid.alpha'] = config['grid']['alpha']
+    plt.rcParams['grid.alpha'] = float(config['grid']['alpha'])
 
     # Figure settings
-    plt.rcParams['figure.dpi'] = config['figure']['dpi']
-    plt.rcParams['savefig.dpi'] = config['figure']['save_dpi']
+    plt.rcParams['figure.dpi'] = float(config['figure']['dpi'])
+    plt.rcParams['savefig.dpi'] = float(config['figure']['save_dpi'])
     plt.rcParams['figure.facecolor'] = config['figure']['facecolor']
     plt.rcParams['axes.facecolor'] = config['figure']['axes_facecolor']
 
@@ -123,7 +137,7 @@ def __setup_plot_style():
 
 def _plot_probabilistic(explanation, instance, predict, feature_weights, features_to_plot,
                         num_to_show, column_names, title, path, show, interval=False,
-                        idx=None, save_ext=None):
+                        idx=None, save_ext=None, style_override=None):
     """
     Plot regular and uncertainty explanations.
 
@@ -156,7 +170,7 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
-    config = __setup_plot_style()
+    config = __setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext=['svg','pdf','png']
@@ -295,7 +309,7 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
 # pylint: disable=too-many-branches, too-many-statements, too-many-locals
 def _plot_regression(explanation, instance, predict, feature_weights, features_to_plot, num_to_show,
                 column_names, title, path, show, interval=False, idx=None,
-                save_ext=None):
+                save_ext=None, style_override=None):
     """
     Plot regular and uncertainty explanations.
 
@@ -328,7 +342,7 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
-    config = __setup_plot_style()
+    config = __setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext=['svg','pdf','png']
@@ -438,7 +452,7 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
 
 # pylint: disable=duplicate-code
 def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertainty,
-                     num_to_show, title, path, show, save_ext=None):
+                     num_to_show, title, path, show, save_ext=None, style_override=None):
     """
     Plot triangular explanations.
 
@@ -465,7 +479,7 @@ def _plot_triangular(explanation, proba, uncertainty, rule_proba, rule_uncertain
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
-    config = __setup_plot_style()
+    config = __setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext=['svg','pdf','png']
@@ -535,7 +549,8 @@ def __plot_proba_triangle():
 
 # pylint: disable=too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
 def _plot_alternative(explanation, instance, predict, feature_predict, features_to_plot, \
-                            num_to_show, column_names, title, path, show, save_ext=None):
+                            num_to_show, column_names, title, path, show, save_ext=None, 
+                            style_override=None):
     """
     Plot alternative explanations.
 
@@ -564,7 +579,7 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
-    config = __setup_plot_style()
+    config = __setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext=['svg','pdf','png']
@@ -689,7 +704,8 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
+def _plot_global(explainer, X_test, y_test=None, threshold=None, style_override=None, 
+                 show=True, bins=None):
     """
     Generate a global explanation plot for the given test data.
 
@@ -711,18 +727,17 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     **kwargs : dict
         Additional keyword arguments.
     """
-    config = __setup_plot_style()
+    config = __setup_plot_style(style_override)
 
-    show = kwargs.pop("show", True)
     is_regularized = True
     if 'predict_proba' not in dir(explainer.learner) and threshold is None:
-        predict, (low, high) = explainer.predict(X_test, uq_interval=True, **kwargs)
+        predict, (low, high) = explainer.predict(X_test, uq_interval=True, bins=bins)
         is_regularized = False
     else:
         proba, (low, high) = explainer.predict_proba(X_test,
                                                      uq_interval=True,
                                                      threshold=threshold,
-                                                     **kwargs)
+                                                     bins=bins)
     uncertainty = np.array(high - low)
 
     marker_size = 50

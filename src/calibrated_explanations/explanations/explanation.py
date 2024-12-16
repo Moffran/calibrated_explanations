@@ -847,6 +847,9 @@ class FactualExplanation(CalibratedExplanation):
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
+        # Ensure style_override gets passed through
+        style_override = kwargs.get('style_override', None)
+
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
         uncertainty = kwargs.get("uncertainty", False)
@@ -924,6 +927,7 @@ class FactualExplanation(CalibratedExplanation):
                 show=show,
                 idx=self.index,
                 save_ext=save_ext,
+                style_override=style_override,
             )
         else:
             _plot_regression(
@@ -940,6 +944,7 @@ class FactualExplanation(CalibratedExplanation):
                 show=show,
                 idx=self.index,
                 save_ext=save_ext,
+                style_override=style_override,
             )
 
 
@@ -1574,6 +1579,9 @@ class AlternativeExplanation(CalibratedExplanation):
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
+        # Ensure style_override gets passed through
+        style_override = kwargs.get('style_override', None)
+
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
         rnk_metric = kwargs.get("rnk_metric", "ensured")
@@ -1657,6 +1665,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 path=path,
                 show=show,
                 save_ext=save_ext,
+                style_override=style_override,
             )
             return
 
@@ -1673,6 +1682,7 @@ class AlternativeExplanation(CalibratedExplanation):
             path=path,
             show=show,
             save_ext=save_ext,
+            style_override=style_override,
         )
 
 
@@ -1904,6 +1914,9 @@ class FastExplanation(CalibratedExplanation):
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
+        # Ensure style_override gets passed through
+        style_override = kwargs.get('style_override', None)
+
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
         uncertainty = kwargs.get("uncertainty", False)
@@ -1981,6 +1994,7 @@ class FastExplanation(CalibratedExplanation):
                 show=show,
                 idx=self.index,
                 save_ext=save_ext,
+                style_override=style_override
             )
         else:
             _plot_regression(
@@ -1997,4 +2011,5 @@ class FastExplanation(CalibratedExplanation):
                 show=show,
                 idx=self.index,
                 save_ext=save_ext,
+                style_override=style_override
             )

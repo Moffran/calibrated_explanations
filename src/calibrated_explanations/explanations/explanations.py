@@ -9,7 +9,6 @@ Classes
     - :class:`.AlternativeExplanations`
     - :class:`.FrozenCalibratedExplainer`
 """
-import warnings
 from copy import deepcopy
 from time import time
 import numpy as np
@@ -400,8 +399,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         style="regular",
         rnk_metric=None,
         rnk_weight=0.5,
-        sort_on_uncertainty=False,
-        interactive=False,
+        style_override=None
     ):
         """
         Plot explanations for a given instance, with the option to show or save the plots.
@@ -432,14 +430,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         :meth:`.AlternativeExplanation.plot` : Refer to the docstring for plot in AlternativeExplanation for details on default ranking ('ensured').
         :meth:`.FastExplanation.plot` : Refer to the docstring for plot in FastExplanation for details on default ranking ('feature_weight').
         """
-        # Check for deprecated parameters and issue warnings
-        if sort_on_uncertainty is not None:
-            warnings.warn(
-                "The 'sort_on_uncertainty' parameter is deprecated and will be removed in future versions.",
-                DeprecationWarning,
-            )
         if len(filename) > 0:
             path, filename, title, ext = prepare_for_saving(filename)
+
         if index is not None:
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
@@ -451,6 +444,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 style=style,
                 rnk_metric=rnk_metric,
                 rnk_weight=rnk_weight,
+                style_override=style_override
             )
         else:
             for i, explanation in enumerate(self.explanations):
@@ -464,6 +458,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     style=style,
                     rnk_metric=rnk_metric,
                     rnk_weight=rnk_weight,
+                    style_override=style_override
                 )
 
     # pylint: disable=protected-access
