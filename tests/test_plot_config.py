@@ -4,21 +4,21 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations._plots import load_plot_config, update_plot_config
-
+# pylint: disable=invalid-name
 @pytest.fixture
 def styled_explainer():
     """Create a fitted and calibrated explainer for testing plot styles"""
-    X = np.random.rand(100, 5)
-    y = (X[:,0] + X[:,1] > 1).astype(int)
+    X_data = np.random.rand(100, 5)
+    y_data = (X_data[:,0] + X_data[:,1] > 1).astype(int)
 
-    X_train, X_cal = X[:70], X[70:90]
-    y_train, y_cal = y[:70], y[70:90]
+    X_train, X_cal = X_data[:70], X_data[70:90]
+    y_train, y_cal = y_data[:70], y_data[70:90]
 
     explainer = WrapCalibratedExplainer(RandomForestClassifier())
     explainer.fit(X_train, y_train)
     explainer.calibrate(X_cal, y_cal)
 
-    return explainer, X[90:], y[90:]
+    return explainer, X_data[90:], y_data[90:]
 
 def test_default_plot_config():
     """Test the default plot configuration loads correctly"""
@@ -74,9 +74,9 @@ def test_update_plot_config():
         'uncertainty': 'gray'
     })
 ])
-def test_style_override(styled_explainer, style_section, style_params):
+def test_style_override(styled_explainer_fixture, style_section, style_params):
     """Test that style overrides work for all configurable parameters"""
-    explainer, X_test, y_test = styled_explainer
+    explainer, X_test, y_test = styled_explainer_fixture
 
     # Test global plot
     explainer.plot(X_test, y_test, show=False,
@@ -95,17 +95,17 @@ def test_style_override(styled_explainer, style_section, style_params):
     # # No errors should occur with any style override
     # assert True
 
-def test_invalid_style_override(styled_explainer):
+def test_invalid_style_override(styled_explainer_fixture):
     """Test that invalid style overrides are handled gracefully"""
-    explainer, X_test, _ = styled_explainer
+    explainer, X_test, _ = styled_explainer_fixture
 
     # with pytest.raises(Warning):
     explainer.plot(X_test, show=False,
                     style_override={'invalid_section': {'param': 'value'}})
 
-def test_style_override_persistence(styled_explainer):
+def test_style_override_persistence(styled_explainer_fixture):
     """Test that style overrides don't persist between plots"""
-    explainer, X_test, _ = styled_explainer
+    explainer, X_test, _ = styled_explainer_fixture
 
     # Plot with override
     explainer.plot(X_test, show=False,

@@ -47,7 +47,8 @@ import matplotlib.colors as mcolors
 def load_plot_config():
     """Load plot configuration from INI file."""
     config = configparser.ConfigParser()
-    config_path = os.path.join(os.path.dirname(__file__), '../calibrated-explanations/utils/configurations/plot_config.ini')
+    config_path = os.path.join(os.path.dirname(__file__),
+                               '../calibrated-explanations/utils/configurations/plot_config.ini')
 
     # Set default values
     config['style'] = {'base': 'seaborn-v0_8-whitegrid'}
@@ -92,7 +93,8 @@ def update_plot_config(new_config):
             config[section][key] = str(value)
 
     # Write updated config to file
-    config_path = os.path.join(os.path.dirname(__file__), '../calibrated-explanations/utils/configurations/plot_config.ini')
+    config_path = os.path.join(os.path.dirname(__file__),
+                               '../calibrated-explanations/utils/configurations/plot_config.ini')
     os.makedirs(os.path.dirname(config_path), exist_ok=True)  # Ensure directory exists
     with open(config_path, 'w', encoding='utf-8') as f:
         config.write(f)
@@ -245,7 +247,7 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
             gwl = predict['low'] - p
             gwh = predict['high'] - p
 
-            gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
+            gwh, gwl = np.max([gwh, gwl]), np.min([gwl, gwh])
             ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
         # For each feature, plot the weight
@@ -549,8 +551,8 @@ def __plot_proba_triangle():
 
 
 # pylint: disable=too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
-def _plot_alternative(explanation, instance, predict, feature_predict, features_to_plot, \
-                            num_to_show, column_names, title, path, show, save_ext=None, 
+def _plot_alternative(explanation, instance, predict, feature_predict, features_to_plot,
+                            num_to_show, column_names, title, path, show, save_ext=None,
                             style_override=None):
     """
     Plot alternative explanations.
@@ -705,7 +707,7 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, X_test, y_test=None, threshold=None, style_override=None, 
+def _plot_global(explainer, X_test, y_test=None, threshold=None, style_override=None,
                  show=True, bins=None):
     """
     Generate a global explanation plot for the given test data.
