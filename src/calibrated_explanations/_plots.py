@@ -1,4 +1,5 @@
-"""Module containing all plotting functionality.
+"""
+This module contains all plotting functionality for calibrated explanations.
 
 Functions
 ---------

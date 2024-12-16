@@ -1,6 +1,9 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-arguments, too-many-positional-arguments, line-too-long
-"""This module defines the discretizers used by CalibratedExplainer.
+"""
+This module contains classes and functions for discretizing data.
+
+This module defines the discretizers used by CalibratedExplainer.
 
 The discretizers are defined using the same super class as the discretizers from the LIME package.
 

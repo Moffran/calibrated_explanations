@@ -1,5 +1,6 @@
 # pylint: disable=line-too-long
-"""This module provides utility functions for various tasks.
+"""
+This module contains helper functions for various tasks.
 
 These tasks include directory creation, safe importing,
 type checking, data transformation, and metric calculation. It includes functions to handle 
@@ -76,6 +77,8 @@ def safe_isinstance(obj, class_path_str):
     """
     if isinstance(class_path_str, str):
         class_path_strs = [class_path_str]
+    elif class_path_str is None:
+        class_path_strs = []
     elif isinstance(class_path_str, (list, tuple)):
         class_path_strs = class_path_str
     else:

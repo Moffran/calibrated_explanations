@@ -1,8 +1,7 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments, fixme
-"""Contains the VennAbers class which is used to calibrate the predictions of a model.
-
-This module provides the VennAbers class for calibrating model predictions using the Venn-Abers method.
+"""
+This module contains the VennAbers class for calibrating model predictions using the Venn-Abers method.
 
 Classes
 -------

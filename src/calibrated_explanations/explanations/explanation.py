@@ -136,9 +136,26 @@ class CalibratedExplanation(ABC):
         return self._get_explainer().is_multiclass()
 
     def _get_explainer(self):
+        """Return the explainer object."""
         return self.calibrated_explanations._get_explainer()  # pylint: disable=protected-access
 
     def _rank_features(self, feature_weights=None, width=None, num_to_show=None):
+        """Rank the features based on their weights.
+
+        Parameters
+        ----------
+        feature_weights : dict, optional
+            A mapping of feature weights.
+        width : dict, optional
+            A mapping of feature widths.
+        num_to_show : int, optional
+            The number of features to show.
+
+        Returns
+        -------
+        list
+            The sorted indices of the features.
+        """
         assert (
             feature_weights is not None or width is not None
         ), "Either feature_weights or width (or both) must not be None"
@@ -177,7 +194,7 @@ class CalibratedExplanation(ABC):
         )
 
     def is_thresholded(self) -> bool:
-        """Test if the explanation is thresholded.
+        """Check if the explanation is thresholded.
 
         Returns
         -------
@@ -186,7 +203,7 @@ class CalibratedExplanation(ABC):
         return self.y_threshold is not None
 
     def is_regression(self) -> bool:
-        """Test if the explanation is for regression.
+        """Check if the explanation is for regression.
 
         Returns
         -------
@@ -195,7 +212,7 @@ class CalibratedExplanation(ABC):
         return "regression" in self._get_explainer().mode
 
     def is_probabilistic(self) -> bool:
-        """Test if the explanation is probabilistic.
+        """Check if the explanation is probabilistic.
 
         Returns
         -------
@@ -530,6 +547,22 @@ class CalibratedExplanation(ABC):
         return self
 
     def _get_rule_str(self, is_lesser, feature, rule_boundary):
+        """Get the rule string for the explanation.
+
+        Parameters
+        ----------
+        is_lesser : bool
+            Whether the rule is a lesser condition.
+        feature : str
+            The feature name.
+        rule_boundary : float
+            The rule boundary value.
+
+        Returns
+        -------
+        str
+            The rule string.
+        """
         if is_lesser:
             return f"{self._get_explainer().feature_names[feature]} < {rule_boundary:.2f}"
         return f"{self._get_explainer().feature_names[feature]} > {rule_boundary:.2f}"

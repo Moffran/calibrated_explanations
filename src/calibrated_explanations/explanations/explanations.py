@@ -34,13 +34,13 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         Parameters
         ----------
         calibrated_explainer : CalibratedExplainer
-            The calibrated explainer that generated the explanations.
+            The calibrated explainer object.
         X_test : array-like
             The test data.
-        y_threshold : array-like
-            The threshold values for the explanations.
+        y_threshold : float or tuple
+            The threshold for regression explanations.
         bins : array-like
-            Bin information for the features.
+            The bins for conditional explanations.
         """
         self.calibrated_explainer = FrozenCalibratedExplainer(calibrated_explainer)
         self.X_test = X_test
@@ -54,12 +54,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self.total_explain_time = None
 
     def __iter__(self):
-        """Return an iterator over the explanations."""
+        """Return an iterator for the explanations."""
         self.current_index = self.start_index
         return self
 
     def __next__(self):
-        """Return the next explanation in the iterator."""
+        """Return the next explanation."""
         if self.current_index >= self.end_index:
             raise StopIteration
         result = self.get_explanation(self.current_index)
@@ -67,11 +67,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         return result
 
     def __len__(self):
-        """Return the number of test instances."""
+        """Return the number of explanations."""
         return len(self.X_test[:, 0])
 
     def __getitem__(self, key):
-        """Retrieve explanation(s) corresponding to the given key.
+        """Return the explanation for the given key.
         
         In case the index key is an integer (or results in a single result), the function returns the explanation
         corresponding to the index. If the key is a slice or an integer or boolean list (or numpy array)
@@ -117,35 +117,26 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         raise TypeError("Invalid argument type.")
 
     def __repr__(self) -> str:
-        """Return a string representation of the object."""
+        """Return the string representation of the CalibratedExplanations object."""
         explanations_str = "\n".join([str(e) for e in self.explanations])
         return f"CalibratedExplanations({len(self)} explanations):\n{explanations_str}"
 
     def __str__(self) -> str:
-        """Return a string representation of the object."""
+        """Return the string representation of the CalibratedExplanations object."""
         return self.__repr__()
 
     def _is_thresholded(self) -> bool:
-        # """test if the explanation is thresholded
-
-        # Returns:
-        #     bool: True if the y_threshold is not None
-        # """
+        """Check if the explanations are thresholded."""
         return self.y_threshold is not None
 
     def _is_one_sided(self) -> bool:
-        # """test if a regression explanation is one-sided
-
-        # Returns:
-        #     bool: True if one of the low or high percentiles is infinite
-        # """
+        """Check if the explanations are one-sided."""
         if self.low_high_percentiles is None:
             return False
         return np.isinf(self.get_low_percentile()) or np.isinf(self.get_high_percentile())
 
     def get_confidence(self) -> float:
-        """
-        Get the user-assigned confidence of the explanation.
+        """Return the confidence level of the explanations.
         
         This method calculates the confidence interval for regression tasks by determining the distance between the lower and upper percentiles. By default, these percentiles are set to 5 and 95.
         
@@ -167,9 +158,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         return self.get_high_percentile() - self.get_low_percentile()
 
     def get_low_percentile(self) -> float:
-        """
-        Retrieve the low percentile value of the explanation.
-
+        """Return the low percentile of the explanations.
+        
         This method returns the first element of the `low_high_percentiles` attribute,
         which represents the lower bound of the percentile range for the explanation.
 
@@ -181,9 +171,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         return self.low_high_percentiles[0]  # pylint: disable=unsubscriptable-object
 
     def get_high_percentile(self) -> float:
-        """
-        Get the high percentile of the explanation.
-
+        """Return the high percentile of the explanations.
+        
         Returns
         -------
         float
