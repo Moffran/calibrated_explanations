@@ -408,10 +408,15 @@ class CalibratedExplainer:
                                 bins = None,) -> AlternativeExplanations:
         """See documentation for the `explore_alternatives` method.
 
-        Notes
-        -----
-        The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
+        
+        Warnings
+        --------
+        Deprecated: This method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.
         """
+        warnings.warn("The `explain_counterfactual` method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.", DeprecationWarning)
         return self.explore_alternatives(X_test, threshold, low_high_percentiles, bins)
 
     def explore_alternatives(self,

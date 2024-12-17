@@ -9,6 +9,7 @@ Classes
     - :class:`.AlternativeExplanations`
     - :class:`.FrozenCalibratedExplainer`
 """
+import warnings
 from copy import deepcopy
 from time import time
 import numpy as np
@@ -360,6 +361,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
+        warnings.warn("This method is deprecated and may be removed in future versions. Use indexing instead.", DeprecationWarning)
         assert isinstance(index, int), "index must be an integer"
         assert index >= 0, "index must be greater than or equal to 0"
         assert index < len(self.X_test), "index must be less than the number of test instances"
