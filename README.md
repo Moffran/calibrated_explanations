@@ -36,14 +36,14 @@
 
 By providing estimates for both aleatoric and epistemic uncertainty, **Calibrated Explanations** offers a more comprehensive understanding of predictions, both in terms of accuracy and confidence. This is particularly valuable in high-stakes environments where model reliability and interpretability are essential, such as in healthcare, finance, and autonomous systems.
 
-To get a very condensed example on how Calibrated Explanations can be used, see the [Quick Overview](#quick-overview). For an in-depth guide on how to start using Calibrated Explanations, refer to the [Getting Started](#getting-started) section below.
+To get a very condensed example on how Calibrated Explanations can be used, see the [Quick Start](#quick-start). For an in-depth guide on how to start using Calibrated Explanations, refer to the [Usage](#usage) section below.
 
 ### Core Features:
 - **Calibrated Prediction Confidence**: Obtain well-calibrated uncertainty estimates for predictions, helping users make informed decisions based on the model’s confidence.
 - **Uncertainty-Aware Feature Importance**: Understand not only which features are important but also how uncertain the model is about the contribution of those features.
 - **Support for Various Tasks**: The framework supports classification, regression, and probabilistic regression, making it adaptable to a wide range of machine learning problems.
 
-The ability to quantify both aleatoric and epistemic uncertainty provides practitioners with actionable insights into the reliability of predictions and explanations, fostering **appropriate trust** ([read paper](https://scholar.google.com/citations?view_op=view_citation&hl=sv&user=reKgRBwAAAAJ&citation_for_view=reKgRBwAAAAJ:Se3iqnhoufwC)) and transparency in machine learning models. 
+The ability to quantify both aleatoric and epistemic uncertainty provides practitioners with actionable insights into the reliability of predictions and explanations, fostering **appropriate trust** ([read paper](https://ieeexplore.ieee.org/abstract/document/10487244)) and transparency in machine learning models. 
 
 ### Distinctive Characteristics
 
