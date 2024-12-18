@@ -11,6 +11,22 @@
 <!-- [![Lint Status for Calibrated Explanations][lint-status]][lint-log] -->
 <!-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/main?urlpath=https%3A%2F%2Fgithub.com%2FMoffran%2Fcalibrated_explanations%2Fblob%2Fmain%2Fnotebooks%2Fquickstart.ipynb) -->
 
+## Table of Contents
+- [Introduction](#introduction)
+  - [Core Features](#core-features)
+  - [Distinctive Characteristics](#distinctive-characteristics)
+  - [Example Explanation](#example-explanation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Installation](#installation)
+- [Contributing](#contributing)
+- [Documentation](#documentation)
+- [License](#license)
+- [Further Reading and Citing](#further-reading-and-citing)
+- [Acknowledgements](#acknowledgements)
+
+## Introduction
+
 **Calibrated Explanations** is an explanation method for machine learning designed to enhance both the interpretability of model predictions and the quantification of uncertainty. In many real-world applications, understanding how confident a model is about its predictions is just as important as the predictions themselves. This framework provides calibrated explanations for both predictions and feature importance by quantifying **aleatoric** and **epistemic uncertainty** — two types of uncertainty that offer critical insights into both data and model reliability.
 
 - **Aleatoric uncertainty** represents the noise inherent in the data. It affects the spread of probability distributions (for probabilistic outcomes) and predictions (for regression). This uncertainty is **irreducible** because it reflects limitations in the data generation process itself. Incorporating calibration ensures accurate aleatoric uncertainty.
@@ -28,7 +44,7 @@ To get a very condensed example on how Calibrated Explanations can be used, see 
 
 The ability to quantify both aleatoric and epistemic uncertainty provides practitioners with actionable insights into the reliability of predictions and explanations, fostering **appropriate trust** ([read paper](https://scholar.google.com/citations?view_op=view_citation&hl=sv&user=reKgRBwAAAAJ&citation_for_view=reKgRBwAAAAJ:Se3iqnhoufwC)) and transparency in machine learning models. 
 
-### Distinctive Characteristics of Calibrated Explanations
+### Distinctive Characteristics
 
 Calibrated Explanations offers a range of features designed to enhance both the interpretability and reliability of machine learning models. These characteristics can be summarized as follows:
 
@@ -72,8 +88,10 @@ The darker red bars for each rule (left) show the probability intervals provided
     <img src="https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/alternatives_wine_ensured.png" alt="Alternative explanations for Wine (classification)">
   </a>
 </p>
+  
+[Table of Content](#table-of-contents)
 
-## Quick Overview
+## Quick Start
 Here is a very condensed example to get you started:
 
 ```python
@@ -166,9 +184,11 @@ It is easy to access the predictions and probabilities from the calibrator and m
    thrld_y_hat_reg, low_high = regressor.predict(X_test_reg, threshold=your_threshold, uq_interval=True)
    thrld_proba_reg, (low, high) = regressor.predict_proba(X_test_reg, threshold=your_threshold, uq_interval=True)
 ```
+  
+[Table of Content](#table-of-contents)
 
-## Getting Started
-The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) notebook, using the `WrapCalibratedExplainer` class, is similar to this Getting Started in structure and includes plots and output.
+## Usage
+The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) notebook is similar to this section in structure and includes plots and output.
 
 The notebooks listed below are using the `CalibratedExplainer` class. They showcase a number of different use cases, as indicated by their names:
 * [quickstart](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart.ipynb) - similar to this Getting Started, but without a wrapper class.
@@ -475,16 +495,14 @@ display(calibrated_regressor)
 
 When a calibrated explainer is re-fitted, the explainer is reinitialized.
 
-[Top](#calibrated-explanations-documentation)
-
-## Known Limitations
+### Known Limitations
 The implementation currently only support numerical input. Use the `utils.helper.transform_to_numeric` (released in version v0.3.1) to transform a `DataFrame` with text data into numerical form and at the same time extracting `categorical_features`, `categorical_labels`, `target_labels` (if text labels) and `mappings` (used to apply the same mappings to new data) to be used as input to the `CalibratedExplainer`. The algorithm does not currently support image data.
 
-See e.g. the [Conditional Fairness Experiment](evaluation/Conditional_Fairness_Experiment.ipynb) for examples on how it can be used.
+See e.g. the [Conditional Fairness Experiment](evaluation/Conditional_Fairness_Experiment.ipynb) for examples on how `utils.helper.transform_to_numeric` can be used.
 
-[Top](#calibrated-explanations-documentation)
+[Table of Content](#table-of-contents)
 
-## Install
+## Installation
 
 ### From PyPI:
 Install `calibrated-explanations` from PyPI:
@@ -516,7 +534,7 @@ The following dependencies are required and will be installed automatically if n
 * [matplotlib](https://matplotlib.org/)
 * [NumPy](https://numpy.org/)
   
-[Top](#calibrated-explanations-documentation)
+[Table of Content](#table-of-contents)
 
 
 ## Contributing
@@ -526,13 +544,33 @@ the project page on [GitHub](https://github.com/Moffran/calibrated_explanations)
 You can find a detailed guide for contributions in
 [CONTRIBUTING.md](https://github.com/Moffran/calibrated_explanations/blob/main/CONTRIBUTING.md).
 
-[Top](#calibrated-explanations-documentation)
+[Table of Content](#table-of-contents)
 
 
 ## Documentation
 For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
   
-[Top](#calibrated-explanations-documentation)
+[Table of Content](#table-of-contents)
+
+
+## License
+The license used by `calibrated-explanations` is the [BSD 3-Clause License](https://github.com/Moffran/calibrated_explanations/blob/main/LICENSE). 
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+  
+[Table of Content](#table-of-contents)
 
 
 ## Further Reading and Citing
@@ -556,7 +594,8 @@ The paper that originated the idea of `calibrated-explanations` is:
 ### Citing and Bibtex
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the papers above. Bibtex entries can be found in [citing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md#bibtex-entries).
   
-[Top](#calibrated-explanations-documentation)
+[Table of Content](#table-of-contents)
+
 
 ## Acknowledgements
 This research is funded by the [Swedish Knowledge Foundation](https://www.kks.se/) together with industrial partners supporting the research and education environment on Knowledge Intensive Product Realization SPARK at Jönköping University, Sweden, through projects: AFAIR grant no. 20200223, ETIAI grant no. 20230040, and PREMACOP grant no. 20220187. Helena Löfström was initially a PhD student in the Industrial Graduate School in Digital Retailing (INSiDR) at the University of Borås, funded by the Swedish Knowledge Foundation, grant no. 20160035. 
@@ -575,7 +614,7 @@ We have copied code from [Marco Tulio Correia Ribeiro](https://github.com/marcot
 
 The `check_is_fitted` and `safe_instance` functions in `calibrated_explanations.utils` are copied from `sklearn` and `shap`.  
   
-[Top](#calibrated-explanations-documentation)
+[Table of Content](#table-of-contents)
 
 [build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
 [build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
