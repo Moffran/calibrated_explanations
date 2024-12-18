@@ -24,6 +24,7 @@
 - [License](#license)
 - [Further Reading and Citing](#further-reading-and-citing)
 - [Acknowledgements](#acknowledgements)
+- [Support](#support)
 
 ## Introduction
 
@@ -613,6 +614,12 @@ We are using Decision Trees from `scikit-learn` in the discretizers.
 We have copied code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Discretizer` class.
 
 The `check_is_fitted` and `safe_instance` functions in `calibrated_explanations.utils` are copied from `sklearn` and `shap`.  
+  
+[Table of Content](#table-of-contents)
+
+
+## Support
+For any questions or issues, please open an [issue](https://github.com/Moffran/calibrated_explanations/issues), open a [discussion](https://github.com/Moffran/calibrated_explanations/discussions) or contact the maintainers. 
   
 [Table of Content](#table-of-contents)
 
