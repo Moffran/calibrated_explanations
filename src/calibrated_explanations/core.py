@@ -391,8 +391,8 @@ class CalibratedExplainer:
 
         Returns
         -------
-        :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
-            intervals. 
+        CalibratedExplanations : :class:`.CalibratedExplanations`
+            A `CalibratedExplanations` containing one :class:`.FactualExplanation` for each instance. 
         """
         if 'regression' in self.mode:
             discretizer = 'binaryRegressor'
@@ -446,7 +446,8 @@ class CalibratedExplainer:
 
         Returns
         -------
-        :class:`.AlternativeExplanations` : A :class:`.AlternativeExplanations` object containing one :class:`.AlternativeExplanation` for each instance. 
+        AlternativeExplanations : :class:`.AlternativeExplanations`
+            An `AlternativeExplanations` containing one :class:`.AlternativeExplanation` for each instance. 
 
         Notes
         -----
@@ -846,8 +847,8 @@ class CalibratedExplainer:
 
         Returns
         -------
-        :class:`.CalibratedExplanations` : A :class:`.CalibratedExplanations` object containing the predictions and the 
-            intervals. 
+        CalibratedExplanations : :class:`.CalibratedExplanations`
+            A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.  
         """
         if not self.is_fast():
             try:
