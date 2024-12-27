@@ -180,7 +180,7 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
         save_ext=['svg','pdf','png']
     if interval is True:
         assert idx is not None
-    fig = plt.figure(figsize=(10,num_to_show*.5+2))
+    fig = plt.figure(figsize=(config['figure']['width'],num_to_show*.5+2))
     subfigs = fig.subfigures(3, 1, height_ratios=[1, 1, num_to_show+2])
 
     if interval and (explanation.is_one_sided()):
@@ -352,7 +352,7 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
         save_ext=['svg','pdf','png']
     if interval is True:
         assert idx is not None
-    fig = plt.figure(figsize=(10,num_to_show*.5+2))
+    fig = plt.figure(figsize=(config['figure']['width'],num_to_show*.5+2))
     subfigs = fig.subfigures(2, 1, height_ratios=[1, num_to_show+2])
 
     if interval and (explanation.is_one_sided()):
@@ -587,7 +587,7 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
 
     if save_ext is None:
         save_ext=['svg','pdf','png']
-    fig = plt.figure(figsize=(10,num_to_show*.5))
+    fig = plt.figure(figsize=(config['figure']['width'],num_to_show*.5))
     ax_main = fig.add_subplot(111)
 
     x = np.linspace(0, num_to_show-1, num_to_show)
