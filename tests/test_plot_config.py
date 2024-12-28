@@ -69,9 +69,11 @@ def test_update_plot_config():
         'background': '#ffffff',
         'text': '#000000',
         'grid': '#dddddd',
+        'regression': 'red',
         'positive': 'green',
         'negative': 'orange',
-        'uncertainty': 'gray'
+        'uncertainty': 'gray',
+        'alpha': '0.4'
     })
 ])
 def test_style_override(styled_explainer, style_section, style_params):

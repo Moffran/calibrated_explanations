@@ -74,9 +74,11 @@ def load_plot_config():
         'background': '#f8f9fa',
         'text': '#666666',
         'grid': '#cccccc',
+        'regression': 'red',
         'positive': 'red',
         'negative': 'blue',
-        'uncertainty': 'lightgrey'
+        'uncertainty': 'lightgrey',
+        'alpha': '0.2'
     }
 
     # Read config file if it exists
@@ -184,34 +186,36 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
     # Get figure width from config, with fallback to default value
     fig_width = float(config['figure'].get('width', 10))
     fig = plt.figure(figsize=(fig_width, num_to_show*.5+2))
-    subfigs = fig.subfigures(3, 1, height_ratios=[1, 1, num_to_show+2])
+    subfigures = fig.subfigures(3, 1, height_ratios=[1, 1, num_to_show+2])
 
     if interval and (explanation.is_one_sided()):
         raise Warning('Interval plot is not supported for one-sided explanations.')
 
-    ax_positive = subfigs[0].add_subplot(111)
-    ax_negative = subfigs[1].add_subplot(111)
+    ax_positive = subfigures[0].add_subplot(111)
+    ax_negative = subfigures[1].add_subplot(111)
 
-    ax_main = subfigs[2].add_subplot(111)
+    ax_main = subfigures[2].add_subplot(111)
 
     # plot the probabilities at the top
     x = np.linspace(0, 1, 2)
     xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
-    p = predict['predict']
-    pl = predict['low'] if predict['low'] != -np.inf \
-                                else explanation.y_minmax[0]
-    ph = predict['high'] if predict['high'] != np.inf \
-                                else explanation.y_minmax[1]
+    pred = predict['predict']
+    pred_low = predict['low'] if predict['low'] != -np.inf else explanation.y_minmax[0]
+    pred_high = predict['high'] if predict['high'] != np.inf else explanation.y_minmax[1]
 
-    ax_negative.fill_betweenx(xj, 1-p, 1-p, color=config['colors']['positive'])
-    ax_negative.fill_betweenx(xj, 0, 1-ph, color=config['colors']['positive'])
-    ax_negative.fill_betweenx(xj, 1-pl, 1-ph, color=config['colors']['positive'], alpha=0.2)
+    alpha_val = float(config['colors']['alpha'])
+    pos_color = config['colors']['positive']
+    neg_color = config['colors']['negative']
+
+    ax_negative.fill_betweenx(xj, 1-pred, 1-pred, color=pos_color)
+    ax_negative.fill_betweenx(xj, 0, 1-pred_high, color=pos_color)
+    ax_negative.fill_betweenx(xj, 1-pred_low, 1-pred_high, color=pos_color, alpha=alpha_val)
     ax_negative.set_xlim([0,1])
     ax_negative.set_yticks(range(1))
     ax_negative.set_xticks(np.linspace(0,1,6))
-    ax_positive.fill_betweenx(xj, p, p, color=config['colors']['negative'])
-    ax_positive.fill_betweenx(xj, 0, pl, color=config['colors']['negative'])
-    ax_positive.fill_betweenx(xj, pl, ph, color=config['colors']['negative'], alpha=0.2)
+    ax_positive.fill_betweenx(xj, pred, pred, color=neg_color)
+    ax_positive.fill_betweenx(xj, 0, pred_low, color=neg_color)
+    ax_positive.fill_betweenx(xj, pred_low, pred_high, color=neg_color, alpha=alpha_val)
     ax_positive.set_xlim([0,1])
     ax_positive.set_yticks(range(1))
     ax_positive.set_xticks([])
@@ -247,12 +251,11 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
         ax_main.fill_betweenx(xl, [0], [0], color='k')
         ax_main.fill_betweenx(xh, [0], [0], color='k')
         if interval:
-            p = predict['predict']
-            gwl = predict['low'] - p
-            gwh = predict['high'] - p
+            gwl = predict['low'] - pred
+            gwh = predict['high'] - pred
 
             gwh, gwl = np.max([gwh, gwl]), np.min([gwl, gwh])
-            ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
+            ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=alpha_val)
 
         # For each feature, plot the weight
         for jx, j in enumerate(features_to_plot):
@@ -273,14 +276,14 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
                 width = feature_weights[j]
                 min_val = min(width, 0)
                 max_val = max(width, 0)
-            color = config['colors']['negative'] if width > 0 else config['colors']['positive']
+            color = neg_color if width > 0 else pos_color
             ax_main.fill_betweenx(xj, min_val, max_val, color=color)
             if interval:
                 if wl < 0 < wh and explanation.get_mode() == 'classification':
-                    ax_main.fill_betweenx(xj, 0, wl, color=config['colors']['positive'], alpha=0.2)
-                    ax_main.fill_betweenx(xj, wh, 0, color=config['colors']['negative'], alpha=0.2)
+                    ax_main.fill_betweenx(xj, 0, wl, color=pos_color, alpha=alpha_val)
+                    ax_main.fill_betweenx(xj, wh, 0, color=neg_color, alpha=alpha_val)
                 else:
-                    ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
+                    ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
 
         ax_main.set_yticks(range(num_to_show))
         ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
@@ -358,26 +361,29 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
     # Get figure width from config, with fallback to default value
     fig_width = float(config['figure'].get('width', 10))
     fig = plt.figure(figsize=(fig_width, num_to_show*.5+2))
-    subfigs = fig.subfigures(2, 1, height_ratios=[1, num_to_show+2])
+    subfigures = fig.subfigures(2, 1, height_ratios=[1, num_to_show+2])
 
     if interval and (explanation.is_one_sided()):
         raise Warning('Interval plot is not supported for one-sided explanations.')
 
-    ax_regression = subfigs[0].add_subplot(111)
-    ax_main = subfigs[1].add_subplot(111)
+    ax_regression = subfigures[0].add_subplot(111)
+    ax_main = subfigures[1].add_subplot(111)
 
     # plot the probabilities at the top
     x = np.linspace(0, 1, 2)
     xj = np.linspace(x[0]-0.2, x[0]+0.2,2)
-    p = predict['predict']
-    pl = predict['low'] if predict['low'] != -np.inf \
+    pred = predict['predict']
+    pred_low = predict['low'] if predict['low'] != -np.inf \
                                     else explanation.y_minmax[0]
-    ph = predict['high'] if predict['high'] != np.inf \
+    pred_high = predict['high'] if predict['high'] != np.inf \
                                     else explanation.y_minmax[1]
 
-    ax_regression.fill_betweenx(xj, pl, ph, color=config['colors']['negative'], alpha=0.2)
-    ax_regression.fill_betweenx(xj, p, p, color=config['colors']['negative'])
-    ax_regression.set_xlim([np.min([pl, explanation.y_minmax[0]]),np.max([ph, explanation.y_minmax[1]])]) # pylint: disable=line-too-long
+    alpha_val = float(config['colors']['alpha'])
+    reg_color = config['colors']['regression']
+
+    ax_regression.fill_betweenx(xj, pred_low, pred_high, color=reg_color, alpha=alpha_val)
+    ax_regression.fill_betweenx(xj, pred, pred, color=reg_color)
+    ax_regression.set_xlim([np.min([pred_low, explanation.y_minmax[0]]),np.max([pred_high, explanation.y_minmax[1]])]) # pylint: disable=line-too-long
     ax_regression.set_yticks(range(1))
 
     ax_regression.set_xlabel(f'Prediction interval with {explanation.calibrated_explanations.get_confidence()}% confidence') # pylint: disable=line-too-long
@@ -392,11 +398,10 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
     ax_main.fill_betweenx(xh, [0], [0], color='k')
     x_min, x_max = 0,0
     if interval:
-        p = predict['predict']
-        gwl = p - predict['low']
-        gwh = p - predict['high']
+        gwl = pred - predict['low']
+        gwh = pred - predict['high']
 
-        gwh, gwl = np.max([gwh, gwl]), np.min([gwh, gwl])
+        gwh, gwl = np.max([gwh, gwl]), np.min([gwl, gwh])
         # ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
 
         x_min, x_max = gwl,gwh
@@ -419,10 +424,10 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
             width = feature_weights[j]
             min_val = min(width, 0)
             max_val = max(width, 0)
-        color = 'b' if width > 0 else 'r'
+        color = config['colors']['positive'] if width > 0 else config['colors']['negative']
         ax_main.fill_betweenx(xj, min_val, max_val, color=color)
         if interval:
-            ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=0.2)
+            ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
 
             x_min = np.min([x_min, min_val, max_val, wl, wh])
             x_max = np.max([x_max, min_val, max_val, wl, wh])
@@ -597,62 +602,64 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
     fig = plt.figure(figsize=(fig_width, num_to_show*.5))
     ax_main = fig.add_subplot(111)
     x = np.linspace(0, num_to_show-1, num_to_show)
-    p = predict['predict']
-    p_l = predict['low'] if predict['low'] != -np.inf \
+    pred = predict['predict']
+    pred_low = predict['low'] if predict['low'] != -np.inf \
                             else explanation.y_minmax[0]
-    p_h = predict['high'] if predict['high'] != np.inf \
+    pred_high = predict['high'] if predict['high'] != np.inf \
                             else explanation.y_minmax[1]
-    venn_abers={'low_high': [p_l,p_h],'predict':p}
+    venn_abers={'low_high': [pred_low,pred_high],'predict':pred}
+    alpha_val = float(config['colors']['alpha'])
+    pos_color = config['colors']['positive']
     # Fill original Venn Abers interval
     xl = np.linspace(-0.5, x[0], 2) if len(x) > 0 else np.linspace(-0.5, 0, 2)
     xh = np.linspace(x[-1], x[-1]+0.5, 2) if len(x) > 0 else np.linspace(0, 0.5, 2)
-    if (p_l < 0.5 and p_h < 0.5) or (p_l > 0.5 and p_h > 0.5) or \
+    if (pred_low < 0.5 and pred_high < 0.5) or (pred_low > 0.5 and pred_high > 0.5) or \
                             'regression' in explanation.get_mode():
         color = __get_fill_color({'predict':1},0.15) \
                             if 'regression' in explanation.get_mode() \
                             else __get_fill_color(venn_abers,0.15)
-        ax_main.fill_betweenx(x, [p_l]*(num_to_show), [p_h]*(num_to_show),color=color)
+        ax_main.fill_betweenx(x, [pred_low]*(num_to_show), [pred_high]*(num_to_show),color=color)
         # Fill up to the edges
-        ax_main.fill_betweenx(xl, [p_l]*(2), [p_h]*(2),color=color)
-        ax_main.fill_betweenx(xh, [p_l]*(2), [p_h]*(2),color=color)
+        ax_main.fill_betweenx(xl, [pred_low]*(2), [pred_high]*(2),color=color)
+        ax_main.fill_betweenx(xh, [pred_low]*(2), [pred_high]*(2),color=color)
         if 'regression' in explanation.get_mode():
-            ax_main.fill_betweenx(x, p, p, color=config['colors']['positive'], alpha=0.3)
+            ax_main.fill_betweenx(x, pred, pred, color=pos_color, alpha=alpha_val)
             # Fill up to the edges
-            ax_main.fill_betweenx(xl, p, p, color=config['colors']['positive'], alpha=0.3)
-            ax_main.fill_betweenx(xh, p, p, color=config['colors']['positive'], alpha=0.3)
+            ax_main.fill_betweenx(xl, pred, pred, color=pos_color, alpha=alpha_val)
+            ax_main.fill_betweenx(xh, pred, pred, color=pos_color, alpha=alpha_val)
     else:
-        venn_abers['predict'] = p_l
+        venn_abers['predict'] = pred_low
         color = __get_fill_color(venn_abers, 0.15)
-        ax_main.fill_betweenx(x, [p_l]*(num_to_show), [0.5]*(num_to_show),color=color)
+        ax_main.fill_betweenx(x, [pred_low]*(num_to_show), [0.5]*(num_to_show),color=color)
         # Fill up to the edges
-        ax_main.fill_betweenx(xl, [p_l]*(2), [0.5]*(2),color=color)
-        ax_main.fill_betweenx(xh, [p_l]*(2), [0.5]*(2),color=color)
-        venn_abers['predict'] = p_h
+        ax_main.fill_betweenx(xl, [pred_low]*(2), [0.5]*(2),color=color)
+        ax_main.fill_betweenx(xh, [pred_low]*(2), [0.5]*(2),color=color)
+        venn_abers['predict'] = pred_high
         color = __get_fill_color(venn_abers, 0.15)
-        ax_main.fill_betweenx(x, [0.5]*(num_to_show), [p_h]*(num_to_show),color=color)
+        ax_main.fill_betweenx(x, [0.5]*(num_to_show), [pred_high]*(num_to_show),color=color)
         # Fill up to the edges
-        ax_main.fill_betweenx(xl, [0.5]*(2), [p_h]*(2),color=color)
-        ax_main.fill_betweenx(xh, [0.5]*(2), [p_h]*(2),color=color)
+        ax_main.fill_betweenx(xl, [0.5]*(2), [pred_high]*(2),color=color)
+        ax_main.fill_betweenx(xh, [0.5]*(2), [pred_high]*(2),color=color)
 
     for jx, j in enumerate(features_to_plot):
-        p_l = feature_predict['low'][j] if feature_predict['low'][j] != -np.inf \
+        pred_low = feature_predict['low'][j] if feature_predict['low'][j] != -np.inf \
                                             else explanation.y_minmax[0]
-        p_h = feature_predict['high'][j] if feature_predict['high'][j] != np.inf \
+        pred_high = feature_predict['high'][j] if feature_predict['high'][j] != np.inf \
                                             else explanation.y_minmax[1]
-        p = feature_predict['predict'][j]
+        pred = feature_predict['predict'][j]
         xj = np.linspace(x[jx]-0.2, x[jx]+0.2,2)
-        venn_abers={'low_high': [p_l,p_h],'predict':p}
+        venn_abers={'low_high': [pred_low,pred_high],'predict':pred}
         # Fill each feature impact
         if 'regression' in explanation.get_mode():
-            ax_main.fill_betweenx(xj, p_l,p_h, color=config['colors']['positive'], alpha= 0.40)
-            ax_main.fill_betweenx(xj, p, p, color=config['colors']['positive'])
-        elif (p_l < 0.5 and p_h < 0.5) or (p_l > 0.5 and p_h > 0.5) :
-            ax_main.fill_betweenx(xj, p_l,p_h,color=__get_fill_color(venn_abers, 0.99))
+            ax_main.fill_betweenx(xj, pred_low,pred_high, color=pos_color, alpha= alpha_val)
+            ax_main.fill_betweenx(xj, pred, pred, color=pos_color)
+        elif (pred_low < 0.5 and pred_high < 0.5) or (pred_low > 0.5 and pred_high > 0.5) :
+            ax_main.fill_betweenx(xj, pred_low,pred_high,color=__get_fill_color(venn_abers, 0.99))
         else:
-            venn_abers['predict'] = p_l
-            ax_main.fill_betweenx(xj, p_l,0.5,color=__get_fill_color(venn_abers, 0.99))
-            venn_abers['predict'] = p_h
-            ax_main.fill_betweenx(xj, 0.5,p_h,color=__get_fill_color(venn_abers, 0.99))
+            venn_abers['predict'] = pred_low
+            ax_main.fill_betweenx(xj, pred_low,0.5,color=__get_fill_color(venn_abers, 0.99))
+            venn_abers['predict'] = pred_high
+            ax_main.fill_betweenx(xj, 0.5,pred_high,color=__get_fill_color(venn_abers, 0.99))
 
     ax_main.set_yticks(range(num_to_show))
     ax_main.set_yticklabels(labels=[column_names[i] for i in features_to_plot]) \
@@ -856,7 +863,7 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, style_override=
             plt.xlabel('Probability of Y = 1')
     plt.xlim(min_x, max_x)
     plt.ylim(min_y, max_y)
-    plt.grid(True, linestyle='--', alpha=0.3)
+    plt.grid(True, linestyle=config['grid']['style'], alpha=float(config['grid']['alpha']))
     if show:
         plt.show()
     else:
