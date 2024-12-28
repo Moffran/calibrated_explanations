@@ -67,7 +67,8 @@ def load_plot_config():
         'dpi': '300',
         'save_dpi': '300',
         'facecolor': 'white',
-        'axes_facecolor': 'white'
+        'axes_facecolor': 'white',
+        'width': '10'  # Add default width value
     }
     config['colors'] = {
         'background': '#f8f9fa',
@@ -180,7 +181,9 @@ def _plot_probabilistic(explanation, instance, predict, feature_weights, feature
         save_ext=['svg','pdf','png']
     if interval is True:
         assert idx is not None
-    fig = plt.figure(figsize=(config['figure']['width'],num_to_show*.5+2))
+    # Get figure width from config, with fallback to default value
+    fig_width = float(config['figure'].get('width', 10))
+    fig = plt.figure(figsize=(fig_width, num_to_show*.5+2))
     subfigs = fig.subfigures(3, 1, height_ratios=[1, 1, num_to_show+2])
 
     if interval and (explanation.is_one_sided()):
@@ -352,7 +355,9 @@ def _plot_regression(explanation, instance, predict, feature_weights, features_t
         save_ext=['svg','pdf','png']
     if interval is True:
         assert idx is not None
-    fig = plt.figure(figsize=(config['figure']['width'],num_to_show*.5+2))
+    # Get figure width from config, with fallback to default value
+    fig_width = float(config['figure'].get('width', 10))
+    fig = plt.figure(figsize=(fig_width, num_to_show*.5+2))
     subfigs = fig.subfigures(2, 1, height_ratios=[1, num_to_show+2])
 
     if interval and (explanation.is_one_sided()):
@@ -587,9 +592,10 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
 
     if save_ext is None:
         save_ext=['svg','pdf','png']
-    fig = plt.figure(figsize=(config['figure']['width'],num_to_show*.5))
+    # Get figure width from config, with fallback to default value
+    fig_width = float(config['figure'].get('width', 10))
+    fig = plt.figure(figsize=(fig_width, num_to_show*.5))
     ax_main = fig.add_subplot(111)
-
     x = np.linspace(0, num_to_show-1, num_to_show)
     p = predict['predict']
     p_l = predict['low'] if predict['low'] != -np.inf \
@@ -610,10 +616,10 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
         ax_main.fill_betweenx(xl, [p_l]*(2), [p_h]*(2),color=color)
         ax_main.fill_betweenx(xh, [p_l]*(2), [p_h]*(2),color=color)
         if 'regression' in explanation.get_mode():
-            ax_main.fill_betweenx(x, p, p, color=config['colors']['negative'], alpha=0.3)
+            ax_main.fill_betweenx(x, p, p, color=config['colors']['positive'], alpha=0.3)
             # Fill up to the edges
-            ax_main.fill_betweenx(xl, p, p, color=config['colors']['negative'], alpha=0.3)
-            ax_main.fill_betweenx(xh, p, p, color=config['colors']['negative'], alpha=0.3)
+            ax_main.fill_betweenx(xl, p, p, color=config['colors']['positive'], alpha=0.3)
+            ax_main.fill_betweenx(xh, p, p, color=config['colors']['positive'], alpha=0.3)
     else:
         venn_abers['predict'] = p_l
         color = __get_fill_color(venn_abers, 0.15)
@@ -638,8 +644,8 @@ def _plot_alternative(explanation, instance, predict, feature_predict, features_
         venn_abers={'low_high': [p_l,p_h],'predict':p}
         # Fill each feature impact
         if 'regression' in explanation.get_mode():
-            ax_main.fill_betweenx(xj, p_l,p_h, color=config['colors']['negative'], alpha= 0.40)
-            ax_main.fill_betweenx(xj, p, p, color=config['colors']['negative'])
+            ax_main.fill_betweenx(xj, p_l,p_h, color=config['colors']['positive'], alpha= 0.40)
+            ax_main.fill_betweenx(xj, p, p, color=config['colors']['positive'])
         elif (p_l < 0.5 and p_h < 0.5) or (p_l > 0.5 and p_h > 0.5) :
             ax_main.fill_betweenx(xj, p_l,p_h,color=__get_fill_color(venn_abers, 0.99))
         else:
