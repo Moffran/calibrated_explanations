@@ -384,7 +384,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self,
         index=None,
         filter_top=10,
-        show=False,
+        show=True,
         filename="",
         uncertainty=False,
         style="regular",
@@ -401,8 +401,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             The index of the instance for which you want to plot the explanation. If None, the function will plot all the explanations.
         filter_top :  int or None, default=10
             The number of top features to display in the plot. If set to `None`, all the features will be shown.
-        show : bool, default=False
-            Determines whether the plots should be displayed immediately after they are generated.
+        show : bool, default=True
+            Determines whether the plots should be displayed immediately after they are generated. Suitable to set to False when saving 
+            the plots to a file to suppress that the plots are shown.
         filename : str, default=''
             The full path and filename of the plot image file that will be saved. If empty, the plot will not be saved.
         uncertainty : bool, default=False
