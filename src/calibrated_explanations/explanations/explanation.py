@@ -57,7 +57,7 @@ from .._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _
 #     ----------
 #     weight : PredictionInterval
 #         The weight/importance of this feature rule, containing prediction and interval values
-#     prediction : PredictionInterval 
+#     prediction : PredictionInterval
 #         The model's prediction and interval for this feature rule
 #     instance_prediction : PredictionInterval
 #         The binned prediction data for this feature rule
