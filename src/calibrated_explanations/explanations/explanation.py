@@ -17,6 +17,7 @@ Classes:
 """
 import contextlib
 import warnings
+# from dataclasses import dataclass
 from copy import deepcopy
 from abc import ABC, abstractmethod
 from types import MappingProxyType
@@ -31,6 +32,57 @@ from ..utils.discretizers import (
 from ..utils.helper import calculate_metrics, prepare_for_saving
 from .._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 
+# @dataclass
+# class PredictionInterval:
+#     """A dataclass representing a prediction interval for a single feature.
+
+#     Attributes
+#     ----------
+#     predict: float
+#         The model's prediction for this feature
+#     low: float
+#         The lower bound of the prediction interval
+#     high: float
+#         The upper bound of the prediction interval
+#     """
+#     predict: float
+#     low: float
+#     high: float
+
+# @dataclass
+# class FeatureRule:
+#     """A dataclass representing a rule for a single feature in an explanation.
+
+#     Attributes
+#     ----------
+#     weight : PredictionInterval
+#         The weight/importance of this feature rule, containing prediction and interval values
+#     prediction : PredictionInterval 
+#         The model's prediction and interval for this feature rule
+#     instance_prediction : PredictionInterval
+#         The binned prediction data for this feature rule
+#     current_bin : int
+#         The bin index containing the current feature value
+#     rule : str
+#         String representation of the rule
+#     feature : int
+#         Index of the feature this rule applies to
+#     feature_value : float
+#         The actual value of the feature
+#     is_conjunctive : bool
+#         Whether this rule is part of a conjunction
+#     value_str : str
+#         String representation of the feature value
+#     """
+#     weight: PredictionInterval
+#     prediction: PredictionInterval
+#     instance_prediction: PredictionInterval # from binned data
+#     current_bin: int
+#     rule: str
+#     feature: int
+#     feature_value: float
+#     is_conjunctive: bool
+#     value_str: str
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class CalibratedExplanation(ABC):
