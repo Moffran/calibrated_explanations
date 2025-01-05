@@ -273,8 +273,15 @@ class CalibratedExplainer:
                 bins = None,
                 feature = None,
                 ):
-        """
-        Predicts the target variable for the test data.
+        """Internal prediction method that handles both classification and regression cases.
+        
+        For classification:
+        - Returns probabilities and intervals for binary/multiclass
+        - Handles Mondrian categories via bins parameter
+        
+        For regression:
+        - Returns predictions and uncertainty intervals
+        - Can return probability predictions when threshold is provided
 
         Parameters
         ----------
@@ -474,62 +481,127 @@ class CalibratedExplainer:
                 threshold = None,
                 low_high_percentiles = (5, 95),
                 bins = None,) -> CalibratedExplanations:
-        """Call the explain function to create a :class:`.CalibratedExplanations` object for the test data.
+        """Generate explanations for test instances by analyzing feature effects.
+        
+        This method:
+        1. Makes predictions on original test instances
+        2. Creates perturbed versions by varying feature values
+        3. Analyzes how predictions change with feature perturbations
+        4. Generates feature importance weights and prediction intervals
+        
+        Returns
+        -------
+        CalibratedExplanations : :class:`.CalibratedExplanations`
+            A :class:`.CalibratedExplanations` containing one :class:`.CalibratedExplanation` for each instance. 
         
         See Also
         --------
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
+        # Track total explanation time
         total_time = time()
 
-        # Validate inputs and initialize explanation
+        # Validate inputs and initialize explanation object
         X_test = self._validate_and_prepare_input(X_test)
         explanation = self._initialize_explanation(X_test, low_high_percentiles, threshold, bins)
 
         instance_time = time()
-        # Step 1: Predict the target variable for the test data
+
+        # Step 1: Get predictions for original test instances
         predict, low, high, prediction, perturbed_feature,\
             rule_boundaries, lesser_values, greater_values, covered_values, \
                 X_cal = self._explain_predict_step(X_test, threshold, low_high_percentiles, bins)
 
-        # Step 2: For each feature and instance, create the rules
-        feature_weights =  {'predict': [],'low': [],'high': [],}
-        feature_predict =  {'predict': [],'low': [],'high': [],}
-        binned_predict =  {'predict': [],'low': [],'high': [],'current_bin': [],'rule_values': [], 'counts': [], 'fractions': []}
+        # Step 2: Initialize data structures to store feature-level results
+        # Dictionaries to store aggregated results across all instances
+        feature_weights = {'predict': [],'low': [],'high': []}  # Feature importance weights
+        feature_predict = {'predict': [],'low': [],'high': []}  # Predictions for each feature
+        binned_predict = {                                      # Results for discretized feature values
+            'predict': [],
+            'low': [],
+            'high': [],
+            'current_bin': [],
+            'rule_values': [], 
+            'counts': [], 
+            'fractions': []
+        }
 
-        rule_values = {}
-        instance_weights = {}
-        instance_predict = {}
-        instance_binned = {}
+        # Initialize per-instance storage
+        rule_values = {}        # Store rule boundaries for each feature
+        instance_weights = {}   # Store feature importance weights
+        instance_predict = {}   # Store predictions for each feature
+        instance_binned = {}    # Store binned prediction results
+
+        # Initialize data structures for each test instance
         for i, x in enumerate(X_test):
             rule_values[i] = {}
-            instance_weights[i] = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
-            instance_predict[i] = {'predict':np.zeros(x.shape[0]),'low':np.zeros(x.shape[0]),'high':np.zeros(x.shape[0])}
-            instance_binned[i] = {'predict': {},'low': {},'high': {},'current_bin': {},'rule_values': {}, 'counts': {}, 'fractions': {}}
-        for f in range(self.num_features): # For each feature
+            instance_weights[i] = {
+                'predict': np.zeros(x.shape[0]),
+                'low': np.zeros(x.shape[0]),
+                'high': np.zeros(x.shape[0])
+            }
+            instance_predict[i] = {
+                'predict': np.zeros(x.shape[0]),
+                'low': np.zeros(x.shape[0]),
+                'high': np.zeros(x.shape[0])
+            }
+            instance_binned[i] = {
+                'predict': {},
+                'low': {},
+                'high': {},
+                'current_bin': {},
+                'rule_values': {}, 
+                'counts': {}, 
+                'fractions': {}
+            }
+
+        # Step 3: Process each feature to analyze its effects
+        for f in range(self.num_features):
             if f in self.features_to_ignore:
                 continue
+
+            # Get discretized values for this feature
             feature_values = self.feature_values[f]
             perturbed = [v[1] for v in perturbed_feature if v[0] == f]
+
+            # Handle categorical and numerical features differently
             if f in self.categorical_features:
+                # Process categorical feature - analyze effect of each possible value
                 for i in np.unique(perturbed):
                     current_bin = -1
-                    average_predict, low_predict, high_predict, counts = np.zeros(len(feature_values)),np.zeros(len(feature_values)),np.zeros(len(feature_values)),np.zeros(len(feature_values))
-                    for bin_value, value in enumerate(feature_values):  # For each bin (i.e. discretized value) in the values array...
-                        feature_index = [perturbed_feature[j,0] == f and perturbed_feature[j,1] == i and perturbed_feature[j,2] == value for j in range(len(perturbed_feature))]
+                    # Initialize arrays to store predictions for each feature value
+                    average_predict = np.zeros(len(feature_values))
+                    low_predict = np.zeros(len(feature_values))
+                    high_predict = np.zeros(len(feature_values))
+                    counts = np.zeros(len(feature_values))
+
+                    # Calculate predictions for each possible feature value
+                    for bin_value, value in enumerate(feature_values):
+                        # Find predictions where this feature was set to this value
+                        feature_index = [
+                            perturbed_feature[j,0] == f and
+                            perturbed_feature[j,1] == i and
+                            perturbed_feature[j,2] == value
+                            for j in range(len(perturbed_feature))
+                        ]
+
+                        # Track original feature value's bin
                         if X_test[i,f] == value:
-                            current_bin = bin_value  # If the discretized value is the same as the original, skip it
+                            current_bin = bin_value
+
+                        # Store predictions for this value
                         average_predict[bin_value] = predict[feature_index]
                         low_predict[bin_value] = low[feature_index]
                         high_predict[bin_value] = high[feature_index]
                         counts[bin_value] = len(np.where(X_cal[:,f] == value)[0])
 
+                    # Store results for this instance
                     rule_values[i][f] = (feature_values, X_test[i,f], X_test[i,f])
                     uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
-
                     fractions = counts[uncovered]/np.sum(counts[uncovered])
 
+                    # Store binned predictions
                     instance_binned[i]['predict'][f] = average_predict
                     instance_binned[i]['low'][f] = low_predict
                     instance_binned[i]['high'][f] = high_predict
@@ -537,7 +609,7 @@ class CalibratedExplainer:
                     instance_binned[i]['counts'][f] = counts
                     instance_binned[i]['fractions'][f] = fractions
 
-                    # Handle the situation where the current bin is the only bin
+                    # Handle special case where current bin is the only bin
                     if len(uncovered) == 0:
                         instance_predict[i]['predict'][f] = 0
                         instance_predict[i]['low'][f] = 0
@@ -551,22 +623,30 @@ class CalibratedExplainer:
                         # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*fractions[uncovered])
                         # instance_predict['low'][f] = np.sum(low_predict[uncovered]*fractions[uncovered])
                         # instance_predict['high'][f] = np.sum(high_predict[uncovered]*fractions[uncovered])
+                        # Calculate the average predictions
                         instance_predict[i]['predict'][f] = np.mean(average_predict[uncovered])
                         instance_predict[i]['low'][f] = np.mean(low_predict[uncovered])
                         instance_predict[i]['high'][f] = np.mean(high_predict[uncovered])
 
-                        instance_weights[i]['predict'][f] = self._assign_weight(instance_predict[i]['predict'][f], prediction['predict'][i])
+                        # Calculate feature importance weights
+                        instance_weights[i]['predict'][f] = self._assign_weight(
+                            instance_predict[i]['predict'][f],
+                            prediction['predict'][i]
+                        )
                         tmp_low = self._assign_weight(instance_predict[i]['low'][f], prediction['predict'][i])
                         tmp_high = self._assign_weight(instance_predict[i]['high'][f], prediction['predict'][i])
                         instance_weights[i]['low'][f] = np.min([tmp_low, tmp_high])
                         instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
             else:
+                # Get unique feature values and boundaries for this feature
                 feature_values = np.unique(np.array(X_cal[:,f]))
                 lower_boundary = rule_boundaries[:,f,0]
                 upper_boundary = rule_boundaries[:,f,1]
 
+                # Initialize dictionaries to store predictions and counts for each instance
                 average_predict, low_predict, high_predict, counts, rule_value = {},{},{},{},{}
                 for i in range(len(X_test)):
+                    # Set boundary values and initialize arrays based on number of bins
                     lower_boundary[i] = lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
                     upper_boundary[i] = upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
                     num_bins = 1 + (1 if lower_boundary[i] != -np.inf else 0)
@@ -577,17 +657,23 @@ class CalibratedExplainer:
                     counts[i] = np.zeros(num_bins)
                     rule_value[i] = []
 
+                # Track bin assignments
                 bin_value = np.zeros(len(X_test), dtype=int)
                 current_bin = -np.ones(len(X_test), dtype=int)
+
+                # Process instances below lower boundary
                 for j, val in enumerate(np.unique(lower_boundary)):
                     if lesser_values[f][j][0].shape[0] == 0:
                         continue
                     for i in np.where(lower_boundary == val)[0]:
+                        # Find relevant perturbed feature indices
                         index = [p_i for p_i in range(len(perturbed_feature)) if
                                     perturbed_feature[p_i,0] == f and
                                     perturbed_feature[p_i,1] == i and
                                     perturbed_feature[p_i,2] == j and
                                     perturbed_feature[p_i,3] == True] # pylint: disable=singleton-comparison
+
+                        # Store predictions and counts for values below boundary
                         average_predict[i][bin_value[i]] = np.mean(predict[index])
                         low_predict[i][bin_value[i]] = np.mean(low[index])
                         high_predict[i][bin_value[i]] = np.mean(high[index])
@@ -595,15 +681,19 @@ class CalibratedExplainer:
                         rule_value[i].append(lesser_values[f][j][0])
                         bin_value[i] += 1
 
+                # Process instances above upper boundary
                 for j, val in enumerate(np.unique(upper_boundary)):
                     if greater_values[f][j][0].shape[0] == 0:
                         continue
                     for i in np.where(upper_boundary == val)[0]:
+                        # Find relevant perturbed feature indices
                         index = [p_i for p_i in range(len(perturbed_feature)) if
                                     perturbed_feature[p_i,0] == f and
                                     perturbed_feature[p_i,1] == i and
                                     perturbed_feature[p_i,2] == j and
                                     perturbed_feature[p_i,3] == False] # pylint: disable=singleton-comparison
+
+                        # Store predictions and counts for values above boundary
                         average_predict[i][bin_value[i]] = np.mean(predict[index])
                         low_predict[i][bin_value[i]] = np.mean(low[index])
                         high_predict[i][bin_value[i]] = np.mean(high[index])
@@ -611,27 +701,36 @@ class CalibratedExplainer:
                         rule_value[i].append(greater_values[f][j][0])
                         bin_value[i] += 1
 
+                # Process instances between boundaries
                 indices = range(len(X_test))
                 for i in indices:
                     for j, (l,g) in enumerate(np.unique(list(zip(lower_boundary, upper_boundary)), axis=0)):
+                        # Find relevant perturbed feature indices
                         index = [p_i for p_i in range(len(perturbed_feature)) if
                                     perturbed_feature[p_i,0] == f and
                                     perturbed_feature[p_i,1] == i and
                                     perturbed_feature[p_i,2] == j and
                                     perturbed_feature[p_i,3] is None]
+
+                        # Store predictions and counts for values between boundaries
                         average_predict[i][bin_value[i]] = np.mean(predict[index])
                         low_predict[i][bin_value[i]] = np.mean(low[index])
                         high_predict[i][bin_value[i]] = np.mean(high[index])
                         counts[i][bin_value[i]] = len(np.where((X_cal[:,f] >= l) & (X_cal[:,f] <= g))[0])
                         rule_value[i].append(covered_values[f][j][0])
                         current_bin[i] = bin_value[i]
-
+                # For each test instance
                 for i in range(len(X_test)):
+                    # Store rule values for this feature and instance
                     rule_values[i][f] = (rule_value[i], X_test[i,f], X_test[i,f])
+
+                    # Get indices of bins not containing current value
                     uncovered = np.setdiff1d(np.arange(len(average_predict[i])), current_bin[i])
 
+                    # Calculate fractions for uncovered bins
                     fractions = counts[i][uncovered]/np.sum(counts[i][uncovered])
 
+                    # Store binned prediction results for this feature and instance
                     instance_binned[i]['predict'][f] = average_predict[i]
                     instance_binned[i]['low'][f] = low_predict[i]
                     instance_binned[i]['high'][f] = high_predict[i]
@@ -819,6 +918,7 @@ class CalibratedExplainer:
         return predict, low, high, prediction, perturbed_feature,\
                 rule_boundaries, lesser_values, greater_values, covered_values, \
                 X_cal
+
     def explain_fast(self,
                                 X_test,
                                 threshold = None,
@@ -934,6 +1034,133 @@ class CalibratedExplainer:
 
 
 
+    def explain_lime(self,
+                                X_test,
+                                threshold = None,
+                                low_high_percentiles = (5, 95),
+                                bins = None,) -> CalibratedExplanations:
+        """Create a :class:`.CalibratedExplanations` object for the test data.
+
+        Parameters
+        ----------
+        X_test : array-like
+            A set with n_samples of test objects to predict
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+        bins : array-like of shape (n_samples,), default=None
+            Mondrian categories
+
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The threshold-parameter is only supported for mode='regression'.
+        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
+            instances in X_test.
+        RuntimeError: Fast explanations are only possible if the explainer is a Fast Calibrated Explainer.
+
+        Returns
+        -------
+        CalibratedExplanations : :class:`.CalibratedExplanations`
+            A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.  
+        """
+        if not self.__lime_enabled:
+            self._preload_lime()
+        total_time = time()
+        instance_time = []
+        if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
+            X_test = X_test.values  # pylint: disable=invalid-name
+        if len(X_test.shape) == 1:
+            X_test = X_test.reshape(1, -1)
+        if X_test.shape[1] != self.X_cal.shape[1]:
+            raise ValueError("The number of features in the test data must be the same as in the \
+                            calibration data.")
+        if self._is_mondrian():
+            assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
+            assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
+        explanation = CalibratedExplanations(self, X_test, threshold, bins)
+
+        if threshold is not None:
+            if 'regression' not in self.mode:
+                raise Warning("The threshold parameter is only supported for mode='regression'.")
+            assert_threshold(threshold, X_test)
+                # explanation.low_high_percentiles = low_high_percentiles
+        elif 'regression' in self.mode:
+            explanation.low_high_percentiles = low_high_percentiles
+
+        feature_weights =  {'predict': [],'low': [],'high': [],}
+        feature_predict =  {'predict': [],'low': [],'high': [],}
+        prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
+
+        instance_weights = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(X_test))]
+        instance_predict = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(X_test))]
+
+        predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
+        prediction['predict'] = predict
+        prediction['low'] = low
+        prediction['high'] = high
+        if self.is_multiclass():
+            prediction['classes'] = predicted_class
+        else:
+            prediction['classes'] = np.ones(X_test.shape[0])
+
+        explainer = self.lime
+        def low_proba(x):
+            _, low, _, _ = self._predict(x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
+            return np.asarray([[1-l, l] for l in low])
+        def high_proba(x):
+            _, _, high, _ = self._predict(x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
+            return np.asarray([[1-h, h] for h in high])
+        res_struct = {}
+        res_struct['low'] = {}
+        res_struct['high'] = {}
+        res_struct['low']['explanation'], res_struct['high']['explanation'] = [],[]
+        res_struct['low']['abs_rank'], res_struct['high']['abs_rank'] = [],[]
+        res_struct['low']['values'], res_struct['high']['values'] = [],[]
+
+        for i, x in enumerate(X_test):
+            instance_timer = time()
+
+            low = explainer.explain_instance(x, predict_fn = low_proba, num_features=len(x))
+            high = explainer.explain_instance(x, predict_fn = high_proba, num_features=len(x))
+
+            res_struct['low']['explanation'].append(low)
+            res_struct['high']['explanation'].append(high)
+            res_struct['low']['abs_rank'], res_struct['high']['abs_rank'] = np.zeros(len(x)), np.zeros(len(x))
+            res_struct['low']['values'], res_struct['high']['values'] = np.zeros(len(x)), np.zeros(len(x))
+
+            for j, f in enumerate(low.local_exp[1]):
+                res_struct['low']['abs_rank'][f[0]] = low.local_exp[1][j][0]
+                res_struct['low']['values'][f[0]] = f[1]
+            for j, f in enumerate(high.local_exp[1]):
+                res_struct['high']['abs_rank'][f[0]] = high.local_exp[1][j][0]
+                res_struct['high']['values'][f[0]] = f[1]
+
+            for f in range(self.num_features):
+                tmp_low = res_struct['low']['values'][f]
+                tmp_high = res_struct['high']['values'][f]
+                instance_weights[i]['low'][f] = np.min([tmp_low, tmp_high])
+                instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
+                instance_weights[i]['predict'][f] = instance_weights[i]['high'][f] / (1-instance_weights[i]['low'][f] + instance_weights[i]['high'][f])
+
+                instance_predict[i]['low'][f] = low.predict_proba[-1] - instance_weights[i]['low'][f]
+                instance_predict[i]['high'][f] = high.predict_proba[-1] - instance_weights[i]['high'][f]
+                instance_predict[i]['predict'][f] = instance_predict[i]['high'][f] / (1-instance_predict[i]['low'][f] + instance_predict[i]['high'][f])
+
+            feature_weights['predict'].append(instance_weights[i]['predict'])
+            feature_weights['low'].append(instance_weights[i]['low'])
+            feature_weights['high'].append(instance_weights[i]['high'])
+
+            feature_predict['predict'].append(instance_predict[i]['predict'])
+            feature_predict['low'].append(instance_predict[i]['low'])
+            feature_predict['high'].append(instance_predict[i]['high'])
+            instance_time.append(time() - instance_timer)
+
+        explanation.finalize_fast(feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
+        self.latest_explanation = explanation
+        return explanation
+
     def assign_threshold(self, threshold):
         """Assign the threshold for the explainer.
 
@@ -1030,6 +1257,8 @@ class CalibratedExplainer:
 
 
     def __get_greater_values(self, f: int, greater: float):
+        """Get sample values greater than the given threshold for a numerical feature.
+        Uses percentile sampling from calibration data."""
         if not np.any(self.X_cal[:,f] > greater):
             return np.array([])
         return np.percentile(self.X_cal[self.X_cal[:,f] > greater,f],
@@ -1037,6 +1266,8 @@ class CalibratedExplainer:
 
 
     def __get_lesser_values(self, f: int, lesser: float):
+        """Get sample values less than the given threshold for a numerical feature.
+        Uses percentile sampling from calibration data."""
         if not np.any(self.X_cal[:,f] < lesser):
             return np.array([])
         return np.percentile(self.X_cal[self.X_cal[:,f] < lesser,f],
@@ -1045,6 +1276,8 @@ class CalibratedExplainer:
 
 
     def __get_covered_values(self, f: int, lesser: float, greater: float):
+        """Get sample values between lower and upper bounds for a numerical feature.
+        Uses percentile sampling from calibration data."""
         covered = np.where((self.X_cal[:,f] >= lesser) & (self.X_cal[:,f] <= greater))[0]
         return np.percentile(self.X_cal[covered,f], self.sample_percentiles)
 
@@ -1204,6 +1437,8 @@ class CalibratedExplainer:
 
     def predict_reject(self, X_test, bins=None, confidence=0.95):
         """Predict whether to reject the explanations for the test data.
+        
+        Use conformal classifier to identify test instances that may be too different from calibration data.
 
         Parameters
         ----------
@@ -1217,7 +1452,7 @@ class CalibratedExplainer:
         Returns
         -------
         array-like
-            An array indicating whether to reject each explanation.
+            Returns rejection decisions and error/rejection rates.
         """
         if self.mode in 'regression':
             assert self.reject_threshold is not None, "The reject learner is only available for regression with a threshold."
@@ -1588,11 +1823,11 @@ class CalibratedExplainer:
         return self.__shap_enabled
 
 
-    def _preload_lime(self):
+    def _preload_lime(self, X_cal=None):
         if lime := safe_import("lime.lime_tabular", "LimeTabularExplainer"):
             if not self._is_lime_enabled():
                 if self.mode == 'classification':
-                    self.lime = lime(self.X_cal[:1, :],
+                    self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
                                                     feature_names=self.feature_names,
                                                     class_names=['0','1'],
                                                     mode=self.mode)
@@ -1600,7 +1835,7 @@ class CalibratedExplainer:
                                                                 self.learner.predict_proba,
                                                                 num_features=self.num_features)
                 elif 'regression' in self.mode:
-                    self.lime = lime(self.X_cal[:1, :],
+                    self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
                                                     feature_names=self.feature_names,
                                                     mode='regression')
                     self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
@@ -1849,6 +2084,21 @@ class WrapCalibratedExplainer():
 
         kwargs['bins'] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_fast(X_test, **kwargs)
+
+    def explain_lime(self, X_test, **kwargs):
+        """Generate lime explanations for the test data.
+
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+
+        kwargs['bins'] = self._get_bins(X_test, **kwargs)
+        return self.explainer.explain_lime(X_test, **kwargs)
 
 
     # pylint: disable=too-many-return-statements
