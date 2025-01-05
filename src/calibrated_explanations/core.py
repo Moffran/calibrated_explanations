@@ -580,9 +580,9 @@ class CalibratedExplainer:
                     for bin_value, value in enumerate(feature_values):
                         # Find predictions where this feature was set to this value
                         feature_index = [
-                            perturbed_feature[j,0] == f and 
-                            perturbed_feature[j,1] == i and 
-                            perturbed_feature[j,2] == value 
+                            perturbed_feature[j,0] == f and
+                            perturbed_feature[j,1] == i and
+                            perturbed_feature[j,2] == value
                             for j in range(len(perturbed_feature))
                         ]
 
@@ -630,7 +630,7 @@ class CalibratedExplainer:
 
                         # Calculate feature importance weights
                         instance_weights[i]['predict'][f] = self._assign_weight(
-                            instance_predict[i]['predict'][f], 
+                            instance_predict[i]['predict'][f],
                             prediction['predict'][i]
                         )
                         tmp_low = self._assign_weight(instance_predict[i]['low'][f], prediction['predict'][i])
@@ -1033,6 +1033,133 @@ class CalibratedExplainer:
         return explanation
 
 
+
+    def explain_lime(self,
+                                X_test,
+                                threshold = None,
+                                low_high_percentiles = (5, 95),
+                                bins = None,) -> CalibratedExplanations:
+        """Create a :class:`.CalibratedExplanations` object for the test data.
+
+        Parameters
+        ----------
+        X_test : array-like
+            A set with n_samples of test objects to predict
+        threshold : float, int or array-like of shape (n_samples,), default=None
+            values for which p-values should be returned. Only used for probabilistic explanations for regression. 
+        low_high_percentiles : a tuple of floats, default=(5, 95)
+            The low and high percentile used to calculate the interval. Applicable to regression.
+        bins : array-like of shape (n_samples,), default=None
+            Mondrian categories
+
+        Raises
+        ------
+        ValueError: The number of features in the test data must be the same as in the calibration data.
+        Warning: The threshold-parameter is only supported for mode='regression'.
+        ValueError: The length of the threshold parameter must be either a constant or the same as the number of 
+            instances in X_test.
+        RuntimeError: Fast explanations are only possible if the explainer is a Fast Calibrated Explainer.
+
+        Returns
+        -------
+        CalibratedExplanations : :class:`.CalibratedExplanations`
+            A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.  
+        """
+        if not self.__lime_enabled:
+            self._preload_lime()
+        total_time = time()
+        instance_time = []
+        if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
+            X_test = X_test.values  # pylint: disable=invalid-name
+        if len(X_test.shape) == 1:
+            X_test = X_test.reshape(1, -1)
+        if X_test.shape[1] != self.X_cal.shape[1]:
+            raise ValueError("The number of features in the test data must be the same as in the \
+                            calibration data.")
+        if self._is_mondrian():
+            assert bins is not None, "The bins parameter must be specified for Mondrian explanations."
+            assert len(bins) == len(X_test), "The length of the bins parameter must be the same as the number of instances in X_test."
+        explanation = CalibratedExplanations(self, X_test, threshold, bins)
+
+        if threshold is not None:
+            if 'regression' not in self.mode:
+                raise Warning("The threshold parameter is only supported for mode='regression'.")
+            assert_threshold(threshold, X_test)
+                # explanation.low_high_percentiles = low_high_percentiles
+        elif 'regression' in self.mode:
+            explanation.low_high_percentiles = low_high_percentiles
+
+        feature_weights =  {'predict': [],'low': [],'high': [],}
+        feature_predict =  {'predict': [],'low': [],'high': [],}
+        prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
+
+        instance_weights = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(X_test))]
+        instance_predict = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(X_test))]
+
+        predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
+        prediction['predict'] = predict
+        prediction['low'] = low
+        prediction['high'] = high
+        if self.is_multiclass():
+            prediction['classes'] = predicted_class
+        else:
+            prediction['classes'] = np.ones(X_test.shape[0])
+
+        explainer = self.lime
+        def low_proba(x):
+            _, low, _, _ = self._predict(x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
+            return np.asarray([[1-l, l] for l in low])
+        def high_proba(x):
+            _, _, high, _ = self._predict(x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
+            return np.asarray([[1-h, h] for h in high])
+        res_struct = {}
+        res_struct['low'] = {}
+        res_struct['high'] = {}
+        res_struct['low']['explanation'], res_struct['high']['explanation'] = [],[]
+        res_struct['low']['abs_rank'], res_struct['high']['abs_rank'] = [],[]
+        res_struct['low']['values'], res_struct['high']['values'] = [],[]
+
+        for i, x in enumerate(X_test):
+            instance_timer = time()
+
+            low = explainer.explain_instance(x, predict_fn = low_proba, num_features=len(x))
+            high = explainer.explain_instance(x, predict_fn = high_proba, num_features=len(x))
+
+            res_struct['low']['explanation'].append(low)
+            res_struct['high']['explanation'].append(high)
+            res_struct['low']['abs_rank'], res_struct['high']['abs_rank'] = np.zeros(len(x)), np.zeros(len(x))
+            res_struct['low']['values'], res_struct['high']['values'] = np.zeros(len(x)), np.zeros(len(x))
+
+            for j, f in enumerate(low.local_exp[1]):
+                res_struct['low']['abs_rank'][f[0]] = low.local_exp[1][j][0]
+                res_struct['low']['values'][f[0]] = f[1]
+            for j, f in enumerate(high.local_exp[1]):
+                res_struct['high']['abs_rank'][f[0]] = high.local_exp[1][j][0]
+                res_struct['high']['values'][f[0]] = f[1]
+
+            for f in range(self.num_features):
+                tmp_low = res_struct['low']['values'][f]
+                tmp_high = res_struct['high']['values'][f]
+                instance_weights[i]['low'][f] = np.min([tmp_low, tmp_high])
+                instance_weights[i]['high'][f] = np.max([tmp_low, tmp_high])
+                instance_weights[i]['predict'][f] = instance_weights[i]['high'][f] / (1-instance_weights[i]['low'][f] + instance_weights[i]['high'][f])
+
+                instance_predict[i]['low'][f] = low.predict_proba[-1] - instance_weights[i]['low'][f]
+                instance_predict[i]['high'][f] = high.predict_proba[-1] - instance_weights[i]['high'][f]
+                instance_predict[i]['predict'][f] = instance_predict[i]['high'][f] / (1-instance_predict[i]['low'][f] + instance_predict[i]['high'][f])
+
+            feature_weights['predict'].append(instance_weights[i]['predict'])
+            feature_weights['low'].append(instance_weights[i]['low'])
+            feature_weights['high'].append(instance_weights[i]['high'])
+
+            feature_predict['predict'].append(instance_predict[i]['predict'])
+            feature_predict['low'].append(instance_predict[i]['low'])
+            feature_predict['high'].append(instance_predict[i]['high'])
+            instance_time.append(time() - instance_timer)
+
+        explanation.finalize_fast(feature_weights, feature_predict, prediction, instance_time=instance_time, total_time=total_time)
+        self.latest_explanation = explanation
+        return explanation
 
     def assign_threshold(self, threshold):
         """Assign the threshold for the explainer.
@@ -1696,11 +1823,11 @@ class CalibratedExplainer:
         return self.__shap_enabled
 
 
-    def _preload_lime(self):
+    def _preload_lime(self, X_cal=None):
         if lime := safe_import("lime.lime_tabular", "LimeTabularExplainer"):
             if not self._is_lime_enabled():
                 if self.mode == 'classification':
-                    self.lime = lime(self.X_cal[:1, :],
+                    self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
                                                     feature_names=self.feature_names,
                                                     class_names=['0','1'],
                                                     mode=self.mode)
@@ -1708,7 +1835,7 @@ class CalibratedExplainer:
                                                                 self.learner.predict_proba,
                                                                 num_features=self.num_features)
                 elif 'regression' in self.mode:
-                    self.lime = lime(self.X_cal[:1, :],
+                    self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
                                                     feature_names=self.feature_names,
                                                     mode='regression')
                     self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
@@ -1957,6 +2084,21 @@ class WrapCalibratedExplainer():
 
         kwargs['bins'] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_fast(X_test, **kwargs)
+
+    def explain_lime(self, X_test, **kwargs):
+        """Generate lime explanations for the test data.
+
+        See Also
+        --------
+        :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
+        """
+        if not self.fitted:
+            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
+        if not self.calibrated:
+            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
+
+        kwargs['bins'] = self._get_bins(X_test, **kwargs)
+        return self.explainer.explain_lime(X_test, **kwargs)
 
 
     # pylint: disable=too-many-return-statements
