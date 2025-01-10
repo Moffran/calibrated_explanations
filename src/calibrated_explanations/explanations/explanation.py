@@ -846,10 +846,8 @@ class FactualExplanation(CalibratedExplanation):
                 if conjunctive["is_conjunctive"][cf2]:
                     if of1 in of2:
                         continue
-                    for of in of2:
-                        original_features.append(of)
-                    for rule_value in conjunctive["feature_value"][cf2]:
-                        rule_values.append(rule_value)
+                    original_features.extend(iter(of2))
+                    rule_values.extend(iter(conjunctive["feature_value"][cf2]))
                 else:
                     if of1 == of2:
                         continue
@@ -1581,10 +1579,8 @@ class AlternativeExplanation(CalibratedExplanation):
                 if conjunctive["is_conjunctive"][cf2]:
                     if of1 in of2:
                         continue
-                    for of in of2:
-                        original_features.append(of)
-                    for rule_value in conjunctive["feature_value"][cf2]:
-                        rule_values.append(rule_value)
+                    original_features.extend(iter(of2))
+                    rule_values.extend(iter(conjunctive["feature_value"][cf2]))
                 else:
                     if of1 == of2:
                         continue
