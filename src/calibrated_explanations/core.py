@@ -591,9 +591,9 @@ class CalibratedExplainer:
                             current_bin = bin_value
 
                         # Store predictions for this value
-                        average_predict[bin_value] = predict[feature_index]
-                        low_predict[bin_value] = low[feature_index]
-                        high_predict[bin_value] = high[feature_index]
+                        average_predict[bin_value] = predict[feature_index][0] if len(predict[feature_index]) > 0 else 0
+                        low_predict[bin_value] = low[feature_index][0] if len(low[feature_index]) > 0 else 0
+                        high_predict[bin_value] = high[feature_index][0] if len(high[feature_index]) > 0 else 0
                         counts[bin_value] = len(np.where(X_cal[:,f] == value)[0])
 
                     # Store results for this instance
@@ -828,7 +828,7 @@ class CalibratedExplainer:
         }
 
         # Step 1: Predict the test set and the perturbed instances to get the predictions and intervals
-        # Substep 1.a: Add the test set
+        # Sub-step 1.a: Add the test set
         X_test.flags.writeable = False
         assert_threshold(threshold, X_test)
         perturbed_threshold = self.assign_threshold(threshold)
@@ -839,7 +839,7 @@ class CalibratedExplainer:
         X_perturbed = self._discretize(X_test)
         rule_boundaries = self.rule_boundaries(X_test, X_perturbed)
 
-        # Substep 1.b: prepare and add the perturbed test instances
+        # Sub-step 1.b: prepare and add the perturbed test instances
         lesser_values = {}
         greater_values = {}
         covered_values = {}
@@ -907,7 +907,7 @@ class CalibratedExplainer:
                                 perturbed_threshold = [threshold[i]]
                             else:
                                 perturbed_threshold = np.concatenate((perturbed_threshold, [threshold[i]]))
-        # Substep 1.c: Predict and convert to numpy arrays to allow boolean indexing
+        # Sub-step 1.c: Predict and convert to numpy arrays to allow boolean indexing
         if threshold is not None and isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
             perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
         predict, low, high, _ = self._predict(perturbed_X, threshold=perturbed_threshold, low_high_percentiles=low_high_percentiles, classes=perturbed_class, bins=perturbed_bins)
@@ -981,17 +981,13 @@ class CalibratedExplainer:
 
         feature_weights =  {'predict': [],'low': [],'high': [],}
         feature_predict =  {'predict': [],'low': [],'high': [],}
-        prediction =  {'predict': [],'low': [],'high': [], 'classes': []}
-
         instance_weights = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(X_test))]
         instance_predict = [{'predict':np.zeros(self.num_features),'low':np.zeros(self.num_features),'high':np.zeros(self.num_features)} for _ in range(len(X_test))]
 
         feature_time = time()
 
         predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
-        prediction['predict'] = predict
-        prediction['low'] = low
-        prediction['high'] = high
+        prediction = {'classes': [], 'predict': predict, 'low': low, 'high': high}
         if self.is_multiclass():
             prediction['classes'] = predicted_class
         else:
