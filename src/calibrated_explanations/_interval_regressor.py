@@ -21,6 +21,7 @@ pre_fit_for_probabilistic(self)
 compute_proba_cal(self, y_threshold: float)
     Calculate the probability calibration for a given threshold.
 """
+from functools import singledispatchmethod
 import crepes
 import numpy as np
 from ._VennAbers import VennAbers
@@ -89,27 +90,22 @@ class IntervalRegressor:
         if bins is not None:
             assert self.bins is not None, 'Calibration bins must be assigned when test bins are submitted.'
         self.y_threshold = y_threshold
-        if np.isscalar(self.y_threshold):
+        if np.isscalar(self.y_threshold) or isinstance(self.y_threshold, tuple):
             self.current_y_threshold = self.y_threshold
             self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.split['va'].predict_proba(X_test, output_interval=True, bins=bins)
             return proba[:, 1], low, high, None
 
-        if isinstance(self.y_threshold, tuple):
-            return self._predict_tuple_interval(X_test, self.y_threshold, bins)
         bins = bins if bins is not None else [None]*X_test.shape[0]
         interval = np.zeros((X_test.shape[0],2))
         proba = np.zeros(X_test.shape[0])
         for i, _ in enumerate(proba):
-            if isinstance(self.y_threshold[i], tuple):
-                p, low, high, _ = self._predict_tuple_interval(X_test[i, :].reshape(1, -1), self.y_threshold[i], bins[i])
-            else:
-                self.current_y_threshold = self.y_threshold[i]
-                self.compute_proba_cal(self.y_threshold[i])
-                p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]])
-                p = p[0,1]
-                low = low[0]
-                high = high[0]
+            self.current_y_threshold = self.y_threshold[i]
+            self.compute_proba_cal(self.y_threshold[i])
+            p, low, high = self.split['va'].predict_proba(X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]])
+            p = p[0,1]
+            low = low[0]
+            high = high[0]
             proba[i] = p
             interval[i, :] = np.array([low, high])
         return proba, interval[:, 0], interval[:, 1], None
@@ -170,7 +166,7 @@ class IntervalRegressor:
             None
 
     def predict_proba(self, X_test, bins=None):
-        """Predict the probabilities for being above the y_threshold.
+        """Predict the probabilities for being below the y_threshold (for float threshold) or below the lower bound and above the upper bound (for tuple threshold).
 
         Parameters
         ----------
@@ -189,8 +185,13 @@ class IntervalRegressor:
         """
         y_test_hat = self.ce.learner.predict(X_test)
 
-        sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
-        proba = self.cps.predict(y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold, bins=bins)
+        sigma_test = self.ce._get_sigma_test(X=X_test)
+        if isinstance(self.current_y_threshold, tuple):
+            proba_lower = self.cps.predict(y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[0], bins=bins)
+            proba_upper = self.cps.predict(y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[1], bins=bins)
+            proba = proba_upper - proba_lower
+        else:
+            proba = self.cps.predict(y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold, bins=bins)
         return np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
 
     def pre_fit_for_probabilistic(self):
@@ -212,7 +213,21 @@ class IntervalRegressor:
                             sigmas=self.sigma_cal[cal_cps],
                             bins=self.bins[cal_cps], seed=self.ce.seed)
 
-    def compute_proba_cal(self, y_threshold: float):
+    @singledispatchmethod
+    def compute_proba_cal(self, y_threshold):
+        """Base method for computing the probability calibration.
+
+        Parameters
+        ----------
+        y_threshold : float or tuple
+            The `y_threshold` parameter is a float or tuple value that represents the threshold for the probability.
+            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the 
+            calibration set for a given threshold value.     
+        """
+        raise TypeError('y_threshold must be a float or a tuple.')
+
+    @compute_proba_cal.register(float)
+    def _(self, y_threshold: float):
         """Calculate the probability calibration for a given threshold.
 
         Parameters
@@ -221,9 +236,6 @@ class IntervalRegressor:
             The `y_threshold` parameter is a float value that represents the threshold for the probability.
             It is used in the `compute_proba_cal` method to determine the predicted probabilities of the 
             calibration set for a given threshold value.     
-        bins 
-            array-like of shape (n_samples,), default=None
-            Mondrian categories
         """
         cal_va = self.split['parts'][1]
         bins = None if self.bins is None else self.bins[cal_va]
@@ -234,6 +246,35 @@ class IntervalRegressor:
         self.split['proba'] = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
         self.split['va'] = VennAbers(None,
                                         (self.ce.y_cal[cal_va] <= y_threshold).astype(int),
+                                        self,
+                                        bins=bins,
+                                        cprobs=self.split['proba'])
+
+    @compute_proba_cal.register(tuple)
+    def _(self, y_threshold: tuple):
+        """Calculate the probability calibration for a given interval threshold.
+
+        Parameters
+        ----------
+        y_threshold : tuple
+            The `y_threshold` parameter is a tuple that represents the interval threshold for the probability.
+            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the 
+            calibration set for a given threshold value.     
+        """
+        cal_va = self.split['parts'][1]
+        bins = None if self.bins is None else self.bins[cal_va]
+        proba_lower = self.split['cps'].predict(y_hat=self.y_cal_hat[cal_va],
+                                y=y_threshold[0],
+                                sigmas=self.sigma_cal[cal_va],
+                                bins=bins)
+        proba_upper = self.split['cps'].predict(y_hat=self.y_cal_hat[cal_va],
+                                y=y_threshold[1],
+                                sigmas=self.sigma_cal[cal_va],
+                                bins=bins)
+        proba = proba_upper - proba_lower
+        self.split['proba'] = np.array([[1-proba[i], proba[i]] for i in range(len(proba))])
+        self.split['va'] = VennAbers(None,
+                                        (y_threshold[0] < self.ce.y_cal[cal_va]) & (self.ce.y_cal[cal_va] <= y_threshold[1]).astype(int),
                                         self,
                                         bins=bins,
                                         cprobs=self.split['proba'])
