@@ -157,7 +157,7 @@ def test_probabilistic_regression_ce(regression_dataset):
     factual_explanation.plot(show=False, uncertainty=True)
 
     factual_explanation = cal_exp.explain_factual(X_test, y_test[0])
-    factual_explanation = cal_exp.explain_factual(X_test, (y_test[0], y_test[0]))
+    factual_explanation = cal_exp.explain_factual(X_test, (0.4, 0.6))
 
     alternative_explanation = cal_exp.explore_alternatives(X_test, y_test)
     alternative_explanation.plot(show=False)
