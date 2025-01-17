@@ -185,7 +185,7 @@ class IntervalRegressor:
         """
         y_test_hat = self.ce.learner.predict(X_test)
 
-        sigma_test = self.ce._get_sigma_test(X=X_test)
+        sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
         if isinstance(self.current_y_threshold, tuple):
             proba_lower = self.cps.predict(y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[0], bins=bins)
             proba_upper = self.cps.predict(y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[1], bins=bins)
