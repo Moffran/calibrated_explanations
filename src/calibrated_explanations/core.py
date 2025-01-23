@@ -139,7 +139,6 @@ class CalibratedExplainer:
         self.predict_function = kwargs.get('predict_function', None)
         if self.predict_function is None:
             self.predict_function = learner.predict_proba if mode == 'classification' else learner.predict
-        self._learn_one = kwargs.get('learn_one', None)
         self.oob = kwargs.get('oob', False)
         if self.oob:
             try:
@@ -1894,7 +1893,7 @@ class CalibratedExplainer:
         return confusion_matrix(self.y_cal, cal_predicted_classes)
 
     def learn_one(self, X, y):
-        """Learn from a single sample.
+        """Learn from a single sample. Useful in online learning settings.
         
         Parameters
         ----------
@@ -1906,15 +1905,17 @@ class CalibratedExplainer:
         Raises
         ------
         AttributeError
-            If learner does not have learn_one method and no learn_one method is assigned
+            If learner does not have a learn_one method
         """
-        if not (hasattr(self.learner, 'learn_one') or hasattr(self, '_learn_one')):
-            raise AttributeError("Learner must have learn_one method or learn_one must be assigned")
+        if not hasattr(self.learner, 'learn_one'):
+            raise AttributeError("Learner must have a learn_one method")
 
-        if hasattr(self, '_learn_one'):
-            self._learn_one(X, y)
-        else:
-            self.learner.learn_one(X, y)
+        self.learner.learn_one(X, y)
+
+        self.X_cal.append(X)
+        self.y_cal.append(y)
+
+        self.reinitialize(self.learner)
 
 class WrapCalibratedExplainer():
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
@@ -1928,7 +1929,7 @@ class WrapCalibratedExplainer():
     conformal predictive systems (regression).
 
     :class:`.WrapCalibratedExplainer` is a wrapper class for the :class:`.CalibratedExplainer`. It allows to fit, calibrate, and explain the learner.
-    Compared to the :class:`.CalibratedExplainer`, it allows access to the predict and predict_proba methods of
+    Like the :class:`.CalibratedExplainer`, it allows access to the predict and predict_proba methods of
     the calibrated explainer, making it easy to get the same output as shown in the explanations.
     """
 
