@@ -996,11 +996,16 @@ class CalibratedExplainer:
         feature_time = time()
 
         predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
-        prediction = {'classes': [], 'predict': predict, 'low': low, 'high': high}
-        if self.is_multiclass():
-            prediction['classes'] = predicted_class
-        else:
-            prediction['classes'] = np.ones(X_test.shape[0])
+        prediction = {
+            'predict': predict,
+            'low': low,
+            'high': high,
+            'classes': (
+                predicted_class
+                if self.is_multiclass()
+                else np.ones(X_test.shape[0])
+            ),
+        }
         y_cal = self.y_cal
         self.y_cal = self.scaled_y_cal
         for f in range(self.num_features):
@@ -1777,16 +1782,12 @@ class CalibratedExplainer:
                 proba, low, high, _ = self.interval_learner[-1].predict_proba(X_test, output_interval=True, **kwargs)
             else:
                 proba, low, high, _ = self.interval_learner.predict_proba(X_test, output_interval=True, **kwargs)
-            if uq_interval:
-                return proba, (low, high)
-            return proba
+            return (proba, (low, high)) if uq_interval else proba
         if isinstance(self.interval_learner, list):
             proba, low, high = self.interval_learner[-1].predict_proba(X_test, output_interval=True, **kwargs)
         else:
             proba, low, high = self.interval_learner.predict_proba(X_test, output_interval=True, **kwargs)
-        if uq_interval:
-            return proba, (low, high)
-        return proba
+        return (proba, (low, high)) if uq_interval else proba
 
 
 
@@ -1828,26 +1829,26 @@ class CalibratedExplainer:
 
 
     def _preload_lime(self, X_cal=None):
-        if lime := safe_import("lime.lime_tabular", "LimeTabularExplainer"):
-            if not self._is_lime_enabled():
-                if self.mode == 'classification':
-                    self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
-                                                    feature_names=self.feature_names,
-                                                    class_names=['0','1'],
-                                                    mode=self.mode)
-                    self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
-                                                                self.learner.predict_proba,
-                                                                num_features=self.num_features)
-                elif 'regression' in self.mode:
-                    self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
-                                                    feature_names=self.feature_names,
-                                                    mode='regression')
-                    self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
-                                                                self.learner.predict,
-                                                                num_features=self.num_features)
-                self._is_lime_enabled(True)
-            return self.lime, self.lime_exp
-        return None, None
+        if not (lime := safe_import("lime.lime_tabular", "LimeTabularExplainer")):
+            return None, None
+        if not self._is_lime_enabled():
+            if self.mode == 'classification':
+                self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
+                                                feature_names=self.feature_names,
+                                                class_names=['0','1'],
+                                                mode=self.mode)
+                self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
+                                                            self.learner.predict_proba,
+                                                            num_features=self.num_features)
+            elif 'regression' in self.mode:
+                self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
+                                                feature_names=self.feature_names,
+                                                mode='regression')
+                self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
+                                                            self.learner.predict,
+                                                            num_features=self.num_features)
+            self._is_lime_enabled(True)
+        return self.lime, self.lime_exp
 
     def _preload_shap(self, num_test=None):
         if shap := safe_import("shap"):
