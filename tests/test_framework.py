@@ -80,7 +80,7 @@ def test_is_notebook_false(mock_get_ipython):
     mock_get_ipython.return_value = None
     assert not is_notebook()
 
-def test_explanation_functions(binary_dataset, regression_dataset):
+def test_explanation_functions_classification(binary_dataset):
     """
     Tests various explanation functions of `CalibratedExplainer`.
     Args:
@@ -96,7 +96,7 @@ def test_explanation_functions(binary_dataset, regression_dataset):
     factual_explanations._is_one_sided()
     factual_explanations._is_thresholded()
     factual_explanations.as_lime()
-    factual_explanations.as_shap()
+    # factual_explanations.as_shap() # generates an insane number of warnings
 
     de = DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True)
     ce = CalibratedExplainer(model, X_cal, y_cal, difficulty_estimator=de, verbose=True)
@@ -110,10 +110,16 @@ def test_explanation_functions(binary_dataset, regression_dataset):
     alternative_explanations._is_thresholded()
 
     ce._preload_lime()
-    ce._preload_shap()
+    # ce._preload_shap() # generates an insane number of warnings
 
     print(ce)
 
+def test_explanation_functions_regression(regression_dataset):
+    """
+    Tests various explanation functions of `CalibratedExplainer`.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _ = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', verbose=True)
@@ -125,7 +131,7 @@ def test_explanation_functions(binary_dataset, regression_dataset):
     factual_explanations._is_thresholded()
     factual_explanations[0].is_multiclass()
     factual_explanations.as_lime()
-    factual_explanations.as_shap()
+    # factual_explanations.as_shap() # generates an insane number of warnings
 
     alternative_explanations = ce.explore_alternatives(X_test)
     alternative_explanations._get_rules()
@@ -134,6 +140,6 @@ def test_explanation_functions(binary_dataset, regression_dataset):
     alternative_explanations._is_thresholded()
 
     ce._preload_lime()
-    ce._preload_shap()
+    # ce._preload_shap() # generates an insane number of warnings
 
     print(ce)

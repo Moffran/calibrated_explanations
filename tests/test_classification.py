@@ -113,7 +113,7 @@ def get_classification_model(model_name, X_prop_train, y_prop_train):
     model.fit(X_prop_train, y_prop_train)
     return model, model_name
 
-def initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode, class_labels=None, difficulty_estimator=None, bins=None, fast=False, verbose=False):
+def initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode, class_labels=None, difficulty_estimator=None, bins=None, fast=False, verbose=False, predict_function=None):
     """
     Initialize a CalibratedExplainer instance.
 
@@ -343,11 +343,13 @@ def test_binary_fast_ce(binary_dataset):
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='classification', fast=True)
 
     fast_explanation = cal_exp.explain_fast(X_test)
-    fast_explanation.add_conjunctions()
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
     fast_explanation.remove_conjunctions()
     fast_explanation[:1].plot(show=False)
     fast_explanation[0].plot(show=False, uncertainty=True)
-    fast_explanation.add_conjunctions(max_rule_size=3)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions(max_rule_size=3)
 
 def test_multiclass_fast_ce(multiclass_dataset):
     """
@@ -360,11 +362,13 @@ def test_multiclass_fast_ce(multiclass_dataset):
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_labels, mode='classification', class_labels=target_labels, verbose=True, fast=True)
 
     fast_explanation = cal_exp.explain_fast(X_test)
-    fast_explanation.add_conjunctions()
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
     fast_explanation.remove_conjunctions()
     fast_explanation[:1].plot(show=False)
     fast_explanation[0].plot(show=False, uncertainty=True)
-    fast_explanation.add_conjunctions(max_rule_size=3)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions(max_rule_size=3)
 
 def test_binary_conditional_fast_ce(binary_dataset):
     """
@@ -378,7 +382,8 @@ def test_binary_conditional_fast_ce(binary_dataset):
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='classification', class_labels=target_labels, bins=X_cal[:, 0], fast=True)
 
     fast_explanation = cal_exp.explain_fast(X_test, bins=X_test[:, 0])
-    fast_explanation.add_conjunctions()
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
     fast_explanation[:1].plot(show=False)
     fast_explanation[0].plot(show=False, uncertainty=True)
 
@@ -393,6 +398,7 @@ def test_multiclass_fast_conditional_ce(multiclass_dataset):
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_labels, mode='classification', bins=X_cal[:, 0], fast=True)
 
     fast_explanation = cal_exp.explain_fast(X_test, bins=X_test[:, 0])
-    fast_explanation.add_conjunctions()
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
     fast_explanation[:1].plot(show=False)
     fast_explanation[0].plot(show=False, uncertainty=True)

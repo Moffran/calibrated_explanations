@@ -148,7 +148,7 @@ def test_invalid_inputs(binary_dataset, invalid_X):
     cal_exp.fit(X_prop_train, y_prop_train)
 
     with pytest.raises(ValueError):
-        cal_exp.predict(invalid_X)
+        cal_exp.predict(invalid_X, calibrated=False)
 
 def test_wrap_binary_ce(binary_dataset):
     """
@@ -190,8 +190,10 @@ def test_wrap_binary_ce(binary_dataset):
 
     multiple_failing_calls(cal_exp, X_test, y_test)
 
-    y_test_hat1 = cal_exp.predict(X_test)
-    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
+    with pytest.warns(UserWarning):
+        y_test_hat1 = cal_exp.predict(X_test)
+    with pytest.warns(UserWarning):
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
     y_test_hat3 = cal_exp.predict(X_test, calibrated=False)
     y_test_hat4, (low4, high4) = cal_exp.predict(X_test, uq_interval=True, calibrated=False)
 
@@ -204,8 +206,10 @@ def test_wrap_binary_ce(binary_dataset):
         assert low4[i] == y_hat
         assert high4[i] == y_hat
 
-    y_test_proba1 = cal_exp.predict_proba(X_test)
-    y_test_proba2, (low_proba, high_proba) = cal_exp.predict_proba(X_test, True)
+    with pytest.warns(UserWarning):
+        y_test_proba1 = cal_exp.predict_proba(X_test)
+    with pytest.warns(UserWarning):
+        y_test_proba2, (low_proba, high_proba) = cal_exp.predict_proba(X_test, True)
     y_test_proba3 = cal_exp.predict_proba(X_test, calibrated=False)
     y_test_proba4, (low_proba4, high_proba4) = cal_exp.predict_proba(X_test, True, calibrated=False)
 
@@ -296,16 +300,20 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     repr(cal_exp)
 
     multiple_failing_calls(cal_exp, X_test, y_test)
-    y_test_hat1 = cal_exp.predict(X_test)
-    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
+    with pytest.warns(UserWarning):
+        y_test_hat1 = cal_exp.predict(X_test)
+    with pytest.warns(UserWarning):
+        y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
 
     for i, y_hat in enumerate(y_test_hat2):
         assert y_test_hat1[i] == y_hat
         assert low[i] == y_hat
         assert high[i] == y_hat
 
-    y_test_hat1 = cal_exp.predict_proba(X_test)
-    y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
+    with pytest.warns(UserWarning):
+        y_test_hat1 = cal_exp.predict_proba(X_test)
+    with pytest.warns(UserWarning):
+        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
 
     for i, y_hat in enumerate(y_test_hat2):
         for j, y_hat_j in enumerate(y_hat):

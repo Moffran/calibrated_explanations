@@ -122,6 +122,11 @@ class CalibratedExplainer:
             A boolean parameter that determines whether the explainer should use out-of-bag samples for calibration. 
             If set to True, the explainer will use out-of-bag samples for calibration. If set to False, the explainer
             will not use out-of-bag samples for calibration. This requires the learner to be a RandomForestClassifier
+        predict_function : function handle
+            A function handle that takes an array-like input and returns an array-like output of probabilities 
+            for classification or predictions for regression. If not provided, defaults to predict_proba for 
+            classification mode or predict for regression mode. This allows customizing how predictions are 
+            generated from the learner.
         
         Returns
         -------
@@ -131,6 +136,10 @@ class CalibratedExplainer:
         self.__initialized = False
         check_is_fitted(learner)
         self.learner = learner
+        self.predict_function = kwargs.get('predict_function', None)
+        if self.predict_function is None:
+            self.predict_function = learner.predict_proba if mode == 'classification' else learner.predict
+        self._learn_one = kwargs.get('learn_one', None)
         self.oob = kwargs.get('oob', False)
         if self.oob:
             try:
@@ -1344,10 +1353,10 @@ class CalibratedExplainer:
         """
         self.__initialized = False
         if mode == 'classification':
-            assert 'predict_proba' in dir(self.learner), "The learner must have a predict_proba method."
+            # assert 'predict_proba' in dir(self.learner), "The learner must have a predict_proba method."
             self.num_classes = len(np.unique(self.y_cal))
-        elif 'regression' in mode:
-            assert 'predict' in dir(self.learner), "The learner must have a predict method."
+        elif mode == 'regression':
+            # assert 'predict' in dir(self.learner), "The learner must have a predict method."
             self.num_classes = 0
         else:
             raise ValueError("The mode must be either 'classification' or 'regression'.")
@@ -1361,7 +1370,7 @@ class CalibratedExplainer:
         if self.is_fast():
             self.__initialize_interval_learner_for_fast_explainer()
         elif self.mode == 'classification':
-            self.interval_learner = VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator)
+            self.interval_learner = VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator, predict_function=self.predict_function)
         elif 'regression' in self.mode:
             self.interval_learner = IntervalRegressor(self)
         self.__initialized = True
@@ -1750,7 +1759,6 @@ class CalibratedExplainer:
         if not calibrated:
             if threshold is not None:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
-            warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
             if uq_interval:
                 proba = self.learner.predict_proba(X_test)
                 if proba.shape[1] > 2:
@@ -1884,6 +1892,28 @@ class CalibratedExplainer:
             cal_predicted_classes[i] = predict[0]
         return confusion_matrix(self.y_cal, cal_predicted_classes)
 
+    def learn_one(self, X, y):
+        """Learn from a single sample.
+        
+        Parameters
+        ----------
+        X : array-like
+            Single sample features
+        y : array-like 
+            Single sample target
+            
+        Raises
+        ------
+        AttributeError
+            If learner does not have learn_one method and no learn_one method is assigned
+        """
+        if not (hasattr(self.learner, 'learn_one') or hasattr(self, '_learn_one')):
+            raise AttributeError("Learner must have learn_one method or learn_one must be assigned")
+
+        if hasattr(self, '_learn_one'):
+            self._learn_one(X, y)
+        else:
+            self.learner.learn_one(X, y)
 
 class WrapCalibratedExplainer():
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
@@ -2111,7 +2141,7 @@ class WrapCalibratedExplainer():
             if 'threshold' in kwargs:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             if calibrated:
-                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
+                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", UserWarning)
             if uq_interval:
                 predict = self.learner.predict(X_test)
                 return predict, (predict, predict)
@@ -2138,7 +2168,7 @@ class WrapCalibratedExplainer():
             if threshold is not None:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             if calibrated:
-                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
+                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", UserWarning)
             if uq_interval:
                 proba = self.learner.predict_proba(X_test)
                 if proba.shape[1] > 2:

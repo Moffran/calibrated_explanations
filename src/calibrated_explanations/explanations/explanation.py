@@ -577,7 +577,7 @@ class CalibratedExplanation(ABC):
         if self.prediction["low"] == np.mean(rule_low) and self.prediction["high"] == np.mean(
             rule_high
         ):
-            warnings.warn("The alternative explanation is identical to the original explanation")
+            warnings.warn("The alternative explanation is identical to the original explanation", UserWarning)
             return self
         new_rule["predict"].append(np.mean(rule_predict))
         new_rule["predict_low"].append(np.mean(rule_low))
