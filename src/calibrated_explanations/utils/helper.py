@@ -183,7 +183,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
             "appropriate arguments before using this estimator."
         )
 
-    if not hasattr(estimator, "fit"):
+    if not (hasattr(estimator, "fit") or hasattr(estimator, 'learn_initial_training_set')): # handle online_cp package
         raise TypeError(f"{estimator} is not an estimator instance.")
 
     if attributes is not None:
@@ -192,6 +192,8 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         fitted = all_or_any([hasattr(estimator, attr) for attr in attributes])
     elif hasattr(estimator, "__sklearn_is_fitted__"):
         fitted = estimator.__sklearn_is_fitted__()
+    elif hasattr(estimator, 'XTXinv'): # handle online_cp package
+        fitted = estimator.XTXinv is not None
     else:
         fitted = [
             v for v in vars(estimator) if v.endswith("_") and not v.startswith("__")

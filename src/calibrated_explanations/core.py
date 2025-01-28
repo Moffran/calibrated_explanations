@@ -1892,8 +1892,38 @@ class CalibratedExplainer:
             cal_predicted_classes[i] = predict[0]
         return confusion_matrix(self.y_cal, cal_predicted_classes)
 
-    def learn_one(self, X, y):
-        """Learn from a single sample. Useful in online learning settings.
+    def batch_update(self, X, y, update_model=True):
+        """Update the model on the fly. Useful in online learning settings.
+        
+        If 'update_model' is True, then the learn_one method is called once for each instance before adding the instances to the calibration set.
+        
+        Parameters
+        ----------
+        X : array-like
+            Set of instance objects
+        y : array-like 
+            Set of instance targets
+            
+        Raises
+        ------
+        AttributeError
+            If update_model=True and learner does not have a learn_one method
+        """
+        if update_model:
+            if not hasattr(self.learner, 'learn_one'):
+                raise AttributeError("Learner must have a learn_one method")
+            for x_i, y_i in zip(X,y):
+                self.learner.learn_one(x_i, y_i)
+
+        self.X_cal.append(X)
+        self.y_cal.append(y)
+
+        self.reinitialize(self.learner)
+
+    def update(self, X, y, update_model=True):
+        """Update the model on the fly. Useful in online learning settings.
+        
+        If 'update_model' is True, then the learn_one method is called before adding the instance to the calibration set.
         
         Parameters
         ----------
@@ -1905,17 +1935,32 @@ class CalibratedExplainer:
         Raises
         ------
         AttributeError
-            If learner does not have a learn_one method
+            If update_model=True and learner does not have a learn_one method
         """
-        if not hasattr(self.learner, 'learn_one'):
-            raise AttributeError("Learner must have a learn_one method")
-
-        self.learner.learn_one(X, y)
+        if update_model:
+            if not hasattr(self.learner, 'learn_one'):
+                raise AttributeError("Learner must have a learn_one method")
+            self.learner.learn_one(X, y)
 
         self.X_cal.append(X)
         self.y_cal.append(y)
 
         self.reinitialize(self.learner)
+
+    def predict_calibration(self):
+        """Predict the target values for the calibration data.
+
+        Returns
+        -------
+        array-like
+            Predicted values for the calibration data. For online learning models with hat matrix,
+            returns updated predictions using the hat matrix. Otherwise uses the predict_function
+            on the calibration data.
+        """
+        if hasattr(self.learner, 'XTXinv'): # handle online_cp package
+            updated_hat_matrix = self.learner.X @ self.learner.XTXinv @ self.learner.X.T
+            return updated_hat_matrix @ self.learner.y
+        return self.predict_function(self.X_cal)
 
 class WrapCalibratedExplainer():
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
