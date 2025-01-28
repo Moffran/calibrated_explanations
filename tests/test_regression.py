@@ -176,9 +176,11 @@ def test_regression_as_classification_ce(regression_dataset):
     Args:
         regression_dataset (tuple): The regression dataset.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, categorical_features, feature_names = regression_dataset
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    predict_function = lambda x: np.asarray([[float(p > 0.5), float(p <= 0.5)] for p in model.predict(x)])
+    def predict_function(x):
+        """Convert regression predictions to binary classification."""
+        return np.asarray([[float(p > 0.5), float(p <= 0.5)] for p in model.predict(x)])
     cal_exp = CalibratedExplainer(model, X_cal, np.asarray([1 if y<=0.5 else 0 for y in y_cal]), feature_names=feature_names, categorical_features=categorical_features, mode='classification', predict_function=predict_function)
 
     factual_explanation = cal_exp.explain_factual(X_test)

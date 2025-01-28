@@ -113,7 +113,7 @@ def get_classification_model(model_name, X_prop_train, y_prop_train):
     model.fit(X_prop_train, y_prop_train)
     return model, model_name
 
-def initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode, class_labels=None, difficulty_estimator=None, bins=None, fast=False, verbose=False, predict_function=None):
+def initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode, class_labels=None, difficulty_estimator=None, bins=None, fast=False, verbose=False):
     """
     Initialize a CalibratedExplainer instance.
 

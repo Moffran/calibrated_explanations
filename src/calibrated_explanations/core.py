@@ -9,7 +9,7 @@ using Venn-Abers predictors (classification & regression) or
 conformal predictive systems (regression).
 """
 # pylint: disable=unknown-option-value
-# pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments
+# pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 import warnings
 from time import time
 import numpy as np

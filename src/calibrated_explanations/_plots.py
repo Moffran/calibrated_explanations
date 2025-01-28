@@ -862,7 +862,9 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, style_override=
         else:
             plt.xlabel('Probability of Y = 1')
     plt.xlim(min_x, max_x)
-    plt.ylim(min_y, max_y) # TODO: UserWarning: Attempting to set identical low and high ylims makes transformation singular; automatically expanding.
+    # TODO: UserWarning: Attempting to set identical low and high ylims
+    # makes transformation singular; automatically expanding.
+    plt.ylim(min_y, max_y)
     plt.grid(True, linestyle=config['grid']['style'], alpha=float(config['grid']['alpha']))
     if show:
         plt.show()
