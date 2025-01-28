@@ -9,7 +9,7 @@ using Venn-Abers predictors (classification & regression) or
 conformal predictive systems (regression).
 """
 # pylint: disable=unknown-option-value
-# pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments
+# pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 import warnings
 from time import time
 import numpy as np
@@ -122,6 +122,11 @@ class CalibratedExplainer:
             A boolean parameter that determines whether the explainer should use out-of-bag samples for calibration. 
             If set to True, the explainer will use out-of-bag samples for calibration. If set to False, the explainer
             will not use out-of-bag samples for calibration. This requires the learner to be a RandomForestClassifier
+        predict_function : function handle
+            A function handle that takes an array-like input and returns an array-like output of probabilities 
+            for classification or predictions for regression. If not provided, defaults to predict_proba for 
+            classification mode or predict for regression mode. This allows customizing how predictions are 
+            generated from the learner.
         
         Returns
         -------
@@ -131,6 +136,9 @@ class CalibratedExplainer:
         self.__initialized = False
         check_is_fitted(learner)
         self.learner = learner
+        self.predict_function = kwargs.get('predict_function', None)
+        if self.predict_function is None:
+            self.predict_function = learner.predict_proba if mode == 'classification' else learner.predict
         self.oob = kwargs.get('oob', False)
         if self.oob:
             try:
@@ -987,11 +995,16 @@ class CalibratedExplainer:
         feature_time = time()
 
         predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
-        prediction = {'classes': [], 'predict': predict, 'low': low, 'high': high}
-        if self.is_multiclass():
-            prediction['classes'] = predicted_class
-        else:
-            prediction['classes'] = np.ones(X_test.shape[0])
+        prediction = {
+            'predict': predict,
+            'low': low,
+            'high': high,
+            'classes': (
+                predicted_class
+                if self.is_multiclass()
+                else np.ones(X_test.shape[0])
+            ),
+        }
         y_cal = self.y_cal
         self.y_cal = self.scaled_y_cal
         for f in range(self.num_features):
@@ -1344,10 +1357,10 @@ class CalibratedExplainer:
         """
         self.__initialized = False
         if mode == 'classification':
-            assert 'predict_proba' in dir(self.learner), "The learner must have a predict_proba method."
+            # assert 'predict_proba' in dir(self.learner), "The learner must have a predict_proba method."
             self.num_classes = len(np.unique(self.y_cal))
-        elif 'regression' in mode:
-            assert 'predict' in dir(self.learner), "The learner must have a predict method."
+        elif mode == 'regression':
+            # assert 'predict' in dir(self.learner), "The learner must have a predict method."
             self.num_classes = 0
         else:
             raise ValueError("The mode must be either 'classification' or 'regression'.")
@@ -1361,7 +1374,7 @@ class CalibratedExplainer:
         if self.is_fast():
             self.__initialize_interval_learner_for_fast_explainer()
         elif self.mode == 'classification':
-            self.interval_learner = VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator)
+            self.interval_learner = VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator, predict_function=self.predict_function)
         elif 'regression' in self.mode:
             self.interval_learner = IntervalRegressor(self)
         self.__initialized = True
@@ -1750,7 +1763,6 @@ class CalibratedExplainer:
         if not calibrated:
             if threshold is not None:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
-            warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
             if uq_interval:
                 proba = self.learner.predict_proba(X_test)
                 if proba.shape[1] > 2:
@@ -1769,16 +1781,12 @@ class CalibratedExplainer:
                 proba, low, high, _ = self.interval_learner[-1].predict_proba(X_test, output_interval=True, **kwargs)
             else:
                 proba, low, high, _ = self.interval_learner.predict_proba(X_test, output_interval=True, **kwargs)
-            if uq_interval:
-                return proba, (low, high)
-            return proba
+            return (proba, (low, high)) if uq_interval else proba
         if isinstance(self.interval_learner, list):
             proba, low, high = self.interval_learner[-1].predict_proba(X_test, output_interval=True, **kwargs)
         else:
             proba, low, high = self.interval_learner.predict_proba(X_test, output_interval=True, **kwargs)
-        if uq_interval:
-            return proba, (low, high)
-        return proba
+        return (proba, (low, high)) if uq_interval else proba
 
 
 
@@ -1820,26 +1828,26 @@ class CalibratedExplainer:
 
 
     def _preload_lime(self, X_cal=None):
-        if lime := safe_import("lime.lime_tabular", "LimeTabularExplainer"):
-            if not self._is_lime_enabled():
-                if self.mode == 'classification':
-                    self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
-                                                    feature_names=self.feature_names,
-                                                    class_names=['0','1'],
-                                                    mode=self.mode)
-                    self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
-                                                                self.learner.predict_proba,
-                                                                num_features=self.num_features)
-                elif 'regression' in self.mode:
-                    self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
-                                                    feature_names=self.feature_names,
-                                                    mode='regression')
-                    self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
-                                                                self.learner.predict,
-                                                                num_features=self.num_features)
-                self._is_lime_enabled(True)
-            return self.lime, self.lime_exp
-        return None, None
+        if not (lime := safe_import("lime.lime_tabular", "LimeTabularExplainer")):
+            return None, None
+        if not self._is_lime_enabled():
+            if self.mode == 'classification':
+                self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
+                                                feature_names=self.feature_names,
+                                                class_names=['0','1'],
+                                                mode=self.mode)
+                self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
+                                                            self.learner.predict_proba,
+                                                            num_features=self.num_features)
+            elif 'regression' in self.mode:
+                self.lime = lime(self.X_cal[:1, :] if X_cal is None else X_cal,
+                                                feature_names=self.feature_names,
+                                                mode='regression')
+                self.lime_exp = self.lime.explain_instance(self.X_cal[0, :],
+                                                            self.learner.predict,
+                                                            num_features=self.num_features)
+            self._is_lime_enabled(True)
+        return self.lime, self.lime_exp
 
     def _preload_shap(self, num_test=None):
         if shap := safe_import("shap"):
@@ -1884,6 +1892,75 @@ class CalibratedExplainer:
             cal_predicted_classes[i] = predict[0]
         return confusion_matrix(self.y_cal, cal_predicted_classes)
 
+    def batch_update(self, X, y, update_model=True):
+        """Update the model on the fly. Useful in online learning settings.
+        
+        If 'update_model' is True, then the learn_one method is called once for each instance before adding the instances to the calibration set.
+        
+        Parameters
+        ----------
+        X : array-like
+            Set of instance objects
+        y : array-like 
+            Set of instance targets
+            
+        Raises
+        ------
+        AttributeError
+            If update_model=True and learner does not have a learn_one method
+        """
+        if update_model:
+            if not hasattr(self.learner, 'learn_one'):
+                raise AttributeError("Learner must have a learn_one method")
+            for x_i, y_i in zip(X,y):
+                self.learner.learn_one(x_i, y_i)
+
+        self.X_cal.append(X)
+        self.y_cal.append(y)
+
+        self.reinitialize(self.learner)
+
+    def update(self, X, y, update_model=True):
+        """Update the model on the fly. Useful in online learning settings.
+        
+        If 'update_model' is True, then the learn_one method is called before adding the instance to the calibration set.
+        
+        Parameters
+        ----------
+        X : array-like
+            Single sample features
+        y : array-like 
+            Single sample target
+            
+        Raises
+        ------
+        AttributeError
+            If update_model=True and learner does not have a learn_one method
+        """
+        if update_model:
+            if not hasattr(self.learner, 'learn_one'):
+                raise AttributeError("Learner must have a learn_one method")
+            self.learner.learn_one(X, y)
+
+        self.X_cal.append(X)
+        self.y_cal.append(y)
+
+        self.reinitialize(self.learner)
+
+    def predict_calibration(self):
+        """Predict the target values for the calibration data.
+
+        Returns
+        -------
+        array-like
+            Predicted values for the calibration data. For online learning models with hat matrix,
+            returns updated predictions using the hat matrix. Otherwise uses the predict_function
+            on the calibration data.
+        """
+        if hasattr(self.learner, 'XTXinv'): # handle online_cp package
+            updated_hat_matrix = self.learner.X @ self.learner.XTXinv @ self.learner.X.T
+            return updated_hat_matrix @ self.learner.y
+        return self.predict_function(self.X_cal)
 
 class WrapCalibratedExplainer():
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
@@ -1897,7 +1974,7 @@ class WrapCalibratedExplainer():
     conformal predictive systems (regression).
 
     :class:`.WrapCalibratedExplainer` is a wrapper class for the :class:`.CalibratedExplainer`. It allows to fit, calibrate, and explain the learner.
-    Compared to the :class:`.CalibratedExplainer`, it allows access to the predict and predict_proba methods of
+    Like the :class:`.CalibratedExplainer`, it allows access to the predict and predict_proba methods of
     the calibrated explainer, making it easy to get the same output as shown in the explanations.
     """
 
@@ -2111,7 +2188,7 @@ class WrapCalibratedExplainer():
             if 'threshold' in kwargs:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             if calibrated:
-                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", Warning)
+                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", UserWarning)
             if uq_interval:
                 predict = self.learner.predict(X_test)
                 return predict, (predict, predict)
@@ -2138,7 +2215,7 @@ class WrapCalibratedExplainer():
             if threshold is not None:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             if calibrated:
-                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", Warning)
+                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", UserWarning)
             if uq_interval:
                 proba = self.learner.predict_proba(X_test)
                 if proba.shape[1] > 2:

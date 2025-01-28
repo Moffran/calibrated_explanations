@@ -50,7 +50,7 @@ class IntervalRegressor:
         self.ce = calibrated_explainer
         self.bins = calibrated_explainer.bins
         self.model = self
-        self.y_cal_hat = self.ce.learner.predict(self.ce.X_cal)  # can be calculated through calibrated_explainer
+        self.y_cal_hat = self.ce.predict_calibration()  # can be calculated through calibrated_explainer
         self.residual_cal = self.ce.y_cal - self.y_cal_hat  # can be calculated through calibrated_explainer
         self.sigma_cal = self.ce._get_sigma_test(X=self.ce.X_cal)  # pylint: disable=protected-access
         cps = crepes.ConformalPredictiveSystem()
@@ -110,23 +110,6 @@ class IntervalRegressor:
             interval[i, :] = np.array([low, high])
         return proba, interval[:, 0], interval[:, 1], None
 
-    def _predict_tuple_interval(self, X_test, threshold, bins):
-        h_threshold = np.max(threshold)
-        self.current_y_threshold = h_threshold
-        self.compute_proba_cal(h_threshold)
-        _, low_h, high_h = self.split['va'].predict_proba(X_test, output_interval=True, bins=bins)
-        l_threshold = np.min(threshold)
-        self.current_y_threshold = l_threshold
-        self.compute_proba_cal(l_threshold)
-        _, low_l, high_l = self.split['va'].predict_proba(X_test, output_interval=True, bins=bins)
-        low_ = low_h-low_l
-        high_ = high_h-high_l
-        low = np.min(np.array([low_, high_]), axis=0)
-        high = np.max(np.array([low_, high_]), axis=0)
-        proba = high / (1-low + high)
-        assert np.all([low[i] <= proba[i] <= high[i] for i in range(len(low))]), 'Lower bound must be less than or equal to upper bound, with proba in the middle.'
-        return proba, low, high, None
-
     def predict_uncertainty(self, X_test, low_high_percentiles, bins=None):
         """Predict the uncertainty of a given set of instances using a `ConformalPredictiveSystem`.
 
@@ -149,7 +132,7 @@ class IntervalRegressor:
         -------
             four values: median, lower bound, upper bound, and None.
         """
-        y_test_hat = self.ce.learner.predict(X_test)
+        y_test_hat = self.ce.predict_function(X_test)
 
         sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
@@ -183,7 +166,7 @@ class IntervalRegressor:
             for being above or below the y_threshold. The first column represents the probability of the 
             negative class (1-proba) and the second column represents the probability of the positive class (proba).
         """
-        y_test_hat = self.ce.learner.predict(X_test)
+        y_test_hat = self.ce.predict_function(X_test)
 
         sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
         if isinstance(self.current_y_threshold, tuple):

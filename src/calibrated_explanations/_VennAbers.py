@@ -42,7 +42,7 @@ class VennAbers:
             Returns true if Mondrian categories are used.
     """
 
-    def __init__(self, X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
+    def __init__(self, X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None, predict_function=None):
         """Initialize the VennAbers class with calibration data and model.
 
         Parameters
@@ -53,12 +53,14 @@ class VennAbers:
             bins (array-like, optional): Mondrian categories for calibration. Defaults to None.
             cprobs (array-like, optional): Calibration probabilities. Defaults to None.
             difficulty_estimator (callable, optional): A difficulty estimator function. Defaults to None.
+            predict_function (callable, optional): A predict_proba function. Defaults to None.
         """
         self.y_cal_numeric, self.label_map = convert_targets_to_numeric(y_cal)
         self.original_labels = y_cal
 
         self.de = difficulty_estimator
         self.learner = learner
+        self._predict_proba = predict_function if predict_function is not None else learner.predict_proba
         self.X_cal = X_cal
         self.__is_multiclass = len(np.unique(self.y_cal_numeric)) > 2
 
@@ -103,10 +105,10 @@ class VennAbers:
         warnings.filterwarnings("default", category=RuntimeWarning)
 
     def __predict_proba_with_difficulty(self, X, bins=None):
-        if 'bins' in self.learner.predict_proba.__code__.co_varnames:
-            probs = self.learner.predict_proba(X, bins=bins)
+        if 'bins' in self._predict_proba.__code__.co_varnames:
+            probs = self._predict_proba(X, bins=bins)
         else:
-            probs = self.learner.predict_proba(X)
+            probs = self._predict_proba(X)
         if self.de is not None:
             difficulty = self.de.apply(X)
             # method = logit_based_scaling_list

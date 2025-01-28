@@ -18,8 +18,8 @@ Functions:
     test_var_normalized_probabilistic_regression_ce: Tests variance normalized probabilistic explanations for regression models.
     test_regression_fast_ce: Tests fast explanations for regression models.
     test_probabilistic_regression_fast_ce: Tests fast probabilistic explanations for regression models.
-    test_regression_conditional_perturbed_ce: Tests conditional perturbed explanations for regression models.
-    test_probabilistic_regression_conditional_perturbed_ce: Tests probabilistic conditional perturbed explanations for regression models.
+    test_regression_conditional_fast_ce: Tests conditional perturbed explanations for regression models.
+    test_probabilistic_regression_conditional_fast_ce: Tests probabilistic conditional perturbed explanations for regression models.
     test_knn_normalized_regression_fast_ce: Tests KNN normalized fast explanations for regression models.
     test_knn_normalized_probabilistic_regression_fast_ce: Tests KNN normalized fast probabilistic explanations for regression models.
     test_var_normalized_regression_fast_ce: Tests variance normalized fast explanations for regression models.
@@ -33,6 +33,7 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 from crepes.extras import DifficultyEstimator
 
+from calibrated_explanations import CalibratedExplainer
 from tests.test_classification import initiate_explainer
 
 @pytest.fixture
@@ -53,8 +54,8 @@ def regression_dataset():
             - categorical_features (list): A list of indices of categorical features.
             - columns (pandas.Index): The column names of the features.
     """
-    num_to_test = 1
-    calibration_size = 200
+    num_to_test = 2
+    calibration_size = 1000
     dataset = 'abalone.txt'
 
     ds = pd.read_csv(f'data/reg/{dataset}')
@@ -167,39 +168,63 @@ def test_probabilistic_regression_ce(regression_dataset):
     alternative_explanation.super_explanations()
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
+
+
+def test_regression_as_classification_ce(regression_dataset):
+    """
+    Tests probabilistic explanations for regression models.
+    Args:
+        regression_dataset (tuple): The regression dataset.
+    """
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
+    model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
+    def predict_function(x):
+        """Convert regression predictions to binary classification."""
+        return np.asarray([[float(p > 0.5), float(p <= 0.5)] for p in model.predict(x)])
+    cal_exp = CalibratedExplainer(model, X_cal, np.asarray([1 if y<=0.5 else 0 for y in y_cal]), feature_names=feature_names, categorical_features=categorical_features, mode='classification', predict_function=predict_function)
+
+    factual_explanation = cal_exp.explain_factual(X_test)
+    factual_explanation.add_conjunctions()
+    factual_explanation.plot(show=False)
+    factual_explanation.plot(show=False, uncertainty=True)
+
+    alternative_explanation = cal_exp.explore_alternatives(X_test)
+    alternative_explanation.plot(show=False)
+
 def test_regression_conditional_ce(regression_dataset):
     """
     Tests conditional explanations for regression models.
     Args:
         regression_dataset (tuple): The regression dataset.
     """
+    bin_feature = 0
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, categorical_features, feature_names = regression_dataset
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', bins=X_cal[:, 0])
+    cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', bins=X_cal[:, bin_feature])
 
-    factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:, 0])
+    factual_explanation = cal_exp.explain_factual(X_test, bins=X_test[:, bin_feature])
     factual_explanation.add_conjunctions()
     factual_explanation.plot(show=False)
     factual_explanation.plot(show=False, uncertainty=True)
     repr(factual_explanation)
 
-    factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:, 0])
+    factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:, bin_feature])
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
-    factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:, 0])
+    factual_explanation = cal_exp.explain_factual(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:, bin_feature])
     factual_explanation.plot(show=False)
     with pytest.raises(Warning):
         factual_explanation.plot(show=False, uncertainty=True)
 
-    alternative_explanation = cal_exp.explore_alternatives(X_test, bins=X_test[:, 0])
+    alternative_explanation = cal_exp.explore_alternatives(X_test, bins=X_test[:, bin_feature])
     alternative_explanation.plot(show=False)
 
-    alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:, 0])
+    alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:, bin_feature])
     alternative_explanation.plot(show=False)
 
-    alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:, 0])
+    alternative_explanation = cal_exp.explore_alternatives(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:, bin_feature])
     alternative_explanation.plot(show=False)
     repr(alternative_explanation)
 
@@ -321,20 +346,21 @@ def test_regression_fast_ce(regression_dataset):
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', fast=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test)
-    perturbed_explanation.add_conjunctions()
-    perturbed_explanation.plot(show=False)
-    perturbed_explanation.plot(show=False, uncertainty=True)
+    fast_explanation = cal_exp.explain_fast(X_test)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
+    fast_explanation.plot(show=False)
+    fast_explanation.plot(show=False, uncertainty=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
-    perturbed_explanation.plot(show=False)
+    fast_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
+    fast_explanation.plot(show=False)
     with pytest.raises(Warning):
-        perturbed_explanation.plot(show=False, uncertainty=True)
+        fast_explanation.plot(show=False, uncertainty=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
-    perturbed_explanation.plot(show=False)
+    fast_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
+    fast_explanation.plot(show=False)
     with pytest.raises(Warning):
-        perturbed_explanation.plot(show=False, uncertainty=True)
+        fast_explanation.plot(show=False, uncertainty=True)
 
 def test_probabilistic_regression_fast_ce(regression_dataset):
     """
@@ -346,16 +372,17 @@ def test_probabilistic_regression_fast_ce(regression_dataset):
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', fast=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
-    perturbed_explanation.add_conjunctions()
-    perturbed_explanation.plot(show=False)
-    perturbed_explanation.plot(show=False, uncertainty=True)
+    fast_explanation = cal_exp.explain_fast(X_test, y_test)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
+    fast_explanation.plot(show=False)
+    fast_explanation.plot(show=False, uncertainty=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0])
-    perturbed_explanation.plot(show=False)
-    perturbed_explanation.plot(show=False, uncertainty=True)
+    fast_explanation = cal_exp.explain_fast(X_test, y_test[0])
+    fast_explanation.plot(show=False)
+    fast_explanation.plot(show=False, uncertainty=True)
 
-def test_regression_conditional_perturbed_ce(regression_dataset):
+def test_regression_conditional_fast_ce(regression_dataset):
     """
     Tests conditional perturbed explanations for regression models.
     Args:
@@ -365,14 +392,15 @@ def test_regression_conditional_perturbed_ce(regression_dataset):
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', bins=X_cal[:,0], fast=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, bins=X_test[:,0])
-    perturbed_explanation.add_conjunctions()
+    fast_explanation = cal_exp.explain_fast(X_test, bins=X_test[:,0])
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:,0])
+    fast_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf), bins=X_test[:,0])
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:,0])
+    fast_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9), bins=X_test[:,0])
 
-def test_probabilistic_regression_conditional_perturbed_ce(regression_dataset):
+def test_probabilistic_regression_conditional_fast_ce(regression_dataset):
     """
     Tests probabilistic conditional perturbed explanations for regression models.
     Args:
@@ -382,10 +410,11 @@ def test_probabilistic_regression_conditional_perturbed_ce(regression_dataset):
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', bins=y_cal > y_test[0], fast=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, y_test, bins=y_test > y_test[0])
-    perturbed_explanation.add_conjunctions()
+    fast_explanation = cal_exp.explain_fast(X_test, y_test, bins=y_test > y_test[0])
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0], bins=y_test > y_test[0])
+    fast_explanation = cal_exp.explain_fast(X_test, y_test[0], bins=y_test > y_test[0])
 
 def test_knn_normalized_regression_fast_ce(regression_dataset):
     """
@@ -397,12 +426,13 @@ def test_knn_normalized_regression_fast_ce(regression_dataset):
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True), fast=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test)
-    perturbed_explanation.add_conjunctions()
+    fast_explanation = cal_exp.explain_fast(X_test)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
+    fast_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
+    fast_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
 
 def test_knn_normalized_probabilistic_regression_fast_ce(regression_dataset):
     """
@@ -414,10 +444,11 @@ def test_knn_normalized_probabilistic_regression_fast_ce(regression_dataset):
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True), fast=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
-    perturbed_explanation.add_conjunctions()
+    fast_explanation = cal_exp.explain_fast(X_test, y_test)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0])
+    fast_explanation = cal_exp.explain_fast(X_test, y_test[0])
 
 def test_var_normalized_regression_fast_ce(regression_dataset):
     """
@@ -429,12 +460,13 @@ def test_var_normalized_regression_fast_ce(regression_dataset):
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True), fast=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test)
-    perturbed_explanation.add_conjunctions()
+    fast_explanation = cal_exp.explain_fast(X_test)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
+    fast_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(0.1, np.inf))
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
+    fast_explanation = cal_exp.explain_fast(X_test, low_high_percentiles=(-np.inf, 0.9))
 
 def test_var_normalized_probabilistic_regression_fast_ce(regression_dataset):
     """
@@ -446,7 +478,8 @@ def test_var_normalized_probabilistic_regression_fast_ce(regression_dataset):
     model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(model, X_cal, y_cal, feature_names, categorical_features, mode='regression', difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=model, scaler=True), fast=True)
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, y_test)
-    perturbed_explanation.add_conjunctions()
+    fast_explanation = cal_exp.explain_fast(X_test, y_test)
+    with pytest.warns(UserWarning):
+        fast_explanation.add_conjunctions()
 
-    perturbed_explanation = cal_exp.explain_fast(X_test, y_test[0])
+    fast_explanation = cal_exp.explain_fast(X_test, y_test[0])

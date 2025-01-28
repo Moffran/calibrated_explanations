@@ -63,7 +63,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Return the next explanation."""
         if self.current_index >= self.end_index:
             raise StopIteration
-        result = self.get_explanation(self.current_index)
+        result = self[self.current_index]
         self.current_index += 1
         return result
 
@@ -428,7 +428,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if index is not None:
             if len(filename) > 0:
                 filename = path + title + str(index) + ext
-            self.get_explanation(index).plot(
+            self[index].plot(
                 filter_top=filter_top,
                 show=show,
                 filename=filename,
