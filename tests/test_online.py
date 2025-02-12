@@ -1,5 +1,5 @@
 """Tests for OnlineCalibratedExplainer functionality."""
-
+# pylint: disable=invalid-name, too-many-locals
 import numpy as np
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.preprocessing import StandardScaler
@@ -19,7 +19,6 @@ def test_online_classification():
     X_cal = X[400:600]
     y_cal = y[400:600]
     X_test = X[600:800]
-    y_test = y[600:800]
     X_stream = X[800:]
     y_stream = y[800:]
 
@@ -61,7 +60,7 @@ def test_online_classification():
 def test_online_regression():
     """Test OnlineCalibratedExplainer with regression."""
     # Generate synthetic data
-    X, y = make_regression(n_samples=1000, n_features=20, n_informative=15, 
+    X, y, _ = make_regression(n_samples=1000, n_features=20, n_informative=15,
                           random_state=42)
 
     # Scale targets to reasonable range
@@ -74,7 +73,6 @@ def test_online_regression():
     X_cal = X[400:600]
     y_cal = y[400:600]
     X_test = X[600:800]
-    y_test = y[600:800]
     X_stream = X[800:]
     y_stream = y[800:]
 
@@ -130,7 +128,6 @@ def test_online_explanations():
     X_cal = X[400:600]
     y_cal = y[400:600]
     X_test = X[600:605]  # Small test set for explanations
-    y_test = y[600:605]
     X_stream = X[800:]
     y_stream = y[800:]
 
@@ -178,10 +175,13 @@ def test_error_handling():
     """Test error handling in OnlineCalibratedExplainer."""
     # Create explainer with non-online learner
     class NonOnlineLearner:
+        """Error class"""
         def fit(self, X, y):
-            pass
+            """Fit function"""
+            pass # pylint: disable=unnecessary-pass
 
         def predict(self, X):
+            """Predict function"""
             return np.zeros(len(X))
 
     explainer = OnlineCalibratedExplainer(NonOnlineLearner())
