@@ -175,6 +175,28 @@ class CalibratedExplanation(ABC):
         """Return the number of rules in the explanation."""
         return len(self._get_rules()["rule"])
 
+    @property
+    def prediction_interval(self):
+        """Get the prediction interval from the prediction dictionary.
+
+        Returns
+        -------
+        tuple
+            A tuple containing (low, high) values of the prediction interval.
+        """
+        return (self.prediction["low"], self.prediction["high"])
+
+    @property
+    def predict(self):
+        """Get the prediction from the prediction dictionary.
+
+        Returns
+        -------
+        float
+            A prediction value.
+        """
+        return self.prediction["predict"]
+
     def get_mode(self):
         """Return the mode of the explanation ('classification' or 'regression')."""
         return self._get_explainer().mode
@@ -535,6 +557,8 @@ class CalibratedExplanation(ABC):
                 perturbed_threshold = threshold
             elif threshold is None:
                 perturbed_threshold = None
+            elif np.isscalar(perturbed_threshold) and perturbed_threshold == threshold:
+                perturbed_threshold = threshold
             else:
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 

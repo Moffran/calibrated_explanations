@@ -126,6 +126,28 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Return the string representation of the CalibratedExplanations object."""
         return self.__repr__()
 
+    @property
+    def prediction_interval(self):
+        """Get the prediction intervals from each prediction.
+
+        Returns
+        -------
+        list of tuples
+            A list of tuples containing (low, high) values of the prediction interval.
+        """
+        return [e.prediction_interval for e in self.explanations]
+
+    @property
+    def predict(self):
+        """Get the predictions from each prediction.
+
+        Returns
+        -------
+        list
+            A list of prediction value.
+        """
+        return [e.predict for e in self.explanations]
+
     def _is_thresholded(self) -> bool:
         """Check if the explanations are thresholded."""
         return self.y_threshold is not None
