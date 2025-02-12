@@ -132,7 +132,7 @@ class IntervalRegressor:
         -------
             four values: median, lower bound, upper bound, and None.
         """
-        y_test_hat = self.ce.predict_function(X_test)
+        y_test_hat = self.ce.predict_function(X_test).reshape(-1,1)
 
         sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]

@@ -194,8 +194,8 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         fitted = all_or_any([hasattr(estimator, attr) for attr in attributes])
     elif hasattr(estimator, "__sklearn_is_fitted__"):
         fitted = estimator.__sklearn_is_fitted__()
-    elif hasattr(estimator, 'XTXinv'): # handle online_cp package
-        fitted = estimator.XTXinv is not None
+    elif hasattr(estimator, 'XTXinv'): # handle online_cp package and OnlineRidgeRegressor
+        fitted = estimator.XTXinv is not None or bool(hasattr(estimator, 'a') and estimator.a != 0)
     else:
         fitted = [
             v for v in vars(estimator) if v.endswith("_") and not v.startswith("__")

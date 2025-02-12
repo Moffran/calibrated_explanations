@@ -654,6 +654,8 @@ class CalibratedExplainer:
         # Step 3: Process each feature to analyze its effects
         for f in range(self.num_features):
             if f in self.features_to_ignore:
+                for i in range(len(X_test)):
+                    rule_values[i][f] = (self.feature_values[f], X_test[i,f], X_test[i,f])
                 continue
 
             # Get discretized values for this feature
@@ -1998,9 +2000,6 @@ class CalibratedExplainer:
             returns updated predictions using the hat matrix. Otherwise uses the predict_function
             on the calibration data.
         """
-        if hasattr(self.learner, 'XTXinv'): # handle online_cp package
-            updated_hat_matrix = self.learner.X @ self.learner.XTXinv @ self.learner.X.T
-            return updated_hat_matrix @ self.learner.y
         return self.predict_function(self.X_cal)
 
 class WrapCalibratedExplainer():
@@ -2417,7 +2416,9 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         """
         if not hasattr(self.learner, 'partial_fit'):
             raise AttributeError("The learner must implement partial_fit for incremental learning")
-
+        if np.isscalar(y):
+            X = np.asarray(X).reshape(1, -1)
+            y = np.asarray(y).reshape(1)
         self.learner.partial_fit(X, y, **kwargs)
         self.fitted = True
         return self
