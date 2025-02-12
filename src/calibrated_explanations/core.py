@@ -158,16 +158,9 @@ class CalibratedExplainer:
                 raise exc
             assert len(X_cal) == len(y_oob), 'The length of the out-of-bag predictions does not match the length of X_cal.'
             y_cal = y_oob
-        if safe_isinstance(X_cal, "pandas.core.frame.DataFrame"):
-            self.X_cal = X_cal.values  # pylint: disable=invalid-name
-        else:
-            self.X_cal = X_cal
-        if safe_isinstance(y_cal, "pandas.core.frame.DataFrame"):
-            self.y_cal = y_cal.values  # pylint: disable=invalid-name
-        else:
-            self.y_cal = y_cal
+        self.X_cal = X_cal
+        self.y_cal = y_cal
 
-        self.num_features = len(self.X_cal[0, :])
         self.set_seed(kwargs.get('seed', 42))
         self.sample_percentiles = kwargs.get('sample_percentiles', [25, 50, 75])
         self.verbose = kwargs.get('verbose', False)
@@ -190,13 +183,13 @@ class CalibratedExplainer:
         self._preprocess()
 
         if feature_names is None:
-            feature_names = [str(i) for i in range(self.num_features)]
-        self.feature_names = list(feature_names)
+            feature_names = self._X_cal[0].keys() if isinstance(self._X_cal[0], dict) else [str(i) for i in range(self.num_features)]
+        self._feature_names = list(feature_names)
 
         if mode == 'classification':
             if any(isinstance(val, str) for val in self.y_cal) or any(isinstance(val, (np.str_, np.object_)) for val in self.y_cal):
                 self.y_cal_numeric, self.label_map = convert_targets_to_numeric(self.y_cal)
-                self.y_cal = self.y_cal_numeric
+                self.y_cal = self.y_cal_numeric # save to _y_cal to avoid append
                 if self.class_labels is None:
                     self.class_labels = {v: k for k, v in self.label_map.items()}
             else:
@@ -228,7 +221,93 @@ class CalibratedExplainer:
 
         self.init_time = time() - init_time
 
-    def reinitialize(self, learner):
+    @property
+    def X_cal(self):
+        """Get the calibration input data.
+        
+        Returns
+        -------
+        array-like
+            The calibration input data.
+        """
+        return self.__X_cal if isinstance(self._X_cal[0], dict) else self._X_cal
+
+    @X_cal.setter
+    def X_cal(self, value):
+        """Set the calibration input data.
+        
+        Parameters
+        ----------
+        value : array-like of shape (n_samples, n_features)
+            The new calibration input data.
+            
+        Raises
+        ------
+        ValueError
+            If the number of features in value does not match the existing calibration data.
+        """
+        if safe_isinstance(value, "pandas.core.frame.DataFrame"):
+            value = value.values
+
+        if len(value.shape) == 1:
+            value = value.reshape(1, -1)
+
+        self._X_cal = value
+
+        if isinstance(self._X_cal[0], dict):
+            self.__X_cal = np.array([[x[f] for f in x.keys()] for x in self._X_cal])
+
+    @property
+    def y_cal(self):
+        """Get the calibration target data.
+        
+        Returns
+        -------
+        array-like
+            The calibration target data.
+        """
+        return self._y_cal
+
+    @y_cal.setter
+    def y_cal(self, value):
+        """Set the calibration target data.
+        
+        Parameters
+        ----------
+        value : array-like of shape (n_samples,)
+            The new calibration target data.
+        """
+        if safe_isinstance(value, "pandas.core.frame.DataFrame"):
+            self._y_cal = np.asarray(value.values)
+        else:
+            if len(value.shape) == 2 and value.shape[1] == 1:
+                value = value.ravel()
+            self._y_cal = np.asarray(value)
+
+    def append_cal(self, X, y):
+        """Append new calibration data.
+        
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The new calibration input data to append.
+        y : array-like of shape (n_samples,)
+            The new calibration target data to append.
+        """
+        if X.shape[1] != self.num_features:
+            raise ValueError("Number of features must match existing calibration data")
+        self.X_cal = np.vstack((self.X_cal, X))
+        self.y_cal = np.concatenate((self.y_cal, y))
+
+    @property
+    def num_features(self):
+        return len(self._X_cal[0].keys()) if isinstance(self._X_cal[0], dict) else len(self._X_cal[0, :])
+
+    @property
+    def feature_names(self):
+        return self._feature_names
+
+    def reinitialize(self, learner, xs=None, ys=None):
         """Reinitialize the explainer with a new learner.
 
         This is useful when the learner is updated or retrained and the explainer needs to be reinitialized.
@@ -237,6 +316,10 @@ class CalibratedExplainer:
         ----------
         learner : predictive learner
             A predictive learner that can be used to predict the target variable. The learner must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
+        xs : array-like, optional
+            New calibration input data to append
+        ys : array-like, optional  
+            New calibration target data to append
 
         Returns
         -------
@@ -246,7 +329,11 @@ class CalibratedExplainer:
         self.__initialized = False
         check_is_fitted(learner)
         self.learner = learner
-        self.__initialize_interval_learner()
+        if xs is not None and ys is not None:
+            self.append_cal(xs, ys)
+            self.__update_interval_learner(xs, ys)
+        else:
+            self.__initialize_interval_learner()
         self.__initialized = True
 
 
@@ -799,7 +886,7 @@ class CalibratedExplainer:
             X_test = X_test.values
         if len(X_test.shape) == 1:
             X_test = X_test.reshape(1, -1)
-        if X_test.shape[1] != self.X_cal.shape[1]:
+        if X_test.shape[1] != self.num_features:
             raise ValueError("Number of features must match calibration data")
         return X_test
 
@@ -971,7 +1058,7 @@ class CalibratedExplainer:
             X_test = X_test.values  # pylint: disable=invalid-name
         if len(X_test.shape) == 1:
             X_test = X_test.reshape(1, -1)
-        if X_test.shape[1] != self.X_cal.shape[1]:
+        if X_test.shape[1] != self.num_features:
             raise ValueError("The number of features in the test data must be the same as in the \
                             calibration data.")
         if self._is_mondrian():
@@ -1082,7 +1169,7 @@ class CalibratedExplainer:
             X_test = X_test.values  # pylint: disable=invalid-name
         if len(X_test.shape) == 1:
             X_test = X_test.reshape(1, -1)
-        if X_test.shape[1] != self.X_cal.shape[1]:
+        if X_test.shape[1] != self.num_features:
             raise ValueError("The number of features in the test data must be the same as in the \
                             calibration data.")
         if self._is_mondrian():
@@ -1331,7 +1418,7 @@ class CalibratedExplainer:
 
 
     def __constant_sigma(self, X: np.ndarray, learner=None, beta=None) -> np.ndarray:  # pylint: disable=unused-argument
-        return np.ones(X.shape[0])
+        return np.ones(X.shape[0]) if isinstance(X, (np.ndarray, list, tuple)) else np.ones(1)
 
 
 
@@ -1368,7 +1455,15 @@ class CalibratedExplainer:
         if initialize:
             self.__initialize_interval_learner()
 
-
+    def __update_interval_learner(self, xs, ys) -> None: # pylint: disable=unused-argument
+        # TODO: change so that existing calibrators are extended with new calibration instances
+        if self.is_fast():
+            self.__initialize_interval_learner_for_fast_explainer()
+        elif self.mode == 'classification':
+            self.interval_learner = VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator, predict_function=self.predict_function)
+        elif 'regression' in self.mode:
+            self.interval_learner = IntervalRegressor(self)
+        self.__initialized = True
 
     def __initialize_interval_learner(self) -> None:
         if self.is_fast():
@@ -1498,10 +1593,11 @@ class CalibratedExplainer:
     def _preprocess(self):
         constant_columns = [
             f
-            for f in range(self.X_cal.shape[1])
+            for f in range(self.num_features)
             if np.all(self.X_cal[:, f] == self.X_cal[0, f])
         ]
         self.features_to_ignore = constant_columns
+
 
 
     def _discretize(self, x):
@@ -1594,7 +1690,7 @@ class CalibratedExplainer:
         self.feature_values = {}
         self.feature_frequencies = {}
 
-        for feature in range(self.X_cal.shape[1]):
+        for feature in range(self.num_features):
             column = self.discretized_X_cal[:, feature]
             feature_count = {}
             for item in column:
@@ -1892,61 +1988,6 @@ class CalibratedExplainer:
             cal_predicted_classes[i] = predict[0]
         return confusion_matrix(self.y_cal, cal_predicted_classes)
 
-    def batch_update(self, X, y, update_model=True):
-        """Update the model on the fly. Useful in online learning settings.
-        
-        If 'update_model' is True, then the learn_one method is called once for each instance before adding the instances to the calibration set.
-        
-        Parameters
-        ----------
-        X : array-like
-            Set of instance objects
-        y : array-like 
-            Set of instance targets
-            
-        Raises
-        ------
-        AttributeError
-            If update_model=True and learner does not have a learn_one method
-        """
-        if update_model:
-            if not hasattr(self.learner, 'learn_one'):
-                raise AttributeError("Learner must have a learn_one method")
-            for x_i, y_i in zip(X,y):
-                self.learner.learn_one(x_i, y_i)
-
-        self.X_cal.append(X)
-        self.y_cal.append(y)
-
-        self.reinitialize(self.learner)
-
-    def update(self, X, y, update_model=True):
-        """Update the model on the fly. Useful in online learning settings.
-        
-        If 'update_model' is True, then the learn_one method is called before adding the instance to the calibration set.
-        
-        Parameters
-        ----------
-        X : array-like
-            Single sample features
-        y : array-like 
-            Single sample target
-            
-        Raises
-        ------
-        AttributeError
-            If update_model=True and learner does not have a learn_one method
-        """
-        if update_model:
-            if not hasattr(self.learner, 'learn_one'):
-                raise AttributeError("Learner must have a learn_one method")
-            self.learner.learn_one(X, y)
-
-        self.X_cal.append(X)
-        self.y_cal.append(y)
-
-        self.reinitialize(self.learner)
-
     def predict_calibration(self):
         """Predict the target values for the calibration data.
 
@@ -1986,21 +2027,21 @@ class WrapCalibratedExplainer():
         learner : predictive learner
             A predictive learner that can be used to predict the target variable.
         """
+        self.mc = None
         # Check if the learner is a CalibratedExplainer
         if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
             explainer = learner
             learner = explainer.learner
-            self.calibrated = True
-            self.explainer = explainer
             self.learner = learner
             check_is_fitted(self.learner)
             self.fitted = True
+            self.explainer = explainer
+            self.calibrated = True
             return
 
         self.learner = learner
         self.explainer = None
         self.calibrated = False
-        self.mc = None
 
         # Check if the learner is already fitted
         try:
@@ -2299,3 +2340,179 @@ class WrapCalibratedExplainer():
         if isinstance(self.mc, MondrianCategorizer):
             return self.mc.apply(X_test)
         return self.mc(X_test) if self.mc is not None else kwargs.get('bins', None)
+
+
+class OnlineCalibratedExplainer(WrapCalibratedExplainer):
+    """Calibrated Explanations for Online Learning.
+
+    This class extends WrapCalibratedExplainer to support online/incremental learning.
+    It maintains compatibility with scikit-learn style interfaces while allowing
+    incremental updates to both the model and calibration.
+
+    The calibrated explanations are updated incrementally as new data arrives, making it suitable for streaming
+    data scenarios where the model needs to continuously learn and adapt.
+    """
+    def fit(self, X_proper_train, y_proper_train, **kwargs):
+        """Fit the learner to the training data.
+
+        Parameters
+        ----------
+        X_proper_train : array-like of shape (n_samples, n_features)
+            The training input samples in sklearn-compatible format.
+        y_proper_train : array-like of shape (n_samples,)
+            The target values.
+        **kwargs : dict
+            Additional arguments passed to the underlying learner's fit method.
+
+        Returns
+        -------
+        self
+            The fitted explainer.
+        """
+        reinitialize = bool(self.calibrated)
+        self.fitted = False
+        self.calibrated = False
+
+        if hasattr(self.learner, 'fit'):
+            self.learner.fit(X_proper_train, y_proper_train, **kwargs)
+        else:
+            if 'classes' not in kwargs:
+                kwargs['classes'] = np.unique(y_proper_train)
+            try:
+                self.learner.partial_fit(X_proper_train, y_proper_train, **kwargs)
+            except TypeError:
+                kwargs.pop('classes', None)
+                self.learner.partial_fit(X_proper_train, y_proper_train, **kwargs)
+
+        check_is_fitted(self.learner)
+        self.fitted = True
+
+        if reinitialize:
+            self.explainer.reinitialize(self.learner)
+            self.calibrated = True
+
+        return self
+
+    def partial_fit(self, X, y, **kwargs):
+        """Incrementally fit the model with samples X and y.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Training data in sklearn-compatible format.
+        y : array-like of shape (n_samples,)
+            Target values.
+        **kwargs : dict
+            Additional arguments passed to the learner's partial_fit method.
+
+        Returns
+        -------
+        self
+            The updated explainer.
+
+        Raises
+        ------
+        AttributeError
+            If the underlying learner does not support incremental learning.
+        """
+        if not hasattr(self.learner, 'partial_fit'):
+            raise AttributeError("The learner must implement partial_fit for incremental learning")
+
+        self.learner.partial_fit(X, y, **kwargs)
+        self.fitted = True
+        return self
+
+    def calibrate_one(self, x, y, **kwargs):
+        """Update the calibration set with a single instance.
+
+        Parameters
+        ----------
+        x : array-like of shape (1, n_features)
+            Single instance to calibrate with in sklearn-compatible format.
+        y : array-like of shape (1,)
+            The target value for the instance.
+        **kwargs : dict
+            Additional arguments passed to calibrate_many.
+
+        Returns
+        -------
+        self
+            The updated explainer.
+        """
+        x = np.asarray(x).reshape(1, -1)
+        y = np.asarray(y).reshape(1)
+        return self.calibrate_many(x, y, **kwargs)
+
+    def calibrate_many(self, X, y, **kwargs):
+        """Update the calibration set with multiple instances.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Multiple instances to calibrate with in sklearn-compatible format.
+        y : array-like of shape (n_samples,)
+            The target values for the instances.
+        **kwargs : dict
+            Additional arguments passed to the calibrate method.
+
+        Returns
+        -------
+        self
+            The updated explainer.
+
+        Raises
+        ------
+        RuntimeError
+            If the explainer has not been fitted before calling this method.
+        """
+        if not self.fitted:
+            raise RuntimeError("The OnlineCalibratedExplainer must be fitted before calibration.")
+
+        if self.calibrated:
+            self.explainer.reinitialize(self.learner, X, y)
+        else:
+            if 'mode' not in kwargs:
+                if hasattr(self.learner, 'predict_proba'):
+                    kwargs['mode'] = 'classification'
+                else:
+                    kwargs['mode'] = 'regression'
+            self.calibrate(X, y, **kwargs)
+
+        self.calibrated = True
+        return self
+
+    def predict_one(self, x, **kwargs):
+        """Predict target for a single instance.
+
+        Parameters
+        ----------
+        x : array-like of shape (1, n_features)
+            Single instance in sklearn-compatible format.
+        **kwargs : dict
+            Additional arguments passed to predict.
+
+        Returns
+        -------
+        array-like
+            Predicted value(s).
+        """
+        x = np.asarray(x).reshape(1, -1)
+        return self.predict(x, **kwargs)
+
+    def predict_proba_one(self, x, **kwargs):
+        """Predict class probabilities for a single instance.
+
+        Parameters
+        ----------
+        x : array-like of shape (1, n_features)
+            Single instance in sklearn-compatible format.
+        **kwargs : dict
+            Additional arguments passed to predict_proba.
+
+        Returns
+        -------
+        array-like
+            Predicted probabilities.
+        """
+        x = np.asarray(x).reshape(1, -1)
+        return self.predict_proba(x, **kwargs)
