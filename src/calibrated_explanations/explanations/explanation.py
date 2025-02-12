@@ -577,6 +577,8 @@ class CalibratedExplanation(ABC):
                 perturbed_threshold = threshold
             elif threshold is None:
                 perturbed_threshold = None
+            elif np.isscalar(perturbed_threshold) and perturbed_threshold == threshold:
+                perturbed_threshold = threshold
             else:
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 
@@ -613,7 +615,7 @@ class CalibratedExplanation(ABC):
         new_rule["weight_high"].append(
             np.mean(rule_high) - np.mean(instance_predict) if rule_high != np.inf else rule_high
         )
-        new_rule["value"].append(str(np.around(X_copy, decimals=2)))
+        new_rule["value"].append(str(np.around(self.X_test[f], decimals=2)))
         new_rule["feature"].append(f)
         new_rule["feature_value"].append(self.binned["rule_values"][f][0][0])
         new_rule["is_conjunctive"].append(False)
