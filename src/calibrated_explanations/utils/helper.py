@@ -183,7 +183,9 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
             "appropriate arguments before using this estimator."
         )
 
-    if not (hasattr(estimator, "fit") or hasattr(estimator, 'learn_initial_training_set')): # handle online_cp package
+    if not (hasattr(estimator, "fit") or
+            hasattr(estimator, 'partial_fit') or # handle online models
+            hasattr(estimator, 'learn_initial_training_set')): # handle online_cp package
         raise TypeError(f"{estimator} is not an estimator instance.")
 
     if attributes is not None:
