@@ -166,7 +166,7 @@ class IntervalRegressor:
             for being above or below the y_threshold. The first column represents the probability of the 
             negative class (1-proba) and the second column represents the probability of the positive class (proba).
         """
-        y_test_hat = self.ce.predict_function(X_test)
+        y_test_hat = self.ce.predict_function(X_test).reshape(-1,1)
 
         sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
         if isinstance(self.current_y_threshold, tuple):
