@@ -216,6 +216,7 @@ class CalibratedExplainer:
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.__set_mode(str.lower(mode), initialize=False)
 
+        self.interval_learner = None
         self.__initialize_interval_learner()
         self.reject_learner = self.initialize_reject_learner() if kwargs.get('reject', False) else None
 
@@ -301,10 +302,26 @@ class CalibratedExplainer:
 
     @property
     def num_features(self):
+        """Get the number of features in the calibration data.
+        
+        Returns
+        -------
+        int
+            The number of features in the calibration data. For dictionary input,
+            returns the number of keys. For array input, returns the number of columns.
+        """
         return len(self._X_cal[0].keys()) if isinstance(self._X_cal[0], dict) else len(self._X_cal[0, :])
 
     @property
     def feature_names(self):
+        """Get the feature names.
+        
+        Returns
+        -------
+        list
+            The list of feature names. If no feature names were provided during initialization,
+            returns None.
+        """
         return self._feature_names
 
     def reinitialize(self, learner, xs=None, ys=None):
@@ -1458,6 +1475,7 @@ class CalibratedExplainer:
             self.__initialize_interval_learner()
 
     def __update_interval_learner(self, xs, ys) -> None: # pylint: disable=unused-argument
+        # pylint: disable=fixme
         # TODO: change so that existing calibrators are extended with new calibration instances
         if self.is_fast():
             self.__initialize_interval_learner_for_fast_explainer()
