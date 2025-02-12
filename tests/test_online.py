@@ -60,7 +60,8 @@ def test_online_classification():
 def test_online_regression():
     """Test OnlineCalibratedExplainer with regression."""
     # Generate synthetic data
-    X, y, _ = make_regression(n_samples=1000, n_features=20, n_informative=15,
+    # pylint: disable=unbalanced-tuple-unpacking
+    X, y = make_regression(n_samples=1000, n_features=20, n_informative=15,
                           random_state=42)
 
     # Scale targets to reasonable range
