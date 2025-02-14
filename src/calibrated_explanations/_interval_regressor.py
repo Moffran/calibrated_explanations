@@ -261,3 +261,48 @@ class IntervalRegressor:
                                         self,
                                         bins=bins,
                                         cprobs=self.split['proba'])
+
+    def insert_calibration(self, xs, ys, bins=None):
+        """Make a sorted insert of the calibration values"""
+        num_add = len(ys)
+        if num_add % 2 != 0: # is odd?
+            parts = self.split['parts']
+            small_part = int(np.argmin([len(parts[0]), len(parts[1])]))
+            large_part = int(np.argmax([len(parts[0]), len(parts[1])]))
+            large_part = 1 if small_part == large_part else large_part
+        else:
+            small_part = 0
+            large_part = 1
+        small_idx = list(range(0, num_add, 2)) # if odd, one more to the smaller part
+        large_idx = list(range(1, num_add, 2))
+
+        # Update split indeces
+        if len(small_idx) > 0:
+            self.split['parts'][small_part].extend([len(self.residual_cal) + i for i in small_idx])
+        if len(large_idx) > 0:
+            self.split['parts'][large_part].extend([len(self.residual_cal) + i for i in large_idx])
+        cps_idx = small_idx if small_part == 0 else large_idx
+
+        # Update y_hat, residuals, and sigma
+        y_cal_hat = self.ce.predict_function(xs)
+        residuals = ys - y_cal_hat
+        sigmas = self.ce._get_sigma_test(X=xs)  # pylint: disable=protected-access
+        self.y_cal_hat = np.append(self.y_cal_hat, y_cal_hat)
+        self.residual_cal = np.append(self.residual_cal, residuals)
+        self.sigma_cal = np.append(self.sigma_cal, sigmas)
+
+        # Update bins
+        if bins is not None:
+            assert self.bins is not None, 'Cannot mix calibration instances with and without bins.'
+            assert len(bins) == len(ys), 'The length of bins must match the number of added instances.'
+            self.bins = np.append(self.bins, bins)
+
+        # Update split cps
+        alphas = self.split['cps'].alphas
+        indices = np.searchsorted(alphas, residuals[cps_idx])
+        self.split['cps'].alphas = np.insert(alphas, indices, residuals[cps_idx])
+
+        # Update cps
+        alphas = self.cps.alphas
+        indices = np.searchsorted(alphas, residuals)
+        self.cps.alphas = np.insert(alphas, indices, residuals)
