@@ -324,7 +324,7 @@ class CalibratedExplainer:
         """
         return self._feature_names
 
-    def reinitialize(self, learner, xs=None, ys=None):
+    def reinitialize(self, learner, xs=None, ys=None, bins=None):
         """Reinitialize the explainer with a new learner.
 
         This is useful when the learner is updated or retrained and the explainer needs to be reinitialized.
@@ -348,7 +348,11 @@ class CalibratedExplainer:
         self.learner = learner
         if xs is not None and ys is not None:
             self.append_cal(xs, ys)
-            self.__update_interval_learner(xs, ys)
+            if bins is not None:
+                assert self.bins is not None, 'Cannot mix calibration instances with and without bins.'
+                assert len(bins) == len(ys), 'The length of bins must match the number of added instances.'
+                self.bins.append(bins)
+            self.__update_interval_learner(xs, ys, bins=bins)
         else:
             self.__initialize_interval_learner()
         self.__initialized = True
@@ -1474,15 +1478,18 @@ class CalibratedExplainer:
         if initialize:
             self.__initialize_interval_learner()
 
-    def __update_interval_learner(self, xs, ys) -> None: # pylint: disable=unused-argument
+    def __update_interval_learner(self, xs, ys, bins=None) -> None: # pylint: disable=unused-argument
         # pylint: disable=fixme
         # TODO: change so that existing calibrators are extended with new calibration instances
         if self.is_fast():
-            self.__initialize_interval_learner_for_fast_explainer()
+            raise RuntimeError('OnlineCalibratedExplainers does not currently support fast explanations.')
         elif self.mode == 'classification':
             self.interval_learner = VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator, predict_function=self.predict_function)
         elif 'regression' in self.mode:
-            self.interval_learner = IntervalRegressor(self)
+            if isinstance(self.interval_learner, list):
+                raise RuntimeError('OnlineCalibratedExplainers does not currently support fast explanations.')
+            # update the IntervalRegressor
+            self.interval_learner.insert_calibration(xs, ys, bins=bins)
         self.__initialized = True
 
     def __initialize_interval_learner(self) -> None:
@@ -2440,6 +2447,34 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         self.learner.partial_fit(X, y, **kwargs)
         self.fitted = True
         return self
+
+    def partial_fit_and_calibrate(self, X, y, **kwargs):
+        """Incrementally fit and calibrate the model with samples X and y. Calls partial_fit and calibrate_many.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Training data in sklearn-compatible format.
+        y : array-like of shape (n_samples,)
+            Target values.
+        **kwargs : dict
+            Additional arguments passed to the learner's partial_fit method.
+
+        Returns
+        -------
+        self
+            The updated explainer.
+
+        Raises
+        ------
+        AttributeError
+            If the underlying learner does not support incremental learning.
+        """
+        self.partial_fit(X, y, **kwargs)
+        if np.isscalar(y):
+            self.calibrate_one(X, y, **kwargs)
+        else:
+            self.calibrate_many(X, y, **kwargs)
 
     def calibrate_one(self, x, y, **kwargs):
         """Update the calibration set with a single instance.
