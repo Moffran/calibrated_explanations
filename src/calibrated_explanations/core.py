@@ -1479,11 +1479,11 @@ class CalibratedExplainer:
             self.__initialize_interval_learner()
 
     def __update_interval_learner(self, xs, ys, bins=None) -> None: # pylint: disable=unused-argument
-        # pylint: disable=fixme
-        # TODO: change so that existing calibrators are extended with new calibration instances
         if self.is_fast():
             raise RuntimeError('OnlineCalibratedExplainers does not currently support fast explanations.')
-        elif self.mode == 'classification':
+        if self.mode == 'classification':
+            # pylint: disable=fixme
+            # TODO: change so that existing calibrators are extended with new calibration instances
             self.interval_learner = VennAbers(self.X_cal, self.y_cal, self.learner, self.bins, difficulty_estimator=self.difficulty_estimator, predict_function=self.predict_function)
         elif 'regression' in self.mode:
             if isinstance(self.interval_learner, list):
