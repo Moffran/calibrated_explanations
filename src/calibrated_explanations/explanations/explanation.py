@@ -368,6 +368,9 @@ class CalibratedExplanation(ABC):
         # pylint: disable=invalid-name
         x = self._get_explainer().discretizer.discretize(self.X_test)
         for f in range(self._get_explainer().num_features):
+            if f in self.calibrated_explanations.features_to_ignore:
+                self.conditions.append("")
+                continue
             if f in self._get_explainer().categorical_features:
                 if self._get_explainer().categorical_labels is not None:
                     try:
@@ -778,6 +781,8 @@ class FactualExplanation(CalibratedExplanation):
         factual["base_predict_high"].append(self.prediction["high"])
         rules = self._define_conditions()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
+            if f in self.calibrated_explanations.features_to_ignore:
+                continue
             if self.prediction["predict"] == self.feature_predict["predict"][f]:
                 continue
             factual["predict"].append(self.feature_predict["predict"][f])
@@ -1182,6 +1187,8 @@ class AlternativeExplanation(CalibratedExplanation):
         alternative = self.__set_up_result()
         rule_boundaries = self._get_explainer().rule_boundaries(instance)
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
+            if f in self.calibrated_explanations.features_to_ignore:
+                continue
             if f in self._get_explainer().categorical_features:
                 values = np.array(self._get_explainer().feature_values[f])
                 values = np.delete(values, values == discretized[f])

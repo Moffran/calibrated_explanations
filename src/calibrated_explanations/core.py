@@ -491,7 +491,8 @@ class CalibratedExplainer:
                         X_test,
                         threshold = None,
                         low_high_percentiles = (5, 95),
-                        bins = None,) -> CalibratedExplanations:
+                        bins = None,
+                        features_to_ignore = []) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
         Parameters
@@ -521,14 +522,15 @@ class CalibratedExplainer:
             discretizer = 'binaryRegressor'
         else:
             discretizer = 'binaryEntropy'
-        self.set_discretizer(discretizer)
-        return self.explain(X_test, threshold, low_high_percentiles, bins)
+        self.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
+        return self.explain(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
 
     def explain_counterfactual(self,
                                 X_test,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
-                                bins = None,) -> AlternativeExplanations:
+                                bins = None,
+                                features_to_ignore = []) -> AlternativeExplanations:
         """See documentation for the `explore_alternatives` method.
 
         See Also
@@ -540,13 +542,14 @@ class CalibratedExplainer:
         Deprecated: This method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.
         """
         warnings.warn("The `explain_counterfactual` method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.", DeprecationWarning)
-        return self.explore_alternatives(X_test, threshold, low_high_percentiles, bins)
+        return self.explore_alternatives(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
 
     def explore_alternatives(self,
                                 X_test,
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
-                                bins = None,) -> AlternativeExplanations:
+                                bins = None,
+                                features_to_ignore = []) -> AlternativeExplanations:
         """Create a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
         Parameters
@@ -577,26 +580,28 @@ class CalibratedExplainer:
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.  
         """
         discretizer = 'regressor' if 'regression' in self.mode else 'entropy'
-        self.set_discretizer(discretizer)
-        return self.explain(X_test, threshold, low_high_percentiles, bins)
+        self.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
+        return self.explain(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
 
     def __call__(self,
                 X_test,
                 threshold = None,
                 low_high_percentiles = (5, 95),
-                bins = None,) -> CalibratedExplanations:
+                bins = None,
+                features_to_ignore = []) -> CalibratedExplanations:
         """Call self as a function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
 
         Since v0.4.0, this method is equivalent to the `explain` method.
         """
-        return self.explain(X_test, threshold, low_high_percentiles, bins)
+        return self.explain(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
 
 
     def explain(self,
                 X_test,
                 threshold = None,
                 low_high_percentiles = (5, 95),
-                bins = None,) -> CalibratedExplanations:
+                bins = None,
+                features_to_ignore = []) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
         
         This method:
@@ -618,16 +623,19 @@ class CalibratedExplainer:
         # Track total explanation time
         total_time = time()
 
+        features_to_ignore = self.features_to_ignore if features_to_ignore is None \
+                            else np.union1d(self.features_to_ignore, features_to_ignore)
+
         # Validate inputs and initialize explanation object
         X_test = self._validate_and_prepare_input(X_test)
-        explanation = self._initialize_explanation(X_test, low_high_percentiles, threshold, bins)
+        explanation = self._initialize_explanation(X_test, low_high_percentiles, threshold, bins, features_to_ignore)
 
         instance_time = time()
 
         # Step 1: Get predictions for original test instances
         predict, low, high, prediction, perturbed_feature,\
             rule_boundaries, lesser_values, greater_values, covered_values, \
-                X_cal = self._explain_predict_step(X_test, threshold, low_high_percentiles, bins)
+                X_cal = self._explain_predict_step(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
 
         # Step 2: Initialize data structures to store feature-level results
         # Dictionaries to store aggregated results across all instances
@@ -674,9 +682,12 @@ class CalibratedExplainer:
 
         # Step 3: Process each feature to analyze its effects
         for f in range(self.num_features):
-            if f in self.features_to_ignore:
+            if f in features_to_ignore:
                 for i in range(len(X_test)):
                     rule_values[i][f] = (self.feature_values[f], X_test[i,f], X_test[i,f])
+                    instance_binned[i]['predict'][f] = predict[i]
+                    instance_binned[i]['low'][f] = low[i]
+                    instance_binned[i]['high'][f] = high[i]
                 continue
 
             # Get discretized values for this feature
@@ -913,12 +924,12 @@ class CalibratedExplainer:
             raise ValueError("Number of features must match calibration data")
         return X_test
 
-    def _initialize_explanation(self, X_test, low_high_percentiles, threshold, bins):
+    def _initialize_explanation(self, X_test, low_high_percentiles, threshold, bins, features_to_ignore):
         """Initialize the explanation object."""
         if self._is_mondrian():
             assert bins is not None, "Bins required for Mondrian explanations"
             assert len(bins) == len(X_test)
-        explanation = CalibratedExplanations(self, X_test, threshold, bins)
+        explanation = CalibratedExplanations(self, X_test, threshold, bins, features_to_ignore)
 
         if threshold is not None:
             if 'regression' not in self.mode:
@@ -931,7 +942,7 @@ class CalibratedExplainer:
             explanation.low_high_percentiles = low_high_percentiles
         return explanation
 
-    def _explain_predict_step(self, X_test, threshold, low_high_percentiles, bins):
+    def _explain_predict_step(self, X_test, threshold, low_high_percentiles, bins, features_to_ignore):
         X_cal = self.X_cal
         predict, low, high, predicted_class = self._predict(X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins)
         # print(predicted_class)
@@ -963,6 +974,8 @@ class CalibratedExplainer:
         covered_values = {}
         # pylint: disable=too-many-nested-blocks
         for f in range(self.num_features):
+            if f in features_to_ignore:
+                continue
             if f in self.categorical_features:
                 feature_values = self.feature_values[f]
                 X_copy = np.array(X_test, copy=True)
@@ -1650,7 +1663,7 @@ class CalibratedExplainer:
 
 
     # pylint: disable=too-many-branches
-    def set_discretizer(self, discretizer, X_cal=None, y_cal=None) -> None:
+    def set_discretizer(self, discretizer, X_cal=None, y_cal=None, features_to_ignore=None) -> None:
         """Assign the discretizer to be used.
 
         Parameters
@@ -1682,7 +1695,7 @@ class CalibratedExplainer:
                 'binaryEntropy',
             }, "The discretizer must be 'binaryEntropy' (default for factuals) or 'entropy' (default for alternatives) for classification."
 
-        not_to_discretize = self.categorical_features #np.union1d(self.categorical_features, self.features_to_ignore)
+        not_to_discretize = np.union1d(np.union1d(self.categorical_features, self.features_to_ignore), features_to_ignore)
         if discretizer == 'binaryEntropy':
             if isinstance(self.discretizer, BinaryEntropyDiscretizer):
                 return
