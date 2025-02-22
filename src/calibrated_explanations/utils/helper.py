@@ -183,6 +183,11 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
             "appropriate arguments before using this estimator."
         )
 
+    if hasattr(estimator, 'fitted'):
+        return estimator.fitted
+    if hasattr(estimator, 'is_fitted'):
+        return estimator.is_fitted()        
+
     if not (hasattr(estimator, "fit") or
             hasattr(estimator, 'partial_fit') or # handle online models
             hasattr(estimator, 'learn_initial_training_set')): # handle online_cp package
