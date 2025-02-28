@@ -49,7 +49,7 @@ Bibtex entry for the original paper:
 	pages = 	{123154},
 	year = 		{2024},
 	issn = 		{0957-4174},
-	doi = 		{https://doi.org/10.1016/j.eswa.2024.123154},
+	doi = 		{10.1016/j.eswa.2024.123154},
 	url = 		{https://www.sciencedirect.com/science/article/pii/S0957417424000198},
 	author = 	{Helena Löfström and Tuwe Löfström and Ulf Johansson and Cecilia Sönströd},
 	keywords = 	{Explainable AI, Feature importance, Calibrated explanations, Venn-Abers, Uncertainty quantification, Counterfactual explanations},
@@ -68,7 +68,7 @@ Bibtex entry for the regression paper:
 	number =	{100},
 	year =		{2025},
 	publisher =	{Springer Nature},
-	doi = 		{https://doi.org/10.1007/s10994-024-06642-8},
+	doi = 		{10.1007/s10994-024-06642-8},
 	url = 		{https://link.springer.com/article/10.1007/s10994-024-06642-8},
 	abstract =  {Artificial Intelligence (AI) methods are an integral part of modern decision support systems. The best-performing predictive models used in AI-based decision support systems lack transparency. Explainable Artificial Intelligence (XAI) aims to create AI systems that can explain their rationale to human users. Local explanations in XAI can provide information about the causes of individual predictions in terms of feature importance. However, a critical drawback of existing local explanation methods is their inability to quantify the uncertainty associated with a feature’s importance. This paper introduces an extension of a feature importance explanation method, Calibrated Explanations, previously only supporting classification, with support for standard regression and probabilistic regression, i.e., the probability that the target is below an arbitrary threshold. The extension for regression keeps all the benefits of Calibrated Explanations, such as calibration of the prediction from the underlying model with confidence intervals, uncertainty quantification of feature importance, and allows both factual and counterfactual explanations. Calibrated Explanations for regression provides fast, reliable, stable, and robust explanations. Calibrated Explanations for probabilistic regression provides an entirely new way of creating probabilistic explanations from any ordinary regression model, allowing dynamic selection of thresholds. The method is model agnostic with easily understood conditional rules. An implementation in Python is freely available on GitHub and for installation using both pip and conda, making the results in this paper easily replicable.}
 }
