@@ -1,4 +1,4 @@
-crepes >= 0.7.1, < 0.8
+crepes >= 0.7.1, < 0.9
 ipython
 scikit-learn
 matplotlib >= 3.4
