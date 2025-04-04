@@ -51,7 +51,7 @@ jobs:
         run: python src/calibrated_explanations/utils/helper.py
 
       - name: Upload coverage reports to Codecov      
-        uses: codecov/codecov-action@v5.3.1
+        uses: codecov/codecov-action@v5.4.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
