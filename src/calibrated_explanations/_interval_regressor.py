@@ -264,13 +264,13 @@ class IntervalRegressor:
 
     def insert_calibration(self, xs, ys, bins=None):
         """Make a sorted insert of the calibration values"""
-        num_add = len(ys)
+        num_add = len(ys) # number of new instances
         if num_add % 2 != 0: # is odd?
             parts = self.split['parts']
             small_part = int(np.argmin([len(parts[0]), len(parts[1])]))
             large_part = int(np.argmax([len(parts[0]), len(parts[1])]))
             large_part = 1 if small_part == large_part else large_part
-        else:
+        else: # divide equally
             small_part = 0
             large_part = 1
         small_idx = list(range(0, num_add, 2)) # if odd, one more to the smaller part
@@ -278,10 +278,9 @@ class IntervalRegressor:
 
         # Update split indeces
         if len(small_idx) > 0:
-            self.split['parts'][small_part].extend([len(self.residual_cal) + i for i in small_idx])
+            self.split['parts'][small_part].extend([len(self.residual_cal) - 1 + i for i in small_idx])
         if len(large_idx) > 0:
-            self.split['parts'][large_part].extend([len(self.residual_cal) + i for i in large_idx])
-        cps_idx = small_idx if small_part == 0 else large_idx
+            self.split['parts'][large_part].extend([len(self.residual_cal) - 1 + i for i in large_idx])
 
         # Update y_hat, residuals, and sigma
         y_cal_hat = self.ce.predict_function(xs)
@@ -297,12 +296,27 @@ class IntervalRegressor:
             assert len(bins) == len(ys), 'The length of bins must match the number of added instances.'
             self.bins = np.append(self.bins, bins)
 
-        # Update split cps
-        alphas = self.split['cps'].alphas
-        indices = np.searchsorted(alphas, residuals[cps_idx])
-        self.split['cps'].alphas = np.insert(alphas, indices, residuals[cps_idx])
+        if small_part == 0 or len(large_idx) > 0: # add to cps calibration
+            cps_idx = small_idx if small_part == 0 else large_idx
+            # Update split cps
+            if bins is None:
+                alphas = self.split['cps'].alphas
+                indices = np.searchsorted(alphas, residuals[cps_idx])
+                self.split['cps'].alphas = np.insert(alphas, indices, residuals[cps_idx])
+            else:
+                for b in np.unique(bins):
+                    alphas = self.split['cps'].alphas[1][b]
+                    res = residuals[cps_idx]
+                    indices = np.searchsorted(alphas, res[bins == b])
+                    self.split['cps'].alphas[1][b] = np.insert(alphas, indices, res[bins == b])
 
         # Update cps
-        alphas = self.cps.alphas
-        indices = np.searchsorted(alphas, residuals)
-        self.cps.alphas = np.insert(alphas, indices, residuals)
+        if bins is None:
+            alphas = self.cps.alphas
+            indices = np.searchsorted(alphas, residuals)
+            self.cps.alphas = np.insert(alphas, indices, residuals)
+        else:
+            for b in np.unique(bins):
+                alphas = self.cps.alphas[1][b]
+                indices = np.searchsorted(alphas, residuals[bins == b])
+                self.cps.alphas[1][b] = np.insert(alphas, indices, residuals[bins == b])
