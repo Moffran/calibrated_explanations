@@ -179,7 +179,7 @@ class CalibratedExplainer:
             else:
                 categorical_features = []
         self.categorical_features = list(categorical_features)
-        self.features_to_ignore = []
+        self.features_to_ignore = kwargs.get('features_to_ignore', [])
         self._preprocess()
 
         if feature_names is None:
@@ -492,7 +492,7 @@ class CalibratedExplainer:
                         threshold = None,
                         low_high_percentiles = (5, 95),
                         bins = None,
-                        features_to_ignore = []) -> CalibratedExplanations:
+                        features_to_ignore = None) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
         Parameters
@@ -518,10 +518,7 @@ class CalibratedExplainer:
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FactualExplanation` for each instance. 
         """
-        if 'regression' in self.mode:
-            discretizer = 'binaryRegressor'
-        else:
-            discretizer = 'binaryEntropy'
+        discretizer = 'binaryRegressor' if 'regression' in self.mode else 'binaryEntropy'
         self.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
         return self.explain(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
 
@@ -530,7 +527,7 @@ class CalibratedExplainer:
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
                                 bins = None,
-                                features_to_ignore = []) -> AlternativeExplanations:
+                                features_to_ignore = None) -> AlternativeExplanations:
         """See documentation for the `explore_alternatives` method.
 
         See Also
@@ -549,7 +546,7 @@ class CalibratedExplainer:
                                 threshold = None,
                                 low_high_percentiles = (5, 95),
                                 bins = None,
-                                features_to_ignore = []) -> AlternativeExplanations:
+                                features_to_ignore = None) -> AlternativeExplanations:
         """Create a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
         Parameters
@@ -588,7 +585,7 @@ class CalibratedExplainer:
                 threshold = None,
                 low_high_percentiles = (5, 95),
                 bins = None,
-                features_to_ignore = []) -> CalibratedExplanations:
+                features_to_ignore = None) -> CalibratedExplanations:
         """Call self as a function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
 
         Since v0.4.0, this method is equivalent to the `explain` method.
@@ -601,7 +598,7 @@ class CalibratedExplainer:
                 threshold = None,
                 low_high_percentiles = (5, 95),
                 bins = None,
-                features_to_ignore = []) -> CalibratedExplanations:
+                features_to_ignore = None) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
         
         This method:
@@ -1697,6 +1694,8 @@ class CalibratedExplainer:
                 'binaryEntropy',
             }, "The discretizer must be 'binaryEntropy' (default for factuals) or 'entropy' (default for alternatives) for classification."
 
+        if features_to_ignore is None:
+            features_to_ignore = []
         not_to_discretize = np.union1d(np.union1d(self.categorical_features, self.features_to_ignore), features_to_ignore)
         if discretizer == 'binaryEntropy':
             if isinstance(self.discretizer, BinaryEntropyDiscretizer):
@@ -2488,7 +2487,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         pre_pred = self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
         try:
             self.partial_fit(X, y, **kwargs)
-        except:
+        except AttributeError:
             self.partial_fit(X, y)
         post_pred = self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
         if self.calibrated and np.all(pre_pred == post_pred):
