@@ -351,7 +351,7 @@ class CalibratedExplainer:
             if bins is not None:
                 assert self.bins is not None, 'Cannot mix calibration instances with and without bins.'
                 assert len(bins) == len(ys), 'The length of bins must match the number of added instances.'
-                self.bins.append(bins)
+                self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
             self.__update_interval_learner(xs, ys, bins=bins)
         else:
             self.__initialize_interval_learner()
@@ -1006,7 +1006,8 @@ class CalibratedExplainer:
                         X_local[:,f] = value
                         perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
                         perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, True) for i in indices]))
-                        perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
+                        if bins is not None:
+                            perturbed_bins = np.concatenate((perturbed_bins, bins[indices] if len(indices) > 1 else [bins[indices[0]]]))
                         perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
                         perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
                 for j, val in enumerate(np.unique(upper_boundary)):
@@ -1017,7 +1018,8 @@ class CalibratedExplainer:
                         X_local[:,f] = value
                         perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
                         perturbed_feature = np.concatenate((perturbed_feature, [(f, i, j, False) for i in indices]))
-                        perturbed_bins = np.concatenate((perturbed_bins, bins[indices])) if bins is not None else None
+                        if bins is not None:
+                            perturbed_bins = np.concatenate((perturbed_bins, bins[indices] if len(indices) > 1 else [bins[indices[0]]]))
                         perturbed_class = np.concatenate((perturbed_class, prediction['classes'][indices]))
                         perturbed_threshold = concatenate_thresholds(perturbed_threshold, threshold, indices)
                 indices = range(len(X_test))
@@ -2461,7 +2463,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         self.fitted = True
         return self
 
-    def partial_fit_and_calibrate(self, X, y, **kwargs):
+    def online_fit_and_calibrate(self, X, y, **kwargs):
         """Incrementally fit and calibrate the model with samples X and y. Calls partial_fit and calibrate_many.
 
         Parameters
@@ -2483,11 +2485,30 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         AttributeError
             If the underlying learner does not support incremental learning.
         """
-        self.partial_fit(X, y, **kwargs)
-        if np.isscalar(y):
-            self.calibrate_one(X, y, **kwargs)
+        pre_pred = self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
+        try:
+            self.partial_fit(X, y, **kwargs)
+        except:
+            self.partial_fit(X, y)
+        post_pred = self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
+        if self.calibrated and np.all(pre_pred == post_pred):
+            if np.isscalar(y):
+                self.calibrate_one(X, y, **kwargs)
+            else:
+                self.calibrate_many(X, y, **kwargs)
         else:
-            self.calibrate_many(X, y, **kwargs)
+            if np.isscalar(y):
+                X = X.reshape(1, -1)
+                y = y.reshape(-1)
+            if self.calibrated:
+                X = np.concatenate((self.explainer.X_cal, X), axis=0)
+                y = np.concatenate((self.explainer.y_cal, y), axis=0)
+            if 'mode' not in kwargs:
+                if hasattr(self.learner, 'predict_proba'):
+                    kwargs['mode'] = 'classification'
+                else:
+                    kwargs['mode'] = 'regression'
+            self.calibrate(X, y, **kwargs)
 
     def calibrate_one(self, x, y, **kwargs):
         """Update the calibration set with a single instance.
@@ -2536,7 +2557,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
             raise RuntimeError("The OnlineCalibratedExplainer must be fitted before calibration.")
 
         if self.calibrated:
-            self.explainer.reinitialize(self.learner, X, y)
+            self.explainer.reinitialize(self.learner, X, y, **kwargs)
         else:
             if 'mode' not in kwargs:
                 if hasattr(self.learner, 'predict_proba'):
