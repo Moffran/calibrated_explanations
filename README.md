@@ -12,29 +12,46 @@
 <!-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/main?urlpath=https%3A%2F%2Fgithub.com%2FMoffran%2Fcalibrated_explanations%2Fblob%2Fmain%2Fnotebooks%2Fquickstart.ipynb) -->
 
 ## Table of Contents
-- [Introduction](#introduction)
-  - [Core Features](#core-features)
-  - [Distinctive Characteristics](#distinctive-characteristics)
-  - [Example Explanation](#example-explanation)
-- [Quick Start](#quick-start)
-- [Usage](#usage)
-- [Installation](#installation)
-- [Contributing](#contributing)
-- [Documentation](#documentation)
-- [License](#license)
-- [Further Reading and Citing](#further-reading-and-citing)
-- [Acknowledgements](#acknowledgements)
-- [Support](#support)
+- [Calibrated Explanations (Documentation)](#calibrated-explanations-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+    - [Core Features:](#core-features)
+    - [Distinctive Characteristics](#distinctive-characteristics)
+    - [Example Explanation](#example-explanation)
+  - [Quick Start](#quick-start)
+  - [Usage](#usage)
+    - [Classification](#classification)
+      - [Factual Explanations](#factual-explanations)
+      - [Explore Alternative Explanations](#explore-alternative-explanations)
+    - [Regression](#regression)
+      - [Factual Explanations](#factual-explanations-1)
+      - [Explore Alternative Explanations](#explore-alternative-explanations-1)
+    - [Probabilistic Regression](#probabilistic-regression)
+    - [Initializing `WrapCalibratedExplainer`s](#initializing-wrapcalibratedexplainers)
+    - [Known Limitations](#known-limitations)
+  - [Installation](#installation)
+    - [From PyPI:](#from-pypi)
+    - [From conda-forge:](#from-conda-forge)
+    - [Dependencies:](#dependencies)
+  - [Contributing](#contributing)
+  - [Documentation](#documentation)
+  - [License](#license)
+  - [Further Reading and Citing](#further-reading-and-citing)
+    - [Published Papers](#published-papers)
+    - [Preprints:](#preprints)
+    - [Citing and Bibtex](#citing-and-bibtex)
+  - [Acknowledgements](#acknowledgements)
+  - [Support](#support)
 
 ## Introduction
 
-**Calibrated Explanations** is an explanation method for machine learning designed to enhance both the interpretability of model predictions and the quantification of uncertainty. In many real-world applications, understanding how confident a model is about its predictions is just as important as the predictions themselves. This framework provides calibrated explanations for both predictions and feature importance by quantifying **aleatoric** and **epistemic uncertainty** — two types of uncertainty that offer critical insights into both data and model reliability.
+**Calibrated Explanations** is an explanation method for machine learning designed to enhance both the interpretability of model predictions and the quantification of uncertainty. In many real-world applications, understanding how confident a model is about its predictions is just as important as the predictions themselves. This framework provides calibrated explanations for both predictions and feature importance by minimizing **aleatoric** and quantifying **epistemic uncertainty** — two types of uncertainty that offer critical insights into both data and model reliability.
 
-- **Aleatoric uncertainty** represents the noise inherent in the data. It affects the spread of probability distributions (for probabilistic outcomes) and predictions (for regression). This uncertainty is **irreducible** because it reflects limitations in the data generation process itself. Incorporating calibration ensures accurate aleatoric uncertainty.
-  
-- **Epistemic uncertainty** arises from the model's lack of knowledge due to limited training data or insufficient complexity. It affects the model’s confidence in its output when it encounters unfamiliar or out-of-distribution data. Unlike aleatoric uncertainty, epistemic uncertainty is **reducible** — it can be minimized by gathering more data, improving the model architecture, or refining features.
+- **Aleatoric uncertainty** represents the noise inherent in the data. It affects the spread of probability distributions (for probabilistic outcomes) and predictions (for regression). This uncertainty is **irreducible** because it reflects limitations in the data generation process itself. Incorporating calibration ensures accurate decision support. The difference between the calibrated and the uncalibrated predictions is a measure of the aleatoric uncertainty.
 
-By providing estimates for both aleatoric and epistemic uncertainty, **Calibrated Explanations** offers a more comprehensive understanding of predictions, both in terms of accuracy and confidence. This is particularly valuable in high-stakes environments where model reliability and interpretability are essential, such as in healthcare, finance, and autonomous systems.
+- **Epistemic uncertainty** arises from the model's lack of knowledge due to limited training or calibration data or insufficient complexity. It affects the model’s confidence in its output when it encounters unfamiliar or out-of-distribution data. Unlike aleatoric uncertainty, epistemic uncertainty is **reducible** — it can be minimized by gathering more data, improving the model architecture, or refining features.
+
+Through calibration of the model prediction, **Calibrated Explanations** minimize the aleatoric uncertainty. By providing an uncertainty interval for the prediction and the feature importance estimates, it highlights the epistemic uncertainty for individual instances. This offers a more comprehensive and accurate support for decision making, both in terms of accuracy and confidence. This is particularly valuable in high-stakes environments where model reliability and interpretability are essential, such as in healthcare, finance, and autonomous systems.
 
 To get a very condensed example on how Calibrated Explanations can be used, see the [Quick Start](#quick-start). For an in-depth guide on how to start using Calibrated Explanations, refer to the [Usage](#usage) section below.
 
