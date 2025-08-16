@@ -1,0 +1,9 @@
+{
+  "import_time_seconds": {"max_relative_increase": 0.15},
+  "classification.fit_time_s": {"max_relative_increase": 0.25},
+  "classification.calibrate_time_s": {"max_relative_increase": 0.25},
+  "classification.predict_batch_time_s": {"max_relative_increase": 0.40},
+  "regression.fit_time_s": {"max_relative_increase": 0.25},
+  "regression.calibrate_time_s": {"max_relative_increase": 0.25},
+  "regression.predict_batch_time_s": {"max_relative_increase": 0.40}
+}
