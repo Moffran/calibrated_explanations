@@ -1,0 +1,11 @@
+# Public API snapshot for calibrated_explanations @ 20250816_100922 UTC
+# Root package exports:
+CalibratedExplainer
+OnlineCalibratedExplainer
+WrapCalibratedExplainer
+transform_to_numeric
+
+# Selected submodule exports (__all__ if defined):
+[calibrated_explanations.core_components] -> __all__:
+  OnlineCalibratedExplainer
+  WrapCalibratedExplainer
