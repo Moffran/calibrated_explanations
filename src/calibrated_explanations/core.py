@@ -10,7 +10,7 @@ conformal predictive systems (regression).
 """
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
-import warnings
+import warnings as _warnings
 from time import time
 import numpy as np
 
@@ -30,6 +30,13 @@ from ._plots import _plot_global
 
 __version__ = 'v0.5.1'
 
+# Emit deprecation notice for upcoming core split (Phase 1A)
+_warnings.warn(
+    "calibrated_explanations.core is scheduled for mechanical split in v0.6.0; "
+    "import paths will remain stable until v0.8.0. This warning is informational.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 class CalibratedExplainer:
@@ -538,7 +545,7 @@ class CalibratedExplainer:
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.
         """
-        warnings.warn("The `explain_counterfactual` method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.", DeprecationWarning)
+        _warnings.warn("The `explain_counterfactual` method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.", DeprecationWarning)
         return self.explore_alternatives(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
 
     def explore_alternatives(self,
@@ -932,7 +939,7 @@ class CalibratedExplainer:
             if 'regression' not in self.mode:
                 raise Warning("The threshold parameter is only supported for mode='regression'.")
             if isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
-                warnings.warn("Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.")
+                _warnings.warn("Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.")
             assert_threshold(threshold, X_test)
                 # explanation.low_high_percentiles = low_high_percentiles
         elif 'regression' in self.mode:
@@ -2267,7 +2274,7 @@ class WrapCalibratedExplainer():
             if 'threshold' in kwargs:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             if calibrated:
-                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", UserWarning)
+                _warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", UserWarning)
             if uq_interval:
                 predict = self.learner.predict(X_test)
                 return predict, (predict, predict)
@@ -2294,7 +2301,7 @@ class WrapCalibratedExplainer():
             if threshold is not None:
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             if calibrated:
-                warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", UserWarning)
+                _warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", UserWarning)
             if uq_interval:
                 proba = self.learner.predict_proba(X_test)
                 if proba.shape[1] > 2:
