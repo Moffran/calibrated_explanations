@@ -7,8 +7,7 @@ is a Python package for explaining black-box models.
 It is based on the paper "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
 by Helena Löfström et al.
 """
-from .core import CalibratedExplainer, __version__
-from .core_components import WrapCalibratedExplainer, OnlineCalibratedExplainer
+from .core_components import __version__, CalibratedExplainer, WrapCalibratedExplainer, OnlineCalibratedExplainer
 from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
                     RegressorDiscretizer, BinaryRegressorDiscretizer
 from .explanations.explanations import CalibratedExplanations, AlternativeExplanations

@@ -3,9 +3,9 @@
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 import warnings as _warnings
-import numpy as np
+
 from ..utils.helper import check_is_fitted, safe_isinstance  # noqa: F401
-from ..core import CalibratedExplainer  # type: ignore  # circular during split
+from .calibrated_explainer import CalibratedExplainer  # type: ignore  # circular during split
 from crepes.extras import MondrianCategorizer  # type: ignore
 
 class WrapCalibratedExplainer():
