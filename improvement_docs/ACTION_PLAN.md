@@ -75,8 +75,8 @@ Release Alignment:
 **Tasks:**
 
 - Benchmark harness: integrate `pytest-benchmark` (tag perf tests) + memory probe (tracemalloc / psutil).
-- Pre-commit: `ruff` (lint + formatting), `isort` (if not using ruff-format), `mypy`, `bandit`, `pip-audit`, `codespell` (optional).
-- Add `CODEOWNERS`, `CONTRIBUTING` update with quality checklist.
+- Pre-commit: `ruff` (lint + formatting), `bandit`, `pip-audit`, `codespell` (optional).
+- Add `CONTRIBUTING` update with quality checklist.
 - Add `scripts/` utilities: baseline collector, API symbol list generator (compare drift).
 - Introduce semantic version & changelog automation (e.g., `python-semantic-release` or `towncrier`).
 - Decide environment management (e.g., `uv` or `pip-tools`) and produce lock file for CI reproducibility.
