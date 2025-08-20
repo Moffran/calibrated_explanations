@@ -66,7 +66,7 @@ jobs:
             api_diff.txt
 
       - name: Create Pull Request with new baseline
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "chore: update performance baseline ${{ steps.gen.outputs.date_tag }}"
           title: "Update performance baseline ${{ steps.gen.outputs.date_tag }}"
