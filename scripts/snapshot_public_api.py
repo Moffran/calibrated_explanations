@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long, missing-function-docstring, too-many-locals, import-outside-toplevel, invalid-name, no-member, unused-import
 """Snapshot the current public API surface of calibrated_explanations.
 
 Creates a timestamped text file in benchmarks/ listing exported symbols from the
@@ -51,7 +52,7 @@ def main():
         full_name = f"{PACKAGE}.{m.name}"
         try:
             sub = importlib.import_module(full_name)
-        except Exception:
+        except ImportError:
             continue
         if hasattr(sub, "__all__") and sub.__all__:
             lines.append(f"[{full_name}] -> __all__:")

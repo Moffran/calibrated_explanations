@@ -129,6 +129,7 @@ def safe_import(module_name, class_name=None):
                 f"not exist in the module '{module_name}'.") from exc
 
 # copied from sklearn.utils.validation.check_is_fitted
+# pylint: disable=inconsistent-return-statements
 def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
     """Perform is_fitted validation for estimator.
 
@@ -186,7 +187,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
     if hasattr(estimator, 'fitted'):
         return estimator.fitted
     if hasattr(estimator, 'is_fitted'):
-        return estimator.is_fitted()        
+        return estimator.is_fitted()
 
     if not (hasattr(estimator, "fit") or
             hasattr(estimator, 'partial_fit') or # handle online models

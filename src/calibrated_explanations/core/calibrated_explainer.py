@@ -29,8 +29,6 @@ from ..utils.helper import safe_isinstance, convert_targets_to_numeric, safe_imp
 from ..utils.perturbation import perturb_dataset
 from .._plots import _plot_global
 
-__version__ = 'v0.5.1'
-
 
 class CalibratedExplainer:
     """The :class:`.CalibratedExplainer` class is used for explaining machine learning learners with calibrated predictions.

@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long, missing-function-docstring, too-many-locals, import-outside-toplevel, invalid-name, no-member, unused-import
 """Collect baseline performance, memory, and API surface metrics.
 
 Run: python scripts/collect_baseline.py --output benchmarks/baseline_$(date +%Y%m%d).json
@@ -7,7 +8,6 @@ Windows PowerShell example:
 from __future__ import annotations
 import argparse
 import json
-import os
 import sys
 import time
 import importlib
@@ -52,7 +52,7 @@ def _memory_usage_mb() -> float:
 def _safe_len(obj: Any) -> int:
     try:
         return len(obj)
-    except Exception:
+    except TypeError:
         return -1
 
 

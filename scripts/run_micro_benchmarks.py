@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long, missing-function-docstring, too-many-locals, import-outside-toplevel, invalid-name, no-member, unused-import
 """Run micro benchmarks with optional repetition for trend tracking.
 
 This script is intentionally light-weight to be CI friendly.

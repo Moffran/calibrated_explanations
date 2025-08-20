@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long, missing-function-docstring, too-many-branches, too-many-statements, too-many-locals
 """Check performance regressions against stored baseline and thresholds.
 
 Usage:

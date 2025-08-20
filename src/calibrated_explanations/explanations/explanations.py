@@ -1,4 +1,4 @@
-# pylint: disable=unknown-option-value
+# pylint: disable=unknown-option-value, too-many-arguments
 # pylint: disable=too-many-lines, too-many-public-methods, invalid-name, too-many-positional-arguments, line-too-long
 """
 Contains classes for storing and visualizing calibrated explanations.
@@ -24,7 +24,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     and accessing explanations for test instances.
     """
 
-    def __init__(self, calibrated_explainer, X_test, y_threshold, bins, features_to_ignore = []) -> None:
+    def __init__(self, calibrated_explainer, X_test, y_threshold, bins, features_to_ignore=None) -> None:
         """A class for storing and visualizing calibrated explanations.
 
         This class is created by :class:`.CalibratedExplainer` and provides methods for managing
@@ -53,7 +53,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self.end_index = len(X_test[:, 0])
         self.bins = bins
         self.total_explain_time = None
-        self.features_to_ignore = features_to_ignore
+        self.features_to_ignore = features_to_ignore if features_to_ignore is not None else []
 
     def __iter__(self):
         """Return an iterator for the explanations."""

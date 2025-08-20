@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long, missing-function-docstring
 """Compare exported public API symbols between two baseline JSON files.
 
 Usage:
