@@ -44,7 +44,7 @@ repos:
         entry: pytest -q --maxfail=1
         language: system
         pass_filenames: false
-        stages: [pre-push]
+        stages: [pre-commit]
         types: [python]
 
 ci:
