@@ -4,9 +4,9 @@
 from __future__ import annotations
 import warnings as _warnings
 
+from crepes.extras import MondrianCategorizer  # type: ignore
 from ..utils.helper import check_is_fitted, safe_isinstance  # noqa: F401
 from .calibrated_explainer import CalibratedExplainer  # type: ignore  # circular during split
-from crepes.extras import MondrianCategorizer  # type: ignore
 
 class WrapCalibratedExplainer():
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
@@ -34,7 +34,7 @@ class WrapCalibratedExplainer():
         """
         self.mc = None
         # Check if the learner is a CalibratedExplainer
-        if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
+        if safe_isinstance(learner, "calibrated_explanations.core_components.CalibratedExplainer"):
             explainer = learner
             learner = explainer.learner
             self.learner = learner
