@@ -220,14 +220,14 @@ def test_calculate_metrics_invalid_weight():
     """Test calculate_metrics with an invalid weight."""
     uncertainty = [0.1, 0.2, 0.3]
     prediction = [0.9, 0.8, 0.7]
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         calculate_metrics(uncertainty, prediction, w=1.5, metric="ensured")
     assert "The weight must be between -1 and 1." in str(excinfo.value)
 
 
 def test_calculate_metrics_missing_arguments():
     """Test calculate_metrics with missing uncertainty or prediction."""
-    with pytest.raises(AssertionError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         calculate_metrics(uncertainty=[0.1, 0.2, 0.3])
     assert (
         "Both uncertainty and prediction must be provided if any other argument is provided"
