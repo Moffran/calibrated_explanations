@@ -14,15 +14,21 @@ Tests:
 """
 
 from unittest.mock import patch
+
 import pytest
+from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations.utils.helper import (
+    check_is_fitted,
+    is_notebook,
+    make_directory,
+    safe_import,
+)
+from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestClassifier
 
-from crepes.extras import DifficultyEstimator
+from tests.test_classification import get_classification_model
+from tests.test_regression import get_regression_model
 
-from calibrated_explanations import CalibratedExplainer
-from calibrated_explanations.utils.helper import safe_import, check_is_fitted, make_directory, is_notebook
-from tests.test_classification import binary_dataset, get_classification_model
-from tests.test_regression import regression_dataset, get_regression_model
 
 def test_failure():
     """
@@ -31,6 +37,7 @@ def test_failure():
     with pytest.raises(RuntimeError):
         CalibratedExplainer(RandomForestClassifier(), [], [])
 
+
 def test_check_is_fitted_with_fitted_model(binary_dataset):
     """
     Tests `check_is_fitted` with a fitted model.
@@ -38,13 +45,14 @@ def test_check_is_fitted_with_fitted_model(binary_dataset):
         binary_dataset (tuple): The binary classification dataset.
     """
     X_prop_train, y_prop_train, _, _, _, _, _, _, _, _ = binary_dataset
-    model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
     try:
         check_is_fitted(model)
     except TypeError:
         pytest.fail("check_is_fitted raised TypeError unexpectedly!")
     except RuntimeError:
         pytest.fail("check_is_fitted raised RuntimeError unexpectedly!")
+
 
 def test_check_is_fitted_with_non_fitted_model():
     """
@@ -55,6 +63,7 @@ def test_check_is_fitted_with_non_fitted_model():
     with pytest.raises(TypeError):
         check_is_fitted(RandomForestClassifier)
 
+
 def test_safe_import():
     """
     Tests the `safe_import` utility function.
@@ -63,12 +72,14 @@ def test_safe_import():
     with pytest.raises(ImportError):
         safe_import("p1337")
 
+
 def test_make_directory_invalid_path():
     """
     Tests `make_directory` with an invalid path.
     """
     with pytest.raises(Exception):
         make_directory("/invalid/path/to/directory")
+
 
 @patch("IPython.get_ipython")
 def test_is_notebook_false(mock_get_ipython):
@@ -80,6 +91,7 @@ def test_is_notebook_false(mock_get_ipython):
     mock_get_ipython.return_value = None
     assert not is_notebook()
 
+
 def test_explanation_functions_classification(binary_dataset):
     """
     Tests various explanation functions of `CalibratedExplainer`.
@@ -87,7 +99,7 @@ def test_explanation_functions_classification(binary_dataset):
         binary_dataset (tuple): The binary classification dataset.
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, _ = binary_dataset
-    model, _ = get_classification_model('RF', X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
     ce = CalibratedExplainer(model, X_cal, y_cal, verbose=True)
 
     factual_explanations = ce.explain_factual(X_test)
@@ -114,6 +126,7 @@ def test_explanation_functions_classification(binary_dataset):
 
     print(ce)
 
+
 def test_explanation_functions_regression(regression_dataset):
     """
     Tests various explanation functions of `CalibratedExplainer`.
@@ -121,8 +134,8 @@ def test_explanation_functions_regression(regression_dataset):
         regression_dataset (tuple): The regression dataset.
     """
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _ = regression_dataset
-    model, _ = get_regression_model('RF', X_prop_train, y_prop_train)
-    ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression', verbose=True)
+    model, _ = get_regression_model("RF", X_prop_train, y_prop_train)
+    ce = CalibratedExplainer(model, X_cal, y_cal, mode="regression", verbose=True)
 
     factual_explanations = ce.explain_factual(X_test)
     factual_explanations._get_rules()

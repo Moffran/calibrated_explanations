@@ -12,7 +12,7 @@ Welcome to Calibrated-explanations's documentation!
 
 .. title:: Calibrated-explanations
 
-``calibrated-explanations`` is a Python package that implements the calibrated-explanations method for classification and regression models. 
+``calibrated-explanations`` is a Python package that implements the calibrated-explanations method for classification and regression models.
 
 .. raw:: html
 
@@ -39,14 +39,14 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
       * Binary classification models (`read paper <https://doi.org/10.1016/j.eswa.2024.123154/>`_)
       * Multi-class classification models (`read paper <https://easychair.org/publications/preprint/rqdD/>`_)
       * Regression models (`read paper <https://arxiv.org/abs/2308.16245/>`_)
-         * Including probabilistic explanations of the probability that the target exceeds a user-defined threshold 
-         * With difficulty adaptable explanations (conformal normalization) 
+         * Including probabilistic explanations of the probability that the target exceeds a user-defined threshold
+         * With difficulty adaptable explanations (conformal normalization)
    * Calibration of the underlying model to ensure that predictions reflect reality.
-   * Uncertainty quantification of the prediction from the underlying model and the feature importance weights. 
+   * Uncertainty quantification of the prediction from the underlying model and the feature importance weights.
    * Rules with straightforward interpretation in relation to instance values and feature weights.
    * Possibility to generate alternative rules with uncertainty quantification of the expected predictions.
    * Conjunctional rules conveying feature importance for the interaction of included features.
-   * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints (`read paper <https://doi.org/10.1007/978-3-031-63787-2_17/>`_). 
+   * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints (`read paper <https://doi.org/10.1007/978-3-031-63787-2_17/>`_).
 
 Example
 -------

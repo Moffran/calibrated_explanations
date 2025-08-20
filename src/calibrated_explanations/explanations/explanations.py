@@ -9,13 +9,17 @@ Classes
     - :class:`.AlternativeExplanations`
     - :class:`.FrozenCalibratedExplainer`
 """
+
 import warnings
 from copy import deepcopy
 from time import time
+
 import numpy as np
-from .explanation import FactualExplanation, AlternativeExplanation, FastExplanation
+
 from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
 from ..utils.helper import prepare_for_saving
+from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
+
 
 class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     """A class for storing and visualizing calibrated explanations.
@@ -24,14 +28,16 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     and accessing explanations for test instances.
     """
 
-    def __init__(self, calibrated_explainer, X_test, y_threshold, bins, features_to_ignore=None) -> None:
+    def __init__(
+        self, calibrated_explainer, X_test, y_threshold, bins, features_to_ignore=None
+    ) -> None:
         """A class for storing and visualizing calibrated explanations.
 
         This class is created by :class:`.CalibratedExplainer` and provides methods for managing
         and accessing explanations for test instances.
-        
+
         Initialize the CalibratedExplanations object.
-        
+
         Parameters
         ----------
         calibrated_explainer : CalibratedExplainer
@@ -74,7 +80,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def __getitem__(self, key):
         """Return the explanation for the given key.
-        
+
         In case the index key is an integer (or results in a single result), the function returns the explanation
         corresponding to the index. If the key is a slice or an integer or boolean list (or numpy array)
         resulting in more than one explanation, the function returns a new `CalibratedExplanations`
@@ -161,16 +167,16 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def get_confidence(self) -> float:
         """Return the confidence level of the explanations.
-        
+
         This method calculates the confidence interval for regression tasks by determining the distance between the lower and upper percentiles. By default, these percentiles are set to 5 and 95.
-        
+
         Returns
         -------
         float
             The difference between the high and low percentiles, representing the confidence interval.
-                
+
         Notes
-        -----        
+        -----
         - This method is only applicable to regression tasks.
         - If the high percentile is infinite, the confidence is calculated as `100 - low_percentile`.
         - If the low percentile is infinite, the confidence is calculated as `high_percentile`.
@@ -183,7 +189,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def get_low_percentile(self) -> float:
         """Return the low percentile of the explanations.
-        
+
         This method returns the first element of the `low_high_percentiles` attribute,
         which represents the lower bound of the percentile range for the explanation.
 
@@ -196,7 +202,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def get_high_percentile(self) -> float:
         """Return the high percentile of the explanations.
-        
+
         Returns
         -------
         float
@@ -216,7 +222,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     ) -> None:
         """
         Finalize the explanation by adding the binned data and the feature weights.
-        
+
         Parameters
         ----------
         binned : array-like
@@ -281,7 +287,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     ) -> None:
         """
         Finalize the explanation by adding the binned data and the feature weights.
-        
+
         Parameters
         ----------
         binned : array-like
@@ -328,7 +334,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     def _get_rules(self):
         return [
             # pylint: disable=protected-access
-            explanation._get_rules() for explanation in self.explanations
+            explanation._get_rules()
+            for explanation in self.explanations
         ]
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
@@ -337,14 +344,14 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
         The conjunctive rules are added to the `conjunctive_rules` attribute of the `CalibratedExplanations`
         object.
-        
+
         Parameters
         ----------
         n_top_features : int, optional
             The number of most important factual rules to try to combine into conjunctive rules. Defaults to 5.
         max_rule_size : int, optional
             The maximum size of the conjunctions. Defaults to 2 (meaning `rule_one and rule_two`).
-        
+
         Returns
         -------
         CalibratedExplanations
@@ -369,25 +376,32 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def get_explanation(self, index):
         """Return the explanation corresponding to the index.
-        
+
         Parameters
         ----------
         index : int
             The index of the explanation to retrieve.
-        
+
         Returns
         -------
         CalibratedExplanation
             The explanation at the specified index.
-        
+
         Warnings
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
-        warnings.warn("This method is deprecated and may be removed in future versions. Use indexing instead.", DeprecationWarning)
-        assert isinstance(index, int), "index must be an integer"
-        assert index >= 0, "index must be greater than or equal to 0"
-        assert index < len(self.X_test), "index must be less than the number of test instances"
+        warnings.warn(
+            "This method is deprecated and may be removed in future versions. Use indexing instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if not isinstance(index, int):
+            raise TypeError("index must be an integer")
+        if index < 0:
+            raise ValueError("index must be greater than or equal to 0")
+        if index >= len(self.X_test):
+            raise ValueError("index must be less than the number of test instances")
         return self.explanations[index]
 
     def _is_alternative(self):
@@ -413,7 +427,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         style="regular",
         rnk_metric=None,
         rnk_weight=0.5,
-        style_override=None
+        style_override=None,
     ):
         """
         Plot explanations for a given instance, with the option to show or save the plots.
@@ -425,7 +439,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         filter_top :  int or None, default=10
             The number of top features to display in the plot. If set to `None`, all the features will be shown.
         show : bool, default=True
-            Determines whether the plots should be displayed immediately after they are generated. Suitable to set to False when saving 
+            Determines whether the plots should be displayed immediately after they are generated. Suitable to set to False when saving
             the plots to a file to suppress that the plots are shown.
         filename : str, default=''
             The full path and filename of the plot image file that will be saved. If empty, the plot will not be saved.
@@ -438,7 +452,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             If None, the default from the explanation class is used.
         rnk_weight : float, default=0.5
             The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
-        
+
         See Also
         --------
         :meth:`.FactualExplanation.plot` : Refer to the docstring for plot in FactualExplanation for details on default ranking ('feature_weight').
@@ -459,7 +473,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 style=style,
                 rnk_metric=rnk_metric,
                 rnk_weight=rnk_weight,
-                style_override=style_override
+                style_override=style_override,
             )
         else:
             for i, explanation in enumerate(self.explanations):
@@ -473,7 +487,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     style=style,
                     rnk_metric=rnk_metric,
                     rnk_weight=rnk_weight,
-                    style_override=style_override
+                    style_override=style_override,
                 )
 
     # pylint: disable=protected-access
@@ -548,19 +562,19 @@ class AlternativeExplanations(CalibratedExplanations):
         Return a copy with only super-explanations.
 
         Super-explanations are individual rules with higher probability that support the predicted class.
-        
+
         Parameters
         ----------
         only_ensured : bool, default=False
             Determines whether to return only ensured explanations.
         include_potential : bool, default=True
             Determines whether to include potential explanations in the super-explanations.
-        
+
         Returns
         -------
         AlternativeExplanations
             A new `AlternativeExplanations` object containing only super-factual or super-potential explanations.
-        
+
         Notes
         -----
         Super-explanations are only available for `AlternativeExplanation` explanations.
@@ -576,19 +590,19 @@ class AlternativeExplanations(CalibratedExplanations):
         Return a copy with only semi-explanations.
 
         Semi-explanations are individual rules with lower probability that support the predicted class.
-        
+
         Parameters
         ----------
         only_ensured : bool, default=False
             Determines whether to return only ensured explanations.
         include_potential : bool, default=True
             Determines whether to include potential explanations in the semi-explanations.
-        
+
         Returns
         -------
         AlternativeExplanations
             A new `AlternativeExplanations` object containing only semi-factual or semi-potential explanations.
-        
+
         Notes
         -----
         Semi-explanations are only available for `AlternativeExplanation` explanations.
@@ -611,12 +625,12 @@ class AlternativeExplanations(CalibratedExplanations):
             Determines whether to return only ensured explanations.
         include_potential : bool, default=True
             Determines whether to include potential explanations in the counter-explanations.
-        
+
         Returns
         -------
         AlternativeExplanations
             A new `AlternativeExplanations` object containing only counter-factual or counter-potential explanations.
-        
+
         Notes
         -----
         Counter-explanations are only available for `AlternativeExplanation` explanations.
@@ -632,7 +646,7 @@ class AlternativeExplanations(CalibratedExplanations):
         Return a copy with only ensured explanations.
 
         Ensured explanations are individual rules that have a smaller confidence interval.
-        
+
         Returns
         -------
         AlternativeExplanations
@@ -651,7 +665,7 @@ class FrozenCalibratedExplainer:
 
     def __init__(self, explainer):
         """Initialize a new instance of the FrozenCalibratedExplainer class.
-        
+
         Parameters
         ----------
         explainer : CalibratedExplainer
@@ -663,9 +677,9 @@ class FrozenCalibratedExplainer:
     def X_cal(self):
         """
         Retrieves the calibrated feature matrix from the underlying explainer.
-        
+
         This property provides access to the feature matrix used in the explainer, allowing users to understand the data being analyzed.
-        
+
         Returns
         -------
             numpy.ndarray: The calibrated feature matrix.
@@ -678,7 +692,7 @@ class FrozenCalibratedExplainer:
         Retrieves the calibrated target values from the underlying explainer.
 
         This property provides access to the target values used in the explainer, allowing users to understand the data being analyzed.
-        
+
         Returns
         -------
             numpy.ndarray: The calibrated target values.
@@ -690,7 +704,7 @@ class FrozenCalibratedExplainer:
         """
         Retrieves the number of features in the dataset.
 
-        This property provides access to the count of features that the underlying explainer is using. 
+        This property provides access to the count of features that the underlying explainer is using.
         It is useful for understanding the dimensionality of the data being analyzed.
 
         Returns
@@ -703,9 +717,9 @@ class FrozenCalibratedExplainer:
     def categorical_features(self):
         """
         Retrieves the indices of categorical features from the underlying explainer.
-        
+
         This property provides access to the indices of categorical features used in the explainer, allowing users to understand the data being analyzed.
-        
+
         Returns
         -------
             list: The indices of categorical features.
@@ -716,9 +730,9 @@ class FrozenCalibratedExplainer:
     def categorical_labels(self):
         """
         Retrieves the labels for categorical features from the underlying explainer.
-        
+
         This property provides access to the labels for categorical features used in the explainer, allowing users to understand the data being analyzed.
-        
+
         Returns
         -------
             list: The labels for categorical features.
@@ -729,9 +743,9 @@ class FrozenCalibratedExplainer:
     def feature_values(self):
         """
         Retrieves the unique values for each feature from the underlying explainer.
-        
+
         This property provides access to the unique values for each feature used in the explainer, allowing users to understand the data being analyzed.
-        
+
         Returns
         -------
             list: The unique values for each feature.
@@ -742,9 +756,9 @@ class FrozenCalibratedExplainer:
     def feature_names(self):
         """
         Retrieves the names of the features from the underlying explainer.
-        
+
         This property provides access to the names of the features used in the explainer, allowing users to understand the data being analyzed.
-        
+
         Returns
         -------
             list: The names of the features.
@@ -755,9 +769,9 @@ class FrozenCalibratedExplainer:
     def class_labels(self):
         """
         Retrieves the labels for the classes from the underlying explainer.
-            
+
         This property provides access to the labels for the classes used in the explainer, allowing users to understand the data being analyzed.
-        
+
         Returns
         -------
             list: The labels for the classes.
@@ -768,9 +782,9 @@ class FrozenCalibratedExplainer:
     def assign_threshold(self):
         """
         Retrieves the threshold for assigning class labels from the underlying explainer.
-        
+
         This property provides access to the threshold used for assigning class labels in the explainer, allowing users to understand the data being analyzed.
-        
+
         Returns
         -------
             float: The threshold for assigning class labels.
@@ -782,7 +796,7 @@ class FrozenCalibratedExplainer:
         """
         Retrieves the sample percentiles from the underlying explainer.
 
-        This property provides access to the percentiles of the samples used in the explainer, 
+        This property provides access to the percentiles of the samples used in the explainer,
         allowing users to understand the distribution of the data being analyzed.
 
         Returns
@@ -795,9 +809,9 @@ class FrozenCalibratedExplainer:
     def mode(self):
         """
         Retrieves the mode of the explainer from the underlying explainer.
-        
+
         This property provides access to the mode of the explainer, allowing users to understand the type of problem being analyzed.
-        
+
         Returns
         -------
             str: The mode of the explainer.
@@ -808,9 +822,9 @@ class FrozenCalibratedExplainer:
     def is_multiclass(self):
         """
         Retrieves a boolean indicating if the problem is multiclass from the underlying explainer.
-        
+
         This property provides access to a boolean value indicating if the problem is multiclass, allowing users to understand the type of problem being analyzed.
-        
+
         Returns
         -------
             bool: True if the problem is multiclass, False otherwise.
@@ -821,9 +835,9 @@ class FrozenCalibratedExplainer:
     def discretizer(self):
         """
         Retrieves the discretizer used by the explainer from the underlying explainer.
-        
+
         This property provides access to the discretizer used by the explainer, allowing users to understand the discretization process.
-        
+
         Returns
         -------
             Discretizer: The discretizer used by the explainer.
@@ -834,22 +848,22 @@ class FrozenCalibratedExplainer:
     def _discretize(self):
         """
         Retrieves the discretize function from the underlying explainer.
-        
+
         This property provides access to the discretize function used by the explainer, allowing users to understand the discretization process.
-        
+
         Returns
         -------
             function: The discretize function used by the explainer.
         """
-        return self._explainer._discretize # pylint: disable=protected-access
+        return self._explainer._discretize  # pylint: disable=protected-access
 
     @property
     def rule_boundaries(self):
         """
         Retrieves the boundaries for rules in the explainer from the underlying explainer.
-        
+
         This property provides access to the boundaries for rules used in the explainer, allowing users to understand the discretization process.
-        
+
         Returns
         -------
             list: The boundaries for rules in the explainer.
@@ -860,9 +874,9 @@ class FrozenCalibratedExplainer:
     def learner(self):
         """
         Retrieves the learner associated with the explainer from the underlying explainer.
-        
+
         This property provides access to the learner associated with the explainer, allowing users to understand the learning process.
-        
+
         Returns
         -------
             object: The learner associated with the explainer.
@@ -873,9 +887,9 @@ class FrozenCalibratedExplainer:
     def difficulty_estimator(self):
         """
         Retrieves the estimator for difficulty levels from the underlying explainer.
-        
+
         This property provides access to the estimator for difficulty levels used in the explainer, allowing users to understand the learning process.
-        
+
         Returns
         -------
             object: The estimator for difficulty levels.
@@ -886,44 +900,44 @@ class FrozenCalibratedExplainer:
     def _predict(self):
         """
         Retrieves the predict function from the underlying explainer.
-        
+
         This property provides access to the predict function used by the explainer, allowing users to understand the prediction process.
-        
+
         Returns
         -------
             function: The predict function used by the explainer.
         """
-        return self._explainer._predict # pylint: disable=protected-access
+        return self._explainer._predict  # pylint: disable=protected-access
 
     @property
     def _preload_lime(self):
         """
         Retrieves the preload_lime function from the underlying explainer.
-        
+
         This property provides access to the preload_lime function used by the explainer, allowing users to understand the prediction process.
-        
+
         Returns
         -------
             function: The preload_lime function used by the explainer.
         """
-        return self._explainer._preload_lime # pylint: disable=protected-access
+        return self._explainer._preload_lime  # pylint: disable=protected-access
 
     @property
     def _preload_shap(self):
         """
         Retrieves the preload_shap function from the underlying explainer.
-        
+
         This property provides access to the preload_shap function used by the explainer, allowing users to understand the prediction process.
-        
+
         Returns
         -------
             function: The preload_shap function used by the explainer.
         """
-        return self._explainer._preload_shap # pylint: disable=protected-access
+        return self._explainer._preload_shap  # pylint: disable=protected-access
 
     def __setattr__(self, key, value):
         """Prevent modification of attributes except for '_explainer'."""
-        if key == '_explainer':
+        if key == "_explainer":
             super().__setattr__(key, value)
         else:
             raise AttributeError("Cannot modify frozen instance")

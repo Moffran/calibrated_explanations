@@ -1,11 +1,15 @@
 """Mechanical extraction of OnlineCalibratedExplainer (Phase 1A).
 
 Verbatim move from legacy core.py (no semantic changes)."""
+
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
+
 import numpy as np
+
 from .wrap_explainer import WrapCalibratedExplainer  # fixed import
+
 
 class OnlineCalibratedExplainer(WrapCalibratedExplainer):
     """Calibrated Explanations for Online Learning.
@@ -17,6 +21,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
     The calibrated explanations are updated incrementally as new data arrives, making it suitable for streaming
     data scenarios where the model needs to continuously learn and adapt.
     """
+
     def fit(self, X_proper_train, y_proper_train, **kwargs):
         """Fit the learner to the training data.
 
@@ -38,15 +43,15 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         self.fitted = False
         self.calibrated = False
 
-        if hasattr(self.learner, 'fit'):
+        if hasattr(self.learner, "fit"):
             self.learner.fit(X_proper_train, y_proper_train, **kwargs)
         else:
-            if 'classes' not in kwargs:
-                kwargs['classes'] = np.unique(y_proper_train)
+            if "classes" not in kwargs:
+                kwargs["classes"] = np.unique(y_proper_train)
             try:
                 self.learner.partial_fit(X_proper_train, y_proper_train, **kwargs)
             except TypeError:
-                kwargs.pop('classes', None)
+                kwargs.pop("classes", None)
                 self.learner.partial_fit(X_proper_train, y_proper_train, **kwargs)
 
         return self._finalize_fit(reinitialize)
@@ -73,7 +78,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         AttributeError
             If the underlying learner does not support incremental learning.
         """
-        if not hasattr(self.learner, 'partial_fit'):
+        if not hasattr(self.learner, "partial_fit"):
             raise AttributeError("The learner must implement partial_fit for incremental learning")
         if np.isscalar(y):
             X = np.asarray(X).reshape(1, -1)
@@ -104,12 +109,16 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         AttributeError
             If the underlying learner does not support incremental learning.
         """
-        pre_pred = self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
+        pre_pred = (
+            self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
+        )
         try:
             self.partial_fit(X, y, **kwargs)
         except AttributeError:
             self.partial_fit(X, y)
-        post_pred = self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
+        post_pred = (
+            self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
+        )
         if self.calibrated and np.all(pre_pred == post_pred):
             if np.isscalar(y):
                 self.calibrate_one(X, y, **kwargs)
@@ -122,11 +131,11 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
             if self.calibrated:
                 X = np.concatenate((self.explainer.X_cal, X), axis=0)
                 y = np.concatenate((self.explainer.y_cal, y), axis=0)
-            if 'mode' not in kwargs:
-                if hasattr(self.learner, 'predict_proba'):
-                    kwargs['mode'] = 'classification'
+            if "mode" not in kwargs:
+                if hasattr(self.learner, "predict_proba"):
+                    kwargs["mode"] = "classification"
                 else:
-                    kwargs['mode'] = 'regression'
+                    kwargs["mode"] = "regression"
             self.calibrate(X, y, **kwargs)
 
     def calibrate_one(self, x, y, **kwargs):
@@ -178,11 +187,11 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         if self.calibrated:
             self.explainer.reinitialize(self.learner, X, y, **kwargs)
         else:
-            if 'mode' not in kwargs:
-                if hasattr(self.learner, 'predict_proba'):
-                    kwargs['mode'] = 'classification'
+            if "mode" not in kwargs:
+                if hasattr(self.learner, "predict_proba"):
+                    kwargs["mode"] = "classification"
                 else:
-                    kwargs['mode'] = 'regression'
+                    kwargs["mode"] = "regression"
             self.calibrate(X, y, **kwargs)
 
         self.calibrated = True
@@ -223,5 +232,6 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         """
         x = np.asarray(x).reshape(1, -1)
         return self.predict_proba(x, **kwargs)
+
 
 __all__ = ["OnlineCalibratedExplainer"]

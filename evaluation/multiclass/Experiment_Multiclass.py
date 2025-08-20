@@ -1,31 +1,35 @@
 # pylint: disable=all
 import warnings
+
 import numpy as np
 import pandas as pd
+from calibrated_explanations._VennAbers import VennAbers
+from matplotlib import pyplot as plt
+from sklearn.calibration import calibration_curve
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.isotonic import IsotonicRegression
+from sklearn.metrics import accuracy_score, brier_score_loss, log_loss, roc_auc_score
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.utils import shuffle
-from sklearn.metrics import (brier_score_loss, log_loss, accuracy_score, roc_auc_score)
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import StratifiedKFold
-from sklearn.calibration import calibration_curve
-from matplotlib import pyplot as plt
-from calibrated_explanations._VennAbers import VennAbers
-warnings.filterwarnings('ignore', category=RuntimeWarning)
-warnings.filterwarnings('ignore', category=UserWarning)
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+
 
 def bin_total(y_prob, n_bins):
-    bins = np.linspace(0., 1. + 1e-8, n_bins + 1)
+    bins = np.linspace(0.0, 1.0 + 1e-8, n_bins + 1)
     # In sklearn.calibration.calibration_curve,
     # the last value in the array is always 0.
     binids = np.digitize(y_prob, bins) - 1
     return np.bincount(binids, minlength=len(bins))
+
 
 def ece(y_prob, fop, mpv, n_bins=10):
     bins = bin_total(y_prob, n_bins)
     bins = bins[bins != 0]
     w = bins / np.sum(bins)
     return np.sum(w * abs(fop - mpv))
+
 
 def fix_class_missing(proba, class_is_missing, unique_y, unique_train_y):
     if not class_is_missing:
@@ -36,6 +40,7 @@ def fix_class_missing(proba, class_is_missing, unique_y, unique_train_y):
         new_proba[:, idx] = proba[:, y_i]
     return new_proba
 
+
 # MAIN PROGRAM
 outerloop = 10
 eval_matrix = []
@@ -43,15 +48,34 @@ eval_matrix = []
 treeSize_noncal = 0
 treeSize_va = 0
 
-for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehicle", "cmc", "balance", "wave", "vowel", "cars", "steel", "heat", "cool", "user", "whole", "yeast" ]:
+for dataSet in [
+    "iris",
+    "tae",
+    "image",
+    "wineW",
+    "wineR",
+    "wine",
+    "glass",
+    "vehicle",
+    "cmc",
+    "balance",
+    "wave",
+    "vowel",
+    "cars",
+    "steel",
+    "heat",
+    "cool",
+    "user",
+    "whole",
+    "yeast",
+]:
+    # for dataSet in ["ecoli"]:
 
-# for dataSet in ["ecoli"]:
-
-    fileName="data/Multiclass/multi/"+dataSet+".csv"
-    df = pd.read_csv(fileName, sep=';')
+    fileName = "data/Multiclass/multi/" + dataSet + ".csv"
+    df = pd.read_csv(fileName, sep=";")
     X, y = df.iloc[:, :-1].values, df.iloc[:, -1].values
 
-    X,y = shuffle(X, y)
+    X, y = shuffle(X, y)
     if min(y) == 1:
         y = y - 1
 
@@ -90,7 +114,9 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
             m1.fit(X_train, y_train)
             # treeSize_noncal = treeSize_noncal + m1.tree_.node_count
 
-            X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train, test_size=0.33)
+            X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
+                X_train, y_train, test_size=0.33
+            )
 
             uniqueY = np.unique(y)
             uniqueTrainY = np.unique(y_train)
@@ -98,22 +124,26 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
 
             s = len(y_prop_train)
 
-
             m2.fit(X_prop_train, y_prop_train)
             # treeSize_va = treeSize_va + m2.tree_.node_count
 
             uncal_preds[test_index] = m1.predict(X_test)
-            uncal_probs[test_index, :] = fix_class_missing(m1.predict_proba(X_test), class_missing, uniqueY, uniqueTrainY)
-
+            uncal_probs[test_index, :] = fix_class_missing(
+                m1.predict_proba(X_test), class_missing, uniqueY, uniqueTrainY
+            )
 
             uniqueTrainY = np.unique(y_prop_train)
             class_missing = len(uniqueTrainY) != len(uniqueY)
 
             cal_preds = m2.predict(X_cal)
-            cal_probs = fix_class_missing(m2.predict_proba(X_cal), class_missing, uniqueY, uniqueTrainY)
+            cal_probs = fix_class_missing(
+                m2.predict_proba(X_cal), class_missing, uniqueY, uniqueTrainY
+            )
 
             test_preds = m2.predict(X_test)
-            test_probs = fix_class_missing(m2.predict_proba(X_test), class_missing, uniqueY, uniqueTrainY)
+            test_probs = fix_class_missing(
+                m2.predict_proba(X_test), class_missing, uniqueY, uniqueTrainY
+            )
 
             va = VennAbers(cal_probs, y_cal, m2)
             tmp = va.predict_proba(X_test, output_interval=True)
@@ -121,8 +151,6 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
             va_preds[test_index] = np.argmax(tmp[0], axis=1)
             l[test_index, :] = tmp[1]
             h[test_index, :] = tmp[2]
-
-
 
         yall = np.append(yall, y)
         uncal_probs_all = np.append(uncal_probs_all, uncal_probs, axis=0)
@@ -151,12 +179,12 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-    for name in ['Uncal','VA']:#
-        if name == 'Uncal':
+    for name in ["Uncal", "VA"]:  #
+        if name == "Uncal":
             y_test = uncal_corrects
             prob_pos = uncal_probs_predicted
             ec = "%.3f" % (ece(uncal_probs_predicted, fop_uncal, mpv_uncal))
-        elif name == 'VA':
+        elif name == "VA":
             y_test = va_corrects
             prob_pos = va_probs_predicted
             ec = "%.3f" % (ece(va_probs_predicted, fop_va, mpv_va))
@@ -165,29 +193,26 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
 
         line_new = name + ": ECE=" + ec
         # line_new = f"{name:<12}  {ec:<12}"
-        ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
-                    label="%s" % (line_new,))
+        ax1.plot(mean_predicted_value, fraction_of_positives, "s-", label="%s" % (line_new,))
 
-        ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
-                    histtype="step", lw=2)
+        ax2.hist(prob_pos, range=(0, 1), bins=10, label=name, histtype="step", lw=2)
 
     ax1.set_ylabel("Fraction of positives")
     ax1.set_ylim([-0.05, 1.05])
     ax1.legend(loc="lower right")
-    ax1.set_title('Reliability')
+    ax1.set_title("Reliability")
 
     ax2.set_xlabel("Mean predicted value")
     ax2.set_ylabel("Count")
     ax2.legend(loc="upper left", ncol=2)
 
     plt.tight_layout()
-    plt.savefig('debug/multiclass/plots/' + dataSet + '_reliability.png')
+    plt.savefig("debug/multiclass/plots/" + dataSet + "_reliability.png")
     # plt.show()
     plt.close()
 
-
-    va_low_predicted = [low[i,j] for i,j in enumerate(np.argmax(va_probs_all, axis=1))]
-    va_high_predicted = [high[i,j] for i,j in enumerate(np.argmax(va_probs_all, axis=1))]
+    va_low_predicted = [low[i, j] for i, j in enumerate(np.argmax(va_probs_all, axis=1))]
+    va_high_predicted = [high[i, j] for i, j in enumerate(np.argmax(va_probs_all, axis=1))]
     va_corrects = (va_preds_all == yall).astype(int)
     va_diff = np.mean(va_probs_predicted) - accuracy_score(yall, va_preds_all)
 
@@ -198,31 +223,29 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
     ax1 = plt.subplot2grid((3, 1), (0, 0), rowspan=2)
     ax2 = plt.subplot2grid((3, 1), (2, 0))
     ax1.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-    for name in ['Uncal', 'VA', 'VA Low', 'VA High']:
-        if name == 'Uncal':
+    for name in ["Uncal", "VA", "VA Low", "VA High"]:
+        if name == "Uncal":
             y_test = uncal_corrects
             prob_pos = uncal_probs_predicted
             ec = "%.3f" % (ece(uncal_probs_predicted, fop_uncal, mpv_uncal))
             line_new = name + ": ECE=" + ec
 
-            ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
-                        histtype="step", lw=2)
+            ax2.hist(prob_pos, range=(0, 1), bins=10, label=name, histtype="step", lw=2)
 
-        if name == 'VA':
+        if name == "VA":
             y_test = va_corrects
             prob_pos = va_probs_predicted
             ec = "%.3f" % (ece(va_probs_predicted, fop_va, mpv_va))
             line_new = name + ": ECE=" + ec
 
-            ax2.hist(prob_pos, range=(0, 1), bins=10, label=name,
-                        histtype="step", lw=2)
+            ax2.hist(prob_pos, range=(0, 1), bins=10, label=name, histtype="step", lw=2)
 
-        if name == 'VA Low':
+        if name == "VA Low":
             y_test = va_corrects
             prob_pos = va_low_predicted
             ec = "%.3f" % (ece(va_low_predicted, fop_low, mpv_low))
             line_new = name
-        if name == 'VA High':
+        if name == "VA High":
             y_test = va_corrects
             prob_pos = va_high_predicted
             ec = "%.3f" % (ece(va_high_predicted, fop_high, mpv_high))
@@ -231,8 +254,7 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
         fraction_of_positives, mean_predicted_value = calibration_curve(y_test, prob_pos, n_bins=10)
 
         # line_new = f"{name:<12}  {ec:<12}"
-        ax1.plot(mean_predicted_value, fraction_of_positives, "s-",
-                    label="%s" % (line_new,))
+        ax1.plot(mean_predicted_value, fraction_of_positives, "s-", label="%s" % (line_new,))
     ax1.set_ylabel("Fraction of positives")
     ax1.set_ylim([-0.05, 1.05])
     ax1.legend(loc="lower right")
@@ -243,7 +265,7 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
     ax2.legend(loc="upper left", ncol=2)
 
     plt.tight_layout()
-    plt.savefig('debug/multiclass/plots/' + dataSet + '.png')
+    plt.savefig("debug/multiclass/plots/" + dataSet + ".png")
     # plt.show()
     plt.close()
 
@@ -251,36 +273,36 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
         (
             [
                 dataSet,
-                'Brier',
-                'NoCal',
+                "Brier",
+                "NoCal",
                 brier_score_loss(uncal_corrects, uncal_probs_predicted),
             ],
-            [dataSet, 'Acc', 'NoCal', accuracy_score(yall, uncal_preds_all)],
+            [dataSet, "Acc", "NoCal", accuracy_score(yall, uncal_preds_all)],
         )
     )
     eval_matrix.extend(
         (
             [
                 dataSet,
-                'Log',
-                'NoCal',
+                "Log",
+                "NoCal",
                 log_loss(uncal_corrects, uncal_probs_predicted),
             ],
-            [dataSet, 'Diff', 'NoCal', uncal_diff],
+            [dataSet, "Diff", "NoCal", uncal_diff],
         )
     )
     eval_matrix.extend(
         (
             [
                 dataSet,
-                'ECE',
-                'NoCal',
+                "ECE",
+                "NoCal",
                 ece(uncal_probs_predicted, fop_uncal, mpv_uncal),
             ],
             [
                 dataSet,
-                'treeSize',
-                'NoCal',
+                "treeSize",
+                "NoCal",
                 (treeSize_noncal / (10 * outerloop)),
             ],
         )
@@ -289,27 +311,44 @@ for dataSet in ["iris", "tae", "image", "wineW","wineR", "wine", "glass", "vehic
         (
             [
                 dataSet,
-                'AUC',
-                'NoCal',
+                "AUC",
+                "NoCal",
                 roc_auc_score(uncal_corrects, uncal_probs_predicted),
             ],
             [
                 dataSet,
-                'Brier',
-                'VA',
+                "Brier",
+                "VA",
                 brier_score_loss(va_corrects, va_probs_predicted),
             ],
         )
     )
-    eval_matrix.append([dataSet, 'Acc', 'VA', accuracy_score(yall, va_preds_all)])
-    eval_matrix.append([dataSet, 'Log', 'VA', log_loss(va_corrects, va_probs_predicted)])
-    eval_matrix.append([dataSet, 'Diff', 'VA', va_diff])
-    eval_matrix.append([dataSet, 'ECE', 'VA', ece(va_probs_predicted, fop_va, mpv_va)])
-    eval_matrix.append([dataSet, 'treeSize', 'VA', (treeSize_va / (10 * outerloop))])
-    eval_matrix.append([dataSet, 'AUC', 'VA', roc_auc_score(va_corrects, va_probs_predicted)])
-    eval_matrix.append([dataSet, 'Low', 'VA', np.mean([low[i,j] for i,j in enumerate(np.argmax(va_probs_all, axis=1))])])
-    eval_matrix.append([dataSet, 'High', 'VA', np.mean([high[i,j] for i,j in enumerate(np.argmax(va_probs_all, axis=1))])])
+    eval_matrix.append([dataSet, "Acc", "VA", accuracy_score(yall, va_preds_all)])
+    eval_matrix.append([dataSet, "Log", "VA", log_loss(va_corrects, va_probs_predicted)])
+    eval_matrix.append([dataSet, "Diff", "VA", va_diff])
+    eval_matrix.append([dataSet, "ECE", "VA", ece(va_probs_predicted, fop_va, mpv_va)])
+    eval_matrix.append([dataSet, "treeSize", "VA", (treeSize_va / (10 * outerloop))])
+    eval_matrix.append([dataSet, "AUC", "VA", roc_auc_score(va_corrects, va_probs_predicted)])
+    eval_matrix.append(
+        [
+            dataSet,
+            "Low",
+            "VA",
+            np.mean([low[i, j] for i, j in enumerate(np.argmax(va_probs_all, axis=1))]),
+        ]
+    )
+    eval_matrix.append(
+        [
+            dataSet,
+            "High",
+            "VA",
+            np.mean([high[i, j] for i, j in enumerate(np.argmax(va_probs_all, axis=1))]),
+        ]
+    )
 
-    evaluation_matrix = pd.DataFrame(data=eval_matrix, columns=['DataSet', 'Metric', 'Criteria', 'Value'])
-    evaluation_matrix.to_csv(r'debug/multiclass/results_COPA_2024.csv', index=True, header=True, sep=';')
-
+    evaluation_matrix = pd.DataFrame(
+        data=eval_matrix, columns=["DataSet", "Metric", "Criteria", "Value"]
+    )
+    evaluation_matrix.to_csv(
+        r"debug/multiclass/results_COPA_2024.csv", index=True, header=True, sep=";"
+    )

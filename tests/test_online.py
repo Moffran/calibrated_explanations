@@ -1,17 +1,19 @@
 """Tests for OnlineCalibratedExplainer functionality."""
+
 # pylint: disable=invalid-name, too-many-locals
 import numpy as np
+from calibrated_explanations import OnlineCalibratedExplainer
+from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.datasets import make_classification, make_regression
 
-from calibrated_explanations import OnlineCalibratedExplainer
 
 def test_online_classification():
     """Test OnlineCalibratedExplainer with classification."""
     # Generate synthetic data
-    X, y = make_classification(n_samples=1000, n_features=20, n_informative=15,
-                             n_redundant=5, random_state=42)
+    X, y = make_classification(
+        n_samples=1000, n_features=20, n_informative=15, n_redundant=5, random_state=42
+    )
 
     # Split into initial training, calibration and test sets
     X_train = X[:400]
@@ -23,7 +25,7 @@ def test_online_classification():
     y_stream = y[800:]
 
     # Create and initialize online learner
-    sgd = SGDClassifier(loss='log_loss', random_state=42)
+    sgd = SGDClassifier(loss="log_loss", random_state=42)
     explainer = OnlineCalibratedExplainer(sgd)
 
     # Initial fit and calibration
@@ -36,8 +38,8 @@ def test_online_classification():
 
     # Update with streaming data
     for i in range(0, len(X_stream), 10):
-        batch_X = X_stream[i:i+10]
-        batch_y = y_stream[i:i+10]
+        batch_X = X_stream[i : i + 10]
+        batch_y = y_stream[i : i + 10]
         explainer.partial_fit(batch_X, batch_y)
         explainer.calibrate_many(batch_X, batch_y)
 
@@ -57,12 +59,12 @@ def test_online_classification():
     assert len(single_pred.shape) == 1
     assert len(single_prob.shape) <= 2
 
+
 def test_online_regression():
     """Test OnlineCalibratedExplainer with regression."""
     # Generate synthetic data
     # pylint: disable=unbalanced-tuple-unpacking
-    X, y = make_regression(n_samples=1000, n_features=20, n_informative=15,
-                          random_state=42)
+    X, y = make_regression(n_samples=1000, n_features=20, n_informative=15, random_state=42)
 
     # Scale targets to reasonable range
     scaler = StandardScaler()
@@ -91,8 +93,8 @@ def test_online_regression():
 
     # Update with streaming data
     for i in range(0, len(X_stream), 10):
-        batch_X = X_stream[i:i+10]
-        batch_y = y_stream[i:i+10]
+        batch_X = X_stream[i : i + 10]
+        batch_y = y_stream[i : i + 10]
         explainer.partial_fit(batch_X, batch_y)
         explainer.calibrate_many(batch_X, batch_y)
 
@@ -117,11 +119,13 @@ def test_online_regression():
     assert len(preds_with_intervals) == 2
     assert len(preds_with_intervals[1]) == 2  # (low, high) intervals
 
+
 def test_online_explanations():
     """Test explanation generation with OnlineCalibratedExplainer."""
     # Generate synthetic data
-    X, y = make_classification(n_samples=1000, n_features=20, n_informative=15,
-                             n_redundant=5, random_state=42)
+    X, y = make_classification(
+        n_samples=1000, n_features=20, n_informative=15, n_redundant=5, random_state=42
+    )
 
     # Split data
     X_train = X[:400]
@@ -133,12 +137,12 @@ def test_online_explanations():
     y_stream = y[800:]
 
     # Create and initialize explainer
-    sgd = SGDClassifier(loss='log_loss', random_state=42)
+    sgd = SGDClassifier(loss="log_loss", random_state=42)
     explainer = OnlineCalibratedExplainer(sgd)
 
     # Initial fit and calibration
     explainer.fit(X_train, y_train)
-    explainer.calibrate(X_cal, y_cal, feature_names=[f'f{i}' for i in range(20)])
+    explainer.calibrate(X_cal, y_cal, feature_names=[f"f{i}" for i in range(20)])
 
     # Generate initial explanations
     initial_factual = explainer.explain_factual(X_test)
@@ -146,8 +150,8 @@ def test_online_explanations():
 
     # Update with streaming data
     for i in range(0, len(X_stream), 10):
-        batch_X = X_stream[i:i+10]
-        batch_y = y_stream[i:i+10]
+        batch_X = X_stream[i : i + 10]
+        batch_y = y_stream[i : i + 10]
         explainer.partial_fit(batch_X, batch_y)
         explainer.calibrate_many(batch_X, batch_y)
 
@@ -163,23 +167,26 @@ def test_online_explanations():
 
     # Verify explanation attributes
     for exp in updated_factual.explanations:
-        assert hasattr(exp, 'feature_weights')
-        assert hasattr(exp, 'prediction')
-        assert hasattr(exp, 'X_test')
+        assert hasattr(exp, "feature_weights")
+        assert hasattr(exp, "prediction")
+        assert hasattr(exp, "X_test")
 
     for exp in updated_alternatives.explanations:
-        assert hasattr(exp, 'feature_weights')
-        assert hasattr(exp, 'prediction')
-        assert hasattr(exp, 'X_test')
+        assert hasattr(exp, "feature_weights")
+        assert hasattr(exp, "prediction")
+        assert hasattr(exp, "X_test")
+
 
 def test_error_handling():
     """Test error handling in OnlineCalibratedExplainer."""
+
     # Create explainer with non-online learner
     class NonOnlineLearner:
         """Error class"""
+
         def fit(self, X, y):
             """Fit function"""
-            pass # pylint: disable=unnecessary-pass
+            pass  # pylint: disable=unnecessary-pass
 
         def predict(self, X):
             """Predict function"""
@@ -188,8 +195,9 @@ def test_error_handling():
     explainer = OnlineCalibratedExplainer(NonOnlineLearner())
 
     # Test partial_fit with non-online learner
-    X = np.random.randn(10, 5)
-    y = np.random.randint(0, 2, 10)
+    rng = np.random.default_rng()
+    X = rng.standard_normal((10, 5))
+    y = rng.integers(0, 2, 10)
 
     try:
         explainer.partial_fit(X, y)

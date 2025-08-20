@@ -30,7 +30,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install calibrated-explanations
-          pip install pytest pytest-cov pylint xgboost lime shap setuptools psutil
+          pip install pytest pytest-cov xgboost lime shap setuptools psutil
 
       - name: Run tests with coverage
         id: run_tests
@@ -39,15 +39,10 @@ jobs:
       - name: Run doctests
         run: python src/calibrated_explanations/utils/helper.py
 
-      - name: Upload coverage reports to Codecov      
+      - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5.4.3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Lint with pylint
-        id: lint
-        run: |
-          pylint $(git ls-files '*.py')
 
   perf-guard:
     runs-on: ubuntu-latest

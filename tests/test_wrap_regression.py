@@ -10,19 +10,19 @@ Functions:
     test_wrap_conditional_regression_ce: Tests the WrapCalibratedExplainer class for conditional regression.
     test_wrap_regression_fast_ce: Tests the WrapCalibratedExplainer class for fast regression.
 """
+
 import numpy as np
 import pytest
+from calibrated_explanations import WrapCalibratedExplainer
+from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
 
-from crepes.extras import MondrianCategorizer
-from calibrated_explanations import WrapCalibratedExplainer
-
-from tests.test_regression import regression_dataset
 
 def assert_predictions_match(y_pred1, y_pred2, msg="Predictions don't match"):
     """Helper to verify predictions match"""
     assert len(y_pred1) == len(y_pred2), f"{msg}: Different lengths"
     assert all(y1 == y2 for y1, y2 in zip(y_pred1, y_pred2)), msg
+
 
 def assert_valid_confidence_bounds(predictions, bounds, msg="Invalid confidence bounds"):
     """Helper to verify confidence bounds are valid"""
@@ -30,8 +30,10 @@ def assert_valid_confidence_bounds(predictions, bounds, msg="Invalid confidence 
     for i, pred in enumerate(predictions):
         assert low[i] <= pred <= high[i], f"{msg} at index {i}"
 
+
 class TestWrapRegressionExplainer:
     """Tests for WrapCalibratedExplainer in regression tasks."""
+
     # Class attributes instead of instance attributes initialized in __init__
     X_train = None
     y_train = None
@@ -45,7 +47,17 @@ class TestWrapRegressionExplainer:
     @pytest.fixture(autouse=True)
     def setup(self, regression_dataset):
         """Setup the regression dataset and explainer."""
-        self.X_train, self.y_train, self.X_cal, self.y_cal, self.X_test, self.y_test, _, _, self.feature_names = regression_dataset
+        (
+            self.X_train,
+            self.y_train,
+            self.X_cal,
+            self.y_cal,
+            self.X_test,
+            self.y_test,
+            _,
+            _,
+            self.feature_names,
+        ) = regression_dataset
         self.explainer = WrapCalibratedExplainer(RandomForestRegressor(random_state=42))
 
     def test_initial_state(self):
@@ -56,14 +68,17 @@ class TestWrapRegressionExplainer:
         with pytest.raises(RuntimeError, match="must be fitted"):
             self.explainer.explain_factual(self.X_test)
 
-    @pytest.mark.parametrize("threshold", [
-        None,
-        0.5,
-        [0.5, 0.6],
-        (0.4,0.6),
-        [(0.4,0.6), (0.3, 0.4)],
-        pytest.param(-1, marks=pytest.mark.xfail(raises=TypeError))
-    ])
+    @pytest.mark.parametrize(
+        "threshold",
+        [
+            None,
+            0.5,
+            [0.5, 0.6],
+            (0.4, 0.6),
+            [(0.4, 0.6), (0.3, 0.4)],
+            pytest.param(-1, marks=pytest.mark.xfail(raises=TypeError)),
+        ],
+    )
     def test_prediction_with_thresholds(self, threshold):
         """Test predictions with different threshold values"""
         self.explainer.fit(self.X_train, self.y_train)
@@ -83,7 +98,8 @@ class TestWrapRegressionExplainer:
 
         # Test invalid feature count
         with pytest.raises(ValueError):
-            self.explainer.predict(np.random.rand(10, len(self.X_train[0]) + 1), calibrated=False)
+            rng = np.random.default_rng()
+            self.explainer.predict(rng.random((10, len(self.X_train[0]) + 1)), calibrated=False)
 
         # # Test NaN/Inf handling
         # X_invalid = self.X_test.copy()
@@ -91,12 +107,13 @@ class TestWrapRegressionExplainer:
         # with pytest.raises(ValueError):
         #     self.explainer.predict(X_invalid)
 
+
 def generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
     """
     Tests the functionality of a calibrated explainer.
-    This function performs a series of assertions to ensure that the 
-    calibrated explainer (`cal_exp`) is properly fitted and calibrated. 
-    It also checks the behavior of the `WrapCalibratedExplainer` class 
+    This function performs a series of assertions to ensure that the
+    calibrated explainer (`cal_exp`) is properly fitted and calibrated.
+    It also checks the behavior of the `WrapCalibratedExplainer` class
     when initialized with the learner and explainer from `cal_exp`.
     Parameters:
     cal_exp (object): The calibrated explainer to be tested.
@@ -129,6 +146,7 @@ def generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
     cal_exp.plot(X_test, y_test, show=False)
     return cal_exp
 
+
 def test_wrap_regression_ce(regression_dataset):
     """
     Test the WrapCalibratedExplainer class for regression.
@@ -147,7 +165,9 @@ def test_wrap_regression_ce(regression_dataset):
     Args:
         regression_dataset (tuple): A tuple containing the training, calibration, and test datasets along with additional metadata such as categorical features and feature names.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, feature_names = regression_dataset
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, feature_names = (
+        regression_dataset
+    )
     cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
     assert not cal_exp.fitted
     assert not cal_exp.calibrated
@@ -246,6 +266,7 @@ def test_wrap_regression_ce(regression_dataset):
     cal_exp.plot(X_test, show=False, threshold=y_test[0])
     cal_exp.plot(X_test, y_test, show=False, threshold=y_test[0])
 
+
 def test_wrap_conditional_regression_ce(regression_dataset):
     """
     Test the WrapCalibratedExplainer class for conditional regression.
@@ -260,7 +281,9 @@ def test_wrap_conditional_regression_ce(regression_dataset):
     Args:
         regression_dataset (tuple): A tuple containing the training, calibration, and test datasets along with additional metadata such as categorical features and feature names.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, feature_names = regression_dataset
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, feature_names = (
+        regression_dataset
+    )
     cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
     cal_exp.fit(X_prop_train, y_prop_train)
 
@@ -272,8 +295,11 @@ def test_wrap_conditional_regression_ce(regression_dataset):
     conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
     # test with predict as categorizer
-    cal_exp.calibrate(X_cal, y_cal, mc=lambda x: cal_exp.learner.predict(x) > 0.5, feature_names=feature_names)
+    cal_exp.calibrate(
+        X_cal, y_cal, mc=lambda x: cal_exp.learner.predict(x) > 0.5, feature_names=feature_names
+    )
     conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
+
 
 def conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
     """
@@ -327,6 +353,7 @@ def conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
 
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
+
 def test_wrap_regression_fast_ce(regression_dataset):
     """
     Test the WrapCalibratedExplainer class for fast regression.
@@ -341,7 +368,9 @@ def test_wrap_regression_fast_ce(regression_dataset):
     Args:
         regression_dataset (tuple): A tuple containing the training, calibration, and test datasets along with additional metadata such as categorical features and feature names.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, feature_names = regression_dataset
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, feature_names = (
+        regression_dataset
+    )
     cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
     cal_exp.fit(X_prop_train, y_prop_train)
     cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, perturb=True)

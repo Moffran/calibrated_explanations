@@ -5,13 +5,15 @@ Creates a timestamped text file in benchmarks/ listing exported symbols from the
 package root plus selected key modules. Intended for Phase 1A mechanical refactor
 regression checking.
 """
+
 from __future__ import annotations
+
 import importlib
 import inspect
 import pkgutil
-from pathlib import Path
-from datetime import datetime
 import sys
+from datetime import datetime
+from pathlib import Path
 
 # Ensure local src/ on sys.path for in-place execution
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,6 +25,7 @@ PACKAGE = "calibrated_explanations"
 OUT_DIR = ROOT / "benchmarks"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+
 def list_module_public(mod):
     exported = set()
     if hasattr(mod, "__all__") and mod.__all__:
@@ -32,9 +35,15 @@ def list_module_public(mod):
             if name.startswith("_"):
                 continue
             # only include callables, classes, modules, simple constants
-            if inspect.isfunction(obj) or inspect.isclass(obj) or inspect.ismodule(obj) or isinstance(obj, (int, float, str, tuple)):
+            if (
+                inspect.isfunction(obj)
+                or inspect.isclass(obj)
+                or inspect.ismodule(obj)
+                or isinstance(obj, (int, float, str, tuple))
+            ):
                 exported.add(name)
     return sorted(exported)
+
 
 def main():
     ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -62,6 +71,7 @@ def main():
     out_file = OUT_DIR / f"api_public_{ts}.txt"
     out_file.write_text("\n".join(lines), encoding="utf-8")
     print(f"Wrote API snapshot to {out_file}")
+
 
 if __name__ == "__main__":  # pragma: no cover
     main()

@@ -18,7 +18,7 @@ Here is a very condensed example to get you started:
    # Initialize the CalibratedExplainer
    classifier.calibrate(X_calibration, y_calibration)
    regressor.calibrate(X_calibration, y_calibration)
- 
+
    # Factual Explanations
    # Create factual explanations for classification
    factual_explanations = classifier.explain_factual(X_test)
@@ -39,7 +39,7 @@ Here is a very condensed example to get you started:
    alternative_explanations = regressor.explore_alternatives(X_test, low_high_percentiles=(10,90))
    # Create alternative probabilistic explanations for regression with user assigned threshold
    alternative_explanations = regressor.explore_alternatives(X_test, threshold=your_threshold)
-   
+
    # Plot the explanations
    factual_explanations.plot()
    factual_explanations.plot(uncertainty=True)
@@ -50,9 +50,9 @@ Here is a very condensed example to get you started:
    alternative_conjunctions.add_conjunctions()
 
    # One-sided explanations for regression are easily created
-   factual_upper_bounded = regressor.explain_factual(X_test, 
+   factual_upper_bounded = regressor.explain_factual(X_test,
                               low_high_percentiles=(-np.inf,90))
-   alternative_lower_bounded = regressor.explore_alternatives(X_test, 
+   alternative_lower_bounded = regressor.explore_alternatives(X_test,
                               low_high_percentiles=(10,np.inf))
 ```
 
@@ -62,7 +62,7 @@ The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/m
 
 The notebooks listed below are using the `CalibratedExplainer` class. They showcase a number of different use cases, as indicated by their names:
 * [quickstart](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart.ipynb) - similar to this Getting Started, but without a wrapper class.
-* [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) - with examples for binary classification 
+* [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) - with examples for binary classification
 * [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb) - with examples for multi-class classification
 * [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) - with examples for regression
 * [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) - with examples for regression with thresholds
@@ -95,7 +95,7 @@ X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train,
 
 ```
 
-We now create our wrapper object, using a `RandomForestClassifier` as learner. 
+We now create our wrapper object, using a `RandomForestClassifier` as learner.
 
 
 ```python
@@ -123,7 +123,7 @@ The `WrapCalibratedExplainer` class has a `predict` and a `predict_proba` method
 print(f'Uncalibrated probability estimates: \n{classifier.predict_proba(X_test)}')
 ```
 
-Before we can generate explanations, we need to calibrate our model using the calibration set. 
+Before we can generate explanations, we need to calibrate our model using the calibration set.
 
 
 ```python
@@ -141,7 +141,7 @@ print(f'Calibrated uncertainty interval for the positive class: [{[(low[i], high
 ```
 
 #### Factual Explanations
-Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`. 
+Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`.
 
 
 ```python
@@ -169,7 +169,7 @@ factual_explanations.remove_conjunctions().plot(0, uncertainty=True)
 ```
 
 #### Alternative Explanations
-An alternative to factual rules is to extract alternative rules, which is done using the `explore_alternatives` function. 
+An alternative to factual rules is to extract alternative rules, which is done using the `explore_alternatives` function.
 
 
 ```python
@@ -177,7 +177,7 @@ alternative_explanations = classifier.explore_alternatives(X_test)
 display(classifier)
 ```
 
-Alternatives are also visualized using the `plot`. Plotting an individual alternative explanation is done using `plot`, submitting the index to plot. Adding or removing conjunctions is done as before. 
+Alternatives are also visualized using the `plot`. Plotting an individual alternative explanation is done using `plot`, submitting the index to plot. Adding or removing conjunctions is done as before.
 
 
 ```python
@@ -187,9 +187,9 @@ alternative_explanations.add_conjunctions().plot()
 alternative_explanations.plot(0)
 ```
 
-`calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability. 
+`calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability.
 ### Regression
-Extracting explanations for regression is very similar to how it is done for classification. First we load and divide the dataset. The target is divided by 1000, meaning that the target is in thousands of dollars. 
+Extracting explanations for regression is very similar to how it is done for classification. First we load and divide the dataset. The target is divided by 1000, meaning that the target is in thousands of dollars.
 
 
 ```python
@@ -209,7 +209,7 @@ X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train,
                                                             test_size=200)
 ```
 
-We now create our wrapper object, using a `RandomForestRegressor` as learner. 
+We now create our wrapper object, using a `RandomForestRegressor` as learner.
 
 
 ```python
@@ -234,7 +234,7 @@ The `WrapCalibratedExplainer` class has a `predict` method that returns the pred
 print(f'Uncalibrated model prediction: \n{regressor.predict(X_test)}')
 ```
 
-Before we can generate explanations, we need to calibrate our model using the calibration set. 
+Before we can generate explanations, we need to calibrate our model using the calibration set.
 
 
 ```python
@@ -248,12 +248,12 @@ We can easily add a difficulty estimator by assigning a `DifficultyEstimator` to
 ```python
 from crepes.extras import DifficultyEstimator
 
-regressor.calibrate(X_cal, y_cal, feature_names=feature_names, 
+regressor.calibrate(X_cal, y_cal, feature_names=feature_names,
                     difficulty_estimator=DifficultyEstimator().fit(X=X_prop_train, learner=regressor.learner, scaler=True))
 display(regressor)
 ```
 
-Once the model is calibrated, the `predict`  method produce calibrated predictions with uncertainties. The default confidence is 90 per cent, which can be altered using the `low_high_percentiles` parameter. 
+Once the model is calibrated, the `predict`  method produce calibrated predictions with uncertainties. The default confidence is 90 per cent, which can be altered using the `low_high_percentiles` parameter.
 
 
 ```python
@@ -274,7 +274,7 @@ print(f'Calibrated probabilistic uncertainty interval for y_hat <= threshold: [{
 ```
 
 #### Factual Explanations
-Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`. 
+Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`.
 
 
 ```python
@@ -282,7 +282,7 @@ factual_explanations = regressor.explain_factual(X_test)
 display(regressor)
 ```
 
-Regression also offer both regular and uncertainty plots for factual explanations with or without conjunctive rules, in almost exactly the same way as for classification. 
+Regression also offer both regular and uncertainty plots for factual explanations with or without conjunctive rules, in almost exactly the same way as for classification.
 
 
 ```python
@@ -292,7 +292,7 @@ factual_explanations.plot(uncertainty=True)
 factual_explanations.add_conjunctions().plot(uncertainty=True)
 ```
 
-Default, the confidence interval is set to a symmetric interval of 90% (defined as `low_high_percentiles=(5,95)`). The intervals can cover any user specified interval, including one-sided intervals. To define a one-sided upper-bounded 90% interval, set `low_high_percentiles=(-np.inf,90)`, and to define a one-sided lower-bounded 95% interval, set `low_high_percentiles=(5,np.inf)`. Percentiles can also be set to any other values in the range (0,100) (exclusive), and intervals do not have to be symmetric. 
+Default, the confidence interval is set to a symmetric interval of 90% (defined as `low_high_percentiles=(5,95)`). The intervals can cover any user specified interval, including one-sided intervals. To define a one-sided upper-bounded 90% interval, set `low_high_percentiles=(-np.inf,90)`, and to define a one-sided lower-bounded 95% interval, set `low_high_percentiles=(5,np.inf)`. Percentiles can also be set to any other values in the range (0,100) (exclusive), and intervals do not have to be symmetric.
 
 
 ```python
@@ -301,7 +301,7 @@ asymmetric_explanations = regressor.explain_factual(X_test, low_high_percentiles
 ```
 
 #### Alternative Explanations
-The `explore_alternatives` will work exactly the same as for classification. 
+The `explore_alternatives` will work exactly the same as for classification.
 
 
 ```python
@@ -318,7 +318,7 @@ alternative_explanations.add_conjunctions().plot()
 ```
 
 ### Probabilistic Regression
-The difference between probabilistic regression and regular regression is that the former returns a probability of the prediction being below a certain threshold. This could for example be useful when the prediction is a time to an event, such as time to death or time to failure. 
+The difference between probabilistic regression and regular regression is that the former returns a probability of the prediction being below a certain threshold. This could for example be useful when the prediction is a time to an event, such as time to death or time to failure.
 
 
 ```python
@@ -337,7 +337,7 @@ Regression offers many more options but to learn more about them, see the [demo_
 
 ### Alternatives
 
-A `WrapCalibratedExplainer` can also be initialized with a trained model or with a `CalibratedExplainer` object, as is examplified below. 
+A `WrapCalibratedExplainer` can also be initialized with a trained model or with a `CalibratedExplainer` object, as is examplified below.
 
 
 ```python

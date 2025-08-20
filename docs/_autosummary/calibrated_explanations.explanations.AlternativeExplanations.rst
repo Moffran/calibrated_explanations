@@ -6,9 +6,3 @@
 .. autoclass:: AlternativeExplanations
    :members:
    :show-inheritance:
-   
-   
-
-   
-   
-   

@@ -11,23 +11,25 @@ If --current is omitted, the script will invoke collect_baseline internally
 into a temp file.
 Exit code 0 = OK, 1 = regression detected, 2 = configuration error.
 """
+
 from __future__ import annotations
+
 import argparse
 import json
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def load_json(path: Path) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def get_nested(d: Dict[str, Any], dotted: str):
-    parts = dotted.split('.')
+    parts = dotted.split(".")
     cur: Any = d
     for p in parts:
         if p not in cur:
@@ -41,7 +43,11 @@ def main():
     parser.add_argument("--baseline", required=True, help="Baseline JSON path")
     parser.add_argument("--thresholds", required=True, help="Threshold JSON path")
     parser.add_argument("--current", help="Current metrics JSON path (optional)")
-    parser.add_argument("--collect", action="store_true", help="Force collect current metrics even if --current provided")
+    parser.add_argument(
+        "--collect",
+        action="store_true",
+        help="Force collect current metrics even if --current provided",
+    )
     args = parser.parse_args()
 
     baseline_path = Path(args.baseline)
@@ -94,7 +100,9 @@ def main():
         if max_rel is not None and rel_increase > max_rel:
             status = "REGRESSION"
             regressions.append((key, base_val, cur_val, rel_increase, max_rel))
-        summary.append(f"{status} {key}: base={base_val:.6g} current={cur_val:.6g} rel={rel_increase:.2%} (limit {max_rel:.0%})")
+        summary.append(
+            f"{status} {key}: base={base_val:.6g} current={cur_val:.6g} rel={rel_increase:.2%} (limit {max_rel:.0%})"
+        )
 
     print("Performance Check Summary:")
     for line in summary:

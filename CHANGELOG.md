@@ -3,9 +3,9 @@
 ## [Unreleased]
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.1...main)
 ### Features
-- Updated references to the paper [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8) in README and citing. The paper is now published in Machine Learning Journal. 
-  - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2025). [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8). Machine Learning 114, 100. 
-- Added support for Time Series data through the addition of an `OnlineCalibratedExplainer`. The explainer support both online methods like ridge regression, making it possible to continuously update both the model and the calibration. It also support offline models, allowing online calibration. It also has support for semi-online and batch updates and calibration. 
+- Updated references to the paper [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8) in README and citing. The paper is now published in Machine Learning Journal.
+  - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2025). [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8). Machine Learning 114, 100.
+- Added support for Time Series data through the addition of an `OnlineCalibratedExplainer`. The explainer support both online methods like ridge regression, making it possible to continuously update both the model and the calibration. It also support offline models, allowing online calibration. It also has support for semi-online and batch updates and calibration.
 - Plot Style Control: With [a series of commits](https://github.com/Moffran/calibrated_explanations/compare/4cbc4ff410df19a32899071daa2568e8904c2c47...4093496b1d938f3470f2d33715f0af286f239728), a `plot_config.ini` file and a `test_plot_config.py` file have been added. The style parameters are used by the plots. The style parameters for all plot functions can now be overridden using the `style_override` parameter. [Controlling figure width is also added](https://github.com/Moffran/calibrated_explanations/compare/86babfa1afed75fc8959cf072c21e932c3d08f07...e0d13f32907185a144781ff76b553ad5c8cc0f8d).
 ### Fixes
 - [fix: ensure figures are closed when not shown in plotting functions](https://github.com/Moffran/calibrated_explanations/commit/f20a047b2c4acb0eae6b5f6aed876f2db7d4d389)
@@ -28,24 +28,24 @@
 - Added `calibrated_confusion_matrix` in `CalibratedExplainer` and `WrapCalibratedExplainer`, providing a leave-one-out calibrated confusion matrix using the calibration set. The insights from the confusion matrix are useful when analyzing explanations, to determine general prediction and error distributions of the model. An example of using the confusion matrix in the analysis is given in paper [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf).
 - Embraced the update of `crepes` version 0.7.1, making it possible to add a seed when fitting. Addresses issue #43.
 - Updating terminology and functionality:
-  - Introducing the concept of _ensured_ explanations. 
-    - Changed the name of `CounterfactualExplanation` to `AlternativeExplanation`, as it better reflects the purpose and functionality of the class. 
-    - Added a collection subclass `AlternativeExplanations` inheriting from `CalibratedExplanations`, which is used for collections of `AlternativeExplanation`'s. Collection methods referring to methods only available in the `AlternativeExplanation` are included in the new collection class.  
-    - Added an `explore_alternatives` method in `CalibratedExplainer` and `WrapCalibratedExplainer` to be used instead of `explain_counterfactual`, as the name of the later is ambiguous. The `explain_counterfactual` is still kept for compatibility reasons but only forwards the call to `explore_alternatives`. All files and notebooks have been updated to only call `explore_alternatives`. All references to counterfactuals have been changed to alternatives, with obvious exceptions. 
-    - Added both filtering methods and a ranking metric that can help filter out ensured explanations. 
-      - The parameters `rnk_metric` and `rnk_weight` has been added to the plotting functions and is applicable to all kinds of plots. 
+  - Introducing the concept of _ensured_ explanations.
+    - Changed the name of `CounterfactualExplanation` to `AlternativeExplanation`, as it better reflects the purpose and functionality of the class.
+    - Added a collection subclass `AlternativeExplanations` inheriting from `CalibratedExplanations`, which is used for collections of `AlternativeExplanation`'s. Collection methods referring to methods only available in the `AlternativeExplanation` are included in the new collection class.
+    - Added an `explore_alternatives` method in `CalibratedExplainer` and `WrapCalibratedExplainer` to be used instead of `explain_counterfactual`, as the name of the later is ambiguous. The `explain_counterfactual` is still kept for compatibility reasons but only forwards the call to `explore_alternatives`. All files and notebooks have been updated to only call `explore_alternatives`. All references to counterfactuals have been changed to alternatives, with obvious exceptions.
+    - Added both filtering methods and a ranking metric that can help filter out ensured explanations.
+      - The parameters `rnk_metric` and `rnk_weight` has been added to the plotting functions and is applicable to all kinds of plots.
       - Both the `AlternativeExplanation` class (for an individual instance) and the collection subclass `AlternativeExplanations` contains filter functions only applicable to alternative explanations, such as `counter_explanations`, `semi_explanations`, `super_explanations`, and `ensured_explanations`.
-        - `counter_explanations` removes all alternatives except those changing prediction. 
+        - `counter_explanations` removes all alternatives except those changing prediction.
         - `semi_explanations` removes all alternatives except those reducing the probability while not changing prediction.
         - `super_explanations` removes all alternatives except those increasing the probability for the prediction.
-        - The concept of potential (uncertain) explanations is introduced. When the uncertainty interval spans across probability 0.5, an explanation is considered a potential. It will normally only be counter-potential and semi-potential, but can in some cases also be super-potential. Potential alternatives can be included or excluded from the above methods using the boolean parameter `include_potentials`. 
+        - The concept of potential (uncertain) explanations is introduced. When the uncertainty interval spans across probability 0.5, an explanation is considered a potential. It will normally only be counter-potential and semi-potential, but can in some cases also be super-potential. Potential alternatives can be included or excluded from the above methods using the boolean parameter `include_potentials`.
         - `ensured_explanations` removes all alternatives except those with lower uncertainty (i.e. smaller uncertainty interval) than the original prediction.
-    - Added a new form of plot for probabilistic predictions is added, clearly visualizing both the aleatoric and the epistemic uncertainty. 
+    - Added a new form of plot for probabilistic predictions is added, clearly visualizing both the aleatoric and the epistemic uncertainty.
       - A global plot is added, plotting all test instances with probability and uncertainty as the x- and y-axes. The area corresponding to potential (uncertain) predictions is marked. The plot can be invoked using the `plot(X_test)` or `plot(X_test, y_test)` call.
       - A local plot for alternative explanations, with probability and uncertainty as the x- and y-axes, is added, which can be invoked from an `AlternativeExplanation` or a `AlternativeExplanations` using `plot(style='triangular')`. The optimal use is when combined with the `filter_top` parameter (see below), to include all alternatives, as follows: `plot(style='triangular', filter_top=None)`.
     - Added prerpint and bibtex to the paper introducing _ensured_ explanations:
-      - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479. 
-      - Bibtex: 
+      - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.
+      - Bibtex:
         ```bibtex
         @misc{lofstrom2024ce_ensured,
           title = 	      {Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions},
@@ -56,15 +56,15 @@
           primaryClass =    {cs.LG}
         }
         ```
-  - Introduced _fast_ explanations 
+  - Introduced _fast_ explanations
     - Introduced a new type of explanation called `FastExplanation` which can be extracted using the `explain_fast` method. It differs from a `FactualExplanation` in that it does not define a rule condition but only provides a feature weight.
     - The new type of explanation is using ideas from [ConformaSight](https://github.com/rabia174/ConformaSight), a recently proposed global explanation algorithm based on conformal classification. Acknowledgements have been added.
   - Introduced a new form av probabilistic regression explanation:
     - Introduced the possibility to get explanations for the probability of being inside an interval. This is achieved by assigning a tuple with lower and upper bounds as threshold, e.g., `threshold=(low,high)` to get the probability of the prediction falling inside the interval (low, high].
-    - To the best of our knowledge, this is the only package that provide this functionality with epistemic uncertainty. 
-  - Introduced the possibility to add new user defined rule conditions, using the `add_new_rule_condition` method. This is only applicable to numerical features. 
-    - Factual explanations will create new conditions covering the instance value. Categorical features already get a condition for the instance value during the invocation of `explain_factual`. 
-    - Alternative explanations will create new conditions that exclude the instance value. Categorical features already get conditions for all alternative categories during the invocation of `explore_alternatives`.   
+    - To the best of our knowledge, this is the only package that provide this functionality with epistemic uncertainty.
+  - Introduced the possibility to add new user defined rule conditions, using the `add_new_rule_condition` method. This is only applicable to numerical features.
+    - Factual explanations will create new conditions covering the instance value. Categorical features already get a condition for the instance value during the invocation of `explain_factual`.
+    - Alternative explanations will create new conditions that exclude the instance value. Categorical features already get conditions for all alternative categories during the invocation of `explore_alternatives`.
   - Parameter naming:
     - The parameter indicating the number of rules to plot is renamed to `filter_top` (previously `n_features_to_show`), making the call including all rules (`filter_top=None`) makes a lot more sense.
 ### Fixes
@@ -77,9 +77,9 @@
 ### Features
 - Paper updates:
   - [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245) has been accepted to Machine Learning. It is currently in press.
-- Code improvements: 
-  - __Substantial speedup__ achieved through the newly implemented `explain` method! This method implements the core algorithm while minimizing the number of calls to core._predict, substantially speeding up the code without altering the algorithmic logic of `calibrated_explanations`. The `explain` method is used exclusively from this version on when calling `explain_factual` or `explain_counterfactual`. 
-    - Re-ran the ablation study for classification, looking at the impact of calibration set size, number of percentile samplings for numeric features and the number of features. 
+- Code improvements:
+  - __Substantial speedup__ achieved through the newly implemented `explain` method! This method implements the core algorithm while minimizing the number of calls to core._predict, substantially speeding up the code without altering the algorithmic logic of `calibrated_explanations`. The `explain` method is used exclusively from this version on when calling `explain_factual` or `explain_counterfactual`.
+    - Re-ran the ablation study for classification, looking at the impact of calibration set size, number of percentile samplings for numeric features and the number of features.
       - Uploaded a pdf version of the [ablation study](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Calibrated_Explanations_Ablation.pdf), making the results easier to overview.
     - Re-ran the evaluation for regression, measuring stability, robustness and running times with and without normalization.
   - Improved the `safe_import` to allow `import ... from ...` constructs.
@@ -97,7 +97,7 @@
     - Including `predict`, `predict_proba`, and `set_difficulty_estimator`.
     - Moved any remaining implementations of functions in `WrapCalibratedExplainer` to `CalibratedExplainer`.
   - Renamed the `plot_all` and `plot_explanation` functions to `plot`. Updated all usages of the `plot` function.
-  - Added `__len__` and `__getitem__` to `CalibratedExplanations`. 
+  - Added `__len__` and `__getitem__` to `CalibratedExplanations`.
     - `__getitem__` allow indexing with `int`, `slice`, and lists (both boolean and integer lists). When more than one explanation is retrieved, a new `CalibratedExplanations` is returned, otherwise, the indexed `CalibratedExplanation` is returned.
 - Documentation improvements:
   - Restructured and extended the [documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
@@ -117,20 +117,20 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.4...v0.3.5)
 ### Features
 - Made several improvements of the `WrapCalibratedExplainer`:
-    - `WrapCalibratedExplainer` is introduced as the default way to interact with `calibrated-explanations` in README.md. The benefit of having a wrapper class as interface is that it makes it easier to add different kinds of explanations. 
+    - `WrapCalibratedExplainer` is introduced as the default way to interact with `calibrated-explanations` in README.md. The benefit of having a wrapper class as interface is that it makes it easier to add different kinds of explanations.
     - Documentation of the functions has been updated.
-    - Initialization: 
+    - Initialization:
       - The `WrapCalibratedExplainer` can now be initialized with an unfitted model as well as with a fitted model.
       - The `WrapCalibratedExplainer` can now be initialized with an already initialized `CalibratedExplainer` instance, providing access to the `predict` and `predict_proba` functions.
-    - The `fit` method will reinitialize the explainer if the `WrapCalibratedExplainer` has already been calibrated, to ensure that the `explainer` is adapted to the re-fitted model. 
-    - Added improved error handling. 
-    - Made several other minor quality improving adjustments.      
+    - The `fit` method will reinitialize the explainer if the `WrapCalibratedExplainer` has already been calibrated, to ensure that the `explainer` is adapted to the re-fitted model.
+    - Added improved error handling.
+    - Made several other minor quality improving adjustments.
 - Code coverage tests are added and monitored at [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations).
   - Tests are added in order to increase code coverage.
-  - Unused code is cleaned up. 
-- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README: 
+  - Unused code is cleaned up.
+- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README:
   - Added a reference and bibtex to:
-    - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://easychair.org/publications/preprint/rqdD). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>. In press. 
+    - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://easychair.org/publications/preprint/rqdD). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>. In press.
     - ```bibtex
       @Booklet{lofstrom2024ce_multiclass,
         author = {Tuwe Löfström and Helena Löfström and Ulf Johansson},
@@ -143,12 +143,12 @@
 ### Fixes
 - Discretizers are limited to the default alternatives for classification and regression. BinaryDiscretizer removed. `__repr__` functions added.
 - Changed the `check_is_fitted` function to remove ties to sklearn.
-- Made the `safe_import` throw an `ImportError` when an import fail. 
+- Made the `safe_import` throw an `ImportError` when an import fail.
 
 ## [v0.3.4](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.4) - 2024-07-10
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.3...v0.3.4)
 ### Features
-- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README: 
+- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README:
   - Added a reference and bibtex to:
     - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://doi.org/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham.
     - ```bibtex
@@ -176,11 +176,11 @@
 ## [v0.3.3](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.3) - 2024-05-25
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.2...v0.3.3)
 ### Features
-- Changed how probabilistic regression is done to handle both validity and speed by dividing the calibration set into two sets to allow pre-computation of the CPS. Credits to anonymous reviewer for this suggestion. 
-- Added updated regression experiments and plotting for revised paper. 
+- Changed how probabilistic regression is done to handle both validity and speed by dividing the calibration set into two sets to allow pre-computation of the CPS. Credits to anonymous reviewer for this suggestion.
+- Added updated regression experiments and plotting for revised paper.
 - Added a new `under the hood` demo notebook to show how to access the information used in the plots,  like conditions and uncertainties etc.
 ### Fixes
-- Several minor updates to descrptions and notebooks in the repository. 
+- Several minor updates to descrptions and notebooks in the repository.
 
 ## [v0.3.2](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.2) - 2024-04-14
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.1...v0.3.2)
@@ -195,9 +195,9 @@
 ## [v0.3.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.1) - 2024-02-23
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.0...v0.3.1)
 ### Features
-- Added support for Mondrian explanations, using the `bins` attribute. The `bins` attribute takes a categorical feature of the size of the calibration or test set (depending on context) indicating the category of each instance. For continuous attributes, the `crepes.extras.binning`can be used to define categories through binning.  
+- Added support for Mondrian explanations, using the `bins` attribute. The `bins` attribute takes a categorical feature of the size of the calibration or test set (depending on context) indicating the category of each instance. For continuous attributes, the `crepes.extras.binning`can be used to define categories through binning.
 - Added `BinaryRegressorDiscretizer` and `RegressorDiscretizer` which are similar to `BinaryEntropyDiscretizer` and `EntropyDiscretizer` in that it uses a decision tree to identify suitable discretizations for numerical features. `explain_factual` and `explain_counterfactual` have been updated to use these discretizers for regression by default. In a future version, the possibility to assign your own discretizer may be removed.
-- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README: 
+- Updated the [Further reading and citing](https://github.com/Moffran/calibrated_explanations#further-reading-and-citing) section in the README:
   - Updated the reference and bibtex to the published version of the introductory paper:
     - Löfström, H., Löfström, T., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27.
 
@@ -227,26 +227,26 @@
         month = 	feb,
         year = 	{2024}
       }
-      ``` 
+      ```
   - Updated the [docs/citing.md](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md) with the above changes.
 - Added a [CITATION.cff](https://github.com/Moffran/calibrated_explanations/blob/main/CITATION.cff) with citation data for the software repository.
 ### Fixes
 - Extended `__repr__` to include additional fields when `verbose=True`.
-- Fixed a minor bug in the example provided in the [README.md](https://github.com/Moffran/calibrated_explanations/blob/main/README.md#classification) and the [getting_started.md](https://github.com/Moffran/calibrated_explanations/blob/main/docs/getting_started.md#classification), as described in issue #26. 
+- Fixed a minor bug in the example provided in the [README.md](https://github.com/Moffran/calibrated_explanations/blob/main/README.md#classification) and the [getting_started.md](https://github.com/Moffran/calibrated_explanations/blob/main/docs/getting_started.md#classification), as described in issue #26.
 - Added `utils.transform_to_numeric` and a clarification about known limitations in [README.md](https://github.com/Moffran/calibrated_explanations/blob/main/README.md#classification) as a response to issue #28.
 - Fixed a minor bug in `FactualExplanation.__plot_probabilistic` that was triggered when no features where to be shown.
-- Fixed a bug with the discretizers in `core`. 
-- Fixed a bug with saving plots to file using the `filename` parameter. 
+- Fixed a bug with the discretizers in `core`.
+- Fixed a bug with saving plots to file using the `filename` parameter.
 
 ## [v0.3.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.3.0) - 2024-01-02
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.2.3...v0.3.0)
 ### Features
-- Updated to version 1.4.1 of venn_abers. Added `precision=4` to the fitting of the venn_abers model to increase speed. 
-- Preparation for weighted categorical rules implemented but not yet activated. 
+- Updated to version 1.4.1 of venn_abers. Added `precision=4` to the fitting of the venn_abers model to increase speed.
+- Preparation for weighted categorical rules implemented but not yet activated.
 - Added a state-of-the-art comparison with scripts and notebooks for evaluating the performance of the method in comparison with `LIME` and `SHAP`: see [Classification_Experiment_sota.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_sota.py) and [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) for running and evaluating the experiment. Unzip [results_sota.zip](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/results_sota.zip) and run [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) to get the results used in the paper [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305).
 - Updated the parameters used by `plot_all` and `plot_explanation`.
 ### Fixes
-- Filtered out extreme target values in the quickstart notebook to make the regression examples more realistic. 
+- Filtered out extreme target values in the quickstart notebook to make the regression examples more realistic.
 - Fixed bugs related to how plots can be saved to file.
 - Fixed an issue where add_conjunctions with `max_rule_size=3` did not work.
 
@@ -276,11 +276,11 @@ The wrapper file with helper classes `CalibratedAsShapExplainer` and `Calibrated
 ### Features
 - Added a `WrapCalibratedExplainer` class which can be used for both classificaiton and regression.
 - Added [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) to the notebooks folder.
-- Added [LIME_comparison](https://github.com/Moffran/calibrated_explanations/notebooks/LIME_comparison.ipynb) to the notebooks folder. 
+- Added [LIME_comparison](https://github.com/Moffran/calibrated_explanations/notebooks/LIME_comparison.ipynb) to the notebooks folder.
 ### Fixes
 - Removed the dependency on `shap` and `scikit-learn` and closed issue #8.
-- Updated the weights to match LIME's weights (to ensure that a positive weight has the same meaning in both). 
-- Changed name of parameter `y` (representing the threshold in probabilistic regression) to `threshold`. 
+- Updated the weights to match LIME's weights (to ensure that a positive weight has the same meaning in both).
+- Changed name of parameter `y` (representing the threshold in probabilistic regression) to `threshold`.
 
 ## [v0.1.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.1.1) - 2023-09-14
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.1.0...v0.1.1)

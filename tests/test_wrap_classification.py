@@ -14,19 +14,20 @@ The tests ensure that:
     - The `WrapCalibratedExplainer` raises appropriate errors when methods are called before fitting or calibration.
     - The `WrapCalibratedExplainer` can be re-initialized with an existing learner or explainer.
 """
-import pytest
+
 import numpy as np
 import pandas as pd
+import pytest
+from calibrated_explanations import WrapCalibratedExplainer
+from calibrated_explanations.utils.helper import transform_to_numeric
+from crepes.extras import MondrianCategorizer
 from joblib import dump, load
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from crepes.extras import MondrianCategorizer
-
-from calibrated_explanations import WrapCalibratedExplainer
-from calibrated_explanations.utils.helper import transform_to_numeric
 
 from tests.test_wrap_regression import generic_test
+
 
 @pytest.fixture
 def binary_dataset():
@@ -47,12 +48,12 @@ def binary_dataset():
             - categorical_features (list): A list of indices of categorical features.
             - columns (pandas.Index): The column names of the features.
     """
-    dataSet = 'diabetes_full'
-    delimiter = ','
+    dataSet = "diabetes_full"
+    delimiter = ","
     num_to_test = 2
-    target_column = 'Y'
+    target_column = "Y"
 
-    fileName = f'data/{dataSet}.csv'
+    fileName = f"data/{dataSet}.csv"
     df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
 
     columns = df.drop(target_column, axis=1).columns
@@ -60,19 +61,42 @@ def binary_dataset():
     num_features = df.drop(target_column, axis=1).shape[1]
 
     sorted_indices = np.argsort(df[target_column].values).astype(int)
-    X, y = df.drop(target_column, axis=1).values[sorted_indices, :], df[target_column].values[sorted_indices]
+    X, y = (
+        df.drop(target_column, axis=1).values[sorted_indices, :],
+        df[target_column].values[sorted_indices],
+    )
 
-    categorical_features = [i for i in range(num_features) if len(np.unique(df.drop(target_column, axis=1).iloc[:, i])) < 10]
+    categorical_features = [
+        i
+        for i in range(num_features)
+        if len(np.unique(df.drop(target_column, axis=1).iloc[:, i])) < 10
+    ]
 
-    test_index = np.array([*range(num_to_test // 2), *range(len(y) - 1, len(y) - num_to_test // 2 - 1, -1)])
+    test_index = np.array(
+        [*range(num_to_test // 2), *range(len(y) - 1, len(y) - num_to_test // 2 - 1, -1)]
+    )
     train_index = np.setdiff1d(np.array(range(len(y))), test_index)
 
     trainX_cal, X_test = X[train_index, :], X[test_index, :]
     y_train, y_test = y[train_index], y[test_index]
 
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(trainX_cal, y_train, test_size=0.33, random_state=42, stratify=y_train)
+    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
+        trainX_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
+    )
 
-    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, num_classes, num_features, categorical_features, columns
+    return (
+        X_prop_train,
+        y_prop_train,
+        X_cal,
+        y_cal,
+        X_test,
+        y_test,
+        num_classes,
+        num_features,
+        categorical_features,
+        columns,
+    )
+
 
 @pytest.fixture
 def multiclass_dataset():
@@ -93,32 +117,55 @@ def multiclass_dataset():
         target_labels (list): List of target labels.
         columns (pd.Index): Column names of the feature set.
     """
-    dataset_name = 'glass'
-    delimiter = ','
+    dataset_name = "glass"
+    delimiter = ","
     num_test_samples = 6
-    file_path = f'data/Multiclass/{dataset_name}.csv'
+    file_path = f"data/Multiclass/{dataset_name}.csv"
 
     df = pd.read_csv(file_path, delimiter=delimiter).dropna()
-    target_column = 'Type'
+    target_column = "Type"
 
-    df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(df, target_column)
+    df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(
+        df, target_column
+    )
 
     columns = df.drop(target_column, axis=1).columns
     num_classes = len(np.unique(df[target_column]))
     num_features = df.drop(target_column, axis=1).shape[1]
 
     sorted_indices = np.argsort(df[target_column].values).astype(int)
-    X, y = df.drop(target_column, axis=1).values[sorted_indices, :], df[target_column].values[sorted_indices]
+    X, y = (
+        df.drop(target_column, axis=1).values[sorted_indices, :],
+        df[target_column].values[sorted_indices],
+    )
 
-    test_indices = np.hstack([np.where(y == i)[0][:num_test_samples // num_classes] for i in range(num_classes)])
+    test_indices = np.hstack(
+        [np.where(y == i)[0][: num_test_samples // num_classes] for i in range(num_classes)]
+    )
     train_indices = np.setdiff1d(np.arange(len(y)), test_indices)
 
     X_train_cal, X_test = X[train_indices, :], X[test_indices, :]
     y_train, y_test = y[train_indices], y[test_indices]
 
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train_cal, y_train, test_size=0.33, random_state=42, stratify=y_train)
+    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
+        X_train_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
+    )
 
-    return X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, num_classes, num_features, categorical_features, categorical_labels, target_labels, columns
+    return (
+        X_prop_train,
+        y_prop_train,
+        X_cal,
+        y_cal,
+        X_test,
+        y_test,
+        num_classes,
+        num_features,
+        categorical_features,
+        categorical_labels,
+        target_labels,
+        columns,
+    )
+
 
 @pytest.fixture(autouse=True)
 def setup_teardown():
@@ -126,6 +173,7 @@ def setup_teardown():
     # Setup
     yield
     # Teardown (if needed)
+
 
 def verify_predictions(y_pred1, y_pred2, bounds=None):
     """Helper to verify predictions match and are within bounds"""
@@ -136,11 +184,15 @@ def verify_predictions(y_pred1, y_pred2, bounds=None):
             low, high = bounds
             assert low[i] <= p1 <= high[i], f"Prediction {p1} outside bounds at index {i}"
 
-@pytest.mark.parametrize("invalid_X", [
-    None,
-    np.array([]),
-    np.array([[1,2], [3,4], [5,6]]),  # Wrong feature count
-])
+
+@pytest.mark.parametrize(
+    "invalid_X",
+    [
+        None,
+        np.array([]),
+        np.array([[1, 2], [3, 4], [5, 6]]),  # Wrong feature count
+    ],
+)
 def test_invalid_inputs(binary_dataset, invalid_X):
     """Test handling of invalid inputs"""
     X_prop_train, y_prop_train, _, _, _, _, _, _, _, _ = binary_dataset
@@ -150,6 +202,7 @@ def test_invalid_inputs(binary_dataset, invalid_X):
     with pytest.raises(ValueError):
         cal_exp.predict(invalid_X, calibrated=False)
 
+
 def test_wrap_binary_ce(binary_dataset):
     """
     Test the WrapCalibratedExplainer class for binary classification.
@@ -158,24 +211,35 @@ def test_wrap_binary_ce(binary_dataset):
     2. Checks that the explainer is neither fitted nor calibrated initially.
     3. Ensures that plotting without fitting raises a RuntimeError.
     4. Fits the explainer and verifies it is fitted but not calibrated.
-    5. Tests various prediction methods (with and without calibration) and 
+    5. Tests various prediction methods (with and without calibration) and
        ensures consistency in the predictions.
-    6. Tests the predict_proba method (with and without calibration) and 
+    6. Tests the predict_proba method (with and without calibration) and
        ensures consistency in the probability predictions.
     7. Calibrates the explainer and verifies it is both fitted and calibrated.
     8. Re-tests the prediction methods to ensure consistency post-calibration.
     9. Re-fits the explainer and verifies it remains calibrated.
-    10. Tests the ability to create new instances of WrapCalibratedExplainer 
-        with the same learner and explainer, ensuring they inherit the correct 
+    10. Tests the ability to create new instances of WrapCalibratedExplainer
+        with the same learner and explainer, ensuring they inherit the correct
         fitted and calibrated states.
     11. Plots the results to visually inspect the predictions.
     Args:
-        binary_dataset (tuple): A tuple containing the training, calibration, 
-                                and test datasets along with additional 
-                                metadata such as categorical features and 
+        binary_dataset (tuple): A tuple containing the training, calibration,
+                                and test datasets along with additional
+                                metadata such as categorical features and
                                 feature names.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = binary_dataset
+    (
+        X_prop_train,
+        y_prop_train,
+        X_cal,
+        y_cal,
+        X_test,
+        y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
     cal_exp = WrapCalibratedExplainer(RandomForestClassifier(random_state=42))  # Add random_state
 
     # Test initial state
@@ -223,7 +287,9 @@ def test_wrap_binary_ce(binary_dataset):
         assert low_proba4[i] == y_test_proba1[i, 1]
         assert high_proba4[i] == y_test_proba1[i, 1]
 
-    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
+    cal_exp.calibrate(
+        X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
     assert cal_exp.fitted
     assert cal_exp.calibrated
 
@@ -263,9 +329,10 @@ def test_wrap_binary_ce(binary_dataset):
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
     # Add test for model persistence
-    dump(cal_exp, 'model.joblib')
-    loaded_exp = load('model.joblib')
+    dump(cal_exp, "model.joblib")
+    loaded_exp = load("model.joblib")
     assert np.array_equal(cal_exp.predict(X_test), loaded_exp.predict(X_test))
+
 
 def test_wrap_multiclass_ce(multiclass_dataset):
     """
@@ -282,17 +349,32 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     9. Tests the ability to create new WrapCalibratedExplainer instances with the same learner and explainer.
     10. Ensures that plotting methods work after fitting and calibration.
     Args:
-        multiclass_dataset (tuple): A tuple containing the training, calibration, and test datasets along with 
+        multiclass_dataset (tuple): A tuple containing the training, calibration, and test datasets along with
                                     additional metadata such as categorical features and feature names.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, _, _, feature_names = multiclass_dataset
+    (
+        X_prop_train,
+        y_prop_train,
+        X_cal,
+        y_cal,
+        X_test,
+        y_test,
+        _,
+        _,
+        categorical_features,
+        _,
+        _,
+        feature_names,
+    ) = multiclass_dataset
     cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
     assert not cal_exp.fitted
     assert not cal_exp.calibrated
     repr(cal_exp)
 
     with pytest.raises(RuntimeError):
-        cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
+        cal_exp.calibrate(
+            X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+        )
     multiple_failing_calls(cal_exp, X_test, y_test)
     cal_exp.fit(X_prop_train, y_prop_train)
     assert cal_exp.fitted
@@ -320,7 +402,13 @@ def test_wrap_multiclass_ce(multiclass_dataset):
             assert y_test_hat1[i][j] == y_hat_j
             assert low[i][j] <= y_hat_j <= high[i][j]
 
-    cal_exp.calibrate(X_cal, y_cal, mode='classification', feature_names=feature_names, categorical_features=categorical_features)
+    cal_exp.calibrate(
+        X_cal,
+        y_cal,
+        mode="classification",
+        feature_names=feature_names,
+        categorical_features=categorical_features,
+    )
     assert cal_exp.fitted
     assert cal_exp.calibrated
     repr(cal_exp)
@@ -347,10 +435,13 @@ def test_wrap_multiclass_ce(multiclass_dataset):
 
     # Add test for probability sum
     y_proba = cal_exp.predict_proba(X_test)
-    np.testing.assert_almost_equal(y_proba.sum(axis=1),
-                                 np.ones(len(X_test)),
-                                 decimal=6,
-                                 err_msg="Probabilities should sum to 1")
+    np.testing.assert_almost_equal(
+        y_proba.sum(axis=1),
+        np.ones(len(X_test)),
+        decimal=6,
+        err_msg="Probabilities should sum to 1",
+    )
+
 
 def test_wrap_binary_conditional_ce(binary_dataset):
     """
@@ -360,35 +451,48 @@ def test_wrap_binary_conditional_ce(binary_dataset):
     2. Checks that the explainer is neither fitted nor calibrated initially.
     3. Ensures that plotting without fitting raises a RuntimeError.
     4. Fits the explainer and verifies it is fitted but not calibrated.
-    5. Tests various prediction methods (with and without calibration) and 
+    5. Tests various prediction methods (with and without calibration) and
        ensures consistency in the predictions.
-    6. Tests the predict_proba method (with and without calibration) and 
+    6. Tests the predict_proba method (with and without calibration) and
        ensures consistency in the probability predictions.
     7. Calibrates the explainer and verifies it is both fitted and calibrated.
     8. Re-tests the prediction methods to ensure consistency post-calibration.
     9. Re-fits the explainer and verifies it remains calibrated.
-    10. Tests the ability to create new instances of WrapCalibratedExplainer 
-        with the same learner and explainer, ensuring they inherit the correct 
+    10. Tests the ability to create new instances of WrapCalibratedExplainer
+        with the same learner and explainer, ensuring they inherit the correct
         fitted and calibrated states.
     11. Plots the results to visually inspect the predictions.
     Args:
-        binary_dataset (tuple): A tuple containing the training, calibration, 
-                                and test datasets along with additional 
-                                metadata such as categorical features and 
+        binary_dataset (tuple): A tuple containing the training, calibration,
+                                and test datasets along with additional
+                                metadata such as categorical features and
                                 feature names.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = binary_dataset
+    (
+        X_prop_train,
+        y_prop_train,
+        X_cal,
+        y_cal,
+        X_test,
+        y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
     cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
 
     cal_exp.fit(X_prop_train, y_prop_train)
 
     def get_values(X):
-        return X[:,0]
+        return X[:, 0]
 
     mc = MondrianCategorizer()
     mc.fit(X_cal, f=get_values, no_bins=5)
 
-    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features, mc=mc)
+    cal_exp.calibrate(
+        X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features, mc=mc
+    )
 
     y_test_hat1 = cal_exp.predict(X_test)
     y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
@@ -406,6 +510,7 @@ def test_wrap_binary_conditional_ce(binary_dataset):
 
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
+
 def test_wrap_multiclass_conditional_ce(multiclass_dataset):
     """
     Test the WrapCalibratedExplainer class for a multiclass classification problem.
@@ -421,21 +526,36 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
     9. Tests the ability to create new WrapCalibratedExplainer instances with the same learner and explainer.
     10. Ensures that plotting methods work after fitting and calibration.
     Args:
-        multiclass_dataset (tuple): A tuple containing the training, calibration, and test datasets along with 
+        multiclass_dataset (tuple): A tuple containing the training, calibration, and test datasets along with
                                     additional metadata such as categorical features and feature names.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, _, _, feature_names = multiclass_dataset
+    (
+        X_prop_train,
+        y_prop_train,
+        X_cal,
+        y_cal,
+        X_test,
+        y_test,
+        _,
+        _,
+        categorical_features,
+        _,
+        _,
+        feature_names,
+    ) = multiclass_dataset
     cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
 
     cal_exp.fit(X_prop_train, y_prop_train)
 
     def get_values(X):
-        return X[:,0]
+        return X[:, 0]
 
     mc = MondrianCategorizer()
     mc.fit(X_cal, f=get_values, no_bins=5)
 
-    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features, mc=mc)
+    cal_exp.calibrate(
+        X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features, mc=mc
+    )
     assert cal_exp.fitted
     assert cal_exp.calibrated
     repr(cal_exp)
@@ -462,10 +582,13 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
 
     # Add test for probability sum
     y_proba = cal_exp.predict_proba(X_test)
-    np.testing.assert_almost_equal(y_proba.sum(axis=1),
-                                 np.ones(len(X_test)),
-                                 decimal=6,
-                                 err_msg="Probabilities should sum to 1")
+    np.testing.assert_almost_equal(
+        y_proba.sum(axis=1),
+        np.ones(len(X_test)),
+        decimal=6,
+        err_msg="Probabilities should sum to 1",
+    )
+
 
 def multiple_failing_calls(cal_exp, X_test, y_test):
     """Test multiple methods that should raise a RuntimeError when called before fitting or calibration."""
@@ -480,6 +603,7 @@ def multiple_failing_calls(cal_exp, X_test, y_test):
     with pytest.raises(RuntimeError):
         cal_exp.predict_reject(X_test)
 
+
 # Add new test for handling missing values
 def test_missing_values(binary_dataset):
     """Test handling of missing values in input data"""
@@ -487,7 +611,7 @@ def test_missing_values(binary_dataset):
 
     # Introduce some missing values
     X_test_missing = X_test.copy()
-    X_test_missing[0,0] = np.nan
+    X_test_missing[0, 0] = np.nan
 
     cal_exp = WrapCalibratedExplainer(LogisticRegression())
     cal_exp.fit(X_prop_train, y_prop_train)

@@ -15,22 +15,26 @@ Classes:
     :class:`.FastExplanation`:
         Represents fast explanations, enabling efficient interpretation of model behavior for large datasets.
 """
+
 import contextlib
 import warnings
+from abc import ABC, abstractmethod
+
 # from dataclasses import dataclass
 from copy import deepcopy
-from abc import ABC, abstractmethod
 from types import MappingProxyType
+
 import numpy as np
 from pandas import Categorical
+
+from .._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 from ..utils.discretizers import (
     BinaryEntropyDiscretizer,
+    BinaryRegressorDiscretizer,
     EntropyDiscretizer,
     RegressorDiscretizer,
-    BinaryRegressorDiscretizer,
 )
 from ..utils.helper import calculate_metrics, prepare_for_saving
-from .._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 
 # @dataclass
 # class PredictionInterval:
@@ -84,6 +88,7 @@ from .._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _
 #     is_conjunctive: bool
 #     value_str: str
 
+
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class CalibratedExplanation(ABC):
     """Abstract base class for storing and visualizing calibrated explanations.
@@ -106,7 +111,7 @@ class CalibratedExplanation(ABC):
         """Abstract base class for storing and visualizing calibrated explanations.
 
         This class defines the interface and shared functionality for different types of calibrated explanations.
-        
+
         Initialize a CalibratedExplanation instance.
 
         Parameters
@@ -141,17 +146,19 @@ class CalibratedExplanation(ABC):
         self.feature_weights = {}
         self.feature_predict = {}
         self.prediction = {}
-        for key in binned.keys():
+        for key in binned:
             self.binned[key] = binned[key][index]
-        for key in feature_weights.keys():
+        for key in feature_weights:
             self.feature_weights[key] = feature_weights[key][index]
             self.feature_predict[key] = feature_predict[key][index]
-        for key in prediction.keys():
+        for key in prediction:
             self.prediction[key] = prediction[key][index]
         self.y_threshold = (
             y_threshold
             if np.isscalar(y_threshold) or isinstance(y_threshold, tuple)
-            else None if y_threshold is None else y_threshold[index]
+            else None
+            if y_threshold is None
+            else y_threshold[index]
         )
 
         self.conditions = []
@@ -230,15 +237,14 @@ class CalibratedExplanation(ABC):
         list
             The sorted indices of the features.
         """
-        assert (
-            feature_weights is not None or width is not None
-        ), "Either feature_weights or width (or both) must not be None"
+        if not (feature_weights is not None or width is not None):
+            raise ValueError("Either feature_weights or width (or both) must not be None")
         num_features = len(feature_weights) if feature_weights is not None else len(width)
         if num_to_show is None or num_to_show > num_features:
             num_to_show = num_features
         # handle case where there are same weight but different uncertainty
         if feature_weights is not None and width is not None:
-            # get the indeces by first sorting on the absolute value of the
+            # get the indices by first sorting on the absolute value of the
             # feature_weight and then on the width
             sorted_indices = [
                 i
@@ -311,7 +317,7 @@ class CalibratedExplanation(ABC):
             The number of top features to display.
         **kwargs : dict
             Additional plotting arguments. See each subclass.
-        
+
         See Also
         --------
         :meth:`.FactualExplanation.plot` : Refer to the docstring for plot in FactualExplanation for details.
@@ -417,7 +423,8 @@ class CalibratedExplanation(ABC):
         tuple
             The predicted value, lower bound, upper bound, and count.
         """
-        assert len(original_features) >= 2, "Conjunctive rules require at least two features"
+        if not (len(original_features) >= 2):
+            raise ValueError("Conjunctive rules require at least two features")
         rule_predict, rule_low, rule_high, rule_count = 0, 0, 0, 0
         of1, of2, of3 = 0, 0, 0
         rule_value1, rule_value2, rule_value3 = 0, 0, 0
@@ -451,7 +458,7 @@ class CalibratedExplanation(ABC):
                         rule_high += high[0]
                         rule_count += 1
                 else:
-                    p_value, low, high, _ = self._get_explainer()._predict( # pylint: disable=protected-access
+                    p_value, low, high, _ = self._get_explainer()._predict(  # pylint: disable=protected-access
                         perturbed.reshape(1, -1),
                         threshold=threshold,
                         low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
@@ -500,13 +507,15 @@ class CalibratedExplanation(ABC):
                 else self._get_explainer().feature_names.index(feature)
             )
         except ValueError:
-            warnings.warn(f"Feature {feature} not found")
+            warnings.warn(f"Feature {feature} not found", stacklevel=2)
             return self
         if (
             self._get_explainer().categorical_features is not None
             and f in self._get_explainer().categorical_features
         ):
-            warnings.warn("Alternatives for all categorical features are already included")
+            warnings.warn(
+                "Alternatives for all categorical features are already included", stacklevel=2
+            )
             return self
 
         X_copy = np.array(self.X_test, copy=True)
@@ -514,7 +523,7 @@ class CalibratedExplanation(ABC):
         new_rule = self._get_rules()
         rule = self._get_rule_str(is_lesser, f, rule_boundary)
         if np.any([new_rule["rule"][i] == rule for i in range(len(new_rule["rule"]))]):
-            warnings.warn("Rule already included")
+            warnings.warn("Rule already included", stacklevel=2)
             return self
 
         threshold = self.y_threshold
@@ -531,7 +540,8 @@ class CalibratedExplanation(ABC):
         if is_lesser:
             if not np.any(feature_values < rule_boundary):
                 warnings.warn(
-                    f"Lowest feature value for feature {feature} is {np.min(feature_values)}"
+                    f"Lowest feature value for feature {feature} is {np.min(feature_values)}",
+                    stacklevel=2,
                 )
                 return self
             values = np.percentile(cal_X_f[cal_X_f < rule_boundary], sample_percentiles)
@@ -539,7 +549,8 @@ class CalibratedExplanation(ABC):
         else:
             if not np.any(feature_values > rule_boundary):
                 warnings.warn(
-                    f"Highest feature value for feature {feature} is {np.max(feature_values)}"
+                    f"Highest feature value for feature {feature} is {np.max(feature_values)}",
+                    stacklevel=2,
                 )
                 return self
             values = np.percentile(cal_X_f[cal_X_f > rule_boundary], sample_percentiles)
@@ -606,7 +617,11 @@ class CalibratedExplanation(ABC):
         if self.prediction["low"] == np.mean(rule_low) and self.prediction["high"] == np.mean(
             rule_high
         ):
-            warnings.warn("The alternative explanation is identical to the original explanation", UserWarning)
+            warnings.warn(
+                "The alternative explanation is identical to the original explanation",
+                UserWarning,
+                stacklevel=2,
+            )
             return self
         new_rule["predict"].append(np.mean(rule_predict))
         new_rule["predict_low"].append(np.mean(rule_low))
@@ -671,7 +686,7 @@ class FactualExplanation(CalibratedExplanation):
         """Class for storing and visualizing factual explanations.
 
         Provides factual explanations for a given instance, highlighting features that contribute to the model's prediction.
-    
+
         Initialize a FactualExplanation instance.
 
         Parameters
@@ -734,13 +749,15 @@ class FactualExplanation(CalibratedExplanation):
                 warnings.warn(
                     "Factual explanations for regression recommend using the binaryRegressor "
                     + "discretizer. Consider extracting factual explanations using "
-                    + "`explainer.explain_factual(test_set)`"
+                    + "`explainer.explain_factual(test_set)`",
+                    stacklevel=2,
                 )
         elif not isinstance(self._get_explainer().discretizer, BinaryEntropyDiscretizer):
             warnings.warn(
                 "Factual explanations for classification recommend using the "
                 + "binaryEntropy discretizer. Consider extracting factual "
-                + "explanations using `explainer.explain_factual(test_set)`"
+                + "explanations using `explainer.explain_factual(test_set)`",
+                stacklevel=2,
             )
 
     def _get_rules(self):
@@ -829,17 +846,10 @@ class FactualExplanation(CalibratedExplanation):
             raise ValueError("max_rule_size must be 2 or 3")
         if max_rule_size < 2:
             return self
-        if not self._has_rules:
-            factual = deepcopy(self._get_rules())
-        else:
-            factual = deepcopy(self.rules)
-        if self._has_conjunctive_rules:
-            conjunctive = self.conjunctive_rules
-        else:
-            conjunctive = deepcopy(factual)
+        factual = deepcopy(self._get_rules()) if not self._has_rules else deepcopy(self.rules)
+        conjunctive = self.conjunctive_rules if self._has_conjunctive_rules else deepcopy(factual)
         self._has_conjunctive_rules = False
         self.conjunctive_rules = []
-        i = self.index
         # pylint: disable=unsubscriptable-object, invalid-name
         threshold = None if self.y_threshold is None else self.y_threshold
         x_original = deepcopy(self.X_test)
@@ -939,7 +949,7 @@ class FactualExplanation(CalibratedExplanation):
             The number of top features to display.
         **kwargs : dict
             Additional plotting arguments, such as:
-            
+
             show : bool, default=True if filename is empty, False otherwise
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
@@ -954,7 +964,7 @@ class FactualExplanation(CalibratedExplanation):
                 intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
             style : str, default='regular'
                 The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
-                
+
                 * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
             rnk_metric : str, default='feature_weight'
                 The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
@@ -962,7 +972,7 @@ class FactualExplanation(CalibratedExplanation):
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
         # Ensure style_override gets passed through
-        style_override = kwargs.get('style_override', None)
+        style_override = kwargs.get("style_override")
 
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
@@ -984,7 +994,8 @@ class FactualExplanation(CalibratedExplanation):
         filter_top = np.min([num_features_to_show, filter_top])
         if filter_top <= 0:
             warnings.warn(
-                f"The explanation has no rules to plot. The index of the instance is {self.index}"
+                f"The explanation has no rules to plot. The index of the instance is {self.index}",
+                stacklevel=2,
             )
             return
 
@@ -1083,7 +1094,7 @@ class AlternativeExplanation(CalibratedExplanation):
         """Class representing an alternative explanation for a given instance.
 
         Offers alternative explanations by exploring how changes to feature values could alter the model's prediction.
-    
+
         Initialize an AlternativeExplanation instance.
 
         Parameters
@@ -1150,13 +1161,15 @@ class AlternativeExplanation(CalibratedExplanation):
                 warnings.warn(
                     "Alternative explanations for regression recommend using the "
                     + "regressor discretizer. Consider extracting alternative "
-                    + "explanations using `explainer.explain_alternatives(test_set)`"
+                    + "explanations using `explainer.explain_alternatives(test_set)`",
+                    stacklevel=2,
                 )
         elif not isinstance(self._get_explainer().discretizer, EntropyDiscretizer):
             warnings.warn(
                 "Alternative explanations for classification recommend using "
                 + "the entropy discretizer. Consider extracting alternative "
-                + "explanations using `explainer.explain_alternatives(test_set)`"
+                + "explanations using `explainer.explain_alternatives(test_set)`",
+                stacklevel=2,
             )
 
     # pylint: disable=too-many-statements, too-many-branches
@@ -1178,9 +1191,7 @@ class AlternativeExplanation(CalibratedExplanation):
         instance = np.array(self.X_test, copy=True)
         instance.flags.writeable = False
         # pylint: disable=protected-access
-        discretized = self._get_explainer()._discretize(instance.reshape(1, -1))[
-            0
-        ]
+        discretized = self._get_explainer()._discretize(instance.reshape(1, -1))[0]
         instance_predict = self.binned["predict"]
         instance_low = self.binned["low"]
         instance_high = self.binned["high"]
@@ -1355,7 +1366,8 @@ class AlternativeExplanation(CalibratedExplanation):
         """Filter rules based on the explanation type."""
         if self.is_regression() and not self.is_probabilistic():
             warnings.warn(
-                "Regression explanations are not probabilistic. Filtering rules may not be effective."
+                "Regression explanations are not probabilistic. Filtering rules may not be effective.",
+                stacklevel=2,
             )
         positive_class = self.prediction["predict"] > 0.5
         initial_uncertainty = np.abs(self.prediction["high"] - self.prediction["low"])
@@ -1564,10 +1576,7 @@ class AlternativeExplanation(CalibratedExplanation):
             raise ValueError("max_rule_size must be 2 or 3")
         if max_rule_size < 2:
             return self
-        if not self._has_rules:
-            alternative = deepcopy(self._get_rules())
-        else:
-            alternative = deepcopy(self.rules)
+        alternative = deepcopy(self._get_rules()) if not self._has_rules else deepcopy(self.rules)
         if self._has_conjunctive_rules:
             conjunctive = self.conjunctive_rules
         else:
@@ -1675,7 +1684,7 @@ class AlternativeExplanation(CalibratedExplanation):
             The number of top features to display.
         **kwargs : dict
             Additional plotting arguments, such as:
-            
+
             show : bool, default=True if filename is empty, False otherwise
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
@@ -1685,7 +1694,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 will not be saved as an image file.
             style : str, default='regular'
                 The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.AlternativeExplanation`:
-                
+
                 * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
                 * 'triangular' - a triangular plot for alternative explanations highlighting the interplay between the calibrated probability and the uncertainty intervals
             rnk_metric : str, default='ensured'
@@ -1694,7 +1703,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
         # Ensure style_override gets passed through
-        style_override = kwargs.get('style_override', None)
+        style_override = kwargs.get("style_override")
 
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
@@ -1733,7 +1742,8 @@ class AlternativeExplanation(CalibratedExplanation):
         num_to_show_ = np.min([num_rules, filter_top])
         if num_to_show_ <= 0:
             warnings.warn(
-                f"The explanation has no rules to plot. The index of the instance is {self.index}"
+                f"The explanation has no rules to plot. The index of the instance is {self.index}",
+                stacklevel=2,
             )
             return
 
@@ -1820,7 +1830,7 @@ class FastExplanation(CalibratedExplanation):
         """Class representing fast explanations.
 
         Represents fast, SHAP-like explanations, enabling efficient interpretation of model behavior for large datasets.
-    
+
         Initialize a FastExplanation instance.
 
         Parameters
@@ -1882,7 +1892,7 @@ class FastExplanation(CalibratedExplanation):
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """This method is currently not supported for `FastExplanation`, making this call result in no change.
-        
+
         Parameters
         ----------
         n_top_features : int
@@ -1895,7 +1905,8 @@ class FastExplanation(CalibratedExplanation):
         This method is not supported for :class:`.FastExplanation` and will not alter the explanation.
         """
         warnings.warn(
-            "The add_conjunctions method is currently not supported for `FastExplanation`, making this call resulting in no change."
+            "The add_conjunctions method is currently not supported for `FastExplanation`, making this call resulting in no change.",
+            stacklevel=2,
         )
         # pass
 
@@ -1910,7 +1921,8 @@ class FastExplanation(CalibratedExplanation):
         This method is not supported for :class:`.FastExplanation` and will not alter the explanation.
         """
         warnings.warn(
-            "The add_new_rule_condition method is currently not supported for `FastExplanation`, making this call resulting in no change."
+            "The add_new_rule_condition method is currently not supported for `FastExplanation`, making this call resulting in no change.",
+            stacklevel=2,
         )
         # pass
 
@@ -2006,7 +2018,7 @@ class FastExplanation(CalibratedExplanation):
             The number of top features to display.
         **kwargs : dict
             Additional plotting arguments, such as:
-            
+
             show : bool, default=True if filename is empty, False otherwise
                 A boolean parameter that determines whether the plot should be displayed or not. If set to
                 True, the plot will be displayed. If set to False, the plot will not be displayed.
@@ -2021,7 +2033,7 @@ class FastExplanation(CalibratedExplanation):
                 intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
             style : str, default='regular'
                 The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FastExplanation`:
-                
+
                 * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
             rnk_metric : str, default='feature_weight'
                 The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
@@ -2029,7 +2041,7 @@ class FastExplanation(CalibratedExplanation):
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
         # Ensure style_override gets passed through
-        style_override = kwargs.get('style_override', None)
+        style_override = kwargs.get("style_override")
 
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
@@ -2051,7 +2063,8 @@ class FastExplanation(CalibratedExplanation):
         filter_top = np.min([num_features_to_show, filter_top])
         if filter_top <= 0:
             warnings.warn(
-                f"The explanation has no rules to plot. The index of the instance is {self.index}"
+                f"The explanation has no rules to plot. The index of the instance is {self.index}",
+                stacklevel=2,
             )
             return
 
@@ -2108,7 +2121,7 @@ class FastExplanation(CalibratedExplanation):
                 show=show,
                 idx=self.index,
                 save_ext=save_ext,
-                style_override=style_override
+                style_override=style_override,
             )
         else:
             _plot_regression(
@@ -2125,5 +2138,5 @@ class FastExplanation(CalibratedExplanation):
                 show=show,
                 idx=self.index,
                 save_ext=save_ext,
-                style_override=style_override
+                style_override=style_override,
             )

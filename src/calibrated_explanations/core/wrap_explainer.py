@@ -1,22 +1,26 @@
 """Mechanical extraction of WrapCalibratedExplainer (Phase 1A)."""
+
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
+
 import warnings as _warnings
 
 from crepes.extras import MondrianCategorizer  # type: ignore
+
 from ..utils.helper import check_is_fitted, safe_isinstance  # noqa: F401
 from .calibrated_explainer import CalibratedExplainer  # type: ignore  # circular during split
 
-class WrapCalibratedExplainer():
+
+class WrapCalibratedExplainer:
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
 
-    The calibrated explanations explanation method is based on the paper 
-    "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
+    The calibrated explanations explanation method is based on the paper
+    "Calibrated Explanations: with Uncertainty Information and Counterfactuals"
     by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
 
-    Calibrated explanations are a way to explain the predictions of a black-box learner 
-    using Venn-Abers predictors (classification & regression) or 
+    Calibrated explanations are a way to explain the predictions of a black-box learner
+    using Venn-Abers predictors (classification & regression) or
     conformal predictive systems (regression).
 
     :class:`.WrapCalibratedExplainer` is a wrapper class for the :class:`.CalibratedExplainer`. It allows to fit, calibrate, and explain the learner.
@@ -59,8 +63,10 @@ class WrapCalibratedExplainer():
         """Return the string representation of the WrapCalibratedExplainer."""
         if self.fitted:
             if self.calibrated:
-                return (f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, "
-                    f"calibrated=True, \n\t\texplainer={self.explainer})")
+                return (
+                    f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, "
+                    f"calibrated=True, \n\t\texplainer={self.explainer})"
+                )
             return f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, calibrated=False)"
         return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
 
@@ -92,34 +98,34 @@ class WrapCalibratedExplainer():
             The calibration target values.
         mc : optional
             Mondrian categories. Defaults to None.
-        
+
         **kwargs
             Keyword arguments to be passed to the :class:`.CalibratedExplainer`'s __init__ method
-        
+
         Raises
         ------
         RuntimeError: If the learner is not fitted before calibration.
-        
+
         Returns
         -------
-        :class:`.WrapCalibratedExplainer` 
+        :class:`.WrapCalibratedExplainer`
             The :class:`.WrapCalibratedExplainer` object with `explainer` initialized as a :class:`.CalibratedExplainer`.
-        
+
         Examples
         --------
         Calibrate the learner to the calibration data:
-        
+
         .. code-block:: python
 
             w.calibrate(X_calibration, y_calibration)
-        
+
         Provide additional keyword arguments to the :class:`.CalibratedExplainer`:
-        
+
         .. code-block:: python
 
-            w.calibrate(X_calibration, y_calibration, feature_names=feature_names, 
+            w.calibrate(X_calibration, y_calibration, feature_names=feature_names,
                         categorical_features=categorical_features)
-        
+
         Notes
         -----
         if mode is not explicitly set, it is automatically determined based on the the absence or presence of a predict_proba method in the learner.
@@ -130,14 +136,20 @@ class WrapCalibratedExplainer():
 
         if mc is not None:
             self.mc = mc
-        kwargs['bins'] = self._get_bins(X_calibration, **kwargs)
+        kwargs["bins"] = self._get_bins(X_calibration, **kwargs)
 
-        if 'mode' in kwargs:
-            self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, **kwargs)
-        elif 'predict_proba' in dir(self.learner):
-            self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, mode='classification', **kwargs)
+        if "mode" in kwargs:
+            self.explainer = CalibratedExplainer(
+                self.learner, X_calibration, y_calibration, **kwargs
+            )
+        elif "predict_proba" in dir(self.learner):
+            self.explainer = CalibratedExplainer(
+                self.learner, X_calibration, y_calibration, mode="classification", **kwargs
+            )
         else:
-            self.explainer = CalibratedExplainer(self.learner, X_calibration, y_calibration, mode='regression', **kwargs)
+            self.explainer = CalibratedExplainer(
+                self.learner, X_calibration, y_calibration, mode="regression", **kwargs
+            )
         self.calibrated = True
         return self
 
@@ -150,11 +162,13 @@ class WrapCalibratedExplainer():
 
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+            )
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
 
-        kwargs['bins'] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_factual(X_test, **kwargs)
 
     def explain_counterfactual(self, X_test, **kwargs):
@@ -176,11 +190,13 @@ class WrapCalibratedExplainer():
 
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+            )
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
 
-        kwargs['bins'] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explore_alternatives(X_test, **kwargs)
 
     def explain_fast(self, X_test, **kwargs):
@@ -191,11 +207,13 @@ class WrapCalibratedExplainer():
         :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+            )
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
 
-        kwargs['bins'] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_fast(X_test, **kwargs)
 
     def explain_lime(self, X_test, **kwargs):
@@ -206,13 +224,14 @@ class WrapCalibratedExplainer():
         :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before explaining.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+            )
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before explaining.")
 
-        kwargs['bins'] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_lime(X_test, **kwargs)
-
 
     # pylint: disable=too-many-return-statements
     def predict(self, X_test, uq_interval=False, calibrated=True, **kwargs):
@@ -225,17 +244,25 @@ class WrapCalibratedExplainer():
         if not self.fitted:
             raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting.")
         if not self.calibrated:
-            if 'threshold' in kwargs:
-                raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
+            if "threshold" in kwargs:
+                raise ValueError(
+                    "A thresholded prediction is not possible for uncalibrated learners."
+                )
             if calibrated:
-                _warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated predictions.", UserWarning)
+                _warnings.warn(
+                    "The WrapCalibratedExplainer must be calibrated to get calibrated predictions.",
+                    UserWarning,
+                    stacklevel=2,
+                )
             if uq_interval:
                 predict = self.learner.predict(X_test)
                 return predict, (predict, predict)
             return self.learner.predict(X_test)
 
-        kwargs['bins'] = self._get_bins(X_test, **kwargs)
-        return self.explainer.predict(X_test, uq_interval=uq_interval, calibrated=calibrated, **kwargs)
+        kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        return self.explainer.predict(
+            X_test, uq_interval=uq_interval, calibrated=calibrated, **kwargs
+        )
 
     def predict_proba(self, X_test, uq_interval=False, calibrated=True, threshold=None, **kwargs):
         """Generate probability predictions for the test data.
@@ -245,22 +272,34 @@ class WrapCalibratedExplainer():
         :meth:`.CalibratedExplainer.predict_proba` : Refer to the docstring for predict_proba in CalibratedExplainer for more details.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted before predicting probabilities.")
-        if 'predict_proba' not in dir(self.learner):
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted before predicting probabilities."
+            )
+        if "predict_proba" not in dir(self.learner):
             if threshold is None:
                 raise ValueError("The threshold parameter must be specified for regression.")
             if not self.calibrated:
-                raise RuntimeError("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities for regression.")
+                raise RuntimeError(
+                    "The WrapCalibratedExplainer must be calibrated to get calibrated probabilities for regression."
+                )
         if not self.calibrated:
             if threshold is not None:
-                raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
+                raise ValueError(
+                    "A thresholded prediction is not possible for uncalibrated learners."
+                )
             if calibrated:
-                _warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", UserWarning)
+                _warnings.warn(
+                    "The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.",
+                    UserWarning,
+                    stacklevel=2,
+                )
             proba = self.learner.predict_proba(X_test)
             return self._format_proba_output(proba, uq_interval)
 
-        kwargs['bins'] = self._get_bins(X_test, **kwargs)
-        return self.explainer.predict_proba(X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs)
+        kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        return self.explainer.predict_proba(
+            X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs
+        )
 
     def calibrated_confusion_matrix(self):
         """Generate a calibrated confusion matrix.
@@ -270,9 +309,13 @@ class WrapCalibratedExplainer():
         :meth:`.CalibratedExplainer.calibrated_confusion_matrix` : Refer to the docstring for calibrated_confusion_matrix in CalibratedExplainer for more details.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before providing a confusion matrix.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before providing a confusion matrix."
+            )
         if not self.calibrated:
-            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before providing a confusion matrix.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be calibrated before providing a confusion matrix."
+            )
         return self.explainer.calibrated_confusion_matrix()
 
     def set_difficulty_estimator(self, difficulty_estimator) -> None:
@@ -283,11 +326,14 @@ class WrapCalibratedExplainer():
         :meth:`.CalibratedExplainer.set_difficulty_estimator` : Refer to the docstring for set_difficulty_estimator in CalibratedExplainer for more details.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before assigning a difficulty estimator.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before assigning a difficulty estimator."
+            )
         if not self.calibrated:
-            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before assigning a difficulty estimator.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be calibrated before assigning a difficulty estimator."
+            )
         self.explainer.set_difficulty_estimator(difficulty_estimator)
-
 
     def initialize_reject_learner(self, threshold=None):
         """Initialize the reject learner with a threshold value.
@@ -297,9 +343,13 @@ class WrapCalibratedExplainer():
         :meth:`.CalibratedExplainer.initialize_reject_learner` : Refer to the docstring for initialize_reject_learner in CalibratedExplainer for more details.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before initializing reject learner.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before initializing reject learner."
+            )
         if not self.calibrated:
-            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before initializing reject learner.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be calibrated before initializing reject learner."
+            )
         return self.explainer.initialize_reject_learner(threshold=threshold)
 
     def predict_reject(self, X_test, bins=None, confidence=0.95):
@@ -309,11 +359,15 @@ class WrapCalibratedExplainer():
         --------
         :meth:`.CalibratedExplainer.predict_reject` : Refer to the docstring for predict_reject in CalibratedExplainer for more details.
         """
-        bins = self._get_bins(X_test, **{'bins': bins})
+        bins = self._get_bins(X_test, **{"bins": bins})
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection."
+            )
         if not self.calibrated:
-            raise RuntimeError("The WrapCalibratedExplainer must be calibrated before predicting rejection.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be calibrated before predicting rejection."
+            )
         return self.explainer.predict_reject(X_test, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
@@ -325,16 +379,18 @@ class WrapCalibratedExplainer():
         :meth:`.CalibratedExplainer.plot` : Refer to the docstring for plot in CalibratedExplainer for more details.
         """
         if not self.fitted:
-            raise RuntimeError("The WrapCalibratedExplainer must be fitted and calibrated before plotting.")
+            raise RuntimeError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before plotting."
+            )
         if not self.calibrated:
             raise RuntimeError("The WrapCalibratedExplainer must be calibrated before plotting.")
-        kwargs['bins'] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_test, **kwargs)
         self.explainer.plot(X_test, y_test=y_test, threshold=threshold, **kwargs)
 
     def _get_bins(self, X_test, **kwargs):
         if isinstance(self.mc, MondrianCategorizer):
             return self.mc.apply(X_test)
-        return self.mc(X_test) if self.mc is not None else kwargs.get('bins', None)
+        return self.mc(X_test) if self.mc is not None else kwargs.get("bins")
 
     # ------ Internal helpers (reduce duplication) ------
     def _finalize_fit(self, reinitialize: bool):
@@ -365,5 +421,6 @@ class WrapCalibratedExplainer():
             return proba, (proba[:, 1], proba[:, 1])
         # Fallback (unexpected shape) -> mirror array
         return proba, (proba, proba)
+
 
 __all__ = ["WrapCalibratedExplainer"]

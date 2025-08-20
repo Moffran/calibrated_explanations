@@ -3,7 +3,7 @@
 """
 Module for perturbing datasets for calibration purposes.
 
-This module provides functions to apply various types of perturbations to 
+This module provides functions to apply various types of perturbations to
 dataset columns, including categorical and numerical perturbations.
 
 Functions
@@ -20,6 +20,7 @@ uniform_perturbation(column, severity)
 perturb_dataset(X_cal, y_cal, categorical_features=None, noise_type='uniform', scale_factor=5, severity=0.5)
     Perturb the dataset for the calibration process.
 """
+
 # Import Libraries
 # import configparser
 import numpy as np
@@ -36,6 +37,7 @@ import numpy as np
 # STEP = config.getfloat('perturbation_variables', 'STEP')
 # Now Let's write functions to provide perturbations to each column specific to each data type
 
+
 # BASIC PERTURBATIONS FOR THE VERSION I: Provides Gaussian Noise by protecting
 # the standard deviation and mean properties of the current column.
 def categorical_perturbation(column, num_permutations=5):
@@ -48,14 +50,14 @@ def categorical_perturbation(column, num_permutations=5):
 
     Returns
     -------
-        tuple: A tuple containing lists of perturbation column names, types, 
+        tuple: A tuple containing lists of perturbation column names, types,
                 severities, and perturbed datasets.
     """
     column = column.copy()  # Make a copy to avoid modifying the original DataFrame
     for _ in np.arange(num_permutations):
-        column_perturbed = np.random.permutation(column)  # Shuffle the values in the column
+        rng = np.random.default_rng()
+        column_perturbed = rng.permutation(column)  # Shuffle the values in the column
     return column_perturbed
-
 
 
 # Assuming you have a function to generate alternative instances for numerical columns
@@ -81,7 +83,8 @@ def gaussian_perturbation(column, severity):
     original_std = column.std()
 
     # Generate perturbation based on severity
-    perturbation = np.random.normal(loc=0, scale=original_std * severity, size=len(column))
+    rng = np.random.default_rng()
+    perturbation = rng.normal(loc=0, scale=original_std * severity, size=len(column))
 
     # Apply perturbation while preserving mean and standard deviation
     return original_mean + perturbation
@@ -109,19 +112,19 @@ def uniform_perturbation(column, severity):
     original_range = column.max() - column.min()
 
     # Generate perturbation based on severity
-    perturbation = np.random.uniform(low=-original_range * severity,
-                                     high=original_range * severity, size=len(column))
+    rng = np.random.default_rng()
+    perturbation = rng.uniform(
+        low=-original_range * severity, high=original_range * severity, size=len(column)
+    )
 
     # Apply perturbation while preserving mean
     return column + perturbation
 
+
 # pylint: disable=invalid-name, too-many-arguments
-def perturb_dataset(X_cal,
-                    y_cal,
-                    categorical_features=None,
-                    noise_type='uniform',
-                    scale_factor=5,
-                    severity=0.5):
+def perturb_dataset(
+    X_cal, y_cal, categorical_features=None, noise_type="uniform", scale_factor=5, severity=0.5
+):
     """
     Perturb the dataset for the calibration process.
 
@@ -143,22 +146,25 @@ def perturb_dataset(X_cal,
     Returns
     -------
     tuple
-        Tuple containing perturbed feature matrix, scaled feature matrix, 
+        Tuple containing perturbed feature matrix, scaled feature matrix,
         scaled target vector, and scale factor.
     """
-    perturbed_X_cal = np.tile(X_cal.copy(), (scale_factor,1))
+    perturbed_X_cal = np.tile(X_cal.copy(), (scale_factor, 1))
     scaled_X_cal = perturbed_X_cal.copy()
     scaled_y_cal = np.tile(y_cal.copy(), scale_factor)
-    assert noise_type in ['uniform', 'gaussian'], \
-        "Noise type must be either 'uniform' or 'gaussian'."
+    if noise_type not in [
+        "uniform",
+        "gaussian",
+    ]:
+        raise ValueError("Noise type must be either 'uniform' or 'gaussian'.")
 
     for f in range(scaled_X_cal.shape[1]):
         if f in categorical_features:
-            perturbed_X_cal[:,f] = categorical_perturbation(perturbed_X_cal[:,f])
-        elif noise_type == 'uniform':
+            perturbed_X_cal[:, f] = categorical_perturbation(perturbed_X_cal[:, f])
+        elif noise_type == "uniform":
             # Apply numerical alternative perturbation to the selected column -- uniform
-            perturbed_X_cal[:,f] = uniform_perturbation(perturbed_X_cal[:,f], severity)
-        elif noise_type == 'gaussian':
+            perturbed_X_cal[:, f] = uniform_perturbation(perturbed_X_cal[:, f], severity)
+        elif noise_type == "gaussian":
             # Apply numerical alternative perturbation to the selected column -- gaussian
-            perturbed_X_cal[:,f] = gaussian_perturbation(perturbed_X_cal[:,f], severity)
+            perturbed_X_cal[:, f] = gaussian_perturbation(perturbed_X_cal[:, f], severity)
     return perturbed_X_cal, scaled_X_cal, scaled_y_cal, scale_factor

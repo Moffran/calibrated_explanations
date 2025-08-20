@@ -18,7 +18,7 @@ Establish a versioned explanation envelope:
 ```json
 {
   "schema_version": "1.0.0",
-  "type": "feature_attribution",    
+  "type": "feature_attribution",
   "generator": {
     "library_version": "0.6.0",
     "strategy": "isotonic_conformal",

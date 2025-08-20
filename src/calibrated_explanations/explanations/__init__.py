@@ -1,4 +1,18 @@
 """Module for explanations of calibrated models."""
-from .explanations import CalibratedExplanations, AlternativeExplanations
-from .explanation import CalibratedExplanation, FactualExplanation, \
-                    AlternativeExplanation, FastExplanation
+
+from .explanation import (
+    AlternativeExplanation,
+    CalibratedExplanation,
+    FactualExplanation,
+    FastExplanation,
+)
+from .explanations import AlternativeExplanations, CalibratedExplanations
+
+__all__ = [
+    "CalibratedExplanations",
+    "AlternativeExplanations",
+    "CalibratedExplanation",
+    "FactualExplanation",
+    "AlternativeExplanation",
+    "FastExplanation",
+]

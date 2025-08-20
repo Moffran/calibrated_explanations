@@ -4,7 +4,9 @@
 Usage:
   python scripts/api_diff.py --old benchmarks/baseline_20250816.json --new benchmarks/baseline_20250901.json
 """
+
 from __future__ import annotations
+
 import argparse
 import json
 from pathlib import Path
@@ -12,7 +14,7 @@ from typing import Set
 
 
 def load_symbols(path: Path) -> Set[str]:
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     return set(data.get("public_api_symbols", []))
 
@@ -38,7 +40,9 @@ def main():
         print(f" - {s}")
 
     if removed:
-        print("WARNING: Public API removals detected. Consider a major/minor version bump or deprecation path.")
+        print(
+            "WARNING: Public API removals detected. Consider a major/minor version bump or deprecation path."
+        )
 
 
 if __name__ == "__main__":

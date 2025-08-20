@@ -5,12 +5,14 @@ Run: python scripts/collect_baseline.py --output benchmarks/baseline_$(date +%Y%
 Windows PowerShell example:
   python scripts/collect_baseline.py --output benchmarks/baseline_$(Get-Date -Format yyyyMMdd).json
 """
+
 from __future__ import annotations
+
 import argparse
+import importlib
 import json
 import sys
 import time
-import importlib
 import tracemalloc
 from pathlib import Path
 from typing import Any, Dict, List
@@ -60,9 +62,9 @@ def collect_runtime_benchmarks() -> Dict[str, Any]:
     """Run lightweight runtime benchmarks using small synthetic data.
     Avoid heavy dataset loads to keep CI fast.
     """
-    from sklearn.datasets import load_diabetes, load_breast_cancer
-    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
     from calibrated_explanations import WrapCalibratedExplainer
+    from sklearn.datasets import load_breast_cancer, load_diabetes
+    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
     results: Dict[str, Any] = {}
 
@@ -149,7 +151,9 @@ def collect_baseline() -> Dict[str, Any]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Collect baseline metrics for calibrated_explanations")
+    parser = argparse.ArgumentParser(
+        description="Collect baseline metrics for calibrated_explanations"
+    )
     parser.add_argument("--output", "-o", type=str, required=True, help="Output JSON file path")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON")
     args = parser.parse_args()
@@ -162,7 +166,11 @@ def main():
         json.dump(baseline, f, indent=2 if args.pretty else None, sort_keys=True)
 
     print(f"Baseline metrics written to {out_path}")
-    print(json.dumps({k: baseline[k] for k in ["import_time_seconds", "public_api_symbol_count"]}, indent=2))
+    print(
+        json.dumps(
+            {k: baseline[k] for k in ["import_time_seconds", "public_api_symbol_count"]}, indent=2
+        )
+    )
 
 
 if __name__ == "__main__":

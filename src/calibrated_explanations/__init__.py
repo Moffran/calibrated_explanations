@@ -2,30 +2,30 @@
 """
 Calibrated Explanations (calibrated_explanations)
 
-Python package for explaining black-box models with calibrated uncertainty.
-Based on the paper "Calibrated Explanations: with Uncertainty Information and Counterfactuals" 
+is a Python package for explaining black-box models.
+
+It is based on the paper "Calibrated Explanations: with Uncertainty Information and Counterfactuals"
 by Helena Löfström et al.
 """
 
-# NOTE: Avoid importing the deprecated shim `core.py` just to obtain a version string, since
-# that would emit a DeprecationWarning on every package import. Maintain the version here
-# (kept in sync with pyproject.toml) until a dedicated version module is introduced.
-__version__ = "0.5.1"
-
-from .core import (
-    CalibratedExplainer,
-    WrapCalibratedExplainer,
-    OnlineCalibratedExplainer,
+from ._interval_regressor import IntervalRegressor  # noqa: F401
+from ._VennAbers import VennAbers  # noqa: F401
+from .core import CalibratedExplainer, OnlineCalibratedExplainer, WrapCalibratedExplainer
+from .explanations.explanation import (
+    AlternativeExplanation,  # noqa: F401
+    FactualExplanation,  # noqa: F401
+    FastExplanation,  # noqa: F401
 )
-from .utils.discretizers import BinaryEntropyDiscretizer, EntropyDiscretizer, \
-                    RegressorDiscretizer, BinaryRegressorDiscretizer
-from .explanations.explanations import CalibratedExplanations, AlternativeExplanations
-from .explanations.explanation import FactualExplanation, \
-                    AlternativeExplanation, FastExplanation
-from ._VennAbers import VennAbers
-from ._interval_regressor import IntervalRegressor
+from .explanations.explanations import AlternativeExplanations, CalibratedExplanations  # noqa: F401
+from .utils.discretizers import (
+    BinaryEntropyDiscretizer,  # noqa: F401
+    BinaryRegressorDiscretizer,  # noqa: F401
+    EntropyDiscretizer,  # noqa: F401
+    RegressorDiscretizer,  # noqa: F401
+)
 from .utils.helper import transform_to_numeric
 
+__version__ = "v0.5.1"
 
 __all__ = [
     "CalibratedExplainer",

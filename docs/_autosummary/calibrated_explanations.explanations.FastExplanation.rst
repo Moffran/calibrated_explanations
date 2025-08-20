@@ -6,9 +6,3 @@
 .. autoclass:: FastExplanation
    :members:
    :show-inheritance:
-   
-   
-
-   
-   
-   

@@ -40,3 +40,55 @@ pythonpath = ["src"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# ----------------------------
+# Tooling / Quality Gates (Phase 0)
+# ----------------------------
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+extend-exclude = ["build", "dist", "benchmarks", "docs/_build", "notebooks", "scripts", "evaluation"]
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle errors
+  "F",  # pyflakes
+  "I",  # isort
+  "B",  # bugbear
+  "UP", # pyupgrade
+  "C4", # comprehensions
+  "SIM",# simplify
+  "NPY",# NumPy
+  "S",  # security (bandit-like)
+]
+ignore = [
+  "E501",    # line length (managed by formatter)
+  "S101",    # use of assert (allowed in tests)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.mypy]
+python_version = "3.8"
+packages = ["calibrated_explanations"]
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+show_error_codes = true
+exclude = ["build", "benchmarks", "docs", "notebooks", "scripts", "evaluation"]
+
+[tool.bandit]
+skips = ["B101"]
+exclude = ["tests", "build", "benchmarks", "notebooks", "scripts", "docs", "dist", "evaluation"]
+
+[tool.codespell]
+ignore-words-list = "dataframe,nd"
+skip = "notebooks,scripts,evaluation,benchmarks,build,dist,*.lock,*.csv,*.json,*.png,*.jpg,*.gif,*.zip"

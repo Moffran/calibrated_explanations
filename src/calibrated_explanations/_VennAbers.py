@@ -7,10 +7,14 @@ Classes
 -------
     VennAbers: A class to calibrate the predictions of a model using the Venn-Abers method.
 """
+
 import warnings
+
 import numpy as np
 import venn_abers as va
+
 from .utils.helper import convert_targets_to_numeric
+
 
 class VennAbers:
     """
@@ -42,7 +46,16 @@ class VennAbers:
             Returns true if Mondrian categories are used.
     """
 
-    def __init__(self, X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None, predict_function=None):
+    def __init__(
+        self,
+        X_cal,
+        y_cal,
+        learner,
+        bins=None,
+        cprobs=None,
+        difficulty_estimator=None,
+        predict_function=None,
+    ):
         """Initialize the VennAbers class with calibration data and model.
 
         Parameters
@@ -60,7 +73,9 @@ class VennAbers:
 
         self.de = difficulty_estimator
         self.learner = learner
-        self._predict_proba = predict_function if predict_function is not None else learner.predict_proba
+        self._predict_proba = (
+            predict_function if predict_function is not None else learner.predict_proba
+        )
         self.X_cal = X_cal
         self.__is_multiclass = len(np.unique(self.y_cal_numeric)) > 2
 
@@ -74,28 +89,32 @@ class VennAbers:
         if self.is_mondrian():
             self.va = {}
             if self.is_multiclass():
-                tmp_probs = np.zeros((cprobs.shape[0],2))
+                tmp_probs = np.zeros((cprobs.shape[0], 2))
                 for c in np.unique(self.ctargets):
                     self.va[c] = {}
-                    tmp_probs[:,0] = 1 - cprobs[:,c]
-                    tmp_probs[:,1] = cprobs[:,c]
+                    tmp_probs[:, 0] = 1 - cprobs[:, c]
+                    tmp_probs[:, 1] = cprobs[:, c]
                     for b in np.unique(self.bins):
                         va_class_bin = va.VennAbers()
-                        va_class_bin.fit(tmp_probs[self.bins == b,:],
-                                       np.multiply(c == self.ctargets[self.bins == b], 1),
-                                       precision=4)
+                        va_class_bin.fit(
+                            tmp_probs[self.bins == b, :],
+                            np.multiply(c == self.ctargets[self.bins == b], 1),
+                            precision=4,
+                        )
                         self.va[c][b] = va_class_bin
             else:
                 for b in np.unique(self.bins):
                     va_bin = va.VennAbers()
-                    va_bin.fit(cprobs[self.bins == b,:], self.ctargets[self.bins == b], precision=4)
+                    va_bin.fit(
+                        cprobs[self.bins == b, :], self.ctargets[self.bins == b], precision=4
+                    )
                     self.va[b] = va_bin
         elif self.is_multiclass():
             self.va = {}
-            tmp_probs = np.zeros((cprobs.shape[0],2))
+            tmp_probs = np.zeros((cprobs.shape[0], 2))
             for c in np.unique(self.ctargets):
-                tmp_probs[:,0] = 1 - cprobs[:,c]
-                tmp_probs[:,1] = cprobs[:,c]
+                tmp_probs[:, 0] = 1 - cprobs[:, c]
+                tmp_probs[:, 1] = cprobs[:, c]
                 va_class = va.VennAbers()
                 va_class.fit(tmp_probs, np.multiply(c == self.ctargets, 1), precision=4)
                 self.va[c] = va_class
@@ -105,7 +124,7 @@ class VennAbers:
         warnings.filterwarnings("default", category=RuntimeWarning)
 
     def __predict_proba_with_difficulty(self, X, bins=None):
-        if 'bins' in self._predict_proba.__code__.co_varnames:
+        if "bins" in self._predict_proba.__code__.co_varnames:
             probs = self._predict_proba(X, bins=bins)
         else:
             probs = self._predict_proba(X)
@@ -117,7 +136,7 @@ class VennAbers:
             if self.is_multiclass():
                 probs_tmp = method(probs, difficulty)
             else:
-                probs_tmp = method(probs, np.repeat(difficulty, 2).reshape(-1,2))
+                probs_tmp = method(probs, np.repeat(difficulty, 2).reshape(-1, 2))
             probs = np.array([np.asarray(tmp) for tmp in probs_tmp])
         return probs
 
@@ -136,8 +155,8 @@ class VennAbers:
         """
         if self.is_multiclass():
             tmp, _ = self.predict_proba(X_test, bins=bins)
-            return np.asarray(np.round(tmp[:,1]))
-        tmp = self.predict_proba(X_test, bins=bins)[:,1]
+            return np.asarray(np.round(tmp[:, 1]))
+        tmp = self.predict_proba(X_test, bins=bins)[:, 1]
         return np.asarray(np.round(tmp))
 
     # pylint: disable=too-many-locals, too-many-branches
@@ -160,24 +179,25 @@ class VennAbers:
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         tprobs = self.__predict_proba_with_difficulty(X_test, bins=bins)
-        p0p1 = np.zeros((tprobs.shape[0],2))
+        p0p1 = np.zeros((tprobs.shape[0], 2))
         va_proba = np.zeros(tprobs.shape)
 
         if self.is_multiclass():
             low, high = np.zeros(tprobs.shape), np.zeros(tprobs.shape)
-            tmp_probs = np.zeros((tprobs.shape[0],2))
+            tmp_probs = np.zeros((tprobs.shape[0], 2))
             for c, va_class in self.va.items():
-                tmp_probs[:,0] = 1 - tprobs[:,c]
-                tmp_probs[:,1] = tprobs[:,c]
+                tmp_probs[:, 0] = 1 - tprobs[:, c]
+                tmp_probs[:, 1] = tprobs[:, c]
                 if self.is_mondrian():
-                    assert bins is not None, "bins must be provided if Mondrian"
+                    if bins is None:
+                        raise ValueError("bins must be provided if Mondrian")
                     for b, va_class_bin in va_class.items():
-                        p0p1[bins == b,:] = va_class_bin.predict_proba(tmp_probs[bins == b,:])[1]
+                        p0p1[bins == b, :] = va_class_bin.predict_proba(tmp_probs[bins == b, :])[1]
                 else:
                     p0p1 = va_class.predict_proba(tmp_probs)[1]
-                low[:,c], high[:,c] = p0p1[:,0], p0p1[:,1]
-                tmp = high[:,c] / (1-low[:,c] + high[:,c])
-                va_proba[:,c] = tmp
+                low[:, c], high[:, c] = p0p1[:, 0], p0p1[:, 1]
+                tmp = high[:, c] / (1 - low[:, c] + high[:, c])
+                va_proba[:, c] = tmp
             # TODO: Surprisingly, probability normalization is needed, needs looking into
             for i in range(va_proba.shape[0]):
                 low[i] = low[i] / np.sum(va_proba[i, :])
@@ -187,7 +207,12 @@ class VennAbers:
                 if type(classes) not in (list, np.ndarray):
                     classes = [classes]
                 if output_interval:
-                    return np.asarray(va_proba), [low[i,c] for i,c in enumerate(classes)], [high[i,c] for i,c in enumerate(classes)], classes
+                    return (
+                        np.asarray(va_proba),
+                        [low[i, c] for i, c in enumerate(classes)],
+                        [high[i, c] for i, c in enumerate(classes)],
+                        classes,
+                    )
                 return np.asarray(va_proba), classes
             classes = np.argmax(va_proba, axis=1)
             if output_interval:
@@ -195,15 +220,16 @@ class VennAbers:
             return np.asarray(va_proba), classes
 
         if self.is_mondrian():
-            assert bins is not None, "bins must be provided if Mondrian"
+            if bins is None:
+                raise ValueError("bins must be provided if Mondrian")
             for b, va_bin in self.va.items():
-                p0p1[bins == b,:] = va_bin.predict_proba(tprobs[bins == b,:])[1]
+                p0p1[bins == b, :] = va_bin.predict_proba(tprobs[bins == b, :])[1]
         else:
             _, p0p1 = self.va.predict_proba(tprobs)
-        low, high = p0p1[:,0], p0p1[:,1]
-        tmp = high / (1-low + high)
-        va_proba[:,0] = 1-tmp
-        va_proba[:,1] = tmp
+        low, high = p0p1[:, 0], p0p1[:, 1]
+        tmp = high / (1 - low + high)
+        va_proba[:, 0] = 1 - tmp
+        va_proba[:, 1] = tmp
         # binary
         warnings.filterwarnings("default", category=RuntimeWarning)
         if output_interval:
@@ -227,6 +253,7 @@ class VennAbers:
             bool: True if Mondrian.
         """
         return self.bins is not None
+
 
 def exponent_scaling_list(probs, difficulties, beta=5):
     """

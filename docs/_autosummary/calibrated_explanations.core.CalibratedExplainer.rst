@@ -6,4 +6,3 @@
 .. autoclass:: CalibratedExplainer
    :members:
    :show-inheritance:
-   

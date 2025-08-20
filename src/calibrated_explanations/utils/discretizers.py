@@ -53,13 +53,16 @@ BinaryRegressorDiscretizer.__repr__(self)
 BinaryRegressorDiscretizer.bins(self, data, labels)
     Calculate the bins for the BinaryRegressorDiscretizer.
 """
+
 from abc import ABCMeta, abstractmethod
+
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import check_random_state
 
+
 # pylint: disable=too-many-instance-attributes
-class BaseDiscretizer():
+class BaseDiscretizer:
     """
     Abstract class. Build a class that inherits from this class to implement a custom discretizer.
 
@@ -98,8 +101,7 @@ class BaseDiscretizer():
             data_stats: must have 'means', 'stds', 'mins' and 'maxs', use this
                 if you don't want these values to be computed from data
         """
-        self.to_discretize = ([x for x in range(data.shape[1])
-                                if x not in categorical_features])
+        self.to_discretize = [x for x in range(data.shape[1]) if x not in categorical_features]
         self.names = {}
         self.lambdas = {}
         self.means = {}
@@ -117,10 +119,10 @@ class BaseDiscretizer():
             boundaries = np.min(data[:, feature]), np.max(data[:, feature])
             name = feature_names[feature]
 
-            self.names[feature] = [f'{name} <= {qts[0]:.2f}']
+            self.names[feature] = [f"{name} <= {qts[0]:.2f}"]
             for i in range(n_bins - 1):
-                self.names[feature].append(f'{qts[i]:.2f} < {name} <= {qts[i + 1]:.2f}')
-            self.names[feature].append(f'{name} > {qts[n_bins - 1]:.2f}')
+                self.names[feature].append(f"{qts[i]:.2f} < {name} <= {qts[i + 1]:.2f}")
+            self.names[feature].append(f"{name} > {qts[n_bins - 1]:.2f}")
 
             self.lambdas[feature] = lambda x, qts=qts: np.searchsorted(qts, x)
             discretized = self.lambdas[feature](data[:, feature])
@@ -172,7 +174,7 @@ class EntropyDiscretizer(BaseDiscretizer):
     """A dynamic entropy discretizer for the CalibratedExplainer.
 
     Arguments
-    ---------        
+    ---------
         data: numpy 2d array
         categorical_features: list of indices (ints) corresponding to the
             categorical columns. These features will not be discretized.
@@ -183,7 +185,7 @@ class EntropyDiscretizer(BaseDiscretizer):
             column x.
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
-        labels: must have target labels of the data  
+        labels: must have target labels of the data
 
     Methods
     -------
@@ -198,32 +200,36 @@ class EntropyDiscretizer(BaseDiscretizer):
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initialize the EntropyDiscretizer."""
         if labels is None:
-            raise ValueError('Labels must be not None when using \
-                            EntropyDiscretizer')
-        BaseDiscretizer.__init__(self, data, categorical_features,
-                                feature_names, labels=labels,
-                                random_state=random_state)
+            raise ValueError(
+                "Labels must be not None when using \
+                            EntropyDiscretizer"
+            )
+        BaseDiscretizer.__init__(
+            self,
+            data,
+            categorical_features,
+            feature_names,
+            labels=labels,
+            random_state=random_state,
+        )
 
     def __repr__(self):
         """Return a string representation of the EntropyDiscretizer."""
-        return 'EntropyDiscretizer()'
+        return "EntropyDiscretizer()"
 
     def bins(self, data, labels):
         """Calculate the bins for the EntropyDiscretizer."""
         bins = []
         for feature in self.to_discretize:
             # Entropy splitting / at most 8 bins so max_depth=3
-            dt = DecisionTreeClassifier(criterion='entropy',
-                                                    max_depth=3,
-                                                    random_state=self.random_state)
+            dt = DecisionTreeClassifier(
+                criterion="entropy", max_depth=3, random_state=self.random_state
+            )
             x = np.reshape(data[:, feature], (-1, 1))
             dt.fit(x, labels)
             qts = dt.tree_.threshold[np.where(dt.tree_.children_left > -1)]
 
-            if qts.shape[0] == 0:
-                qts = np.array([np.median(data[:, feature])])
-            else:
-                qts = np.sort(qts)
+            qts = np.array([np.median(data[:, feature])]) if qts.shape[0] == 0 else np.sort(qts)
 
             bins.append(qts)
 
@@ -245,7 +251,7 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
             column x.
         feature_names: list of names (strings) corresponding to the columns
             in the training data.
-        labels: must have target labels of the data  
+        labels: must have target labels of the data
 
     Methods
     -------
@@ -260,15 +266,19 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initialize the BinaryEntropyDiscretizer."""
         if labels is None:
-            raise ValueError('Labels must not be None when using '+\
-                            'BinaryEntropyDiscretizer')
-        BaseDiscretizer.__init__(self, data, categorical_features,
-                                feature_names, labels=labels,
-                                random_state=random_state)
+            raise ValueError("Labels must not be None when using " + "BinaryEntropyDiscretizer")
+        BaseDiscretizer.__init__(
+            self,
+            data,
+            categorical_features,
+            feature_names,
+            labels=labels,
+            random_state=random_state,
+        )
 
     def __repr__(self):
         """Return a string representation of the BinaryEntropyDiscretizer."""
-        return 'BinaryEntropyDiscretizer()'
+        return "BinaryEntropyDiscretizer()"
 
     # pylint: disable=invalid-name
     def bins(self, data, labels):
@@ -276,17 +286,14 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
         bins = []
         for feature in self.to_discretize:
             # Entropy splitting / at most 2 bins so max_depth=1
-            dt = DecisionTreeClassifier(criterion='entropy',
-                                                    max_depth=1,
-                                                    random_state=self.random_state)
+            dt = DecisionTreeClassifier(
+                criterion="entropy", max_depth=1, random_state=self.random_state
+            )
             x = np.reshape(data[:, feature], (-1, 1))
             dt.fit(x, labels)
             qts = dt.tree_.threshold[np.where(dt.tree_.children_left > -1)]
 
-            if qts.shape[0] == 0:
-                qts = np.array([np.median(data[:, feature])])
-            else:
-                qts = np.sort(qts)
+            qts = np.array([np.median(data[:, feature])]) if qts.shape[0] == 0 else np.sort(qts)
 
             bins.append(qts)
 
@@ -323,15 +330,19 @@ class RegressorDiscretizer(BaseDiscretizer):
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initialize the RegressorDiscretizer."""
         if labels is None:
-            raise ValueError('Labels must not be None when using '+\
-                            'RegressorDiscretizer')
-        BaseDiscretizer.__init__(self, data, categorical_features,
-                                feature_names, labels=labels,
-                                random_state=random_state)
+            raise ValueError("Labels must not be None when using " + "RegressorDiscretizer")
+        BaseDiscretizer.__init__(
+            self,
+            data,
+            categorical_features,
+            feature_names,
+            labels=labels,
+            random_state=random_state,
+        )
 
     def __repr__(self):
         """Return a string representation of the RegressorDiscretizer."""
-        return 'RegressorDiscretizer()'
+        return "RegressorDiscretizer()"
 
     # pylint: disable=invalid-name
     def bins(self, data, labels):
@@ -339,17 +350,14 @@ class RegressorDiscretizer(BaseDiscretizer):
         bins = []
         for feature in self.to_discretize:
             # Entropy splitting / at most 2 bins so max_depth=1
-            dt = DecisionTreeRegressor(criterion='absolute_error',
-                                                    max_depth=3,
-                                                    random_state=self.random_state)
+            dt = DecisionTreeRegressor(
+                criterion="absolute_error", max_depth=3, random_state=self.random_state
+            )
             x = np.reshape(data[:, feature], (-1, 1))
             dt.fit(x, labels)
             qts = dt.tree_.threshold[np.where(dt.tree_.children_left > -1)]
 
-            if qts.shape[0] == 0:
-                qts = np.array([np.median(data[:, feature])])
-            else:
-                qts = np.sort(qts)
+            qts = np.array([np.median(data[:, feature])]) if qts.shape[0] == 0 else np.sort(qts)
 
             bins.append(qts)
 
@@ -386,15 +394,19 @@ class BinaryRegressorDiscretizer(BaseDiscretizer):
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initialize the BinaryRegressorDiscretizer."""
         if labels is None:
-            raise ValueError('Labels must not be None when using '+\
-                            'BinaryRegressorDiscretizer')
-        BaseDiscretizer.__init__(self, data, categorical_features,
-                                feature_names, labels=labels,
-                                random_state=random_state)
+            raise ValueError("Labels must not be None when using " + "BinaryRegressorDiscretizer")
+        BaseDiscretizer.__init__(
+            self,
+            data,
+            categorical_features,
+            feature_names,
+            labels=labels,
+            random_state=random_state,
+        )
 
     def __repr__(self):
         """Return a string representation of the BinaryRegressorDiscretizer."""
-        return 'BinaryRegressorDiscretizer()'
+        return "BinaryRegressorDiscretizer()"
 
     # pylint: disable=invalid-name
     def bins(self, data, labels):
@@ -402,17 +414,14 @@ class BinaryRegressorDiscretizer(BaseDiscretizer):
         bins = []
         for feature in self.to_discretize:
             # Entropy splitting / at most 2 bins so max_depth=1
-            dt = DecisionTreeRegressor(criterion='absolute_error',
-                                                    max_depth=1,
-                                                    random_state=self.random_state)
+            dt = DecisionTreeRegressor(
+                criterion="absolute_error", max_depth=1, random_state=self.random_state
+            )
             x = np.reshape(data[:, feature], (-1, 1))
             dt.fit(x, labels)
             qts = dt.tree_.threshold[np.where(dt.tree_.children_left > -1)]
 
-            if qts.shape[0] == 0:
-                qts = np.array([np.median(data[:, feature])])
-            else:
-                qts = np.sort(qts)
+            qts = np.array([np.median(data[:, feature])]) if qts.shape[0] == 0 else np.sort(qts)
 
             bins.append(qts)
 

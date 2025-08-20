@@ -1,8 +1,8 @@
 # Calibrated Explanations Repository Improvement Action Plan
 
-**Created:** August 16, 2025  
-**Repository:** calibrated_explanations  
-**Current Version:** v0.5.1  
+**Created:** August 16, 2025
+**Repository:** calibrated_explanations
+**Current Version:** v0.5.1
 **Target Releases:** v0.6.0 (Foundational Refactor & Stability), v0.7.0 (Performance & Robustness), v0.8.0 (Extensibility & Advanced UX)
 
 ---
@@ -15,20 +15,20 @@ This plan focuses on: (1) introducing architectural baselining before refactors,
 
 ## 1. Current State Assessment (Condensed)
 
-**Strengths:** Strong academic basis, rich examples, packaging + tests exist.  
+**Strengths:** Strong academic basis, rich examples, packaging + tests exist.
 **Pain Points:** Monolithic `core.py` (2600+ LOC), heavy pylint disables, inconsistent API, unclear validation, limited performance profiling, no formal plugin interface, scattered visualization patterns.
 
 ---
 
 ## 2. Guiding Principles
 
-1. Behavior parity first; enhancements second.  
-2. Mechanical refactor isolated from logic changes.  
-3. Introduce safety nets (tests, benchmarks, lint, type checks) before deep changes.  
-4. Explicit deprecations (warnings + migration helpers) instead of silent breaks.  
-5. Performance & memory are tracked, not assumed.  
-6. Public surface area stays minimal + documented.  
-7. Extensibility via stable, versioned contracts (plugin, visualization, explanation data schema).  
+1. Behavior parity first; enhancements second.
+2. Mechanical refactor isolated from logic changes.
+3. Introduce safety nets (tests, benchmarks, lint, type checks) before deep changes.
+4. Explicit deprecations (warnings + migration helpers) instead of silent breaks.
+5. Performance & memory are tracked, not assumed.
+6. Public surface area stays minimal + documented.
+7. Extensibility via stable, versioned contracts (plugin, visualization, explanation data schema).
 
 ---
 
@@ -36,13 +36,13 @@ This plan focuses on: (1) introducing architectural baselining before refactors,
 
 Before Phase 1 tasks begin:
 
-- Produce high-level component diagram (Explain Flow: Training → Calibration → Explanation → Visualization).  
-- Extract Architecture Decision Records (ADRs) for: calibration strategy abstraction, plugin boundaries, caching layer, parallel backend choice, explanation data schema.  
+- Produce high-level component diagram (Explain Flow: Training → Calibration → Explanation → Visualization).
+- Extract Architecture Decision Records (ADRs) for: calibration strategy abstraction, plugin boundaries, caching layer, parallel backend choice, explanation data schema.
 - Capture baseline metrics script (`scripts/collect_baseline.py`):
   - Import time of `calibrated_explanations`.
-  - Median / p95 explanation time (small & medium dataset).  
-  - Peak RSS memory for representative tasks.  
-  - Current test runtime & coverage.  
+  - Median / p95 explanation time (small & medium dataset).
+  - Peak RSS memory for representative tasks.
+  - (Test runtime & coverage no longer part of baseline collection; retained in later CI reporting.)
 - Store JSON baseline under `benchmarks/baseline_<date>.json` and commit.
 
 ---
@@ -62,9 +62,9 @@ Before Phase 1 tasks begin:
 
 Release Alignment:
 
-- v0.6.0 → End of Phase 2 (stability + simplified API).  
-- v0.7.0 → End of Phase 4 (performance + robust testing/docs).  
-- v0.8.0 → End of Phase 6 (plugins + advanced visualization).  
+- v0.6.0 → End of Phase 2 (stability + simplified API).
+- v0.7.0 → End of Phase 4 (performance + robust testing/docs).
+- v0.8.0 → End of Phase 6 (plugins + advanced visualization).
 
 ---
 
@@ -74,13 +74,13 @@ Release Alignment:
 
 **Tasks:**
 
-- Benchmark harness: integrate `pytest-benchmark` (tag perf tests) + memory probe (tracemalloc / psutil).  
-- Pre-commit: `ruff` (lint + formatting), `isort` (if not using ruff-format), `mypy`, `bandit`, `pip-audit`, `codespell` (optional).  
-- Add `CODEOWNERS`, `CONTRIBUTING` update with quality checklist.  
-- Add `scripts/` utilities: baseline collector, API symbol list generator (compare drift).  
-- Introduce semantic version & changelog automation (e.g., `python-semantic-release` or `towncrier`).  
+- Benchmark harness: integrate `pytest-benchmark` (tag perf tests) + memory probe (tracemalloc / psutil).
+- Pre-commit: `ruff` (lint + formatting), `isort` (if not using ruff-format), `mypy`, `bandit`, `pip-audit`, `codespell` (optional).
+- Add `CODEOWNERS`, `CONTRIBUTING` update with quality checklist.
+- Add `scripts/` utilities: baseline collector, API symbol list generator (compare drift).
+- Introduce semantic version & changelog automation (e.g., `python-semantic-release` or `towncrier`).
 - Decide environment management (e.g., `uv` or `pip-tools`) and produce lock file for CI reproducibility.
-- Establish logging policy (structured via `logging` + optional user-provided handler).  
+- Establish logging policy (structured via `logging` + optional user-provided handler).
 
 **Deliverables:** Baseline JSON, ADRs committed, CI updated, pre-commit enforced, lock file, logging guidelines.
 
@@ -107,10 +107,10 @@ src/calibrated_explanations/core/
 
 **Deprecation Strategy:**
 
-- Keep `core.py` as thin shim re-exporting moved symbols; emit `DeprecationWarning` on import.  
-- Provide `from calibrated_explanations.core import CalibratedExplainer` unchanged for v0.6.x.  
+- Keep `core.py` as thin shim re-exporting moved symbols; emit `DeprecationWarning` on import.
+- Provide `from calibrated_explanations.core import CalibratedExplainer` unchanged for v0.6.x.
 
-**Validation:** Snapshot test counts & benchmarks must match baseline ±5% runtime, ±0.5% memory.  
+**Validation:** Snapshot test counts & benchmarks must match baseline ±5% runtime, ±0.5% memory.
 
 **Deliverables:** Files split, tests green, import path compatibility layer, ADR updated if drift.
 
@@ -122,11 +122,11 @@ src/calibrated_explanations/core/
 
 **Tasks:**
 
-- Introduce `exceptions.py` (custom hierarchy).  
-- Implement `validation.py` replacing `validation_stub.py`.  
-- Central argument normalization helper (`api/params.py`): alias mapping + canonicalization.  
-- Add minimal type hints to core public APIs; enable `mypy --strict` gradually (start permissive, escalate).  
-- Replace generic exceptions across refactored modules.  
+- Introduce `exceptions.py` (custom hierarchy).
+- Implement `validation.py` replacing `validation_stub.py`.
+- Central argument normalization helper (`api/params.py`): alias mapping + canonicalization.
+- Add minimal type hints to core public APIs; enable `mypy --strict` gradually (start permissive, escalate).
+- Replace generic exceptions across refactored modules.
 
 **Deliverables:** 80%+ reduction of pylint disables tied to naming/args; typed stubs for main classes; validation unit tests; doc examples for error handling.
 
@@ -138,12 +138,12 @@ src/calibrated_explanations/core/
 
 **Enhancements:**
 
-- `ExplainerConfig` dataclass (model, calibration params, thresholds, parallel settings).  
-- Builder (`ExplainerBuilder`) returns configured wrapper; ensures validation pre-fit.  
-- High-level convenience `quick_explain(...)`.  
-- Parameter alias resolution early (e.g., `alpha → low_high_percentiles`).  
-- Add deprecation warnings for old parameter names (scheduled removal v0.8.0).  
-- Auto-migration script: scans notebooks/scripts and rewrites deprecated args optionally.  
+- `ExplainerConfig` dataclass (model, calibration params, thresholds, parallel settings).
+- Builder (`ExplainerBuilder`) returns configured wrapper; ensures validation pre-fit.
+- High-level convenience `quick_explain(...)`.
+- Parameter alias resolution early (e.g., `alpha → low_high_percentiles`).
+- Add deprecation warnings for old parameter names (scheduled removal v0.8.0).
+- Auto-migration script: scans notebooks/scripts and rewrites deprecated args optionally.
 
 **Deliverables:** Updated docs with old vs new side-by-side, migration guide draft (v0.5.x → v0.6.0), CLI snippet for migration script, increased docstring coverage.
 
@@ -155,10 +155,10 @@ src/calibrated_explanations/core/
 
 **Design Decisions (ADRs):**
 
-- Parallel backend interface (`ParallelBackend`): default `joblib`, future pluggable (Ray/Dask).  
-- Cache policy: LRU keyed by deterministic hash (data bytes + params) with size accounting; allow user-supplied cache store (in-memory / disk).  
-- Memory Manager: pre-operation estimate + soft cap warnings; optional chunked iteration for large arrays.  
-- Lazy wrapper `LazyExplanation` returning materialized structure on demand.  
+- Parallel backend interface (`ParallelBackend`): default `joblib`, future pluggable (Ray/Dask).
+- Cache policy: LRU keyed by deterministic hash (data bytes + params) with size accounting; allow user-supplied cache store (in-memory / disk).
+- Memory Manager: pre-operation estimate + soft cap warnings; optional chunked iteration for large arrays.
+- Lazy wrapper `LazyExplanation` returning materialized structure on demand.
 
 **Instrumentation:** Collect before/after benchmark deltas; fail CI if regression beyond thresholds.
 
@@ -170,17 +170,17 @@ src/calibrated_explanations/core/
 
 **Testing Expansion:**
 
-- Property-based tests (Hypothesis) for calibration invariants (probabilities within [0,1], monotonic cumulative).  
-- Edge cases: single row, single feature, extreme values, missing values.  
-- Performance tests marked `@pytest.mark.perf` excluded by default, nightly in CI.  
-- Mutation testing (optional stretch: `mutmut` or `cosmic-ray`) for critical modules.  
+- Property-based tests (Hypothesis) for calibration invariants (probabilities within [0,1], monotonic cumulative).
+- Edge cases: single row, single feature, extreme values, missing values.
+- Performance tests marked `@pytest.mark.perf` excluded by default, nightly in CI.
+- Mutation testing (optional stretch: `mutmut` or `cosmic-ray`) for critical modules.
 
 **Docs:**
 
-- Sphinx: auto API from docstrings (enforce style via `pydocstyle`).  
-- Sphinx-gallery converting notebooks → gallery examples to prevent drift.  
-- Progressive migration guide updates (finalized here).  
-- Best Practices: memory, parallel, caching usage, error handling patterns.  
+- Sphinx: auto API from docstrings (enforce style via `pydocstyle`).
+- Sphinx-gallery converting notebooks → gallery examples to prevent drift.
+- Progressive migration guide updates (finalized here).
+- Best Practices: memory, parallel, caching usage, error handling patterns.
 
 **Deliverables:** >90% coverage, docstring coverage metric (≥85%), API reference generated, failing CI on broken links, performance dashboard markdown updated.
 
@@ -190,18 +190,18 @@ src/calibrated_explanations/core/
 
 **Plugin System:**
 
-- `plugins/base.py` abstract interface: `supports(model)`, `explain(model, X, **kwargs)`.  
-- `plugins/registry.py` with registration + discovery; versioned capability metadata (`plugin_meta = {"schema_version": 1, "capabilities": [..]}`).  
-- Security note: warn users about third-party code execution; optional whitelist config.  
+- `plugins/base.py` abstract interface: `supports(model)`, `explain(model, X, **kwargs)`.
+- `plugins/registry.py` with registration + discovery; versioned capability metadata (`plugin_meta = {"schema_version": 1, "capabilities": [..]}`).
+- Security note: warn users about third-party code execution; optional whitelist config.
 
 **Explanation Data Schema:**
 
-- Versioned JSON spec (`schemas/explanation_schema_v1.json`) capturing: inputs, model metadata, calibration params, feature attributions, uncertainty intervals, provenance (library versions, timestamp, git commit).  
-- Serialization utilities (`serialization.py`) + round-trip tests.  
+- Versioned JSON spec (`schemas/explanation_schema_v1.json`) capturing: inputs, model metadata, calibration params, feature attributions, uncertainty intervals, provenance (library versions, timestamp, git commit).
+- Serialization utilities (`serialization.py`) + round-trip tests.
 
 **Visualization Abstraction:**
 
-- Renderer-agnostic data layer: transform Explanation → canonical PlotSpec JSON; adapters for matplotlib/plotly.  
+- Renderer-agnostic data layer: transform Explanation → canonical PlotSpec JSON; adapters for matplotlib/plotly.
 
 **Deliverables:** Plugin examples (LIME, SHAP adaptors), schema doc, serialization tests, initial viz abstraction.
 
@@ -211,9 +211,9 @@ src/calibrated_explanations/core/
 
 **Features:**
 
-- Interactive plots (plotly; optional bokeh backend).  
-- Exporters: HTML (self-contained), JSON (schema v1), PDF (via WeasyPrint/reportlab) – PDF optional if time.  
-- Prototype dashboard (Streamlit) reading Explanation JSON & rendering plots; add Jupyter widget wrapper.  
+- Interactive plots (plotly; optional bokeh backend).
+- Exporters: HTML (self-contained), JSON (schema v1), PDF (via WeasyPrint/reportlab) – PDF optional if time.
+- Prototype dashboard (Streamlit) reading Explanation JSON & rendering plots; add Jupyter widget wrapper.
 
 **Deliverables:** Export APIs documented, dashboard example, usage tutorial, performance note (client-side payload size tracking).
 
@@ -236,19 +236,19 @@ src/calibrated_explanations/core/
 
 ## 14. Deprecation & Migration Policy
 
-- Each deprecated symbol emits `DeprecationWarning` (once per session).  
-- Public removal only after 2 minor releases (e.g., introduced in v0.6.0 → removed v0.8.0).  
-- Migration guide sections include: Old signature, New signature, Rationale, Automated rewrite example.  
+- Each deprecated symbol emits `DeprecationWarning` (once per session).
+- Public removal only after 2 minor releases (e.g., introduced in v0.6.0 → removed v0.8.0).
+- Migration guide sections include: Old signature, New signature, Rationale, Automated rewrite example.
 - Provide `scripts/list_public_api.py` to diff exported symbols between versions.
 
 ---
 
 ## 15. Metrics & Monitoring
 
-**Performance:** median & p95 explanation latency, throughput (explanations/sec), import time, cache hit ratio, parallel speedup scaling chart.  
-**Quality:** pylint score, cyclomatic complexity (radon) delta, open issues tagged `tech-debt` burndown.  
-**Usability:** time-to-first-explanation (measured via scripted notebook), doc page view anomalies (manual if analytics later).  
-**Extensibility:** plugin count, external plugin adoption (manual tracking initially).  
+**Performance:** median & p95 explanation latency, throughput (explanations/sec), import time, cache hit ratio, parallel speedup scaling chart.
+**Quality:** pylint score, cyclomatic complexity (radon) delta, open issues tagged `tech-debt` burndown.
+**Usability:** time-to-first-explanation (measured via scripted notebook), doc page view anomalies (manual if analytics later).
+**Extensibility:** plugin count, external plugin adoption (manual tracking initially).
 
 ---
 
@@ -268,26 +268,26 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 
 ## 17. Release Strategy (Adjusted)
 
-- v0.6.0: Phases 0-2 complete, deprecations active, migration guide (draft), no performance degradation.  
-- v0.7.0: Phases 3-4; performance boosts, finalized migration, stable schema v1.  
-- v0.8.0: Phases 5-6; plugin ecosystem baseline, advanced visualization, potential schema v1.1 if non-breaking enhancements.  
+- v0.6.0: Phases 0-2 complete, deprecations active, migration guide (draft), no performance degradation.
+- v0.7.0: Phases 3-4; performance boosts, finalized migration, stable schema v1.
+- v0.8.0: Phases 5-6; plugin ecosystem baseline, advanced visualization, potential schema v1.1 if non-breaking enhancements.
 
 ---
 
 ## 18. Communication Plan
 
-- Weekly CHANGELOG fragment via newsfiles (towncrier) to prevent large doc merges.  
-- Biweekly progress summary (metrics delta + risk updates).  
-- Early adopter channel for plugin API feedback after Phase 5 start.  
+- Weekly CHANGELOG fragment via newsfiles (towncrier) to prevent large doc merges.
+- Biweekly progress summary (metrics delta + risk updates).
+- Early adopter channel for plugin API feedback after Phase 5 start.
 
 ---
 
 ## 19. Next Immediate Steps
 
-1. Create `baseline` branch; implement Phase 0 tasks.  
-2. Record and commit baseline metrics & ADRs.  
-3. Open tracking issues / GitHub Project board columns: Backlog, In Progress, Review, Done, Risks.  
-4. Begin mechanical split PR (Phase 1A) with golden test suite.  
+1. Create `baseline` branch; implement Phase 0 tasks.
+2. Record and commit baseline metrics & ADRs.
+3. Open tracking issues / GitHub Project board columns: Backlog, In Progress, Review, Done, Risks.
+4. Begin mechanical split PR (Phase 1A) with golden test suite.
 
 ---
 
@@ -295,19 +295,19 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 
 **ADR Topics (Initial List):**
 
-- ADR-001: Core decomposition boundaries  
-- ADR-002: Validation & exception design  
-- ADR-003: Caching key & eviction strategy  
-- ADR-004: Parallel backend abstraction  
-- ADR-005: Explanation JSON schema versioning  
-- ADR-006: Plugin registry trust model  
-- ADR-007: Visualization abstraction layer  
+- ADR-001: Core decomposition boundaries
+- ADR-002: Validation & exception design
+- ADR-003: Caching key & eviction strategy
+- ADR-004: Parallel backend abstraction
+- ADR-005: Explanation JSON schema versioning
+- ADR-006: Plugin registry trust model
+- ADR-007: Visualization abstraction layer
 
-**Glossary:**  
+**Glossary:**
 
-- Mechanical Refactor: Code relocation without semantic change.  
-- Golden Test: Asserts serialized output equality of canonical examples.  
-- PlotSpec: Backend-agnostic structure for visualization adapters.  
+- Mechanical Refactor: Code relocation without semantic change.
+- Golden Test: Asserts serialized output equality of canonical examples.
+- PlotSpec: Backend-agnostic structure for visualization adapters.
 
 ---
 

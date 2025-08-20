@@ -4,17 +4,18 @@
 This script is intentionally light-weight to be CI friendly.
 Use pytest-benchmark for deeper analysis later.
 """
+
 from __future__ import annotations
+
 import argparse
+import json
 import statistics
 import time
-from typing import Dict, Any, Callable, List
-import json
-
-from sklearn.datasets import load_breast_cancer, load_diabetes  # noqa
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # noqa
+from typing import Any, Callable, Dict, List
 
 from calibrated_explanations import WrapCalibratedExplainer  # noqa
+from sklearn.datasets import load_breast_cancer, load_diabetes  # noqa
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # noqa
 
 
 def time_fn(fn: Callable[[], Any], repeat: int) -> Dict[str, float]:
