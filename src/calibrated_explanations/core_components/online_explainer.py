@@ -6,7 +6,6 @@ Verbatim move from legacy core.py (no semantic changes)."""
 from __future__ import annotations
 import numpy as np
 from .wrap_explainer import WrapCalibratedExplainer  # fixed import
-from ..utils.helper import check_is_fitted  # noqa: F401
 
 class OnlineCalibratedExplainer(WrapCalibratedExplainer):
     """Calibrated Explanations for Online Learning.
@@ -50,14 +49,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
                 kwargs.pop('classes', None)
                 self.learner.partial_fit(X_proper_train, y_proper_train, **kwargs)
 
-        check_is_fitted(self.learner)
-        self.fitted = True
-
-        if reinitialize:
-            self.explainer.reinitialize(self.learner)
-            self.calibrated = True
-
-        return self
+        return self._finalize_fit(reinitialize)
 
     def partial_fit(self, X, y, **kwargs):
         """Incrementally fit the model with samples X and y.

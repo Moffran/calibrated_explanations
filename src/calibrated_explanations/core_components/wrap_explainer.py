@@ -78,14 +78,8 @@ class WrapCalibratedExplainer():
         self.fitted = False
         self.calibrated = False
         self.learner.fit(X_proper_train, y_proper_train, **kwargs)
-        check_is_fitted(self.learner)
-        self.fitted = True
-
-        if reinitialize:
-            self.explainer.reinitialize(self.learner)
-            self.calibrated = True
-
-        return self
+        # delegate shared post-fit logic (also used by OnlineCalibratedExplainer)
+        return self._finalize_fit(reinitialize)
 
     def calibrate(self, X_calibration, y_calibration, mc=None, **kwargs):
         """Calibrate the explainer with calibration data.
@@ -262,12 +256,8 @@ class WrapCalibratedExplainer():
                 raise ValueError("A thresholded prediction is not possible for uncalibrated learners.")
             if calibrated:
                 _warnings.warn("The WrapCalibratedExplainer must be calibrated to get calibrated probabilities.", UserWarning)
-            if uq_interval:
-                proba = self.learner.predict_proba(X_test)
-                if proba.shape[1] > 2:
-                    return proba, (proba, proba)
-                return proba, (proba[:,1], proba[:,1])
-            return self.learner.predict_proba(X_test)
+            proba = self.learner.predict_proba(X_test)
+            return self._format_proba_output(proba, uq_interval)
 
         kwargs['bins'] = self._get_bins(X_test, **kwargs)
         return self.explainer.predict_proba(X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs)
@@ -345,5 +335,35 @@ class WrapCalibratedExplainer():
         if isinstance(self.mc, MondrianCategorizer):
             return self.mc.apply(X_test)
         return self.mc(X_test) if self.mc is not None else kwargs.get('bins', None)
+
+    # ------ Internal helpers (reduce duplication) ------
+    def _finalize_fit(self, reinitialize: bool):
+        """Finalize fit logic shared across fit implementations.
+
+        Parameters
+        ----------
+        reinitialize : bool
+            Whether an existing calibrated explainer should be reinitialized.
+        """
+        check_is_fitted(self.learner)
+        self.fitted = True
+        if reinitialize and self.explainer is not None:
+            # Preserve calibration by updating underlying learner reference
+            self.explainer.reinitialize(self.learner)
+            self.calibrated = True
+        return self
+
+    def _format_proba_output(self, proba, uq_interval: bool):
+        """Format probability output (with optional trivial intervals) without duplicating logic."""
+        if not uq_interval:
+            return proba
+        # Multiclass: return matrix and identical bounds
+        if proba.ndim == 2 and proba.shape[1] > 2:
+            return proba, (proba, proba)
+        # Binary (assume second column is positive class probability)
+        if proba.ndim == 2 and proba.shape[1] == 2:
+            return proba, (proba[:, 1], proba[:, 1])
+        # Fallback (unexpected shape) -> mirror array
+        return proba, (proba, proba)
 
 __all__ = ["WrapCalibratedExplainer"]
