@@ -1,0 +1,29 @@
+{
+  "import_time_seconds": 5.820401200093329,
+  "memory_rss_mb_after": 215.078125,
+  "memory_rss_mb_before": 30.55859375,
+  "memory_tracemalloc_peak_mb": 74.37680530548096,
+  "package": "calibrated_explanations",
+  "public_api_symbol_count": 4,
+  "public_api_symbols": [
+    "CalibratedExplainer",
+    "OnlineCalibratedExplainer",
+    "WrapCalibratedExplainer",
+    "transform_to_numeric"
+  ],
+  "runtime": {
+    "classification": {
+      "batch_size": 50,
+      "calibrate_time_s": 0.003109200391918421,
+      "fit_time_s": 0.06508919969201088,
+      "predict_batch_time_s": 0.0020811003632843494
+    },
+    "regression": {
+      "batch_size": 50,
+      "calibrate_time_s": 0.002504299860447645,
+      "fit_time_s": 0.08258980000391603,
+      "predict_batch_time_s": 0.0022920002229511738
+    }
+  },
+  "timestamp": "2025-08-20T08:58:31Z"
+}

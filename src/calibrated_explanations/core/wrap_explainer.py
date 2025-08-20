@@ -34,7 +34,7 @@ class WrapCalibratedExplainer():
         """
         self.mc = None
         # Check if the learner is a CalibratedExplainer
-        if safe_isinstance(learner, "calibrated_explanations.core_components.CalibratedExplainer"):
+        if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
             explainer = learner
             learner = explainer.learner
             self.learner = learner
