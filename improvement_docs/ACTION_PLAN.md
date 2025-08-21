@@ -121,7 +121,7 @@ Anything else proceeds in later phases without blocking Phase 1A.
 src/calibrated_explanations/core/
   __init__.py
   calibrated_explainer.py
-  wrapper_explainer.py
+  wrap_explainer.py
   online_explainer.py
   fast_explainer.py
   calibration.py

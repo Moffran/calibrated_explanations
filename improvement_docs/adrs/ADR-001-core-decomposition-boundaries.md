@@ -68,3 +68,5 @@ Phase 2+: Introduce cache/parallel modules behind feature flags.
 ## Decision Notes
 
 Reassess after Phase 1 for any boundary adjustments.
+
+Update 2025-08-21: Chosen filename for the wrapper explainer implementation is `wrap_explainer.py` (short form) instead of the earlier draft name `wrapper_explainer.py`. Action plan updated accordingly; no other impact.
