@@ -80,6 +80,12 @@ class CalibratedExplainer:
         using Venn-Abers predictors (classification) or
         conformal predictive systems (regression).
 
+        Notes
+        -----
+        Minimal lifecycle logging is available at INFO level. To enable, configure:
+
+        >>> import logging; logging.getLogger('calibrated_explanations').setLevel(logging.INFO)
+
         Initialize the :class:`.CalibratedExplainer` object for explaining the predictions of a black-box learner.
 
             Parameters

@@ -88,10 +88,9 @@ Release Alignment:
 - Deprecation shim (`core.py`).
 - Extended pre-commit suite (bandit, pip-audit, codespell).
 - Add ruff to development workflow (pre-commit or simple CI step).
+- Minimal logging scaffold (NullHandler + lifecycle INFO logs in core wrappers).
 
-**Remaining (Phase 0 minimal):**
-
-- Optional: single module logger stub (low effort) – only if needed before Phase 3.
+All minimal Phase 0 tasks completed; no remaining mandatory items.
 
 **Explicitly Deferred (moved to later phases):**
 

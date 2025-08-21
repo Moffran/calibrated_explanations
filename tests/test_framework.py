@@ -244,7 +244,7 @@ def test_explanation_functions_regression(regression_dataset):
     factual_explanations._is_one_sided()
     factual_explanations._is_thresholded()
     factual_explanations[0].is_multiclass()
-    factual_explanations.as_lime()
+    # factual_explanations.as_lime() # requires lime to be installed, which is optional
     # factual_explanations.as_shap() # generates an insane number of warnings
 
     alternative_explanations = ce.explore_alternatives(X_test)
@@ -253,7 +253,7 @@ def test_explanation_functions_regression(regression_dataset):
     alternative_explanations._is_one_sided()
     alternative_explanations._is_thresholded()
 
-    ce._preload_lime()
+    # ce._preload_lime() # requires lime to be installed, which is optional
     # ce._preload_shap() # generates an insane number of warnings
 
     print(ce)

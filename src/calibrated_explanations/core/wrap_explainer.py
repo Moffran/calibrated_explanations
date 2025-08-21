@@ -4,6 +4,7 @@
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
+import logging as _logging
 import warnings as _warnings
 
 from crepes.extras import MondrianCategorizer  # type: ignore
@@ -37,6 +38,7 @@ class WrapCalibratedExplainer:
             A predictive learner that can be used to predict the target variable.
         """
         self.mc = None
+        self._logger = _logging.getLogger(__name__)
         # Check if the learner is a CalibratedExplainer
         if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
             explainer = learner
@@ -46,8 +48,10 @@ class WrapCalibratedExplainer:
             self.fitted = True
             self.explainer = explainer
             self.calibrated = True
+            self._logger.info(
+                "Initialized from existing CalibratedExplainer (already fitted & calibrated)"
+            )
             return
-
         self.learner = learner
         self.explainer = None
         self.calibrated = False
@@ -83,6 +87,7 @@ class WrapCalibratedExplainer:
         reinitialize = bool(self.calibrated)
         self.fitted = False
         self.calibrated = False
+        self._logger.info("Fitting underlying learner: %s", type(self.learner).__name__)
         self.learner.fit(X_proper_train, y_proper_train, **kwargs)
         # delegate shared post-fit logic (also used by OnlineCalibratedExplainer)
         return self._finalize_fit(reinitialize)
@@ -137,6 +142,7 @@ class WrapCalibratedExplainer:
         if mc is not None:
             self.mc = mc
         kwargs["bins"] = self._get_bins(X_calibration, **kwargs)
+        self._logger.info("Calibrating with %s samples", getattr(X_calibration, "shape", ["?"])[0])
 
         if "mode" in kwargs:
             self.explainer = CalibratedExplainer(

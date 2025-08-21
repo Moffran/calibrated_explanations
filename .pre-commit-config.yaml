@@ -41,10 +41,10 @@ repos:
     hooks:
       - id: pytest
         name: pytest (quick suite)
-        entry: pytest -q --maxfail=1
+        entry: python -m pytest -q --maxfail=1
         language: system
         pass_filenames: false
-        stages: [pre-commit]
+        stages: [pre-push]
         types: [python]
 
 ci:

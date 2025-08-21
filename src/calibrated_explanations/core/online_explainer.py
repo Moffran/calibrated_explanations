@@ -6,6 +6,8 @@ Verbatim move from legacy core.py (no semantic changes)."""
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
+import logging as _logging
+
 import numpy as np
 
 from .wrap_explainer import WrapCalibratedExplainer  # fixed import
@@ -42,6 +44,9 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         reinitialize = bool(self.calibrated)
         self.fitted = False
         self.calibrated = False
+        _logging.getLogger(__name__).info(
+            "Online fit start (%s samples)", getattr(X_proper_train, "shape", ["?"])[0]
+        )
 
         if hasattr(self.learner, "fit"):
             self.learner.fit(X_proper_train, y_proper_train, **kwargs)
@@ -54,7 +59,9 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
                 kwargs.pop("classes", None)
                 self.learner.partial_fit(X_proper_train, y_proper_train, **kwargs)
 
-        return self._finalize_fit(reinitialize)
+        result = self._finalize_fit(reinitialize)
+        _logging.getLogger(__name__).info("Online fit complete")
+        return result
 
     def partial_fit(self, X, y, **kwargs):
         """Incrementally fit the model with samples X and y.
