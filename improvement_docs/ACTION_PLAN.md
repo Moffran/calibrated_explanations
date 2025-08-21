@@ -68,21 +68,47 @@ Release Alignment:
 
 ---
 
-## 5. Phase 0: Baselines, Tooling, Policy (Week 0)
+## 5. Phase 0: Minimal Baselines (Week 0)
 
-**Goals:** Create safety net so later refactors are measurable & reversible.
+*Adjusted for primarily single maintainer; ambitious tooling deferred.*
 
-**Tasks:**
+**Goals (Must):**
 
-- Benchmark harness: integrate `pytest-benchmark` (tag perf tests) + memory probe (tracemalloc / psutil).
-- Pre-commit: `ruff` (lint + formatting), `bandit`, `pip-audit`, `codespell` (optional).
-- Add `CONTRIBUTING` update with quality checklist.
-- Add `scripts/` utilities: baseline collector, API symbol list generator (compare drift).
-- Introduce semantic version & changelog automation (e.g., `python-semantic-release` or `towncrier`).
-- Decide environment management (e.g., `uv` or `pip-tools`) and produce lock file for CI reproducibility.
-- Establish logging policy (structured via `logging` + optional user-provided handler).
+1. Architectural intent captured (diagram + ADRs 001–007).
+2. Lightweight performance + API baseline (import time, micro timings, public symbols).
+3. Deprecation shim in place ahead of core split.
+4. Minimal linting (ruff) to prevent style drift.
 
-**Deliverables:** Baseline JSON, ADRs committed, CI updated, pre-commit enforced, lock file, logging guidelines.
+**Done Already:**
+
+- ADRs & component diagram.
+- Baseline collector (`scripts/collect_baseline.py`) & stored baselines (16 & 20 Aug).
+- Performance thresholds + regression check (`perf_thresholds.json`, `check_perf_regression.py`, CI workflow).
+- API snapshot & diff scripts.
+- Deprecation shim (`core.py`).
+- Extended pre-commit suite (bandit, pip-audit, codespell).
+- Add ruff to development workflow (pre-commit or simple CI step).
+
+**Remaining (Phase 0 minimal):**
+
+- Optional: single module logger stub (low effort) – only if needed before Phase 3.
+
+**Explicitly Deferred (moved to later phases):**
+
+- Benchmark harness (`pytest-benchmark`).
+- Capturing test runtime & coverage inside baseline JSON.
+- Environment lock / pin strategy.
+- Release automation (semantic-release / towncrier).
+- Formal logging policy & metrics aggregation.
+
+**Phase 0 Exit Criteria (Revised):**
+
+- Baseline + thresholds + CI regression guard green.
+- ADRs & diagram committed.
+- Ruff lint passes.
+- Deprecation warning emitted on legacy import.
+
+Anything else proceeds in later phases without blocking Phase 1A.
 
 ---
 
@@ -219,18 +245,20 @@ src/calibrated_explanations/core/
 
 ---
 
-## 13. Cross-Cutting Quality Gates
+## 13. Cross-Cutting Quality Gates (Scoped)
 
-| Category | Gate |
-|----------|------|
-| Lint/Style | ruff passes (no new ignores), black or ruff-format enforced |
-| Types | mypy incremental; by v0.7.0: no errors in `core/` & `api/` |
-| Tests | Coverage >90%, critical paths property-tested |
-| Performance | No p95 latency regression >10% vs previous release; improved targets logged |
-| Memory | Peak memory not >10% regression; mem snapshot diff stored |
-| Docs | Build passes, linkcheck clean, docstring coverage ≥85% |
-| Deprecations | All have warning, timeline, migration note |
-| Security | bandit & pip-audit clean (or documented justifications) |
+| Category | Phase 0–2 (Minimal) | Later Target (Phase 3–4) |
+|----------|---------------------|--------------------------|
+| Lint/Style | Ruff clean | No new ignores; stable formatting |
+| Types | (Deferred) | `core/` & new API mypy-clean by v0.7.0 |
+| Tests | Existing suite green | >90% coverage + property tests |
+| Performance | Import + micro runtime guard | Broader p95 + memory dashboards |
+| Memory | Basic RSS snapshot | ≤10% regression guard by Phase 3 |
+| Docs | Build succeeds | Linkcheck + docstring ≥85% |
+| Deprecations | Warnings present | Migration guide finalized Phase 4 |
+| Security | Manual review | bandit + audit integrated Phase 3 |
+
+Justification: reduce early overhead; delay heavier gates until after mechanical refactors stabilize.
 
 ---
 
