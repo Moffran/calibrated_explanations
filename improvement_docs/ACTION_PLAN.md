@@ -168,18 +168,50 @@ Dropped: `_legacy_core_shim.py` (superseded by existing top-level `core.py` shim
 
 **Inline Gap Analysis (current status):**
 
-| Item | Status | Notes |
-|------|--------|-------|
-| wrap_explainer.py, online_explainer.py | Done | Already split |
-| prediction/calibration/fast modules | Pending | To extract mechanically |
-| validation_stub.py | Pending | Placeholder only (Phase 1B real logic) |
-| Golden output tests | Missing | Must add before large extractions |
-| Import deprecation test | Missing | Add early |
-| API snapshot diff test | Missing | Add early |
-| Deprecation warning clarity | Pending | Message to be updated |
-| ADR-001 Accepted | Done | Status changed & filename note added |
-| Performance baseline re-check | Pending | Run after all moves |
-| `_legacy_core_shim.py` | Dropped | Not needed |
+| Item | Status (2025-08-21) | Notes |
+|------|---------------------|-------|
+| wrap_explainer.py, online_explainer.py | Done | Already split and imported in core package __all__ |
+| prediction.py / calibration.py / fast_explainer.py | Pending | Not yet created; next extraction wave (start with pure helpers: prediction → calibration → fast) |
+| validation_stub.py | Pending | To add as no-op placeholder before Phase 1B real validation logic |
+| Golden output tests | Done | `tests/test_golden_explanations.py` covers classification & regression serialization (first 5 instances); consider extending with hash of full probabilistic vectors later |
+| Import deprecation test | Done | `tests/test_deprecation_import.py` asserts single DeprecationWarning & symbol presence |
+| API snapshot diff test | Done | `tests/test_api_snapshot.py` guards root & core `__all__` |
+| Deprecation warning clarity | Partially Done | Warning emitted; optionally adjust wording to match policy text (non-blocking) |
+| CalibratedExplainer size reduction | Not Started | File still ~2.4K LOC; target is thin delegator after extractions |
+| Performance baseline re-check | Pending | Run `scripts/collect_baseline.py` after module creation & ensure ±5% latency / ±0.5% RSS |
+| Branch / PR strategy | Pending | Create feature branch `core-split` with staged commits per module extraction |
+| `_legacy_core_shim.py` | Dropped | Not needed, documented in ADR-001 |
+
+### 6.1 Current Progress Summary (as of 2025-08-21)
+
+Overall Phase 1A progress: ~35% (scaffolding + safety nets in place; extractions outstanding).
+
+Completed safeguards now allow safe mechanical moves without semantic drift risk:
+
+- Golden serialization tests (regression & classification)
+- API snapshot stability check
+- Single deprecation warning test
+- ADR-001 accepted & updated
+
+Remaining work focuses purely on structural extraction; no behavior changes planned.
+
+### 6.2 Planned Extraction Order & Commit Slices
+
+1. prediction.py: Move pure prediction / probability helper functions (no class-level state changes). Commit 1.
+2. calibration.py: Move interval learner + calibration assembly (currently `__initialize_interval_learner`, `__update_interval_learner`, related helpers). Commit 2.
+3. fast_explainer.py: Isolate fast path logic currently guarded by `self.__fast` flags. Commit 3.
+4. validation_stub.py: Introduce placeholder functions (e.g., `validate_inputs(...)` no-op) to anchor future Phase 1B validation integration. Commit 4.
+5. Shrink `calibrated_explainer.py`: Replace moved method bodies with thin delegations/imports; ensure public signatures unchanged. Commit 5.
+6. Run full test suite + baseline collector; compare metrics vs latest baseline JSON (record new `benchmarks/baseline_<date>.json`). Commit 6.
+
+Rollback strategy: If any golden/API snapshot test fails after a commit, revert that single commit, inspect diff for unintended logic movement, and re-attempt with smaller chunk.
+
+### 6.3 Additional (Optional) Hardening (non-blocking for Phase 1A)
+
+- Add a size assertion test ensuring `calibrated_explainer.py` LOC below a target (e.g., < 1000) to prevent regression.
+- Add content hash of golden explanation serialized JSON for stricter equality (rather than element-wise tolerance) once stable.
+- Refine deprecation warning text to: "The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead." (aligns with policy wording).
+
 
 Risk mitigation: perform extractions in two waves (prediction → calibration/fast) with golden tests after each wave; rollback if diff detected.
 
@@ -355,10 +387,16 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 
 ## 19. Next Immediate Steps
 
-1. Create `baseline` branch; implement Phase 0 tasks.
-2. Record and commit baseline metrics & ADRs.
-3. Open tracking issues / GitHub Project board columns: Backlog, In Progress, Review, Done, Risks.
-4. Begin mechanical split PR (Phase 1A) with golden test suite.
+1. (Completed) Phase 0 tasks & baselines committed.
+2. (Action) Open feature branch `core-split`.
+3. (Action) Extraction Wave 1: Introduce `prediction.py`; relocate pure helper functions; update imports; run tests.
+4. (Action) Extraction Wave 2: Introduce `calibration.py`; move interval learner initialization/update logic; run tests & golden checks.
+5. (Action) Extraction Wave 3: Introduce `fast_explainer.py` & migrate `fast` path code; add delegations.
+6. (Action) Add `validation_stub.py` with no-op placeholders used by `calibrated_explainer.py`.
+7. (Action) Prune `calibrated_explainer.py` retaining only orchestrating methods & datamodel; ensure exports unchanged.
+8. (Action) Re-run baseline metrics; store new JSON (naming convention preserved) and verify performance guard (±5% median/p95, ±0.5% RSS). Document in CHANGELOG fragment.
+9. (Action) Optionally refine deprecation warning text (non-blocking).
+10. (Action) Open PR referencing Phase 1A checklist; include diffstat and baseline comparison summary.
 
 ---
 
