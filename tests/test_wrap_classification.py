@@ -328,10 +328,15 @@ def test_wrap_binary_ce(binary_dataset):
 
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
 
-    # Add test for model persistence
-    dump(cal_exp, "model.joblib")
-    loaded_exp = load("model.joblib")
-    assert np.array_equal(cal_exp.predict(X_test), loaded_exp.predict(X_test))
+    # Add test for model persistence (use temporary file to avoid modifying repo files)
+    import os
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmpdir:  # pragma: no cover - OS specific path mgmt
+        model_path = os.path.join(tmpdir, "model.joblib")
+        dump(cal_exp, model_path)
+        loaded_exp = load(model_path)
+        assert np.array_equal(cal_exp.predict(X_test), loaded_exp.predict(X_test))
 
 
 def test_wrap_multiclass_ce(multiclass_dataset):
