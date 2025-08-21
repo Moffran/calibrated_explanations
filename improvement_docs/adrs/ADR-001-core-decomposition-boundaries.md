@@ -1,6 +1,6 @@
 # ADR-001: Core Decomposition Boundaries
 
-Status: Proposed
+Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD

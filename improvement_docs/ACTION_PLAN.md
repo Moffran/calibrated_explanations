@@ -113,31 +113,75 @@ Anything else proceeds in later phases without blocking Phase 1A.
 
 ## 6. Phase 1A: Mechanical Core Decomposition (Weeks 1-2)
 
-**Rule:** No logic or signature change; only move & re-export.
+**Rule:** No logic or signature change; only mechanical moves + delegation wrappers. Zero semantic drift.
 
-**New Structure:**
+**Target Internal File Layout (remaining extractions only):**
 
 ```text
 src/calibrated_explanations/core/
-  __init__.py
-  calibrated_explainer.py
-  wrap_explainer.py
-  online_explainer.py
-  fast_explainer.py
-  calibration.py
-  prediction.py
-  validation_stub.py (temporary)
-  _legacy_core_shim.py
+  __init__.py                (exports)
+  calibrated_explainer.py    (shrinking; delegates after splits)
+  wrap_explainer.py          (done)
+  online_explainer.py        (done)
+  prediction.py              (NEW: prediction / probability helper functions)
+  calibration.py             (NEW: interval learner & calibration assembly)
+  fast_explainer.py          (NEW: fast explanation path logic)
+  validation_stub.py         (NEW: placeholder no-op API for Phase 1B integration)
 ```
 
-**Deprecation Strategy:**
+Dropped: `_legacy_core_shim.py` (superseded by existing top-level `core.py` shim). Renaming divergence (wrapper→wrap) accepted and documented in ADR-001.
 
-- Keep `core.py` as thin shim re-exporting moved symbols; emit `DeprecationWarning` on import.
-- Provide `from calibrated_explanations.core import CalibratedExplainer` unchanged for v0.6.x.
+**Deprecation Strategy (clarified):**
 
-**Validation:** Snapshot test counts & benchmarks must match baseline ±5% runtime, ±0.5% memory.
+1. Retain legacy module `calibrated_explanations/core.py` as a shim issuing a single `DeprecationWarning` directing users to the package form.
+2. No additional alias files; removal not before v0.8.0 per deprecation policy.
+3. Warning text: "The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead." (Will be updated in code.)
 
-**Deliverables:** Files split, tests green, import path compatibility layer, ADR updated if drift.
+**Safety Nets (must be in place before major file shrinking):**
+
+- Golden output tests (classification + regression) comparing serialized explanation dicts before/after moves.
+- Import compatibility test asserting exactly one `DeprecationWarning` and symbol equivalence.
+- Public API snapshot diff (script) must be empty.
+
+**Performance & Memory Guard:**
+
+- Re-run `scripts/collect_baseline.py` post-split; median + p95 explanation latency within ±5% of pre-split baseline; peak RSS within ±0.5% (else investigate before merging).
+- No new benchmark harness (pytest-benchmark) introduced—explicitly deferred.
+
+**Acceptance Criteria:**
+
+1. All target modules created; `calibrated_explainer.py` reduced (only delegating wrappers + core datamodel).
+2. Tests green; golden fixtures unchanged byte-for-byte.
+3. API snapshot diff empty.
+4. Deprecation warning emitted once; message updated/clear.
+5. ADR-001 status set to Accepted (done) with note on file naming.
+6. Updated component diagram (optional) if it enumerates files; not a blocker.
+
+**Deliverables (Phase 1A Final):**
+
+- New modules (`prediction.py`, `calibration.py`, `fast_explainer.py`, `validation_stub.py`).
+- Updated `calibrated_explainer.py` delegations.
+- Golden test fixtures + associated tests.
+- Import compatibility + API snapshot tests.
+- Updated baseline comparison evidence (JSON + short note in CHANGELOG fragment).
+- Refined deprecation warning text.
+
+**Inline Gap Analysis (current status):**
+
+| Item | Status | Notes |
+|------|--------|-------|
+| wrap_explainer.py, online_explainer.py | Done | Already split |
+| prediction/calibration/fast modules | Pending | To extract mechanically |
+| validation_stub.py | Pending | Placeholder only (Phase 1B real logic) |
+| Golden output tests | Missing | Must add before large extractions |
+| Import deprecation test | Missing | Add early |
+| API snapshot diff test | Missing | Add early |
+| Deprecation warning clarity | Pending | Message to be updated |
+| ADR-001 Accepted | Done | Status changed & filename note added |
+| Performance baseline re-check | Pending | Run after all moves |
+| `_legacy_core_shim.py` | Dropped | Not needed |
+
+Risk mitigation: perform extractions in two waves (prediction → calibration/fast) with golden tests after each wave; rollback if diff detected.
 
 ---
 
