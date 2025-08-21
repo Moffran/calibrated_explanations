@@ -1053,39 +1053,18 @@ class CalibratedExplainer:
         return explanation
 
     def _validate_and_prepare_input(self, X_test):
-        """Validate and prepare the input data."""
-        if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
-            X_test = X_test.values
-        if len(X_test.shape) == 1:
-            X_test = X_test.reshape(1, -1)
-        if X_test.shape[1] != self.num_features:
-            raise ValueError("Number of features must match calibration data")
-        return X_test
+        """Delegate to extracted helper (Phase 1A)."""
+        from .prediction_helpers import validate_and_prepare_input as _vh
+
+        return _vh(self, X_test)
 
     def _initialize_explanation(
         self, X_test, low_high_percentiles, threshold, bins, features_to_ignore
     ):
-        """Initialize the explanation object."""
-        if self._is_mondrian():
-            if bins is None:
-                raise ValueError("Bins required for Mondrian explanations")
-            if len(bins) != len(X_test):
-                raise ValueError("The length of bins must match the number of added instances.")
-        explanation = CalibratedExplanations(self, X_test, threshold, bins, features_to_ignore)
+        """Delegate to extracted helper (Phase 1A)."""
+        from .prediction_helpers import initialize_explanation as _ih
 
-        if threshold is not None:
-            if "regression" not in self.mode:
-                raise Warning("The threshold parameter is only supported for mode='regression'.")
-            if isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
-                _warnings.warn(
-                    "Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.",
-                    stacklevel=2,
-                )
-            assert_threshold(threshold, X_test)
-        # explanation.low_high_percentiles = low_high_percentiles
-        elif "regression" in self.mode:
-            explanation.low_high_percentiles = low_high_percentiles
-        return explanation
+        return _ih(self, X_test, low_high_percentiles, threshold, bins, features_to_ignore)
 
     def _explain_predict_step(
         self, X_test, threshold, low_high_percentiles, bins, features_to_ignore
