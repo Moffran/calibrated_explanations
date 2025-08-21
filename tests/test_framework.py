@@ -208,7 +208,15 @@ def test_explanation_functions_classification(binary_dataset):
     factual_explanations._is_alternative()
     factual_explanations._is_one_sided()
     factual_explanations._is_thresholded()
-    factual_explanations.as_lime()
+    # LIME is an optional dependency; skip this portion if not installed
+    try:  # pragma: no cover - optional path
+        import importlib
+
+        importlib.import_module("lime.lime_tabular")
+    except ImportError:  # pragma: no cover - executed only when lime missing
+        pytest.skip("Skipping LIME export test because 'lime' is not installed")
+    else:
+        factual_explanations.as_lime()
     # factual_explanations.as_shap() # generates an insane number of warnings
 
     de = DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True)
