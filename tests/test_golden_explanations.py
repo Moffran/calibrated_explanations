@@ -13,28 +13,50 @@ REG_FILE = GOLDEN_DIR / "regression.json"
 
 
 def _serialize_classification(exp):
+    # Pull first 3 explanation objects for compact rule snapshot (string repr truncated)
+    rule_summaries = []
+    for e in exp.explanations[:3]:
+        s = str(e).splitlines()[:6]
+        rule_summaries.append(" ".join(s))
+    probs = None
+    if hasattr(exp, "probabilities") and getattr(exp, "probabilities") is not None:
+        probs = [
+            [round(float(v), 6) for v in row]
+            for row in exp.probabilities[:5]  # type: ignore[index]
+        ]
     return {
         "mode": "classification",
-        "version": getattr(exp, "version", None),
         "n_instances": len(exp.explanations),
-        "predictions": getattr(exp, "predictions", None).tolist()
-        if hasattr(exp, "predictions")
-        else None,
-        "probs_shape": list(exp.probabilities.shape) if hasattr(exp, "probabilities") else None,
+        "predictions": (exp.predictions[:5].tolist() if hasattr(exp, "predictions") else None),
+        "probabilities_head": probs,
         "class_labels": getattr(exp, "class_labels", None),
         "feature_names": getattr(exp, "feature_names", None),
+        "rule_summaries": rule_summaries,
     }
 
 
 def _serialize_regression(exp):
+    rule_summaries = []
+    for e in exp.explanations[:3]:
+        s = str(e).splitlines()[:6]
+        rule_summaries.append(" ".join(s))
+    lows = highs = None
+    if (
+        hasattr(exp, "lower")
+        and hasattr(exp, "upper")
+        and getattr(exp, "lower") is not None
+        and getattr(exp, "upper") is not None
+    ):
+        lows = [round(float(v), 6) for v in exp.lower[:5]]  # type: ignore[index]
+        highs = [round(float(v), 6) for v in exp.upper[:5]]  # type: ignore[index]
     return {
         "mode": "regression",
         "n_instances": len(exp.explanations),
-        "predictions": getattr(exp, "predictions", None).tolist()
-        if hasattr(exp, "predictions")
-        else None,
-        "intervals_shape": [len(exp.lower), len(exp.upper)] if hasattr(exp, "lower") else None,
+        "predictions": (exp.predictions[:5].tolist() if hasattr(exp, "predictions") else None),
+        "lower_head": lows,
+        "upper_head": highs,
         "feature_names": getattr(exp, "feature_names", None),
+        "rule_summaries": rule_summaries,
     }
 
 

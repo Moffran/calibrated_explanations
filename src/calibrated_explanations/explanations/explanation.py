@@ -152,7 +152,13 @@ class CalibratedExplanation(ABC):
             self.feature_weights[key] = feature_weights[key][index]
             self.feature_predict[key] = feature_predict[key][index]
         for key in prediction:
-            self.prediction[key] = prediction[key][index]
+            # Special handling: full probability matrix stored under magic key
+            if key == "__full_probabilities__":
+                self.prediction[key] = prediction[
+                    key
+                ]  # keep whole matrix (used for golden baseline only)
+            else:
+                self.prediction[key] = prediction[key][index]
         self.y_threshold = (
             y_threshold
             if np.isscalar(y_threshold) or isinstance(y_threshold, tuple)
@@ -723,6 +729,31 @@ class FactualExplanation(CalibratedExplanation):
         )
         self._check_preconditions()
         self._get_rules()
+        # Cache per-instance prediction probabilities for golden baseline (classification)
+        try:
+            if not self.is_regression():
+                # Access stored full probability matrix via parent prediction mapping
+                full_probs = self.prediction.get("__full_probabilities__")
+                if full_probs is not None:
+                    # full_probs may be a tuple (proba_matrix, classes) for multiclass
+                    if isinstance(full_probs, tuple) and len(full_probs) >= 1:
+                        proba_matrix = full_probs[0]
+                    else:
+                        proba_matrix = full_probs
+                    # Attach whole matrix on first explanation, then propagate
+                    if self.index == 0:
+                        self.prediction_probabilities = proba_matrix
+                    else:
+                        # ensure earlier explanation already stored full matrix
+                        self.prediction_probabilities = getattr(
+                            self.calibrated_explanations.explanations[0],
+                            "prediction_probabilities",
+                            proba_matrix,
+                        )
+                else:
+                    self.prediction_probabilities = None
+        except Exception:  # pragma: no cover - defensive
+            self.prediction_probabilities = None
 
     def __repr__(self):
         """Return a string representation of the factual explanation."""

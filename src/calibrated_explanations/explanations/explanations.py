@@ -60,6 +60,13 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self.bins = bins
         self.total_explain_time = None
         self.features_to_ignore = features_to_ignore if features_to_ignore is not None else []
+        # Derived caches (set during finalize of individual explanations)
+        self._feature_names_cache = None  # populated lazily from underlying explainer
+        self._predictions_cache = None
+        self._probabilities_cache = None  # classification only
+        self._lower_cache = None  # regression only
+        self._upper_cache = None
+        self._class_labels_cache = None  # classification label mapping for golden baseline
 
     def __iter__(self):
         """Return an iterator for the explanations."""
@@ -154,6 +161,91 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             A list of prediction value.
         """
         return [e.predict for e in self.explanations]
+
+    # ---- Rich baseline exposure (Phase 1A golden snapshot enrichment) ----
+    @property
+    def feature_names(self):  # consistent naming with underlying explainer
+        if self._feature_names_cache is None:
+            # Underlying FrozenCalibratedExplainer exposes feature_names via original explainer
+            try:
+                self._feature_names_cache = self.calibrated_explainer._explainer.feature_names  # type: ignore[attr-defined]  # noqa: SLF001
+            except Exception:  # pragma: no cover - defensive
+                self._feature_names_cache = None
+        return self._feature_names_cache
+
+    @property
+    def class_labels(self):
+        if self._class_labels_cache is None:
+            try:
+                labels = getattr(self.calibrated_explainer._explainer, "class_labels", None)  # noqa: SLF001
+                if labels is not None and isinstance(labels, dict):
+                    # normalize to list ordered by class index if dict provided
+                    # assume keys are numeric class indices
+                    labels = [labels[k] for k in sorted(labels.keys())]
+                self._class_labels_cache = labels
+            except Exception:  # pragma: no cover
+                self._class_labels_cache = None
+        return self._class_labels_cache
+
+    @property
+    def predictions(self):  # noqa: D401
+        """Vector of scalar predictions for the explained instances (cached)."""
+        if self._predictions_cache is None:
+            try:
+                self._predictions_cache = np.asarray([e.predict for e in self.explanations])
+            except Exception:  # pragma: no cover
+                self._predictions_cache = None
+        return self._predictions_cache
+
+    @property
+    def probabilities(self):  # classification only
+        if self._probabilities_cache is None:
+            try:
+                # Each explanation may store:
+                #  (a) its own probability vector (shape (n_classes,)) OR
+                #  (b) the full matrix (n_instances, n_classes) due to earlier enrichment
+                raw = [getattr(e, "prediction_probabilities", None) for e in self.explanations]
+                if all(r is not None for r in raw):
+                    # If first is a tuple (should not now), handle defensively
+                    first = raw[0]
+                    if isinstance(first, tuple):  # pragma: no cover - defensive
+                        first = first[0]
+                    first = np.asarray(first)
+                    if first.ndim == 2 and first.shape[0] == len(self.explanations):
+                        # Case (b): each explanation redundantly holds full matrix
+                        self._probabilities_cache = first
+                    else:
+                        # Case (a): stack per-instance vectors
+                        self._probabilities_cache = np.vstack(raw)
+            except Exception:  # pragma: no cover
+                self._probabilities_cache = None
+        return self._probabilities_cache
+
+    @property
+    def lower(self):  # regression only
+        if self._lower_cache is None:
+            try:
+                lows = [
+                    getattr(e, "prediction_interval", (None, None))[0] for e in self.explanations
+                ]
+                if any(low is not None for low in lows):
+                    self._lower_cache = np.asarray(lows)
+            except Exception:  # pragma: no cover
+                self._lower_cache = None
+        return self._lower_cache
+
+    @property
+    def upper(self):  # regression only
+        if self._upper_cache is None:
+            try:
+                highs = [
+                    getattr(e, "prediction_interval", (None, None))[1] for e in self.explanations
+                ]
+                if any(h is not None for h in highs):
+                    self._upper_cache = np.asarray(highs)
+            except Exception:  # pragma: no cover
+                self._upper_cache = None
+        return self._upper_cache
 
     def _is_thresholded(self) -> bool:
         """Check if the explanations are thresholded."""

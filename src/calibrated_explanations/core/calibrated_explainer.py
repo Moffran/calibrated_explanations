@@ -13,6 +13,7 @@ conformal predictive systems (regression).
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
+import logging
 import warnings as _warnings
 from time import time
 
@@ -1101,6 +1102,30 @@ class CalibratedExplainer:
             "high": high,
             "classes": (predicted_class if self.is_multiclass() else np.ones(predict.shape)),
         }
+        # Phase 1A golden baseline enrichment: capture full per-class probability matrix for classification
+        # This enables downstream serialization of a stable probabilities_head in golden tests.
+        if self.mode == "classification":  # store full calibrated probability matrix
+            try:  # pragma: no cover - defensive
+                if self.is_multiclass():
+                    if self.is_fast():
+                        full_probs = self.interval_learner[self.num_features].predict_proba(  # type: ignore[index]
+                            X_test, bins=bins
+                        )
+                    else:
+                        full_probs = self.interval_learner.predict_proba(X_test, bins=bins)
+                else:  # binary returns shape (n,2)
+                    if self.is_fast():
+                        full_probs = self.interval_learner[self.num_features].predict_proba(  # type: ignore[index]
+                            X_test, bins=bins
+                        )
+                    else:
+                        full_probs = self.interval_learner.predict_proba(X_test, bins=bins)
+                # Store separately (not per-instance index) to avoid indexing issues in CalibratedExplanation
+                prediction["__full_probabilities__"] = full_probs
+            except Exception as exc:  # pragma: no cover
+                logging.getLogger("calibrated_explanations").debug(
+                    "Failed to compute full calibrated probabilities: %s", exc
+                )
 
         # Step 1: Predict the test set and the perturbed instances to get the predictions and intervals
         # Sub-step 1.a: Add the test set
