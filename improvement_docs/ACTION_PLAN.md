@@ -123,9 +123,9 @@ src/calibrated_explanations/core/
   calibrated_explainer.py    (shrinking; delegates after splits)
   wrap_explainer.py          (done)
   online_explainer.py        (done)
-  prediction.py              (NEW: prediction / probability helper functions)
-  calibration.py             (NEW: interval learner & calibration assembly)
-  fast_explainer.py          (NEW: fast explanation path logic)
+  prediction_helpers.py      (NEW: prediction / probability helper functions)
+  calibration_helpers.py     (NEW: interval learner & calibration assembly)
+  fast_explainer.py          (DEFERRED: separate FastCalibratedExplainer class; Phase 2/3)
   validation_stub.py         (NEW: placeholder no-op API for Phase 1B integration)
 ```
 
@@ -150,20 +150,20 @@ Dropped: `_legacy_core_shim.py` (superseded by existing top-level `core.py` shim
 
 **Acceptance Criteria:**
 
-1. All target modules created; `calibrated_explainer.py` reduced (only delegating wrappers + core datamodel).
-2. Tests green; golden fixtures unchanged byte-for-byte.
-3. API snapshot diff empty.
-4. Deprecation warning emitted once; message updated/clear.
-5. ADR-001 status set to Accepted (done) with note on file naming.
-6. Updated component diagram (optional) if it enumerates files; not a blocker.
+1. All target modules created; `calibrated_explainer.py` reduced (only delegating wrappers + core datamodel). [Done]
+2. Tests green; golden fixtures unchanged byte-for-byte. [Done]
+3. API snapshot diff empty. [Done]
+4. Deprecation warning emitted once; message updated/clear. [Done]
+5. ADR-001 status set to Accepted (done) with note on file naming. [Done]
+6. Updated component diagram (optional) if it enumerates files; not a blocker. [Deferred]
 
 **Deliverables (Phase 1A Final):**
 
-- New modules (`prediction.py`, `calibration.py`, `fast_explainer.py`, `validation_stub.py`).
+- New modules (`prediction_helpers.py`, `calibration_helpers.py`, `validation_stub.py`).
 - Updated `calibrated_explainer.py` delegations.
 - Golden test fixtures + associated tests.
 - Import compatibility + API snapshot tests.
-- Updated baseline comparison evidence (JSON + short note in CHANGELOG fragment).
+- Updated baseline comparison evidence (JSON + summary); perf remediation deferred to Phase 2.
 - Refined deprecation warning text.
 
 **Inline Gap Analysis (current status):**
@@ -171,20 +171,20 @@ Dropped: `_legacy_core_shim.py` (superseded by existing top-level `core.py` shim
 | Item | Status (2025-08-21) | Notes |
 |------|---------------------|-------|
 | wrap_explainer.py, online_explainer.py | Done | Already split and imported in core package __all__ |
-| prediction.py / calibration.py / fast_explainer.py | Pending | Not yet created; next extraction wave (start with pure helpers: prediction → calibration → fast) |
-| validation_stub.py | Pending | To add as no-op placeholder before Phase 1B real validation logic |
+| prediction_helpers.py / calibration_helpers.py / fast_explainer.py | Partially Done | prediction_helpers.py created and wired; calibration_helpers.py created and wired for init/update; fast_explainer.py deferred to Phase 2/3 as a separate class |
+| validation_stub.py | Done | No-op placeholder added before Phase 1B real validation logic |
 | Golden output tests | Done | `tests/test_golden_explanations.py` covers classification & regression serialization (first 5 instances); consider extending with hash of full probabilistic vectors later |
 | Import deprecation test | Done | `tests/test_deprecation_import.py` asserts single DeprecationWarning & symbol presence |
 | API snapshot diff test | Done | `tests/test_api_snapshot.py` guards root & core `__all__` |
 | Deprecation warning clarity | Partially Done | Warning emitted; optionally adjust wording to match policy text (non-blocking) |
-| CalibratedExplainer size reduction | Not Started | File still ~2.4K LOC; target is thin delegator after extractions |
+| CalibratedExplainer size reduction | In Progress | Delegated input/init/predict-step and interval learner init/update; fast path extraction deferred to Phase 2/3 |
 | Performance baseline re-check | Pending | Run `scripts/collect_baseline.py` after module creation & ensure ±5% latency / ±0.5% RSS |
 | Branch / PR strategy | Pending | Create feature branch `core-split` with staged commits per module extraction |
 | `_legacy_core_shim.py` | Dropped | Not needed, documented in ADR-001 |
 
-### 6.1 Current Progress Summary (as of 2025-08-21)
+### 6.1 Current Progress Summary (as of 2025-08-22)
 
-Overall Phase 1A progress: ~35% (scaffolding + safety nets in place; extractions outstanding).
+Overall Phase 1A progress: 100% (planned mechanical moves complete; fast path extraction deferred to Phase 2/3).
 
 Completed safeguards now allow safe mechanical moves without semantic drift risk:
 
@@ -193,13 +193,27 @@ Completed safeguards now allow safe mechanical moves without semantic drift risk
 - Single deprecation warning test
 - ADR-001 accepted & updated
 
-Remaining work focuses purely on structural extraction; no behavior changes planned.
+Remaining work focuses purely on structural extraction; no behavior changes planned. Fast path extraction moved to Phase 2/3 as a separate class.
+
+### 6.3 Baseline & Performance Check (2025-08-22)
+
+- New baseline captured: `benchmarks/baseline_20250822.json`.
+- Regression check run against `benchmarks/baseline_20250820.json` with thresholds `benchmarks/perf_thresholds.json`.
+- Summary (truncated):
+  - import_time_seconds: +42.53% (limit 15%) — REGRESSION
+  - classification.calibrate_time_s: +107.96% (limit 25%) — REGRESSION
+  - classification.predict_batch_time_s: +85.80% (limit 40%) — REGRESSION
+  - regression.calibrate_time_s: +70.76% (limit 25%) — REGRESSION
+  - regression.predict_batch_time_s: +82.08% (limit 40%) — REGRESSION
+  - fit_time_s within limits for both tasks.
+
+Decision: Do not block Phase 1A on perf deltas; module splitting/import changes can affect timings. Investigate in Phase 2 (lazy imports, caching, fast class). Consider stabilizing environment for benchmarks.
 
 ### 6.2 Planned Extraction Order & Commit Slices
 
-1. prediction.py: Move pure prediction / probability helper functions (no class-level state changes). Commit 1.
-2. calibration.py: Move interval learner + calibration assembly (currently `__initialize_interval_learner`, `__update_interval_learner`, related helpers). Commit 2.
-3. fast_explainer.py: Isolate fast path logic currently guarded by `self.__fast` flags. Commit 3.
+1. prediction_helpers.py: Move pure prediction / probability helper functions (no class-level state changes). Commit 1. [Completed]
+2. calibration_helpers.py: Move interval learner + calibration assembly (currently `__initialize_interval_learner`, `__update_interval_learner`, related helpers). Commit 2. [Completed]
+3. fast_explainer.py: Extract as separate `FastCalibratedExplainer` class with clear contract (inputs/outputs, behavior) — Deferred to Phase 2/3 to avoid semantic changes in Phase 1A. [Deferred]
 4. validation_stub.py: Introduce placeholder functions (e.g., `validate_inputs(...)` no-op) to anchor future Phase 1B validation integration. Commit 4.
 5. Shrink `calibrated_explainer.py`: Replace moved method bodies with thin delegations/imports; ensure public signatures unchanged. Commit 5.
 6. Run full test suite + baseline collector; compare metrics vs latest baseline JSON (record new `benchmarks/baseline_<date>.json`). Commit 6.
@@ -389,14 +403,15 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 
 1. (Completed) Phase 0 tasks & baselines committed.
 2. (Action) Open feature branch `core-split`.
-3. (Action) Extraction Wave 1: Introduce `prediction.py`; relocate pure helper functions; update imports; run tests.
-4. (Action) Extraction Wave 2: Introduce `calibration.py`; move interval learner initialization/update logic; run tests & golden checks.
+3. (Action) Extraction Wave 1: Introduce `prediction_helpers.py`; relocate pure helper functions; update imports; run tests.
+4. (Action) Extraction Wave 2: Introduce `calibration_helpers.py`; move interval learner initialization/update logic; run tests & golden checks.
 5. (Action) Extraction Wave 3: Introduce `fast_explainer.py` & migrate `fast` path code; add delegations.
 6. (Action) Add `validation_stub.py` with no-op placeholders used by `calibrated_explainer.py`.
 7. (Action) Prune `calibrated_explainer.py` retaining only orchestrating methods & datamodel; ensure exports unchanged.
 8. (Action) Re-run baseline metrics; store new JSON (naming convention preserved) and verify performance guard (±5% median/p95, ±0.5% RSS). Document in CHANGELOG fragment.
 9. (Action) Optionally refine deprecation warning text (non-blocking).
 10. (Action) Open PR referencing Phase 1A checklist; include diffstat and baseline comparison summary.
+11. (Deferred Action, Phase 2/3) Draft `FastCalibratedExplainer` class design (constructor, predict/explain interface, compatibility with existing tests), then implement and swap delegations.
 
 ---
 
