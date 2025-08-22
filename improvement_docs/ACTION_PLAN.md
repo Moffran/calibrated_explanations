@@ -233,17 +233,141 @@ Risk mitigation: perform extractions in two waves (prediction → calibration/fa
 
 ## 7. Phase 1B: Exceptions, Validation, Typing Core (Week 3)
 
-(Moved earlier from original Week 3+5-6 to avoid duplicate edits.)
+Purpose: lock in stability and developer ergonomics immediately after the mechanical split. This phase replaces the temporary validation stub, introduces a clear exception taxonomy, establishes argument normalization, and adds foundational typing and CI gates—without changing external behavior.
 
-**Tasks:**
+### 7.1 Scope & Non-Goals
 
-- Introduce `exceptions.py` (custom hierarchy).
-- Implement `validation.py` replacing `validation_stub.py`.
-- Central argument normalization helper (`api/params.py`): alias mapping + canonicalization.
-- Add minimal type hints to core public APIs; enable `mypy --strict` gradually (start permissive, escalate).
-- Replace generic exceptions across refactored modules.
+In scope:
 
-**Deliverables:** 80%+ reduction of pylint disables tied to naming/args; typed stubs for main classes; validation unit tests; doc examples for error handling.
+- Replace `validation_stub.py` with a real validation module and wire it in (no behavior changes beyond raising clearer errors earlier).
+- Introduce a project-wide exception hierarchy and replace ad-hoc exceptions across `core/` modules.
+- Add parameter alias canonicalization in a dedicated module to reduce argument drift in later phases.
+- Add targeted type hints for public APIs and critical helpers; mypy in permissive mode to start.
+- CI: add mypy and keep ruff; fail on new errors only.
+
+Out of scope (deferred to Phases 2–4):
+
+- API surface changes or signature renames (only aliases + warnings allowed later).
+- Performance improvements.
+- Extensive doc overhaul (only essentials for the new error/validation behavior now).
+
+### 7.2 Work Breakdown (files, tasks, commit slices)
+
+#### 7.2.1 Exceptions (commit slice 1)
+
+- File: `src/calibrated_explanations/core/exceptions.py`
+- Classes (tentative; see ADR-002):
+  - `CalibratedError(Exception)` base (non-recoverable, library-specific).
+  - `ValidationError(CalibratedError)` for input/config validation.
+  - `ConfigurationError(CalibratedError)` invalid combos of parameters.
+  - `ModelNotSupportedError(CalibratedError)` model type not supported by explainer.
+  - `DataShapeError(ValidationError)` mismatched shapes/features/labels.
+  - `NotFittedError(CalibratedError)` operations requiring prior fit.
+  - `ConvergenceError(CalibratedError)` calibration/optimization didn’t converge.
+  - `SerializationError(CalibratedError)` explanation JSON/schema issues.
+- Map/replace common generic exceptions (ValueError/TypeError/RuntimeError) in the core path to these classes without changing user-facing messages yet.
+
+#### 7.2.2 Validation engine (commit slice 2)
+
+- Remove stub and add real validator:
+  - Replace: `src/calibrated_explanations/core/validation_stub.py`
+  - With: `src/calibrated_explanations/core/validation.py`
+- Functions (contracts below):
+  - `validate_inputs(X, y=None, task="auto", allow_nan=False, require_y=False, n_features=None, class_labels=None, check_finite=True) -> None`
+  - `validate_model(model) -> None` (basic protocol checks: predict/predict_proba as applicable).
+  - `validate_fit_state(explainer, require=True) -> None`
+  - `infer_task(X, y, model) -> Literal["classification","regression"]` (best-effort; no hard dependency outside core).
+- Centralize numpy/pandas checks, sparse detection, NaN policy, dtype/shape checks, and class label sanity. Raise the new exceptions.
+
+#### 7.2.3 Parameter canonicalization (commit slice 3)
+
+- File: `src/calibrated_explanations/api/params.py`
+- Artifacts:
+  - `ALIAS_MAP = {"alpha": "low_high_percentiles", "alphas": "low_high_percentiles", "n_jobs": "parallel_workers", ...}` (start minimal, extend later in Phase 2).
+  - `canonicalize_kwargs(kwargs: dict) -> dict` (returns a copy with canonical keys; preserves originals for warning messages if needed later).
+  - `validate_param_combination(kwargs: dict) -> None` raising `ConfigurationError` for mutually exclusive or invalid combos.
+- Wire this at the boundary constructors/wrappers in `calibrated_explainer.py`, `wrap_explainer.py`, and `online_explainer.py` without changing external signatures.
+
+#### 7.2.4 Typing foundation (commit slice 4)
+
+- Add type hints to public entry points and newly added modules.
+- Mypy configuration:
+  - Add `tool.mypy` to `pyproject.toml` with relaxed defaults: `ignore_missing_imports = true`, `warn_unused_ignores = true`, `disable_error_code = ["annotation-unchecked"]` initially.
+  - Enable strict per-module gradually via `mypy.ini` or pyproject module overrides for `core/validation.py` and `core/exceptions.py`.
+- Goals this phase: `core/exceptions.py` and `core/validation.py` are mypy-clean; public methods in `CalibratedExplainer` and wrappers have typed signatures and return types.
+
+#### 7.2.5 CI and pre-commit (commit slice 5)
+
+- Add mypy step to CI (non-blocking for legacy files; blocking for the two new modules + changed public APIs).
+- Keep ruff; ensure new code has no new disables. Prefer local `# noqa` only when justified and documented.
+
+#### 7.2.6 Wiring & messaging (commit slice 6)
+
+- Replace calls to `validation_stub.*` with `validation.*` across core.
+- Update error raising sites to the new exception classes.
+- Maintain existing log messages; add one-line INFO messages around validation boundaries only if already scaffolded.
+
+### 7.3 Contracts (tiny spec)
+
+Inputs/outputs and errors:
+
+- `validate_inputs(...)` raises `ValidationError | DataShapeError` on failure, else returns `None`.
+- `validate_model(model)` raises `ModelNotSupportedError` when required methods are missing for the inferred/selected task.
+- `validate_fit_state(explainer, require=True)` raises `NotFittedError` when required and not fitted.
+- `canonicalize_kwargs(kwargs)` returns a new dict; lossless for unknown keys; does not emit warnings in 1B (warnings deferred to Phase 2).
+
+Success criteria:
+
+- No change to successful paths or serialized outputs versus Phase 1A golden tests.
+- All new modules are covered by unit tests; overall test suite remains green.
+
+### 7.4 Tests to add
+
+- `tests/test_exceptions.py`: hierarchy, isinstance relationships, pickling of exceptions (optional), repr/str stability.
+- `tests/test_validation.py`: matrix of cases
+  - X only (2D), X,y shapes mismatch, y dtypes invalid, NaN policy raise/allow, single-feature/row, sparse inputs, missing `predict_proba` for classification.
+  - Model protocol tests using simple dummy estimators.
+- `tests/test_params_canonicalization.py`:
+  - Aliases map to canonical keys; unknown keys preserved; conflict detection triggers `ConfigurationError`.
+- Integration assertions:
+  - In calibrated explainer paths, invalid inputs now raise `ValidationError` instead of generic `ValueError` (update tests accordingly without changing messages where asserted).
+
+### 7.5 Documentation & ADRs
+
+- Update ADR-002 (Validation & Exception Design): status → Accepted; reference module paths and exception taxonomy finalized in 1B.
+- Short docs page section or README snippet: “Error handling and validation”—what to expect, common errors, quick examples.
+- Add API reference stubs for `core.exceptions` and `core.validation`.
+
+### 7.6 Acceptance Criteria (exit checklist)
+
+1. `core/exceptions.py` and `core/validation.py` implemented, imported by `core/__init__.py` as needed. [Done when merged]
+2. All references to `validation_stub` removed; replaced with `validation`. [Done]
+3. Golden serialization tests unchanged vs Phase 1A baselines. [Guard]
+4. At least 20 targeted tests added across exceptions/validation/params; all green in CI. [Guard]
+5. Mypy runs in CI; new modules mypy-clean; no increase in ruff violations. [Guard]
+6. ADR-002 updated to Accepted; ACTION_PLAN reflects 1B completion scope. [Process]
+
+### 7.7 Milestones & Timeline (1 week)
+
+- Day 1: exceptions module + unit tests; open PR 1 (fast review).
+- Day 2: validation module, replace stub; tests; open PR 2.
+- Day 3: parameter canonicalization + wiring; tests; open PR 3.
+- Day 4: typing pass + mypy CI; adapt call sites; open PR 4.
+- Day 5: integration polish, docs/ADR-002 updates, finalize. Re-run baselines to confirm no behavioral drift (perf deltas not gating in 1B).
+
+### 7.8 Risks & Mitigations
+
+- Risk: Raising earlier/stricter errors could break user flows. Mitigation: retain error messages and timing as much as possible; only swap exception types; document mapping.
+- Risk: Hidden dependencies on old generic exceptions in tests. Mitigation: update tests in the same PR; keep message substrings stable.
+- Risk: Mypy noise. Mitigation: module-scoped strictness; start permissive, iterate.
+
+### 7.9 Deliverables (Phase 1B Final)
+
+- New: `core/exceptions.py`, `core/validation.py`, `api/params.py`.
+- Rewired: `calibrated_explainer.py`, `wrap_explainer.py`, `online_explainer.py` to call new validation and exceptions.
+- CI: mypy step, config in `pyproject.toml`.
+- Tests: exceptions/validation/params + updated integration tests.
+- Docs: ADR-002 to Accepted; short error-handling guide; API stubs for new modules.
 
 ---
 

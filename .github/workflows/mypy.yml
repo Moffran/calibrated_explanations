@@ -1,0 +1,33 @@
+name: mypy
+on:
+  push:
+    paths:
+      - 'src/calibrated_explanations/core/**'
+      - 'src/calibrated_explanations/api/**'
+      - 'pyproject.toml'
+      - '.github/workflows/mypy.yml'
+  pull_request:
+    paths:
+      - 'src/calibrated_explanations/core/**'
+      - 'src/calibrated_explanations/api/**'
+      - 'pyproject.toml'
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install .
+          pip install mypy
+      - name: Run mypy
+        run: |
+          mypy --version
+          mypy src/calibrated_explanations --config-file pyproject.toml
