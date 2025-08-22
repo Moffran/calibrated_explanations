@@ -245,6 +245,8 @@ In scope:
 - Add targeted type hints for public APIs and critical helpers; mypy in permissive mode to start.
 - CI: add mypy and keep ruff; fail on new errors only.
 
+- Reported Issue (Non-numeric input support): validation should detect DataFrame inputs and non-numeric columns early, with actionable `ValidationError`/`DataShapeError` messages to pave the way for native preprocessing in Phase 2.
+
 Out of scope (deferred to Phases 2–4):
 
 - API surface changes or signature renames (only aliases + warnings allowed later).
@@ -278,6 +280,7 @@ Out of scope (deferred to Phases 2–4):
   - `validate_fit_state(explainer, require=True) -> None`
   - `infer_task(X, y, model) -> Literal["classification","regression"]` (best-effort; no hard dependency outside core).
 - Centralize numpy/pandas checks, sparse detection, NaN policy, dtype/shape checks, and class label sanity. Raise the new exceptions.
+  - Include DataFrame-aware checks to support the reported need for native non-numeric inputs (see Phase 2 plan).
 
 #### 7.2.3 Parameter canonicalization (commit slice 3)
 
@@ -384,7 +387,20 @@ Success criteria:
 - Add deprecation warnings for old parameter names (scheduled removal v0.8.0).
 - Auto-migration script: scans notebooks/scripts and rewrites deprecated args optionally.
 
+- Reported Issue (Explanations storage redesign):
+  - Introduce an internal Explanation domain model (e.g., `explanations/models.py`) with `Explanation` and `FeatureRule` types, structuring rules as an explicit list. Maintain the public legacy dict shape via adapters to preserve golden outputs and API behavior. This resolves the “mixed singleton vs. list” storage complexity and simplifies filtering/iteration.
+  - Add iteration/filter helpers that operate on the new model; public APIs continue to emit legacy dicts until schema v1 is adopted (Phase 5).
+
+- Reported Issue (Native non-numeric input support):
+  - In `wrap_explainer.py`, add `auto_encode=True|False|'auto'` and support a user-supplied `preprocessor` (e.g., ColumnTransformer/Pipeline). Default behavior preserves existing numeric path; when enabled, apply `utils.helper.transform_to_numeric` or user transformer. Persist mappings and attach to provenance for reproducibility.
+  - Extend `ExplainerConfig` with `preprocessor`, `auto_encode`, and unseen-category policy. Ensure predict/online paths reuse the same mapping deterministically.
+
 **Deliverables:** Updated docs with old vs new side-by-side, migration guide draft (v0.5.x → v0.6.0), CLI snippet for migration script, increased docstring coverage.
+
+Additional Deliverables (Phase 2, tied to reported issues):
+
+- Internal domain model implemented with adapter parity tests against golden fixtures; no public change yet.
+- Preprocessing path integrated in wrapper with round-trip tests on categorical/text DataFrames; numeric-only paths remain unchanged.
 
 ---
 
@@ -437,6 +453,7 @@ Success criteria:
 
 - Versioned JSON spec (`schemas/explanation_schema_v1.json`) capturing: inputs, model metadata, calibration params, feature attributions, uncertainty intervals, provenance (library versions, timestamp, git commit).
 - Serialization utilities (`serialization.py`) + round-trip tests.
+- Align the schema with the internal domain model introduced in Phase 2 by representing feature rules as `rules: []`. Provide a migration tool from legacy dicts. This directly addresses the earlier reported issue about explanation storage structure.
 
 **Visualization Abstraction:**
 
@@ -550,6 +567,8 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 - ADR-005: Explanation JSON schema versioning
 - ADR-006: Plugin registry trust model
 - ADR-007: Visualization abstraction layer
+- ADR-008: Explanation domain model & legacy-compatibility strategy
+- ADR-009: Input preprocessing & mapping persistence policy
 
 **Glossary:**
 

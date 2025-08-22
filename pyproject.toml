@@ -75,8 +75,7 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 
 [tool.mypy]
-python_version = "3.8"
-packages = ["calibrated_explanations"]
+python_version = "3.11"
 ignore_missing_imports = true
 warn_unused_ignores = true
 warn_return_any = false
@@ -84,6 +83,9 @@ warn_unused_configs = true
 disallow_untyped_defs = false
 show_error_codes = true
 exclude = ["build", "benchmarks", "docs", "notebooks", "scripts", "evaluation"]
+# Keep mypy focused on explicitly provided files in CI and avoid following imports.
+follow_imports = "skip"
+check_untyped_defs = false
 
 # Phase 1B typing: keep permissive defaults; enable stricter checks per-module below.
 [[tool.mypy.overrides]]

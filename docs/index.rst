@@ -27,6 +27,8 @@ Contents
 
     getting_started
     citing
+   contributing
+   pr_guide
     calibrated_explanations
 
 Introduction
