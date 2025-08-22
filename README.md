@@ -562,13 +562,24 @@ the project page on [GitHub](https://github.com/Moffran/calibrated_explanations)
 You can find a detailed guide for contributions in
 [CONTRIBUTING.md](https://github.com/Moffran/calibrated_explanations/blob/main/CONTRIBUTING.md).
 
+### Roadmap and ADRs
+
+We are evolving the package according to a written Action Plan and ADRs:
+
+- Action Plan: see `improvement_docs/ACTION_PLAN.md` in the repository. Phases guide what changes are accepted at any given time.
+- ADRs: see `improvement_docs/adrs/` for accepted and proposed architectural decisions.
+
+When opening a PR, please align with the current phase and reference the relevant Action Plan sections/ADRs. The PR template includes a short checklist to help.
+
 [Table of Content](#table-of-contents)
+
 
 
 ## Documentation
 For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
 
 [Table of Content](#table-of-contents)
+
 
 
 ## License
@@ -594,6 +605,7 @@ modification, are permitted provided that the following conditions are met:
 ## Further Reading and Citing
 
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
+
 ### Published Papers
 - [Löfström, H](https://github.com/Moffran). (2023). [Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440&dswid=6197) (Doctoral dissertation, Jönköping University, Jönköping International Business School).
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27.
@@ -605,14 +617,17 @@ The paper that originated the idea of `calibrated-explanations` is:
 
 - [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18. [Code and results](https://github.com/tuvelofstrom/calibrating-explanations).
 
-### Preprints:
+
+### Preprints
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.
 - [Löfström, T](https://github.com/tuvelofstrom)., [Rabia Yapicioglu, F](https://github.com/rabia174)., Stramiglio A., [Löfström, H](https://github.com/Moffran)., and Vitali F. (2024). [Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://arxiv.org/abs/2410.21129). arXiv preprint arXiv:2410.21129.
+
 
 ### Citing and Bibtex
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the papers above. Bibtex entries can be found in [citing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md#bibtex-entries).
 
 [Table of Content](#table-of-contents)
+
 
 
 ## Acknowledgements
@@ -635,12 +650,12 @@ The `check_is_fitted` and `safe_instance` functions in `calibrated_explanations.
 [Table of Content](#table-of-contents)
 
 
+
 ## Support
 For any questions or issues, please open an [issue](https://github.com/Moffran/calibrated_explanations/issues), open a [discussion](https://github.com/Moffran/calibrated_explanations/discussions) or contact the maintainers.
 
 [Table of Content](#table-of-contents)
 
-[build-log]:    https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml
-[build-status]: https://github.com/Moffran/calibrated_explanations/actions/workflows/test.yml/badge.svg
+
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations
