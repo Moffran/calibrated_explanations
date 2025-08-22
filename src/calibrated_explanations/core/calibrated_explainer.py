@@ -13,7 +13,6 @@ conformal predictive systems (regression).
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
-import logging
 import warnings as _warnings
 from time import time
 
@@ -22,7 +21,6 @@ from crepes import ConformalClassifier
 from crepes.extras import hinge
 from sklearn.metrics import confusion_matrix
 
-from .._interval_regressor import IntervalRegressor
 from .._plots import _plot_global
 from .._VennAbers import VennAbers
 from ..explanations import AlternativeExplanations, CalibratedExplanations
@@ -41,7 +39,6 @@ from ..utils.helper import (
     safe_import,
     safe_isinstance,
 )
-from ..utils.perturbation import perturb_dataset
 
 
 class CalibratedExplainer:
@@ -250,7 +247,10 @@ class CalibratedExplainer:
         self.__set_mode(str.lower(mode), initialize=False)
 
         self.interval_learner = None
-        self.__initialize_interval_learner()
+        # Phase 1A delegation: interval learner initialization via helper
+        from .calibration_helpers import initialize_interval_learner as _init_il
+
+        _init_il(self)
         self.reject_learner = (
             self.initialize_reject_learner() if kwargs.get("reject", False) else None
         )
@@ -393,9 +393,14 @@ class CalibratedExplainer:
                 if len(bins) != len(ys):
                     raise ValueError("The length of bins must match the number of added instances.")
                 self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
-            self.__update_interval_learner(xs, ys, bins=bins)
+            # Phase 1A delegation: update interval learner via helper
+            from .calibration_helpers import update_interval_learner as _upd_il
+
+            _upd_il(self, xs, ys, bins=bins)
         else:
-            self.__initialize_interval_learner()
+            from .calibration_helpers import initialize_interval_learner as _init_il
+
+            _init_il(self)
         self.__initialized = True
 
     def __repr__(self):
@@ -1069,59 +1074,27 @@ class CalibratedExplainer:
     def _explain_predict_step(
         self, X_test, threshold, low_high_percentiles, bins, features_to_ignore
     ):
-        X_cal = self.X_cal
-        predict, low, high, predicted_class = self._predict(
-            X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
-        )
-        # print(predicted_class)
+        # Phase 1A: delegate initial setup to prediction_helpers to lock behavior
+        from .prediction_helpers import explain_predict_step as _eps
 
-        prediction = {
-            "predict": predict,
-            "low": low,
-            "high": high,
-            "classes": (predicted_class if self.is_multiclass() else np.ones(predict.shape)),
-        }
-        # Phase 1A golden baseline enrichment: capture full per-class probability matrix for classification
-        # This enables downstream serialization of a stable probabilities_head in golden tests.
-        if self.mode == "classification":  # store full calibrated probability matrix
-            try:  # pragma: no cover - defensive
-                if self.is_multiclass():
-                    if self.is_fast():
-                        full_probs = self.interval_learner[self.num_features].predict_proba(  # type: ignore[index]
-                            X_test, bins=bins
-                        )
-                    else:
-                        full_probs = self.interval_learner.predict_proba(X_test, bins=bins)
-                else:  # binary returns shape (n,2)
-                    if self.is_fast():
-                        full_probs = self.interval_learner[self.num_features].predict_proba(  # type: ignore[index]
-                            X_test, bins=bins
-                        )
-                    else:
-                        full_probs = self.interval_learner.predict_proba(X_test, bins=bins)
-                # Store separately (not per-instance index) to avoid indexing issues in CalibratedExplanation
-                prediction["__full_probabilities__"] = full_probs
-            except Exception as exc:  # pragma: no cover
-                logging.getLogger("calibrated_explanations").debug(
-                    "Failed to compute full calibrated probabilities: %s", exc
-                )
+        (
+            _base_predict,
+            _base_low,
+            _base_high,
+            prediction,
+            perturbed_feature,
+            rule_boundaries,
+            lesser_values,
+            greater_values,
+            covered_values,
+            X_cal,
+            perturbed_threshold,
+            perturbed_bins,
+            perturbed_X,
+            perturbed_class,
+        ) = _eps(self, X_test, threshold, low_high_percentiles, bins, features_to_ignore)
 
-        # Step 1: Predict the test set and the perturbed instances to get the predictions and intervals
-        # Sub-step 1.a: Add the test set
-        X_test.flags.writeable = False
-        assert_threshold(threshold, X_test)
-        perturbed_threshold = self.assign_threshold(threshold)
-        perturbed_bins = np.empty((0,)) if bins is not None else None
-        perturbed_X = np.empty((0, self.num_features))
-        perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
-        perturbed_class = np.empty((0,), dtype=int)
-        X_perturbed = self._discretize(X_test)
-        rule_boundaries = self.rule_boundaries(X_test, X_perturbed)
-
-        # Sub-step 1.b: prepare and add the perturbed test instances
-        lesser_values = {}
-        greater_values = {}
-        covered_values = {}
+        # Sub-step 1.b: prepare and add the perturbed test instances (unchanged logic)
         # pylint: disable=too-many-nested-blocks
         for f in range(self.num_features):
             if f in features_to_ignore:
@@ -1249,7 +1222,7 @@ class CalibratedExplainer:
         predict = np.array(predict)
         low = np.array(low)
         high = np.array(high)
-        predicted_class = np.array(perturbed_class)
+        # predicted_class = np.array(perturbed_class)
         return (
             predict,
             low,
@@ -1829,66 +1802,18 @@ class CalibratedExplainer:
         self.__initialized = True
 
     def __initialize_interval_learner(self) -> None:
-        if self.is_fast():
-            self.__initialize_interval_learner_for_fast_explainer()
-        elif self.mode == "classification":
-            self.interval_learner = VennAbers(
-                self.X_cal,
-                self.y_cal,
-                self.learner,
-                self.bins,
-                difficulty_estimator=self.difficulty_estimator,
-                predict_function=self.predict_function,
-            )
-        elif "regression" in self.mode:
-            self.interval_learner = IntervalRegressor(self)
-        self.__initialized = True
+        # Thin delegator kept for backward-compatibility internal calls
+        from .calibration_helpers import initialize_interval_learner as _init_il
+
+        _init_il(self)
 
     # pylint: disable=attribute-defined-outside-init
     def __initialize_interval_learner_for_fast_explainer(self):
-        self.interval_learner = []
-        X_cal, y_cal, bins = self.X_cal, self.y_cal, self.bins
-        self.fast_X_cal, self.scaled_X_cal, self.scaled_y_cal, scale_factor = perturb_dataset(
-            self.X_cal,
-            self.y_cal,
-            self.categorical_features,
-            noise_type=self.__noise_type,
-            scale_factor=self.__scale_factor,
-            severity=self.__severity,
+        from .calibration_helpers import (
+            initialize_interval_learner_for_fast_explainer as _init_fast,
         )
-        self.bins = np.tile(self.bins.copy(), scale_factor) if self.bins is not None else None
-        for f in range(self.num_features):
-            fast_X_cal = self.scaled_X_cal.copy()
-            fast_X_cal[:, f] = self.fast_X_cal[:, f]
-            if self.mode == "classification":
-                self.interval_learner.append(
-                    VennAbers(
-                        fast_X_cal,
-                        self.scaled_y_cal,
-                        self.learner,
-                        self.bins,
-                        difficulty_estimator=self.difficulty_estimator,
-                    )
-                )
-            elif "regression" in self.mode:
-                self.X_cal = fast_X_cal
-                self.y_cal = self.scaled_y_cal
-                self.interval_learner.append(IntervalRegressor(self))
 
-        self.X_cal, self.y_cal, self.bins = X_cal, y_cal, bins
-        if self.mode == "classification":
-            self.interval_learner.append(
-                VennAbers(
-                    self.X_cal,
-                    self.y_cal,
-                    self.learner,
-                    self.bins,
-                    difficulty_estimator=self.difficulty_estimator,
-                )
-            )
-        elif "regression" in self.mode:
-            # Add a reference learner using the original calibration data last
-            self.interval_learner.append(IntervalRegressor(self))
+        _init_fast(self)
 
     def initialize_reject_learner(self, calibration_set=None, threshold=None):
         """Initialize the reject learner with a threshold value.

@@ -8,6 +8,7 @@ exercise these wrappers to lock in semantics before moving logic bodies.
 
 from __future__ import annotations
 
+import logging
 import warnings as _warnings
 from typing import Any
 
@@ -63,21 +64,108 @@ def initialize_explanation(
     return explanation
 
 
+def predict_internal(
+    explainer,
+    X_test,
+    threshold=None,
+    low_high_percentiles=(5, 95),
+    classes=None,
+    bins=None,
+    feature=None,
+):
+    """Internal prediction logic (mechanically moved)."""
+    # (Body kept inside calibrated_explainer for now to limit patch size) -- placeholder stub if future isolation needed
+    return explainer._predict(  # noqa: SLF001
+        X_test,
+        threshold=threshold,
+        low_high_percentiles=low_high_percentiles,
+        classes=classes,
+        bins=bins,
+        feature=feature,
+    )
+
+
 def explain_predict_step(
-    explainer: Any,
+    explainer,
     X_test,
     threshold,
     low_high_percentiles,
     bins,
     features_to_ignore,
-):  # pragma: no cover - thin wrapper
-    return explainer._explain_predict_step(
-        X_test, threshold, low_high_percentiles, bins, features_to_ignore
+):
+    """Execute the initial prediction step for explanation (mechanically moved)."""
+    X_cal = explainer.X_cal
+    predict, low, high, predicted_class = explainer._predict(  # noqa: SLF001
+        X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
+    )
+
+    prediction = {
+        "predict": predict,
+        "low": low,
+        "high": high,
+        "classes": (predicted_class if explainer.is_multiclass() else np.ones(predict.shape)),
+    }
+    if explainer.mode == "classification":  # store full calibrated probability matrix
+        try:  # pragma: no cover - defensive
+            if explainer.is_multiclass():
+                if explainer.is_fast():
+                    full_probs = explainer.interval_learner[  # type: ignore[index]  # noqa: SLF001
+                        explainer.num_features
+                    ].predict_proba(X_test, bins=bins)
+                else:
+                    full_probs = explainer.interval_learner.predict_proba(  # noqa: SLF001
+                        X_test, bins=bins
+                    )
+            else:  # binary
+                if explainer.is_fast():
+                    full_probs = explainer.interval_learner[  # type: ignore[index]  # noqa: SLF001
+                        explainer.num_features
+                    ].predict_proba(X_test, bins=bins)
+                else:
+                    full_probs = explainer.interval_learner.predict_proba(  # noqa: SLF001
+                        X_test, bins=bins
+                    )
+            prediction["__full_probabilities__"] = full_probs
+        except Exception as exc:  # pragma: no cover
+            logging.getLogger("calibrated_explanations").debug(
+                "Failed to compute full calibrated probabilities: %s", exc
+            )
+
+    X_test.flags.writeable = False
+    assert_threshold(threshold, X_test)
+    perturbed_threshold = explainer.assign_threshold(threshold)
+    perturbed_bins = np.empty((0,)) if bins is not None else None
+    perturbed_X = np.empty((0, explainer.num_features))
+    perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
+    perturbed_class = np.empty((0,), dtype=int)
+    X_perturbed = explainer._discretize(X_test)  # noqa: SLF001
+    rule_boundaries = explainer.rule_boundaries(X_test, X_perturbed)  # noqa: SLF001
+
+    lesser_values: dict[int, Any] = {}
+    greater_values: dict[int, Any] = {}
+    covered_values: dict[int, Any] = {}
+
+    return (
+        predict,
+        low,
+        high,
+        prediction,
+        perturbed_feature,
+        rule_boundaries,
+        lesser_values,
+        greater_values,
+        covered_values,
+        X_cal,
+        perturbed_threshold,
+        perturbed_bins,
+        perturbed_X,
+        perturbed_class,
     )
 
 
 __all__ = [
     "validate_and_prepare_input",
     "initialize_explanation",
+    "predict_internal",
     "explain_predict_step",
 ]

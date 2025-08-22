@@ -14,8 +14,8 @@ from .online_explainer import OnlineCalibratedExplainer  # noqa: F401
 from .wrap_explainer import WrapCalibratedExplainer  # noqa: F401
 
 _warn(
-    "Importing 'calibrated_explanations.core' now loads the core package; the legacy module "
-    "form is deprecated and will be removed in a future minor release.",
+    "The legacy module 'calibrated_explanations.core' is deprecated; import from the "
+    "'calibrated_explanations.core' package instead.",
     DeprecationWarning,
     stacklevel=2,
 )
