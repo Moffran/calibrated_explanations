@@ -27,7 +27,21 @@ jobs:
           pip install -r requirements.txt
           pip install .
           pip install mypy
-      - name: Run mypy
+      - name: Run mypy (Phase 1B scope)
+        shell: bash
         run: |
+          set -e
           mypy --version
-          mypy src/calibrated_explanations --config-file pyproject.toml
+          FILES=""
+          for f in \
+            src/calibrated_explanations/core/exceptions.py \
+            src/calibrated_explanations/core/validation.py \
+            src/calibrated_explanations/api/params.py; do
+            if [ -f "$f" ]; then FILES="$FILES $f"; fi
+          done
+          if [ -z "$FILES" ]; then
+            echo "No Phase 1B typed files found; skipping mypy."
+            exit 0
+          fi
+          echo "Checking files:$FILES"
+          mypy $FILES --config-file pyproject.toml

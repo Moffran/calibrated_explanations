@@ -86,11 +86,8 @@ show_error_codes = true
 exclude = ["build", "benchmarks", "docs", "notebooks", "scripts", "evaluation"]
 
 # Phase 1B typing: keep permissive defaults; enable stricter checks per-module below.
-[tool.mypy.overrides]
-module = [
-  "calibrated_explanations.core.exceptions",
-  "calibrated_explanations.core.validation",
-]
+[[tool.mypy.overrides]]
+module = ["calibrated_explanations.core.exceptions", "calibrated_explanations.core.validation"]
 disallow_untyped_defs = true
 warn_return_any = true
 no_implicit_optional = true
