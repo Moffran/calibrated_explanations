@@ -1,6 +1,6 @@
 # ADR-002: Validation & Exception Design
 
-Status: Proposed
+Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -13,14 +13,36 @@ Validation logic currently scattered; errors raise generic `ValueError` / `Runti
 
 ## Decision
 
-Introduce structured validation layer:
+Introduce a structured validation layer and exception taxonomy, aligned with Phase 1B plan.
 
-- Custom exception hierarchy rooted at `CalibratedError`:
-  - `DataShapeError`, `SchemaMismatchError`, `ConfigurationError`, `StrategyError`, `ResourceLimitError`.
-- Helper `validate(condition, exc_cls, message, *, details=None)` raising enriched error with `.details` dict.
-- Standardized message guidelines (imperative, specify expected vs actual, reference parameter name).
-- Central module `calibrated_explanations.core.validation` consumed by calibration & explanation code.
-- Error codes (short string) inside `.details['code']` for machine consumption.
+Exception taxonomy (finalized for 1B):
+
+- Base: `CalibratedError(Exception)`
+- Validation & usage:
+  - `ValidationError(CalibratedError)`
+  - `DataShapeError(ValidationError)`
+  - `NotFittedError(CalibratedError)`
+  - `ModelNotSupportedError(CalibratedError)`
+- Configuration & runtime:
+  - `ConfigurationError(CalibratedError)`
+  - `ConvergenceError(CalibratedError)`
+  - `SerializationError(CalibratedError)`
+
+Validation and helper contracts:
+
+- `validate_inputs(X, y=None, task="auto", allow_nan=False, require_y=False, n_features=None, class_labels=None, check_finite=True) -> None`
+- `validate_model(model) -> None`
+- `validate_fit_state(explainer, require=True) -> None`
+- `infer_task(X, y, model) -> Literal["classification","regression"]`
+- (Optional) `validate(condition, exc_cls, message, *, details=None)` helper; details may include short error codes for machine consumption.
+
+Messaging guidelines: imperative, specify expected vs actual, reference the parameter name; keep message substrings stable to avoid breaking tests.
+
+Module paths (authoritative):
+
+- Exceptions: `src/calibrated_explanations/core/exceptions.py`
+- Validation: `src/calibrated_explanations/core/validation.py` (replaces `validation_stub.py`)
+- Parameter canonicalization: `src/calibrated_explanations/api/params.py`
 
 Logging & surfacing:
 
@@ -48,9 +70,17 @@ Negative / Risks:
 
 ## Adoption & Migration
 
-Phase 1: Introduce hierarchy + helper; refactor most common hotspots.
-Phase 2: Sweep remaining modules; add tests asserting representative errors.
-Phase 3: Document patterns in contributing guide.
+Phase 1B:
+
+- Implement `core/exceptions.py` and `core/validation.py`, remove `validation_stub.py`.
+- Introduce `api/params.py` with alias canonicalization and combination checks.
+- Replace generic exceptions in core paths with the new classes (message text preserved where asserted by tests).
+- Add unit tests for exceptions/validation/params; wire mypy in CI (strict on new modules).
+
+Phase 2–4:
+
+- Expand canonicalization, add deprecation warnings for old parameter names.
+- Broaden validation coverage and documentation; finalize migration guidance.
 
 ## Open Questions
 
@@ -60,4 +90,4 @@ Phase 3: Document patterns in contributing guide.
 
 ## Decision Notes
 
-Review after first wave of refactors to adjust error taxonomy.
+Review after Phase 1B integration; adjust taxonomy only if gaps are observed. Update ADR if new classes are introduced.

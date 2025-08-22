@@ -1,0 +1,47 @@
+name: mypy
+on:
+  push:
+    paths:
+      - 'src/calibrated_explanations/core/**'
+      - 'src/calibrated_explanations/api/**'
+      - 'pyproject.toml'
+      - '.github/workflows/mypy.yml'
+  pull_request:
+    paths:
+      - 'src/calibrated_explanations/core/**'
+      - 'src/calibrated_explanations/api/**'
+      - 'pyproject.toml'
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install .
+          pip install mypy
+      - name: Run mypy (Phase 1B scope)
+        shell: bash
+        run: |
+          set -e
+          mypy --version
+          FILES=""
+          for f in \
+            src/calibrated_explanations/core/exceptions.py \
+            src/calibrated_explanations/core/validation.py \
+            src/calibrated_explanations/api/params.py; do
+            if [ -f "$f" ]; then FILES="$FILES $f"; fi
+          done
+          if [ -z "$FILES" ]; then
+            echo "No Phase 1B typed files found; skipping mypy."
+            exit 0
+          fi
+          echo "Checking files:$FILES"
+          mypy $FILES --config-file pyproject.toml
