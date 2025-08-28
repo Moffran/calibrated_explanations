@@ -12,6 +12,7 @@ import numpy as np
 from .._interval_regressor import IntervalRegressor
 from .._VennAbers import VennAbers
 from ..utils.perturbation import perturb_dataset
+from .exceptions import ConfigurationError
 
 
 def assign_threshold(explainer, threshold):
@@ -28,7 +29,7 @@ def update_interval_learner(explainer, xs, ys, bins=None) -> None:
     Mirrors original semantics and exceptions exactly.
     """
     if explainer.is_fast():
-        raise RuntimeError(
+        raise ConfigurationError(
             "OnlineCalibratedExplainers does not currently support fast explanations."
         )
     if explainer.mode == "classification":
@@ -42,7 +43,7 @@ def update_interval_learner(explainer, xs, ys, bins=None) -> None:
         )
     elif "regression" in explainer.mode:
         if isinstance(explainer.interval_learner, list):
-            raise RuntimeError(
+            raise ConfigurationError(
                 "OnlineCalibratedExplainers does not currently support fast explanations."
             )
         # update the IntervalRegressor

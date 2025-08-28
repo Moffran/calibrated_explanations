@@ -11,6 +11,7 @@ import logging as _logging
 import numpy as np
 
 from .wrap_explainer import WrapCalibratedExplainer  # fixed import
+from calibrated_explanations.core.exceptions import NotFittedError, ModelNotSupportedError
 
 
 class OnlineCalibratedExplainer(WrapCalibratedExplainer):
@@ -82,11 +83,13 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
 
         Raises
         ------
-        AttributeError
+        ModelNotSupportedError
             If the underlying learner does not support incremental learning.
         """
         if not hasattr(self.learner, "partial_fit"):
-            raise AttributeError("The learner must implement partial_fit for incremental learning")
+            raise ModelNotSupportedError(
+                "The learner must implement partial_fit for incremental learning"
+            )
         if np.isscalar(y):
             X = np.asarray(X).reshape(1, -1)
             y = np.asarray(y).reshape(1)
@@ -185,11 +188,11 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
 
         Raises
         ------
-        RuntimeError
+        NotFittedError
             If the explainer has not been fitted before calling this method.
         """
         if not self.fitted:
-            raise RuntimeError("The OnlineCalibratedExplainer must be fitted before calibration.")
+            raise NotFittedError("The OnlineCalibratedExplainer must be fitted before calibration.")
 
         if self.calibrated:
             self.explainer.reinitialize(self.learner, X, y, **kwargs)
