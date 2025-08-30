@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations.core.exceptions import NotFittedError
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
@@ -119,9 +120,9 @@ def test_failure_regression(regression_dataset):
     cal_exp = initiate_explainer(
         model, X_cal, y_cal, feature_names, categorical_features, mode="regression"
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.set_difficulty_estimator(DifficultyEstimator())
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.set_difficulty_estimator(DifficultyEstimator)
 
 

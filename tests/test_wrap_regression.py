@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from calibrated_explanations import WrapCalibratedExplainer
+from calibrated_explanations.core.exceptions import NotFittedError, ValidationError
 from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
@@ -115,8 +116,7 @@ class TestWrapRegressionExplainer:
         """Test initial unfitted state"""
         assert not self.explainer.fitted, "Should not be fitted initially"
         assert not self.explainer.calibrated, "Should not be calibrated initially"
-
-        with pytest.raises(RuntimeError, match="must be fitted"):
+        with pytest.raises(NotFittedError, match="must be fitted"):
             self.explainer.explain_factual(self.X_test)
 
     @pytest.mark.parametrize(
@@ -144,10 +144,12 @@ class TestWrapRegressionExplainer:
         self.explainer.fit(self.X_train, self.y_train)
 
         # Test empty input
+        # sklearn raises ValueError on empty input during predict
         with pytest.raises(ValueError):
             self.explainer.predict(np.array([]), calibrated=False)
 
         # Test invalid feature count
+        # sklearn raises ValueError when the number of features doesn't match
         with pytest.raises(ValueError):
             rng = np.random.default_rng()
             self.explainer.predict(rng.random((10, len(self.X_train[0]) + 1)), calibrated=False)
@@ -223,9 +225,9 @@ def test_wrap_regression_ce(regression_dataset):
     assert not cal_exp.fitted
     assert not cal_exp.calibrated
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.explain_factual(X_test)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.explore_alternatives(X_test)
 
     cal_exp.fit(X_prop_train, y_prop_train)
@@ -248,25 +250,25 @@ def test_wrap_regression_ce(regression_dataset):
         assert low4[i] == y_hat
         assert high4[i] == y_hat
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict(X_test, threshold=y_test)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict(X_test, uq_interval=True, threshold=y_test)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict_proba(X_test)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict_proba(X_test, uq_interval=True)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.predict_proba(X_test, threshold=y_test)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.explain_factual(X_test)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.explore_alternatives(X_test)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.explain_factual(X_test, threshold=y_test)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.explore_alternatives(X_test, threshold=y_test)
 
     cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names)
@@ -297,9 +299,9 @@ def test_wrap_regression_ce(regression_dataset):
     cal_exp.explain_factual(X_test, threshold=y_test)
     cal_exp.explore_alternatives(X_test, threshold=y_test)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict_proba(X_test)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict_proba(X_test, uq_interval=True)
     y_test_hat1 = cal_exp.predict_proba(X_test, threshold=y_test[0])
     y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test[0])
@@ -386,9 +388,9 @@ def conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
     cal_exp.explain_factual(X_test, threshold=y_test)
     cal_exp.explore_alternatives(X_test, threshold=y_test)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict_proba(X_test)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict_proba(X_test, uq_interval=True)
     y_test_hat1 = cal_exp.predict_proba(X_test, threshold=y_test[0])
     y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test[0])
@@ -445,9 +447,9 @@ def test_wrap_regression_fast_ce(regression_dataset):
     cal_exp.explain_fast(X_test)
     cal_exp.explain_fast(X_test, threshold=y_test)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict_proba(X_test)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         cal_exp.predict_proba(X_test, uq_interval=True)
     y_test_hat1 = cal_exp.predict_proba(X_test, threshold=y_test[0])
     y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test[0])

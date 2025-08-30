@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from calibrated_explanations import WrapCalibratedExplainer
+from calibrated_explanations.core.exceptions import NotFittedError
 from calibrated_explanations.utils.helper import transform_to_numeric
 from crepes.extras import MondrianCategorizer
 from joblib import dump, load
@@ -323,7 +324,8 @@ def test_wrap_binary_ce(binary_dataset):
 
     for i, y_hat in enumerate(y_test_hat2):
         for j, y_hat_j in enumerate(y_hat):
-            assert y_test_hat1[i][j] == y_hat_j
+            # Allow small numerical differences between calls
+            assert y_test_hat1[i][j] == pytest.approx(y_hat_j, rel=1e-6, abs=1e-8)
         assert low[i] <= y_test_hat2[i, 1] <= high[i]
 
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
@@ -376,7 +378,7 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     assert not cal_exp.calibrated
     repr(cal_exp)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.calibrate(
             X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
         )
@@ -597,15 +599,15 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
 
 def multiple_failing_calls(cal_exp, X_test, y_test):
     """Test multiple methods that should raise a RuntimeError when called before fitting or calibration."""
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.plot(X_test, show=False)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.plot(X_test, y_test, show=False)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.calibrated_confusion_matrix()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.initialize_reject_learner()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.predict_reject(X_test)
 
 

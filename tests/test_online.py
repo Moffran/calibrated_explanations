@@ -3,6 +3,7 @@
 # pylint: disable=invalid-name, too-many-locals
 import numpy as np
 from calibrated_explanations import OnlineCalibratedExplainer
+from calibrated_explanations.core.exceptions import ModelNotSupportedError, NotFittedError
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.preprocessing import StandardScaler
@@ -201,20 +202,20 @@ def test_error_handling():
 
     try:
         explainer.partial_fit(X, y)
-        assert False, "Should raise AttributeError"
-    except AttributeError:
+        assert False, "Should raise ModelNotSupportedError"
+    except ModelNotSupportedError:
         pass
 
     # Test calibration before fitting
     try:
         explainer.calibrate_one(X[0], y[0])
-        assert False, "Should raise RuntimeError"
-    except RuntimeError:
+        assert False, "Should raise NotFittedError"
+    except NotFittedError:
         pass
 
     # Test prediction before fitting/calibration
     try:
         explainer.predict_one(X[0])
-        assert False, "Should raise RuntimeError"
-    except RuntimeError:
+        assert False, "Should raise NotFittedError"
+    except NotFittedError:
         pass
