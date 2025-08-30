@@ -39,6 +39,12 @@ from ..utils.helper import (
     safe_import,
     safe_isinstance,
 )
+from .exceptions import (
+    ValidationError,
+    DataShapeError,
+    ConfigurationError,
+    NotFittedError,
+)
 
 
 class CalibratedExplainer:
@@ -178,7 +184,7 @@ class CalibratedExplainer:
             except Exception as exc:
                 raise exc
             if len(X_cal) != len(y_oob):
-                raise ValueError(
+                raise DataShapeError(
                     "The length of the out-of-bag predictions does not match the length of X_cal."
                 )
             y_cal = y_oob
@@ -331,7 +337,7 @@ class CalibratedExplainer:
             The new calibration target data to append.
         """
         if X.shape[1] != self.num_features:
-            raise ValueError("Number of features must match existing calibration data")
+            raise DataShapeError("Number of features must match existing calibration data")
         self.X_cal = np.vstack((self.X_cal, X))
         self.y_cal = np.concatenate((self.y_cal, y))
 
@@ -389,9 +395,9 @@ class CalibratedExplainer:
             self.append_cal(xs, ys)
             if bins is not None:
                 if self.bins is None:
-                    raise ValueError("Cannot mix calibration instances with and without bins.")
+                    raise ValidationError("Cannot mix calibration instances with and without bins.")
                 if len(bins) != len(ys):
-                    raise ValueError("The length of bins must match the number of added instances.")
+                    raise DataShapeError("The length of bins must match the number of added instances.")
                 self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
             # Phase 1A delegation: update interval learner via helper
             from .calibration_helpers import update_interval_learner as _upd_il
@@ -479,7 +485,7 @@ class CalibratedExplainer:
             Mondrian categories
         """
         if not self.__initialized:
-            raise ValueError("The learner must be initialized before calling predict.")
+            raise NotFittedError("The learner must be initialized before calling predict.")
         if feature is None and self.is_fast():
             feature = self.num_features  # Use the calibrator defined using X_cal
         if self.mode == "classification":
@@ -516,7 +522,7 @@ class CalibratedExplainer:
             # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
             if threshold is None:  # normal regression
                 if not (low_high_percentiles[0] <= low_high_percentiles[1]):
-                    raise ValueError(
+                    raise ValidationError(
                         "The low percentile must be smaller than (or equal to) the high percentile."
                     )
                 if not (
@@ -530,7 +536,7 @@ class CalibratedExplainer:
                         low_high_percentiles[0] == -np.inf and low_high_percentiles[1] == np.inf
                     )
                 ):
-                    raise ValueError(
+                    raise ValidationError(
                         "The percentiles must be between 0 and 100 (exclusive). \
                             The lower percentile can be -np.inf and the higher percentile can \
                             be np.inf (but not at the same time) to allow one-sided intervals."
@@ -1275,7 +1281,7 @@ class CalibratedExplainer:
                 self.__initialize_interval_learner_for_fast_explainer()
             except Exception as exc:
                 self.__fast = False
-                raise RuntimeError(
+                raise ConfigurationError(
                     "Fast explanations are only possible if the explainer is a Fast Calibrated Explainer."
                 ) from exc
         total_time = time()
@@ -1285,22 +1291,22 @@ class CalibratedExplainer:
         if len(X_test.shape) == 1:
             X_test = X_test.reshape(1, -1)
         if X_test.shape[1] != self.num_features:
-            raise ValueError(
+            raise DataShapeError(
                 "The number of features in the test data must be the same as in the \
                             calibration data."
             )
         if self._is_mondrian():
             if bins is None:
-                raise ValueError("The bins parameter must be specified for Mondrian explanations.")
+                raise ValidationError("The bins parameter must be specified for Mondrian explanations.")
             if len(bins) != len(X_test):
-                raise ValueError(
+                raise DataShapeError(
                     "The length of the bins parameter must be the same as the number of instances in X_test."
                 )
         explanation = CalibratedExplanations(self, X_test, threshold, bins)
 
         if threshold is not None:
             if "regression" not in self.mode:
-                raise Warning("The threshold parameter is only supported for mode='regression'.")
+                raise ValidationError("The threshold parameter is only supported for mode='regression'.")
             assert_threshold(threshold, X_test)
         # explanation.low_high_percentiles = low_high_percentiles
         elif "regression" in self.mode:
@@ -1435,22 +1441,22 @@ class CalibratedExplainer:
         if len(X_test.shape) == 1:
             X_test = X_test.reshape(1, -1)
         if X_test.shape[1] != self.num_features:
-            raise ValueError(
+            raise DataShapeError(
                 "The number of features in the test data must be the same as in the \
                             calibration data."
             )
         if self._is_mondrian():
             if bins is None:
-                raise ValueError("The bins parameter must be specified for Mondrian explanations.")
+                raise ValidationError("The bins parameter must be specified for Mondrian explanations.")
             if len(bins) != len(X_test):
-                raise ValueError(
+                raise DataShapeError(
                     "The length of the bins parameter must be the same as the number of instances in X_test."
                 )
         explanation = CalibratedExplanations(self, X_test, threshold, bins)
 
         if threshold is not None:
             if "regression" not in self.mode:
-                raise Warning("The threshold parameter is only supported for mode='regression'.")
+                raise ValidationError("The threshold parameter is only supported for mode='regression'.")
             assert_threshold(threshold, X_test)
         # explanation.low_high_percentiles = low_high_percentiles
         elif "regression" in self.mode:
@@ -1730,11 +1736,11 @@ class CalibratedExplainer:
         if difficulty_estimator is not None:
             try:
                 if not difficulty_estimator.fitted:
-                    raise RuntimeError(
+                    raise NotFittedError(
                         "The difficulty estimator is not fitted. Please fit the estimator first."
                     )
             except AttributeError as e:
-                raise RuntimeError(
+                raise NotFittedError(
                     "The difficulty estimator is not fitted. Please fit the estimator first."
                 ) from e
         self.__initialized = False
@@ -1771,14 +1777,14 @@ class CalibratedExplainer:
             # assert 'predict' in dir(self.learner), "The learner must have a predict method."
             self.num_classes = 0
         else:
-            raise ValueError("The mode must be either 'classification' or 'regression'.")
+            raise ValidationError("The mode must be either 'classification' or 'regression'.")
         self.mode = mode
         if initialize:
             self.__initialize_interval_learner()
 
     def __update_interval_learner(self, xs, ys, bins=None) -> None:  # pylint: disable=unused-argument
         if self.is_fast():
-            raise RuntimeError(
+            raise ConfigurationError(
                 "OnlineCalibratedExplainers does not currently support fast explanations."
             )
         if self.mode == "classification":
@@ -1794,7 +1800,7 @@ class CalibratedExplainer:
             )
         elif "regression" in self.mode:
             if isinstance(self.interval_learner, list):
-                raise RuntimeError(
+                raise ConfigurationError(
                     "OnlineCalibratedExplainers does not currently support fast explanations."
                 )
             # update the IntervalRegressor
@@ -1876,7 +1882,7 @@ class CalibratedExplainer:
         """
         if self.mode in "regression":
             if self.reject_threshold is None:
-                raise ValueError(
+                raise ValidationError(
                     "The reject learner is only available for regression with a threshold."
                 )
             proba_1, _, _, _ = self.interval_learner.predict_probability(
@@ -1971,7 +1977,7 @@ class CalibratedExplainer:
                     "binaryRegressor",
                 }
             ):
-                raise ValueError(
+                raise ValidationError(
                     "The discretizer must be 'binaryRegressor' (default for factuals) or 'regressor' (default for alternatives) for regression."
                 )
         else:
@@ -1983,7 +1989,7 @@ class CalibratedExplainer:
                     "binaryEntropy",
                 }
             ):
-                raise ValueError(
+                raise ValidationError(
                     "The discretizer must be 'binaryEntropy' (default for factuals) or 'entropy' (default for alternatives) for classification."
                 )
 
@@ -2097,7 +2103,7 @@ class CalibratedExplainer:
         """
         if not calibrated:
             if "threshold" in kwargs:
-                raise ValueError(
+                raise ValidationError(
                     "A thresholded prediction is not possible for uncalibrated predictions."
                 )
             if uq_interval:
@@ -2192,7 +2198,7 @@ class CalibratedExplainer:
         """
         if not calibrated:
             if threshold is not None:
-                raise ValueError(
+                raise ValidationError(
                     "A thresholded prediction is not possible for uncalibrated learners."
                 )
             if uq_interval:
@@ -2334,7 +2340,7 @@ class CalibratedExplainer:
             The calibrated confusion matrix.
         """
         if not (self.mode == "classification"):
-            raise ValueError("The confusion matrix is only available for classification tasks.")
+            raise ValidationError("The confusion matrix is only available for classification tasks.")
         cal_predicted_classes = np.zeros(len(self.y_cal))
         for i in range(len(self.y_cal)):
             va = VennAbers(

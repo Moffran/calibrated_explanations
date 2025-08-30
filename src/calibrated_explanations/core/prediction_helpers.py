@@ -15,6 +15,10 @@ from typing import Any
 import numpy as np
 
 from ..explanations import CalibratedExplanations
+from .exceptions import (
+    ValidationError,
+    DataShapeError,
+)
 from ..utils.helper import assert_threshold, safe_isinstance
 
 # NOTE: We intentionally avoid importing CalibratedExplainer for type-only usage to
@@ -31,7 +35,7 @@ def validate_and_prepare_input(explainer: Any, X_test):
     if len(X_test.shape) == 1:  # noqa: PLR2004
         X_test = X_test.reshape(1, -1)
     if X_test.shape[1] != explainer.num_features:
-        raise ValueError("Number of features must match calibration data")
+        raise DataShapeError("Number of features must match calibration data")
     return X_test
 
 
@@ -46,13 +50,13 @@ def initialize_explanation(
     """Initialize explanation object (extracted logic)."""
     if explainer._is_mondrian():  # noqa: SLF001
         if bins is None:
-            raise ValueError("Bins required for Mondrian explanations")
+            raise ValidationError("Bins required for Mondrian explanations")
         if len(bins) != len(X_test):  # pragma: no cover - defensive
-            raise ValueError("The length of bins must match the number of added instances.")
+            raise DataShapeError("The length of bins must match the number of added instances.")
     explanation = CalibratedExplanations(explainer, X_test, threshold, bins, features_to_ignore)
     if threshold is not None:
         if "regression" not in explainer.mode:
-            raise Warning("The threshold parameter is only supported for mode='regression'.")
+            raise ValidationError("The threshold parameter is only supported for mode='regression'.")
         if isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
             _warnings.warn(
                 "Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.",
