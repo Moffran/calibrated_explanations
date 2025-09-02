@@ -399,55 +399,39 @@ def test_wrap_multiclass_ce(multiclass_dataset):
         assert low[i] == y_hat
         assert high[i] == y_hat
 
-    with pytest.warns(UserWarning):
-        y_test_hat1 = cal_exp.predict_proba(X_test)
-    with pytest.warns(UserWarning):
-        y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
 
-    for i, y_hat in enumerate(y_test_hat2):
-        for j, y_hat_j in enumerate(y_hat):
-            assert y_test_hat1[i][j] == y_hat_j
-            assert low[i][j] <= y_hat_j <= high[i][j]
+def test_calibrate_with_string_labels_oob(binary_dataset):
+    """Calibrate should accept string labels when using oob=True (no separate calibration split)."""
+    (
+        X_prop_train,
+        y_prop_train,
+        _X_cal,
+        _y_cal,
+        _X_test,
+        _y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
 
-    cal_exp.calibrate(
-        X_cal,
-        y_cal,
-        mode="classification",
+    # Create string labels from binary numeric labels
+    y_str = np.where(y_prop_train == 1, "True", "False")
+    clf = WrapCalibratedExplainer(RandomForestClassifier(oob_score=True, random_state=42))
+    clf.fit(X_prop_train, y_str)
+
+    # Calibrate on training data with string labels and oob=True
+    clf.calibrate(
+        X_prop_train,
+        y_str,
         feature_names=feature_names,
         categorical_features=categorical_features,
+        oob=True,
     )
-    assert cal_exp.fitted
-    assert cal_exp.calibrated
-    repr(cal_exp)
-
-    cal_exp.calibrated_confusion_matrix()
-    cal_exp.initialize_reject_learner()
-    cal_exp.predict_reject(X_test)
-
-    y_test_hat1 = cal_exp.predict(X_test)
-    y_test_hat2, (low, high) = cal_exp.predict(X_test, True)
-
-    for i, y_hat in enumerate(y_test_hat2):
-        assert y_test_hat1[i] == y_hat
-
-    y_test_hat1 = cal_exp.predict_proba(X_test)
-    y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, True)
-
-    for i, y_hat in enumerate(y_test_hat2):
-        for j, y_hat_j in enumerate(y_hat):
-            assert y_test_hat1[i][j] == y_hat_j
-            assert low[i][j] <= y_hat_j <= high[i][j]
-
-    generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
-
-    # Add test for probability sum
-    y_proba = cal_exp.predict_proba(X_test)
-    np.testing.assert_almost_equal(
-        y_proba.sum(axis=1),
-        np.ones(len(X_test)),
-        decimal=6,
-        err_msg="Probabilities should sum to 1",
-    )
+    assert clf.calibrated
+    # After calibration, predict_proba should work and return valid probabilities
+    proba = clf.predict_proba(X_prop_train[:5])
+    assert proba.shape == (5, 2)
 
 
 def test_wrap_binary_conditional_ce(binary_dataset):

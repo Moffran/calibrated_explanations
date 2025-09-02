@@ -117,7 +117,13 @@ def validate_inputs_matrix(
             raise DataShapeError(
                 f"Length of 'y' ({y_arr.shape[0]}) does not match number of samples in X ({n_samples})."
             )
-        if check_finite and not allow_nan and not np.isfinite(y_arr).all():
+        # Only perform finiteness checks on numeric dtypes to avoid TypeError for object/string labels
+        if (
+            check_finite
+            and not allow_nan
+            and np.issubdtype(y_arr.dtype, np.number)
+            and not np.isfinite(y_arr).all()
+        ):
             raise ValidationError("Argument 'y' contains NaN or infinite values.")
 
     if check_finite and not allow_nan and not np.isfinite(X_arr).all():

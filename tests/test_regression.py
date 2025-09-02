@@ -215,6 +215,38 @@ def test_probabilistic_regression_ce(regression_dataset):
     alternative_explanation.counter_explanations()
 
 
+def test_probabilistic_regression_int_threshold_ce(regression_dataset):
+    """Ensure integer thresholds are accepted for probabilistic regression paths."""
+    (
+        X_prop_train,
+        y_prop_train,
+        X_cal,
+        y_cal,
+        X_test,
+        _y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", X_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, X_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
+
+    # Single integer threshold (y is normalized to [0,1])
+    factual_explanation = cal_exp.explain_factual(X_test, 0)
+    factual_explanation.add_conjunctions()
+    factual_explanation.plot(show=False)
+
+    # Tuple of integer thresholds
+    factual_explanation = cal_exp.explain_factual(X_test, (0, 1))
+    factual_explanation.plot(show=False)
+
+    # Alternatives should also accept int thresholds
+    alternative_explanation = cal_exp.explore_alternatives(X_test, 0)
+    alternative_explanation.plot(show=False)
+
+
 def test_regression_as_classification_ce(regression_dataset):
     """
     Tests probabilistic explanations for regression models.

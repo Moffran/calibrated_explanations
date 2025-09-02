@@ -22,6 +22,7 @@ compute_proba_cal(self, y_threshold: float)
     Calculate the probability calibration for a given threshold.
 """
 
+import numbers
 from functools import singledispatchmethod
 
 import crepes
@@ -248,8 +249,8 @@ class IntervalRegressor:
         """
         raise TypeError("y_threshold must be a float or a tuple.")
 
-    @compute_proba_cal.register(float)
-    def _(self, y_threshold: float):
+    @compute_proba_cal.register(numbers.Real)
+    def _(self, y_threshold: numbers.Real):
         """Calculate the probability calibration for a given threshold.
 
         Parameters
@@ -296,8 +297,9 @@ class IntervalRegressor:
         self.split["proba"] = np.array([[1 - proba[i], proba[i]] for i in range(len(proba))])
         self.split["va"] = VennAbers(
             None,
-            (y_threshold[0] < self.ce.y_cal[cal_va])
-            & (self.ce.y_cal[cal_va] <= y_threshold[1]).astype(int),
+            (
+                (y_threshold[0] < self.ce.y_cal[cal_va]) & (self.ce.y_cal[cal_va] <= y_threshold[1])
+            ).astype(int),
             self,
             bins=bins,
             cprobs=self.split["proba"],

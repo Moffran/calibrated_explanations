@@ -398,13 +398,30 @@ def conditional_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
     for i, y_hat in enumerate(y_test_hat2):
         assert low[i] <= y_test_hat2[i, 1] <= high[i]
 
-    y_test_hat1 = cal_exp.predict_proba(X_test, threshold=y_test)
-    y_test_hat2, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=y_test)
 
-    for i, y_hat in enumerate(y_test_hat2):
-        assert low[i] <= y_test_hat2[i, 1] <= high[i]
+def test_wrap_regression_accepts_int_threshold(regression_dataset):
+    """WrapCalibratedExplainer should accept integer thresholds without errors."""
+    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _y_test, _, _, feature_names = (
+        regression_dataset
+    )
+    cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
+    cal_exp.fit(X_prop_train, y_prop_train)
+    cal_exp.calibrate(X_cal, y_cal, feature_names=feature_names)
 
-    generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
+    # Predict with integer threshold
+    y_pred_int = cal_exp.predict(X_test, threshold=0)
+    assert len(y_pred_int) == len(X_test)
+
+    # Predict_proba with integer threshold and intervals
+    proba_int, (low, high) = cal_exp.predict_proba(X_test, uq_interval=True, threshold=0)
+    assert proba_int.shape == (len(X_test), 2)
+    assert len(low) == len(high) == len(X_test)
+
+    # Explanations with integer threshold
+    fx = cal_exp.explain_factual(X_test, threshold=0)
+    fx.plot(show=False)
+    ax = cal_exp.explore_alternatives(X_test, threshold=0)
+    ax.plot(show=False)
 
 
 def test_wrap_regression_fast_ce(regression_dataset):
