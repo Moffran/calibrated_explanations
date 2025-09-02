@@ -552,6 +552,23 @@ The following dependencies are required and will be installed automatically if n
 * [matplotlib](https://matplotlib.org/)
 * [NumPy](https://numpy.org/)
 
+### Optional extras
+Some features can be installed as optional extras to keep the core lean:
+
+- Visualization (matplotlib)
+
+```powershell
+pip install "calibrated_explanations[viz]"
+```
+
+- LIME integration
+
+```powershell
+pip install "calibrated_explanations[lime]"
+```
+
+Plotting functions will raise a friendly error if matplotlib isn’t installed, with a hint to install the viz extra.
+
 [Table of Content](#table-of-contents)
 
 

@@ -32,6 +32,16 @@ Contents
     calibrated_explanations
    error_handling
 
+Optional extras
+----------------
+
+Some functionality is provided via optional extras to keep the core lean:
+
+* Visualization (matplotlib): ``pip install "calibrated_explanations[viz]"``
+* LIME integration: ``pip install "calibrated_explanations[lime]"``
+
+Plotting will raise a friendly error if matplotlib isn’t installed, with a hint to install the ``viz`` extra.
+
 Introduction
 ------------
 

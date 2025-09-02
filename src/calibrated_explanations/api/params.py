@@ -15,6 +15,7 @@ See ADR-002 for context.
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 # Minimal, conservative alias map. Extend in Phase 2.
@@ -59,3 +60,23 @@ def validate_param_combination(kwargs: dict[str, Any]) -> None:
 
 
 __all__ = ["ALIAS_MAP", "canonicalize_kwargs", "validate_param_combination"]
+
+
+def warn_on_aliases(kwargs: dict[str, Any]) -> None:
+    """Emit deprecation warnings when known alias keys are used.
+
+    Notes
+    -----
+    - No behavior change; only a `DeprecationWarning` to guide users.
+    - Intended to be called at public boundaries in Phase 2.
+    """
+    for alias, canonical in ALIAS_MAP.items():
+        if alias in kwargs:
+            warnings.warn(
+                f"Parameter '{alias}' is deprecated; use '{canonical}' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+
+__all__.append("warn_on_aliases")

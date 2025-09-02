@@ -6,16 +6,23 @@ from __future__ import annotations
 
 import logging as _logging
 import warnings as _warnings
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from crepes.extras import MondrianCategorizer
 
-from calibrated_explanations.api.params import canonicalize_kwargs, validate_param_combination
+from calibrated_explanations.api.params import (
+    canonicalize_kwargs,
+    validate_param_combination,
+    warn_on_aliases,
+)
 from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
 from calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
 
 from ..utils.helper import check_is_fitted, safe_isinstance  # noqa: F401
 from .calibrated_explainer import CalibratedExplainer  # circular during split
+
+if TYPE_CHECKING:  # pragma: no cover - import only for type checking
+    from calibrated_explanations.api.config import ExplainerConfig
 
 
 class WrapCalibratedExplainer:
@@ -49,6 +56,11 @@ class WrapCalibratedExplainer:
         """
         self.mc: Callable[[Any], Any] | MondrianCategorizer | None = None
         self._logger: _logging.Logger = _logging.getLogger(__name__)
+        # Optional preprocessing (Phase 2 controlled wiring)
+        self._preprocessor: Any | None = None
+        self._pre_fitted: bool = False
+        self._auto_encode: bool | str = "auto"
+        self._unseen_category_policy: str = "error"
         # Check if the learner is a CalibratedExplainer
         if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
             explainer = learner
@@ -84,6 +96,31 @@ class WrapCalibratedExplainer:
             return f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, calibrated=False)"
         return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
 
+    # Phase 2: internal wiring for config
+    @classmethod
+    def _from_config(cls, cfg: ExplainerConfig) -> WrapCalibratedExplainer:
+        """Internal helper to construct from an ExplainerConfig.
+
+        Notes
+        -----
+        - Intentionally minimal in Phase 2 start: only uses the provided model.
+        - Further wiring of preprocessing and knobs will be added later.
+        - Private API to avoid public snapshot changes.
+        """
+        w = cls(cfg.model)
+        # Stash config on the instance for later optional use (private attr)
+        w._cfg = cfg  # type: ignore[attr-defined]
+        # Wire optional preprocessing in a controlled way (only if provided)
+        try:
+            w._preprocessor = cfg.preprocessor  # type: ignore[attr-defined]
+            w._auto_encode = cfg.auto_encode  # type: ignore[attr-defined]
+            w._unseen_category_policy = cfg.unseen_category_policy  # type: ignore[attr-defined]
+        except Exception as exc:  # pragma: no cover - defensive
+            _logging.getLogger(__name__).warning(
+                "Failed to transfer preprocessing config to wrapper: %s", exc
+            )
+        return w
+
     def fit(
         self, X_proper_train: Any, y_proper_train: Any, **kwargs: Any
     ) -> WrapCalibratedExplainer:
@@ -99,8 +136,12 @@ class WrapCalibratedExplainer:
         reinitialize = bool(self.calibrated)
         self.fitted = False
         self.calibrated = False
+        # Optional preprocessing: fit on training data when provided
+        X_train_local = X_proper_train
+        if self._preprocessor is not None:
+            X_train_local = self._pre_fit_preprocess(X_train_local)
         self._logger.info("Fitting underlying learner: %s", type(self.learner).__name__)
-        self.learner.fit(X_proper_train, y_proper_train, **kwargs)
+        self.learner.fit(X_train_local, y_proper_train, **kwargs)
         # delegate shared post-fit logic
         return self._finalize_fit(reinitialize)
 
@@ -159,26 +200,33 @@ class WrapCalibratedExplainer:
 
         if mc is not None:
             self.mc = mc
-        # Canonicalize parameters before passing along
+        # Canonicalize parameters before passing along and warn on aliases
         kwargs = canonicalize_kwargs(kwargs)
+        warn_on_aliases(kwargs)
         validate_param_combination(kwargs)
         # Lightweight validation (does not alter behavior)
         validate_model(self.learner)
-        validate_inputs_matrix(X_calibration, y_calibration, require_y=True, allow_nan=False)
-        kwargs["bins"] = self._get_bins(X_calibration, **kwargs)
+        # Optional preprocessing: ensure preprocessor is fitted (fit here if needed), then transform
+        X_cal_local = X_calibration
+        if self._preprocessor is not None:
+            if not self._pre_fitted:
+                self._logger.info("Fitting preprocessor on calibration data")
+                X_cal_local = self._pre_fit_preprocess(X_cal_local)
+            else:
+                X_cal_local = self._pre_transform(X_cal_local, stage="calibrate")
+        validate_inputs_matrix(X_cal_local, y_calibration, require_y=True, allow_nan=False)
+        kwargs["bins"] = self._get_bins(X_cal_local, **kwargs)
         self._logger.info("Calibrating with %s samples", getattr(X_calibration, "shape", ["?"])[0])
 
         if "mode" in kwargs:
-            self.explainer = CalibratedExplainer(
-                self.learner, X_calibration, y_calibration, **kwargs
-            )
+            self.explainer = CalibratedExplainer(self.learner, X_cal_local, y_calibration, **kwargs)
         elif "predict_proba" in dir(self.learner):
             self.explainer = CalibratedExplainer(
-                self.learner, X_calibration, y_calibration, mode="classification", **kwargs
+                self.learner, X_cal_local, y_calibration, mode="classification", **kwargs
             )
         else:
             self.explainer = CalibratedExplainer(
-                self.learner, X_calibration, y_calibration, mode="regression", **kwargs
+                self.learner, X_cal_local, y_calibration, mode="regression", **kwargs
             )
         self.calibrated = True
         return self
@@ -199,13 +247,21 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
-
+        # Optional preprocessing
+        X_local = self._maybe_preprocess_for_inference(X_test)
         kwargs = canonicalize_kwargs(kwargs)
-        validate_inputs_matrix(X_test, allow_nan=True)
+        # If constructed via _from_config, prefer cfg defaults when absent
+        cfg = getattr(self, "_cfg", None)
+        if cfg is not None:
+            kwargs.setdefault("threshold", cfg.threshold)
+            # low_high_percentiles only applies to regression-style intervals; safe to pass through
+            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
+        warn_on_aliases(kwargs)
+        validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_local, **kwargs)
         assert self.explainer is not None
-        return self.explainer.explain_factual(X_test, **kwargs)
+        return self.explainer.explain_factual(X_local, **kwargs)
 
     def explain_counterfactual(self, X_test: Any, **kwargs: Any) -> Any:
         """Generate counterfactual explanations for the test data.
@@ -233,13 +289,18 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
-
+        X_local = self._maybe_preprocess_for_inference(X_test)
         kwargs = canonicalize_kwargs(kwargs)
-        validate_inputs_matrix(X_test, allow_nan=True)
+        cfg = getattr(self, "_cfg", None)
+        if cfg is not None:
+            kwargs.setdefault("threshold", cfg.threshold)
+            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
+        warn_on_aliases(kwargs)
+        validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_local, **kwargs)
         assert self.explainer is not None
-        return self.explainer.explore_alternatives(X_test, **kwargs)
+        return self.explainer.explore_alternatives(X_local, **kwargs)
 
     def explain_fast(self, X_test: Any, **kwargs: Any) -> Any:
         """Generate fast explanations for the test data.
@@ -256,13 +317,19 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
-
+        X_local = self._maybe_preprocess_for_inference(X_test)
         kwargs = canonicalize_kwargs(kwargs)
-        validate_inputs_matrix(X_test, allow_nan=True)
+        # Apply config defaults when available and not explicitly provided
+        cfg = getattr(self, "_cfg", None)
+        if cfg is not None:
+            kwargs.setdefault("threshold", cfg.threshold)
+            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
+        warn_on_aliases(kwargs)
+        validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_local, **kwargs)
         assert self.explainer is not None
-        return self.explainer.explain_fast(X_test, **kwargs)
+        return self.explainer.explain_fast(X_local, **kwargs)
 
     def explain_lime(self, X_test: Any, **kwargs: Any) -> Any:
         """Generate lime explanations for the test data.
@@ -279,13 +346,14 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
-
+        X_local = self._maybe_preprocess_for_inference(X_test)
         kwargs = canonicalize_kwargs(kwargs)
-        validate_inputs_matrix(X_test, allow_nan=True)
+        warn_on_aliases(kwargs)
+        validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_local, **kwargs)
         assert self.explainer is not None
-        return self.explainer.explain_lime(X_test, **kwargs)
+        return self.explainer.explain_lime(X_local, **kwargs)
 
     # pylint: disable=too-many-return-statements
     def predict(
@@ -466,6 +534,12 @@ class WrapCalibratedExplainer:
             )
         if not self.calibrated:
             raise NotFittedError("The WrapCalibratedExplainer must be calibrated before plotting.")
+        # Apply config defaults when available and not explicitly provided
+        cfg = getattr(self, "_cfg", None)
+        if cfg is not None:
+            if threshold is None:
+                threshold = cfg.threshold
+            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         assert self.explainer is not None
         self.explainer.plot(X_test, y_test=y_test, threshold=threshold, **kwargs)
@@ -476,6 +550,40 @@ class WrapCalibratedExplainer:
         return self.mc(X_test) if self.mc is not None else kwargs.get("bins")
 
     # ------ Internal helpers (reduce duplication) ------
+    def _pre_fit_preprocess(self, X: Any) -> Any:
+        """Fit the configured preprocessor and return transformed X.
+
+        Controlled Phase 2 wiring: if a user-supplied preprocessor exposes
+        fit/transform, we use it. No built-in auto encoding is activated here.
+        """
+        try:
+            if self._preprocessor is None:
+                return X
+            if hasattr(self._preprocessor, "fit_transform"):
+                X_out = self._preprocessor.fit_transform(X)
+            else:
+                self._preprocessor.fit(X)
+                X_out = self._preprocessor.transform(X)
+            self._pre_fitted = True
+            return X_out
+        except Exception as exc:  # pragma: no cover - defensive guard
+            self._logger.warning("Preprocessor failed; proceeding without it: %s", exc)
+            return X
+
+    def _pre_transform(self, X: Any, stage: str = "predict") -> Any:
+        """Transform X with the fitted preprocessor if available."""
+        try:
+            if self._preprocessor is None or not self._pre_fitted:
+                return X
+            return self._preprocessor.transform(X)
+        except Exception as exc:  # pragma: no cover
+            self._logger.warning("Preprocessor transform failed at %s; bypassing: %s", stage, exc)
+            return X
+
+    def _maybe_preprocess_for_inference(self, X: Any) -> Any:
+        """Apply preprocessing for inference paths if configured/fitted."""
+        return self._pre_transform(X, stage="inference")
+
     def _finalize_fit(self, reinitialize: bool) -> WrapCalibratedExplainer:
         """Finalize fit logic shared across fit implementations.
 

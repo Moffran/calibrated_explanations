@@ -1,6 +1,7 @@
 # Calibrated Explanations Repository Improvement Action Plan
 
 **Created:** August 16, 2025
+**Last Updated:** September 2, 2025
 **Repository:** calibrated_explanations
 **Current Version:** v0.5.1
 **Target Releases:** v0.6.0 (Foundational Refactor & Stability), v0.7.0 (Performance & Robustness), v0.8.0 (Extensibility & Advanced UX)
@@ -12,6 +13,21 @@
 This plan focuses on: (1) introducing architectural baselining before refactors, (2) moving validation & exception work earlier to avoid duplicate fixes, (3) adding deprecation & migration strategy, (4) formalizing performance/memory baselines with regression guards, (5) tightening quality gates (lint, typing, doc coverage), and (6) defining stable plugin / visualization contracts. Refactors are split into mechanical and semantic stages to minimize risk.
 
 ---
+
+## Delta summary (2025-09-02)
+
+- Phase 2 progress: configuration scaffolding and controlled preprocessing wiring completed.
+  - Added `ExplainerConfig` and `ExplainerBuilder` (api/config.py).
+  - Added private `WrapCalibratedExplainer._from_config` and propagated config defaults to common methods.
+  - Controlled wiring for user-supplied preprocessors (fit/transform for fit/calibrate/inference) with helpers; tests added and passing.
+  - Docs updated: getting_started and API reference mention config-driven preprocessing and defaults.
+- Phase 2S progress: optional extras initiated and lazy plotting guarded.
+  - Optional dependency groups added: `[project.optional-dependencies].viz`, `[project.optional-dependencies].lime`.
+  - Plot module now lazily imports matplotlib and raises a clear error suggesting `pip install "calibrated_explanations[viz]"` when missing.
+  - Getting started references the viz extra.
+- ADR updates: ADR-009 moved to Accepted; ADR-010 moved to Accepted (initial scope) with adoption progress noted.
+
+Remaining highlights (see detailed sections below): internal Explanation domain model and adapters (Phase 2), alias deprecation warnings at boundaries, quick_explain convenience, migration guide draft, extend extras (`notebooks`, `dev`, `eval`), mark viz tests and add CI matrix job (Phase 2S).
 
 ## 1. Current State Assessment (Condensed)
 
@@ -55,6 +71,7 @@ Before Phase 1 tasks begin:
 | 1A | 1-2 | Mechanical Core Split + Deprecation Shims | `core-split` |
 | 1B | 3 | Exceptions + Validation + Type Core | `stability` |
 | 2 | 4-6 | API Simplification & Config Normalization | `api-simplify` |
+| 2S | 6 | Packaging Split (Core vs Evaluation) & Optional Extras | `pkg-split` |
 | 3 | 7-10 | Performance (Caching, Parallel, Memory) | `perf` |
 | 4 | 11-14 | Testing Expansion + Docs + Migration Guides | `robust-docs` |
 | 5 | 15-18 | Plugin Architecture + Data Schema + Visualization Abstraction | `extensibility` |
@@ -404,6 +421,67 @@ Additional Deliverables (Phase 2, tied to reported issues):
 - Internal domain model implemented with adapter parity tests against golden fixtures; no public change yet.
 - Preprocessing path integrated in wrapper with round-trip tests on categorical/text DataFrames; numeric-only paths remain unchanged.
 
+### Phase 2 status (2025-09-02)
+
+Done:
+- Configuration primitives `ExplainerConfig`, `ExplainerBuilder` added.
+- Private `WrapCalibratedExplainer._from_config` and propagation of config defaults to common methods.
+- Controlled user-supplied preprocessor wiring (fit/transform) in `wrap_explainer.py`; helpers `_pre_fit_preprocess`, `_pre_transform`; inference path reuse; tests added and passing.
+- Docs updated (getting_started + API reference) describing config-driven preprocessing and defaults.
+
+Remaining:
+- Internal Explanation domain model + adapters preserving legacy dict shape; add parity tests vs golden fixtures.
+- Wire alias deprecation warnings at public boundaries (use `warn_on_aliases`); keep behavior unchanged; document deprecation policy.
+- Add `quick_explain(...)` convenience.
+- Draft migration guide (v0.5.x → v0.6.0) with examples; optional notebook/script auto-rewrite helper.
+- Optional: expose a public `from_config` constructor once stabilized (today’s `_from_config` stays private).
+
+Exit criteria update:
+- Replace “planned” with “complete” for config + preprocessor wiring + docs; keep domain model and migration items open.
+
+---
+
+## 8.1 Phase 2S: Packaging Split (Core vs Evaluation) & Optional Extras (Week 6)
+
+Purpose: streamline the core package and make evaluation/research assets clearly optional, improving install footprint and comprehension.
+
+Scope:
+
+- Adopt ADR-010. No runtime behavior changes besides optional visualization gating.
+- Add optional dependency groups in `pyproject.toml`:
+  - `viz`: plotting stack (matplotlib and related);
+  - `notebooks`: IPython/Jupyter authoring;
+  - `dev`: lint/test/type tools plus `viz`;
+  - `eval`: dependencies required by `evaluation/` scripts.
+- Make plotting imports lazy in library code; when missing, raise a clear error instructing to `pip install calibrated-explanations[viz]`.
+- Tag plotting tests with `@pytest.mark.viz` and skip if `viz` extras are unavailable.
+- Add brief `evaluation/README.md` clarifying scope and how to set up the eval environment.
+
+Acceptance criteria:
+
+1. `pyproject.toml` updated with `[project.optional-dependencies]` groups. [Partially Done: `viz`, `lime` present; `notebooks`, `dev`, `eval` pending]
+2. README installation section documents extras and examples. [Pending; getting_started updated with viz note]
+3. Plotting code path performs lazy import; missing-backend error message covered by tests. [Done: lazy import + clear error; tests still require matplotlib in current matrix]
+4. Tests marked and conditionally skipped without `viz`. CI matrix includes one job without `viz` to ensure core remains independent. [Pending]
+5. ADR-010 status updated to Accepted (initial scope) with adoption progress. [Done]
+
+Notes:
+
+- This sub-phase complements ADR-007 (Visualization Abstraction) by decoupling dependencies now, ahead of introducing a PlotSpec later.
+
+### Phase 2S status (2025-09-02)
+
+Done/Partial:
+- Added optional-deps groups `viz`, `lime` in `pyproject.toml`.
+- Implemented lazy plotting import with actionable error suggesting `pip install "calibrated_explanations[viz]"`.
+- Getting started mentions the viz extra.
+
+Remaining next actions:
+- Add extras: `notebooks`, `dev`, `eval` (finalize package lists).
+- Update README install section with extras matrix; add `evaluation/README.md` and an eval environment file.
+- Tag viz tests (e.g., `@pytest.mark.viz`) and skip when extras not installed; add CI job without viz to guarantee core independence.
+- Optional: separate CI workflow for evaluation that installs `[eval]` and exercises benchmarks.
+
 ---
 
 ## 9. Phase 3: Performance (Weeks 7-10)
@@ -528,7 +606,7 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 
 ## 17. Release Strategy (Adjusted)
 
-- v0.6.0: Phases 0-2 complete, deprecations active, migration guide (draft), no performance degradation.
+- v0.6.0: Phases 0-2 (+2S) complete, deprecations active, migration guide (draft), no performance degradation.
 - v0.7.0: Phases 3-4; performance boosts, finalized migration, stable schema v1.
 - v0.8.0: Phases 5-6; plugin ecosystem baseline, advanced visualization, potential schema v1.1 if non-breaking enhancements.
 
@@ -571,6 +649,7 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 - ADR-007: Visualization abstraction layer
 - ADR-008: Explanation domain model & legacy-compatibility strategy
 - ADR-009: Input preprocessing & mapping persistence policy
+- ADR-010: Core vs Evaluation split & distribution strategy
 
 **Glossary:**
 

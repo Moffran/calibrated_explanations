@@ -1,6 +1,6 @@
 # ADR-009: Input Preprocessing & Mapping Persistence Policy
 
-Status: Proposed
+Status: Accepted
 Date: 2025-08-22
 Deciders: Core maintainers
 Reviewers: TBD
@@ -36,6 +36,20 @@ usability and reproducibility.
 
 - Phase 1B: extend validation to be DataFrame-aware.
 - Phase 2: introduce wrapper preprocessing options, persist mappings, and round-trip tests; document configs.
+
+### Adoption Progress (2025-09-02)
+
+Implemented:
+
+- User-supplied preprocessor wiring with private fit/transform helpers in `wrap_explainer.py`.
+- Config fields in `ExplainerConfig` (`preprocessor`, `auto_encode`) and builder pass-through.
+- Docs updated (Getting Started, API reference) to show config-driven preprocessing.
+- Tests added for deterministic reuse of the same transformer across fit/inference.
+
+Pending:
+
+- Automatic encoding path (`auto_encode='auto'`) and mapping persistence helpers for that mode.
+- Unseen-category policy behavior and documentation.
 
 ## Open Questions
 

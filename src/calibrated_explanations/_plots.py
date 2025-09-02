@@ -40,9 +40,17 @@ import math
 import os
 import warnings
 
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
 import numpy as np
+
+try:
+    import matplotlib.colors as mcolors
+    import matplotlib.pyplot as plt
+except Exception as _e:  # pragma: no cover - optional dependency guard
+    mcolors = None  # type: ignore[assignment]
+    plt = None  # type: ignore[assignment]
+    _MATPLOTLIB_IMPORT_ERROR = _e
+else:
+    _MATPLOTLIB_IMPORT_ERROR = None
 
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme
@@ -110,8 +118,21 @@ def update_plot_config(new_config):
         config.write(f)
 
 
+def __require_matplotlib() -> None:
+    """Ensure matplotlib is available before using plotting functions."""
+    if plt is None or mcolors is None:
+        msg = (
+            "Plotting requires matplotlib. Install the 'viz' extra: "
+            "pip install calibrated_explanations[viz]"
+        )
+        if _MATPLOTLIB_IMPORT_ERROR is not None:
+            msg += f"\nOriginal import error: {_MATPLOTLIB_IMPORT_ERROR}"
+        raise RuntimeError(msg)
+
+
 def __setup_plot_style(style_override=None):
     """Set up plot style using configuration with optional runtime overrides."""
+    __require_matplotlib()
     config = load_plot_config()
 
     # Apply style overrides if provided
@@ -200,6 +221,7 @@ def _plot_probabilistic(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    __require_matplotlib()
     config = __setup_plot_style(style_override)
 
     if save_ext is None:
@@ -405,6 +427,7 @@ def _plot_regression(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    __require_matplotlib()
     config = __setup_plot_style(style_override)
 
     if save_ext is None:
@@ -560,6 +583,7 @@ def _plot_triangular(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    __require_matplotlib()
     config = __setup_plot_style(style_override)
 
     if save_ext is None:
@@ -698,6 +722,7 @@ def _plot_alternative(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    __require_matplotlib()
     config = __setup_plot_style(style_override)
 
     if save_ext is None:
@@ -862,6 +887,7 @@ def _plot_global(
     **kwargs : dict
         Additional keyword arguments.
     """
+    __require_matplotlib()
     config = __setup_plot_style(style_override)
 
     is_regularized = True
@@ -1026,6 +1052,7 @@ def _plot_global(
 
 
 def _plot_proba_triangle():
+    __require_matplotlib()
     fig = plt.figure()
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")

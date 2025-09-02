@@ -6,6 +6,9 @@ from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations._plots import load_plot_config, update_plot_config
 from sklearn.ensemble import RandomForestClassifier
 
+# Skip this test module entirely if matplotlib is not available (optional extra)
+pytest.importorskip("matplotlib")
+
 
 # pylint: disable=invalid-name, redefined-outer-name
 @pytest.fixture

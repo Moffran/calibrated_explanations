@@ -35,6 +35,15 @@ classifiers = [
 "Bug Tracker" = "https://github.com/Moffran/calibrated_explanations/issues"
 "Repository" = "https://github.com/Moffran/calibrated_explanations"
 
+[project.optional-dependencies]
+# Phase 2S: Optional extras (kept additive; core deps unchanged for compatibility)
+viz = [
+  "matplotlib",
+]
+lime = [
+  "lime",
+]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 
@@ -58,7 +67,6 @@ select = [
   "F",  # pyflakes
   "I",  # isort
   "B",  # bugbear
-  "UP", # pyupgrade
   "C4", # comprehensions
   "SIM",# simplify
   "NPY",# NumPy
@@ -67,7 +75,6 @@ select = [
 ignore = [
   "E501",    # line length (managed by formatter)
   "S101",    # use of assert (allowed in tests)
-  "UP007",   # allow Optional[...] for py38 compatibility
 ]
 
 [tool.ruff.lint.per-file-ignores]

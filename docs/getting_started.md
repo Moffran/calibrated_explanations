@@ -56,6 +56,50 @@ Here is a very condensed example to get you started:
                               low_high_percentiles=(10,np.inf))
 ```
 
+Note: Plotting requires matplotlib. If it’s not installed, install the optional viz extra:
+
+```powershell
+pip install "calibrated_explanations[viz]"
+```
+
+## Optional preprocessing via configuration
+
+You can provide a user-supplied preprocessor (e.g., a scikit-learn Pipeline or ColumnTransformer)
+through the configuration to have it fitted and applied automatically:
+
+```python
+from sklearn.preprocessing import StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from calibrated_explanations.api.config import ExplainerConfig
+from calibrated_explanations.core import WrapCalibratedExplainer
+
+numeric = [0, 1, 2]
+pre = Pipeline([
+      ("impute", SimpleImputer(strategy="median")),
+      ("scale", StandardScaler()),
+])
+preprocessor = ColumnTransformer([
+      ("num", pre, numeric),
+], remainder="drop")
+
+cfg = ExplainerConfig(model=ClassifierOfYourChoice(), preprocessor=preprocessor)
+w = WrapCalibratedExplainer._from_config(cfg)  # private helper in this phase
+
+# The preprocessor is fitted on the first call to fit/calibrate and used for inference
+w.fit(X_proper_training, y_proper_training)
+w.calibrate(X_calibration, y_calibration)
+factual_explanations = w.explain_factual(X_test)
+```
+
+Notes:
+
+- When configured this way, the wrapper fits the preprocessor on training/calibration data and
+   applies it transparently during fit, calibrate, and explain calls.
+- If you don’t supply a preprocessor, behavior is unchanged from prior releases.
+- Built-in auto-encoding is not enabled yet; only user-supplied preprocessors are wired in this phase.
+
 ## Notebook examples
 
 ## Notes on inputs and parameters
@@ -149,7 +193,7 @@ print(f'Calibrated probability estimates: \n{proba}')
 print(f'Calibrated uncertainty interval for the positive class: [{[(low[i], high[i]) for i in range(len(low))]}]')
 ```
 
-#### Factual Explanations
+#### Factual Explanations (Regression)
 
 Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`.
 
@@ -178,7 +222,7 @@ factual_explanations.plot(0, uncertainty=True)
 factual_explanations.remove_conjunctions().plot(0, uncertainty=True)
 ```
 
-#### Alternative Explanations
+#### Alternative Explanations (Regression)
 
 An alternative to factual rules is to extract alternative rules, which is done using the `explore_alternatives` function.
 
