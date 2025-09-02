@@ -30,6 +30,7 @@ Contents
    contributing
    pr_guide
     calibrated_explanations
+   error_handling
 
 Introduction
 ------------

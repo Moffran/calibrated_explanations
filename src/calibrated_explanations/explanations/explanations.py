@@ -13,6 +13,7 @@ Classes
 import warnings
 from copy import deepcopy
 from time import time
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -49,24 +50,32 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         bins : array-like
             The bins for conditional explanations.
         """
-        self.calibrated_explainer = FrozenCalibratedExplainer(calibrated_explainer)
-        self.X_test = X_test
-        self.y_threshold = y_threshold
-        self.low_high_percentiles = None
-        self.explanations = []
-        self.start_index = 0
-        self.current_index = self.start_index
-        self.end_index = len(X_test[:, 0])
-        self.bins = bins
-        self.total_explain_time = None
-        self.features_to_ignore = features_to_ignore if features_to_ignore is not None else []
+        self.calibrated_explainer: FrozenCalibratedExplainer = FrozenCalibratedExplainer(
+            calibrated_explainer
+        )
+        self.X_test: np.ndarray = X_test
+        self.y_threshold: Optional[Union[float, Tuple[float, float], List[Tuple[float, float]]]] = (
+            y_threshold
+        )
+        self.low_high_percentiles: Optional[Tuple[float, float]] = None
+        self.explanations: List[
+            Union[FactualExplanation, AlternativeExplanation, FastExplanation]
+        ] = []
+        self.start_index: int = 0
+        self.current_index: int = self.start_index
+        self.end_index: int = len(X_test[:, 0])
+        self.bins: Optional[Sequence[Any]] = bins
+        self.total_explain_time: Optional[float] = None
+        self.features_to_ignore: List[int] = (
+            features_to_ignore if features_to_ignore is not None else []
+        )
         # Derived caches (set during finalize of individual explanations)
-        self._feature_names_cache = None  # populated lazily from underlying explainer
-        self._predictions_cache = None
-        self._probabilities_cache = None  # classification only
-        self._lower_cache = None  # regression only
-        self._upper_cache = None
-        self._class_labels_cache = None  # classification label mapping for golden baseline
+        self._feature_names_cache: Optional[Sequence[str]] = None  # populated lazily
+        self._predictions_cache: Optional[np.ndarray] = None
+        self._probabilities_cache: Optional[np.ndarray] = None  # classification only
+        self._lower_cache: Optional[np.ndarray] = None  # regression only
+        self._upper_cache: Optional[np.ndarray] = None
+        self._class_labels_cache: Optional[Sequence[str]] = None  # classification only
 
     def __iter__(self):
         """Return an iterator for the explanations."""
@@ -85,7 +94,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Return the number of explanations."""
         return len(self.X_test[:, 0])
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Union[int, slice, List[int], List[bool], np.ndarray]):
         """Return the explanation for the given key.
 
         In case the index key is an integer (or results in a single result), the function returns the explanation
@@ -117,15 +126,15 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             new_.end_index = len(new_.explanations)
             new_.bins = None if self.bins is None else [self.bins[e.index] for e in new_]
             new_.X_test = np.array([self.X_test[e.index, :] for e in new_])
-            new_.y_threshold = (
-                None
-                if self.y_threshold is None
-                else (
-                    self.y_threshold
-                    if np.isscalar(self.y_threshold)
-                    else [self.y_threshold[e.index] for e in new_]
-                )
-            )
+            if self.y_threshold is None:
+                new_.y_threshold = None
+            elif isinstance(self.y_threshold, (int, float)):
+                new_.y_threshold = float(self.y_threshold)
+            elif isinstance(self.y_threshold, tuple):
+                new_.y_threshold = self.y_threshold
+            else:
+                # assume list of tuples aligned with instances
+                new_.y_threshold = [self.y_threshold[e.index] for e in new_]
             for i, e in enumerate(new_):
                 e.index = i
             return new_
@@ -141,7 +150,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         return self.__repr__()
 
     @property
-    def prediction_interval(self):
+    def prediction_interval(self) -> List[Tuple[Optional[float], Optional[float]]]:
         """Get the prediction intervals from each prediction.
 
         Returns
@@ -152,7 +161,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         return [e.prediction_interval for e in self.explanations]
 
     @property
-    def predict(self):
+    def predict(self) -> List[Any]:
         """Get the predictions from each prediction.
 
         Returns
@@ -168,7 +177,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if self._feature_names_cache is None:
             # Underlying FrozenCalibratedExplainer exposes feature_names via original explainer
             try:
-                self._feature_names_cache = self.calibrated_explainer._explainer.feature_names  # type: ignore[attr-defined]  # noqa: SLF001
+                self._feature_names_cache = self.calibrated_explainer._explainer.feature_names  # noqa: SLF001
             except Exception:  # pragma: no cover - defensive
                 self._feature_names_cache = None
         return self._feature_names_cache
@@ -290,6 +299,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         float
             The low percentile value of the explanation.
         """
+        # mypy: low_high_percentiles is Optional; ensure it's set by callers before use
+        assert self.low_high_percentiles is not None, "low_high_percentiles not set"
         return self.low_high_percentiles[0]  # pylint: disable=unsubscriptable-object
 
     def get_high_percentile(self) -> float:
@@ -300,6 +311,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         float
             The high percentile value of the explanation.
         """
+        assert self.low_high_percentiles is not None, "low_high_percentiles not set"
         return self.low_high_percentiles[1]  # pylint: disable=unsubscriptable-object
 
     # pylint: disable=too-many-arguments
@@ -311,7 +323,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         prediction,
         instance_time=None,
         total_time=None,
-    ) -> None:
+    ) -> "CalibratedExplanations":
         """
         Finalize the explanation by adding the binned data and the feature weights.
 
@@ -338,6 +350,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         for i, instance in enumerate(self.X_test):
             instance_bin = self.bins[i] if self.bins is not None else None
             if self._is_alternative():
+                explanation: Union[FactualExplanation, AlternativeExplanation, FastExplanation]
                 explanation = AlternativeExplanation(
                     self,
                     i,
@@ -368,7 +381,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             return self.__convert_to_AlternativeExplanations()
         return self
 
-    def __convert_to_AlternativeExplanations(self):
+    def __convert_to_AlternativeExplanations(self) -> "AlternativeExplanations":
         alternative_explanations = AlternativeExplanations.__new__(AlternativeExplanations)
         alternative_explanations.__dict__.update(self.__dict__)
         return alternative_explanations

@@ -41,6 +41,9 @@ pythonpath = ["src"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+calibrated_explanations = ["py.typed"]
+
 # ----------------------------
 # Tooling / Quality Gates (Phase 0)
 # ----------------------------
@@ -64,12 +67,13 @@ select = [
 ignore = [
   "E501",    # line length (managed by formatter)
   "S101",    # use of assert (allowed in tests)
+  "UP007",   # allow Optional[...] for py38 compatibility
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S", "B", "I001"]
-"src/calibrated_explanations/core/calibrated_explainer.py" = ["I001"]
-"src/calibrated_explanations/core/prediction_helpers.py" = ["I001"]
+"src/calibrated_explanations/core/calibrated_explainer.py" = ["I001", "UP006"]
+"src/calibrated_explanations/core/prediction_helpers.py" = ["I001", "UP006"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -95,11 +99,13 @@ module = [
   "calibrated_explanations.core.exceptions",
   "calibrated_explanations.core.validation",
   "calibrated_explanations.api.params",
+  "calibrated_explanations.core.prediction_helpers",
 ]
 disallow_untyped_defs = true
 warn_return_any = true
 no_implicit_optional = true
 strict_equality = true
+check_untyped_defs = true
 
 [tool.bandit]
 skips = ["B101"]

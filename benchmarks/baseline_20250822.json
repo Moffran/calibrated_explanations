@@ -7,7 +7,6 @@
   "public_api_symbol_count": 4,
   "public_api_symbols": [
     "CalibratedExplainer",
-    "OnlineCalibratedExplainer",
     "WrapCalibratedExplainer",
     "transform_to_numeric"
   ],

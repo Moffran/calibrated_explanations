@@ -257,6 +257,8 @@ Out of scope (deferred to Phases 2–4):
 
 #### 7.2.1 Exceptions (commit slice 1)
 
+Status: Completed in Phase 1B. New `core.exceptions` implemented and adopted across call sites.
+
 - File: `src/calibrated_explanations/core/exceptions.py`
 - Classes (tentative; see ADR-002):
   - `CalibratedError(Exception)` base (non-recoverable, library-specific).

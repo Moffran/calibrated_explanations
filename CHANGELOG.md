@@ -4,6 +4,10 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.1...main)
 
+### Maintenance / Phase 1B completion
+
+- Phase 1B concluded: parameter canonicalization and lightweight validation wired at predict/predict_proba boundaries; strict typing with py.typed and targeted mypy overrides; documentation for error handling/validation/params added and linked; removed OnlineCalibratedExplainer and pruned legacy mentions; CI hygiene (branch conditions, perf guard) and repo lint/type gates green.
+
 ### Features
 
 - Updated references to the paper [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8) in README and citing. The paper is now published in Machine Learning Journal.
@@ -19,19 +23,27 @@
 - [fix: ensure figures are closed when not shown in plotting functions](https://github.com/Moffran/calibrated_explanations/commit/f20a047b2c4acb0eae6b5f6aed876f2db7d4d389)
 
 ## [v0.5.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.5.1) - 2024-11-27
+
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.0...v0.5.1)
+
 ### Features
+
 - String Targets Support: Added support for string targets, enhancing flexibility in handling diverse datasets. Special thanks to our new contributor [ww-jermaine](https://github.com/ww-jermaine) for the efforts on this feature ([issue #27](https://github.com/Moffran/calibrated_explanations/issues/27)).
 - Out-of-Bag Calibration: Introduced support for out-of-bag calibration when using random forests from `sklearn`, enabling improved calibration techniques directly within ensemble models. See the new [notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap_oob.ipynb) for examples.
 - Documentation Enhancements: Updated and refined [documentation](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest), including fixes to existing sections and the addition of doctests for helper functions to ensure accuracy and reliability.
 - Minor updates: Added a `calibrated` parameter to the `predict` and `predict_proba` methods to allow uncalibrated results.
+
 ### Fixes
+
 - Bug Fixes: Resolved multiple bugs to enhance stability and performance across the library.
 
 
 ## [v0.5.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.5.0) - 2024-10-15
+
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.4.0...v0.5.0)
+
 ### Features
+
 - Improved the introduction in README.
 - Added `calibrated_confusion_matrix` in `CalibratedExplainer` and `WrapCalibratedExplainer`, providing a leave-one-out calibrated confusion matrix using the calibration set. The insights from the confusion matrix are useful when analyzing explanations, to determine general prediction and error distributions of the model. An example of using the confusion matrix in the analysis is given in paper [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf).
 - Embraced the update of `crepes` version 0.7.1, making it possible to add a seed when fitting. Addresses issue #43.
@@ -54,9 +66,10 @@
     - Added prerpint and bibtex to the paper introducing _ensured_ explanations:
       - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.
       - Bibtex:
+
         ```bibtex
         @misc{lofstrom2024ce_ensured,
-          title = 	      {Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions},
+          title =        {Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions},
           author =          {L\"ofstr\"om, Helena and L\"ofstr\"om, Tuwe and Hallberg Szabadvary, Johan},
           year =            {2024},
           eprint =          {2410.05479},
@@ -64,6 +77,7 @@
           primaryClass =    {cs.LG}
         }
         ```
+
   - Introduced _fast_ explanations
     - Introduced a new type of explanation called `FastExplanation` which can be extracted using the `explain_fast` method. It differs from a `FactualExplanation` in that it does not define a rule condition but only provides a feature weight.
     - The new type of explanation is using ideas from [ConformaSight](https://github.com/rabia174/ConformaSight), a recently proposed global explanation algorithm based on conformal classification. Acknowledgements have been added.
@@ -75,7 +89,9 @@
     - Alternative explanations will create new conditions that exclude the instance value. Categorical features already get conditions for all alternative categories during the invocation of `explore_alternatives`.
   - Parameter naming:
     - The parameter indicating the number of rules to plot is renamed to `filter_top` (previously `n_features_to_show`), making the call including all rules (`filter_top=None`) makes a lot more sense.
+
 ### Fixes
+
 - Added checks to ensure that the learner is not called unless the `WrapCalibratedExplainer` is fitted.
 - Added checks to ensure that the explainer is not called unless the `WrapCalibratedExplainer` is calibrated.
 - Fixed incorrect use of `np.random.seed`.

@@ -26,3 +26,6 @@ The calibrated-explanations package
    :caption: Other:
 
    _autosummary/calibrated_explanations.utils.helper
+   _autosummary/calibrated_explanations.core.exceptions
+   _autosummary/calibrated_explanations.core.validation
+   _autosummary/calibrated_explanations.api.params
