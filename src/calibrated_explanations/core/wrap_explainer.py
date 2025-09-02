@@ -6,18 +6,24 @@ from __future__ import annotations
 
 import logging as _logging
 import warnings as _warnings
+from typing import Any, Callable
 
-from crepes.extras import MondrianCategorizer  # type: ignore
+from crepes.extras import MondrianCategorizer
 
 from calibrated_explanations.api.params import canonicalize_kwargs, validate_param_combination
 from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
 from calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
 
 from ..utils.helper import check_is_fitted, safe_isinstance  # noqa: F401
-from .calibrated_explainer import CalibratedExplainer  # type: ignore  # circular during split
+from .calibrated_explainer import CalibratedExplainer  # circular during split
 
 
 class WrapCalibratedExplainer:
+    learner: Any
+    explainer: CalibratedExplainer | None
+    calibrated: bool
+    mc: Callable[[Any], Any] | MondrianCategorizer | None
+    _logger: _logging.Logger
     """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
 
     The calibrated explanations explanation method is based on the paper
@@ -33,7 +39,7 @@ class WrapCalibratedExplainer:
     the calibrated explainer, making it easy to get the same output as shown in the explanations.
     """
 
-    def __init__(self, learner):
+    def __init__(self, learner: Any):
         """Initialize the WrapCalibratedExplainer with a predictive learner.
 
         Parameters
@@ -41,17 +47,17 @@ class WrapCalibratedExplainer:
         learner : predictive learner
             A predictive learner that can be used to predict the target variable.
         """
-        self.mc = None
-        self._logger = _logging.getLogger(__name__)
+        self.mc: Callable[[Any], Any] | MondrianCategorizer | None = None
+        self._logger: _logging.Logger = _logging.getLogger(__name__)
         # Check if the learner is a CalibratedExplainer
         if safe_isinstance(learner, "calibrated_explanations.core.CalibratedExplainer"):
             explainer = learner
-            learner = explainer.learner
-            self.learner = learner
+            underlying_learner = explainer.learner
+            self.learner: Any = underlying_learner
             check_is_fitted(self.learner)
-            self.fitted = True
-            self.explainer = explainer
-            self.calibrated = True
+            self.fitted: bool = True
+            self.explainer: CalibratedExplainer | None = explainer
+            self.calibrated: bool = True
             self._logger.info(
                 "Initialized from existing CalibratedExplainer (already fitted & calibrated)"
             )
@@ -67,7 +73,7 @@ class WrapCalibratedExplainer:
         except (TypeError, RuntimeError):
             self.fitted = False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return the string representation of the WrapCalibratedExplainer."""
         if self.fitted:
             if self.calibrated:
@@ -78,7 +84,9 @@ class WrapCalibratedExplainer:
             return f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, calibrated=False)"
         return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
 
-    def fit(self, X_proper_train, y_proper_train, **kwargs):
+    def fit(
+        self, X_proper_train: Any, y_proper_train: Any, **kwargs: Any
+    ) -> WrapCalibratedExplainer:
         """Fit the learner to the training data.
 
         Parameters
@@ -96,7 +104,13 @@ class WrapCalibratedExplainer:
         # delegate shared post-fit logic (also used by OnlineCalibratedExplainer)
         return self._finalize_fit(reinitialize)
 
-    def calibrate(self, X_calibration, y_calibration, mc=None, **kwargs):
+    def calibrate(
+        self,
+        X_calibration: Any,
+        y_calibration: Any,
+        mc: Callable[[Any], Any] | MondrianCategorizer | None = None,
+        **kwargs: Any,
+    ) -> WrapCalibratedExplainer:
         """Calibrate the explainer with calibration data.
 
         Parameters
@@ -169,7 +183,7 @@ class WrapCalibratedExplainer:
         self.calibrated = True
         return self
 
-    def explain_factual(self, X_test, **kwargs):
+    def explain_factual(self, X_test: Any, **kwargs: Any) -> Any:
         """Generate factual explanations for the test data.
 
         See Also
@@ -190,9 +204,10 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        assert self.explainer is not None
         return self.explainer.explain_factual(X_test, **kwargs)
 
-    def explain_counterfactual(self, X_test, **kwargs):
+    def explain_counterfactual(self, X_test: Any, **kwargs: Any) -> Any:
         """Generate counterfactual explanations for the test data.
 
         See Also
@@ -202,7 +217,7 @@ class WrapCalibratedExplainer:
         """
         return self.explore_alternatives(X_test, **kwargs)
 
-    def explore_alternatives(self, X_test, **kwargs):
+    def explore_alternatives(self, X_test: Any, **kwargs: Any) -> Any:
         """Generate alternative explanations for the test data.
 
         See Also
@@ -223,9 +238,10 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        assert self.explainer is not None
         return self.explainer.explore_alternatives(X_test, **kwargs)
 
-    def explain_fast(self, X_test, **kwargs):
+    def explain_fast(self, X_test: Any, **kwargs: Any) -> Any:
         """Generate fast explanations for the test data.
 
         See Also
@@ -245,9 +261,10 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        assert self.explainer is not None
         return self.explainer.explain_fast(X_test, **kwargs)
 
-    def explain_lime(self, X_test, **kwargs):
+    def explain_lime(self, X_test: Any, **kwargs: Any) -> Any:
         """Generate lime explanations for the test data.
 
         See Also
@@ -267,10 +284,17 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        assert self.explainer is not None
         return self.explainer.explain_lime(X_test, **kwargs)
 
     # pylint: disable=too-many-return-statements
-    def predict(self, X_test, uq_interval=False, calibrated=True, **kwargs):
+    def predict(
+        self,
+        X_test: Any,
+        uq_interval: bool = False,
+        calibrated: bool = True,
+        **kwargs: Any,
+    ) -> Any:
         """Generate predictions for the test data.
 
         See Also
@@ -299,11 +323,19 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        assert self.explainer is not None
         return self.explainer.predict(
             X_test, uq_interval=uq_interval, calibrated=calibrated, **kwargs
         )
 
-    def predict_proba(self, X_test, uq_interval=False, calibrated=True, threshold=None, **kwargs):
+    def predict_proba(
+        self,
+        X_test: Any,
+        uq_interval: bool = False,
+        calibrated: bool = True,
+        threshold: float | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Generate probability predictions for the test data.
 
         See Also
@@ -332,6 +364,7 @@ class WrapCalibratedExplainer:
                     UserWarning,
                     stacklevel=2,
                 )
+            # getattr to appease typing when learner may not expose predict_proba
             proba = self.learner.predict_proba(X_test)
             return self._format_proba_output(proba, uq_interval)
 
@@ -339,11 +372,12 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        assert self.explainer is not None
         return self.explainer.predict_proba(
             X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs
         )
 
-    def calibrated_confusion_matrix(self):
+    def calibrated_confusion_matrix(self) -> Any:
         """Generate a calibrated confusion matrix.
 
         See Also
@@ -358,9 +392,10 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before providing a confusion matrix."
             )
+        assert self.explainer is not None
         return self.explainer.calibrated_confusion_matrix()
 
-    def set_difficulty_estimator(self, difficulty_estimator) -> None:
+    def set_difficulty_estimator(self, difficulty_estimator: Any) -> None:
         """Assign or update the difficulty estimator.
 
         See Also
@@ -375,9 +410,10 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before assigning a difficulty estimator."
             )
+        assert self.explainer is not None
         self.explainer.set_difficulty_estimator(difficulty_estimator)
 
-    def initialize_reject_learner(self, threshold=None):
+    def initialize_reject_learner(self, threshold: float | None = None) -> Any:
         """Initialize the reject learner with a threshold value.
 
         See Also
@@ -392,9 +428,10 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before initializing reject learner."
             )
+        assert self.explainer is not None
         return self.explainer.initialize_reject_learner(threshold=threshold)
 
-    def predict_reject(self, X_test, bins=None, confidence=0.95):
+    def predict_reject(self, X_test: Any, bins: Any = None, confidence: float = 0.95) -> Any:
         """Predict whether to reject the explanations for the test data.
 
         See Also
@@ -410,10 +447,13 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before predicting rejection."
             )
+        assert self.explainer is not None
         return self.explainer.predict_reject(X_test, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-    def plot(self, X_test, y_test=None, threshold=None, **kwargs):
+    def plot(
+        self, X_test: Any, y_test: Any = None, threshold: float | None = None, **kwargs: Any
+    ) -> None:
         """Generate plots for the test data.
 
         See Also
@@ -427,15 +467,16 @@ class WrapCalibratedExplainer:
         if not self.calibrated:
             raise NotFittedError("The WrapCalibratedExplainer must be calibrated before plotting.")
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        assert self.explainer is not None
         self.explainer.plot(X_test, y_test=y_test, threshold=threshold, **kwargs)
 
-    def _get_bins(self, X_test, **kwargs):
+    def _get_bins(self, X_test: Any, **kwargs: Any) -> Any:
         if isinstance(self.mc, MondrianCategorizer):
             return self.mc.apply(X_test)
         return self.mc(X_test) if self.mc is not None else kwargs.get("bins")
 
     # ------ Internal helpers (reduce duplication) ------
-    def _finalize_fit(self, reinitialize: bool):
+    def _finalize_fit(self, reinitialize: bool) -> WrapCalibratedExplainer:
         """Finalize fit logic shared across fit implementations.
 
         Parameters
@@ -451,7 +492,7 @@ class WrapCalibratedExplainer:
             self.calibrated = True
         return self
 
-    def _format_proba_output(self, proba, uq_interval: bool):
+    def _format_proba_output(self, proba: Any, uq_interval: bool) -> Any:
         """Format probability output (with optional trivial intervals) without duplicating logic."""
         if not uq_interval:
             return proba

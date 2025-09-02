@@ -58,18 +58,27 @@ Here is a very condensed example to get you started:
 
 ## Notebook examples
 
+## Notes on inputs and parameters
+
+- Calibration requires clean inputs (no NaNs/inf) and a fitted learner exposing `predict` (and `predict_proba` for classification). The wrapper enforces these checks.
+- Predict/explain/plot perform lightweight shape checks and permit NaNs to match existing behavior in this phase.
+- Some parameter aliases are normalized internally (e.g., `alpha`/`alphas` → `low_high_percentiles`); the original keys are still accepted.
+
 The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb), using the `WrapCalibratedExplainer` class, is similar to this Getting Started, including plots and output.
 
 The notebooks listed below are using the `CalibratedExplainer` class. They showcase a number of different use cases, as indicated by their names:
-* [quickstart](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart.ipynb) - similar to this Getting Started, but without a wrapper class.
-* [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) - with examples for binary classification
-* [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb) - with examples for multi-class classification
-* [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) - with examples for regression
-* [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) - with examples for regression with thresholds
-* [demo_under_the_hood](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_under_the_hood.ipynb) - illustrating how to access the information composing the explanations
+
+- [quickstart](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart.ipynb) - similar to this Getting Started, but without a wrapper class.
+- [demo_binary_classification](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb) - with examples for binary classification
+- [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb) - with examples for multi-class classification
+- [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) - with examples for regression
+- [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) - with examples for regression with thresholds
+- [demo_under_the_hood](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_under_the_hood.ipynb) - illustrating how to access the information composing the explanations
 
 ## Detailed walkthrough
+
 ### Classification
+
 Let us illustrate how we may use `calibrated_explanations` to generate explanations from a classifier trained on a dataset from
 [www.openml.org](https://www.openml.org), which we first split into a
 training and a test set using `train_test_split` from
@@ -141,6 +150,7 @@ print(f'Calibrated uncertainty interval for the positive class: [{[(low[i], high
 ```
 
 #### Factual Explanations
+
 Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`.
 
 
@@ -169,6 +179,7 @@ factual_explanations.remove_conjunctions().plot(0, uncertainty=True)
 ```
 
 #### Alternative Explanations
+
 An alternative to factual rules is to extract alternative rules, which is done using the `explore_alternatives` function.
 
 
@@ -188,7 +199,9 @@ alternative_explanations.plot(0)
 ```
 
 `calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability.
+
 ### Regression
+
 Extracting explanations for regression is very similar to how it is done for classification. First we load and divide the dataset. The target is divided by 1000, meaning that the target is in thousands of dollars.
 
 
@@ -274,6 +287,7 @@ print(f'Calibrated probabilistic uncertainty interval for y_hat <= threshold: [{
 ```
 
 #### Factual Explanations
+
 Let us explain a test instance using our `WrapCalibratedExplainer` object. The method used to get factual explanations is `explain_factual`.
 
 
@@ -301,6 +315,7 @@ asymmetric_explanations = regressor.explain_factual(X_test, low_high_percentiles
 ```
 
 #### Alternative Explanations
+
 The `explore_alternatives` will work exactly the same as for classification.
 
 
@@ -318,6 +333,7 @@ alternative_explanations.add_conjunctions().plot()
 ```
 
 ### Probabilistic Regression
+
 The difference between probabilistic regression and regular regression is that the former returns a probability of the prediction being below a certain threshold. This could for example be useful when the prediction is a time to an event, such as time to death or time to failure.
 
 
@@ -335,7 +351,7 @@ probabilistic_alternative_explanations.plot()
 
 Regression offers many more options but to learn more about them, see the [demo_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_regression.ipynb) or the [demo_probabilistic_regression](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb) notebooks.
 
-### Alternatives
+### Alternatives (initialization options)
 
 A `WrapCalibratedExplainer` can also be initialized with a trained model or with a `CalibratedExplainer` object, as is examplified below.
 
