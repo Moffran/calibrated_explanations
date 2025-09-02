@@ -187,6 +187,7 @@ class WrapCalibratedExplainer:
             )
 
         kwargs = canonicalize_kwargs(kwargs)
+        validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_factual(X_test, **kwargs)
@@ -219,6 +220,7 @@ class WrapCalibratedExplainer:
             )
 
         kwargs = canonicalize_kwargs(kwargs)
+        validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explore_alternatives(X_test, **kwargs)
@@ -240,6 +242,7 @@ class WrapCalibratedExplainer:
             )
 
         kwargs = canonicalize_kwargs(kwargs)
+        validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_fast(X_test, **kwargs)
@@ -261,6 +264,7 @@ class WrapCalibratedExplainer:
             )
 
         kwargs = canonicalize_kwargs(kwargs)
+        validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_lime(X_test, **kwargs)
@@ -292,6 +296,7 @@ class WrapCalibratedExplainer:
             return self.learner.predict(X_test)
 
         kwargs = canonicalize_kwargs(kwargs)
+        validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.predict(
@@ -331,6 +336,7 @@ class WrapCalibratedExplainer:
             return self._format_proba_output(proba, uq_interval)
 
         kwargs = canonicalize_kwargs(kwargs)
+        validate_inputs_matrix(X_test, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.predict_proba(
