@@ -56,7 +56,9 @@ def initialize_explanation(
     explanation = CalibratedExplanations(explainer, X_test, threshold, bins, features_to_ignore)
     if threshold is not None:
         if "regression" not in explainer.mode:
-            raise ValidationError("The threshold parameter is only supported for mode='regression'.")
+            raise ValidationError(
+                "The threshold parameter is only supported for mode='regression'."
+            )
         if isinstance(threshold, (list, np.ndarray)) and isinstance(threshold[0], tuple):
             _warnings.warn(
                 "Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.",

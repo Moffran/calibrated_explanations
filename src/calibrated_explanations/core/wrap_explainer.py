@@ -11,6 +11,7 @@ from crepes.extras import MondrianCategorizer  # type: ignore
 
 from calibrated_explanations.api.params import canonicalize_kwargs, validate_param_combination
 from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
+from calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
 
 from ..utils.helper import check_is_fitted, safe_isinstance  # noqa: F401
 from .calibrated_explainer import CalibratedExplainer  # type: ignore  # circular during split
@@ -147,6 +148,9 @@ class WrapCalibratedExplainer:
         # Canonicalize parameters before passing along
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
+        # Lightweight validation (does not alter behavior)
+        validate_model(self.learner)
+        validate_inputs_matrix(X_calibration, y_calibration, require_y=True, allow_nan=False)
         kwargs["bins"] = self._get_bins(X_calibration, **kwargs)
         self._logger.info("Calibrating with %s samples", getattr(X_calibration, "shape", ["?"])[0])
 

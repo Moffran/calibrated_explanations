@@ -397,7 +397,9 @@ class CalibratedExplainer:
                 if self.bins is None:
                     raise ValidationError("Cannot mix calibration instances with and without bins.")
                 if len(bins) != len(ys):
-                    raise DataShapeError("The length of bins must match the number of added instances.")
+                    raise DataShapeError(
+                        "The length of bins must match the number of added instances."
+                    )
                 self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
             # Phase 1A delegation: update interval learner via helper
             from .calibration_helpers import update_interval_learner as _upd_il
@@ -1297,7 +1299,9 @@ class CalibratedExplainer:
             )
         if self._is_mondrian():
             if bins is None:
-                raise ValidationError("The bins parameter must be specified for Mondrian explanations.")
+                raise ValidationError(
+                    "The bins parameter must be specified for Mondrian explanations."
+                )
             if len(bins) != len(X_test):
                 raise DataShapeError(
                     "The length of the bins parameter must be the same as the number of instances in X_test."
@@ -1306,7 +1310,9 @@ class CalibratedExplainer:
 
         if threshold is not None:
             if "regression" not in self.mode:
-                raise ValidationError("The threshold parameter is only supported for mode='regression'.")
+                raise ValidationError(
+                    "The threshold parameter is only supported for mode='regression'."
+                )
             assert_threshold(threshold, X_test)
         # explanation.low_high_percentiles = low_high_percentiles
         elif "regression" in self.mode:
@@ -1447,7 +1453,9 @@ class CalibratedExplainer:
             )
         if self._is_mondrian():
             if bins is None:
-                raise ValidationError("The bins parameter must be specified for Mondrian explanations.")
+                raise ValidationError(
+                    "The bins parameter must be specified for Mondrian explanations."
+                )
             if len(bins) != len(X_test):
                 raise DataShapeError(
                     "The length of the bins parameter must be the same as the number of instances in X_test."
@@ -1456,7 +1464,9 @@ class CalibratedExplainer:
 
         if threshold is not None:
             if "regression" not in self.mode:
-                raise ValidationError("The threshold parameter is only supported for mode='regression'.")
+                raise ValidationError(
+                    "The threshold parameter is only supported for mode='regression'."
+                )
             assert_threshold(threshold, X_test)
         # explanation.low_high_percentiles = low_high_percentiles
         elif "regression" in self.mode:
@@ -2340,7 +2350,9 @@ class CalibratedExplainer:
             The calibrated confusion matrix.
         """
         if not (self.mode == "classification"):
-            raise ValidationError("The confusion matrix is only available for classification tasks.")
+            raise ValidationError(
+                "The confusion matrix is only available for classification tasks."
+            )
         cal_predicted_classes = np.zeros(len(self.y_cal))
         for i in range(len(self.y_cal)):
             va = VennAbers(
