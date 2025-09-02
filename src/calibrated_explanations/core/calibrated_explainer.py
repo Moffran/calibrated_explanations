@@ -39,6 +39,7 @@ from ..utils.helper import (
     safe_import,
     safe_isinstance,
 )
+from .param_aliases import canonicalize_params
 from .exceptions import (
     ValidationError,
     DataShapeError,
@@ -157,6 +158,8 @@ class CalibratedExplainer:
         """
         init_time = time()
         self.__initialized = False
+        # Normalize kwargs to canonical names to avoid drift
+        kwargs = canonicalize_params(dict(kwargs))
         check_is_fitted(learner)
         self.learner = learner
         self.predict_function = kwargs.get("predict_function")
@@ -714,6 +717,9 @@ class CalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
+        # Normalize any keyword-style overrides via aliasing
+        # (kept minimal; explicit params still take precedence when provided positionally)
+        # No direct kwargs here, but downstream helpers/members respect canonical names.
         # Track total explanation time
         total_time = time()
 
@@ -2101,6 +2107,8 @@ class CalibratedExplainer:
         -----
         The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
         """
+        # Normalize user kwargs to canonical names
+        kwargs = canonicalize_params(dict(kwargs))
         if not calibrated:
             if "threshold" in kwargs:
                 raise ValidationError(
@@ -2196,6 +2204,8 @@ class CalibratedExplainer:
         -----
         The `threshold` parameter is only used for regression tasks.
         """
+        # Normalize user kwargs to canonical names
+        kwargs = canonicalize_params(dict(kwargs))
         if not calibrated:
             if threshold is not None:
                 raise ValidationError(
@@ -2322,6 +2332,7 @@ class CalibratedExplainer:
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, X_test, y_test=None, threshold=None, **kwargs):
         """Generate plots for the test data."""
+        kwargs = canonicalize_params(dict(kwargs))
         # Pass any style overrides along to the plotting function
         style_override = kwargs.pop("style_override", None)
         kwargs["style_override"] = style_override

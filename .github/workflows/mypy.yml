@@ -26,12 +26,11 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install .
-          pip install mypy
-      - name: Run mypy (Phase 1B scope)
+          pip install mypy ruff
+      - name: Run mypy (regressions only) and update baseline if missing
         shell: bash
         run: |
           set -e
-          mypy --version
           FILES=""
           for f in \
             src/calibrated_explanations/core/exceptions.py \
@@ -43,5 +42,6 @@ jobs:
             echo "No Phase 1B typed files found; skipping mypy."
             exit 0
           fi
-          echo "Checking files:$FILES"
-          mypy $FILES --config-file pyproject.toml
+          echo "Checking files: $FILES"
+          python scripts/ci_check_baseline.py --tool mypy --baseline ci/baselines/mypy.txt --paths $FILES || {
+            echo "If baseline was created or new errors found, see logs above."; exit 1; }

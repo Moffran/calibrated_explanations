@@ -7,10 +7,13 @@ Verbatim move from legacy core.py (no semantic changes)."""
 from __future__ import annotations
 
 import logging as _logging
+from typing import Any, Optional
 
 import numpy as np
 
 from .wrap_explainer import WrapCalibratedExplainer  # fixed import
+from .param_aliases import canonicalize_params
+from .validation import validate_feature_matrix
 from calibrated_explanations.core.exceptions import NotFittedError, ModelNotSupportedError
 
 
@@ -25,7 +28,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
     data scenarios where the model needs to continuously learn and adapt.
     """
 
-    def fit(self, X_proper_train, y_proper_train, **kwargs):
+    def fit(self, X_proper_train: Any, y_proper_train: Any, **kwargs: Any) -> "OnlineCalibratedExplainer":
         """Fit the learner to the training data.
 
         Parameters
@@ -49,6 +52,9 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
             "Online fit start (%s samples)", getattr(X_proper_train, "shape", ["?"])[0]
         )
 
+        # Normalize keyword arguments to canonical names to reduce drift
+        validate_feature_matrix(X_proper_train, name="X_proper_train")
+        kwargs = canonicalize_params(dict(kwargs))
         if hasattr(self.learner, "fit"):
             self.learner.fit(X_proper_train, y_proper_train, **kwargs)
         else:
@@ -64,7 +70,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         _logging.getLogger(__name__).info("Online fit complete")
         return result
 
-    def partial_fit(self, X, y, **kwargs):
+    def partial_fit(self, X: Any, y: Any, **kwargs: Any) -> "OnlineCalibratedExplainer":
         """Incrementally fit the model with samples X and y.
 
         Parameters
@@ -93,11 +99,13 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         if np.isscalar(y):
             X = np.asarray(X).reshape(1, -1)
             y = np.asarray(y).reshape(1)
+        validate_feature_matrix(X, name="X")
+        kwargs = canonicalize_params(dict(kwargs))
         self.learner.partial_fit(X, y, **kwargs)
         self.fitted = True
         return self
 
-    def online_fit_and_calibrate(self, X, y, **kwargs):
+    def online_fit_and_calibrate(self, X: Any, y: Any, **kwargs: Any) -> None:
         """Incrementally fit and calibrate the model with samples X and y. Calls partial_fit and calibrate_many.
 
         Parameters
@@ -122,6 +130,8 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         pre_pred = (
             self.explainer.predict_function(self.explainer.X_cal) if self.calibrated else None
         )
+        validate_feature_matrix(X, name="X")
+        kwargs = canonicalize_params(dict(kwargs))
         try:
             self.partial_fit(X, y, **kwargs)
         except AttributeError:
@@ -146,9 +156,10 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
                     kwargs["mode"] = "classification"
                 else:
                     kwargs["mode"] = "regression"
+            # Calibrate handles canonicalization internally as well, but keep kwargs normalized here
             self.calibrate(X, y, **kwargs)
 
-    def calibrate_one(self, x, y, **kwargs):
+    def calibrate_one(self, x: Any, y: Any, **kwargs: Any) -> "OnlineCalibratedExplainer":
         """Update the calibration set with a single instance.
 
         Parameters
@@ -169,7 +180,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         y = np.asarray(y).reshape(1)
         return self.calibrate_many(x, y, **kwargs)
 
-    def calibrate_many(self, X, y, **kwargs):
+    def calibrate_many(self, X: Any, y: Any, **kwargs: Any) -> "OnlineCalibratedExplainer":
         """Update the calibration set with multiple instances.
 
         Parameters
@@ -194,7 +205,10 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         if not self.fitted:
             raise NotFittedError("The OnlineCalibratedExplainer must be fitted before calibration.")
 
+        # Keep kwargs normalized before delegating
+        kwargs = canonicalize_params(dict(kwargs))
         if self.calibrated:
+            # reinitialize does not accept arbitrary kwargs; only bins is relevant
             self.explainer.reinitialize(self.learner, X, y, **kwargs)
         else:
             if "mode" not in kwargs:
@@ -207,7 +221,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         self.calibrated = True
         return self
 
-    def predict_one(self, x, **kwargs):
+    def predict_one(self, x: Any, **kwargs: Any) -> Any:
         """Predict target for a single instance.
 
         Parameters
@@ -225,7 +239,7 @@ class OnlineCalibratedExplainer(WrapCalibratedExplainer):
         x = np.asarray(x).reshape(1, -1)
         return self.predict(x, **kwargs)
 
-    def predict_proba_one(self, x, **kwargs):
+    def predict_proba_one(self, x: Any, **kwargs: Any) -> Any:
         """Predict class probabilities for a single instance.
 
         Parameters
