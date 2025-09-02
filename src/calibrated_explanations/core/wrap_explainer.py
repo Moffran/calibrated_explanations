@@ -9,9 +9,11 @@ import warnings as _warnings
 
 from crepes.extras import MondrianCategorizer  # type: ignore
 
+from calibrated_explanations.api.params import canonicalize_kwargs, validate_param_combination
+from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
+
 from ..utils.helper import check_is_fitted, safe_isinstance  # noqa: F401
 from .calibrated_explainer import CalibratedExplainer  # type: ignore  # circular during split
-from calibrated_explanations.core.exceptions import NotFittedError, ValidationError, DataShapeError
 
 
 class WrapCalibratedExplainer:
@@ -142,6 +144,9 @@ class WrapCalibratedExplainer:
 
         if mc is not None:
             self.mc = mc
+        # Canonicalize parameters before passing along
+        kwargs = canonicalize_kwargs(kwargs)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_calibration, **kwargs)
         self._logger.info("Calibrating with %s samples", getattr(X_calibration, "shape", ["?"])[0])
 
@@ -173,8 +178,12 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
         if not self.calibrated:
-            raise NotFittedError("The WrapCalibratedExplainer must be calibrated before explaining.")
+            raise NotFittedError(
+                "The WrapCalibratedExplainer must be calibrated before explaining."
+            )
 
+        kwargs = canonicalize_kwargs(kwargs)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_factual(X_test, **kwargs)
 
@@ -201,8 +210,12 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
         if not self.calibrated:
-            raise NotFittedError("The WrapCalibratedExplainer must be calibrated before explaining.")
+            raise NotFittedError(
+                "The WrapCalibratedExplainer must be calibrated before explaining."
+            )
 
+        kwargs = canonicalize_kwargs(kwargs)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explore_alternatives(X_test, **kwargs)
 
@@ -218,8 +231,12 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
         if not self.calibrated:
-            raise NotFittedError("The WrapCalibratedExplainer must be calibrated before explaining.")
+            raise NotFittedError(
+                "The WrapCalibratedExplainer must be calibrated before explaining."
+            )
 
+        kwargs = canonicalize_kwargs(kwargs)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_fast(X_test, **kwargs)
 
@@ -235,8 +252,12 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
         if not self.calibrated:
-            raise NotFittedError("The WrapCalibratedExplainer must be calibrated before explaining.")
+            raise NotFittedError(
+                "The WrapCalibratedExplainer must be calibrated before explaining."
+            )
 
+        kwargs = canonicalize_kwargs(kwargs)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.explain_lime(X_test, **kwargs)
 
@@ -266,6 +287,8 @@ class WrapCalibratedExplainer:
                 return predict, (predict, predict)
             return self.learner.predict(X_test)
 
+        kwargs = canonicalize_kwargs(kwargs)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.predict(
             X_test, uq_interval=uq_interval, calibrated=calibrated, **kwargs
@@ -303,6 +326,8 @@ class WrapCalibratedExplainer:
             proba = self.learner.predict_proba(X_test)
             return self._format_proba_output(proba, uq_interval)
 
+        kwargs = canonicalize_kwargs(kwargs)
+        validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_test, **kwargs)
         return self.explainer.predict_proba(
             X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs
