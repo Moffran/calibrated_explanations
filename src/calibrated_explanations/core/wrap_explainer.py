@@ -101,7 +101,7 @@ class WrapCalibratedExplainer:
         self.calibrated = False
         self._logger.info("Fitting underlying learner: %s", type(self.learner).__name__)
         self.learner.fit(X_proper_train, y_proper_train, **kwargs)
-        # delegate shared post-fit logic (also used by OnlineCalibratedExplainer)
+        # delegate shared post-fit logic
         return self._finalize_fit(reinitialize)
 
     def calibrate(

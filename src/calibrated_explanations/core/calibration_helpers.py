@@ -29,9 +29,7 @@ def update_interval_learner(explainer, xs, ys, bins=None) -> None:
     Mirrors original semantics and exceptions exactly.
     """
     if explainer.is_fast():
-        raise ConfigurationError(
-            "OnlineCalibratedExplainers does not currently support fast explanations."
-        )
+        raise ConfigurationError("Fast explanations are not supported in this update path.")
     if explainer.mode == "classification":
         explainer.interval_learner = VennAbers(
             explainer.X_cal,
@@ -43,9 +41,7 @@ def update_interval_learner(explainer, xs, ys, bins=None) -> None:
         )
     elif "regression" in explainer.mode:
         if isinstance(explainer.interval_learner, list):
-            raise ConfigurationError(
-                "OnlineCalibratedExplainers does not currently support fast explanations."
-            )
+            raise ConfigurationError("Fast explanations are not supported in this update path.")
         # update the IntervalRegressor
         explainer.interval_learner.insert_calibration(xs, ys, bins=bins)
     explainer._CalibratedExplainer__initialized = True  # noqa: SLF001

@@ -10,7 +10,6 @@ become aware without flooding logs.
 from warnings import warn as _warn
 
 from .calibrated_explainer import CalibratedExplainer  # noqa: F401
-from .online_explainer import OnlineCalibratedExplainer  # noqa: F401
 from .wrap_explainer import WrapCalibratedExplainer  # noqa: F401
 
 _warn(
@@ -23,5 +22,4 @@ _warn(
 __all__ = [
     "CalibratedExplainer",
     "WrapCalibratedExplainer",
-    "OnlineCalibratedExplainer",
 ]

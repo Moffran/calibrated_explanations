@@ -122,7 +122,7 @@ src/calibrated_explanations/core/
   __init__.py                (exports)
   calibrated_explainer.py    (shrinking; delegates after splits)
   wrap_explainer.py          (done)
-  online_explainer.py        (done)
+  online_explainer.py        (removed)
   prediction_helpers.py      (NEW: prediction / probability helper functions)
   calibration_helpers.py     (NEW: interval learner & calibration assembly)
   fast_explainer.py          (DEFERRED: separate FastCalibratedExplainer class; Phase 2/3)
@@ -170,7 +170,7 @@ Dropped: `_legacy_core_shim.py` (superseded by existing top-level `core.py` shim
 
 | Item | Status (2025-08-21) | Notes |
 |------|---------------------|-------|
-| wrap_explainer.py, online_explainer.py | Done | Already split and imported in core package __all__ |
+| wrap_explainer.py | Done | Already split and imported in core package `__all__` |
 | prediction_helpers.py / calibration_helpers.py / fast_explainer.py | Partially Done | prediction_helpers.py created and wired; calibration_helpers.py created and wired for init/update; fast_explainer.py deferred to Phase 2/3 as a separate class |
 | validation_stub.py | Done | No-op placeholder added before Phase 1B real validation logic |
 | Golden output tests | Done | `tests/test_golden_explanations.py` covers classification & regression serialization (first 5 instances); consider extending with hash of full probabilistic vectors later |
@@ -289,7 +289,7 @@ Out of scope (deferred to Phases 2–4):
   - `ALIAS_MAP = {"alpha": "low_high_percentiles", "alphas": "low_high_percentiles", "n_jobs": "parallel_workers", ...}` (start minimal, extend later in Phase 2).
   - `canonicalize_kwargs(kwargs: dict) -> dict` (returns a copy with canonical keys; preserves originals for warning messages if needed later).
   - `validate_param_combination(kwargs: dict) -> None` raising `ConfigurationError` for mutually exclusive or invalid combos.
-- Wire this at the boundary constructors/wrappers in `calibrated_explainer.py`, `wrap_explainer.py`, and `online_explainer.py` without changing external signatures.
+- Wire this at the boundary constructors/wrappers in `calibrated_explainer.py` and `wrap_explainer.py` without changing external signatures. Online variant removed.
 
 #### 7.2.4 Typing foundation (commit slice 4)
 
@@ -367,7 +367,7 @@ Success criteria:
 ### 7.9 Deliverables (Phase 1B Final)
 
 - New: `core/exceptions.py`, `core/validation.py`, `api/params.py`.
-- Rewired: `calibrated_explainer.py`, `wrap_explainer.py`, `online_explainer.py` to call new validation and exceptions.
+- Rewired: `calibrated_explainer.py`, `wrap_explainer.py` to call new validation and exceptions. Online variant removed.
 - CI: mypy step, config in `pyproject.toml`.
 - Tests: exceptions/validation/params + updated integration tests.
 - Docs: ADR-002 to Accepted; short error-handling guide; API stubs for new modules.

@@ -11,7 +11,7 @@ import logging as _logging
 
 from ._interval_regressor import IntervalRegressor  # noqa: F401
 from ._VennAbers import VennAbers  # noqa: F401
-from .core import CalibratedExplainer, OnlineCalibratedExplainer, WrapCalibratedExplainer
+from .core import CalibratedExplainer, WrapCalibratedExplainer
 from .explanations.explanation import (
     AlternativeExplanation,  # noqa: F401
     FactualExplanation,  # noqa: F401
@@ -34,6 +34,5 @@ __version__ = "v0.5.1"
 __all__ = [
     "CalibratedExplainer",
     "WrapCalibratedExplainer",
-    "OnlineCalibratedExplainer",
     "transform_to_numeric",
 ]

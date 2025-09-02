@@ -1794,9 +1794,7 @@ class CalibratedExplainer:
 
     def __update_interval_learner(self, xs, ys, bins=None) -> None:  # pylint: disable=unused-argument
         if self.is_fast():
-            raise ConfigurationError(
-                "OnlineCalibratedExplainers does not currently support fast explanations."
-            )
+            raise ConfigurationError("Fast explanations are not supported in this update path.")
         if self.mode == "classification":
             # pylint: disable=fixme
             # TODO: change so that existing calibrators are extended with new calibration instances
@@ -1810,9 +1808,7 @@ class CalibratedExplainer:
             )
         elif "regression" in self.mode:
             if isinstance(self.interval_learner, list):
-                raise ConfigurationError(
-                    "OnlineCalibratedExplainers does not currently support fast explanations."
-                )
+                raise ConfigurationError("Fast explanations are not supported in this update path.")
             # update the IntervalRegressor
             self.interval_learner.insert_calibration(xs, ys, bins=bins)
         self.__initialized = True

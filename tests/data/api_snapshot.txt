@@ -1,9 +1,7 @@
 # root __all__
 CalibratedExplainer
-OnlineCalibratedExplainer
 WrapCalibratedExplainer
 transform_to_numeric
 # core __all__
 CalibratedExplainer
-OnlineCalibratedExplainer
 WrapCalibratedExplainer

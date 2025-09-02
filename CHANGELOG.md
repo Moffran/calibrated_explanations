@@ -1,13 +1,21 @@
 # Changelog
 
 ## [Unreleased]
+
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.1...main)
+
 ### Features
+
 - Updated references to the paper [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8) in README and citing. The paper is now published in Machine Learning Journal.
   - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2025). [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8). Machine Learning 114, 100.
-- Added support for Time Series data through the addition of an `OnlineCalibratedExplainer`. The explainer support both online methods like ridge regression, making it possible to continuously update both the model and the calibration. It also support offline models, allowing online calibration. It also has support for semi-online and batch updates and calibration.
 - Plot Style Control: With [a series of commits](https://github.com/Moffran/calibrated_explanations/compare/4cbc4ff410df19a32899071daa2568e8904c2c47...4093496b1d938f3470f2d33715f0af286f239728), a `plot_config.ini` file and a `test_plot_config.py` file have been added. The style parameters are used by the plots. The style parameters for all plot functions can now be overridden using the `style_override` parameter. [Controlling figure width is also added](https://github.com/Moffran/calibrated_explanations/compare/86babfa1afed75fc8959cf072c21e932c3d08f07...e0d13f32907185a144781ff76b553ad5c8cc0f8d).
+
+### Breaking Changes
+
+- Removed the experimental `OnlineCalibratedExplainer` and its tests/docs. All references were purged from code, docs, configs, and packaging metadata.
+
 ### Fixes
+
 - [fix: ensure figures are closed when not shown in plotting functions](https://github.com/Moffran/calibrated_explanations/commit/f20a047b2c4acb0eae6b5f6aed876f2db7d4d389)
 
 ## [v0.5.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.5.1) - 2024-11-27
