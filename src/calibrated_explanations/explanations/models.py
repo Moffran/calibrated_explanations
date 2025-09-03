@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
 
-@dataclass(slots=True)
+@dataclass
 class FeatureRule:
     feature: int
     rule: str
@@ -26,7 +26,7 @@ class FeatureRule:
     current_bin: int | None = None
 
 
-@dataclass(slots=True)
+@dataclass
 class Explanation:
     task: str
     index: int
