@@ -1,6 +1,6 @@
 # ADR-007: Visualization Abstraction Layer
 
-Status: Proposed
+Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -51,8 +51,8 @@ Negative / Risks:
 
 ## Adoption & Migration
 
-Phase 6: Define `PlotSpec` + matplotlib adapter; wrap existing visualization code to emit spec then render.
-Phase 7: Add second backend (likely plotly) to validate abstraction.
+Phase C (v0.6.x): Define `PlotSpec` + matplotlib adapter; convert 1–2 plots to emit spec then render; keep optional deps via extras.
+Phase later (v0.7+): Add a second backend (plotly) to validate abstraction; extend examples and docs.
 
 ## Open Questions
 

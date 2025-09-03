@@ -1,6 +1,6 @@
 # ADR-005: Explanation JSON Schema Versioning
 
-Status: Proposed
+Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -65,9 +65,9 @@ Negative / Risks:
 
 ## Adoption & Migration
 
-Phase 0: Implement envelope + validator; keep old internal paths but do not promise stability.
-Phase 1: Migrate library outputs to envelope; add golden tests.
-Phase 2: Deprecate undocumented legacy shapes; announce removal.
+Phase B (v0.6.0): Freeze v1.0.0 fields and semantics; land envelope + validator and round-trip tests on fixtures while keeping legacy dicts via adapters.
+Phase C–E: Add size/performance notes and optional streaming writer; keep schema stable (additive only).
+Removal: Deprecate undocumented legacy shapes after v0.7.0; earliest removal v0.8.0 under deprecation policy (ADR-011).
 
 ## Open Questions
 
@@ -77,4 +77,4 @@ Phase 2: Deprecate undocumented legacy shapes; announce removal.
 
 ## Decision Notes
 
-Revisit after first external consumer feedback cycle.
+Revisit after first external consumer feedback cycle; any non-additive schema changes require new major schema version (2.0.0).

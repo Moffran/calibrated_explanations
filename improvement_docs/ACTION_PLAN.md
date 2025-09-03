@@ -1,403 +1,234 @@
-# Calibrated Explanations Repository Improvement Action Plan
+# Calibrated Explanations Improvement Plan (Contract-first)
 
-**Created:** August 16, 2025
-**Last Updated:** September 2, 2025
-**Repository:** calibrated_explanations
-**Current Version:** v0.5.1
-**Target Releases:** v0.6.0 (Foundational Refactor & Stability), v0.7.0 (Performance & Robustness), v0.8.0 (Extensibility & Advanced UX)
-
----
-
-## 0. Executive Summary
-
-This plan focuses on: (1) introducing architectural baselining before refactors, (2) moving validation & exception work earlier to avoid duplicate fixes, (3) adding deprecation & migration strategy, (4) formalizing performance/memory baselines with regression guards, (5) tightening quality gates (lint, typing, doc coverage), and (6) defining stable plugin / visualization contracts. Refactors are split into mechanical and semantic stages to minimize risk.
+Created: August 16, 2025
+Last Updated: September 3, 2025
+Repository: calibrated_explanations
+Current Version: v0.5.1
+Target Releases: v0.6.0 (Stable contracts & config), v0.7.0 (Perf foundations & docs CI), v0.8.0 (Extensibility & viz)
 
 ---
 
-## Delta summary (2025-09-02)
+## Executive summary
 
-- Phase 2 progress: configuration scaffolding and controlled preprocessing wiring completed.
-  - Added `ExplainerConfig` and `ExplainerBuilder` (api/config.py).
-  - Added private `WrapCalibratedExplainer._from_config` and propagated config defaults to common methods.
-  - Controlled wiring for user-supplied preprocessors (fit/transform for fit/calibrate/inference) with helpers; tests added and passing.
-  - Docs updated: getting_started and API reference mention config-driven preprocessing and defaults.
-- Phase 2S progress: optional extras initiated and lazy plotting guarded.
-  - Optional dependency groups added: `[project.optional-dependencies].viz`, `[project.optional-dependencies].lime`.
-  - Plot module now lazily imports matplotlib and raises a clear error suggesting `pip install "calibrated_explanations[viz]"` when missing.
-  - Getting started references the viz extra.
-- ADR updates: ADR-009 moved to Accepted; ADR-010 moved to Accepted (initial scope) with adoption progress noted.
-
-Remaining highlights (see detailed sections below): internal Explanation domain model and adapters (Phase 2), alias deprecation warnings at boundaries, quick_explain convenience, migration guide draft, extend extras (`notebooks`, `dev`, `eval`), mark viz tests and add CI matrix job (Phase 2S).
-
-## 1. Current State Assessment (Condensed)
-
-**Strengths:** Strong academic basis, rich examples, packaging + tests exist.
-**Pain Points:** Monolithic `core.py` (2600+ LOC), heavy pylint disables, inconsistent API, unclear validation, limited performance profiling, no formal plugin interface, scattered visualization patterns.
+Shift to contract-first delivery: freeze public data contracts (schema v1), preprocessing policy, and plugin trust model; keep performance behind feature flags; harden tests/docs. Maintain legacy output compatibility via adapters while introducing a clear internal domain model.
 
 ---
 
-## 2. Guiding Principles
+## Current repo state (observed)
 
-1. Behavior parity first; enhancements second.
-2. Mechanical refactor isolated from logic changes.
-3. Introduce safety nets (tests, benchmarks, lint, type checks) before deep changes.
-4. Explicit deprecations (warnings + migration helpers) instead of silent breaks.
-5. Performance & memory are tracked, not assumed.
-6. Public surface area stays minimal + documented.
-7. Extensibility via stable, versioned contracts (plugin, visualization, explanation data schema).
+Based on public plan and code review, the repo is mid-Phase 2 with some 2S structural work landed.
 
----
+- Phase 1A/1B: Done
+  - Validation/exception types are present at boundaries.
+  - Parameter aliasing/canonicalization exists in the API layer.
+- Phase 2 core: In progress
+  - Config normalization and wrapper improvements present; coverage expanding.
+  - Preprocessing and mapping persistence policy (ADR-009) has hooks; needs tests/docs hardening.
+  - Domain model for explanations (ADR-008) not yet implemented; legacy dict outputs dominate.
+  - Explanation JSON Schema v1 (ADR-005) not yet frozen/implemented.
+- Phase 2S structural:
+  - Plugin registry and capability metadata exist minimally; trust model ADR pending finalization.
+- Later phases:
+  - Visualization abstraction (PlotSpec) not yet implemented.
+  - Caching/parallel backends not yet implemented (planned behind flags).
+  - Docs pipeline (API ref, example HTML, linkcheck) not yet wired in CI.
 
-## 3. Architecture & Baselines (Pre-Phase Gates)
-
-Before Phase 1 tasks begin:
-
-- Produce high-level component diagram (Explain Flow: Training → Calibration → Explanation → Visualization).
-- Extract Architecture Decision Records (ADRs) for: calibration strategy abstraction, plugin boundaries, caching layer, parallel backend choice, explanation data schema.
-- Capture baseline metrics script (`scripts/collect_baseline.py`):
-  - Import time of `calibrated_explanations`.
-  - Median / p95 explanation time (small & medium dataset).
-  - Peak RSS memory for representative tasks.
-  - (Test runtime & coverage no longer part of baseline collection; retained in later CI reporting.)
-- Store JSON baseline under `benchmarks/baseline_<date>.json` and commit.
+Implication: prioritize contract-freezing steps (schema v1, domain model, preprocessing policy), then visualization MVP, while keeping performance features behind flags.
 
 ---
 
-## 4. Phase Overview (Re-ordered)
+## Prioritization (what’s next)
 
-| Phase | Weeks | Focus | Key Deliverable Tag |
-|-------|-------|-------|---------------------|
-| 0 | 0 | Baselines, ADRs, Tooling | `baseline` |
-| 1A | 1-2 | Mechanical Core Split + Deprecation Shims | `core-split` |
-| 1B | 3 | Exceptions + Validation + Type Core | `stability` |
-| 2 | 4-6 | API Simplification & Config Normalization | `api-simplify` |
-| 2S | 6 | Packaging Split (Core vs Evaluation) & Optional Extras | `pkg-split` |
-| 3 | 7-10 | Performance (Caching, Parallel, Memory) | `perf` |
-| 4 | 11-14 | Testing Expansion + Docs + Migration Guides | `robust-docs` |
-| 5 | 15-18 | Plugin Architecture + Data Schema + Visualization Abstraction | `extensibility` |
-| 6 | 19-20 | Advanced Visualization & Dashboards | `viz-adv` |
+1) Freeze ADR-005 (schema v1) and ADR-009 (preprocessing policy), finalize ADR-006 (plugin trust) and adopt.
+2) Implement ADR-008 (domain model) with legacy adapter to preserve current outputs.
+3) Accept ADR-007 and ship a minimal PlotSpec with a matplotlib adapter for 1–2 plots; keep optional deps.
+4) Implement ADR-003/ADR-004 behind feature flags with micro-benchmarks; disabled by default.
+5) Add policy ADRs for deprecation and docs/gallery CI; activate deprecation warnings for aliases.
 
-Release Alignment:
-
-- v0.6.0 → End of Phase 2 (stability + simplified API).
-- v0.7.0 → End of Phase 4 (performance + robust testing/docs).
-- v0.8.0 → End of Phase 6 (plugins + advanced visualization).
+Near-term (2–3 weeks): Freeze schema v1 + preprocessing policy, land domain model + adapters, and wire docs CI (API ref + nbconvert + linkcheck).
 
 ---
 
-## 5. Phase 0: Minimal Baselines (Week 0)
+## Phase A: Validation, Exceptions, and Parameter Canonicalization
 
-*Adjusted for primarily single maintainer; ambitious tooling deferred.*
+Status: Done/In progress (minor gaps)
 
-**Goals (Must):**
+- Verify ADR-002 is Accepted and applied across public entry points.
+- Ensure `core.exceptions` are consistently raised; replace any remaining ad-hoc exceptions while preserving message compatibility.
+- Confirm `api/params` canonicalization is used end-to-end (builder, wrapper, CLI/examples); add any missing combination checks.
 
-1. Architectural intent captured (diagram + ADRs 001–007).
-2. Lightweight performance + API baseline (import time, micro timings, public symbols).
-3. Deprecation shim in place ahead of core split.
-4. Minimal linting (ruff) to prevent style drift.
+Acceptance
 
-**Done Already:**
-
-- ADRs & component diagram.
-- Baseline collector (`scripts/collect_baseline.py`) & stored baselines (16 & 20 Aug).
-- Performance thresholds + regression check (`perf_thresholds.json`, `check_perf_regression.py`, CI workflow).
-- API snapshot & diff scripts.
-- Deprecation shim (`core.py`).
-- Extended pre-commit suite (bandit, pip-audit, codespell).
-- Add ruff to development workflow (pre-commit or simple CI step).
-- Minimal logging scaffold (NullHandler + lifecycle INFO logs in core wrappers).
-
-All minimal Phase 0 tasks completed; no remaining mandatory items.
-
-**Explicitly Deferred (moved to later phases):**
-
-- Benchmark harness (`pytest-benchmark`).
-- Capturing test runtime & coverage inside baseline JSON.
-- Environment lock / pin strategy.
-- Release automation (semantic-release / towncrier).
-- Formal logging policy & metrics aggregation.
-
-**Phase 0 Exit Criteria (Revised):**
-
-- Baseline + thresholds + CI regression guard green.
-- ADRs & diagram committed.
-- Ruff lint passes.
-- Deprecation warning emitted on legacy import.
-
-Anything else proceeds in later phases without blocking Phase 1A.
+- Tests cover error typing and messages at boundaries.
+- Error types consistent across main flows.
+- No change to successful behavior or serialized outputs.
 
 ---
 
-## 6. Phase 1A: Mechanical Core Decomposition (Weeks 1-2)
+## Phase B: Explanation Schema v1 and Domain Model
 
-**Rule:** No logic or signature change; only mechanical moves + delegation wrappers. Zero semantic drift.
+Status: Not started (schema/domain), legacy outputs in use
 
-**Target Internal File Layout (remaining extractions only):**
+- Move ADR-005 to Accepted; freeze v1 fields and semantics.
+- Implement the internal domain model (ADR-008) and adapters to maintain legacy dict compatibility.
+- Add round-trip serialization tests (domain -> JSON -> domain) and basic size/perf notes.
 
-```text
-src/calibrated_explanations/core/
-  __init__.py                (exports)
-  calibrated_explainer.py    (shrinking; delegates after splits)
-  wrap_explainer.py          (done)
-  online_explainer.py        (removed)
-  prediction_helpers.py      (NEW: prediction / probability helper functions)
-  calibration_helpers.py     (NEW: interval learner & calibration assembly)
-  fast_explainer.py          (DEFERRED: separate FastCalibratedExplainer class; Phase 2/3)
-  validation_stub.py         (NEW: placeholder no-op API for Phase 1B integration)
-```
+Acceptance
 
-Dropped: `_legacy_core_shim.py` (superseded by existing top-level `core.py` shim). Renaming divergence (wrapper→wrap) accepted and documented in ADR-001.
-
-**Deprecation Strategy (clarified):**
-
-1. Retain legacy module `calibrated_explanations/core.py` as a shim issuing a single `DeprecationWarning` directing users to the package form.
-2. No additional alias files; removal not before v0.8.0 per deprecation policy.
-3. Warning text: "The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead." (Will be updated in code.)
-
-**Safety Nets (must be in place before major file shrinking):**
-
-- Golden output tests (classification + regression) comparing serialized explanation dicts before/after moves.
-- Import compatibility test asserting exactly one `DeprecationWarning` and symbol equivalence.
-- Public API snapshot diff (script) must be empty.
-
-**Performance & Memory Guard:**
-
-- Re-run `scripts/collect_baseline.py` post-split; median + p95 explanation latency within ±5% of pre-split baseline; peak RSS within ±0.5% (else investigate before merging).
-- No new benchmark harness (pytest-benchmark) introduced—explicitly deferred.
-
-**Acceptance Criteria:**
-
-1. All target modules created; `calibrated_explainer.py` reduced (only delegating wrappers + core datamodel). [Done]
-2. Tests green; golden fixtures unchanged byte-for-byte. [Done]
-3. API snapshot diff empty. [Done]
-4. Deprecation warning emitted once; message updated/clear. [Done]
-5. ADR-001 status set to Accepted (done) with note on file naming. [Done]
-6. Updated component diagram (optional) if it enumerates files; not a blocker. [Deferred]
-
-**Deliverables (Phase 1A Final):**
-
-- New modules (`prediction_helpers.py`, `calibration_helpers.py`, `validation_stub.py`).
-- Updated `calibrated_explainer.py` delegations.
-- Golden test fixtures + associated tests.
-- Import compatibility + API snapshot tests.
-- Updated baseline comparison evidence (JSON + summary); perf remediation deferred to Phase 2.
-- Refined deprecation warning text.
-
-**Inline Gap Analysis (current status):**
-
-| Item | Status (2025-08-21) | Notes |
-|------|---------------------|-------|
-| wrap_explainer.py | Done | Already split and imported in core package `__all__` |
-| prediction_helpers.py / calibration_helpers.py / fast_explainer.py | Partially Done | prediction_helpers.py created and wired; calibration_helpers.py created and wired for init/update; fast_explainer.py deferred to Phase 2/3 as a separate class |
-| validation_stub.py | Done | No-op placeholder added before Phase 1B real validation logic |
-| Golden output tests | Done | `tests/test_golden_explanations.py` covers classification & regression serialization (first 5 instances); consider extending with hash of full probabilistic vectors later |
-| Import deprecation test | Done | `tests/test_deprecation_import.py` asserts single DeprecationWarning & symbol presence |
-| API snapshot diff test | Done | `tests/test_api_snapshot.py` guards root & core `__all__` |
-| Deprecation warning clarity | Partially Done | Warning emitted; optionally adjust wording to match policy text (non-blocking) |
-| CalibratedExplainer size reduction | In Progress | Delegated input/init/predict-step and interval learner init/update; fast path extraction deferred to Phase 2/3 |
-| Performance baseline re-check | Pending | Run `scripts/collect_baseline.py` after module creation & ensure ±5% latency / ±0.5% RSS |
-| Branch / PR strategy | Pending | Create feature branch `core-split` with staged commits per module extraction |
-| `_legacy_core_shim.py` | Dropped | Not needed, documented in ADR-001 |
-
-### 6.1 Current Progress Summary (as of 2025-08-22)
-
-Overall Phase 1A progress: 100% (planned mechanical moves complete; fast path extraction deferred to Phase 2/3).
-
-Completed safeguards now allow safe mechanical moves without semantic drift risk:
-
-- Golden serialization tests (regression & classification)
-- API snapshot stability check
-- Single deprecation warning test
-- ADR-001 accepted & updated
-
-Remaining work focuses purely on structural extraction; no behavior changes planned. Fast path extraction moved to Phase 2/3 as a separate class.
-
-### 6.3 Baseline & Performance Check (2025-08-22)
-
-- New baseline captured: `benchmarks/baseline_20250822.json`.
-- Regression check run against `benchmarks/baseline_20250820.json` with thresholds `benchmarks/perf_thresholds.json`.
-- Summary (truncated):
-  - import_time_seconds: +42.53% (limit 15%) — REGRESSION
-  - classification.calibrate_time_s: +107.96% (limit 25%) — REGRESSION
-  - classification.predict_batch_time_s: +85.80% (limit 40%) — REGRESSION
-  - regression.calibrate_time_s: +70.76% (limit 25%) — REGRESSION
-  - regression.predict_batch_time_s: +82.08% (limit 40%) — REGRESSION
-  - fit_time_s within limits for both tasks.
-
-Decision: Do not block Phase 1A on perf deltas; module splitting/import changes can affect timings. Investigate in Phase 2 (lazy imports, caching, fast class). Consider stabilizing environment for benchmarks.
-
-### 6.2 Planned Extraction Order & Commit Slices
-
-1. prediction_helpers.py: Move pure prediction / probability helper functions (no class-level state changes). Commit 1. [Completed]
-2. calibration_helpers.py: Move interval learner + calibration assembly (currently `__initialize_interval_learner`, `__update_interval_learner`, related helpers). Commit 2. [Completed]
-3. fast_explainer.py: Extract as separate `FastCalibratedExplainer` class with clear contract (inputs/outputs, behavior) — Deferred to Phase 2/3 to avoid semantic changes in Phase 1A. [Deferred]
-4. validation_stub.py: Introduce placeholder functions (e.g., `validate_inputs(...)` no-op) to anchor future Phase 1B validation integration. Commit 4.
-5. Shrink `calibrated_explainer.py`: Replace moved method bodies with thin delegations/imports; ensure public signatures unchanged. Commit 5.
-6. Run full test suite + baseline collector; compare metrics vs latest baseline JSON (record new `benchmarks/baseline_<date>.json`). Commit 6.
-
-Rollback strategy: If any golden/API snapshot test fails after a commit, revert that single commit, inspect diff for unintended logic movement, and re-attempt with smaller chunk.
-
-### 6.3 Additional (Optional) Hardening (non-blocking for Phase 1A)
-
-- Add a size assertion test ensuring `calibrated_explainer.py` LOC below a target (e.g., < 1000) to prevent regression.
-- Add content hash of golden explanation serialized JSON for stricter equality (rather than element-wise tolerance) once stable.
-- Refine deprecation warning text to: "The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead." (aligns with policy wording).
-
-
-Risk mitigation: perform extractions in two waves (prediction → calibration/fast) with golden tests after each wave; rollback if diff detected.
+- Schema v1 round-trip passes on reference fixtures.
+- Legacy public outputs preserved via adapter where required.
 
 ---
 
-## 7. Phase 1B: Exceptions, Validation, Typing Core (Week 3)
+## Phase C: Visualization Abstraction (PlotSpec)
 
-Purpose: lock in stability and developer ergonomics immediately after the mechanical split. This phase replaces the temporary validation stub, introduces a clear exception taxonomy, establishes argument normalization, and adds foundational typing and CI gates—without changing external behavior.
+Status: Not started
 
-### 7.1 Scope & Non-Goals
+- Move ADR-007 to Accepted.
+- Introduce a minimal, backend-agnostic PlotSpec and convert 1–2 existing plots.
+- Keep matplotlib adapter as default example; ensure import without heavy optional deps remains error-free.
 
-In scope:
+Acceptance
 
-- Replace `validation_stub.py` with a real validation module and wire it in (no behavior changes beyond raising clearer errors earlier).
-- Introduce a project-wide exception hierarchy and replace ad-hoc exceptions across `core/` modules.
-- Add parameter alias canonicalization in a dedicated module to reduce argument drift in later phases.
-- Add targeted type hints for public APIs and critical helpers; mypy in permissive mode to start.
-- CI: add mypy and keep ruff; fail on new errors only.
-
-- Reported Issue (Non-numeric input support): validation should detect DataFrame inputs and non-numeric columns early, with actionable `ValidationError`/`DataShapeError` messages to pave the way for native preprocessing in Phase 2.
-
-Out of scope (deferred to Phases 2–4):
-
-- API surface changes or signature renames (only aliases + warnings allowed later).
-- Performance improvements.
-- Extensive doc overhaul (only essentials for the new error/validation behavior now).
-
-### 7.2 Work Breakdown (files, tasks, commit slices)
-
-#### 7.2.1 Exceptions (commit slice 1)
-
-Status: Completed in Phase 1B. New `core.exceptions` implemented and adopted across call sites.
-
-- File: `src/calibrated_explanations/core/exceptions.py`
-- Classes (tentative; see ADR-002):
-  - `CalibratedError(Exception)` base (non-recoverable, library-specific).
-  - `ValidationError(CalibratedError)` for input/config validation.
-  - `ConfigurationError(CalibratedError)` invalid combos of parameters.
-  - `ModelNotSupportedError(CalibratedError)` model type not supported by explainer.
-  - `DataShapeError(ValidationError)` mismatched shapes/features/labels.
-  - `NotFittedError(CalibratedError)` operations requiring prior fit.
-  - `ConvergenceError(CalibratedError)` calibration/optimization didn’t converge.
-  - `SerializationError(CalibratedError)` explanation JSON/schema issues.
-- Map/replace common generic exceptions (ValueError/TypeError/RuntimeError) in the core path to these classes without changing user-facing messages yet.
-
-#### 7.2.2 Validation engine (commit slice 2)
-
-- Remove stub and add real validator:
-  - Replace: `src/calibrated_explanations/core/validation_stub.py`
-  - With: `src/calibrated_explanations/core/validation.py`
-- Functions (contracts below):
-  - `validate_inputs(X, y=None, task="auto", allow_nan=False, require_y=False, n_features=None, class_labels=None, check_finite=True) -> None`
-  - `validate_model(model) -> None` (basic protocol checks: predict/predict_proba as applicable).
-  - `validate_fit_state(explainer, require=True) -> None`
-  - `infer_task(X, y, model) -> Literal["classification","regression"]` (best-effort; no hard dependency outside core).
-- Centralize numpy/pandas checks, sparse detection, NaN policy, dtype/shape checks, and class label sanity. Raise the new exceptions.
-  - Include DataFrame-aware checks to support the reported need for native non-numeric inputs (see Phase 2 plan).
-
-#### 7.2.3 Parameter canonicalization (commit slice 3)
-
-- File: `src/calibrated_explanations/api/params.py`
-- Artifacts:
-  - `ALIAS_MAP = {"alpha": "low_high_percentiles", "alphas": "low_high_percentiles", "n_jobs": "parallel_workers", ...}` (start minimal, extend later in Phase 2).
-  - `canonicalize_kwargs(kwargs: dict) -> dict` (returns a copy with canonical keys; preserves originals for warning messages if needed later).
-  - `validate_param_combination(kwargs: dict) -> None` raising `ConfigurationError` for mutually exclusive or invalid combos.
-- Wire this at the boundary constructors/wrappers in `calibrated_explainer.py` and `wrap_explainer.py` without changing external signatures. Online variant removed.
-
-#### 7.2.4 Typing foundation (commit slice 4)
-
-- Add type hints to public entry points and newly added modules.
-- Mypy configuration:
-  - Add `tool.mypy` to `pyproject.toml` with relaxed defaults: `ignore_missing_imports = true`, `warn_unused_ignores = true`, `disable_error_code = ["annotation-unchecked"]` initially.
-  - Enable strict per-module gradually via `mypy.ini` or pyproject module overrides for `core/validation.py` and `core/exceptions.py`.
-- Goals this phase: `core/exceptions.py` and `core/validation.py` are mypy-clean; public methods in `CalibratedExplainer` and wrappers have typed signatures and return types.
-
-#### 7.2.5 CI and pre-commit (commit slice 5)
-
-- Add mypy step to CI (non-blocking for legacy files; blocking for the two new modules + changed public APIs).
-- Keep ruff; ensure new code has no new disables. Prefer local `# noqa` only when justified and documented.
-
-#### 7.2.6 Wiring & messaging (commit slice 6)
-
-- Replace calls to `validation_stub.*` with `validation.*` across core.
-- Update error raising sites to the new exception classes.
-- Maintain existing log messages; add one-line INFO messages around validation boundaries only if already scaffolded.
-
-### 7.3 Contracts (tiny spec)
-
-Inputs/outputs and errors:
-
-- `validate_inputs(...)` raises `ValidationError | DataShapeError` on failure, else returns `None`.
-- `validate_model(model)` raises `ModelNotSupportedError` when required methods are missing for the inferred/selected task.
-- `validate_fit_state(explainer, require=True)` raises `NotFittedError` when required and not fitted.
-- `canonicalize_kwargs(kwargs)` returns a new dict; lossless for unknown keys; does not emit warnings in 1B (warnings deferred to Phase 2).
-
-Success criteria:
-
-- No change to successful paths or serialized outputs versus Phase 1A golden tests.
-- All new modules are covered by unit tests; overall test suite remains green.
-
-### 7.4 Tests to add
-
-- `tests/test_exceptions.py`: hierarchy, isinstance relationships, pickling of exceptions (optional), repr/str stability.
-- `tests/test_validation.py`: matrix of cases
-  - X only (2D), X,y shapes mismatch, y dtypes invalid, NaN policy raise/allow, single-feature/row, sparse inputs, missing `predict_proba` for classification.
-  - Model protocol tests using simple dummy estimators.
-- `tests/test_params_canonicalization.py`:
-  - Aliases map to canonical keys; unknown keys preserved; conflict detection triggers `ConfigurationError`.
-- Integration assertions:
-  - In calibrated explainer paths, invalid inputs now raise `ValidationError` instead of generic `ValueError` (update tests accordingly without changing messages where asserted).
-
-### 7.5 Documentation & ADRs
-
-- Update ADR-002 (Validation & Exception Design): status → Accepted; reference module paths and exception taxonomy finalized in 1B.
-- Short docs page section or README snippet: “Error handling and validation”—what to expect, common errors, quick examples.
-- Add API reference stubs for `core.exceptions` and `core.validation`.
-
-### 7.6 Acceptance Criteria (exit checklist)
-
-1. `core/exceptions.py` and `core/validation.py` implemented, imported by `core/__init__.py` as needed. [Done when merged]
-2. All references to `validation_stub` removed; replaced with `validation`. [Done]
-3. Golden serialization tests unchanged vs Phase 1A baselines. [Guard]
-4. At least 20 targeted tests added across exceptions/validation/params; all green in CI. [Guard]
-5. Mypy runs in CI; new modules mypy-clean; no increase in ruff violations. [Guard]
-6. ADR-002 updated to Accepted; ACTION_PLAN reflects 1B completion scope. [Process]
-
-### 7.7 Milestones & Timeline (1 week)
-
-- Day 1: exceptions module + unit tests; open PR 1 (fast review).
-- Day 2: validation module, replace stub; tests; open PR 2.
-- Day 3: parameter canonicalization + wiring; tests; open PR 3.
-- Day 4: typing pass + mypy CI; adapt call sites; open PR 4.
-- Day 5: integration polish, docs/ADR-002 updates, finalize. Re-run baselines to confirm no behavioral drift (perf deltas not gating in 1B).
-
-### 7.8 Risks & Mitigations
-
-- Risk: Raising earlier/stricter errors could break user flows. Mitigation: retain error messages and timing as much as possible; only swap exception types; document mapping.
-- Risk: Hidden dependencies on old generic exceptions in tests. Mitigation: update tests in the same PR; keep message substrings stable.
-- Risk: Mypy noise. Mitigation: module-scoped strictness; start permissive, iterate.
-
-### 7.9 Deliverables (Phase 1B Final)
-
-- New: `core/exceptions.py`, `core/validation.py`, `api/params.py`.
-- Rewired: `calibrated_explainer.py`, `wrap_explainer.py` to call new validation and exceptions. Online variant removed.
-- CI: mypy step, config in `pyproject.toml`.
-- Tests: exceptions/validation/params + updated integration tests.
-- Docs: ADR-002 to Accepted; short error-handling guide; API stubs for new modules.
+- PlotSpec renders via the matplotlib adapter for selected examples.
+- Public API docs updated with PlotSpec usage examples.
 
 ---
 
-## 8. Phase 2: API Simplification & Configuration (Weeks 4-6)
+## Phase D: Preprocessing and Mapping Persistence
 
-**Goals:** Reduce cognitive load; consolidate configuration.
+Status: In progress (hooks exist; needs tests/docs hardening)
 
-**Enhancements:**
+- Move ADR-009 to Accepted (already); finalize tests and docs.
+- Finalize preprocessor hooks in wrappers with deterministic mapping persistence and an unseen category policy.
+- Provide cookbook examples and tests with pandas DataFrame inputs (categorical/text).
+
+Acceptance
+
+- Deterministic mappings across fit/predict; tests cover unseen categories behavior.
+
+---
+
+## Phase E: Performance Foundations (Caching & Parallel)
+
+Status: Not started
+
+- Implement baseline ADR-003 (Caching) and ADR-004 (Parallel Backend) behind feature flags.
+- Provide a small LRU cache and a thin parallel map abstraction with sensible defaults.
+- Add micro-benchmarks and perf guards where feasible (import time, p50/p95 on small datasets).
+
+Acceptance
+
+- Feature-flagged; disabled by default; no behavior change when off.
+
+---
+
+## Phase F: Testing & Documentation Hardening
+
+Status: In progress (unit tests present; docs pipeline pending)
+
+- Expand tests: property-based checks for calibration invariants; edge cases; light performance smoke tests.
+- Documentation updates:
+  - Generate API reference; strengthen docstring coverage.
+  - Add sphinx-gallery or nbconvert pipeline for examples rendered as HTML.
+  - Linkcheck in CI.
+
+Acceptance
+
+- Tests remain green; doc build & linkcheck pass in CI.
+
+---
+
+## Phase G: Deprecation & Migration Policy Activation
+
+Status: Not started
+
+- Document and enforce the public deprecation policy (two minor releases before removal).
+- Provide migration notes and a simple guide for parameter alias changes; optional script.
+
+Acceptance
+
+- Deprecation warnings appear once; migration guide pages updated.
+
+---
+
+## ADR changes and priorities
+
+Must finalize (move to Accepted; implement)
+
+- ADR-002 Validation & Exception Design (verify coverage; minor tidy-ups)
+- ADR-003 Caching Key & Eviction Strategy (baseline, feature-flagged)
+- ADR-004 Parallel Backend Abstraction (baseline, feature-flagged)
+- ADR-005 Explanation JSON Schema v1 (freeze and implement)
+- ADR-006 Plugin Registry Trust Model (minimal metadata; registry wiring)
+- ADR-007 Visualization Abstraction (PlotSpec v1)
+- ADR-008 Explanation Domain Model & Legacy Compatibility
+- ADR-009 Input Preprocessing & Mapping Persistence Policy (finalize tests/docs)
+
+New ADRs to add (public, process-focused)
+
+- ADR-011: Deprecation & Migration Policy
+  - Scope: warning semantics, removal timelines, API snapshot tooling, migration guide structure.
+- ADR-012: Documentation & Gallery Build Policy
+  - Scope: doc build gates (API ref, linkcheck), example rendering pipeline, contribution guidelines for examples.
+
+Note: ADR-010 is already used for Core vs Evaluation split in this repo; numbering is adjusted accordingly.
+
+Prioritization (sequence aligned to current state)
+
+1) ADR-005, ADR-009, ADR-006 (freeze contracts used by users and extensions)
+2) ADR-008 (implement domain model with legacy adapter)
+3) ADR-007 (PlotSpec MVP) and docs pipeline (ADR-012)
+4) ADR-003, ADR-004 (performance enablers behind flags)
+5) ADR-011 (deprecation governance)
+
+---
+
+## Issue templates (suggested)
+
+- Adopt Validation & Exceptions at Public Boundaries
+  - Replace any remaining ad-hoc exceptions; add tests; no behavior change.
+- Freeze Explanation Schema v1 and Round-Trip Tests
+  - Finalize fields; add domain model; adapters for legacy dict; round-trip tests; document usage.
+- Preprocessing Mapping Persistence (Categorical/Text)
+  - Finalize hooks; deterministic mappings; unseen category policy; tests & docs.
+- Plugin Registry Trust Model (Minimal)
+  - Finalize ADR-006; document capability metadata; smoke tests for registry import.
+- PlotSpec MVP and Adapter Conversion
+  - Implement PlotSpec; convert two plots; update examples.
+- Baseline Caching & Parallel (Feature-Flagged)
+  - Implement minimal cache and parallel map; add micro-benchmarks; disabled by default.
+- Docs & Gallery build in CI
+  - API ref build, example HTML rendering, linkcheck; contribution guide.
+- Deprecation Policy ADR and Migration Notes
+  - Add ADR-011; wire warnings; write migration page.
+
+---
+
+## Quality gates (public repo)
+
+
+- Lint/style: ruff clean (no new ignores); markdownlint for docs.
+- Types: mypy permissive initially; stricter per-module as code stabilizes.
+- Tests: unit + targeted property tests; keep CI under reasonable time budgets.
+- Docs: build + linkcheck must pass; examples render to HTML.
+
+---
+
+## Communication
+
+- Use CHANGELOG fragments (e.g., towncrier) for incremental releases.
+- Reference ADRs in PR descriptions and keep a short “status” table in the action plan.
+- Post periodic progress summaries (what changed, tests/docs added, any contract decisions).
+
+---
+
+## Near-term focus (next 2–3 weeks)
+
+- Freeze ADR-005 (schema v1) and ADR-009 (preprocessing policy) and implement minimal domain model + adapters.
+- Land docs CI (API ref + nbconvert + linkcheck) to make examples first-class.
+- Publish issues above with checklists and label priorities.
+
 
 - `ExplainerConfig` dataclass (model, calibration params, thresholds, parallel settings).
 - Builder (`ExplainerBuilder`) returns configured wrapper; ensures validation pre-fit.
@@ -424,12 +255,14 @@ Additional Deliverables (Phase 2, tied to reported issues):
 ### Phase 2 status (2025-09-02)
 
 Done:
+
 - Configuration primitives `ExplainerConfig`, `ExplainerBuilder` added.
 - Private `WrapCalibratedExplainer._from_config` and propagation of config defaults to common methods.
 - Controlled user-supplied preprocessor wiring (fit/transform) in `wrap_explainer.py`; helpers `_pre_fit_preprocess`, `_pre_transform`; inference path reuse; tests added and passing.
 - Docs updated (getting_started + API reference) describing config-driven preprocessing and defaults.
 
 Remaining:
+
 - Internal Explanation domain model + adapters preserving legacy dict shape; add parity tests vs golden fixtures.
 - Wire alias deprecation warnings at public boundaries (use `warn_on_aliases`); keep behavior unchanged; document deprecation policy.
 - Add `quick_explain(...)` convenience.
@@ -437,6 +270,7 @@ Remaining:
 - Optional: expose a public `from_config` constructor once stabilized (today’s `_from_config` stays private).
 
 Exit criteria update:
+
 - Replace “planned” with “complete” for config + preprocessor wiring + docs; keep domain model and migration items open.
 
 ---
@@ -472,11 +306,13 @@ Notes:
 ### Phase 2S status (2025-09-02)
 
 Done/Partial:
+
 - Added optional-deps groups `viz`, `lime` in `pyproject.toml`.
 - Implemented lazy plotting import with actionable error suggesting `pip install "calibrated_explanations[viz]"`.
 - Getting started mentions the viz extra.
 
 Remaining next actions:
+
 - Add extras: `notebooks`, `dev`, `eval` (finalize package lists).
 - Update README install section with extras matrix; add `evaluation/README.md` and an eval environment file.
 - Tag viz tests (e.g., `@pytest.mark.viz`) and skip when extras not installed; add CI job without viz to guarantee core independence.
@@ -606,6 +442,7 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 
 ## 17. Release Strategy (Adjusted)
 
+
 - v0.6.0: Phases 0-2 (+2S) complete, deprecations active, migration guide (draft), no performance degradation.
 - v0.7.0: Phases 3-4; performance boosts, finalized migration, stable schema v1.
 - v0.8.0: Phases 5-6; plugin ecosystem baseline, advanced visualization, potential schema v1.1 if non-breaking enhancements.
@@ -639,6 +476,7 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 ## 20. Appendix
 
 **ADR Topics (Initial List):**
+
 
 - ADR-001: Core decomposition boundaries
 - ADR-002: Validation & exception design

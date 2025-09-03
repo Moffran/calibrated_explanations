@@ -1,6 +1,6 @@
 # ADR-003: Caching Key & Eviction Strategy
 
-Status: Proposed
+Status: Proposed (baseline, feature-flagged)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -49,9 +49,8 @@ Negative / Risks:
 
 ## Adoption & Migration
 
-Phase 0: Introduce module `calibrated_explanations.cache` with disabled-by-default cache (no behavior change). Provide opt-in flag.
-Phase 1: Enable caching for pure, high-cost idempotent steps (e.g., calibration statistics) with conservative size limits.
-Phase 2+: Expand to explanation generation if stable.
+Phase E (v0.7.0): Introduce module `calibrated_explanations.cache` behind a feature flag (disabled by default). Start with pure, high-cost idempotent steps.
+Phase later: Expand to explanation generation if stable; add micro-benchmarks and perf guards.
 
 ## Open Questions
 

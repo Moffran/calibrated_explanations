@@ -1,6 +1,6 @@
 # ADR-006: Plugin Registry Trust Model
 
-Status: Proposed
+Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -45,8 +45,8 @@ Negative / Risks:
 
 ## Adoption & Migration
 
-Phase 5: Introduce registry with built-ins only.
-Phase 6: Enable third-party registration & trust workflow; publish docs + examples.
+Phase B (v0.6.0): Land minimal registry data structures and API; load built-ins only; document trust workflow.
+Phase E–F (v0.7.0): Enable third-party registration & trust workflow behind explicit opt-in; publish docs + examples.
 
 ## Open Questions
 

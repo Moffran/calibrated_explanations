@@ -48,8 +48,8 @@ Implemented:
 
 Pending:
 
-- Automatic encoding path (`auto_encode='auto'`) and mapping persistence helpers for that mode.
-- Unseen-category policy behavior and documentation.
+- Automatic encoding path (`auto_encode='auto'`) and mapping persistence helpers for that mode with deterministic mapping storage on the wrapper.
+- Unseen-category policy behavior and documentation (default `'error'`, configurable `'ignore'`).
 
 ## Open Questions
 

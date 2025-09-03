@@ -1,6 +1,6 @@
 # ADR-008: Explanation Domain Model & Legacy-Compatibility Strategy
 
-Status: Proposed
+Status: Accepted
 Date: 2025-08-22
 Deciders: Core maintainers
 Reviewers: TBD
@@ -35,8 +35,9 @@ Rationale: improves clarity, enables easy filtering/transforms, and aligns with 
 
 ## Adoption & Migration
 
-- Phase 2: implement domain model (`explanations/models.py`) + adapters; add tests ensuring adapter output matches golden fixtures byte-for-byte.
-- Phase 5: align JSON schema v1 with `rules: []`, provide migration tool legacy→v1; continue supporting legacy until v0.8.0.
+- Phase B: implement domain model (`explanations/models.py`) + adapters; add tests ensuring adapter output matches golden fixtures byte-for-byte.
+- Phase B/C: round-trip serialization (domain → JSON → domain) using ADR-005 envelope.
+- Removal: continue supporting legacy public dicts via adapter until v0.8.0 per deprecation policy (ADR-011).
 
 ## Open Questions
 

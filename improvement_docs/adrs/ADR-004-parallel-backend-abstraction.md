@@ -1,6 +1,6 @@
 # ADR-004: Parallel Backend Abstraction
 
-Status: Proposed
+Status: Proposed (baseline, feature-flagged)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -58,9 +58,8 @@ Negative / Risks:
 
 ## Adoption & Migration
 
-Phase 0: Introduce facade with SerialStrategy only; no behavior change.
-Phase 1: Add thread + process strategies; default remains Serial unless user opts-in.
-Phase 2: Enable heuristic auto-select for eligible loops (guard with perf tests).
+Phase E (v0.7.0): Introduce facade with SerialStrategy default and thread/process strategies behind feature flag; opt-in only.
+Phase later: Evaluate heuristic auto-select on eligible loops guarded by perf tests; consider joblib/other backends.
 
 ## Open Questions
 
