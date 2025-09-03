@@ -42,6 +42,7 @@ PR expectations:
 - Keep changes scoped to a single slice/milestone. Write a brief checklist in the PR description referencing the Action Plan section.
 - Add/adjust tests: unit tests for new modules/paths, and keep golden/API snapshot tests unchanged unless the Action Plan explicitly calls for a public change (then update snapshots intentionally).
 - Quality gates should pass: ruff lint/format, pytest, and mypy. New modules may be subject to stricter mypy settings (see `pyproject.toml`).
+  - CI for ruff and mypy uses a baseline snapshot: the first run creates `ci/baselines/*` and fails, asking you to commit the snapshot. Subsequent runs fail only on new issues; improvements pass without extra work.
 - If touching performance-sensitive paths, run or reference the perf guard and baseline scripts in `benchmarks/` and `scripts/`.
 - For architectural/public changes, include/modify an ADR in `improvement_docs/adrs/` and link it in the PR.
 

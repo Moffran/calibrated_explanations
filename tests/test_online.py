@@ -2,7 +2,9 @@
 
 # pylint: disable=invalid-name, too-many-locals
 import numpy as np
+import pytest
 from calibrated_explanations import OnlineCalibratedExplainer
+from calibrated_explanations.core.exceptions import ModelNotSupportedError, NotFittedError
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 from sklearn.preprocessing import StandardScaler
@@ -199,22 +201,13 @@ def test_error_handling():
     X = rng.standard_normal((10, 5))
     y = rng.integers(0, 2, 10)
 
-    try:
+    with pytest.raises(ModelNotSupportedError):
         explainer.partial_fit(X, y)
-        assert False, "Should raise AttributeError"
-    except AttributeError:
-        pass
 
     # Test calibration before fitting
-    try:
+    with pytest.raises(NotFittedError):
         explainer.calibrate_one(X[0], y[0])
-        assert False, "Should raise RuntimeError"
-    except RuntimeError:
-        pass
 
     # Test prediction before fitting/calibration
-    try:
+    with pytest.raises(NotFittedError):
         explainer.predict_one(X[0])
-        assert False, "Should raise RuntimeError"
-    except RuntimeError:
-        pass

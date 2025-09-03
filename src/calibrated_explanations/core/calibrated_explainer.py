@@ -46,6 +46,7 @@ from .exceptions import (
     ConfigurationError,
     NotFittedError,
 )
+from .validation import validate_feature_matrix
 
 
 class CalibratedExplainer:
@@ -162,6 +163,13 @@ class CalibratedExplainer:
         kwargs = canonicalize_params(dict(kwargs))
         check_is_fitted(learner)
         self.learner = learner
+
+        # Early validation of calibration features to surface actionable guidance for users
+        # (detect non-numeric DataFrame columns or non-numeric numpy dtypes)
+        try:
+            validate_feature_matrix(X_cal, name="X_cal")
+        except (ValidationError, DataShapeError) as e:
+            raise e
         self.predict_function = kwargs.get("predict_function")
         if self.predict_function is None:
             self.predict_function = (

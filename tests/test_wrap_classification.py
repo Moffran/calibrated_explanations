@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from calibrated_explanations import WrapCalibratedExplainer
+from calibrated_explanations.core.exceptions import NotFittedError
 from calibrated_explanations.utils.helper import transform_to_numeric
 from crepes.extras import MondrianCategorizer
 from joblib import dump, load
@@ -376,7 +377,7 @@ def test_wrap_multiclass_ce(multiclass_dataset):
     assert not cal_exp.calibrated
     repr(cal_exp)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.calibrate(
             X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
         )
@@ -597,15 +598,15 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
 
 def multiple_failing_calls(cal_exp, X_test, y_test):
     """Test multiple methods that should raise a RuntimeError when called before fitting or calibration."""
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.plot(X_test, show=False)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.plot(X_test, y_test, show=False)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.calibrated_confusion_matrix()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.initialize_reject_learner()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         cal_exp.predict_reject(X_test)
 
 

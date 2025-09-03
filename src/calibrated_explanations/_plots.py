@@ -51,8 +51,9 @@ import numpy as np
 def load_plot_config():
     """Load plot configuration from INI file."""
     config = configparser.ConfigParser()
+    # Use correct package-relative path to configuration
     config_path = os.path.join(
-        os.path.dirname(__file__), "../calibrated-explanations/utils/configurations/plot_config.ini"
+        os.path.dirname(__file__), "utils", "configurations", "plot_config.ini"
     )
 
     # Set default values
@@ -103,7 +104,7 @@ def update_plot_config(new_config):
 
     # Write updated config to file
     config_path = os.path.join(
-        os.path.dirname(__file__), "../calibrated-explanations/utils/configurations/plot_config.ini"
+        os.path.dirname(__file__), "utils", "configurations", "plot_config.ini"
     )
     os.makedirs(os.path.dirname(config_path), exist_ok=True)  # Ensure directory exists
     with open(config_path, "w", encoding="utf-8") as f:
@@ -125,7 +126,33 @@ def __setup_plot_style(style_override=None):
             for key, value in values.items():
                 config[section][key] = str(value)
 
-    plt.style.use(config["style"]["base"])
+    # Apply base style with compatibility fallback across Matplotlib versions
+    base_style = config["style"].get("base", "default")
+    try:
+        plt.style.use(base_style)
+    except Exception:  # Matplotlib may treat unknown style as a path; fall back gracefully
+        # Try a few common alternatives before default
+        fallbacks = ["seaborn-whitegrid", "seaborn", "default"]
+        applied = False
+        for alt in fallbacks:
+            try:
+                plt.style.use(alt)
+                warnings.warn(
+                    f"Plot style '{base_style}' not available; using '{alt}' as fallback.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                applied = True
+                break
+            except Exception:
+                continue
+        if not applied:
+            # Last resort: leave current style and continue
+            warnings.warn(
+                f"Plot style '{base_style}' not available and no fallback applied.",
+                UserWarning,
+                stacklevel=2,
+            )
 
     # Font settings
     plt.rcParams["font.family"] = config["fonts"]["family"]
@@ -206,8 +233,8 @@ def _plot_probabilistic(
         save_ext = ["svg", "pdf", "png"]
     if interval is True:
         assert idx is not None
-    # Get figure width from config, with fallback to default value
-    fig_width = float(config["figure"].get("width", 10))
+    # Get figure width from config, with fallback to default value (tolerate inline comments)
+    fig_width = _as_float(config["figure"].get("width", 10), 10)
     fig = plt.figure(figsize=(fig_width, num_to_show * 0.5 + 2))
     subfigures = fig.subfigures(3, 1, height_ratios=[1, 1, num_to_show + 2])
 
@@ -411,8 +438,8 @@ def _plot_regression(
         save_ext = ["svg", "pdf", "png"]
     if interval is True:
         assert idx is not None
-    # Get figure width from config, with fallback to default value
-    fig_width = float(config["figure"].get("width", 10))
+    # Get figure width from config, with fallback to default value (tolerate inline comments)
+    fig_width = _as_float(config["figure"].get("width", 10), 10)
     fig = plt.figure(figsize=(fig_width, num_to_show * 0.5 + 2))
     subfigures = fig.subfigures(2, 1, height_ratios=[1, num_to_show + 2])
 
@@ -702,8 +729,8 @@ def _plot_alternative(
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
-    # Get figure width from config, with fallback to default value
-    fig_width = float(config["figure"].get("width", 10))
+    # Get figure width from config, with fallback to default value (tolerate inline comments)
+    fig_width = _as_float(config["figure"].get("width", 10), 10)
     fig = plt.figure(figsize=(fig_width, num_to_show * 0.5))
     ax_main = fig.add_subplot(111)
     x = np.linspace(0, num_to_show - 1, num_to_show)
@@ -1077,3 +1104,15 @@ def __get_fill_color(venn_abers, reduction=1):  # pylint: disable=unused-private
     color = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
     # Return html color code in #RRGGBB format
     return "#{:02x}{:02x}{:02x}".format(*color)
+def _as_float(value, default):
+    """Parse a config value as float, tolerating inline comments.
+
+    Falls back to the first whitespace-separated token or a provided default.
+    """
+    try:
+        return float(value)
+    except Exception:
+        try:
+            return float(str(value).split()[0])
+        except Exception:
+            return float(default)

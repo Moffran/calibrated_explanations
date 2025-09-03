@@ -7,6 +7,8 @@ instance is passed in and used directly to avoid re-wiring state.
 
 from __future__ import annotations
 
+from typing import Any, Optional, TYPE_CHECKING
+
 import numpy as np
 
 from .._interval_regressor import IntervalRegressor
@@ -14,8 +16,11 @@ from .._VennAbers import VennAbers
 from ..utils.perturbation import perturb_dataset
 from .exceptions import ConfigurationError
 
+if TYPE_CHECKING:  # avoid circular import at runtime
+    from .calibrated_explainer import CalibratedExplainer
 
-def assign_threshold(explainer, threshold):
+
+def assign_threshold(explainer: "CalibratedExplainer", threshold: Any) -> Any:
     """Thin wrapper around ``CalibratedExplainer.assign_threshold``.
 
     Exposed as a helper for tests and future extraction stages.
@@ -23,7 +28,12 @@ def assign_threshold(explainer, threshold):
     return explainer.assign_threshold(threshold)
 
 
-def update_interval_learner(explainer, xs, ys, bins=None) -> None:
+def update_interval_learner(
+    explainer: "CalibratedExplainer",
+    xs: np.ndarray,
+    ys: np.ndarray,
+    bins: Optional[np.ndarray] = None,
+) -> None:
     """Mechanical move of ``CalibratedExplainer.__update_interval_learner``.
 
     Mirrors original semantics and exceptions exactly.
@@ -51,7 +61,7 @@ def update_interval_learner(explainer, xs, ys, bins=None) -> None:
     explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
 
 
-def initialize_interval_learner(explainer) -> None:
+def initialize_interval_learner(explainer: "CalibratedExplainer") -> None:
     """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner``."""
     if explainer.is_fast():
         initialize_interval_learner_for_fast_explainer(explainer)
@@ -69,7 +79,7 @@ def initialize_interval_learner(explainer) -> None:
     explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
 
 
-def initialize_interval_learner_for_fast_explainer(explainer) -> None:
+def initialize_interval_learner_for_fast_explainer(explainer: "CalibratedExplainer") -> None:
     """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner_for_fast_explainer``."""
     explainer.interval_learner = []
     X_cal, y_cal, bins = explainer.X_cal, explainer.y_cal, explainer.bins

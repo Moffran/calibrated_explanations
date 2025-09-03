@@ -20,6 +20,7 @@ from .exceptions import (
     DataShapeError,
 )
 from ..utils.helper import assert_threshold, safe_isinstance
+from .validation import validate_feature_matrix
 
 # NOTE: We intentionally avoid importing CalibratedExplainer for type-only usage to
 # prevent cyclical import complexity during the gradual split.
@@ -30,6 +31,9 @@ def validate_and_prepare_input(explainer: Any, X_test):
 
     Mechanical move from ``CalibratedExplainer._validate_and_prepare_input``.
     """
+    # Early validation: numeric-only features or clear guidance
+    validate_feature_matrix(X_test, name="X_test")
+
     if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
         X_test = X_test.values  # pragma: no cover - passthrough
     if len(X_test.shape) == 1:  # noqa: PLR2004

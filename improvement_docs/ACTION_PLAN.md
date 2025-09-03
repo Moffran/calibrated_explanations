@@ -247,11 +247,12 @@ In scope:
 
 - Reported Issue (Non-numeric input support): validation should detect DataFrame inputs and non-numeric columns early, with actionable `ValidationError`/`DataShapeError` messages to pave the way for native preprocessing in Phase 2.
 
-Out of scope (deferred to Phases 2–4):
 
-- API surface changes or signature renames (only aliases + warnings allowed later).
-- Performance improvements.
-- Extensive doc overhaul (only essentials for the new error/validation behavior now).
+Progress (2025-09-03):
+
+- Done: Parameter alias canonicalization module `src/calibrated_explanations/core/param_aliases.py` with conflict handling; integrated across core fit/calibrate/predict/explain paths. Added tests in `tests/test_param_aliases.py`.
+- Done: Targeted type hints for public APIs and critical helpers (exceptions, validation, calibration helpers). Permissive mypy config in `pyproject.toml` with focused overrides.
+- Done: CI gating for ruff and mypy using `scripts/ci_check_baseline.py` to fail only on new diagnostics. Workflows: `.github/workflows/ruff.yml`, `.github/workflows/mypy.yml`.
 
 ### 7.2 Work Breakdown (files, tasks, commit slices)
 
