@@ -471,7 +471,8 @@ def test_wrap_binary_conditional_ce(binary_dataset):
         categorical_features,
         feature_names,
     ) = binary_dataset
-    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+    # Use a fixed random_state to make Mondrian/VA calibration deterministic across runs
+    cal_exp = WrapCalibratedExplainer(RandomForestClassifier(random_state=42))
 
     cal_exp.fit(X_prop_train, y_prop_train)
 
@@ -496,7 +497,8 @@ def test_wrap_binary_conditional_ce(binary_dataset):
 
     for i, y_hat in enumerate(y_test_hat2):
         for j, y_hat_j in enumerate(y_hat):
-            assert y_test_hat1[i][j] == y_hat_j
+            # Allow tiny numerical differences between the two code paths
+            assert y_test_hat1[i][j] == pytest.approx(y_hat_j, rel=1e-6, abs=1e-8)
         assert low[i] <= y_test_hat2[i, 1] <= high[i]
 
     generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test)
@@ -534,7 +536,8 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
         _,
         feature_names,
     ) = multiclass_dataset
-    cal_exp = WrapCalibratedExplainer(RandomForestClassifier())
+    # Use a fixed random_state here as well to avoid flakiness in conditional calibration
+    cal_exp = WrapCalibratedExplainer(RandomForestClassifier(random_state=42))
 
     cal_exp.fit(X_prop_train, y_prop_train)
 

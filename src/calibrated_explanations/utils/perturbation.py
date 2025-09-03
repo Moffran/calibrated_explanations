@@ -23,6 +23,8 @@ perturb_dataset(X_cal, y_cal, categorical_features=None, noise_type='uniform', s
 
 # Import Libraries
 # import configparser
+from typing import Optional
+
 import numpy as np
 
 # # Create a ConfigParser object
@@ -40,7 +42,7 @@ import numpy as np
 
 # BASIC PERTURBATIONS FOR THE VERSION I: Provides Gaussian Noise by protecting
 # the standard deviation and mean properties of the current column.
-def categorical_perturbation(column, num_permutations=5):
+def categorical_perturbation(column, num_permutations=5, rng: Optional[np.random.Generator] = None):
     """
     Provide categorical perturbation to datasets.
 
@@ -54,14 +56,16 @@ def categorical_perturbation(column, num_permutations=5):
                 severities, and perturbed datasets.
     """
     column = column.copy()  # Make a copy to avoid modifying the original DataFrame
+    # Use provided RNG if available; otherwise, create a local generator
+    local_rng = rng if rng is not None else np.random.default_rng()
     for _ in np.arange(num_permutations):
-        rng = np.random.default_rng()
-        column_perturbed = rng.permutation(column)  # Shuffle the values in the column
+        # Shuffle the values in the column deterministically w.r.t. the RNG
+        column_perturbed = local_rng.permutation(column)
     return column_perturbed
 
 
 # Assuming you have a function to generate alternative instances for numerical columns
-def gaussian_perturbation(column, severity):
+def gaussian_perturbation(column, severity, rng: Optional[np.random.Generator] = None):
     """
     Apply Gaussian noise as numerical perturbation to a column in a DataFrame.
 
@@ -83,14 +87,14 @@ def gaussian_perturbation(column, severity):
     original_std = column.std()
 
     # Generate perturbation based on severity
-    rng = np.random.default_rng()
-    perturbation = rng.normal(loc=0, scale=original_std * severity, size=len(column))
+    local_rng = rng if rng is not None else np.random.default_rng()
+    perturbation = local_rng.normal(loc=0, scale=original_std * severity, size=len(column))
 
     # Apply perturbation while preserving mean and standard deviation
     return original_mean + perturbation
 
 
-def uniform_perturbation(column, severity):
+def uniform_perturbation(column, severity, rng: Optional[np.random.Generator] = None):
     """
     Apply uniform noise as numerical perturbation to a column in a DataFrame.
 
@@ -112,8 +116,8 @@ def uniform_perturbation(column, severity):
     original_range = column.max() - column.min()
 
     # Generate perturbation based on severity
-    rng = np.random.default_rng()
-    perturbation = rng.uniform(
+    local_rng = rng if rng is not None else np.random.default_rng()
+    perturbation = local_rng.uniform(
         low=-original_range * severity, high=original_range * severity, size=len(column)
     )
 
@@ -123,7 +127,15 @@ def uniform_perturbation(column, severity):
 
 # pylint: disable=invalid-name, too-many-arguments
 def perturb_dataset(
-    X_cal, y_cal, categorical_features=None, noise_type="uniform", scale_factor=5, severity=0.5
+    X_cal,
+    y_cal,
+    categorical_features=None,
+    noise_type="uniform",
+    scale_factor=5,
+    severity=0.5,
+    *,
+    seed: Optional[int] = None,
+    rng: Optional[np.random.Generator] = None,
 ):
     """
     Perturb the dataset for the calibration process.
@@ -158,13 +170,24 @@ def perturb_dataset(
     ]:
         raise ValueError("Noise type must be either 'uniform' or 'gaussian'.")
 
+    # Create a single RNG to be used throughout perturbations to ensure reproducibility
+    local_rng = (
+        rng
+        if rng is not None
+        else (np.random.default_rng(seed) if seed is not None else np.random.default_rng())
+    )
+
     for f in range(scaled_X_cal.shape[1]):
         if f in categorical_features:
-            perturbed_X_cal[:, f] = categorical_perturbation(perturbed_X_cal[:, f])
+            perturbed_X_cal[:, f] = categorical_perturbation(perturbed_X_cal[:, f], rng=local_rng)
         elif noise_type == "uniform":
             # Apply numerical alternative perturbation to the selected column -- uniform
-            perturbed_X_cal[:, f] = uniform_perturbation(perturbed_X_cal[:, f], severity)
+            perturbed_X_cal[:, f] = uniform_perturbation(
+                perturbed_X_cal[:, f], severity, rng=local_rng
+            )
         elif noise_type == "gaussian":
             # Apply numerical alternative perturbation to the selected column -- gaussian
-            perturbed_X_cal[:, f] = gaussian_perturbation(perturbed_X_cal[:, f], severity)
+            perturbed_X_cal[:, f] = gaussian_perturbation(
+                perturbed_X_cal[:, f], severity, rng=local_rng
+            )
     return perturbed_X_cal, scaled_X_cal, scaled_y_cal, scale_factor

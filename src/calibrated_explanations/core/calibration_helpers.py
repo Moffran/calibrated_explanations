@@ -81,6 +81,8 @@ def initialize_interval_learner_for_fast_explainer(explainer) -> None:
         noise_type=explainer._CalibratedExplainer__noise_type,  # noqa: SLF001
         scale_factor=explainer._CalibratedExplainer__scale_factor,  # noqa: SLF001
         severity=explainer._CalibratedExplainer__severity,  # noqa: SLF001
+        seed=getattr(explainer, "seed", None),
+        rng=getattr(explainer, "rng", None),
     )
     explainer.bins = (
         np.tile(explainer.bins.copy(), scale_factor) if explainer.bins is not None else None
