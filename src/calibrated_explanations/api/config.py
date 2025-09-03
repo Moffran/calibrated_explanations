@@ -16,7 +16,7 @@ from typing import Any, Literal
 TaskLiteral = Literal["classification", "regression", "auto"]
 
 
-@dataclass(slots=True)
+@dataclass
 class ExplainerConfig:
     """Configuration for building an explainer wrapper.
 
