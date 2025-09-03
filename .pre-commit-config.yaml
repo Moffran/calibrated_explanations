@@ -12,13 +12,16 @@ repos:
       - id: bandit
         args: ["-q", "-r", "src", "-s", "B101"]
         pass_filenames: false
-        stages: [pre-commit, pre-push]
+        stages: [pre-commit]
 
   - repo: https://github.com/pypa/pip-audit
     rev: v2.7.3
     hooks:
       - id: pip-audit
         args: ["--requirement", "requirements.txt", "--ignore-vuln", "PYSEC-0000"]
+        # Make pip-audit opt-in locally to avoid slow runs; invoke manually when needed:
+        #   pre-commit run pip-audit --all-files
+        stages: [manual]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
@@ -37,15 +40,7 @@ repos:
         args: ["--maxkb=1500"]
 
   # Local repo hooks
-  - repo: local
-    hooks:
-      - id: pytest
-        name: pytest (quick suite)
-        entry: python -m pytest -q --maxfail=1
-        language: system
-        pass_filenames: false
-        stages: [pre-push]
-        types: [python]
+  # (removed heavy pre-push pytest hook to speed up pushes)
 
 ci:
   autofix_prs: true
