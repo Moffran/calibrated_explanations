@@ -9,6 +9,9 @@ from sklearn.ensemble import RandomForestClassifier
 # Skip this test module entirely if matplotlib is not available (optional extra)
 pytest.importorskip("matplotlib")
 
+# Mark all tests in this module as visualization-dependent
+pytestmark = pytest.mark.viz
+
 
 # pylint: disable=invalid-name, redefined-outer-name
 @pytest.fixture

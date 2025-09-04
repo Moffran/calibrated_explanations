@@ -33,12 +33,14 @@
     - [From PyPI:](#from-pypi)
     - [From conda-forge:](#from-conda-forge)
     - [Dependencies:](#dependencies)
+    - [Optional extras](#optional-extras)
   - [Contributing](#contributing)
+    - [Roadmap and ADRs](#roadmap-and-adrs)
   - [Documentation](#documentation)
   - [License](#license)
   - [Further Reading and Citing](#further-reading-and-citing)
     - [Published Papers](#published-papers)
-    - [Preprints:](#preprints)
+    - [Preprints](#preprints)
     - [Citing and Bibtex](#citing-and-bibtex)
   - [Acknowledgements](#acknowledgements)
   - [Support](#support)
@@ -567,12 +569,36 @@ pip install "calibrated_explanations[viz]"
 pip install "calibrated_explanations[lime]"
 ```
 
-Plotting functions will raise a friendly error if matplotlib isn’t installed, with a hint to install the viz extra.
+- Notebooks (Jupyter, nbconvert)
+
+```powershell
+pip install "calibrated_explanations[notebooks]"
+```
+
+- Development tools (tests, linting, typing, schema validation)
+
+```powershell
+pip install "calibrated_explanations[dev]"
+```
+
+- Evaluation utilities (benchmarks, plots)
+
+```powershell
+pip install "calibrated_explanations[eval]"
+```
+
+Plotting functions perform a lazy import and will raise a clear error if matplotlib isn’t installed, with a hint to install the viz extra. Tests that depend on plotting are marked with `pytest.mark.viz` and can be selected via:
+
+```powershell
+pytest -m viz
+```
 
 [Table of Content](#table-of-contents)
 
 
+
 ## Contributing
+
 Contributions are welcome.
 Please send bug reports, feature requests or pull requests through
 the project page on [GitHub](https://github.com/Moffran/calibrated_explanations).
@@ -592,14 +618,18 @@ When opening a PR, please align with the current phase and reference the relevan
 
 
 
+
 ## Documentation
+
 For documentation, see [calibrated-explanations.readthedocs.io](https://calibrated-explanations.readthedocs.io/en/latest/?badge=latest).
 
 [Table of Content](#table-of-contents)
 
 
 
+
 ## License
+
 The license used by `calibrated-explanations` is the [BSD 3-Clause License](https://github.com/Moffran/calibrated_explanations/blob/main/LICENSE).
 
 Redistribution and use in source and binary forms, with or without
@@ -623,24 +653,30 @@ modification, are permitted provided that the following conditions are met:
 
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
 
+
 ### Published Papers
+
 - [Löfström, H](https://github.com/Moffran). (2023). [Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440&dswid=6197) (Doctoral dissertation, Jönköping University, Jönköping International Business School).
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27.
 - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2025). [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8). Machine Learning 114, 100.
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://doi.org/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham.
-- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>, PMLR 230:175-194. [Presentation](https://copa-conference.com/presentations/Lofstrom.pdf)
+- [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf). Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications, in Proceedings of Machine Learning Research, PMLR 230:175-194. [Presentation](https://copa-conference.com/presentations/Lofstrom.pdf)
 
 The paper that originated the idea of `calibrated-explanations` is:
 
 - [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18. [Code and results](https://github.com/tuvelofstrom/calibrating-explanations).
 
 
+
 ### Preprints
+
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.
 - [Löfström, T](https://github.com/tuvelofstrom)., [Rabia Yapicioglu, F](https://github.com/rabia174)., Stramiglio A., [Löfström, H](https://github.com/Moffran)., and Vitali F. (2024). [Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://arxiv.org/abs/2410.21129). arXiv preprint arXiv:2410.21129.
 
 
+
 ### Citing and Bibtex
+
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the papers above. Bibtex entries can be found in [citing](https://github.com/Moffran/calibrated_explanations/blob/main/docs/citing.md#bibtex-entries).
 
 [Table of Content](#table-of-contents)
@@ -648,6 +684,7 @@ If you use `calibrated-explanations` for a scientific publication, you are kindl
 
 
 ## Acknowledgements
+
 This research is funded by the [Swedish Knowledge Foundation](https://www.kks.se/) together with industrial partners supporting the research and education environment on Knowledge Intensive Product Realization SPARK at Jönköping University, Sweden, through projects: AFAIR grant no. 20200223, ETIAI grant no. 20230040, and PREMACOP grant no. 20220187. Helena Löfström was initially a PhD student in the Industrial Graduate School in Digital Retailing (INSiDR) at the University of Borås, funded by the Swedish Knowledge Foundation, grant no. 20160035.
 
 [Rudy Matela](https://github.com/rudymatela) has been our git guru and has helped us with the release process.
