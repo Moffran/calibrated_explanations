@@ -242,7 +242,7 @@ alternative_explanations.add_conjunctions().plot()
 alternative_explanations.plot(0)
 ```
 
-`calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability.
+`calibrated_explanations` supports multiclass which is demonstrated in [demo_multiclass](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_multiclass_glass.ipynb). That notebook also demonstrates how both feature names and target and categorical labels can be added to improve the interpretability.
 
 ### Regression
 

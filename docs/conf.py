@@ -47,6 +47,10 @@ extensions = [
     "myst_parser",
 ]
 
+# Avoid importing LaTeX builder on environments missing optional deps
+latex_engine = None
+latex_elements = {}
+
 # The master toctree document
 master_doc = "index"
 

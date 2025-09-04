@@ -22,15 +22,16 @@ Contents
 --------
 
 .. toctree::
-    :maxdepth: 1
-    :caption: Contents:
+   :maxdepth: 1
+   :caption: Contents:
 
-    getting_started
-    citing
+   getting_started
+   citing
    contributing
    pr_guide
-    calibrated_explanations
+   calibrated_explanations
    error_handling
+   architecture
    schema_v1
    migration_0_5_to_0_6
 
@@ -47,13 +48,13 @@ Plotting will raise a friendly error if matplotlib isn’t installed, with a hin
 Introduction
 ------------
 
-`calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both `classification <https://doi.org/10.1016/j.eswa.2024.123154/>`_ and `regression <https://arxiv.org/abs/2308.16245/>`_.
+`calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both `classification <https://doi.org/10.1016/j.eswa.2024.123154>`__ and `regression <https://arxiv.org/abs/2308.16245>`__.
 The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
 
    * Fast, reliable, stable and robust feature importance explanations for:
-      * Binary classification models (`read paper <https://doi.org/10.1016/j.eswa.2024.123154/>`_)
-      * Multi-class classification models (`read paper <https://easychair.org/publications/preprint/rqdD/>`_)
-      * Regression models (`read paper <https://arxiv.org/abs/2308.16245/>`_)
+      * Binary classification models (`classification paper <https://doi.org/10.1016/j.eswa.2024.123154>`__)
+      * Multi-class classification models (`multi-class paper <https://easychair.org/publications/preprint/rqdD/>`_)
+      * Regression models (`regression paper <https://arxiv.org/abs/2308.16245>`__)
          * Including probabilistic explanations of the probability that the target exceeds a user-defined threshold
          * With difficulty adaptable explanations (conformal normalization)
    * Calibration of the underlying model to ensure that predictions reflect reality.
@@ -61,7 +62,7 @@ The proposed method is based on Venn-Abers (classification & regression) and Con
    * Rules with straightforward interpretation in relation to instance values and feature weights.
    * Possibility to generate alternative rules with uncertainty quantification of the expected predictions.
    * Conjunctional rules conveying feature importance for the interaction of included features.
-   * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints (`read paper <https://doi.org/10.1007/978-3-031-63787-2_17/>`_).
+   * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints (`read paper <https://doi.org/10.1007/978-3-031-63787-2_17>`__).
 
 Example
 -------

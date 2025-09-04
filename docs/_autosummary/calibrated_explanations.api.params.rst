@@ -1,5 +1,5 @@
 calibrated_explanations.api.params
-=================================
+==================================
 
 .. automodule:: calibrated_explanations.api.params
    :members:
