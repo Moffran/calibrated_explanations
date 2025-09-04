@@ -9,6 +9,8 @@ by Helena Löfström et al.
 
 import logging as _logging
 
+# Expose viz namespace (internal; subject to change). Avoid importing heavy backends eagerly.
+from . import viz  # noqa: F401
 from ._interval_regressor import IntervalRegressor  # noqa: F401
 from ._VennAbers import VennAbers  # noqa: F401
 from .core import CalibratedExplainer, WrapCalibratedExplainer
