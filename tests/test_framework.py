@@ -186,7 +186,7 @@ def test_is_notebook_false():
     """Tests `is_notebook` returns False outside notebooks, with or without IPython installed."""
     try:
         # pylint: disable=import-outside-toplevel
-        pass  # type: ignore
+        from IPython import get_ipython  # type: ignore  # noqa: F401
     except Exception:
         # If IPython is not installed, is_notebook should gracefully return False
         assert not is_notebook()
