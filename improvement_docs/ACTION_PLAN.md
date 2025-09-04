@@ -1,9 +1,9 @@
 # Calibrated Explanations Improvement Plan (Contract-first)
 
 Created: August 16, 2025
-Last Updated: September 3, 2025
+Last Updated: September 4, 2025
 Repository: calibrated_explanations
-Current Version: v0.5.1
+Current Version: v0.6.0
 Target Releases: v0.6.0 (Stable contracts & config), v0.7.0 (Perf foundations & docs CI), v0.8.0 (Extensibility & viz)
 
 ---
@@ -16,36 +16,39 @@ Shift to contract-first delivery: freeze public data contracts (schema v1), prep
 
 ## Current repo state (observed)
 
-Based on public plan and code review, the repo is mid-Phase 2 with some 2S structural work landed.
+Based on the v0.6.0 release and code review, the repo has completed Phase 2 (contract-first) and Phase 2S (optional extras + CI) milestones.
 
 - Phase 1A/1B: Done
   - Validation/exception types are present at boundaries.
   - Parameter aliasing/canonicalization exists in the API layer.
-- Phase 2 core: In progress
-  - Config normalization and wrapper improvements present; coverage expanding.
-  - Preprocessing and mapping persistence policy (ADR-009) has hooks; needs tests/docs hardening.
-  - Domain model for explanations (ADR-008) not yet implemented; legacy dict outputs dominate.
-  - Explanation JSON Schema v1 (ADR-005) not yet frozen/implemented.
-- Phase 2S structural:
-  - Plugin registry and capability metadata exist minimally; trust model ADR pending finalization.
+- Phase 2 core: Complete in v0.6.0
+  - Config primitives and wrapper wiring present; config defaults flow through wrapper paths.
+  - Preprocessing and mapping persistence policy (ADR-009): user-supplied preprocessor supported in wrapper with deterministic reuse; unseen-category policy field present; tests and docs in place.
+  - Explanation domain model (ADR-008): implemented with `Explanation`/`FeatureRule` and legacy adapters; golden outputs preserved.
+  - Explanation JSON Schema v1 (ADR-005): frozen and shipped as `schemas/explanation_schema_v1.json`; serialization helpers with optional validation and round-trip tests added.
+  - Convenience API `quick_explain(...)` added; parity tests present.
+  - Deprecation warnings for parameter aliases wired at public boundaries.
+- Phase 2S structural: Complete (initial scope)
+  - Optional extras groups declared (`viz`, `lime`, `notebooks`, `dev`, `eval`).
+  - Lazy plotting import; tests marked `@pytest.mark.viz` and skipped when extras are absent; CI includes a core-only job.
+  - Docs build and linkcheck wired in CI; API reference and new pages added (schema v1, migration guide).
 - Later phases:
-  - Visualization abstraction (PlotSpec) not yet implemented.
+  - Visualization abstraction (PlotSpec) not yet implemented (plot style/config landed separately).
   - Caching/parallel backends not yet implemented (planned behind flags).
-  - Docs pipeline (API ref, example HTML, linkcheck) not yet wired in CI.
 
-Implication: prioritize contract-freezing steps (schema v1, domain model, preprocessing policy), then visualization MVP, while keeping performance features behind flags.
+Implication: with contracts stable in v0.6.0, prioritize visualization abstraction (PlotSpec), then performance foundations behind flags, and a minimal plugin trust baseline.
 
 ---
 
 ## Prioritization (what’s next)
 
-1) Freeze ADR-005 (schema v1) and ADR-009 (preprocessing policy), finalize ADR-006 (plugin trust) and adopt.
-2) Implement ADR-008 (domain model) with legacy adapter to preserve current outputs.
-3) Accept ADR-007 and ship a minimal PlotSpec with a matplotlib adapter for 1–2 plots; keep optional deps.
-4) Implement ADR-003/ADR-004 behind feature flags with micro-benchmarks; disabled by default.
-5) Add policy ADRs for deprecation and docs/gallery CI; activate deprecation warnings for aliases.
+1) Accept ADR-007 and ship a minimal PlotSpec with a matplotlib adapter for 1–2 plots; keep optional deps and preserve current plotting behavior by default.
+2) Implement ADR-003/ADR-004 behind feature flags with micro-benchmarks; integrate with existing perf guard; disabled by default.
+3) Finalize ADR-006 (plugin trust) with minimal capability metadata and a registry stub; document risks and opt-in usage.
+4) Harden deprecation/migration policy (ADR-011): ensure alias warnings are consistent; expand migration guide with examples and an optional script.
+5) Expand docs/gallery pipeline (ADR-012): add more example renders; maintain linkcheck and API ref gates.
 
-Near-term (2–3 weeks): Freeze schema v1 + preprocessing policy, land domain model + adapters, and wire docs CI (API ref + nbconvert + linkcheck).
+Near-term (2–3 weeks): PlotSpec MVP + adapter, baseline caching/parallel behind flags with micro-benchmarks, and plugin trust minimal wiring.
 
 ---
 
@@ -67,22 +70,21 @@ Acceptance
 
 ## Phase B: Explanation Schema v1 and Domain Model
 
-Status: Not started (schema/domain), legacy outputs in use
+Status: Done in v0.6.0
 
-- Move ADR-005 to Accepted; freeze v1 fields and semantics.
-- Implement the internal domain model (ADR-008) and adapters to maintain legacy dict compatibility.
-- Add round-trip serialization tests (domain -> JSON -> domain) and basic size/perf notes.
+- ADR-005 Accepted; schema v1 frozen and shipped; serialization helpers and round-trip tests added.
+- ADR-008 Implemented; internal domain model with adapters preserves legacy dict outputs and golden tests.
 
 Acceptance
 
-- Schema v1 round-trip passes on reference fixtures.
-- Legacy public outputs preserved via adapter where required.
+- Schema v1 round-trip passes on reference fixtures. [Done]
+- Legacy public outputs preserved via adapter where required. [Done]
 
 ---
 
 ## Phase C: Visualization Abstraction (PlotSpec)
 
-Status: Not started
+Status: Not started (plot style/config landed separately)
 
 - Move ADR-007 to Accepted.
 - Introduce a minimal, backend-agnostic PlotSpec and convert 1–2 existing plots.
@@ -97,15 +99,14 @@ Acceptance
 
 ## Phase D: Preprocessing and Mapping Persistence
 
-Status: In progress (hooks exist; needs tests/docs hardening)
+Status: Done in v0.6.0 (initial scope)
 
-- Move ADR-009 to Accepted (already); finalize tests and docs.
-- Finalize preprocessor hooks in wrappers with deterministic mapping persistence and an unseen category policy.
-- Provide cookbook examples and tests with pandas DataFrame inputs (categorical/text).
+- ADR-009 Accepted; wrapper supports user-supplied preprocessor with deterministic mapping reuse and unseen-category policy field (default conservative behavior). Tests and docs added.
+- Cookbook examples and DataFrame tests present; numeric-only paths preserved.
 
 Acceptance
 
-- Deterministic mappings across fit/predict; tests cover unseen categories behavior.
+- Deterministic mappings across fit/predict; tests cover unseen categories behavior. [Done]
 
 ---
 
@@ -115,7 +116,7 @@ Status: Not started
 
 - Implement baseline ADR-003 (Caching) and ADR-004 (Parallel Backend) behind feature flags.
 - Provide a small LRU cache and a thin parallel map abstraction with sensible defaults.
-- Add micro-benchmarks and perf guards where feasible (import time, p50/p95 on small datasets).
+- Add micro-benchmarks and integrate with existing perf-guard job.
 
 Acceptance
 
@@ -125,30 +126,30 @@ Acceptance
 
 ## Phase F: Testing & Documentation Hardening
 
-Status: In progress (unit tests present; docs pipeline pending)
+Status: In progress (docs pipeline active)
 
 - Expand tests: property-based checks for calibration invariants; edge cases; light performance smoke tests.
 - Documentation updates:
-  - Generate API reference; strengthen docstring coverage.
-  - Add sphinx-gallery or nbconvert pipeline for examples rendered as HTML.
-  - Linkcheck in CI.
+  - API reference generated; strengthen docstring coverage.
+  - nbconvert/sphinx-gallery examples rendered to HTML (expand coverage).
+  - Linkcheck active in CI.
 
 Acceptance
 
-- Tests remain green; doc build & linkcheck pass in CI.
+- Tests remain green; doc build & linkcheck pass in CI. [Docs CI: Done]
 
 ---
 
 ## Phase G: Deprecation & Migration Policy Activation
 
-Status: Not started
+Status: In progress
 
-- Document and enforce the public deprecation policy (two minor releases before removal).
-- Provide migration notes and a simple guide for parameter alias changes; optional script.
+- Deprecation warnings for alias keys are active at public boundaries.
+- Migration guide (0.5.x → 0.6.0) drafted; extend with code rewrite helper.
 
 Acceptance
 
-- Deprecation warnings appear once; migration guide pages updated.
+- Deprecation warnings appear once; migration guide pages updated with concrete examples; optional script available.
 
 ---
 
@@ -159,11 +160,11 @@ Must finalize (move to Accepted; implement)
 - ADR-002 Validation & Exception Design (verify coverage; minor tidy-ups)
 - ADR-003 Caching Key & Eviction Strategy (baseline, feature-flagged)
 - ADR-004 Parallel Backend Abstraction (baseline, feature-flagged)
-- ADR-005 Explanation JSON Schema v1 (freeze and implement)
+- ADR-005 Explanation JSON Schema v1 (Accepted; implemented)
 - ADR-006 Plugin Registry Trust Model (minimal metadata; registry wiring)
 - ADR-007 Visualization Abstraction (PlotSpec v1)
-- ADR-008 Explanation Domain Model & Legacy Compatibility
-- ADR-009 Input Preprocessing & Mapping Persistence Policy (finalize tests/docs)
+- ADR-008 Explanation Domain Model & Legacy Compatibility (Implemented)
+- ADR-009 Input Preprocessing & Mapping Persistence Policy (Accepted; implemented)
 
 New ADRs to add (public, process-focused)
 
@@ -176,11 +177,10 @@ Note: ADR-010 is already used for Core vs Evaluation split in this repo; numberi
 
 Prioritization (sequence aligned to current state)
 
-1) ADR-005, ADR-009, ADR-006 (freeze contracts used by users and extensions)
-2) ADR-008 (implement domain model with legacy adapter)
-3) ADR-007 (PlotSpec MVP) and docs pipeline (ADR-012)
-4) ADR-003, ADR-004 (performance enablers behind flags)
-5) ADR-011 (deprecation governance)
+1) ADR-007 (PlotSpec MVP) and docs/gallery enrichment (ADR-012)
+2) ADR-003, ADR-004 (performance enablers behind flags)
+3) ADR-006 (plugin trust minimal)
+4) ADR-011 (deprecation governance)
 
 ---
 
@@ -293,30 +293,29 @@ Scope:
 
 Acceptance criteria:
 
-1. `pyproject.toml` updated with `[project.optional-dependencies]` groups. [Partially Done: `viz`, `lime` present; `notebooks`, `dev`, `eval` pending]
-2. README installation section documents extras and examples. [Pending; getting_started updated with viz note]
-3. Plotting code path performs lazy import; missing-backend error message covered by tests. [Done: lazy import + clear error; tests still require matplotlib in current matrix]
-4. Tests marked and conditionally skipped without `viz`. CI matrix includes one job without `viz` to ensure core remains independent. [Pending]
+1. `pyproject.toml` updated with `[project.optional-dependencies]` groups. [Done: `viz`, `lime`, `notebooks`, `dev`, `eval`]
+2. README installation section documents extras and examples. [Done]
+3. Plotting code path performs lazy import; missing-backend error message covered by tests. [Done]
+4. Tests marked and conditionally skipped without `viz`. CI matrix includes one job without `viz` to ensure core remains independent. [Done]
 5. ADR-010 status updated to Accepted (initial scope) with adoption progress. [Done]
 
 Notes:
 
 - This sub-phase complements ADR-007 (Visualization Abstraction) by decoupling dependencies now, ahead of introducing a PlotSpec later.
 
-### Phase 2S status (2025-09-02)
+### Phase 2S status (2025-09-04)
 
-Done/Partial:
+Done:
 
-- Added optional-deps groups `viz`, `lime` in `pyproject.toml`.
-- Implemented lazy plotting import with actionable error suggesting `pip install "calibrated_explanations[viz]"`.
-- Getting started mentions the viz extra.
+- Optional-deps groups present (`viz`, `lime`, `notebooks`, `dev`, `eval`).
+- Lazy plotting import with actionable error suggesting `pip install "calibrated_explanations[viz]"`.
+- README and getting started mention extras.
+- Viz tests marked and skipped without extras; CI includes a core-only job.
+- Docs CI (HTML + linkcheck) active.
 
-Remaining next actions:
+Notes:
 
-- Add extras: `notebooks`, `dev`, `eval` (finalize package lists).
-- Update README install section with extras matrix; add `evaluation/README.md` and an eval environment file.
-- Tag viz tests (e.g., `@pytest.mark.viz`) and skip when extras not installed; add CI job without viz to guarantee core independence.
-- Optional: separate CI workflow for evaluation that installs `[eval]` and exercises benchmarks.
+- Heavy viz deps remain in core install for compatibility; plan decoupling in v0.7.0 once downstream impact is evaluated.
 
 ---
 
@@ -333,7 +332,7 @@ Remaining next actions:
 
 **Instrumentation:** Collect before/after benchmark deltas; fail CI if regression beyond thresholds.
 
-**Deliverables:** Cache module + tests (hit ratio test), parallel interface, memory warnings, updated benchmarks doc, p95 latency improvement target (≥30% vs baseline where achievable).
+**Deliverables:** Cache module + tests (hit ratio test), parallel interface, memory warnings, updated benchmarks doc, CI perf guard integration, p95 latency improvement target (≥30% vs baseline where achievable).
 
 ---
 
@@ -443,9 +442,9 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 ## 17. Release Strategy (Adjusted)
 
 
-- v0.6.0: Phases 0-2 (+2S) complete, deprecations active, migration guide (draft), no performance degradation.
-- v0.7.0: Phases 3-4; performance boosts, finalized migration, stable schema v1.
-- v0.8.0: Phases 5-6; plugin ecosystem baseline, advanced visualization, potential schema v1.1 if non-breaking enhancements.
+- v0.6.0: Phases 0–2 (+2S) complete (released 2025-09-04), deprecations active, migration guide draft, no behavior changes to serialized outputs.
+- v0.7.0: Phases 3–4; performance boosts (feature-flagged), PlotSpec MVP, finalized migration, stable schema v1.
+- v0.8.0: Phases 5–6; plugin ecosystem baseline, advanced visualization, potential schema v1.1 (non-breaking enhancements only).
 
 ---
 
@@ -459,17 +458,11 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 
 ## 19. Next Immediate Steps
 
-1. (Completed) Phase 0 tasks & baselines committed.
-2. (Action) Open feature branch `core-split`.
-3. (Action) Extraction Wave 1: Introduce `prediction_helpers.py`; relocate pure helper functions; update imports; run tests.
-4. (Action) Extraction Wave 2: Introduce `calibration_helpers.py`; move interval learner initialization/update logic; run tests & golden checks.
-5. (Action) Extraction Wave 3: Introduce `fast_explainer.py` & migrate `fast` path code; add delegations.
-6. (Action) Add `validation_stub.py` with no-op placeholders used by `calibrated_explainer.py`.
-7. (Action) Prune `calibrated_explainer.py` retaining only orchestrating methods & datamodel; ensure exports unchanged.
-8. (Action) Re-run baseline metrics; store new JSON (naming convention preserved) and verify performance guard (±5% median/p95, ±0.5% RSS). Document in CHANGELOG fragment.
-9. (Action) Optionally refine deprecation warning text (non-blocking).
-10. (Action) Open PR referencing Phase 1A checklist; include diffstat and baseline comparison summary.
-11. (Deferred Action, Phase 2/3) Draft `FastCalibratedExplainer` class design (constructor, predict/explain interface, compatibility with existing tests), then implement and swap delegations.
+1. Open feature branch `viz-plotspec` and implement PlotSpec MVP with matplotlib adapter; convert 1–2 plots; update docs/examples.
+2. Open feature branch `perf-foundations`; add baseline LRU cache and parallel map behind flags; wire micro-benchmarks and extend perf guard.
+3. Finalize ADR-006 and add `plugins/registry.py` skeleton with minimal metadata; document opt-in risks.
+4. Expand migration guide with concrete alias examples and add an optional rewrite helper script.
+5. Evaluate decoupling heavy viz deps from core install path in v0.7.0; document trade-offs and transition plan.
 
 ---
 
