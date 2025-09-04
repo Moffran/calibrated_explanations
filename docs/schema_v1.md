@@ -26,7 +26,7 @@ This page summarizes the stable JSON contract for serialized explanations in v0.
 - `feature_value` (any): the instance feature value (optional).
 - `is_conjunctive` (boolean): whether this rule is part of a conjunction.
 - `value_str` (string|null): human-readable value.
-- `current_bin` (integer|null): Mondrian bin (when applicable).
+- `bin_index` (integer|null): Index of the discretization bin (used when creating the explanation) that contains the instance’s feature value (when available).
 
 ## Validation
 

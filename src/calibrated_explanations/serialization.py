@@ -48,7 +48,7 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
                 "feature_value": r.feature_value,
                 "is_conjunctive": bool(r.is_conjunctive),
                 "value_str": r.value_str,
-                "current_bin": r.current_bin,
+                "bin_index": r.bin_index,
             }
             for r in exp.rules
         ],
@@ -72,7 +72,7 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
             feature_value=r.get("feature_value"),
             is_conjunctive=bool(r.get("is_conjunctive", False)),
             value_str=r.get("value_str"),
-            current_bin=r.get("current_bin"),
+            bin_index=r.get("bin_index"),
         )
         for i, r in enumerate(obj.get("rules", []))
     ]

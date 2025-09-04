@@ -24,7 +24,10 @@
           "feature_value": {},
           "is_conjunctive": {"type": "boolean"},
           "value_str": {"type": ["string", "null"]},
-          "current_bin": {"type": ["integer", "null"]}
+          "bin_index": {
+            "type": ["integer", "null"],
+            "description": "Index of the discretization bin (used when creating the explanation) that contains the instance’s feature value (when available)."
+          }
         }
       }
     },

@@ -23,7 +23,7 @@ class FeatureRule:
     feature_value: Any | None = None
     is_conjunctive: bool = False
     value_str: str | None = None
-    current_bin: int | None = None
+    bin_index: int | None = None
 
 
 @dataclass

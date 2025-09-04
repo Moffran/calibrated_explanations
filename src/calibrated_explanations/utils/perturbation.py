@@ -55,12 +55,27 @@ def categorical_perturbation(column, num_permutations=5, rng: Optional[np.random
         tuple: A tuple containing lists of perturbation column names, types,
                 severities, and perturbed datasets.
     """
-    column = column.copy()  # Make a copy to avoid modifying the original DataFrame
+    column = column.copy()  # Make a copy to avoid modifying the original array
     # Use provided RNG if available; otherwise, create a local generator
     local_rng = rng if rng is not None else np.random.default_rng()
-    for _ in np.arange(num_permutations):
-        # Shuffle the values in the column deterministically w.r.t. the RNG
-        column_perturbed = local_rng.permutation(column)
+    # Generate at least one permutation; repeat attempts up to num_permutations times
+    # to reduce the chance of returning an identical array for short arrays.
+    attempts = max(1, int(num_permutations))
+    column_perturbed = column
+    for _ in range(attempts):
+        candidate = local_rng.permutation(column)
+        if not np.array_equal(candidate, column):
+            column_perturbed = candidate
+            break
+    else:
+        # As a deterministic fallback for tiny arrays or degenerate RNG states,
+        # force a minimal change by swapping two positions when possible.
+        if column.size > 1 and len(np.unique(column)) > 1:
+            i, j = 0, 1
+            column_perturbed = column.copy()
+            column_perturbed[i], column_perturbed[j] = column_perturbed[j], column_perturbed[i]
+        else:
+            column_perturbed = column.copy()
     return column_perturbed
 
 
