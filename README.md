@@ -30,9 +30,9 @@
     - [Initializing `WrapCalibratedExplainer`s](#initializing-wrapcalibratedexplainers)
     - [Known Limitations](#known-limitations)
   - [Installation](#installation)
-  - [From PyPI](#from-pypi)
-  - [From conda-forge](#from-conda-forge)
-  - [Dependencies](#dependencies)
+    - [From PyPI](#from-pypi)
+    - [From conda-forge](#from-conda-forge)
+    - [Dependencies](#dependencies)
     - [Optional extras](#optional-extras)
   - [Contributing](#contributing)
     - [Roadmap and ADRs](#roadmap-and-adrs)
@@ -704,11 +704,15 @@ We have used the `VennAbers` class from [Ivan Petej](https://github.com/ip200)s 
 
 The `FastExplanation`, created using the `explain_fast` method, is incorporating ideas and code from [ConformaSight](https://github.com/rabia174/ConformaSight) developed by [Fatima Rabia Yapicioglu](https://github.com/rabia174), Allesandra Stramiglio, and Fabio Vitali.
 
+Community contributions: We gratefully acknowledge contributions made in parallel PRs that informed and overlapped with the v0.6.0 contract-first work (domain model, schema/serialization, and preprocessing hooks). Thank you to the external contributors for prototypes, discussions, and reviews that helped shape the final implementation.
+
 We are using Decision Trees from `scikit-learn` in the discretizers.
 
 We have copied code from [Marco Tulio Correia Ribeiro](https://github.com/marcotcr)s [lime](https://github.com/marcotcr/lime) package for the `Discretizer` class.
 
 The `check_is_fitted` and `safe_instance` functions in `calibrated_explanations.utils` are copied from `sklearn` and `shap`.
+
+[AUTHORS](./AUTHORS.md) lists the main authors and authors referenced by our papers. [CONTRIBUTORS](./CONTRIBUTORS.md) recognizes community members who have helped via issues, PRs, reviews, and discussions.
 
 [Table of Content](#table-of-contents)
 

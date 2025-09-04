@@ -28,6 +28,15 @@
 
 - This release focuses on contract stability and does not change public serialized outputs. Performance features remain behind flags and will arrive in v0.7.x.
 
+### Acknowledgements
+
+We thank community contributors for overlapping PR work and early prototypes that informed the v0.6.0 contract-first implementation (domain model, schema/serialization, preprocessing hooks). Your feedback and ideas helped refine the final design.
+
+Also added explicit credit files:
+
+- AUTHORS.md (Main authors, authors listed in papers)
+- CONTRIBUTORS.md (community contributions)
+
 ### Maintenance / Phase 1B completion
 
 - Phase 1B concluded: parameter canonicalization and lightweight validation wired at predict/predict_proba boundaries; strict typing with py.typed and targeted mypy overrides; documentation for error handling/validation/params added and linked; removed OnlineCalibratedExplainer and pruned legacy mentions; CI hygiene (branch conditions, perf guard) and repo lint/type gates green.
