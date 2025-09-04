@@ -182,15 +182,18 @@ def test_make_directory_invalid_path():
         make_directory("/invalid/path/to/directory")
 
 
-@patch("IPython.get_ipython")
-def test_is_notebook_false(mock_get_ipython):
-    """
-    Tests `is_notebook` function when not running in a notebook.
-    Args:
-        mock_get_ipython (Mock): Mocked `get_ipython` function.
-    """
-    mock_get_ipython.return_value = None
-    assert not is_notebook()
+def test_is_notebook_false():
+    """Tests `is_notebook` returns False outside notebooks, with or without IPython installed."""
+    try:
+        # pylint: disable=import-outside-toplevel
+        pass  # type: ignore
+    except Exception:
+        # If IPython is not installed, is_notebook should gracefully return False
+        assert not is_notebook()
+    else:
+        with patch("IPython.get_ipython") as mock_get_ipython:  # type: ignore
+            mock_get_ipython.return_value = None
+            assert not is_notebook()
 
 
 def test_explanation_functions_classification(binary_dataset):
