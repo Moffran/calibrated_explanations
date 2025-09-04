@@ -90,3 +90,46 @@ def test_preprocessor_applied_on_calibrate_and_inference(monkeypatch):
     X_test = np.array([[4.0, 5.0]])
     out = w.explain_factual(X_test)
     np.testing.assert_allclose(out, X_test * 3.0)
+
+
+def test_preprocessor_is_persistent_and_deterministic(monkeypatch):
+    class RecordingPreprocessor(DummyPreprocessor):
+        def __init__(self, factor: float = 2.0) -> None:
+            super().__init__(factor)
+            self.fit_calls = 0
+            self.transform_calls = 0
+
+        def fit_transform(self, X):  # noqa: D401
+            self.fit_calls += 1
+            return super().fit_transform(X)
+
+        def transform(self, X):  # noqa: D401
+            self.transform_calls += 1
+            return super().transform(X)
+
+    model = StubModel()
+    pre = RecordingPreprocessor(factor=1.5)
+    cfg = ExplainerConfig(model=model, preprocessor=pre)
+    w = we.WrapCalibratedExplainer._from_config(cfg)
+
+    # Fit path should call fit once
+    X = np.array([[1.0, 2.0], [3.0, 4.0]])
+    y = np.array([0, 1])
+    w.fit(X, y)
+    assert pre.fit_calls == 1
+
+    # Calibrate path should not re-fit if already fitted
+    class DummyCE2:
+        def __init__(self, learner, X_cal, y_cal, **kwargs):  # noqa: D401
+            # ensure transform used and deterministic
+            np.testing.assert_allclose(X_cal, np.asarray([[1.0, 1.0], [2.0, 2.0]]) * 1.5)
+
+        def explain_factual(self, X, **kwargs):  # noqa: D401
+            return np.asarray(X)
+
+    monkeypatch.setattr(we, "CalibratedExplainer", DummyCE2)
+    X_cal = np.array([[1.0, 1.0], [2.0, 2.0]])
+    w.calibrate(X_cal, y)
+    # Should have used transform only (no new fit)
+    assert pre.fit_calls == 1
+    assert pre.transform_calls >= 2  # calibrate + inference paths

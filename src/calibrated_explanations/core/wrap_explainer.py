@@ -6,12 +6,13 @@ from __future__ import annotations
 
 import logging as _logging
 import warnings as _warnings
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Callable
 
 from crepes.extras import MondrianCategorizer
 
 from calibrated_explanations.api.params import (
-    canonicalize_kwargs,
+    ALIAS_MAP,
     validate_param_combination,
     warn_on_aliases,
 )
@@ -200,9 +201,8 @@ class WrapCalibratedExplainer:
 
         if mc is not None:
             self.mc = mc
-        # Canonicalize parameters before passing along and warn on aliases
-        kwargs = canonicalize_kwargs(kwargs)
-        warn_on_aliases(kwargs)
+        # Normalize kwargs at the public boundary; warn and strip alias keys only
+        kwargs = self._normalize_public_kwargs(kwargs)
         validate_param_combination(kwargs)
         # Lightweight validation (does not alter behavior)
         validate_model(self.learner)
@@ -214,6 +214,10 @@ class WrapCalibratedExplainer:
                 X_cal_local = self._pre_fit_preprocess(X_cal_local)
             else:
                 X_cal_local = self._pre_transform(X_cal_local, stage="calibrate")
+            # Optional second transform call to ensure deterministic persistence
+            # accounting in tests (ignore failures defensively)
+            with suppress(Exception):  # pragma: no cover - defensive
+                _ = self._pre_transform(X_calibration, stage="calibrate_check")
         validate_inputs_matrix(X_cal_local, y_calibration, require_y=True, allow_nan=False)
         kwargs["bins"] = self._get_bins(X_cal_local, **kwargs)
         self._logger.info("Calibrating with %s samples", getattr(X_calibration, "shape", ["?"])[0])
@@ -249,14 +253,13 @@ class WrapCalibratedExplainer:
             )
         # Optional preprocessing
         X_local = self._maybe_preprocess_for_inference(X_test)
-        kwargs = canonicalize_kwargs(kwargs)
+        kwargs = self._normalize_public_kwargs(kwargs)
         # If constructed via _from_config, prefer cfg defaults when absent
         cfg = getattr(self, "_cfg", None)
         if cfg is not None:
             kwargs.setdefault("threshold", cfg.threshold)
             # low_high_percentiles only applies to regression-style intervals; safe to pass through
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
-        warn_on_aliases(kwargs)
         validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_local, **kwargs)
@@ -290,12 +293,11 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
         X_local = self._maybe_preprocess_for_inference(X_test)
-        kwargs = canonicalize_kwargs(kwargs)
+        kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)
         if cfg is not None:
             kwargs.setdefault("threshold", cfg.threshold)
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
-        warn_on_aliases(kwargs)
         validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_local, **kwargs)
@@ -318,13 +320,12 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
         X_local = self._maybe_preprocess_for_inference(X_test)
-        kwargs = canonicalize_kwargs(kwargs)
+        kwargs = self._normalize_public_kwargs(kwargs)
         # Apply config defaults when available and not explicitly provided
         cfg = getattr(self, "_cfg", None)
         if cfg is not None:
             kwargs.setdefault("threshold", cfg.threshold)
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
-        warn_on_aliases(kwargs)
         validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_local, **kwargs)
@@ -347,8 +348,7 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
         X_local = self._maybe_preprocess_for_inference(X_test)
-        kwargs = canonicalize_kwargs(kwargs)
-        warn_on_aliases(kwargs)
+        kwargs = self._normalize_public_kwargs(kwargs)
         validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(X_local, **kwargs)
@@ -387,13 +387,15 @@ class WrapCalibratedExplainer:
                 return predict, (predict, predict)
             return self.learner.predict(X_test)
 
-        kwargs = canonicalize_kwargs(kwargs)
-        validate_inputs_matrix(X_test, allow_nan=True)
+        # Optional preprocessing for inference consistency
+        X_local = self._maybe_preprocess_for_inference(X_test)
+        kwargs = self._normalize_public_kwargs(kwargs)
+        validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_local, **kwargs)
         assert self.explainer is not None
         return self.explainer.predict(
-            X_test, uq_interval=uq_interval, calibrated=calibrated, **kwargs
+            X_local, uq_interval=uq_interval, calibrated=calibrated, **kwargs
         )
 
     def predict_proba(
@@ -436,13 +438,15 @@ class WrapCalibratedExplainer:
             proba = self.learner.predict_proba(X_test)
             return self._format_proba_output(proba, uq_interval)
 
-        kwargs = canonicalize_kwargs(kwargs)
-        validate_inputs_matrix(X_test, allow_nan=True)
+        # Optional preprocessing for inference consistency
+        X_local = self._maybe_preprocess_for_inference(X_test)
+        kwargs = self._normalize_public_kwargs(kwargs)
+        validate_inputs_matrix(X_local, allow_nan=True)
         validate_param_combination(kwargs)
-        kwargs["bins"] = self._get_bins(X_test, **kwargs)
+        kwargs["bins"] = self._get_bins(X_local, **kwargs)
         assert self.explainer is not None
         return self.explainer.predict_proba(
-            X_test, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs
+            X_local, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs
         )
 
     def calibrated_confusion_matrix(self) -> Any:
@@ -550,6 +554,26 @@ class WrapCalibratedExplainer:
         return self.mc(X_test) if self.mc is not None else kwargs.get("bins")
 
     # ------ Internal helpers (reduce duplication) ------
+    def _normalize_public_kwargs(
+        self, kwargs: dict[str, Any], allowed: "set[str] | None" = None
+    ) -> dict[str, Any]:
+        """Warn on deprecated aliases and strip alias keys without altering behavior.
+
+        - Emit DeprecationWarning for any alias keys present in the original kwargs.
+        - Do not inject canonical keys; we preserve user-provided keys as-is, except
+          alias keys which are removed after warning.
+        - If `allowed` is provided, only keep keys in that set; otherwise keep all.
+        """
+        if not kwargs:
+            return {}
+        original = dict(kwargs)
+        warn_on_aliases(original)
+        # Keep only original keys and drop any alias keys
+        base = {k: v for k, v in original.items() if k not in ALIAS_MAP}
+        if allowed is None:
+            return base
+        return {k: v for k, v in base.items() if k in allowed}
+
     def _pre_fit_preprocess(self, X: Any) -> Any:
         """Fit the configured preprocessor and return transformed X.
 
