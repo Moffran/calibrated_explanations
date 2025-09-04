@@ -1,7 +1,7 @@
 # Calibrated Explanations Improvement Plan (Contract-first)
 
 Created: August 16, 2025
-Last Updated: September 4, 2025
+Last Updated: September 4, 2025 (post-perf scaffolding tests)
 Repository: calibrated_explanations
 Current Version: v0.6.0
 Target Releases: v0.6.0 (Stable contracts & config), v0.7.0 (Perf foundations & docs CI), v0.8.0 (Extensibility & viz)
@@ -84,7 +84,7 @@ Acceptance
 
 ## Phase C: Visualization Abstraction (PlotSpec)
 
-Status: Not started (plot style/config landed separately)
+Status: In progress (MVP landed)
 
 - Move ADR-007 to Accepted.
 - Introduce a minimal, backend-agnostic PlotSpec and convert 1–2 existing plots.
@@ -92,8 +92,8 @@ Status: Not started (plot style/config landed separately)
 
 Acceptance
 
-- PlotSpec renders via the matplotlib adapter for selected examples.
-- Public API docs updated with PlotSpec usage examples.
+- PlotSpec renders via the matplotlib adapter for selected examples. [Done: regression bars]
+- Public API docs updated with PlotSpec usage examples. [Done: docs/viz_plotspec.md, linked in index]
 
 ---
 
@@ -112,15 +112,21 @@ Acceptance
 
 ## Phase E: Performance Foundations (Caching & Parallel)
 
-Status: Not started
+Status: Started (scaffolding added; unit tests passing)
 
 - Implement baseline ADR-003 (Caching) and ADR-004 (Parallel Backend) behind feature flags.
-- Provide a small LRU cache and a thin parallel map abstraction with sensible defaults.
-- Add micro-benchmarks and integrate with existing perf-guard job.
+- Provide a small LRU cache and a thin parallel map abstraction with sensible defaults. [Done: `perf.cache.LRUCache`, `perf.parallel.JoblibBackend`]
+- Export surface finalized for this phase (`make_key`, `LRUCache`, `JoblibBackend`, `sequential_map`); tests import from `calibrated_explanations.perf` and pass. [Done]
+- Add micro-benchmarks and integrate with existing perf-guard job. [Done: `scripts/micro_bench_perf.py`, `scripts/check_perf_micro.py`; CI wired in `.github/workflows/test.yml` and baseline updater simplified]
 
 Acceptance
 
-- Feature-flagged; disabled by default; no behavior change when off.
+- Feature-flagged; disabled by default; no behavior change when off. [Maintained]
+
+Notes
+
+- New tests: `tests/test_perf_foundations.py` validate cache eviction, deterministic keys, and the joblib backend fallback; green locally.
+- Micro benchmark script prints JSON with import time and sequential vs joblib timings for future CI perf guard.
 
 ---
 
@@ -362,6 +368,7 @@ Notes:
 
 - `plugins/base.py` abstract interface: `supports(model)`, `explain(model, X, **kwargs)`.
 - `plugins/registry.py` with registration + discovery; versioned capability metadata (`plugin_meta = {"schema_version": 1, "capabilities": [..]}`).
+- `plugins/__init__.py` exports protocol and registry; tests added (`tests/test_plugin_registry.py`).
 - Security note: warn users about third-party code execution; optional whitelist config.
 
 **Explanation Data Schema:**
@@ -458,8 +465,8 @@ Rollback Checklist: revert feature branch, restore baseline JSON, issue hotfix t
 
 ## 19. Next Immediate Steps
 
-1. Open feature branch `viz-plotspec` and implement PlotSpec MVP with matplotlib adapter; convert 1–2 plots; update docs/examples.
-2. Open feature branch `perf-foundations`; add baseline LRU cache and parallel map behind flags; wire micro-benchmarks and extend perf guard.
+1. Open feature branch `viz-plotspec` and implement PlotSpec MVP with matplotlib adapter; convert 1–2 plots; update docs/examples. [In progress; regression bars done]
+2. Open feature branch `perf-foundations`; add baseline LRU cache and parallel map behind flags; wire micro-benchmarks and extend perf guard. [Scaffolding added; benchmarks pending]
 3. Finalize ADR-006 and add `plugins/registry.py` skeleton with minimal metadata; document opt-in risks.
 4. Expand migration guide with concrete alias examples and add an optional rewrite helper script.
 5. Evaluate decoupling heavy viz deps from core install path in v0.7.0; document trade-offs and transition plan.

@@ -4,7 +4,7 @@ applyTo: '**'
 # Calibrated Explanations Improvement Plan (Contract-first)
 
 Created: August 16, 2025
-Last Updated: September 4, 2025
+Last Updated: September 4, 2025 (post-perf guard integration)
 Repository: calibrated_explanations
 Current Version: v0.6.0
 Target Releases: v0.6.0 (Stable contracts & config), v0.7.0 (Perf foundations & docs CI), v0.8.0 (Extensibility & viz)
@@ -36,8 +36,8 @@ Based on the v0.6.0 release and code review, the repo has completed Phase 2 (con
   - Lazy plotting import; tests marked `@pytest.mark.viz` and skipped when extras are absent; CI includes a core-only job.
   - Docs build and linkcheck wired in CI; API reference and new pages added (schema v1, migration guide).
 - Later phases:
-  - Visualization abstraction (PlotSpec) not yet implemented (plot style/config landed separately).
-  - Caching/parallel backends not yet implemented (planned behind flags).
+  - Visualization abstraction (PlotSpec) MVP present with matplotlib adapter; broader conversion and adapters pending.
+  - Caching/parallel scaffolding present behind flags; further tuning and docs pending.
 
 Implication: with contracts stable in v0.6.0, prioritize visualization abstraction (PlotSpec), then performance foundations behind flags, and a minimal plugin trust baseline.
 
@@ -87,7 +87,7 @@ Acceptance
 
 ## Phase C: Visualization Abstraction (PlotSpec)
 
-Status: Not started
+Status: In progress (MVP landed; docs page added)
 
 - Move ADR-007 to Accepted.
 - Introduce a minimal, backend-agnostic PlotSpec and convert 1–2 existing plots.
@@ -95,8 +95,8 @@ Status: Not started
 
 Acceptance
 
-- PlotSpec renders via the matplotlib adapter for selected examples.
-- Public API docs updated with PlotSpec usage examples.
+- PlotSpec renders via the matplotlib adapter for selected examples. [Done: regression bars]
+- Public API docs updated with PlotSpec usage examples. [Done: docs/viz_plotspec.md linked in index]
 
 ---
 
@@ -115,15 +115,20 @@ Acceptance
 
 ## Phase E: Performance Foundations (Caching & Parallel)
 
-Status: Not started
+Status: Active (scaffolding + CI perf guard integrated; unit tests passing)
 
 - Implement baseline ADR-003 (Caching) and ADR-004 (Parallel Backend) behind feature flags.
-- Provide a small LRU cache and a thin parallel map abstraction with sensible defaults.
-- Add micro-benchmarks and perf guards where feasible (import time, p50/p95 on small datasets).
+- Provide a small LRU cache and a thin parallel map abstraction with sensible defaults. [Done: `perf.cache.LRUCache`, `perf.parallel.JoblibBackend`, `sequential_map`, `make_key` exported via package]
+- Add micro-benchmarks and integrate perf guard in CI (import time, map throughput). [Done: `scripts/micro_bench_perf.py`, `scripts/check_perf_micro.py`; workflows updated]
 
 Acceptance
 
-- Feature-flagged; disabled by default; no behavior change when off.
+- Feature-flagged; disabled by default; no behavior change when off. [Maintained]
+
+Notes
+
+- New tests validate cache eviction, deterministic key generation, and joblib backend fallback; green locally.
+- CI workflows use the checker to enforce thresholds; baselines maintained via the update workflow.
 
 ---
 
@@ -365,6 +370,7 @@ Notes:
 
 - `plugins/base.py` abstract interface: `supports(model)`, `explain(model, X, **kwargs)`.
 - `plugins/registry.py` with registration + discovery; versioned capability metadata (`plugin_meta = {"schema_version": 1, "capabilities": [..]}`).
+- `plugins/__init__.py` added to export protocol and registry module; unit tests cover registration and metadata validation.
 - Security note: warn users about third-party code execution; optional whitelist config.
 
 **Explanation Data Schema:**

@@ -1,6 +1,6 @@
 # ADR-003: Caching Key & Eviction Strategy
 
-Status: Proposed (baseline, feature-flagged)
+Status: Accepted (baseline, feature-flagged)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
