@@ -198,6 +198,26 @@ It is easy to access the predictions and probabilities from the calibrator and m
 
    # Include uncertainty interval, outputted as a tuple (low, high)
    calib_proba_cls, low_high = classifier.predict_proba(X_test_cls, uq_interval=True)
+
+## Performance scaffolding (experimental)
+
+Phase 3 introduces a small, opt-in performance module. You can use these primitives directly for your own pipelines:
+
+- `calibrated_explanations.perf.LRUCache`
+- `calibrated_explanations.perf.make_key`
+- `calibrated_explanations.perf.JoblibBackend`
+- `calibrated_explanations.perf.sequential_map`
+
+A tiny micro-benchmark is available at `scripts/micro_bench_perf.py` that prints JSON with import-time and simple map timings. This is intended for smoke testing and CI perf guards; it does not change library behavior.
+
+## Plugin registry (experimental)
+
+An early, opt-in plugin interface and registry is available under `calibrated_explanations.plugins`:
+
+- Protocol: `ExplainerPlugin` (expects `plugin_meta`, `supports(model)`, `explain(model, X, **kwargs)`).
+- Registry: `calibrated_explanations.plugins.registry` with `register`, `unregister`, `list_plugins`, and `find_for(model)`.
+
+Security note: registering/using third-party plugins executes arbitrary code—use only trusted plugins.
    calib_y_hat_cls, (low, high) = classifier.predict(X_test_cls, uq_interval=True)
    calib_y_hat_reg, low_high = regressor.predict(X_test_reg, uq_interval=True) # default low_high_percentiles=(5, 95)
    calib_y_hat_reg, low_high = regressor.predict(X_test_reg, low_high_percentiles=(10,90), uq_interval=True)

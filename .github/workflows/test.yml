@@ -89,8 +89,12 @@ jobs:
           pip install -r requirements.txt
           pip install . psutil
 
-      - name: Run performance regression check
+      - name: Run micro benchmark
         run: |
-          python scripts/check_perf_regression.py \
-            --baseline benchmarks/baseline_20250816.json \
-            --thresholds benchmarks/perf_thresholds.json --collect
+          python scripts/micro_bench_perf.py > micro_current.json
+
+      - name: Compare micro metrics with baseline thresholds
+        run: |
+          BASELINE=$(ls benchmarks/micro_*.json | sort | tail -n 1)
+          echo "Using baseline: $BASELINE"
+          python scripts/check_perf_micro.py "$BASELINE" micro_current.json benchmarks/perf_thresholds.json

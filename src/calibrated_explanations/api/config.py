@@ -40,6 +40,12 @@ class ExplainerConfig:
     # Parallelism placeholder (not wired yet)
     parallel_workers: int | None = None
 
+    # Performance feature flags (ADR-003/ADR-004) – disabled by default
+    perf_cache_enabled: bool = False
+    perf_cache_max_items: int = 128
+    perf_parallel_enabled: bool = False
+    perf_parallel_backend: Literal["auto", "sequential", "joblib"] = "auto"
+
 
 class ExplainerBuilder:
     """Fluent helper to assemble an :class:`ExplainerConfig`.
@@ -78,6 +84,21 @@ class ExplainerBuilder:
 
     def parallel_workers(self, n: int | None) -> ExplainerBuilder:
         self._cfg.parallel_workers = n
+        return self
+
+    # Perf flags (feature-flagged; no behavior change when off)
+    def perf_cache(self, enabled: bool, *, max_items: int | None = None) -> ExplainerBuilder:
+        self._cfg.perf_cache_enabled = enabled
+        if max_items is not None:
+            self._cfg.perf_cache_max_items = max_items
+        return self
+
+    def perf_parallel(
+        self, enabled: bool, *, backend: Literal["auto", "sequential", "joblib"] | None = None
+    ) -> ExplainerBuilder:
+        self._cfg.perf_parallel_enabled = enabled
+        if backend is not None:
+            self._cfg.perf_parallel_backend = backend
         return self
 
     def build_config(self) -> ExplainerConfig:

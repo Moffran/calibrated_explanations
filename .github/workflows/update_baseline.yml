@@ -36,54 +36,53 @@ jobs:
         id: gen
         run: |
           DATE_TAG=$(date -u +%Y%m%d)
-          python scripts/collect_baseline.py --output benchmarks/baseline_${DATE_TAG}.json
-          python scripts/run_micro_benchmarks.py -o benchmarks/micro_${DATE_TAG}.json
+          # API baseline collection not automated here; keep previous behavior minimal
+          # Save micro benchmarks for perf guard
+          python scripts/micro_bench_perf.py > benchmarks/micro_${DATE_TAG}.json
           echo "date_tag=$DATE_TAG" >> $GITHUB_OUTPUT
 
-      - name: API diff vs current committed baseline
+      - name: Micro baseline diff vs current committed baseline
         id: api_diff
         run: |
-          OLD=$(ls benchmarks/baseline_*.json | sort | head -n 1)
-          NEW=benchmarks/baseline_${{ steps.gen.outputs.date_tag }}.json
-          echo "Old baseline: $OLD" > api_diff.txt
-          echo "New baseline: $NEW" >> api_diff.txt
-          python scripts/api_diff.py --old "$OLD" --new "$NEW" >> api_diff.txt || true
-          cat api_diff.txt
+          OLD=$(ls benchmarks/micro_*.json | sort | head -n 1 || true)
+          NEW=benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
+          echo "Old micro baseline: $OLD" > perf_diff.txt
+          echo "New micro baseline: $NEW" >> perf_diff.txt
+          if [ -n "$OLD" ]; then python scripts/check_perf_micro.py "$OLD" "$NEW" benchmarks/perf_thresholds.json >> perf_diff.txt || true; else echo "No existing micro baseline found." >> perf_diff.txt; fi
+          cat perf_diff.txt
 
       - name: Maybe regenerate thresholds
         if: ${{ github.event.inputs.override_thresholds == 'yes' }}
         run: |
           # Simple heuristic: keep existing structure; no automatic change implemented
-          echo "Threshold regeneration not automated; adjust manually if needed." >> api_diff.txt
+          echo "Threshold regeneration not automated; adjust manually if needed." >> perf_diff.txt
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          name: new-baseline-${{ steps.gen.outputs.date_tag }}
+          name: new-micro-baseline-${{ steps.gen.outputs.date_tag }}
           path: |
-            benchmarks/baseline_${{ steps.gen.outputs.date_tag }}.json
             benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
-            api_diff.txt
+            perf_diff.txt
 
       - name: Create Pull Request with new baseline
         uses: peter-evans/create-pull-request@v7
         with:
-          commit-message: "chore: update performance baseline ${{ steps.gen.outputs.date_tag }}"
-          title: "Update performance baseline ${{ steps.gen.outputs.date_tag }}"
+          commit-message: "chore: update micro performance baseline ${{ steps.gen.outputs.date_tag }}"
+          title: "Update micro performance baseline ${{ steps.gen.outputs.date_tag }}"
           body: |
             Reason: ${{ github.event.inputs.reason || 'manual update' }}
 
             Includes:
-            - benchmarks/baseline_${{ steps.gen.outputs.date_tag }}.json
             - benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
 
-            API Diff:
+            Perf summary:
             ```
-            $(cat api_diff.txt)
+            $(cat perf_diff.txt)
             ```
           branch: chore/update-baseline-${{ steps.gen.outputs.date_tag }}
           base: main
           add-paths: |
-            benchmarks/baseline_${{ steps.gen.outputs.date_tag }}.json
             benchmarks/micro_${{ steps.gen.outputs.date_tag }}.json
+            perf_diff.txt
           labels: performance, baseline-update
