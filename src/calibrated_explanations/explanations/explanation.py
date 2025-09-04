@@ -1016,6 +1016,10 @@ class FactualExplanation(CalibratedExplanation):
             rnk_weight = 1.0
             rnk_metric = "ensured"
 
+        # Consistency guard: one-sided intervals cannot show uncertainty bands
+        if uncertainty and self.is_one_sided():
+            raise Warning("Interval plot is not supported for one-sided explanations.")
+
         factual = self._get_rules()  # get_explanation(index)
         self._check_preconditions()
         predict = self.prediction
@@ -2084,6 +2088,10 @@ class FastExplanation(CalibratedExplanation):
         if rnk_metric == "uncertainty":
             rnk_weight = 1.0
             rnk_metric = "ensured"
+
+        # Consistency guard: one-sided intervals cannot show uncertainty bands
+        if uncertainty and self.is_one_sided():
+            raise Warning("Interval plot is not supported for one-sided explanations.")
 
         factual = self._get_rules()  # get_explanation(index)
         self._check_preconditions()
