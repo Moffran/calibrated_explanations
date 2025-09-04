@@ -51,7 +51,7 @@ pythonpath = ["src"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-calibrated_explanations = ["py.typed"]
+calibrated_explanations = ["py.typed", "schemas/*.json"]
 
 # ----------------------------
 # Tooling / Quality Gates (Phase 0)

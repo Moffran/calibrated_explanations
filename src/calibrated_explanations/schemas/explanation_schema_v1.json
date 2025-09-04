@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://calibrated-explanations.org/schema/explanation/v1",
+  "title": "Calibrated Explanation",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["task", "index", "prediction", "rules"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "1.0.0"},
+    "task": {"type": "string"},
+    "index": {"type": "integer", "minimum": 0},
+    "prediction": {"type": "object"},
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["feature", "rule", "weight", "prediction"],
+        "properties": {
+          "feature": {"type": "integer"},
+          "rule": {"type": "string"},
+          "weight": {"type": "object"},
+          "prediction": {"type": "object"},
+          "instance_prediction": {"type": ["object", "null"]},
+          "feature_value": {},
+          "is_conjunctive": {"type": "boolean"},
+          "value_str": {"type": ["string", "null"]},
+          "current_bin": {"type": ["integer", "null"]}
+        }
+      }
+    },
+    "provenance": {"type": ["object", "null"]},
+    "metadata": {"type": ["object", "null"]}
+  }
+}
