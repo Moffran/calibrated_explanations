@@ -30,9 +30,9 @@
     - [Initializing `WrapCalibratedExplainer`s](#initializing-wrapcalibratedexplainers)
     - [Known Limitations](#known-limitations)
   - [Installation](#installation)
-    - [From PyPI:](#from-pypi)
-    - [From conda-forge:](#from-conda-forge)
-    - [Dependencies:](#dependencies)
+  - [From PyPI](#from-pypi)
+  - [From conda-forge](#from-conda-forge)
+  - [Dependencies](#dependencies)
     - [Optional extras](#optional-extras)
   - [Contributing](#contributing)
     - [Roadmap and ADRs](#roadmap-and-adrs)
@@ -516,22 +516,29 @@ display(calibrated_regressor)
 When a calibrated explainer is re-fitted, the explainer is reinitialized.
 
 ### Known Limitations
-The implementation currently only support numerical input. Use the `utils.helper.transform_to_numeric` (released in version v0.3.1) to transform a `DataFrame` with text data into numerical form and at the same time extracting `categorical_features`, `categorical_labels`, `target_labels` (if text labels) and `mappings` (used to apply the same mappings to new data) to be used as input to the `CalibratedExplainer`. The algorithm does not currently support image data.
+By default, the implementation expects numerical input arrays. For non-numeric (categorical/text) inputs you can either:
 
-See e.g. the [Conditional Fairness Experiment](evaluation/Conditional_Fairness_Experiment.ipynb) for examples on how `utils.helper.transform_to_numeric` can be used.
+- Use `utils.helper.transform_to_numeric` to convert a pandas `DataFrame` and obtain `categorical_features`, `categorical_labels`, `target_labels` (if text labels), and reusable `mappings` for consistent transforms across datasets; or
+- Provide a user-supplied preprocessor (e.g., a scikit-learn `ColumnTransformer`/`Pipeline`) via the configuration API to enable controlled, deterministic preprocessing with mapping persistence during `fit`/`calibrate`/inference.
+
+Numeric-only behavior is unchanged when no preprocessor is provided. Image and other non-tabular modalities are not supported.
+
+See the fairness notebook (e.g., [Conditional Fairness Experiment](evaluation/Conditional_Fairness_Experiment.ipynb)) for an example of using `transform_to_numeric`.
 
 [Table of Content](#table-of-contents)
 
 ## Installation
 
-### From PyPI:
+### From PyPI
+
 Install `calibrated-explanations` from PyPI:
 
 ```bash
 pip install calibrated-explanations
 ```
 
-### From conda-forge:
+### From conda-forge
+
 Alternatively, you can install it from conda-forge:
 
 ```bash
@@ -545,17 +552,19 @@ To install the latest version directly from the GitHub repository, use the follo
 conda install git+https://github.com/Moffran/calibrated_explanations.git
 ``` -->
 
-### Dependencies:
+### Dependencies
+
 The following dependencies are required and will be installed automatically if not already present:
 
-* [crepes](https://github.com/henrikbostrom/crepes)
-* [venn-abers](https://github.com/ip200/venn-abers)
-* [scikit-learn](https://github.com/scikit-learn/scikit-learn)
-* [matplotlib](https://matplotlib.org/)
-* [NumPy](https://numpy.org/)
+- [crepes](https://github.com/henrikbostrom/crepes)
+- [venn-abers](https://github.com/ip200/venn-abers)
+- [scikit-learn](https://github.com/scikit-learn/scikit-learn)
+- [matplotlib](https://matplotlib.org/)
+- [NumPy](https://numpy.org/)
 
 ### Optional extras
-Some features can be installed as optional extras to keep the core lean:
+
+Some features can be installed as optional extras to keep the core lean. Note: in v0.6.0, a subset (e.g., matplotlib) may still be present in the core install for compatibility; extras remain available to support minimal or controlled environments.
 
 - Visualization (matplotlib)
 
@@ -706,6 +715,7 @@ The `check_is_fitted` and `safe_instance` functions in `calibrated_explanations.
 
 
 ## Support
+
 For any questions or issues, please open an [issue](https://github.com/Moffran/calibrated_explanations/issues), open a [discussion](https://github.com/Moffran/calibrated_explanations/discussions) or contact the maintainers.
 
 [Table of Content](#table-of-contents)

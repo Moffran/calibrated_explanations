@@ -1,5 +1,9 @@
 name: test
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -29,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install calibrated-explanations
+          pip install .
           pip install pytest pytest-cov xgboost lime shap setuptools psutil
 
       - name: Run tests with coverage
@@ -43,6 +47,29 @@ jobs:
         uses: codecov/codecov-action@v5.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  core-only:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install core dependencies only (no viz extras)
+        run: |
+          python -m pip install --upgrade pip
+          # Install project without dependencies to control deps explicitly
+          pip install . --no-deps
+          # Install minimal runtime deps explicitly (exclude matplotlib/ipython/lime)
+          pip install numpy pandas scikit-learn "crepes>=0.7.1,<0.9" "venn-abers>=1.4.1" pytest
+
+      - name: Run core test subset (skip viz)
+        run: pytest -q -k "not viz"
 
   perf-guard:
     if: ${{ github.ref == 'refs/heads/main' }}

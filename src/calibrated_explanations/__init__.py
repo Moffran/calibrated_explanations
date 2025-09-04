@@ -29,7 +29,7 @@ from .utils.helper import transform_to_numeric
 # Provide a default no-op handler to avoid "No handler" warnings for library users.
 _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
-__version__ = "v0.5.1"
+__version__ = "v0.6.0"
 
 __all__ = [
     "CalibratedExplainer",

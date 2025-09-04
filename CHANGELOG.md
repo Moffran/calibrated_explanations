@@ -2,7 +2,31 @@
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.1...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.0...main)
+
+## [v0.6.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.0) - 2025-09-04
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.1...v0.6.0)
+
+### Highlights (Contract-first)
+
+- Internal domain model for explanations (ADR-008): added `Explanation` and `FeatureRule` types with adapters to preserve legacy dict outputs. No public API changes required; golden outputs unchanged.
+- Explanation Schema v1 (ADR-005): shipped a versioned JSON Schema (`schemas/explanation_schema_v1.json`) and utilities for `to_json`/`from_json` with validation. Round-trip tests included.
+- Preprocessing policy hooks (ADR-009): wrapper now supports configurable preprocessing with mapping persistence and unseen-category policy; default behavior unchanged for numeric inputs.
+- Optional extras split (Phase 2S): declared `viz`, `lime`, `notebooks`, `dev`, `eval` extras and lazy plotting import. Tests that need matplotlib are marked `@pytest.mark.viz` and skipped when extras are absent.
+- Docs: new Schema v1 and Migration (0.5.x → 0.6.0) pages; evaluation README and API reference updates.
+
+### Deprecations
+
+- Parameter alias deprecations wired; warnings emitted once per session (removal not before v0.8.0). See migration guide.
+
+### CI
+
+- Added docs build + linkcheck job and a core-only test job without viz extras to ensure core independence.
+
+### Notes
+
+- This release focuses on contract stability and does not change public serialized outputs. Performance features remain behind flags and will arrive in v0.7.x.
 
 ### Maintenance / Phase 1B completion
 

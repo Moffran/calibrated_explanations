@@ -31,6 +31,8 @@ Contents
    pr_guide
     calibrated_explanations
    error_handling
+   schema_v1
+   migration_0_5_to_0_6
 
 Optional extras
 ----------------
