@@ -34,6 +34,7 @@ Contents
    architecture
    schema_v1
    migration_0_5_to_0_6
+   viz_plotspec
 
 Optional extras
 ----------------
