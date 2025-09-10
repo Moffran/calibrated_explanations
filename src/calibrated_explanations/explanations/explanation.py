@@ -34,7 +34,7 @@ from ..utils.discretizers import (
     EntropyDiscretizer,
     RegressorDiscretizer,
 )
-from ..utils.helper import calculate_metrics, prepare_for_saving
+from ..utils.helper import calculate_metrics, prepare_for_saving, safe_mean
 
 # @dataclass
 # class PredictionInterval:
@@ -459,9 +459,11 @@ class CalibratedExplanation(ABC):
                             classes=predicted_class,
                             bins=bins,
                         )
-                        rule_predict += p_value[0]
-                        rule_low += low[0]
-                        rule_high += high[0]
+                        from ..utils.helper import safe_first_element
+
+                        rule_predict += safe_first_element(p_value)
+                        rule_low += safe_first_element(low)
+                        rule_high += safe_first_element(high)
                         rule_count += 1
                 else:
                     p_value, low, high, _ = self._get_explainer()._predict(  # pylint: disable=protected-access
@@ -471,9 +473,11 @@ class CalibratedExplanation(ABC):
                         classes=predicted_class,
                         bins=bins,
                     )
-                    rule_predict += p_value[0]
-                    rule_low += low[0]
-                    rule_high += high[0]
+                    from ..utils.helper import safe_first_element
+
+                    rule_predict += safe_first_element(p_value)
+                    rule_low += safe_first_element(low)
+                    rule_high += safe_first_element(high)
                     rule_count += 1
         rule_predict /= rule_count
         rule_low /= rule_count
@@ -620,7 +624,7 @@ class CalibratedExplanation(ABC):
         rule_high = [high[i] for i in range(len(high)) if perturbed_feature[i][3] is not None]
 
         # skip if identical to original
-        if self.prediction["low"] == np.mean(rule_low) and self.prediction["high"] == np.mean(
+        if self.prediction["low"] == safe_mean(rule_low) and self.prediction["high"] == safe_mean(
             rule_high
         ):
             warnings.warn(
@@ -629,15 +633,15 @@ class CalibratedExplanation(ABC):
                 stacklevel=2,
             )
             return self
-        new_rule["predict"].append(np.mean(rule_predict))
-        new_rule["predict_low"].append(np.mean(rule_low))
-        new_rule["predict_high"].append(np.mean(rule_high))
-        new_rule["weight"].append(np.mean(rule_predict) - np.mean(instance_predict))
+        new_rule["predict"].append(safe_mean(rule_predict))
+        new_rule["predict_low"].append(safe_mean(rule_low))
+        new_rule["predict_high"].append(safe_mean(rule_high))
+        new_rule["weight"].append(safe_mean(rule_predict) - safe_mean(instance_predict))
         new_rule["weight_low"].append(
-            np.mean(rule_low) - np.mean(instance_predict) if rule_low != -np.inf else rule_low
+            safe_mean(rule_low) - safe_mean(instance_predict) if rule_low != -np.inf else rule_low
         )
         new_rule["weight_high"].append(
-            np.mean(rule_high) - np.mean(instance_predict) if rule_high != np.inf else rule_high
+            safe_mean(rule_high) - safe_mean(instance_predict) if rule_high != np.inf else rule_high
         )
         new_rule["value"].append(str(np.around(self.X_test[f], decimals=2)))
         new_rule["feature"].append(f)
@@ -1288,23 +1292,23 @@ class AlternativeExplanation(CalibratedExplanation):
                 value_bin = 0
                 if np.any(values < lesser):
                     # skip if identical to original
-                    if self.prediction["low"] == np.mean(
+                    if self.prediction["low"] == safe_mean(
                         instance_low[f][value_bin]
-                    ) and self.prediction["high"] == np.mean(instance_high[f][value_bin]):
+                    ) and self.prediction["high"] == safe_mean(instance_high[f][value_bin]):
                         continue
-                    alternative["predict"].append(np.mean(instance_predict[f][value_bin]))
-                    alternative["predict_low"].append(np.mean(instance_low[f][value_bin]))
-                    alternative["predict_high"].append(np.mean(instance_high[f][value_bin]))
+                    alternative["predict"].append(safe_mean(instance_predict[f][value_bin]))
+                    alternative["predict_low"].append(safe_mean(instance_low[f][value_bin]))
+                    alternative["predict_high"].append(safe_mean(instance_high[f][value_bin]))
                     alternative["weight"].append(
-                        np.mean(instance_predict[f][value_bin]) - self.prediction["predict"]
+                        safe_mean(instance_predict[f][value_bin]) - self.prediction["predict"]
                     )
                     alternative["weight_low"].append(
-                        np.mean(instance_low[f][value_bin]) - self.prediction["predict"]
+                        safe_mean(instance_low[f][value_bin]) - self.prediction["predict"]
                         if instance_low[f][value_bin] != -np.inf
                         else instance_low[f][value_bin]
                     )
                     alternative["weight_high"].append(
-                        np.mean(instance_high[f][value_bin]) - self.prediction["predict"]
+                        safe_mean(instance_high[f][value_bin]) - self.prediction["predict"]
                         if instance_high[f][value_bin] != np.inf
                         else instance_high[f][value_bin]
                     )
@@ -1319,23 +1323,23 @@ class AlternativeExplanation(CalibratedExplanation):
 
                 if np.any(values > greater):
                     # skip if identical to original
-                    if self.prediction["low"] == np.mean(
+                    if self.prediction["low"] == safe_mean(
                         instance_low[f][value_bin]
-                    ) and self.prediction["high"] == np.mean(instance_high[f][value_bin]):
+                    ) and self.prediction["high"] == safe_mean(instance_high[f][value_bin]):
                         continue
-                    alternative["predict"].append(np.mean(instance_predict[f][value_bin]))
-                    alternative["predict_low"].append(np.mean(instance_low[f][value_bin]))
-                    alternative["predict_high"].append(np.mean(instance_high[f][value_bin]))
+                    alternative["predict"].append(safe_mean(instance_predict[f][value_bin]))
+                    alternative["predict_low"].append(safe_mean(instance_low[f][value_bin]))
+                    alternative["predict_high"].append(safe_mean(instance_high[f][value_bin]))
                     alternative["weight"].append(
-                        np.mean(instance_predict[f][value_bin]) - self.prediction["predict"]
+                        safe_mean(instance_predict[f][value_bin]) - self.prediction["predict"]
                     )
                     alternative["weight_low"].append(
-                        np.mean(instance_low[f][value_bin]) - self.prediction["predict"]
+                        safe_mean(instance_low[f][value_bin]) - self.prediction["predict"]
                         if instance_low[f][value_bin] != -np.inf
                         else instance_low[f][value_bin]
                     )
                     alternative["weight_high"].append(
-                        np.mean(instance_high[f][value_bin]) - self.prediction["predict"]
+                        safe_mean(instance_high[f][value_bin]) - self.prediction["predict"]
                         if instance_high[f][value_bin] != np.inf
                         else instance_high[f][value_bin]
                     )

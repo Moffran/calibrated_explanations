@@ -57,14 +57,14 @@ def test_validate_inputs_matrix_shapes_and_finite():
     y = np.array([1.0, 2.0, 3.0])
     # happy path
     validate_inputs_matrix(X, y, require_y=True)
-    # shape mismatch
-    with pytest.raises(DataShapeError):
+    # shape mismatch (y length)
+    with pytest.raises(DataShapeError, match="Length of 'y' \("):
         validate_inputs_matrix(X, y[:2], require_y=True)
     # not 2D
-    with pytest.raises(DataShapeError):
+    with pytest.raises(DataShapeError, match="Argument 'X' must be 2D"):
         validate_inputs_matrix(np.ones((3,)), y)
     # n_features mismatch
-    with pytest.raises(DataShapeError):
+    with pytest.raises(DataShapeError, match="Argument 'X' must have 3 features"):
         validate_inputs_matrix(X, y, n_features=3)
     # NaN check
     X_bad = X.copy()

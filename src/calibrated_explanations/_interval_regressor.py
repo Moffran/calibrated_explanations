@@ -121,9 +121,16 @@ class IntervalRegressor:
             p, low, high = self.split["va"].predict_proba(
                 X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]]
             )
-            p = p[0, 1]
-            low = low[0]
-            high = high[0]
+            # import helper locally to avoid top-level dependency
+            try:
+                from .utils.helper import safe_first_element
+            except Exception:
+                # fall back to the package path if relative import fails
+                from calibrated_explanations.utils.helper import safe_first_element
+
+            p = safe_first_element(p, col=1)
+            low = safe_first_element(low)
+            high = safe_first_element(high)
             proba[i] = p
             interval[i, :] = np.array([low, high])
         return proba, interval[:, 0], interval[:, 1], None

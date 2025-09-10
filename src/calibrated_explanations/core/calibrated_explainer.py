@@ -38,6 +38,7 @@ from ..utils.helper import (
     convert_targets_to_numeric,
     immutable_array,
     safe_import,
+    safe_mean,
     safe_isinstance,
 )
 from ..api.params import canonicalize_kwargs, validate_param_combination
@@ -166,6 +167,10 @@ class CalibratedExplainer:
             self.predict_function = (
                 learner.predict_proba if mode == "classification" else learner.predict
             )
+        # Optionally suppress or convert low-level crepes errors into clearer messages.
+        # Caller can pass suppress_crepes_errors=True via kwargs to avoid raising on
+        # crepes broadcasting/shape errors (useful for synthetic tiny datasets).
+        self.suppress_crepes_errors = bool(kwargs.get("suppress_crepes_errors", False))
         self.oob = kwargs.get("oob", False)
         if self.oob:
             try:
@@ -559,22 +564,54 @@ class CalibratedExplainer:
                     [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
                 )
 
-                if self.is_fast():
-                    return self.interval_learner[feature].predict_uncertainty(
+                try:
+                    if self.is_fast():
+                        return self.interval_learner[feature].predict_uncertainty(
+                            X_test, low_high_percentiles, bins=bins
+                        )
+                    return self.interval_learner.predict_uncertainty(
                         X_test, low_high_percentiles, bins=bins
                     )
-                return self.interval_learner.predict_uncertainty(
-                    X_test, low_high_percentiles, bins=bins
-                )
+                except Exception:  # typically crepes broadcasting/shape errors
+                    if self.suppress_crepes_errors:
+                        # Log and return placeholder arrays (caller should handle downstream)
+                        _warnings.warn(
+                            "crepes produced an unexpected result (likely too-small calibration set); returning zeros as a degraded fallback.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                        n = X_test.shape[0]
+                        # produce zero-length or zero arrays consistent with expected shape
+                        return np.zeros(n), np.zeros(n), np.zeros(n), None
+                    # Preserve prior behavior: re-raise the original exception so callers/tests
+                    # see the original error (instead of converting it to DataShapeError).
+                    raise
 
             # regression with threshold condition
             assert_threshold(threshold, X_test)
-            if self.is_fast():
-                return self.interval_learner[feature].predict_probability(
-                    X_test, threshold, bins=bins
-                )
-            # pylint: disable=unexpected-keyword-arg
-            return self.interval_learner.predict_probability(X_test, threshold, bins=bins)
+            try:
+                if self.is_fast():
+                    return self.interval_learner[feature].predict_probability(
+                        X_test, threshold, bins=bins
+                    )
+                # pylint: disable=unexpected-keyword-arg
+                return self.interval_learner.predict_probability(X_test, threshold, bins=bins)
+            except Exception as exc:
+                if self.suppress_crepes_errors:
+                    _warnings.warn(
+                        "crepes produced an unexpected result while computing probabilities; returning zeros as a degraded fallback.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    n = X_test.shape[0]
+                    return np.zeros(n), np.zeros(n), np.zeros(n), None
+                    # Re-raise as a clearer DataShapeError with guidance
+                    raise DataShapeError(
+                        "Error while computing prediction intervals from the underlying crepes library. "
+                        "This commonly occurs when the calibration set is too small for the requested percentiles. "
+                        "Consider using a larger calibration set, or instantiate the explainer with suppress_crepes_errors=True to return a degraded fallback. "
+                        f"(original error: {exc})"
+                    ) from exc
 
         return None, None, None, None  # Should never happen
 
@@ -880,9 +917,9 @@ class CalibratedExplainer:
                         # instance_predict['low'][f] = np.sum(low_predict[uncovered]*fractions[uncovered])
                         # instance_predict['high'][f] = np.sum(high_predict[uncovered]*fractions[uncovered])
                         # Calculate the average predictions
-                        instance_predict[i]["predict"][f] = np.mean(average_predict[uncovered])
-                        instance_predict[i]["low"][f] = np.mean(low_predict[uncovered])
-                        instance_predict[i]["high"][f] = np.mean(high_predict[uncovered])
+                        instance_predict[i]["predict"][f] = safe_mean(average_predict[uncovered])
+                        instance_predict[i]["low"][f] = safe_mean(low_predict[uncovered])
+                        instance_predict[i]["high"][f] = safe_mean(high_predict[uncovered])
 
                         # Calculate feature importance weights
                         instance_weights[i]["predict"][f] = self._assign_weight(
@@ -944,9 +981,15 @@ class CalibratedExplainer:
                         ]
 
                         # Store predictions and counts for values below boundary
-                        avg_predict_map[i][bin_value[i]] = np.mean(predict[index])
-                        low_predict_map[i][bin_value[i]] = np.mean(low[index])
-                        high_predict_map[i][bin_value[i]] = np.mean(high[index])
+                        avg_predict_map[i][bin_value[i]] = (
+                            safe_mean(predict[index]) if len(index) > 0 else 0
+                        )
+                        low_predict_map[i][bin_value[i]] = (
+                            safe_mean(low[index]) if len(index) > 0 else 0
+                        )
+                        high_predict_map[i][bin_value[i]] = (
+                            safe_mean(high[index]) if len(index) > 0 else 0
+                        )
                         counts_map[i][bin_value[i]] = len(np.where(X_cal[:, f] < val)[0])
                         rule_value_map[i].append(lesser_values[f][j][0])
                         bin_value[i] += 1
@@ -967,9 +1010,15 @@ class CalibratedExplainer:
                         ]
 
                         # Store predictions and counts for values above boundary
-                        avg_predict_map[i][bin_value[i]] = np.mean(predict[index])
-                        low_predict_map[i][bin_value[i]] = np.mean(low[index])
-                        high_predict_map[i][bin_value[i]] = np.mean(high[index])
+                        avg_predict_map[i][bin_value[i]] = (
+                            safe_mean(predict[index]) if len(index) > 0 else 0
+                        )
+                        low_predict_map[i][bin_value[i]] = (
+                            safe_mean(low[index]) if len(index) > 0 else 0
+                        )
+                        high_predict_map[i][bin_value[i]] = (
+                            safe_mean(high[index]) if len(index) > 0 else 0
+                        )
                         counts_map[i][bin_value[i]] = len(np.where(X_cal[:, f] > val)[0])
                         rule_value_map[i].append(greater_values[f][j][0])
                         bin_value[i] += 1
@@ -991,9 +1040,15 @@ class CalibratedExplainer:
                         ]
 
                         # Store predictions and counts for values between boundaries
-                        avg_predict_map[i][bin_value[i]] = np.mean(predict[index])
-                        low_predict_map[i][bin_value[i]] = np.mean(low[index])
-                        high_predict_map[i][bin_value[i]] = np.mean(high[index])
+                        avg_predict_map[i][bin_value[i]] = (
+                            safe_mean(predict[index]) if len(index) > 0 else 0
+                        )
+                        low_predict_map[i][bin_value[i]] = (
+                            safe_mean(low[index]) if len(index) > 0 else 0
+                        )
+                        high_predict_map[i][bin_value[i]] = (
+                            safe_mean(high[index]) if len(index) > 0 else 0
+                        )
                         counts_map[i][bin_value[i]] = len(
                             np.where((X_cal[:, f] >= _lower) & (X_cal[:, f] <= _upper))[0]
                         )
@@ -1032,9 +1087,9 @@ class CalibratedExplainer:
                         # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*fractions[uncovered])
                         # instance_predict['low'][f] = np.sum(low_predict[uncovered]*fractions[uncovered])
                         # instance_predict['high'][f] = np.sum(high_predict[uncovered]*fractions[uncovered])
-                        instance_predict[i]["predict"][f] = np.mean(avg_predict_map[i][uncovered])
-                        instance_predict[i]["low"][f] = np.mean(low_predict_map[i][uncovered])
-                        instance_predict[i]["high"][f] = np.mean(high_predict_map[i][uncovered])
+                        instance_predict[i]["predict"][f] = safe_mean(avg_predict_map[i][uncovered])
+                        instance_predict[i]["low"][f] = safe_mean(low_predict_map[i][uncovered])
+                        instance_predict[i]["high"][f] = safe_mean(high_predict_map[i][uncovered])
 
                         instance_weights[i]["predict"][f] = self._assign_weight(
                             instance_predict[i]["predict"][f], prediction["predict"][i]

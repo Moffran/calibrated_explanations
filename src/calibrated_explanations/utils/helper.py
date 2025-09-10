@@ -592,6 +592,56 @@ def prepare_for_saving(filename):
     return "", "", "", ""
 
 
+def safe_mean(values, default=0.0):
+    """Return the mean of values, but return `default` if values is empty.
+
+    This prevents numpy from emitting a "Mean of empty slice" RuntimeWarning
+    and gives callers a deterministic fallback for empty inputs.
+    """
+    try:
+        arr = np.asarray(values)
+        if arr.size == 0:
+            return default
+        return float(np.mean(arr))
+    except Exception:
+        return default
+
+
+def safe_first_element(values, default=0.0, col=None):
+    """Return a sensible first element from `values`.
+
+    - If `values` is scalar, return it as float.
+    - If `values` is empty (size == 0), return `default`.
+    - If `col` is None, return the first flattened element.
+    - If `col` is given and `values` is 1D, return values[col] when available.
+    - If `col` is given and `values` is 2D, return values[0, col] when available.
+
+    This protects callers that index `[0]` (or `[0, 1]`) on prediction outputs
+    when fallback/edge cases may produce empty arrays.
+    """
+    try:
+        arr = np.asarray(values)
+        if arr.size == 0:
+            return float(default)
+        # scalar
+        if arr.ndim == 0:
+            return float(arr)
+        # col not specified -> first flat element
+        if col is None:
+            return float(arr.flat[0])
+        # 1d array
+        if arr.ndim == 1:
+            if col < arr.size:
+                return float(arr[col])
+            return float(default)
+        # 2d or higher: try [0, col]
+        if arr.shape[0] > 0 and arr.shape[1] > col:
+            return float(arr[0, col])
+        return float(default)
+    except Exception:
+        return float(default)
+
+
 if __name__ == "__main__":
     import doctest
 

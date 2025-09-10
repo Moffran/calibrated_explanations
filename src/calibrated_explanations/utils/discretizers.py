@@ -60,6 +60,8 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import check_random_state
 
+from ..utils.helper import safe_mean
+
 
 # pylint: disable=too-many-instance-attributes
 class BaseDiscretizer:
@@ -131,7 +133,7 @@ class BaseDiscretizer:
             self.stds[feature] = []
             for x in range(n_bins + 1):
                 selection = data[discretized == x, feature]
-                mean = 0 if len(selection) == 0 else np.mean(selection)
+                mean = 0 if len(selection) == 0 else safe_mean(selection)
                 self.means[feature].append(mean)
                 std = 0 if len(selection) == 0 else np.std(selection)
                 std += 0.00000000001
