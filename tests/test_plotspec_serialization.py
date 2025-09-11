@@ -1,0 +1,39 @@
+import pytest
+
+from calibrated_explanations.viz import (
+    build_regression_bars_spec,
+    plotspec_to_dict,
+    plotspec_from_dict,
+    validate_plotspec,
+)
+
+
+def test_plotspec_round_trip_minimal():
+    spec = build_regression_bars_spec(
+        title="roundtrip",
+        predict={"predict": 0.5, "low": 0.2, "high": 0.8},
+        feature_weights={
+            "predict": [0.1, 0.2],
+            "low": [0.05, 0.15],
+            "high": [0.18, 0.25],
+        },
+        features_to_plot=[0, 1],
+        column_names=["a", "b"],
+        instance=None,
+        y_minmax=(0.0, 1.0),
+        interval=True,
+    )
+    d = plotspec_to_dict(spec)
+    # Basic structural checks
+    assert isinstance(d, dict)
+    assert "body" in d and "bars" in d["body"]
+    # Round-trip
+    spec2 = plotspec_from_dict(d)
+    assert spec2.title == spec.title
+    assert len(spec2.body.bars) == len(spec.body.bars)
+
+
+def test_validate_plotspec_missing_body_raises():
+    bad = {"plotspec_version": "1.0.0", "title": "no body"}
+    with pytest.raises(ValueError):
+        validate_plotspec(bad)

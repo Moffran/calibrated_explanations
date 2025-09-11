@@ -21,6 +21,14 @@ class IntervalHeaderSpec:
     xlim: Tuple[float, float] | None = None
     xlabel: str | None = None
     ylabel: str | None = None
+    # When True, render two bands (negative/positive) stacked as in legacy probabilistic plot
+    dual: bool = True
+    # Optional explicit class labels for dual probabilistic header (neg_label, pos_label)
+    neg_label: str | None = None
+    pos_label: str | None = None
+    # Optional override for the grey uncertainty overlay color and alpha (per-PlotSpec)
+    uncertainty_color: str | None = None
+    uncertainty_alpha: float | None = None
 
 
 @dataclass

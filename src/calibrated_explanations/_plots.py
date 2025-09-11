@@ -229,160 +229,76 @@ def _plot_probabilistic(
         return
 
     __require_matplotlib()
-    config = __setup_plot_style(style_override)
+    # config = __setup_plot_style(style_override) # Local variable `config` is assigned to but never used
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     if interval is True:
         assert idx is not None
-    # Get figure width from config, with fallback to default value
-    fig_width = float(config["figure"].get("width", 10))
-    fig = plt.figure(figsize=(fig_width, num_to_show * 0.5 + 2))
-    subfigures = fig.subfigures(3, 1, height_ratios=[1, 1, num_to_show + 2])
+    # Build a PlotSpec and render via matplotlib adapter to centralize logic
+    # Build a PlotSpec and render via matplotlib adapter to centralize logic
+    from .viz.builders import build_probabilistic_bars_spec
+    from .viz.matplotlib_adapter import render as render_plotspec
 
-    if interval and (explanation.is_one_sided()):
-        raise Warning("Interval plot is not supported for one-sided explanations.")
+    # Attempt to extract class labels for header annotation (neg/pos)
+    class_labels = None
+    try:
+        class_labels = explanation.get_class_labels()
+    except Exception:
+        class_labels = None
 
-    ax_positive = subfigures[0].add_subplot(111)
-    ax_negative = subfigures[1].add_subplot(111)
+    neg_label = None
+    pos_label = None
+    if class_labels is not None and len(class_labels) >= 2:
+        # class_labels is indexed by class index; positive class corresponds to prediction["classes"]
+        pos_idx = (
+            int(explanation.prediction.get("classes", 1))
+            if explanation.prediction is not None
+            else 1
+        )
+        # fallback ordering: [neg, pos]
+        # try to derive neg/pos by index
+        try:
+            pos_label = class_labels[pos_idx]
+            # pick the other label as neg
+            neg_idx = 0 if pos_idx != 0 else 1
+            neg_label = class_labels[neg_idx]
+        except Exception:
+            neg_label, pos_label = None, None
 
-    ax_main = subfigures[2].add_subplot(111)
+    spec = build_probabilistic_bars_spec(
+        title=title,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=features_to_plot,
+        column_names=column_names,
+        instance=instance,
+        y_minmax=getattr(explanation, "y_minmax", None),
+        interval=interval,
+        sort_by=None,
+        ascending=False,
+        neg_label=neg_label,
+        pos_label=pos_label,
+    )
 
-    # plot the probabilities at the top
-    x = np.linspace(0, 1, 2)
-    xj = np.linspace(x[0] - 0.2, x[0] + 0.2, 2)
-    pred = predict["predict"]
-    pred_low = predict["low"] if predict["low"] != -np.inf else explanation.y_minmax[0]
-    pred_high = predict["high"] if predict["high"] != np.inf else explanation.y_minmax[1]
+    # Use the adapter's render function. For save behavior, construct a temporary
+    # save_path if saving multiple extensions was requested by caller.
+    save_path = None
+    if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
+        # The matplotlib adapter accepts a single save_path; callers previously saved
+        # multiple files by iterating. We'll mimic that behavior here below.
+        save_path = None
 
-    alpha_val = float(config["colors"]["alpha"])
-    pos_color = config["colors"]["positive"]
-    neg_color = config["colors"]["negative"]
+    # Render to show (no-op if neither show nor save requested)
+    render_plotspec(spec, show=show, save_path=save_path)
 
-    ax_negative.fill_betweenx(xj, 1 - pred, 1 - pred, color=pos_color)
-    ax_negative.fill_betweenx(xj, 0, 1 - pred_high, color=pos_color)
-    ax_negative.fill_betweenx(xj, 1 - pred_low, 1 - pred_high, color=pos_color, alpha=alpha_val)
-    ax_negative.set_xlim([0, 1])
-    ax_negative.set_yticks(range(1))
-    ax_negative.set_xticks(np.linspace(0, 1, 6))
-    ax_positive.fill_betweenx(xj, pred, pred, color=neg_color)
-    ax_positive.fill_betweenx(xj, 0, pred_low, color=neg_color)
-    ax_positive.fill_betweenx(xj, pred_low, pred_high, color=neg_color, alpha=alpha_val)
-    ax_positive.set_xlim([0, 1])
-    ax_positive.set_yticks(range(1))
-    ax_positive.set_xticks([])
+    # If requested, also save multiple extensions like the legacy function did
+    if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
+        from .viz.matplotlib_adapter import render as _render
 
-    if explanation.is_thresholded():
-        if np.isscalar(explanation.y_threshold):
-            ax_negative.set_yticklabels(labels=[f"P(y>{float(explanation.y_threshold) :.2f})"])
-            ax_positive.set_yticklabels(labels=[f"P(y<={float(explanation.y_threshold) :.2f})"])
-        else:  # interval threshold
-            ax_negative.set_yticklabels(
-                labels=[
-                    f"y_hat <= {explanation.y_threshold[0]:.3f} || y_hat > {explanation.y_threshold[1]:.3f}"
-                ]
-            )  # pylint: disable=line-too-long
-            ax_positive.set_yticklabels(
-                labels=[
-                    f"{explanation.y_threshold[0]:.3f} < y_hat <= {explanation.y_threshold[1]:.3f}"
-                ]
-            )  # pylint: disable=line-too-long
-    elif explanation.get_class_labels() is None:
-        if explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
-            ax_negative.set_yticklabels(labels=[f'P(y!={explanation.prediction["classes"]})'])
-            ax_positive.set_yticklabels(labels=[f'P(y={explanation.prediction["classes"]})'])
-        else:
-            ax_negative.set_yticklabels(labels=["P(y=0)"])
-            ax_positive.set_yticklabels(labels=["P(y=1)"])
-    elif explanation.is_multiclass:  # pylint: disable=protected-access
-        ax_negative.set_yticklabels(
-            labels=[
-                f'P(y!={explanation.get_class_labels()[int(explanation.prediction["classes"])]})'
-            ]
-        )  # pylint: disable=line-too-long
-        ax_positive.set_yticklabels(
-            labels=[
-                f'P(y={explanation.get_class_labels()[int(explanation.prediction["classes"])]})'
-            ]
-        )  # pylint: disable=line-too-long
-    else:
-        ax_negative.set_yticklabels(labels=[f"P(y={explanation.get_class_labels()[0]})"])  # pylint: disable=line-too-long
-        ax_positive.set_yticklabels(labels=[f"P(y={explanation.get_class_labels()[1]})"])  # pylint: disable=line-too-long
-    ax_negative.set_xlabel("Probability")
-
-    # Plot the base prediction in black/grey
-    if num_to_show > 0:
-        x = np.linspace(0, num_to_show - 1, num_to_show)
-        xl = np.linspace(-0.5, x[0] if len(x) > 0 else 0, 2)
-        xh = np.linspace(x[-1], x[-1] + 0.5 if len(x) > 0 else 0.5, 2)
-        ax_main.fill_betweenx(x, [0], [0], color="k")
-        ax_main.fill_betweenx(xl, [0], [0], color="k")
-        ax_main.fill_betweenx(xh, [0], [0], color="k")
-        if interval:
-            gwl = predict["low"] - pred
-            gwh = predict["high"] - pred
-
-            gwh, gwl = np.max([gwh, gwl]), np.min([gwl, gwh])
-            ax_main.fill_betweenx([-0.5, num_to_show - 0.5], gwl, gwh, color="k", alpha=alpha_val)
-
-        # For each feature, plot the weight
-        for jx, j in enumerate(features_to_plot):
-            xj = np.linspace(x[jx] - 0.2, x[jx] + 0.2, 2)
-            min_val, max_val = 0, 0
-            if interval:
-                width = feature_weights["predict"][j]
-                wl = feature_weights["low"][j]
-                wh = feature_weights["high"][j]
-                wh, wl = np.max([wh, wl]), np.min([wh, wl])
-                max_val = wh if width < 0 else 0
-                min_val = wl if width > 0 else 0
-                # If uncertainty cover zero, then set to 0 to avoid solid plotting
-                if wl < 0 < wh:
-                    min_val = 0
-                    max_val = 0
-            else:
-                width = feature_weights[j]
-                min_val = min(width, 0)
-                max_val = max(width, 0)
-            color = neg_color if width > 0 else pos_color
-            ax_main.fill_betweenx(xj, min_val, max_val, color=color)
-            if interval:
-                if wl < 0 < wh and explanation.get_mode() == "classification":
-                    ax_main.fill_betweenx(xj, 0, wl, color=pos_color, alpha=alpha_val)
-                    ax_main.fill_betweenx(xj, wh, 0, color=neg_color, alpha=alpha_val)
-                else:
-                    ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
-
-        ax_main.set_yticks(range(num_to_show))
-        ax_main.set_yticklabels(
-            labels=[column_names[i] for i in features_to_plot]
-        ) if column_names is not None else ax_main.set_yticks(range(num_to_show))  # pylint: disable=expression-not-assigned
-        ax_main.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
-        ax_main.set_ylabel("Features")
-        ax_main.set_xlabel("Feature weights")
-        ax_main_twin = ax_main.twinx()
-        ax_main_twin.set_yticks(range(num_to_show))
-        ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
-        ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
-        ax_main_twin.set_ylabel("Instance values")
-
-    # Enhance subplot appearance
-    for ax in [ax_positive, ax_negative, ax_main]:
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-
-    # Add background colors for better readability
-    ax_main.patch.set_facecolor(config["colors"]["background"])
-
-    # Enhance legend appearance
-    ax_main_twin.tick_params(axis="y", colors=config["colors"]["text"])
-
-    for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
+        for ext in save_ext:
+            _render(spec, show=False, save_path=path + title + ext)
+    return
 
 
 # pylint: disable=too-many-branches, too-many-statements, too-many-locals
@@ -441,120 +357,29 @@ def _plot_regression(
     if not show and (save_ext is None or len(save_ext) == 0):
         return
 
-    __require_matplotlib()
-    config = __setup_plot_style(style_override)
+    # Build PlotSpec via builder and render via adapter
+    from .viz.builders import build_regression_bars_spec
+    from .viz.matplotlib_adapter import render as render_plotspec
 
-    if save_ext is None:
-        save_ext = ["svg", "pdf", "png"]
-    if interval is True:
-        assert idx is not None
-    # Get figure width from config, with fallback to default value
-    fig_width = float(config["figure"].get("width", 10))
-    fig = plt.figure(figsize=(fig_width, num_to_show * 0.5 + 2))
-    subfigures = fig.subfigures(2, 1, height_ratios=[1, num_to_show + 2])
+    spec = build_regression_bars_spec(
+        title=title,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=features_to_plot,
+        column_names=column_names,
+        instance=instance,
+        y_minmax=getattr(explanation, "y_minmax", None),
+        interval=interval,
+        sort_by=None,
+        ascending=False,
+    )
 
-    if interval and (explanation.is_one_sided()):
-        raise Warning("Interval plot is not supported for one-sided explanations.")
-
-    ax_regression = subfigures[0].add_subplot(111)
-    ax_main = subfigures[1].add_subplot(111)
-
-    # plot the probabilities at the top
-    x = np.linspace(0, 1, 2)
-    xj = np.linspace(x[0] - 0.2, x[0] + 0.2, 2)
-    pred = predict["predict"]
-    pred_low = predict["low"] if predict["low"] != -np.inf else explanation.y_minmax[0]
-    pred_high = predict["high"] if predict["high"] != np.inf else explanation.y_minmax[1]
-
-    alpha_val = float(config["colors"]["alpha"])
-    reg_color = config["colors"]["regression"]
-
-    ax_regression.fill_betweenx(xj, pred_low, pred_high, color=reg_color, alpha=alpha_val)
-    ax_regression.fill_betweenx(xj, pred, pred, color=reg_color)
-    ax_regression.set_xlim(
-        [np.min([pred_low, explanation.y_minmax[0]]), np.max([pred_high, explanation.y_minmax[1]])]
-    )  # pylint: disable=line-too-long
-    ax_regression.set_yticks(range(1))
-
-    ax_regression.set_xlabel(
-        f"Prediction interval with {explanation.calibrated_explanations.get_confidence()}% confidence"
-    )  # pylint: disable=line-too-long
-    ax_regression.set_yticklabels(labels=["Median prediction"])
-
-    # Plot the base prediction in black/grey
-    x = np.linspace(0, num_to_show - 1, num_to_show)
-    xl = np.linspace(-0.5, x[0], 2)
-    xh = np.linspace(x[-1], x[-1] + 0.5, 2)
-    ax_main.fill_betweenx(x, [0], [0], color="k")
-    ax_main.fill_betweenx(xl, [0], [0], color="k")
-    ax_main.fill_betweenx(xh, [0], [0], color="k")
-    x_min, x_max = 0, 0
-    if interval:
-        gwl = pred - predict["low"]
-        gwh = pred - predict["high"]
-
-        gwh, gwl = np.max([gwh, gwl]), np.min([gwl, gwh])
-        # ax_main.fill_betweenx([-0.5,num_to_show-0.5], gwl, gwh, color='k', alpha=0.2)
-
-        x_min, x_max = gwl, gwh
-    # For each feature, plot the weight
-    for jx, j in enumerate(features_to_plot):
-        xj = np.linspace(x[jx] - 0.2, x[jx] + 0.2, 2)
-        min_val, max_val = 0, 0
-        if interval:
-            width = feature_weights["predict"][j]
-            wl = feature_weights["low"][j]
-            wh = feature_weights["high"][j]
-            wh, wl = np.max([wh, wl]), np.min([wh, wl])
-            max_val = wh if width < 0 else 0
-            min_val = wl if width > 0 else 0
-            # If uncertainty cover zero, then set to 0 to avoid solid plotting
-            if wl < 0 < wh:
-                min_val = 0
-                max_val = 0
-        else:
-            width = feature_weights[j]
-            min_val = min(width, 0)
-            max_val = max(width, 0)
-        color = config["colors"]["positive"] if width > 0 else config["colors"]["negative"]
-        ax_main.fill_betweenx(xj, min_val, max_val, color=color)
-        if interval:
-            ax_main.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
-
-            x_min = np.min([x_min, min_val, max_val, wl, wh])
-            x_max = np.max([x_max, min_val, max_val, wl, wh])
-        else:
-            x_min = np.min([x_min, min_val, max_val])
-            x_max = np.max([x_max, min_val, max_val])
-
-    ax_main.set_yticks(range(num_to_show))
-    ax_main.set_yticklabels(
-        labels=[column_names[i] for i in features_to_plot]
-    ) if column_names is not None else ax_main.set_yticks(range(num_to_show))  # pylint: disable=expression-not-assigned
-    ax_main.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
-    ax_main.set_ylabel("Rules", fontweight="bold")
-    ax_main.set_xlabel("Feature weights", fontweight="bold")
-    ax_main.set_xlim(x_min, x_max)
-    ax_main_twin = ax_main.twinx()
-    ax_main_twin.set_yticks(range(num_to_show))
-    ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
-    ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
-    ax_main_twin.set_ylabel("Instance values")
-
-    # Enhance subplot appearance
-    for ax in [ax_regression, ax_main]:
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-
-    # Add subtle background color
-    ax_main.patch.set_facecolor(config["colors"]["background"])
-
-    for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
+    # Render once and then save multiple extensions if requested
+    render_plotspec(spec, show=show, save_path=None)
+    if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
+        for ext in save_ext:
+            render_plotspec(spec, show=False, save_path=path + title + ext)
+    return
 
 
 # pylint: disable=duplicate-code
