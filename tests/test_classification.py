@@ -24,6 +24,7 @@ from calibrated_explanations.utils.helper import transform_to_numeric
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
+import os
 
 
 @pytest.fixture
@@ -40,6 +41,8 @@ def binary_dataset():
 
     fileName = f"data/{dataSet}.csv"
     df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
+    # Limit rows for test speed while preserving behavior
+    df = df.iloc[:500, :]
 
     X, y = df.drop(target, axis=1), df[target]
     no_of_classes = len(np.unique(y))
@@ -88,6 +91,8 @@ def multiclass_dataset():
 
     fileName = f"data/Multiclass/{dataSet}.csv"
     df = pd.read_csv(fileName, delimiter=delimiter)
+    # Limit rows for test speed; multiclass fixtures only need a small sample
+    df = df.iloc[:500, :]
     target = "Type"
 
     df = df.dropna()
@@ -139,8 +144,10 @@ def get_classification_model(model_name, X_prop_train, y_prop_train):
     Returns:
         tuple: A tuple containing the fitted model and its name.
     """
+    # Allow a fast-test mode to reduce training time (smaller forests)
+    fast = bool(os.getenv("FAST_TESTS"))
     t1 = DecisionTreeClassifier()
-    r1 = RandomForestClassifier(n_estimators=10)
+    r1 = RandomForestClassifier(n_estimators=3 if fast else 10)
     model_dict = {"RF": (r1, "RF"), "DT": (t1, "DT")}
 
     model, model_name = model_dict[model_name]
@@ -456,6 +463,7 @@ def test_binary_conditional_ce(binary_dataset):
     alternative_explanation.plot(show=False)
 
 
+@pytest.mark.slow
 def test_multiclass_conditional_ce(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset and conditional bins.

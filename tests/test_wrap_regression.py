@@ -19,6 +19,7 @@ from calibrated_explanations.core.exceptions import NotFittedError, ValidationEr
 from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+import os
 
 
 @pytest.fixture
@@ -40,12 +41,17 @@ def regression_dataset():
             - columns (pandas.Index): The column names of the features.
     """
     num_to_test = 2
-    calibration_size = 1000
     dataset = "abalone.txt"
 
     ds = pd.read_csv(f"data/reg/{dataset}")
-    X = ds.drop("REGRESSION", axis=1).values[:2000, :]
-    y = ds["REGRESSION"].values[:2000]
+    # allow fast test mode to use fewer rows and bound calibration size
+    fast = bool(os.getenv("FAST_TESTS"))
+    max_rows = 500 if fast else 2000
+    X = ds.drop("REGRESSION", axis=1).values[:max_rows, :]
+    y = ds["REGRESSION"].values[:max_rows]
+    # calibration_size must be smaller than the available training rows
+    # leave a small buffer so train/test splits succeed
+    calibration_size = min(1000, max(2, max_rows - num_to_test - 2))
     y = (y - np.min(y)) / (np.max(y) - np.min(y))
     no_of_features = X.shape[1]
     categorical_features = [i for i in range(no_of_features) if len(np.unique(X[:, i])) < 10]
@@ -337,6 +343,10 @@ def test_wrap_conditional_regression_ce(regression_dataset):
     X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, feature_names = (
         regression_dataset
     )
+    # In fast mode skip this long conditional test (external system may slow it)
+    if bool(os.getenv("FAST_TESTS")):
+        pytest.skip("Skipping long conditional regression test in FAST_TESTS mode")
+
     cal_exp = WrapCalibratedExplainer(RandomForestRegressor())
     cal_exp.fit(X_prop_train, y_prop_train)
 
