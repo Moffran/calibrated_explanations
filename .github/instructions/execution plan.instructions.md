@@ -4,7 +4,7 @@ applyTo: '**'
 # Calibrated Explanations Improvement Plan (Contract-first)
 
 Created: August 16, 2025
-Last Updated: September 4, 2025 (post-perf guard integration)
+Last Updated: September 11, 2025 (post-unit-test run)
 Repository: calibrated_explanations
 Current Version: v0.6.0
 Target Releases: v0.6.0 (Stable contracts & config), v0.7.0 (Perf foundations & docs CI), v0.8.0 (Extensibility & viz)
@@ -16,6 +16,11 @@ Target Releases: v0.6.0 (Stable contracts & config), v0.7.0 (Perf foundations & 
 Shift to contract-first delivery: freeze public data contracts (schema v1), preprocessing policy, and plugin trust model; keep performance behind feature flags; harden tests/docs. Maintain legacy output compatibility via adapters while introducing a clear internal domain model.
 
 ---
+
+## CI snapshot (2025-09-11)
+
+Full test suite run: 150 passed, 1 xpassed, 22 warnings in 371.27s (0:06:11). Unit tests are green; this snapshot is reflected in the status updates below.
+
 
 ## Current repo state (observed)
 
@@ -87,7 +92,7 @@ Acceptance
 
 ## Phase C: Visualization Abstraction (PlotSpec)
 
-Status: In progress (MVP landed; docs page added)
+Status: In progress (MVP landed; docs page added; PlotSpec unit tests passing)
 
 - Move ADR-007 to Accepted.
 - Introduce a minimal, backend-agnostic PlotSpec and convert 1–2 existing plots.
@@ -97,6 +102,8 @@ Acceptance
 
 - PlotSpec renders via the matplotlib adapter for selected examples. [Done: regression bars]
 - Public API docs updated with PlotSpec usage examples. [Done: docs/viz_plotspec.md linked in index]
+
+Note: Additional conversions (a second plot kind) and a small PlotSpec validation utility are remaining low-risk tasks to complete ADR-007 fully.
 
 ---
 
@@ -123,7 +130,9 @@ Status: Active (scaffolding + CI perf guard integrated; unit tests passing)
 
 Acceptance
 
-- Feature-flagged; disabled by default; no behavior change when off. [Maintained]
+-- Feature-flagged; disabled by default; no behavior change when off. [Maintained]
+
+Note: Basic `LRUCache` and `JoblibBackend` are implemented and tested. Per the near-term plan, we should ensure a small, centralized feature-flag/factory API (default OFF) wraps cache/backends to guarantee no behavioral change when disabled. This is currently a small gap.
 
 Notes
 
@@ -150,14 +159,14 @@ Acceptance
 
 ## Phase G: Deprecation & Migration Policy Activation
 
-Status: Not started
+Status: In progress
 
 - Document and enforce the public deprecation policy (two minor releases before removal).
 - Provide migration notes and a simple guide for parameter alias changes; optional script.
 
 Acceptance
 
-- Deprecation warnings appear once; migration guide pages updated.
+- Deprecation warnings appear once; migration guide pages updated. (Alias warnings are wired at public boundaries; migration guide draft present.)
 
 ---
 

@@ -1,7 +1,7 @@
 # Calibrated Explanations Improvement Plan (Contract-first)
 
 Created: August 16, 2025
-Last Updated: September 4, 2025 (post-perf scaffolding tests)
+Last Updated: September 11, 2025 (post-unit-test run)
 Repository: calibrated_explanations
 Current Version: v0.6.0
 Target Releases: v0.6.0 (Stable contracts & config), v0.7.0 (Perf foundations & docs CI), v0.8.0 (Extensibility & viz)
@@ -13,6 +13,11 @@ Target Releases: v0.6.0 (Stable contracts & config), v0.7.0 (Perf foundations & 
 Shift to contract-first delivery: freeze public data contracts (schema v1), preprocessing policy, and plugin trust model; keep performance behind feature flags; harden tests/docs. Maintain legacy output compatibility via adapters while introducing a clear internal domain model.
 
 ---
+
+## CI snapshot (2025-09-11)
+
+Full test suite: 150 passed, 1 xpassed, 22 warnings in 371.27s (0:06:11). Unit tests are green; this snapshot is reflected in the status updates below.
+
 
 ## Current repo state (observed)
 
