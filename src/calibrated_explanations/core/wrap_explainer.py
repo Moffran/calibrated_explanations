@@ -111,6 +111,27 @@ class WrapCalibratedExplainer:
         w = cls(cfg.model)
         # Stash config on the instance for later optional use (private attr)
         w._cfg = cfg  # type: ignore[attr-defined]
+        # Wire perf factory (opt-in). When flags are disabled, factory returns
+        # harmless defaults (None cache / sequential backend) and does not alter
+        # runtime behavior.
+        try:
+            perf_factory = None
+            if getattr(cfg, "_perf_factory", None) is not None:
+                perf_factory = cfg._perf_factory
+            else:
+                # lazy import to avoid import cycles
+                from calibrated_explanations.perf import from_config as _from_config
+
+                perf_factory = _from_config(cfg)
+            # stash created primitives for downstream use; keep None when disabled
+            w._perf_cache = perf_factory.make_cache() if perf_factory is not None else None  # type: ignore[attr-defined]
+            w._perf_parallel = (
+                perf_factory.make_parallel_backend() if perf_factory is not None else None
+            )  # type: ignore[attr-defined]
+        except Exception as exc:  # pragma: no cover - defensive
+            w._perf_cache = None
+            w._perf_parallel = None
+            w._logger.debug("Failed to initialize perf primitives from config: %s", exc)
         # Wire optional preprocessing in a controlled way (only if provided)
         try:
             w._preprocessor = cfg.preprocessor  # type: ignore[attr-defined]

@@ -1,9 +1,21 @@
 from __future__ import annotations
 
+import warnings
 import numpy as np
 import pytest
 
+from calibrated_explanations.api.params import ALIAS_MAP, warn_on_aliases
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+
+
+def test_warn_on_aliases_emits_deprecation():
+    # pick an alias from the map
+    alias = next(iter(ALIAS_MAP.keys()))
+    kwargs = {alias: 123}
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        warn_on_aliases(kwargs)
+        assert any(issubclass(item.category, DeprecationWarning) for item in w)
 
 
 class SmallModel:

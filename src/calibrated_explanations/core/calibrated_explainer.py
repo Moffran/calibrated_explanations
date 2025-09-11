@@ -41,7 +41,7 @@ from ..utils.helper import (
     safe_mean,
     safe_isinstance,
 )
-from ..api.params import canonicalize_kwargs, validate_param_combination
+from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
 from .exceptions import (
     ValidationError,
     DataShapeError,
@@ -2177,7 +2177,8 @@ class CalibratedExplainer:
         -----
         The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
         """
-        # Phase 1B: normalize and validate kwargs (alias mapping, light checks)
+        # Phase 1B: emit deprecation warnings for aliases and normalize kwargs
+        warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
 
@@ -2278,7 +2279,8 @@ class CalibratedExplainer:
         -----
         The `threshold` parameter is only used for regression tasks.
         """
-        # Phase 1B: normalize and validate kwargs (alias mapping, light checks)
+        # Phase 1B: emit deprecation warnings for aliases and normalize kwargs
+        warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
         if not calibrated:

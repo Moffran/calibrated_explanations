@@ -13,6 +13,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from ..perf import from_config as _perf_from_config
+
 TaskLiteral = Literal["classification", "regression", "auto"]
 
 
@@ -103,6 +105,15 @@ class ExplainerBuilder:
 
     def build_config(self) -> ExplainerConfig:
         """Return the assembled configuration (no side effects)."""
+        # attach a perf factory convenience object when building config so later
+        # consumers can opt-in to perf primitives consistently. This does not
+        # change behavior unless the factory is used.
+        try:
+            # stash a lightweight factory on the config for downstream wiring
+            self._cfg._perf_factory = _perf_from_config(self._cfg)  # type: ignore[attr-defined]
+        except Exception:
+            # be conservative: do not fail config building if perf factory creation fails
+            self._cfg._perf_factory = None  # type: ignore[attr-defined]
         return self._cfg
 
 

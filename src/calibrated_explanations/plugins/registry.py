@@ -14,6 +14,10 @@ from .base import ExplainerPlugin, validate_plugin_meta
 
 _REGISTRY: List[ExplainerPlugin] = []
 
+# Minimal trust store: only plugins explicitly trusted by the user are allowed
+# to be returned by discovery helpers when trust is requested.
+_TRUSTED: List[ExplainerPlugin] = []
+
 
 def register(plugin: ExplainerPlugin) -> None:
     """Register a plugin after minimal metadata validation.
@@ -34,6 +38,8 @@ def unregister(plugin: ExplainerPlugin) -> None:
 
     with contextlib.suppress(ValueError):
         _REGISTRY.remove(plugin)
+    with contextlib.suppress(ValueError):
+        _TRUSTED.remove(plugin)
 
 
 def clear() -> None:
@@ -48,10 +54,38 @@ def list_plugins() -> Tuple[ExplainerPlugin, ...]:
     return tuple(_REGISTRY)
 
 
+def trust_plugin(plugin: ExplainerPlugin) -> None:
+    """Mark an already-registered plugin as trusted.
+
+    Trust is an explicit, opt-in operation. The function validates metadata
+    before adding to the trusted list. Only trusted plugins will be returned
+    by :func:`find_for` when `trusted_only=True` is passed.
+    """
+    if plugin not in _REGISTRY:
+        raise ValueError("Plugin must be registered before it can be trusted")
+    meta = getattr(plugin, "plugin_meta", None)
+    validate_plugin_meta(meta)
+    if plugin in _TRUSTED:
+        return
+    _TRUSTED.append(plugin)
+
+
+def untrust_plugin(plugin: ExplainerPlugin) -> None:
+    """Remove a plugin from the trusted set if present."""
+    with contextlib.suppress(ValueError):
+        _TRUSTED.remove(plugin)
+
+
 def find_for(model: Any) -> Tuple[ExplainerPlugin, ...]:
     """Find plugins that declare support for the given model."""
 
     return tuple(p for p in _REGISTRY if _safe_supports(p, model))
+
+
+def find_for_trusted(model: Any) -> Tuple[ExplainerPlugin, ...]:
+    """Find trusted plugins that declare support for the given model."""
+
+    return tuple(p for p in _TRUSTED if _safe_supports(p, model))
 
 
 def _safe_supports(plugin: ExplainerPlugin, model: Any) -> bool:
@@ -66,5 +100,8 @@ __all__ = [
     "unregister",
     "clear",
     "list_plugins",
+    "trust_plugin",
+    "untrust_plugin",
     "find_for",
+    "find_for_trusted",
 ]
