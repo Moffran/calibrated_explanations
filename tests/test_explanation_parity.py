@@ -1,6 +1,6 @@
 from calibrated_explanations.serialization import to_json, from_json
 from calibrated_explanations.explanations.adapters import legacy_to_domain
-from tests.test_classification import initiate_explainer
+from tests._helpers import initiate_explainer
 
 import numpy as np
 import pandas as pd
@@ -70,7 +70,7 @@ def test_explain_factual_and_roundtrip():
     ) = _make_binary_dataset()
 
     # Trained model helper used across tests
-    from tests.test_classification import get_classification_model
+    from tests._helpers import get_classification_model
 
     model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
@@ -123,7 +123,7 @@ def test_explore_alternatives_and_conjunctive_rules():
         categorical_features,
         feature_names,
     ) = _make_binary_dataset()
-    from tests.test_classification import get_classification_model
+    from tests._helpers import get_classification_model
 
     model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
@@ -182,7 +182,7 @@ def test_fast_explanation_roundtrip_classification(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    from tests.test_classification import get_classification_model
+    from tests._helpers import get_classification_model
 
     model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
     cal_exp = initiate_explainer(

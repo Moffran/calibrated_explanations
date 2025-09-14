@@ -16,156 +16,15 @@ The tests ensure that:
 """
 
 import numpy as np
-import pandas as pd
 import pytest
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.core.exceptions import NotFittedError
-from calibrated_explanations.utils.helper import transform_to_numeric
 from crepes.extras import MondrianCategorizer
 from joblib import dump, load
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 
-from tests.test_wrap_regression import generic_test
-
-
-@pytest.fixture
-def binary_dataset():
-    """
-    Generates a binary classification dataset from a CSV file.
-    The function reads a dataset from a CSV file, processes it, and splits it into training, calibration, and test sets.
-    It also identifies the number of classes, number of features, and categorical features.
-    Returns:
-        tuple: A tuple containing the following elements:
-            - X_prop_train (numpy.ndarray): The training features for the model.
-            - y_prop_train (numpy.ndarray): The training labels for the model.
-            - X_cal (numpy.ndarray): The calibration features.
-            - y_cal (numpy.ndarray): The calibration labels.
-            - X_test (numpy.ndarray): The test features.
-            - y_test (numpy.ndarray): The test labels.
-            - no_of_classes (int): The number of unique classes in the target variable.
-            - no_of_features (int): The number of features in the dataset.
-            - categorical_features (list): A list of indices of categorical features.
-            - columns (pandas.Index): The column names of the features.
-    """
-    dataSet = "diabetes_full"
-    delimiter = ","
-    num_to_test = 2
-    target_column = "Y"
-
-    fileName = f"data/{dataSet}.csv"
-    df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
-
-    columns = df.drop(target_column, axis=1).columns
-    num_classes = len(np.unique(df[target_column]))
-    num_features = df.drop(target_column, axis=1).shape[1]
-
-    sorted_indices = np.argsort(df[target_column].values).astype(int)
-    X, y = (
-        df.drop(target_column, axis=1).values[sorted_indices, :],
-        df[target_column].values[sorted_indices],
-    )
-
-    categorical_features = [
-        i
-        for i in range(num_features)
-        if len(np.unique(df.drop(target_column, axis=1).iloc[:, i])) < 10
-    ]
-
-    test_index = np.array(
-        [*range(num_to_test // 2), *range(len(y) - 1, len(y) - num_to_test // 2 - 1, -1)]
-    )
-    train_index = np.setdiff1d(np.array(range(len(y))), test_index)
-
-    trainX_cal, X_test = X[train_index, :], X[test_index, :]
-    y_train, y_test = y[train_index], y[test_index]
-
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        trainX_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
-    )
-
-    return (
-        X_prop_train,
-        y_prop_train,
-        X_cal,
-        y_cal,
-        X_test,
-        y_test,
-        num_classes,
-        num_features,
-        categorical_features,
-        columns,
-    )
-
-
-@pytest.fixture
-def multiclass_dataset():
-    """
-    Prepares and splits a multiclass dataset for training, calibration, and testing.
-
-    Returns:
-        X_prop_train (np.ndarray): Training features for the proper training set.
-        y_prop_train (np.ndarray): Training labels for the proper training set.
-        X_cal (np.ndarray): Features for the calibration set.
-        y_cal (np.ndarray): Labels for the calibration set.
-        X_test (np.ndarray): Features for the test set.
-        y_test (np.ndarray): Labels for the test set.
-        no_of_classes (int): Number of unique classes in the target variable.
-        no_of_features (int): Number of features in the dataset.
-        categorical_features (list): List of categorical feature names.
-        categorical_labels (list): List of categorical labels.
-        target_labels (list): List of target labels.
-        columns (pd.Index): Column names of the feature set.
-    """
-    dataset_name = "glass"
-    delimiter = ","
-    num_test_samples = 6
-    file_path = f"data/Multiclass/{dataset_name}.csv"
-
-    df = pd.read_csv(file_path, delimiter=delimiter).dropna()
-    target_column = "Type"
-
-    df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(
-        df, target_column
-    )
-
-    columns = df.drop(target_column, axis=1).columns
-    num_classes = len(np.unique(df[target_column]))
-    num_features = df.drop(target_column, axis=1).shape[1]
-
-    sorted_indices = np.argsort(df[target_column].values).astype(int)
-    X, y = (
-        df.drop(target_column, axis=1).values[sorted_indices, :],
-        df[target_column].values[sorted_indices],
-    )
-
-    test_indices = np.hstack(
-        [np.where(y == i)[0][: num_test_samples // num_classes] for i in range(num_classes)]
-    )
-    train_indices = np.setdiff1d(np.arange(len(y)), test_indices)
-
-    X_train_cal, X_test = X[train_indices, :], X[test_indices, :]
-    y_train, y_test = y[train_indices], y[test_indices]
-
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        X_train_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
-    )
-
-    return (
-        X_prop_train,
-        y_prop_train,
-        X_cal,
-        y_cal,
-        X_test,
-        y_test,
-        num_classes,
-        num_features,
-        categorical_features,
-        categorical_labels,
-        target_labels,
-        columns,
-    )
+from tests._helpers import generic_test
 
 
 @pytest.fixture(autouse=True)

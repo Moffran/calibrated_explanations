@@ -15,8 +15,6 @@ Tests:
 
 from unittest.mock import patch
 
-import numpy as np
-import pandas as pd
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.utils.helper import (
@@ -27,108 +25,9 @@ from calibrated_explanations.utils.helper import (
 )
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 
-from tests.test_classification import get_classification_model
+from tests._helpers import get_classification_model
 from tests.test_regression import get_regression_model
-
-
-@pytest.fixture
-def binary_dataset():
-    """
-    Generates a binary classification dataset from a CSV file.
-    Returns:
-        tuple: A tuple containing the training, calibration, and test datasets along with additional metadata.
-    """
-    dataSet = "diabetes_full"
-    delimiter = ","
-    num_to_test = 2
-    target = "Y"
-
-    fileName = f"data/{dataSet}.csv"
-    df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
-
-    X, y = df.drop(target, axis=1), df[target]
-    no_of_classes = len(np.unique(y))
-    no_of_features = X.shape[1]
-    columns = X.columns
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:, i])) < 10]
-
-    idx = np.argsort(y.values).astype(int)
-    X, y = X.values[idx, :], y.values[idx]
-
-    test_index = np.array(
-        [*range(num_to_test // 2), *range(len(y) - 1, len(y) - num_to_test // 2 - 1, -1)]
-    )
-    train_index = np.setdiff1d(np.array(range(len(y))), test_index)
-
-    trainX_cal, X_test = X[train_index, :], X[test_index, :]
-    y_train, y_test = y[train_index], y[test_index]
-
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        trainX_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
-    )
-    return (
-        X_prop_train,
-        y_prop_train,
-        X_cal,
-        y_cal,
-        X_test,
-        y_test,
-        no_of_classes,
-        no_of_features,
-        categorical_features,
-        columns,
-    )
-
-
-@pytest.fixture
-def regression_dataset():
-    """
-    Generates a regression dataset from a CSV file.
-    The function reads a dataset from a CSV file, processes it, and splits it into training, calibration, and test sets.
-    It also identifies the number of features and categorical features.
-    Returns:
-        tuple: A tuple containing the following elements:
-            - X_prop_train (numpy.ndarray): The training features for the model.
-            - y_prop_train (numpy.ndarray): The training labels for the model.
-            - X_cal (numpy.ndarray): The calibration features.
-            - y_cal (numpy.ndarray): The calibration labels.
-            - X_test (numpy.ndarray): The test features.
-            - y_test (numpy.ndarray): The test labels.
-            - no_of_features (int): The number of features in the dataset.
-            - categorical_features (list): A list of indices of categorical features.
-            - columns (pandas.Index): The column names of the features.
-    """
-    num_to_test = 2
-    calibration_size = 1000
-    dataset = "abalone.txt"
-
-    ds = pd.read_csv(f"data/reg/{dataset}")
-    X = ds.drop("REGRESSION", axis=1).values[:2000, :]
-    y = ds["REGRESSION"].values[:2000]
-    y = (y - np.min(y)) / (np.max(y) - np.min(y))
-    no_of_features = X.shape[1]
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X[:, i])) < 10]
-    columns = ds.drop("REGRESSION", axis=1).columns
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=num_to_test, random_state=42
-    )
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        X_train, y_train, test_size=calibration_size, random_state=42
-    )
-    return (
-        X_prop_train,
-        y_prop_train,
-        X_cal,
-        y_cal,
-        X_test,
-        y_test,
-        no_of_features,
-        categorical_features,
-        columns,
-    )
 
 
 def test_failure():

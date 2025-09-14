@@ -16,7 +16,7 @@
 
 ## Cleanup & Alignment Plan
 **Phase 0 — Quick Wins**
-- Add CI guard job to require PR justification for new test files and verify placement.
+- Add CI guard job to require PR justification for new test files and verify placement. (Wait until after this analysis is merged.)
 - Add `tests/_helpers.py` for shared helpers.
 - Add CONTRIBUTING checklist or README snippet referencing `.github/copilot-instructions.md`.
 

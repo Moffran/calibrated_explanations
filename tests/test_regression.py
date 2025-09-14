@@ -27,17 +27,12 @@ Functions:
 """
 
 import numpy as np
-import pandas as pd
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import NotFittedError
 from crepes.extras import DifficultyEstimator
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeRegressor
-import os
 
-from tests.test_classification import initiate_explainer
+from tests._helpers import get_regression_model, initiate_explainer
 
 
 def safe_fit_difficulty(X, y, scaler=True):
@@ -73,77 +68,6 @@ def safe_fit_difficulty(X, y, scaler=True):
                 return self.apply(X)
 
         return _StubDifficulty().fit()
-
-
-@pytest.fixture
-def regression_dataset(sample_limit):
-    """
-    Generates a regression dataset from a CSV file.
-    The function reads a dataset from a CSV file, processes it, and splits it into training, calibration, and test sets.
-    It also identifies the number of features and categorical features.
-    Returns:
-        tuple: A tuple containing the following elements:
-            - X_prop_train (numpy.ndarray): The training features for the model.
-            - y_prop_train (numpy.ndarray): The training labels for the model.
-            - X_cal (numpy.ndarray): The calibration features.
-            - y_cal (numpy.ndarray): The calibration labels.
-            - X_test (numpy.ndarray): The test features.
-            - y_test (numpy.ndarray): The test labels.
-            - no_of_features (int): The number of features in the dataset.
-            - categorical_features (list): A list of indices of categorical features.
-            - columns (pandas.Index): The column names of the features.
-    """
-    num_to_test = 2
-    dataset = "abalone.txt"
-
-    ds = pd.read_csv(f"data/reg/{dataset}")
-    max_rows = sample_limit
-    X = ds.drop("REGRESSION", axis=1).values[:max_rows, :]
-    y = ds["REGRESSION"].values[:max_rows]
-    # calibration_size must be smaller than the available training rows
-    calibration_size = min(1000, max(2, max_rows - num_to_test - 2))
-    y = (y - np.min(y)) / (np.max(y) - np.min(y))
-    no_of_features = X.shape[1]
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X[:, i])) < 10]
-    columns = ds.drop("REGRESSION", axis=1).columns
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=num_to_test, random_state=42
-    )
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        X_train, y_train, test_size=calibration_size, random_state=42
-    )
-    return (
-        X_prop_train,
-        y_prop_train,
-        X_cal,
-        y_cal,
-        X_test,
-        y_test,
-        no_of_features,
-        categorical_features,
-        columns,
-    )
-
-
-def get_regression_model(model_name, X_prop_train, y_prop_train):
-    """
-    Initializes and fits a regression model.
-    Args:
-        model_name (str): The name of the model to initialize.
-        X_prop_train (np.ndarray): Training features.
-        y_prop_train (np.ndarray): Training labels.
-    Returns:
-        tuple: A tuple containing the fitted model and its name.
-    """
-    fast = bool(os.getenv("FAST_TESTS"))
-    t1 = DecisionTreeRegressor()
-    r1 = RandomForestRegressor(n_estimators=3 if fast else 10)
-    model_dict = {"RF": (r1, "RF"), "DT": (t1, "DT")}
-
-    model, model_name = model_dict[model_name]
-    model.fit(X_prop_train, y_prop_train)
-    return model, model_name
 
 
 def test_failure_regression(regression_dataset):

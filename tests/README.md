@@ -44,3 +44,16 @@ This repository enforces strict guardrails for test creation and editing. All co
 
 ---
 For questions, see the improvement docs or ask a test steward.
+
+## Faster Local Runs
+
+- The test fixtures include a small CSV read cache to reduce repeated disk IO when many tests load the same datasets.
+- To run a faster test session that uses smaller sample sizes, use the helper script:
+
+```powershell
+# From the repository root (PowerShell)
+.
+\scripts\run_fast_tests.ps1
+```
+
+This sets `FAST_TESTS=1` and `SAMPLE_LIMIT=200` which makes fixtures return smaller datasets and skips slow tests marked `@pytest.mark.slow`.

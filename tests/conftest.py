@@ -10,10 +10,13 @@ avoid duplicating parsing logic.
 
 import os
 
-from tests.test_explanation_parity import _make_binary_dataset
 import pytest
 
 import matplotlib
+from ._fixtures import regression_dataset, binary_dataset, multiclass_dataset
+
+# Reference imported fixtures so static analyzers know they are used by pytest
+_IMPORTED_FIXTURES = (regression_dataset, binary_dataset, multiclass_dataset)
 
 
 def _env_flag(name: str) -> bool:
@@ -55,62 +58,6 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 
 # Use non-interactive backend for tests to avoid rendering overhead
 matplotlib.use("Agg")
-
-
-@pytest.fixture
-def binary_dataset():
-    """Lightweight binary dataset fixture used by parity tests.
-
-    Delegates to the internal helper in `tests/test_explanation_parity.py` to
-    keep parity tests fast and isolated.
-    """
-    return _make_binary_dataset()
-
-
-@pytest.fixture
-def regression_dataset():
-    """Generate a regression dataset used by regression parity tests.
-
-    This reproduces the minimal behavior of the original `regression_dataset`
-    fixture but as a plain function (not delegating to another pytest
-    fixture), avoiding calling fixtures directly.
-    """
-    import numpy as np
-    import pandas as pd
-    from sklearn.model_selection import train_test_split
-
-    num_to_test = 2
-    dataset = "abalone.txt"
-
-    ds = pd.read_csv(f"data/reg/{dataset}")
-    fast = _env_flag("FAST_TESTS")
-    max_rows = 500 if fast else 2000
-    X = ds.drop("REGRESSION", axis=1).values[:max_rows, :]
-    y = ds["REGRESSION"].values[:max_rows]
-    # calibration_size must be smaller than the available training rows
-    calibration_size = min(1000, max(2, max_rows - num_to_test - 2))
-    y = (y - np.min(y)) / (np.max(y) - np.min(y))
-    no_of_features = X.shape[1]
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X[:, i])) < 10]
-    columns = ds.drop("REGRESSION", axis=1).columns
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=num_to_test, random_state=42
-    )
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        X_train, y_train, test_size=calibration_size, random_state=42
-    )
-    return (
-        X_prop_train,
-        y_prop_train,
-        X_cal,
-        y_cal,
-        X_test,
-        y_test,
-        no_of_features,
-        categorical_features,
-        columns,
-    )
 
 
 @pytest.fixture(autouse=True)
