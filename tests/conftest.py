@@ -27,6 +27,29 @@ def _env_flag(name: str) -> bool:
     return v in ("1", "true", "yes", "y")
 
 
+@pytest.fixture(scope="session")
+def sample_limit():
+    """Return an integer sample limit for tests.
+
+    Priority:
+    - If SAMPLE_LIMIT env var is set, use it.
+    - Else if FAST_TESTS is enabled, return a small limit (100).
+    - Otherwise return default 500.
+    """
+    MINIMUM_LIMIT = 20
+    val = os.getenv("SAMPLE_LIMIT")
+    if val:
+        try:
+            v = int(val)
+            # enforce a sensible lower bound to avoid dataset-splitting errors
+            return v if v >= MINIMUM_LIMIT else MINIMUM_LIMIT
+        except Exception:
+            pass
+    if _env_flag("FAST_TESTS"):
+        return max(100, MINIMUM_LIMIT)
+    return max(500, MINIMUM_LIMIT)
+
+
 # Set a non-interactive backend before any matplotlib.pyplot import happens.
 os.environ.setdefault("MPLBACKEND", "Agg")
 

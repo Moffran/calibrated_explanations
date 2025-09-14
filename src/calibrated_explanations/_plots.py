@@ -688,7 +688,20 @@ def _plot_alternative(
         ax_main.set_xlabel(
             f"Prediction interval with {explanation.calibrated_explanations.get_confidence()}% confidence"
         )
-        ax_main.set_xlim([explanation.y_minmax[0], explanation.y_minmax[1]])
+        # Ensure y_minmax contains finite numbers; handle tiny datasets where
+        # min==max or values may be NaN/Inf. Fall back to a safe interval.
+        try:
+            y0, y1 = float(explanation.y_minmax[0]), float(explanation.y_minmax[1])
+        except Exception:
+            y0, y1 = 0.0, 1.0
+        if not (np.isfinite(y0) and np.isfinite(y1)):
+            y0, y1 = 0.0, 1.0
+        if y0 == y1:
+            # expand a small epsilon around the single value
+            eps = max(0.05, abs(y0) * 0.01)
+            y0 -= eps
+            y1 += eps
+        ax_main.set_xlim([y0, y1])
     else:
         if explanation.get_class_labels() is None:
             if explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
@@ -896,10 +909,31 @@ def _plot_global(
                 plt.xlabel("Probability of Y = actual class")
         else:
             plt.xlabel("Probability of Y = 1")
-    plt.xlim(min_x, max_x)
-    # TODO: UserWarning: Attempting to set identical low and high ylims
-    # makes transformation singular; automatically expanding.
-    plt.ylim(min_y, max_y)
+
+    # Ensure axis limits are finite and non-degenerate to avoid matplotlib errors
+    def _safe_limits(a, b, fallback=(0.0, 1.0)):
+        try:
+            a_f = float(a)
+            b_f = float(b)
+        except Exception:
+            return float(fallback[0]), float(fallback[1])
+        # use numpy finiteness check for scalars/arrays
+        if not (np.isfinite(a_f) and np.isfinite(b_f)):
+            return float(fallback[0]), float(fallback[1])
+        # swap if out of order
+        if a_f > b_f:
+            a_f, b_f = b_f, a_f
+        # if identical limits, expand slightly
+        if a_f == b_f:
+            eps = max(1e-3, abs(a_f) * 1e-3)
+            a_f -= eps
+            b_f += eps
+        return a_f, b_f
+
+    x0, x1 = _safe_limits(min_x, max_x, fallback=(0.0, 1.0))
+    y0, y1 = _safe_limits(min_y, max_y, fallback=(0.0, 1.0))
+    plt.xlim(x0, x1)
+    plt.ylim(y0, y1)
     plt.grid(True, linestyle=config["grid"]["style"], alpha=float(config["grid"]["alpha"]))
     if show:
         plt.show()

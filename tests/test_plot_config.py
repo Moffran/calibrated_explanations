@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from calibrated_explanations import WrapCalibratedExplainer
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations._plots import load_plot_config, update_plot_config
 from sklearn.ensemble import RandomForestClassifier
 

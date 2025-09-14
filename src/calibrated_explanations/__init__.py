@@ -13,7 +13,6 @@ import logging as _logging
 from . import viz  # noqa: F401
 from ._interval_regressor import IntervalRegressor  # noqa: F401
 from ._VennAbers import VennAbers  # noqa: F401
-from .core import CalibratedExplainer, WrapCalibratedExplainer
 from .explanations.explanation import (
     AlternativeExplanation,  # noqa: F401
     FactualExplanation,  # noqa: F401
@@ -33,8 +32,36 @@ _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
 __version__ = "v0.6.0"
 
+# Note: core submodules are intentionally not imported here to avoid importing
+# large backends and to make deprecation transitions explicit. We still expose
+# the public symbols lazily so `from calibrated_explanations import CalibratedExplainer`
+# works without triggering an eager import of `calibrated_explanations.core`.
 __all__ = [
     "CalibratedExplainer",
     "WrapCalibratedExplainer",
     "transform_to_numeric",
 ]
+
+
+def __getattr__(name: str):
+    """Lazy import for a small set of public symbols.
+
+    This avoids importing `calibrated_explanations.core` at package import time
+    (which would trigger deprecation emissions) while preserving the public API
+    surface for users and tests.
+    """
+    if name == "CalibratedExplainer":
+        from .core.calibrated_explainer import CalibratedExplainer as _C
+
+        globals()[name] = _C
+        return _C
+    if name == "WrapCalibratedExplainer":
+        from .core.wrap_explainer import WrapCalibratedExplainer as _W
+
+        globals()[name] = _W
+        return _W
+    raise AttributeError(name)
+
+
+def __dir__():
+    return sorted(list(globals().keys()) + __all__)

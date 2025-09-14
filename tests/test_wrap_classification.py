@@ -18,7 +18,7 @@ The tests ensure that:
 import numpy as np
 import pandas as pd
 import pytest
-from calibrated_explanations import WrapCalibratedExplainer
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.core.exceptions import NotFittedError
 from calibrated_explanations.utils.helper import transform_to_numeric
 from crepes.extras import MondrianCategorizer

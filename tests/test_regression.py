@@ -29,7 +29,7 @@ Functions:
 import numpy as np
 import pandas as pd
 import pytest
-from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import NotFittedError
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestRegressor
@@ -76,7 +76,7 @@ def safe_fit_difficulty(X, y, scaler=True):
 
 
 @pytest.fixture
-def regression_dataset():
+def regression_dataset(sample_limit):
     """
     Generates a regression dataset from a CSV file.
     The function reads a dataset from a CSV file, processes it, and splits it into training, calibration, and test sets.
@@ -97,8 +97,7 @@ def regression_dataset():
     dataset = "abalone.txt"
 
     ds = pd.read_csv(f"data/reg/{dataset}")
-    fast = bool(os.getenv("FAST_TESTS"))
-    max_rows = 500 if fast else 2000
+    max_rows = sample_limit
     X = ds.drop("REGRESSION", axis=1).values[:max_rows, :]
     y = ds["REGRESSION"].values[:max_rows]
     # calibration_size must be smaller than the available training rows

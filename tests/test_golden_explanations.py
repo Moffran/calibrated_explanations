@@ -2,7 +2,7 @@ import json
 import warnings
 from pathlib import Path
 
-from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from sklearn.datasets import load_diabetes, load_iris
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split

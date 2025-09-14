@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.experimental import enable_hist_gradient_boosting  # noqa: F401
 from sklearn.ensemble import HistGradientBoostingClassifier
 
-from calibrated_explanations import WrapCalibratedExplainer
+from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.core.exceptions import ValidationError
 
 

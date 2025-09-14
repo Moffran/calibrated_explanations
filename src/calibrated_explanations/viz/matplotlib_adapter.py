@@ -7,6 +7,7 @@ lazy matplotlib import. This keeps plotting optional behind the 'viz' extra.
 from __future__ import annotations
 
 import contextlib
+import math
 
 import numpy as np
 
@@ -109,7 +110,21 @@ def render(spec: PlotSpec, *, show: bool = False, save_path: str | None = None) 
             ax.plot([pred, pred], [y_bot[0], y_bot[1]], color=pos_color, linewidth=2)
             # set sensible xlim/labels
             if header.xlim:
-                ax.set_xlim(list(header.xlim))
+                try:
+                    x0, x1 = header.xlim[0], header.xlim[1]
+                    x0f, x1f = float(x0), float(x1)
+                    if math.isfinite(x0f) and math.isfinite(x1f):
+                        # avoid identical limits which matplotlib dislikes
+                        if x0f == x1f:
+                            eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
+                            x0f -= eps
+                            x1f += eps
+                        ax.set_xlim([x0f, x1f])
+                except Exception as exc:
+                    # defensive: skip setting xlim on invalid input but log the error
+                    import logging
+
+                    logging.getLogger(__name__).debug("Header xlim parse failed: %s", exc)
             if header.xlabel:
                 ax.set_xlabel(header.xlabel)
             # Two y tick positions for top (neg) and bottom (pos) bands (match band centers)
@@ -129,7 +144,18 @@ def render(spec: PlotSpec, *, show: bool = False, save_path: str | None = None) 
             ax.fill_betweenx(xj, low, high, color=color, alpha=alpha_val)
             ax.fill_betweenx(xj, pred, pred, color=color)
             if header.xlim:
-                ax.set_xlim(list(header.xlim))
+                try:
+                    x0, x1 = header.xlim[0], header.xlim[1]
+                    x0f, x1f = float(x0), float(x1)
+                    if math.isfinite(x0f) and math.isfinite(x1f):
+                        if x0f == x1f:
+                            eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
+                            x0f -= eps
+                            x1f += eps
+                        ax.set_xlim([x0f, x1f])
+                except Exception as exc:
+                    # defensive: skip setting xlim on invalid input but log the error
+                    logging.getLogger(__name__).debug("Header xlim parse failed: %s", exc)
             if header.xlabel:
                 ax.set_xlabel(header.xlabel)
             ax.set_yticks(range(1))
@@ -208,7 +234,21 @@ def render(spec: PlotSpec, *, show: bool = False, save_path: str | None = None) 
             ax_twin = ax.twinx()
             ax_twin.set_yticks(range(n))
             ax_twin.set_yticklabels(instance_vals)
-            ax_twin.set_ylim(ax.get_ylim())
+            try:
+                ylim = ax.get_ylim()
+                y0f, y1f = float(ylim[0]), float(ylim[1])
+                if math.isfinite(y0f) and math.isfinite(y1f):
+                    # avoid identical limits
+                    if y0f == y1f:
+                        eps = abs(y0f) * 1e-3 if y0f != 0 else 1e-3
+                        y0f -= eps
+                        y1f += eps
+                    ax_twin.set_ylim([y0f, y1f])
+            except Exception as exc:
+                # if ylim is invalid, skip setting twin ylim but log the error
+                import logging
+
+                logging.getLogger(__name__).debug("Failed to set twin ylim: %s", exc)
             ax_twin.set_ylabel("Instance values")
         if body.xlabel:
             ax.set_xlabel(body.xlabel)

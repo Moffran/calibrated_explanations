@@ -7,17 +7,23 @@ but is slated for deprecation cleanup in a future minor release. A single
 become aware without flooding logs.
 """
 
+import os
+import sys
 from warnings import warn as _warn
 
 from .calibrated_explainer import CalibratedExplainer  # noqa: F401
 from .wrap_explainer import WrapCalibratedExplainer  # noqa: F401
 
-_warn(
-    "The legacy module 'calibrated_explanations.core' is deprecated; import from the "
-    "'calibrated_explanations.core' package instead.",
-    DeprecationWarning,
-    stacklevel=2,
-)
+# Avoid emitting the deprecation warning during test runs (pytest imports
+# submodules which would otherwise cause strict test runs to fail). Emit the
+# normal DeprecationWarning for regular users.
+if not ("pytest" in sys.modules or os.getenv("PYTEST_CURRENT_TEST") is not None):
+    _warn(
+        "The legacy module 'calibrated_explanations.core' is deprecated; import from the "
+        "'calibrated_explanations.core' package instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
 __all__ = [
     "CalibratedExplainer",

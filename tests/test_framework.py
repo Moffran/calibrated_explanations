@@ -18,7 +18,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.utils.helper import (
     check_is_fitted,
     is_notebook,

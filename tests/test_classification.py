@@ -19,7 +19,7 @@ Tests:
 import numpy as np
 import pandas as pd
 import pytest
-from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.utils.helper import transform_to_numeric
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -28,7 +28,7 @@ import os
 
 
 @pytest.fixture
-def binary_dataset():
+def binary_dataset(sample_limit):
     """
     Generates a binary classification dataset from a CSV file.
     Returns:
@@ -41,8 +41,8 @@ def binary_dataset():
 
     fileName = f"data/{dataSet}.csv"
     df = pd.read_csv(fileName, delimiter=delimiter, dtype=np.float64)
-    # Limit rows for test speed while preserving behavior
-    df = df.iloc[:500, :]
+    # Limit rows for test speed while preserving behavior; respect sample_limit
+    df = df.iloc[:sample_limit, :]
 
     X, y = df.drop(target, axis=1), df[target]
     no_of_classes = len(np.unique(y))
@@ -79,7 +79,7 @@ def binary_dataset():
 
 
 @pytest.fixture
-def multiclass_dataset():
+def multiclass_dataset(sample_limit):
     """
     Prepares and splits a multiclass dataset for training, calibration, and testing.
     Returns:
@@ -91,8 +91,8 @@ def multiclass_dataset():
 
     fileName = f"data/Multiclass/{dataSet}.csv"
     df = pd.read_csv(fileName, delimiter=delimiter)
-    # Limit rows for test speed; multiclass fixtures only need a small sample
-    df = df.iloc[:500, :]
+    # Limit rows for test speed; respect sample_limit
+    df = df.iloc[:sample_limit, :]
     target = "Type"
 
     df = df.dropna()
@@ -108,8 +108,22 @@ def multiclass_dataset():
     idx = np.argsort(y.values).astype(int)
     X, y = X.values[idx, :], y.values[idx]
 
-    test_idx = [np.where(y == i)[0][: num_to_test // no_of_classes] for i in range(no_of_classes)]
-    test_index = np.array(test_idx).flatten()
+    # Build test indices per class; handle small sample_limit where some classes
+    # may have fewer than the desired number of examples.
+    test_idx = []
+    for i in range(no_of_classes):
+        idxs = np.where(y == i)[0][: max(1, num_to_test // no_of_classes)]
+        if idxs.size > 0:
+            test_idx.append(idxs)
+    if test_idx:
+        try:
+            test_index = np.concatenate(test_idx)
+        except ValueError:
+            # Fallback: flatten manually
+            test_index = np.array([j for sub in test_idx for j in sub])
+    else:
+        # If no per-class indices could be found (very small sample), fallback to last rows
+        test_index = np.array(range(max(0, len(y) - num_to_test), len(y)))
     train_index = np.setdiff1d(np.array(range(len(y))), test_index)
 
     trainX_cal, X_test = X[train_index, :], X[test_index, :]

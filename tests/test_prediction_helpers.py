@@ -1,5 +1,5 @@
 import numpy as np
-from calibrated_explanations import CalibratedExplainer
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core import prediction_helpers as ph
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
