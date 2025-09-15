@@ -58,7 +58,7 @@ def test_validate_inputs_matrix_shapes_and_finite():
     # happy path
     validate_inputs_matrix(X, y, require_y=True)
     # shape mismatch (y length)
-    with pytest.raises(DataShapeError, match="Length of 'y' \("):
+    with pytest.raises(DataShapeError, match=r"Length of 'y' \("):
         validate_inputs_matrix(X, y[:2], require_y=True)
     # not 2D
     with pytest.raises(DataShapeError, match="Argument 'X' must be 2D"):

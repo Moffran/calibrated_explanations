@@ -26,8 +26,7 @@ from calibrated_explanations.utils.helper import (
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestClassifier
 
-from tests._helpers import get_classification_model
-from tests.test_regression import get_regression_model
+from tests._helpers import get_classification_model, get_regression_model
 
 
 def test_failure():

@@ -1,0 +1,42 @@
+{
+  "index": 0,
+  "metadata": null,
+  "prediction": {
+    "y": 1
+  },
+  "provenance": null,
+  "rules": [
+    {
+      "bin_index": null,
+      "feature": 0,
+      "feature_value": null,
+      "instance_prediction": null,
+      "is_conjunctive": false,
+      "prediction": {
+        "pred": 0.0
+      },
+      "rule": "r1",
+      "value_str": null,
+      "weight": {
+        "weight": 0.1
+      }
+    },
+    {
+      "bin_index": null,
+      "feature": 1,
+      "feature_value": null,
+      "instance_prediction": null,
+      "is_conjunctive": false,
+      "prediction": {
+        "pred": 1.0
+      },
+      "rule": "r2",
+      "value_str": null,
+      "weight": {
+        "weight": 0.2
+      }
+    }
+  ],
+  "schema_version": "1.0.0",
+  "task": "classification"
+}
