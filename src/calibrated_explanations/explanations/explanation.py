@@ -1750,6 +1750,7 @@ class AlternativeExplanation(CalibratedExplanation):
         if rnk_metric is None:
             rnk_metric = "ensured"
         rnk_weight = kwargs.get("rnk_weight", 0.5)
+        # Put the most uncertain rules at the top
         if rnk_metric == "uncertainty":
             rnk_weight = 1.0
             rnk_metric = "ensured"
@@ -1806,6 +1807,20 @@ class AlternativeExplanation(CalibratedExplanation):
             )
             features_to_plot = self._rank_features(width=ranking, num_to_show=num_to_show_)
 
+        # Display highest-impact rules at the top: reverse the index order returned by
+        # _rank_features (which yields ascending by design).
+        features_to_plot = list(reversed(features_to_plot))
+
+        # Filter out rules that don't change the prediction (exactly identical to base).
+        # Keep ordering from the ranking.
+        features_to_plot = [
+            i
+            for i in features_to_plot
+            if not np.isclose(feature_predict["predict"][i], predict["predict"])
+        ]
+        # Adjust the number to show after filtering
+        num_to_show_filtered = min(num_to_show_, len(features_to_plot))
+
         if "style" in kwargs and kwargs["style"] == "triangular":
             proba = predict["predict"]
             uncertainty = np.abs(predict["high"] - predict["low"])
@@ -1839,7 +1854,7 @@ class AlternativeExplanation(CalibratedExplanation):
             predict,
             feature_predict,
             features_to_plot,
-            num_to_show=num_to_show_,
+            num_to_show=num_to_show_filtered,
             column_names=column_names,
             title=title,
             path=path,

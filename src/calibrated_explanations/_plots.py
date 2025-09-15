@@ -582,15 +582,25 @@ def _plot_alternative(
         save_ext = ["svg", "pdf", "png"]
     # Get figure width from config, with fallback to default value
     fig_width = float(config["figure"].get("width", 10))
-    fig = plt.figure(figsize=(fig_width, num_to_show * 0.5))
-    ax_main = fig.add_subplot(111)
-    x = np.linspace(0, num_to_show - 1, num_to_show)
+    # Base prediction for the instance (probability for classification or value for regression)
     pred = predict["predict"]
     pred_low = predict["low"] if predict["low"] != -np.inf else explanation.y_minmax[0]
     pred_high = predict["high"] if predict["high"] != np.inf else explanation.y_minmax[1]
     venn_abers = {"low_high": [pred_low, pred_high], "predict": pred}
     alpha_val = float(config["colors"]["alpha"])
     pos_color = config["colors"]["positive"]
+    # Respect incoming order from caller (already ranked/filtered by rnk_metric)
+    n_show = min(num_to_show, len(features_to_plot))
+    if n_show <= 0:
+        return
+
+    # Create figure sized to the number of visible rules
+    fig = plt.figure(figsize=(fig_width, n_show * 0.5))
+    ax_main = fig.add_subplot(111)
+
+    # Horizontal positions for bars
+    x = np.linspace(0, n_show - 1, n_show)
+
     # Fill original Venn Abers interval
     xl = np.linspace(-0.5, x[0], 2) if len(x) > 0 else np.linspace(-0.5, 0, 2)
     xh = np.linspace(x[-1], x[-1] + 0.5, 2) if len(x) > 0 else np.linspace(0, 0.5, 2)
@@ -604,12 +614,10 @@ def _plot_alternative(
             if "regression" in explanation.get_mode()
             else __get_fill_color(venn_abers, 0.15)
         )
-        ax_main.fill_betweenx(
-            x, [pred_low] * (num_to_show), [pred_high] * (num_to_show), color=color
-        )
+        ax_main.fill_betweenx(x, [pred_low] * n_show, [pred_high] * n_show, color=color)
         # Fill up to the edges
-        ax_main.fill_betweenx(xl, [pred_low] * (2), [pred_high] * (2), color=color)
-        ax_main.fill_betweenx(xh, [pred_low] * (2), [pred_high] * (2), color=color)
+        ax_main.fill_betweenx(xl, [pred_low] * 2, [pred_high] * 2, color=color)
+        ax_main.fill_betweenx(xh, [pred_low] * 2, [pred_high] * 2, color=color)
         if "regression" in explanation.get_mode():
             ax_main.fill_betweenx(x, pred, pred, color=pos_color, alpha=alpha_val)
             # Fill up to the edges
@@ -618,16 +626,16 @@ def _plot_alternative(
     else:
         venn_abers["predict"] = pred_low
         color = __get_fill_color(venn_abers, 0.15)
-        ax_main.fill_betweenx(x, [pred_low] * (num_to_show), [0.5] * (num_to_show), color=color)
+        ax_main.fill_betweenx(x, [pred_low] * n_show, [0.5] * n_show, color=color)
         # Fill up to the edges
-        ax_main.fill_betweenx(xl, [pred_low] * (2), [0.5] * (2), color=color)
-        ax_main.fill_betweenx(xh, [pred_low] * (2), [0.5] * (2), color=color)
+        ax_main.fill_betweenx(xl, [pred_low] * 2, [0.5] * 2, color=color)
+        ax_main.fill_betweenx(xh, [pred_low] * 2, [0.5] * 2, color=color)
         venn_abers["predict"] = pred_high
         color = __get_fill_color(venn_abers, 0.15)
-        ax_main.fill_betweenx(x, [0.5] * (num_to_show), [pred_high] * (num_to_show), color=color)
+        ax_main.fill_betweenx(x, [0.5] * n_show, [pred_high] * n_show, color=color)
         # Fill up to the edges
-        ax_main.fill_betweenx(xl, [0.5] * (2), [pred_high] * (2), color=color)
-        ax_main.fill_betweenx(xh, [0.5] * (2), [pred_high] * (2), color=color)
+        ax_main.fill_betweenx(xl, [0.5] * 2, [pred_high] * 2, color=color)
+        ax_main.fill_betweenx(xh, [0.5] * 2, [pred_high] * 2, color=color)
 
     for jx, j in enumerate(features_to_plot):
         pred_low = (
@@ -655,14 +663,14 @@ def _plot_alternative(
             venn_abers["predict"] = pred_high
             ax_main.fill_betweenx(xj, 0.5, pred_high, color=__get_fill_color(venn_abers, 0.99))
 
-    ax_main.set_yticks(range(num_to_show))
+    ax_main.set_yticks(range(n_show))
     ax_main.set_yticklabels(
         labels=[column_names[i] for i in features_to_plot]
-    ) if column_names is not None else ax_main.set_yticks(range(num_to_show))  # pylint: disable=expression-not-assigned
+    ) if column_names is not None else ax_main.set_yticks(range(n_show))  # pylint: disable=expression-not-assigned
     ax_main.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
     ax_main.set_ylabel("Alternative rules")
     ax_main_twin = ax_main.twinx()
-    ax_main_twin.set_yticks(range(num_to_show))
+    ax_main_twin.set_yticks(range(n_show))
     ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
     ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
     ax_main_twin.set_ylabel("Instance values")
