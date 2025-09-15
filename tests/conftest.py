@@ -9,11 +9,18 @@ avoid duplicating parsing logic.
 """
 
 import os
+import contextlib
 
 import pytest
-
-import matplotlib
 from ._fixtures import regression_dataset, binary_dataset, multiclass_dataset
+
+# Ensure non-interactive backend is selected early so tests never require a GUI.
+import os as _os
+
+_os.environ.setdefault("MPLBACKEND", "Agg")
+
+# Defer importing matplotlib until needed; some CI runs do not install viz extras.
+_matplotlib = None
 
 # Reference imported fixtures so static analyzers know they are used by pytest
 _IMPORTED_FIXTURES = (regression_dataset, binary_dataset, multiclass_dataset)
@@ -53,24 +60,39 @@ def sample_limit():
     return max(500, MINIMUM_LIMIT)
 
 
-# Set a non-interactive backend before any matplotlib.pyplot import happens.
-os.environ.setdefault("MPLBACKEND", "Agg")
+def _ensure_matplotlib():
+    """Lazily import matplotlib and set a non-interactive backend.
 
-# Use non-interactive backend for tests to avoid rendering overhead
-matplotlib.use("Agg")
+    Returns the imported matplotlib module or None if not available.
+    """
+    global _matplotlib
+    if _matplotlib is not None:
+        return _matplotlib
+    try:
+        import matplotlib as _m
+
+        # ensure non-interactive backend
+        with contextlib.suppress(Exception):
+            _m.use("Agg")
+        _matplotlib = _m
+    except Exception:
+        _matplotlib = None
+    return _matplotlib
 
 
 @pytest.fixture(autouse=True)
 def disable_plot_show(monkeypatch):
     """Monkeypatch common plotting entrypoints to be no-ops for speed."""
-    try:
+    mpl = _ensure_matplotlib()
+    if not mpl:
+        return
+    # If pyplot can't be imported, continue silently for core-only runs.
+    with contextlib.suppress(Exception):
         import matplotlib.pyplot as plt
 
         # Only disable interactive show to keep tests headless and fast.
         # Do NOT stub out Figure.savefig — some tests assert files are written.
         monkeypatch.setattr(plt, "show", lambda *a, **k: None)
-    except Exception:
-        pass
 
 
 @pytest.fixture(scope="session")
@@ -118,7 +140,7 @@ def patch_difficulty_estimator(monkeypatch):
     if not _env_flag("FAST_TESTS"):
         return
 
-    try:
+    with contextlib.suppress(Exception):
         from crepes import extras as _extras
 
         class _StubDifficulty:
@@ -134,9 +156,6 @@ def patch_difficulty_estimator(monkeypatch):
                 return self.predict(X)
 
         monkeypatch.setattr(_extras, "DifficultyEstimator", lambda *a, **k: _StubDifficulty())
-    except Exception:
-        # crepes not installed or other issue — ignore
-        pass
 
 
 def pytest_collection_modifyitems(config, items):
