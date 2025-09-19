@@ -4,6 +4,29 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.0...main)
 
+### Added
+
+- Visualization: PlotSpec MVP with matplotlib adapter and docs
+  - New backend‑agnostic plot specification (`src/calibrated_explanations/viz/plotspec.py`) and matplotlib adapter (`viz/matplotlib_adapter.py`).
+  - Initial unit/integration tests under `tests/unit/viz` and `tests/integration/viz`.
+  - Documentation page: `docs/viz_plotspec.md`.
+
+- Performance foundations (feature‑flag groundwork)
+  - Tiny LRU cache and parallel backend surface: `calibrated_explanations.perf` (`cache.py`, `parallel.py`).
+  - Micro‑bench + checker scripts: `scripts/micro_bench_perf.py`, `scripts/check_perf_micro.py`.
+
+- Plugins (minimal registry and trust helpers)
+  - In‑process plugin registry and trusted discovery helpers (`src/calibrated_explanations/plugins/registry.py`).
+  - Unit tests for registry/trust behavior.
+
+### Docs
+
+- Clarified deprecation alias warnings at public boundaries and referenced migration helper script.
+
+### Notes
+
+- Items above are groundwork and remain opt‑in; legacy behavior is unchanged by default.
+
 ## [v0.6.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.0) - 2025-09-04
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.5.1...v0.6.0)
