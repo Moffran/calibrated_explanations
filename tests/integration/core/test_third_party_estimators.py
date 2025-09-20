@@ -12,10 +12,32 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+import warnings
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+
+
+# Tests run with `error::FutureWarning` in `pytest.ini` which makes
+# scikit-learn's transitory FutureWarning (rename of `force_all_finite`
+# to `ensure_all_finite`) fail the suite when LightGBM triggers it.
+# Narrowly ignore that specific FutureWarning here so the integration
+# smoke test can run in environments with older/newer sklearn.
+warnings.filterwarnings(
+    "ignore",
+    message="'force_all_finite' was renamed to 'ensure_all_finite'",
+    category=FutureWarning,
+)
+
+# Apply a pytest collection-time filter to ensure pytest's global
+# `error::FutureWarning` doesn't convert this specific message into
+# a failing error for these integration smoke tests.
+pytestmark = [
+    pytest.mark.filterwarnings(
+        "ignore:'force_all_finite' was renamed to 'ensure_all_finite':FutureWarning"
+    )
+]
 
 
 def _tiny_binary_dataset(n_samples: int = 120, n_features: int = 8, random_state: int = 42):

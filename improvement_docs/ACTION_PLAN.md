@@ -5,7 +5,8 @@ Last Updated: September 19, 2025
 Scope: Not‑yet‑achieved items organized by target release. See `CHANGELOG.md` for completed work; see `improvement_docs/DEVELOPMENT_PLAN.md` for strategy.
 
 ## CI Snapshot
-- Reference run (2025‑09‑11): 150 passed, 1 xpassed, 22 warnings in ~371s. Not re‑run in this pass.
+- Reference run (2025‑09‑11): 150 passed, 1 xpassed, 22 warnings in ~371s.
+- Reference run (2025‑09‑20): 205 passed, 3 warnings in ~133s.
 
 ## v0.6.x (stabilization — ongoing patch series)
 - Keep behavior stable; no new feature defaults.
