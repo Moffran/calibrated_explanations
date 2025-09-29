@@ -18,6 +18,7 @@ def build_regression_bars_spec(
     feature_weights: dict[str, Sequence[float]] | Sequence[float],
     features_to_plot: Sequence[int],
     column_names: Sequence[str] | None,
+    rule_labels: Sequence[str] | None = None,
     instance: Sequence[Any] | None,
     y_minmax: tuple[float, float] | None,
     interval: bool,
@@ -25,6 +26,7 @@ def build_regression_bars_spec(
     uncertainty_alpha: float | None = None,
     sort_by: str | None = None,
     ascending: bool = False,
+    legacy_solid_behavior: bool = True,
 ) -> PlotSpec:
     """Create a PlotSpec for the regression bar plot variant.
 
@@ -61,6 +63,7 @@ def build_regression_bars_spec(
             else "Prediction interval"
         ),
         ylabel="Median prediction",
+        dual=False,
         uncertainty_color=uncertainty_color,
         uncertainty_alpha=uncertainty_alpha,
     )
@@ -75,12 +78,17 @@ def build_regression_bars_spec(
             val = float(pred_w[j])
             bars.append(
                 BarItem(
-                    label=(column_names[j] if column_names is not None else str(j)),
+                    label=(
+                        rule_labels[j]
+                        if rule_labels is not None
+                        else (column_names[j] if column_names is not None else str(j))
+                    ),
                     value=val,
                     interval_low=float(wl[j]),
                     interval_high=float(wh[j]),
                     instance_value=(instance[j] if instance is not None else None),
                     color_role="regression",
+                    solid_on_interval_crosses_zero=legacy_solid_behavior,
                 )
             )
     else:
@@ -90,10 +98,15 @@ def build_regression_bars_spec(
             val = float(arr[j])  # type: ignore[index]
             bars.append(
                 BarItem(
-                    label=(column_names[j] if column_names is not None else str(j)),
+                    label=(
+                        rule_labels[j]
+                        if rule_labels is not None
+                        else (column_names[j] if column_names is not None else str(j))
+                    ),
                     value=val,
                     instance_value=(instance[j] if instance is not None else None),
                     color_role="regression",
+                    solid_on_interval_crosses_zero=legacy_solid_behavior,
                 )
             )
 
@@ -122,11 +135,50 @@ def build_regression_bars_spec(
         # Stable sort by key; reverse for descending when ascending=False
         bars = sorted(bars, key=_key, reverse=not ascending)
 
-    body = BarHPanelSpec(bars=bars, xlabel="Feature weights", ylabel="Rules")
+    body = BarHPanelSpec(
+        bars=bars,
+        xlabel="Feature weights",
+        ylabel="Rules",
+        solid_on_interval_crosses_zero=legacy_solid_behavior,
+    )
     return PlotSpec(title=title, header=header, body=body)
 
 
 __all__ = ["build_regression_bars_spec"]
+
+
+def build_factual_probabilistic_spec(**kwargs) -> PlotSpec:
+    """Wrapper for factual probabilistic plot kind (ADR-016).
+
+    Currently delegates to `build_probabilistic_bars_spec`. This wrapper
+    provides a stable name for future refactors and makes plot kinds explicit.
+    """
+    return build_probabilistic_bars_spec(**kwargs)
+
+
+def build_alternative_probabilistic_spec(**kwargs) -> PlotSpec:
+    """Wrapper for alternative probabilistic plot kind (ADR-016)."""
+    return build_probabilistic_bars_spec(**kwargs)
+
+
+def build_factual_regression_spec(**kwargs) -> PlotSpec:
+    """Wrapper for factual regression plot kind (ADR-016)."""
+    return build_regression_bars_spec(**kwargs)
+
+
+def build_alternative_regression_spec(**kwargs) -> PlotSpec:
+    """Wrapper for alternative regression plot kind (ADR-016)."""
+    return build_regression_bars_spec(**kwargs)
+
+
+__all__ = [
+    "build_regression_bars_spec",
+    "build_probabilistic_bars_spec",
+    "build_factual_probabilistic_spec",
+    "build_alternative_probabilistic_spec",
+    "build_factual_regression_spec",
+    "build_alternative_regression_spec",
+]
 
 
 def build_probabilistic_bars_spec(
@@ -136,11 +188,13 @@ def build_probabilistic_bars_spec(
     feature_weights: dict[str, Sequence[float]] | Sequence[float],
     features_to_plot: Sequence[int],
     column_names: Sequence[str] | None,
+    rule_labels: Sequence[str] | None = None,
     instance: Sequence[Any] | None,
     y_minmax: tuple[float, float] | None,
     interval: bool,
     sort_by: str | None = None,
     ascending: bool = False,
+    legacy_solid_behavior: bool = True,
     neg_label: str | None = None,
     pos_label: str | None = None,
     uncertainty_color: str | None = None,
@@ -158,8 +212,11 @@ def build_probabilistic_bars_spec(
     low = float(predict.get("low", pred))
     high = float(predict.get("high", pred))
     xlim = None
+    # For probabilistic plots, default x-axis range is [0,1] unless caller supplies y_minmax
     if y_minmax is not None:
         xlim = (float(min(low, y_minmax[0])), float(max(high, y_minmax[1])))
+    else:
+        xlim = (0.0, 1.0)
     header = IntervalHeaderSpec(
         pred=pred,
         low=low,
@@ -183,12 +240,17 @@ def build_probabilistic_bars_spec(
             val = float(pred_w[j])
             bars.append(
                 BarItem(
-                    label=(column_names[j] if column_names is not None else str(j)),
+                    label=(
+                        rule_labels[j]
+                        if rule_labels is not None
+                        else (column_names[j] if column_names is not None else str(j))
+                    ),
                     value=val,
                     interval_low=float(wl[j]),
                     interval_high=float(wh[j]),
                     instance_value=(instance[j] if instance is not None else None),
                     color_role=("positive" if val > 0 else "negative"),
+                    solid_on_interval_crosses_zero=legacy_solid_behavior,
                 )
             )
     else:
@@ -197,10 +259,15 @@ def build_probabilistic_bars_spec(
             val = float(arr[j])  # type: ignore[index]
             bars.append(
                 BarItem(
-                    label=(column_names[j] if column_names is not None else str(j)),
+                    label=(
+                        rule_labels[j]
+                        if rule_labels is not None
+                        else (column_names[j] if column_names is not None else str(j))
+                    ),
                     value=val,
                     instance_value=(instance[j] if instance is not None else None),
                     color_role=("positive" if val > 0 else "negative"),
+                    solid_on_interval_crosses_zero=legacy_solid_behavior,
                 )
             )
 
@@ -225,8 +292,186 @@ def build_probabilistic_bars_spec(
     if sort_by and sort_by.lower() not in ("none", ""):
         bars = sorted(bars, key=_key, reverse=not ascending)
 
-    body = BarHPanelSpec(bars=bars, xlabel="Probability", ylabel="Rules")
+    # For the body we display feature contributions (weights) centered at zero
+    body = BarHPanelSpec(
+        bars=bars,
+        xlabel="Feature weights",
+        ylabel="Rules",
+        solid_on_interval_crosses_zero=legacy_solid_behavior,
+    )
     return PlotSpec(title=title, header=header, body=body)
 
 
 __all__ = ["build_regression_bars_spec", "build_probabilistic_bars_spec"]
+
+
+# --- Triangular and global builders (return JSON-serializable dicts) ---
+def build_triangular_plotspec_dict(
+    *,
+    title: str | None,
+    proba: list[float] | float,
+    uncertainty: list[float] | float,
+    rule_proba: list[float],
+    rule_uncertainty: list[float],
+    num_to_show: int = 50,
+    is_probabilistic: bool = True,
+) -> dict:
+    """Create a triangular PlotSpec dict describing quiver+scatter data.
+
+    This does not return a PlotSpec dataclass because triangular plots are
+    non-panel (no header/body) and are conveyed as a payload in the dict
+    form consumed by adapters via the PlotSpec JSON contract.
+    """
+    return {
+        "plot_spec": {
+            "kind": "triangular",
+            "mode": "classification" if is_probabilistic else "regression",
+            "header": None,
+            "body": None,
+            "style": "triangular",
+            "uncertainty": True,
+            "feature_order": [],
+            "triangular": {
+                "proba": proba,
+                "uncertainty": uncertainty,
+                "rule_proba": rule_proba,
+                "rule_uncertainty": rule_uncertainty,
+                "num_to_show": int(num_to_show),
+                "is_probabilistic": bool(is_probabilistic),
+            },
+        }
+    }
+
+
+def build_global_plotspec_dict(
+    *,
+    title: str | None,
+    proba: list[float] | None,
+    predict: list[float] | None,
+    low: list[float],
+    high: list[float],
+    uncertainty: list[float],
+    y_test: list | None = None,
+    is_regularized: bool = True,
+) -> dict:
+    """Create a global PlotSpec dict for scatter of uncertainty vs proba/predict.
+
+    Contains arrays and axis hints; adapters should render scatter accordingly.
+    """
+    # basic axis hints
+    min_x = None
+    max_x = None
+    min_y = None
+    max_y = None
+    try:
+        if proba is not None:
+            arr = list(proba)
+        elif predict is not None:
+            arr = list(predict)
+        else:
+            arr = []
+        if arr:
+            min_x = float(min(arr))
+            max_x = float(max(arr))
+    except Exception:
+        min_x = 0.0
+        max_x = 1.0
+    try:
+        if uncertainty is not None:
+            min_y = float(min(uncertainty))
+            max_y = float(max(uncertainty))
+    except Exception:
+        min_y = 0.0
+        max_y = 1.0
+
+    axis_hints = {"xlim": [min_x or 0.0, max_x or 1.0], "ylim": [min_y or 0.0, max_y or 1.0]}
+    return {
+        "plot_spec": {
+            "kind": "global_probabilistic" if is_regularized else "global_regression",
+            "mode": "classification" if is_regularized else "regression",
+            "header": None,
+            "body": None,
+            "style": "regular",
+            "uncertainty": True,
+            "feature_order": [],
+            "global_entries": {
+                "proba": list(proba) if proba is not None else None,
+                "predict": list(predict) if predict is not None else None,
+                "low": list(low),
+                "high": list(high),
+                "uncertainty": list(uncertainty),
+                "y_test": list(y_test) if y_test is not None else None,
+            },
+            "axis_hints": axis_hints,
+        }
+    }
+
+
+def plotspec_to_dict(spec: PlotSpec) -> dict:
+    """Convert a PlotSpec dataclass to a JSON-serializable dict matching plotspec_schema.json."""
+    out = {
+        "plot_spec": {
+            "kind": (
+                "factual_probabilistic"
+                if (spec.header is not None and spec.header.dual)
+                else "factual_regression"
+            ),
+            "mode": (
+                "classification" if spec.header is not None and spec.header.dual else "regression"
+            ),
+            "header": {
+                "pred": float(spec.header.pred) if spec.header is not None else None,
+                "low": float(spec.header.low) if spec.header is not None else None,
+                "high": float(spec.header.high) if spec.header is not None else None,
+                "xlim": (
+                    list(spec.header.xlim)
+                    if (spec.header is not None and spec.header.xlim is not None)
+                    else None
+                ),
+                "xlabel": spec.header.xlabel if spec.header is not None else None,
+                "ylabel": spec.header.ylabel if spec.header is not None else None,
+                "dual": bool(spec.header.dual) if spec.header is not None else False,
+            }
+            if spec.header is not None
+            else None,
+            "body": None,
+            "style": "regular",
+            "uncertainty": False,
+            "feature_order": [],
+        }
+    }
+    if spec.body is not None:
+        entries = []
+        for i, b in enumerate(spec.body.bars):
+            e = {
+                "index": i,
+                "name": b.label,
+                "weight": float(b.value),
+                "low": (float(b.interval_low) if b.interval_low is not None else None),
+                "high": (float(b.interval_high) if b.interval_high is not None else None),
+                "instance_value": b.instance_value,
+            }
+            entries.append(e)
+        out["plot_spec"]["body"] = {
+            "bars_count": len(entries),
+            "xlabel": spec.body.xlabel,
+            "ylabel": spec.body.ylabel,
+        }
+        out["plot_spec"]["feature_entries"] = entries
+        out["plot_spec"]["feature_order"] = list(range(len(entries)))
+        # uncertainty flag if any bar has interval
+        out["plot_spec"]["uncertainty"] = any(
+            (b.interval_low is not None and b.interval_high is not None) for b in spec.body.bars
+        )
+    return out
+
+
+def build_factual_probabilistic_plotspec_dict(**kwargs) -> dict:
+    """Build a PlotSpec for factual probabilistic and return as serializable dict.
+
+    This calls the existing `build_probabilistic_bars_spec` and converts the
+    dataclass to the agreed PlotSpec dict shape for schema validation and
+    downstream adapter consumption.
+    """
+    spec = build_probabilistic_bars_spec(**kwargs)
+    return plotspec_to_dict(spec)

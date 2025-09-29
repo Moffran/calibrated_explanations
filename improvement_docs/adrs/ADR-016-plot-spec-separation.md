@@ -45,3 +45,56 @@ Notes
 This ADR is a practical decision to stabilize visuals and tests.
 Renderers are split into small functions per plot kind and the
 builders updated to return consistent `PlotSpec` metadata.
+
+Amendment: Global plots and PlotSpec precisions
+----------------------------------------------
+This ADR is amended (2025-09-29) to explicitly include global plots and
+clarify several PlotSpec and adapter primitives conventions chosen by the
+team to ensure full support for the legacy v0.5.1 plotting behaviour.
+
+1) Global plots
+   - New canonical kinds `global_probabilistic` and `global_regression`
+     are added. These map to the legacy function `_plot_global` and must
+     preserve the legacy semantics: scatter of uncertainty vs probability
+     (or prediction), color/marker mapping by `y_test` when provided,
+     and the regularized branch that draws the proba-triangle.
+
+2) PlotSpec additions and clarifications
+   - PlotSpec MUST include `mode` ('classification'|'regression'),
+     `threshold` (None|scalar|tuple), and `class_index` (None|int) where
+     relevant to disambiguate multiclass and thresholded-regression
+     semantics.
+   - For alternative plots the header field is `none` (no small header
+     subplots). For factual probabilistic header='dual' (two small
+     probability panels) and for factual regression header='single'
+     (one top panel). The triangular plot is a separate kind `triangular`.
+   - A `feature_order` array must be present in PlotSpec to guarantee
+     deterministic ordering; builders must populate it from the
+     Explanation-level ordering.
+   - Coordinates in exported primitives MUST be in data-space (not pixels)
+     and the primitives payload MUST include human-readable axis labels.
+
+3) Uncertainty visual parity (legacy behaviour)
+   - If `uncertainty=False`: draw solid bars from zero to feature weight.
+   - If `uncertainty=True`: draw translucent uncertainty overlays between
+     low/high and draw a solid bar only when the interval does not cross
+     zero (otherwise the solid bar is suppressed). This is authoritative
+     and must be reproduced by adapters.
+
+4) Adapter primitives contract
+   - Adapters SHOULD implement the `export_drawn_primitives()` hook
+     that returns a JSON-serializable dict with a `plot_spec` and a list
+     of `primitives`. Axis ids (e.g., `header.pos`, `header.neg`, `main`)
+     must be supported so adapters can map logical axes to backend axes.
+   - Colors MAY be validated by role (e.g., 'positive_fill') in tests. The
+     default color mixing behaviour used in v0.5.1 (`__get_fill_color`) is
+     documented and adapters should either reproduce it or present role
+     based colors in primitives.
+
+5) Tests and parity
+   - Adapter tests will use `export_drawn_primitives` to assert semantic
+     equivalence to legacy plots (happy path + edge cases such as
+     zero-crossing, infinite bounds, threshold variants, multiclass).
+
+If conflicts exist between this ADR and other plotting ADRs, this ADR
+takes precedence for plotting behaviour and primitive schema.

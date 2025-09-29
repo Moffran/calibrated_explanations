@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PlotSpec",
+  "type": "object",
+  "required": ["kind", "mode", "header", "body", "style", "uncertainty", "feature_order"],
+  "properties": {
+    "kind": {"type": "string", "enum": ["factual_probabilistic","factual_regression","alternative_probabilistic","alternative_regression","triangular","global_probabilistic","global_regression"]},
+    "mode": {"type": "string", "enum": ["classification","regression"]},
+    "header": {
+      "type": ["object", "null"],
+      "properties": {
+        "pred": {"type": ["number", "null"]},
+        "low": {"type": ["number", "null"]},
+        "high": {"type": ["number", "null"]},
+        "xlim": {"type": ["array","null"]},
+        "xlabel": {"type": ["string","null"]},
+        "ylabel": {"type": ["string","null"]},
+        "dual": {"type": "boolean"}
+      }
+    },
+    "body": {"type": ["object","null"], "properties": {"bars_count": {"type":"integer"}, "xlabel": {"type":["string","null"]}, "ylabel": {"type":["string","null"]}}},
+    "style": {"type": "string"},
+    "uncertainty": {"type": "boolean"},
+    "feature_order": {"type": "array", "items": {"type": "integer"}},
+    "rank_by": {"type": ["string","null"]},
+    "rank_weight": {"type": ["number","null"]},
+    "threshold": {"oneOf": [{"type":"null"},{"type":"number"},{"type":"array","items":{"type":"number"}}]},
+    "class_index": {"type": ["integer","null"]},
+  "feature_entries": {"type": "array", "items": {"type": "object", "required": ["index","name","weight"], "properties": {"index": {"type":"integer"}, "name":{"type":"string"}, "weight":{"type":"number"}, "low":{"type":["number","null"]}, "high":{"type":["number","null"]}, "instance_value": {} }}},
+  "global_entries": {"type": "object", "properties": {"proba": {"type": "array"}, "predict": {"type":"array"}, "low": {"type":"array"}, "high": {"type":"array"}, "uncertainty": {"type":"array"}, "y_test": {"type": ["array","null"]}}},
+    "axis_hints": {"type": "object"},
+    "color_roles": {"type": "object"}
+  }
+}

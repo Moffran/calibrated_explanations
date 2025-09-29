@@ -1075,7 +1075,10 @@ class FactualExplanation(CalibratedExplanation):
             )
             features_to_plot = self._rank_features(width=ranking, num_to_show=filter_top)
 
-        column_names = factual["rule"]
+        # Prefer explicit feature/column names when available; fall back to rule strings
+        column_names = (
+            factual.get("feature_names") or factual.get("column_names") or factual.get("rule")
+        )
         if "classification" in self._get_explainer().mode or self.is_thresholded():
             _plot_probabilistic(
                 self,
@@ -2163,7 +2166,10 @@ class FastExplanation(CalibratedExplanation):
             )
             features_to_plot = self._rank_features(width=ranking, num_to_show=filter_top)
 
-        column_names = factual["rule"]
+        # Prefer explicit feature/column names when available; fall back to rule strings
+        column_names = (
+            factual.get("feature_names") or factual.get("column_names") or factual.get("rule")
+        )
         if "classification" in self._get_explainer().mode or self.is_thresholded():
             _plot_probabilistic(
                 self,

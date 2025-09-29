@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PrimitivesExport",
+  "type": "object",
+  "required": ["plot_spec", "primitives"],
+  "properties": {
+    "plot_spec": {"type": "object"},
+    "primitives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","axis_id","type","coords","style","semantic"],
+        "properties": {
+          "id": {"type": "string"},
+          "axis_id": {"type": "string"},
+          "type": {"type": "string", "enum": ["rect","fill_between","line","scatter","quiver","text","legend","area"]},
+          "coords": {"type": "object"},
+          "style": {"type": "object", "properties": {"color": {"type": ["string","null"]}, "alpha": {"type": ["number","null"]}}, "required": []},
+          "semantic": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

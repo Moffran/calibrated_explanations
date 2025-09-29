@@ -38,6 +38,8 @@ Scope: High‑level roadmap focused on releases and ADR alignment (concise)
   - Unify style config mapping between legacy plots and adapter.
   - Add a short “Using caching/parallel safely” docs section.
 
+Note: Implementation work is guided by ADR-016 (Plot spec separation and uncertainty parity). The current ongoing step is to provide explicit plot-kind builders and ensure the PlotSpec builders/adapters reproduce v0.5.1 legacy visuals by default while offering a parity opt‑in. See `improvement_docs/adrs/ADR-016-plot-spec-separation.md` for details.
+
 ## Risk and Compatibility
 
 - Backward compatibility: keep legacy outputs and plotting path unchanged by default until v0.9.

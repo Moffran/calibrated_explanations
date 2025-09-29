@@ -2,10 +2,11 @@ import warnings
 
 
 from calibrated_explanations import _plots
+from calibrated_explanations.viz import coloring
 
 
 def test_color_brew_length_and_format():
-    cols = _plots.__color_brew(5)
+    cols = coloring.color_brew(5)
     assert isinstance(cols, list)
     # Implementation may generate a slightly different number of colors
     # depending on the arange stepping; ensure it's non-empty and reasonable.
@@ -17,7 +18,7 @@ def test_color_brew_length_and_format():
 
 def test_get_fill_color_outputs_hex():
     ca = {"predict": 0.8, "low_high": [0.7, 0.9]}
-    col = _plots.__get_fill_color(ca, reduction=0.5)
+    col = coloring.get_fill_color(ca, reduction=0.5)
     assert isinstance(col, str) and col.startswith("#") and len(col) == 7
 
 

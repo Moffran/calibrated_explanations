@@ -11,6 +11,10 @@
   - Initial unit/integration tests under `tests/unit/viz` and `tests/integration/viz`.
   - Documentation page: `docs/viz_plotspec.md`.
 
+- PlotSpec parity: Converted one probabilistic/regression bar plot to PlotSpec and added parity unit tests comparing semantics and ordering to the legacy `_plot_*` implementations (see `tests/unit/viz/test_plotspec_mvp.py`).
+
+- Plot rendering mode: For now the adapter preserves the legacy visual behaviour by default: when an interval crosses zero the solid contribution is suppressed. The behaviour can be switched to parity (draw solids even when intervals cross zero) by passing `legacy_solid_behavior=False` to the builders; the underlying `BarItem` and `BarHPanelSpec` also expose `solid_on_interval_crosses_zero` for fine-grained control.
+
 - Performance foundations (feature‑flag groundwork)
   - Tiny LRU cache and parallel backend surface: `calibrated_explanations.perf` (`cache.py`, `parallel.py`).
   - Micro‑bench + checker scripts: `scripts/micro_bench_perf.py`, `scripts/check_perf_micro.py`.

@@ -41,6 +41,8 @@ class BarItem:
     interval_high: float | None = None
     color_role: str | None = None  # e.g., "positive" | "negative" | "regression"
     instance_value: Any | None = None
+    # When True, follow legacy behavior: suppress drawing solid when interval crosses zero
+    solid_on_interval_crosses_zero: bool = True
 
 
 @dataclass
@@ -50,6 +52,8 @@ class BarHPanelSpec:
     bars: Sequence[BarItem]
     xlabel: str | None = None
     ylabel: str | None = None
+    # When True, follow legacy behavior: suppress drawing solids when intervals cross zero
+    solid_on_interval_crosses_zero: bool = True
 
 
 @dataclass

@@ -52,6 +52,9 @@ except Exception as _e:  # pragma: no cover - optional dependency guard
 else:
     _MATPLOTLIB_IMPORT_ERROR = None
 
+# reuse shared color helper from viz
+from .viz.coloring import get_fill_color as __get_fill_color
+
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme
 
@@ -272,6 +275,7 @@ def _plot_probabilistic(
         feature_weights=feature_weights,
         features_to_plot=features_to_plot,
         column_names=column_names,
+        rule_labels=column_names,
         instance=instance,
         y_minmax=getattr(explanation, "y_minmax", None),
         interval=interval,
@@ -367,6 +371,7 @@ def _plot_regression(
         feature_weights=feature_weights,
         features_to_plot=features_to_plot,
         column_names=column_names,
+        rule_labels=column_names,
         instance=instance,
         y_minmax=getattr(explanation, "y_minmax", None),
         interval=interval,
@@ -964,42 +969,3 @@ def _plot_proba_triangle():
 
 
 # pylint: disable=invalid-name
-def __color_brew(n):
-    color_list = []
-
-    # Initialize saturation & value; calculate chroma & value shift
-    s, v = 0.75, 0.9
-    c = s * v
-    m = v - c
-
-    # for h in np.arange(25, 385, 360. / n).astype(int):
-    for h in np.arange(5, 385, 490.0 / n).astype(int):
-        # Calculate some intermediate values
-        h_bar = h / 60.0
-        x = c * (1 - abs((h_bar % 2) - 1))
-        # Initialize RGB with same hue & chroma as our color
-        rgb = [(c, x, 0), (x, c, 0), (0, c, x), (0, x, c), (x, 0, c), (c, 0, x), (c, x, 0)]
-        r, g, b = rgb[int(h_bar)]
-        # Shift the initial RGB values to match value and store
-        rgb = [(int(255 * (r + m))), (int(255 * (g + m))), (int(255 * (b + m)))]
-        color_list.append(rgb)
-    color_list.reverse()
-    return color_list
-
-
-def __get_fill_color(venn_abers, reduction=1):  # pylint: disable=unused-private-member
-    colors = __color_brew(2)
-    winner_class = int(venn_abers["predict"] >= 0.5)
-    color = colors[winner_class]
-
-    alpha = venn_abers["predict"] if winner_class == 1 else 1 - venn_abers["predict"]
-    alpha = ((alpha - 0.5) / (1 - 0.5)) * (1 - 0.25) + 0.25  # normalize values to the range [.25,1]
-    if reduction != 1:
-        alpha = reduction
-
-    # unpack numpy scalars
-    alpha = float(alpha)
-    # compute the color as alpha against white
-    color = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
-    # Return html color code in #RRGGBB format
-    return "#{:02x}{:02x}{:02x}".format(*color)

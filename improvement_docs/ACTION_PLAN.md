@@ -18,9 +18,10 @@ Release gate
 ## v0.7.0 (performance + docs + PlotSpec routing)
 
 - Visualization (ADR‑014)
-  - Convert at least one classification/probabilistic plot to PlotSpec with parity tests vs legacy `_plots.py`.
   - Add opt‑in routing from `Explanation.plot()` to PlotSpec; keep legacy path as default.
   - Unify style mapping between legacy plots and the adapter; document any intentional differences.
+
+Note: Work on PlotSpec separation is guided by ADR-016 (Plot spec separation and uncertainty parity). Current development task: add explicit plot-kind wrappers/builders mirroring legacy v0.5.1 behaviour (legacy visual mode enabled by default) and add adapter primitive tests for parity and legacy behaviour. This task ensures safe, testable migration to PlotSpec routing.
 
 - Performance (ADR‑003/ADR‑004)
   - Keep caching/parallel behind flags; add one end‑to‑end example and short docs.
@@ -30,6 +31,7 @@ Release gate
   - Refresh API/gallery; ensure linkcheck remains green; add PlotSpec usage page updates.
 
 Release gate
+
 - Parity tests pass for the converted plot; feature flag toggles PlotSpec routing safely.
 - CI perf guard enforced; example demonstrates safe, opt‑in perf usage.
 - Docs refreshed and linkcheck passes.
@@ -50,10 +52,12 @@ Release gate
   - Route a subset of plots through PlotSpec by default; legacy path remains available.
 
 Release gate
+
 - Interval/explanation plugin examples pass contract and integration tests on fixtures.
 - PlotSpec becomes default for selected plots; golden parity holds.
 - Trust model and usage clearly documented.
 
 ## Dependencies & Risks
+
 - Plugins: discovery remains explicit/in‑process; trusted‑only finders are the recommended default.
 - Visual parity: minor stylistic drift acceptable if documented; avoid semantic changes to bar/interval semantics.
