@@ -36,7 +36,6 @@ Functions
 
 import configparser
 import contextlib
-import math
 import os
 import warnings
 
@@ -434,89 +433,44 @@ def _plot_triangular(
     if not show and (save_ext is None or len(save_ext) == 0):
         return
 
-    __require_matplotlib()
-    config = __setup_plot_style(style_override)
+    # Build triangular PlotSpec dict via the builder and delegate rendering to the adapter.
+    # This ensures the adapter emits canonical primitives (triangle_background,
+    # quiver/scatter, save_fig) matching ADR-016 and keeps a single rendering path.
+    from .viz.builders import build_triangular_plotspec_dict
+    from .viz.matplotlib_adapter import render as render_plotspec
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
-    # assert self._get_explainer().mode == 'classification' or \
-    #     (self._get_explainer().mode == 'regression' and self._is_thresholded()), \
-    #     'Triangular plot is only available for classification or thresholded regression'
-    marker_size = 50
-    min_x, min_y = 0, 0
-    max_x, max_y = 1, 1
-    is_probabilistic = True
-    plt.figure()
-    if explanation.get_mode() == "classification" or (
-        explanation.get_mode() == "regression" and explanation.is_thresholded()
-    ):
-        __plot_proba_triangle()
-    else:
-        min_x = min(
-            np.min(rule_proba), np.min(proba)
-        )  # np.min(self._get_explainer().y_cal) # pylint: disable=protected-access
-        max_x = max(
-            np.max(rule_proba), np.max(proba)
-        )  # np.max(self._get_explainer().y_cal) # pylint: disable=protected-access
-        min_y = min(np.min(rule_uncertainty), np.min(uncertainty))
-        max_y = max(np.max(rule_uncertainty), np.max(uncertainty))
-        if math.isclose(min_x, max_x, rel_tol=1e-9):
-            warnings.warn("All uncertainties are (almost) identical.", Warning, stacklevel=2)
-        min_y = min_y - 0.1 * (max_y - min_y)
-        max_y = max_y + 0.1 * (max_y - min_y)
-        min_x = min_x - 0.1 * (max_x - min_x)
-        max_x = max_x + 0.1 * (max_x - min_x)
-        is_probabilistic = False
 
-    plt.quiver(
-        [proba] * num_to_show,
-        [uncertainty] * num_to_show,
-        rule_proba[:num_to_show] - proba,
-        rule_uncertainty[:num_to_show] - uncertainty,
-        angles="xy",
-        scale_units="xy",
-        scale=1,
-        color="lightgrey",
-        width=0.005,
-        headwidth=3,
-        headlength=3,
-    )
-    plt.scatter(
-        rule_proba,
-        rule_uncertainty,
-        label="Alternative Explanations",
-        marker=".",
-        s=marker_size,
-        alpha=0.7,
-    )
-    plt.scatter(
-        proba,
-        uncertainty,
-        color="red",
-        label="Original Prediction",
-        marker="*",
-        s=marker_size * 1.5,
-    )
-    if is_probabilistic:
-        plt.xlabel("Probability")
-    else:
-        plt.xlabel("Prediction")
-    plt.ylabel("Uncertainty")
-    plt.title("Alternative Explanations")
-    plt.xlim(min_x, max_x)
-    plt.ylim(min_y, max_y)
-
-    # Add legend
-    plt.legend(
-        frameon=True, fancybox=True, framealpha=0.95, edgecolor=config["colors"]["grid"], loc="best"
+    spec = build_triangular_plotspec_dict(
+        title=title,
+        proba=proba,
+        uncertainty=uncertainty,
+        rule_proba=rule_proba,
+        rule_uncertainty=rule_uncertainty,
+        num_to_show=num_to_show,
+        is_probabilistic=True,
     )
 
-    for ext in save_ext:
-        plt.savefig(path + title + ext, bbox_inches="tight")
-    if show:
-        plt.show()
-    else:
-        plt.close()
+    # Let adapter perform the rendering and handle saving behavior.
+    render_plotspec(spec, show=show, save_path=None)
+    # If caller requested saving in multiple extensions, call adapter for each
+    # extension so it can emit the expected save primitives (and actually save
+    # if matplotlib is available).
+    if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
+        for ext in save_ext:
+            render_plotspec(
+                {
+                    **spec,
+                    "plot_spec": {
+                        **spec.get("plot_spec", {}),
+                        "save_behavior": {"default_exts": [ext]},
+                    },
+                },
+                show=False,
+                save_path=path + title + ext,
+            )
+    return
 
 
 # `__plot_triangular`
@@ -771,188 +725,47 @@ def _plot_global(
         return
 
     __require_matplotlib()
-    config = __setup_plot_style(style_override)
+    # config = __setup_plot_style(style_override)
 
+    # Route global plotting through the PlotSpec builder + adapter so the
+    # adapter emits canonical primitives (triangle_background, scatter,
+    # save_fig) rather than drawing inline here. This keeps a single
+    # authoritative rendering path per ADR-016.
+    from .viz.builders import build_global_plotspec_dict
+    from .viz.matplotlib_adapter import render as render_plotspec
+
+    # Gather model outputs in the same way legacy code did
     is_regularized = True
     if "predict_proba" not in dir(explainer.learner) and threshold is None:
         predict, (low, high) = explainer.predict(X_test, uq_interval=True, bins=bins)
+        proba = None
         is_regularized = False
     else:
         proba, (low, high) = explainer.predict_proba(
             X_test, uq_interval=True, threshold=threshold, bins=bins
         )
-    uncertainty = np.array(high - low)
+        predict = None
 
-    marker_size = 50
-    min_x, min_y = 0, 0
-    max_x, max_y = 1, 1
-    ax = None
-    if is_regularized:
-        fig = _plot_proba_triangle()
-    else:
-        fig, ax = plt.subplots()
-        # draw a line from (0,0) to (0.5,1) and from (1,0) to (0.5,1)
-        min_x = np.min(explainer.y_cal)
-        max_x = np.max(explainer.y_cal)
-        min_y = np.min(uncertainty)
-        max_y = np.max(uncertainty)
-        if math.isclose(min_x, max_x, rel_tol=1e-9):
-            warnings.warn("All uncertainties are (almost) identical.", Warning, stacklevel=2)
+    uncertainty = (
+        (np.array(high) - np.array(low)) if (low is not None and high is not None) else None
+    )
 
-        min_x = (
-            min_x - min(0.1 * (max_x - min_x), 0) if min_x > 0 else min_x - 0.1 * (max_x - min_x)
-        )  # pylint: disable=line-too-long
-        max_x = max_x + 0.1 * (max_x - min_x)
-        # min_y = min_y - max(0.1 * (max_y - min_y), 0) # uncertainty is always positive
-        max_y = max_y + 0.1 * (max_y - min_y)
-        # mid_x = (min_x + max_x) / 2
-        # mid_y = (min_y + max_y) / 2
-        # ax.plot([min_x, mid_x], [min_y, max_y], color='black')
-        # ax.plot([max_x, mid_x], [min_y, max_y], color='black')
-        # # draw a line from (0.5,0) to halfway between (0.5,0) and (0,1)
-        # ax.plot([mid_x, mid_x / 2], [min_y, mid_y], color='black')
-        # # draw a line from (0.5,0) to halfway between (0.5,0) and (1,1)
-        # ax.plot([mid_x, mid_x + mid_x / 2], [min_y, mid_y], color='black')
+    spec_dict = build_global_plotspec_dict(
+        title=None,
+        proba=proba,
+        predict=predict,
+        low=low,
+        high=high,
+        uncertainty=uncertainty,
+        y_test=(list(y_test) if y_test is not None else None),
+        is_regularized=is_regularized,
+    )
 
-    if y_test is None:
-        if "predict_proba" not in dir(explainer.learner) and threshold is None:  # not probabilistic
-            plt.scatter(predict, uncertainty, label="Predictions", marker=".", s=marker_size)
-        else:
-            if explainer.is_multiclass():  # pylint: disable=protected-access
-                predicted = np.argmax(proba, axis=1)
-                proba = proba[np.arange(len(proba)), predicted]
-                uncertainty = uncertainty[np.arange(len(uncertainty)), predicted]
-            else:
-                proba = proba[:, 1]
-            plt.scatter(proba, uncertainty, label="Predictions", marker=".", s=marker_size)
-
-    elif "predict_proba" not in dir(explainer.learner) and threshold is None:  # not probabilistic
-        norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
-        # Choose a colormap
-        colormap = plt.cm.viridis  # pylint: disable=no-member
-        # Map the normalized values to colors
-        colors = colormap(norm(y_test))
-        ax.scatter(
-            predict, uncertainty, label="Predictions", color=colors, marker=".", s=marker_size
-        )
-        # # Create a new axes for the colorbar
-        # divider = make_axes_locatable(ax)
-        # cax = divider.append_axes("right", size="5%", pad=0.05)
-        # # Add the colorbar to the new axes
-        # plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=colormap),
-        #                                       cax=cax, label='Target Values')
-    else:
-        if "predict_proba" not in dir(explainer.learner):
-            if not np.isscalar(threshold):
-                raise ValueError(
-                    "The threshold parameter must be a single constant value for all instances when used in plot_global."
-                )  # pylint: disable=line-too-long
-            y_test = np.array([0 if y_test[i] >= threshold else 1 for i in range(len(y_test))])
-            labels = [f"Y >= {threshold}", f"Y < {threshold}"]
-        else:
-            labels = (
-                [f"Y = {i}" for i in explainer.class_labels.values()]
-                if explainer.class_labels is not None
-                else [f"Y = {i}" for i in np.unique(y_test)]
-            )
-        marker_size = 25
-        if len(labels) == 2:
-            colors = ["blue", "red"]
-            markers = ["o", "x"]
-            proba = proba[:, 1]
-        else:
-            colormap = plt.get_cmap("tab10", len(labels))
-            colors = [colormap(i) for i in range(len(labels))]
-            markers = [
-                "o",
-                "x",
-                "s",
-                "^",
-                "v",
-                "D",
-                "P",
-                "*",
-                "h",
-                "H",
-                "o",
-                "x",
-                "s",
-                "^",
-                "v",
-                "D",
-                "P",
-                "*",
-                "h",
-                "H",
-            ][: len(labels)]  # pylint: disable=line-too-long
-            proba = proba[np.arange(len(proba)), y_test]
-            uncertainty = uncertainty[np.arange(len(uncertainty)), y_test]
-        for i, c in enumerate(np.unique(y_test)):
-            plt.scatter(
-                proba[y_test == c],
-                uncertainty[y_test == c],
-                color=colors[i],
-                label=labels[i],
-                marker=markers[i],
-                s=marker_size,
-                alpha=0.7,
-            )
-        plt.legend(
-            frameon=True,
-            fancybox=True,
-            framealpha=0.95,
-            edgecolor=config["colors"]["grid"],
-            bbox_to_anchor=(1.05, 1),
-            loc="upper left",
-        )
-    if "predict_proba" not in dir(explainer.learner) and threshold is None:  # not probabilistic
-        plt.xlabel("Predictions", loc="center")
-        plt.ylabel("Uncertainty", loc="center")
-    else:
-        plt.ylabel("Uncertainty")
-        if "predict_proba" not in dir(explainer.learner):
-            if np.isscalar(threshold):
-                plt.xlabel(f"Probability of Y < {threshold}")
-            else:
-                plt.xlabel(f"Probability of {threshold[0]} <= Y < {threshold[1]}")
-        elif explainer.is_multiclass():  # pylint: disable=protected-access
-            if y_test is None:
-                plt.xlabel("Probability of Y = predicted class")
-            else:
-                plt.xlabel("Probability of Y = actual class")
-        else:
-            plt.xlabel("Probability of Y = 1")
-
-    # Ensure axis limits are finite and non-degenerate to avoid matplotlib errors
-    def _safe_limits(a, b, fallback=(0.0, 1.0)):
-        try:
-            a_f = float(a)
-            b_f = float(b)
-        except Exception:
-            return float(fallback[0]), float(fallback[1])
-        # use numpy finiteness check for scalars/arrays
-        if not (np.isfinite(a_f) and np.isfinite(b_f)):
-            return float(fallback[0]), float(fallback[1])
-        # swap if out of order
-        if a_f > b_f:
-            a_f, b_f = b_f, a_f
-        # if identical limits, expand slightly
-        if a_f == b_f:
-            eps = max(1e-3, abs(a_f) * 1e-3)
-            a_f -= eps
-            b_f += eps
-        return a_f, b_f
-
-    x0, x1 = _safe_limits(min_x, max_x, fallback=(0.0, 1.0))
-    y0, y1 = _safe_limits(min_y, max_y, fallback=(0.0, 1.0))
-    plt.xlim(x0, x1)
-    plt.ylim(y0, y1)
-    plt.grid(True, linestyle=config["grid"]["style"], alpha=float(config["grid"]["alpha"]))
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
-    # TODO: Add save functionality
+    # Let adapter decide how to render; adapter returns a wrapper for dict
+    # specs (and may emit save primitives). This centralizes saving
+    # behavior and primitive emission.
+    render_plotspec(spec_dict, show=show, save_path=None)
+    return
 
 
 def _plot_proba_triangle():

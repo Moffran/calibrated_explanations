@@ -322,30 +322,40 @@ def render(
                     wh = float(item.interval_high)
                     # normalize ordering
                     wh, wl = (max(wh, wl), min(wh, wl))
-                    # compute solid endpoints as in legacy probabilistic code:
-                    # For probabilistic (dual) headers the natural pivot is 0.5
-                    # (not zero). Solids should reach towards the pivot and be
-                    # suppressed when the interval covers the pivot. Overlays
-                    # that cross the pivot are split on either side and colored
-                    # with sign-appropriate colors.
-                    width = float(val)
-                    pivot = 0.5
-                    # Respect legacy compatibility flag: only suppress solids
-                    # when the builder/body/item signalled legacy behaviour.
-                    suppress_solid_on_cross = getattr(
-                        body, "solid_on_interval_crosses_zero", False
-                    ) or getattr(item, "solid_on_interval_crosses_zero", False)
-                    if width > 0:
-                        min_val = wl
-                        max_val = pivot
+                    # Map interval and value into contribution/body coordinates
+                    # by subtracting the header prediction so that intervals that
+                    # cross the prediction become centered around zero and are
+                    # handled like the non-dual (regression) branch.
+                    try:
+                        header_pred = float(spec.header.pred)
+                    except Exception:
+                        header_pred = 0.0
+                    val_body = float(val) - header_pred
+                    wl_body = wl - header_pred
+                    wh_body = wh - header_pred
+
+                    # compute solid endpoints consistently: draw solids from
+                    # contribution-space zero to the bar value (val_body).
+                    pivot = 0.0
+
+                    # Determine suppression behavior: default to True unless explicitly set
+                    if hasattr(body, "solid_on_interval_crosses_zero"):
+                        suppress_solid_on_cross = bool(body.solid_on_interval_crosses_zero)
+                    elif hasattr(item, "solid_on_interval_crosses_zero"):
+                        suppress_solid_on_cross = bool(item.solid_on_interval_crosses_zero)
                     else:
-                        min_val = pivot
-                        max_val = wh
+                        suppress_solid_on_cross = True
+
+                    # Solid endpoints are always from zero to the value (in body coords)
+                    min_val = min(val_body, pivot)
+                    max_val = max(val_body, pivot)
+
                     # If interval covers the pivot and legacy suppression is enabled,
                     # degenerate the solid to the pivot (suppressed).
-                    if wl < pivot < wh and suppress_solid_on_cross:
+                    if wl_body < pivot < wh_body and suppress_solid_on_cross:
                         min_val = pivot
                         max_val = pivot
+
                     # draw the solid band (may be degenerate if suppressed)
                     ax.fill_betweenx(xj, min_val, max_val, color=color)
                     # only export solids when non-degenerate
@@ -369,18 +379,18 @@ def render(
 
                     # draw translucent overlay: if the interval crosses the pivot
                     # split it on either side using the sign colors; else draw
-                    # the interval wl..wh tinted via chosen color.
+                    # the interval wl_body..wh_body tinted via chosen color.
                     if draw_intervals:
-                        if wl < pivot < wh:
-                            # negative side: pivot .. wl (wl < pivot)
-                            ax.fill_betweenx(xj, pivot, wl, color=neg_color, alpha=alpha_val)
-                            # positive side: wh .. pivot
-                            ax.fill_betweenx(xj, wh, pivot, color=pos_color, alpha=alpha_val)
+                        if wl_body < pivot < wh_body:
+                            # negative side: wl_body .. pivot
+                            ax.fill_betweenx(xj, wl_body, pivot, color=neg_color, alpha=alpha_val)
+                            # positive side: pivot .. wh_body
+                            ax.fill_betweenx(xj, pivot, wh_body, color=pos_color, alpha=alpha_val)
                             if export_drawn_primitives:
                                 primitives.setdefault("overlays", []).append(
                                     {
                                         "index": j,
-                                        "x0": float(wl),
+                                        "x0": float(wl_body),
                                         "x1": float(pivot),
                                         "color": neg_color,
                                         "alpha": float(alpha_val),
@@ -390,19 +400,19 @@ def render(
                                     {
                                         "index": j,
                                         "x0": float(pivot),
-                                        "x1": float(wh),
+                                        "x1": float(wh_body),
                                         "color": pos_color,
                                         "alpha": float(alpha_val),
                                     }
                                 )
                         else:
-                            ax.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
+                            ax.fill_betweenx(xj, wl_body, wh_body, color=color, alpha=alpha_val)
                             if export_drawn_primitives:
                                 primitives.setdefault("overlays", []).append(
                                     {
                                         "index": j,
-                                        "x0": float(wl),
-                                        "x1": float(wh),
+                                        "x0": float(wl_body),
+                                        "x1": float(wh_body),
                                         "color": color,
                                         "alpha": float(alpha_val),
                                     }
@@ -585,11 +595,16 @@ def render(
                     ilo, ihi = (ilo, ihi) if ilo <= ihi else (ihi, ilo)
                     # Map value into body coords as well
                     val_body = val - header_pred_f
-                    # Determine legacy compatibility: allow builder/body to signal
-                    # that solids should be suppressed when the interval crosses zero.
-                    suppress_solid_on_cross = getattr(
-                        body, "solid_on_interval_crosses_zero", False
-                    ) or getattr(item, "solid_on_interval_crosses_zero", False)
+                    # Determine legacy compatibility: default to suppressing
+                    # solids when interval crosses zero (legacy behaviour),
+                    # but respect explicit flags provided by builder/body or
+                    # the individual item.
+                    if hasattr(body, "solid_on_interval_crosses_zero"):
+                        suppress_solid_on_cross = bool(body.solid_on_interval_crosses_zero)
+                    elif hasattr(item, "solid_on_interval_crosses_zero"):
+                        suppress_solid_on_cross = bool(item.solid_on_interval_crosses_zero)
+                    else:
+                        suppress_solid_on_cross = True
                     min_val_body, max_val_body = (min(val_body, 0.0), max(val_body, 0.0))
                     # If legacy compatibility requested and interval spans zero, hide solid
                     # and draw split overlays so that positive/negative sides keep sign colors.
@@ -846,6 +861,14 @@ def render(
                     )
         # Solids and overlays lists
         for s in primitives.get("solids", []) if isinstance(primitives, dict) else []:
+            # sanitize coordinates: ensure x0 <= x1 regardless of drawing order
+            try:
+                a = float(s.get("x0"))
+                b = float(s.get("x1"))
+                x0f, x1f = (min(a, b), max(a, b))
+            except Exception:
+                x0f = float(s.get("x0", 0.0))
+                x1f = float(s.get("x1", 0.0))
             normalized.append(
                 {
                     "id": f"solid.{s.get('index')}",
@@ -853,14 +876,21 @@ def render(
                     "type": "rect",
                     "coords": {
                         "index": int(s.get("index")),
-                        "x0": float(s.get("x0")),
-                        "x1": float(s.get("x1")),
+                        "x0": x0f,
+                        "x1": x1f,
                     },
                     "style": {"color": s.get("color"), "alpha": 1.0},
                     "semantic": "feature_bar",
                 }
             )
         for o in primitives.get("overlays", []) if isinstance(primitives, dict) else []:
+            try:
+                a = float(o.get("x0"))
+                b = float(o.get("x1"))
+                x0f, x1f = (min(a, b), max(a, b))
+            except Exception:
+                x0f = float(o.get("x0", 0.0))
+                x1f = float(o.get("x1", 0.0))
             normalized.append(
                 {
                     "id": f"overlay.{o.get('index')}.{len(normalized)}",
@@ -868,8 +898,8 @@ def render(
                     "type": "fill_between",
                     "coords": {
                         "index": int(o.get("index")),
-                        "x0": float(o.get("x0")),
-                        "x1": float(o.get("x1")),
+                        "x0": x0f,
+                        "x1": x1f,
                     },
                     "style": {"color": o.get("color"), "alpha": float(o.get("alpha", 0.2))},
                     "semantic": "uncertainty_area",
@@ -898,9 +928,14 @@ def render(
         # Produce a legacy-style primitives dict with top-level keys so tests
         # and downstream consumers can access `solids`/`overlays`/`base_interval`/`header`.
         out: dict = {}
-        # Start from the collected primitives dict when present
-        if isinstance(primitives, dict):
-            out.update(primitives)
+        # Do not merge the raw `primitives` drawing dict directly into the
+        # legacy `out` structure. Some drawing branches may record coordinates
+        # in different coordinate spaces (header probability vs. body
+        # contribution), which previously caused a mix of incompatible
+        # primitives (e.g. solids recorded in probability-space). Instead,
+        # construct legacy keys from the canonical `normalized` primitives
+        # only. This preserves coordinate consistency for consumers and
+        # tests that rely on the legacy top-level keys.
 
         # If we also built a `normalized` list-of-primitives, merge it back
         # into the legacy structure so both representations are supported.
@@ -971,6 +1006,8 @@ def render(
         }
         # Merge legacy out keys (solids/overlays/base_interval/header) into wrapper
         wrapper.update(out)
+        # Ensure `primitives` key is always present (normalize any accidental overwrite)
+        wrapper["primitives"] = normalized
         if not return_fig:
             plt.close(fig)
         return wrapper

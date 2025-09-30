@@ -26,7 +26,7 @@ def factual_probabilistic_no_uncertainty():
 
 def factual_probabilistic_zero_crossing():
     predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
-    # one feature crosses the pivot (0.5)
+    # one feature crosses the previous probability pivot; pivot behavior removed
     feature_weights = {
         "predict": [0.6],
         "low": [0.45],

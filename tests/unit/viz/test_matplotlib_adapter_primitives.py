@@ -29,11 +29,15 @@ def test_default_suppresses_solid_for_crossing_interval():
         interval=True,
     )
     primitives = render(spec, export_drawn_primitives=True)
-    # Default legacy behavior should suppress the solid for the crossing interval
+    # Default legacy behaviour: when an interval crosses zero the solid is
+    # suppressed and split overlays are drawn instead. Confirm overlays used
+    # for index 0 and no solid remains for that index.
     solids = primitives.get("solids", [])
     overlays = primitives.get("overlays", [])
-    assert all(s.get("index", 0) != 0 for s in solids), f"Unexpected solid for index 0: {solids}"
-    assert any(o.get("index", -1) == 0 for o in overlays), "Expected overlay for index 0"
+    assert any(
+        o.get("index", -1) == 0 for o in overlays
+    ), f"Expected overlay for index 0, got overlays={overlays}"
+    assert all(s.get("index", -1) != 0 for s in solids), f"Unexpected solid for index 0: {solids}"
 
 
 def test_parity_shows_solid_when_flag_false():
