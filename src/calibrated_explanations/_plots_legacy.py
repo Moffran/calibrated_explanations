@@ -54,6 +54,7 @@ def _plot_probabilistic(
     save_ext=None,
 ):
     """plots regular and uncertainty explanations"""
+    __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     if interval is True:
@@ -206,6 +207,7 @@ def _plot_regression(
     save_ext=None,
 ):
     """plots regular and uncertainty explanations"""
+    __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     if interval is True:
@@ -318,6 +320,7 @@ def _plot_triangular(
     save_ext=None,
 ):
     """plots triangular explanations"""
+    __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     # assert self._get_explainer().mode == 'classification' or \
@@ -412,6 +415,7 @@ def _plot_alternative(
     save_ext=None,
 ):
     """plots alternative explanations"""
+    __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
     fig = plt.figure(figsize=(10, num_to_show * 0.5))
@@ -561,6 +565,7 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
         The threshold value used with regression to get probability of being below the threshold.
         Only applicable to regression.
     """
+    __require_matplotlib()
     is_regularized = True
     if "predict_proba" not in dir(explainer.learner) and threshold is None:
         predict, (low, high) = explainer.predict(X_test, uq_interval=True, **kwargs)

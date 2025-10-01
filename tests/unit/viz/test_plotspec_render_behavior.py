@@ -1,16 +1,17 @@
 import numpy as np
-import matplotlib
 import pytest
 
-from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
-from calibrated_explanations.viz import matplotlib_adapter
-
+# Skip the entire module at collection time if matplotlib is not available.
 pytest.importorskip("matplotlib")
+
 pytestmark = pytest.mark.viz
 
 
 def _render_spec_and_get_axes(spec):
     # Request the figure back for inspection
+    # import backend-specific adapter and matplotlib lazily (after importorskip)
+    from calibrated_explanations.viz import matplotlib_adapter
+
     fig = matplotlib_adapter.render(spec, show=False, save_path=None, return_fig=True)
     # Expect the last axes to be the body axes
     axs = fig.get_axes()
@@ -25,6 +26,9 @@ def test_body_xlim_contains_zero_and_padding():
     low = vals - 0.01
     high = vals + 0.01
     fw = {"predict": vals, "low": low, "high": high}
+    # import builders lazily after matplotlib is ensured present
+    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+
     spec = build_probabilistic_bars_spec(
         title="t",
         predict=predict,
@@ -45,6 +49,8 @@ def test_body_xlim_contains_zero_and_padding():
     pad = (x1 - x0) / 2.0 - max_extent
     assert pad >= max_extent * 0.04  # allow ~5% tolerance
     # close figure
+    import matplotlib
+
     matplotlib.pyplot.close(fig)
 
 
@@ -54,6 +60,8 @@ def test_bars_drawn_from_zero_directionally_and_overlay_sign():
     low = vals - 0.005
     high = vals + 0.005
     fw = {"predict": vals, "low": low, "high": high}
+    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+
     spec = build_probabilistic_bars_spec(
         title="t",
         predict=predict,
@@ -65,6 +73,8 @@ def test_bars_drawn_from_zero_directionally_and_overlay_sign():
         interval=True,
     )
     # use the adapter's primitive export (backend-agnostic)
+    from calibrated_explanations.viz import matplotlib_adapter
+
     primitives_no = matplotlib_adapter.render(
         spec,
         show=False,
