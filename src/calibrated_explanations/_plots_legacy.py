@@ -6,9 +6,35 @@ import contextlib
 import math
 import warnings
 
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
 import numpy as np
+
+# Guard optional dependency imports so importing this module doesn't fail in
+# environments without matplotlib (tests/CI where viz extras aren't installed).
+try:  # pragma: no cover - optional dependency
+    import matplotlib.colors as mcolors
+    import matplotlib.pyplot as plt
+except Exception as _e:  # pragma: no cover - optional dependency
+    mcolors = None  # type: ignore[assignment]
+    plt = None  # type: ignore[assignment]
+    _MATPLOTLIB_IMPORT_ERROR = _e
+else:
+    _MATPLOTLIB_IMPORT_ERROR = None
+
+
+def __require_matplotlib():
+    """Raise a helpful error if matplotlib is not available.
+
+    Many tests import the package but don't need plotting. Guarding imports
+    prevents import-time failures; call this before performing plotting.
+    """
+    if plt is None:
+        msg = (
+            "Plotting requires matplotlib. Install the 'viz' extra: "
+            "pip install calibrated_explanations[viz]"
+        )
+        if _MATPLOTLIB_IMPORT_ERROR is not None:
+            msg += f"\nOriginal import error: {_MATPLOTLIB_IMPORT_ERROR}"
+        raise RuntimeError(msg)
 
 
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments
