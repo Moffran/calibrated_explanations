@@ -453,6 +453,7 @@ class CalibratedExplainer:
         classes=None,
         bins=None,
         feature=None,
+        **kwargs,
     ):
         """Internal prediction method that handles both classification and regression cases.
 
@@ -498,6 +499,9 @@ class CalibratedExplainer:
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
         """
+        # strip plotting-only keys that callers may pass
+        kwargs.pop("show", None)
+        kwargs.pop("style_override", None)
         if not self.__initialized:
             raise NotFittedError("The learner must be initialized before calling predict.")
         if feature is None and self.is_fast():
@@ -2279,6 +2283,9 @@ class CalibratedExplainer:
         -----
         The `threshold` parameter is only used for regression tasks.
         """
+        # strip plotting-only keys that callers may pass
+        kwargs.pop("show", None)
+        kwargs.pop("style_override", None)
         # Phase 1B: emit deprecation warnings for aliases and normalize kwargs
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)

@@ -1008,6 +1008,59 @@ def render(
         wrapper.update(out)
         # Ensure `primitives` key is always present (normalize any accidental overwrite)
         wrapper["primitives"] = normalized
+        # --- Test-only coordinate-space invariants ---
+        # When export_drawn_primitives is enabled, perform lightweight
+        # assertions to help tests detect accidental mixing of
+        # header(probability-space) and body(contribution-space)
+        # coordinates. These checks are defensive and will not raise
+        # in production unless the caller explicitly requested
+        # `export_drawn_primitives=True`.
+        try:
+            if export_drawn_primitives and isinstance(normalized, list):
+                hdr_coords = [p for p in normalized if p.get("axis_id", "").startswith("header")]
+                body_coords = [
+                    p
+                    for p in normalized
+                    if p.get("axis_id") == "body" or p.get("axis_id") == "main"
+                ]
+                # header coords (probability) should fall into [0.0,1.0]
+                for h in hdr_coords:
+                    coords = h.get("coords", {})
+                    # only check primitives that have x0/x1 coords
+                    if "x0" in coords and "x1" in coords:
+                        x0 = float(coords.get("x0", 0.0))
+                        x1 = float(coords.get("x1", 0.0))
+                        # allow tiny epsilon beyond bounds due to floating math
+                        eps = 1e-6
+                        assert -eps <= x0 <= 1.0 + eps and -eps <= x1 <= 1.0 + eps, (
+                            "Header primitive coordinate outside [0,1] probability range",
+                            h,
+                        )
+                # body coords should not all be within [0,1] when header is dual
+                # (this is a heuristic check to detect accidental non-shifting into contribution space)
+                if hdr_coords and body_coords:
+                    all_body_in_0_1 = True
+                    for b in body_coords:
+                        coords = b.get("coords", {})
+                        if "x0" in coords and "x1" in coords:
+                            x0 = float(coords.get("x0", 0.0))
+                            x1 = float(coords.get("x1", 0.0))
+                            if x0 < 0.0 - 1e-6 or x1 > 1.0 + 1e-6:
+                                all_body_in_0_1 = False
+                                break
+                    # If every body primitive falls in [0,1], it's suspicious for dual headers
+                    assert not all_body_in_0_1, (
+                        "Body primitives are all in [0,1] probability-range; expected contribution-space coordinates around 0.0",
+                        body_coords,
+                    )
+        except AssertionError:
+            # Re-raise to make failures visible during tests
+            raise
+        except Exception:
+            # Be defensive: any non-assertion error should not break production.
+            # Log the exception so it's visible to operators and static analysis
+            # tools (avoids try/except/pass patterns flagged by security linters).
+            logging.exception("Non-assertion error while validating export_drawn_primitives")
         if not return_fig:
             plt.close(fig)
         return wrapper

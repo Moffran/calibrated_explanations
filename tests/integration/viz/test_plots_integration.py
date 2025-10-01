@@ -68,6 +68,7 @@ def test_plot_regression_writes_file(tmp_path):
         show=False,
         interval=True,
         save_ext=[".png"],
+        use_legacy=False,
     )
     assert os.path.exists(os.path.join(outdir, title + ".png"))
 
@@ -94,6 +95,7 @@ def test_plot_alternative_writes_file(tmp_path):
         path=outdir + os.path.sep,
         show=False,
         save_ext=[".png"],
+        use_legacy=False,
     )
     assert os.path.exists(os.path.join(outdir, title + ".png"))
 
@@ -103,7 +105,7 @@ def test_plot_global_non_probabilistic_runs_without_error():
     # small X_test
     X_test = np.zeros((3, 2))
     # should not raise
-    _plots._plot_global(expl, X_test, y_test=None, threshold=None, show=False)
+    _plots._plot_global(expl, X_test, y_test=None, threshold=None, show=False, use_legacy=False)
 
 
 def test_plot_proba_triangle_returns_figure():
@@ -142,6 +144,7 @@ def test_plot_alternative_thresholded_writes_file(tmp_path):
         path=outdir + os.path.sep,
         show=False,
         save_ext=[".png"],
+        use_legacy=False,
     )
     assert os.path.exists(os.path.join(outdir, title + ".png"))
 
@@ -170,7 +173,7 @@ def test_plot_global_probabilistic_branch_runs():
     expl = _FakeExplainerProba()
     X_test = np.zeros((3, 2))
     # should not raise
-    _plots._plot_global(expl, X_test, y_test=None, threshold=None, show=False)
+    _plots._plot_global(expl, X_test, y_test=None, threshold=None, show=False, use_legacy=False)
 
 
 def test_plot_alternative_early_noop_when_not_saving():
@@ -194,4 +197,5 @@ def test_plot_alternative_early_noop_when_not_saving():
         path=None,
         show=False,
         save_ext=None,
+        use_legacy=False,
     )

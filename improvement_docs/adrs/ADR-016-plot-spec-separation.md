@@ -1,6 +1,6 @@
 # ADR 016: Plot spec separation and uncertainty parity
 
-Status: Proposed
+Status: Accepted
 
 Context
 -------
@@ -245,3 +245,53 @@ the PlotPlugin proposal in `improvement_docs/adrs/ADR-014-plot-plugin-strategy.m
 They also make explicit the testing strategy: builders produce a
 deterministic JSON PlotSpec and adapters implement `export_drawn_primitives`
 so unit tests can assert parity at the primitive level.
+
+## Implementation & migration
+
+The following concrete implementation and migration guidance must be
+followed by any change that affects plotting parity:
+
+1. Implementation locations
+   - `src/calibrated_explanations/viz/matplotlib_adapter.py`
+     - Enforce contribution-space pivot = 0.0 for body interval splitting.
+     - Export normalized primitives (`primitives`) and construct legacy
+       top-level keys (`solids`, `overlays`, `header`, `base_interval`) from
+       those normalized primitives only to avoid coordinate-space mixing.
+     - Provide a test-only assertion hook when `export_drawn_primitives` is
+       enabled to validate header vs body coordinate ranges in unit tests.
+   - `src/calibrated_explanations/viz/builders.py`
+     - Builders must produce `BarItem.value` in contribution coordinates for
+       body plots. For probabilistic factual plots this means the adapter will
+       subtract `header.pred` (when header.dual) to map to contribution space.
+     - Builders must propagate `solid_on_interval_crosses_zero` and
+       `legacy_color_mode` where callers require legacy parity.
+   - `src/calibrated_explanations/_plots.py`
+     - Top-level plotting convenience functions (e.g. `_plot_probabilistic`)
+       should delegate rendering to the builder -> adapter pipeline and pass
+       any parity switches (e.g. `legacy_color_mode`, `legacy_solid_behavior`).
+
+2. Migration notes for consumers
+   - Tests or code that previously relied on a probability-space pivot at
+     0.5 should be updated: the body pivot is now numeric zero. If callers
+     need probability-space semantics, they should convert inputs before
+     constructing the PlotSpec or use an explicit optional `interval_pivot`
+     PlotSpec field (see next section).
+   - To reproduce exact legacy visuals for testing, callers can set
+     `PlotSpec.legacy_color_mode = True` and `BarHPanelSpec.solid_on_interval_crosses_zero = True`.
+
+3. Optional compatibility extension
+   - If we later need to reintroduce configurable pivot semantics for edge
+     cases, add an optional `interval_pivot` float field to `PlotSpec` and have
+     `matplotlib_adapter` prefer it when present. This must be opt-in only and
+     default to the canonical `0.0` pivot to preserve legacy parity.
+
+4. Validation and QA
+   - Add primitive-level unit tests (using `export_drawn_primitives=True`) to
+     assert: coordinate-space invariants, header and body primitive shapes,
+     color roles, and base_interval emission.
+   - Add an integration visual smoke harness that renders canonical factual
+     examples (no-uncertainty, crossing-interval, regression) and records
+     golden primitives or lightweight image snapshots for manual diffing.
+
+These implementation steps lock the decision made in this ADR and provide a
+clear migration path for downstream consumers and tests.

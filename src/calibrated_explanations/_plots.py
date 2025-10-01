@@ -41,6 +41,10 @@ import warnings
 
 import numpy as np
 
+# Legacy import to ensure legacy plotting is still working
+# while development of plotspec, adapters, and builders are unfinished.
+from . import _plots_legacy as legacy
+
 try:
     import matplotlib.colors as mcolors
     import matplotlib.pyplot as plt
@@ -190,6 +194,7 @@ def _plot_probabilistic(
     idx=None,
     save_ext=None,
     style_override=None,
+    use_legacy=True,
 ):
     """
     Plot regular and uncertainty explanations.
@@ -223,6 +228,24 @@ def _plot_probabilistic(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    if use_legacy:
+        legacy._plot_probabilistic(
+            explanation,
+            instance,
+            predict,
+            feature_weights,
+            features_to_plot,
+            num_to_show,
+            column_names,
+            title,
+            path,
+            show,
+            interval,
+            idx,
+            save_ext,
+        )
+        return
+
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
     if not show and plt is None:  # lightweight path for tests/CI without viz extra
         return
@@ -320,6 +343,7 @@ def _plot_regression(
     idx=None,
     save_ext=None,
     style_override=None,
+    use_legacy=True,
 ):
     """
     Plot regular and uncertainty explanations.
@@ -353,6 +377,24 @@ def _plot_regression(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    if use_legacy:
+        legacy._plot_regression(
+            explanation,
+            instance,
+            predict,
+            feature_weights,
+            features_to_plot,
+            num_to_show,
+            column_names,
+            title,
+            path,
+            show,
+            interval,
+            idx,
+            save_ext,
+        )
+        return
+
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
     if not show and plt is None:  # lightweight path for tests/CI without viz extra
         return
@@ -399,6 +441,7 @@ def _plot_triangular(
     show,
     save_ext=None,
     style_override=None,
+    use_legacy=True,
 ):
     """
     Plot triangular explanations.
@@ -426,6 +469,21 @@ def _plot_triangular(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    if use_legacy:
+        legacy._plot_triangular(
+            explanation,
+            proba,
+            uncertainty,
+            rule_proba,
+            rule_uncertainty,
+            num_to_show,
+            title,
+            path,
+            show,
+            save_ext,
+        )
+        return
+
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
     if not show and plt is None:  # lightweight path for tests/CI without viz extra
         return
@@ -498,6 +556,7 @@ def _plot_alternative(
     show,
     save_ext=None,
     style_override=None,
+    use_legacy=True,
 ):
     """
     Plot alternative explanations.
@@ -527,6 +586,22 @@ def _plot_alternative(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    if use_legacy:
+        legacy._plot_alternative(
+            explanation,
+            instance,
+            predict,
+            feature_predict,
+            features_to_plot,
+            num_to_show,
+            column_names,
+            title,
+            path,
+            show,
+            save_ext,
+        )
+        return
+
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
     if not show and plt is None:  # lightweight path for tests/CI without viz extra
         return
@@ -696,9 +771,7 @@ def _plot_alternative(
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(
-    explainer, X_test, y_test=None, threshold=None, style_override=None, show=True, bins=None
-):
+def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     """
     Generate a global explanation plot for the given test data.
 
@@ -720,6 +793,14 @@ def _plot_global(
     **kwargs : dict
         Additional keyword arguments.
     """
+    show = kwargs.get("show", True)
+    bins = kwargs.get("bins")
+    # style_override = kwargs.get("style_override")
+    use_legacy = kwargs.get("use_legacy", True)
+    if use_legacy:
+        legacy._plot_global(explainer, X_test, y_test, threshold, **kwargs)
+        return
+
     # Allow no-op when not showing and no backend is present
     if not show and plt is None:  # pragma: no cover - optional dep path
         return

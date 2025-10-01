@@ -176,7 +176,17 @@ def test_plot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
 
     # call with show=False and no save_ext -> should no-op and not call adapter.render
     _plots._plot_triangular(
-        None, proba, uncertainty, rule_proba, rule_uncertainty, 1, "t", None, False, save_ext=None
+        None,
+        proba,
+        uncertainty,
+        rule_proba,
+        rule_uncertainty,
+        1,
+        "t",
+        None,
+        False,
+        save_ext=None,
+        use_legacy=False,
     )
     assert len(calls) == 0
 
@@ -193,6 +203,7 @@ def test_plot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
         str(tmp_path) + "/",
         False,
         save_ext=["png"],
+        use_legacy=False,
     )  # noqa: E501
     # adapter.render should be invoked for initial render + each save ext
     assert len(calls) >= 2

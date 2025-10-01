@@ -114,7 +114,9 @@ def test_invalid_style_override(styled_explainer):
     explainer, X_test, _ = styled_explainer
 
     # with pytest.raises(Warning):
-    explainer.plot(X_test, show=False, style_override={"invalid_section": {"param": "value"}})
+    explainer.plot(
+        X_test, show=False, style_override={"invalid_section": {"param": "value"}}, use_legacy=False
+    )
 
 
 def test_style_override_persistence(styled_explainer):
@@ -122,13 +124,15 @@ def test_style_override_persistence(styled_explainer):
     explainer, X_test, _ = styled_explainer
 
     # Plot with override
-    explainer.plot(X_test, show=False, style_override={"fonts": {"family": "serif"}})
+    explainer.plot(
+        X_test, show=False, style_override={"fonts": {"family": "serif"}}, use_legacy=False
+    )
 
     # Get default config
     config1 = load_plot_config()
 
     # Plot without override
-    explainer.plot(X_test, show=False)
+    explainer.plot(X_test, show=False, use_legacy=False)
 
     # Get config again
     config2 = load_plot_config()

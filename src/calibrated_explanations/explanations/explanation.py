@@ -1835,13 +1835,20 @@ class AlternativeExplanation(CalibratedExplanation):
             selected_rule_proba = [rule_proba[i] for i in features_to_plot]
             selected_rule_uncertainty = [rule_uncertainty[i] for i in features_to_plot]
 
+            # Use the filtered number of rules to plot so the number of arrow
+            # positions (num_to_show) matches the length of the selected rule
+            # arrays. Previously we passed the original num_to_show_ which could
+            # be larger than the number of selected rules and caused a size
+            # mismatch in matplotlib.quiver.
+            num_to_show_for_plot = min(num_to_show_, len(selected_rule_proba))
+
             _plot_triangular(
                 self,
                 proba,
                 uncertainty,
                 selected_rule_proba,
                 selected_rule_uncertainty,
-                num_to_show_,
+                num_to_show_for_plot,
                 title=title,
                 path=path,
                 show=show,
