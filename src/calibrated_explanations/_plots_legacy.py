@@ -54,6 +54,13 @@ def _plot_probabilistic(
     save_ext=None,
 ):
     """plots regular and uncertainty explanations"""
+    # If caller does not want to show and matplotlib is not installed,
+    # treat this as a no-op (useful for CI/core-only runs without viz extras).
+    if not show and plt is None:
+        return
+    # If not showing and not saving, no-op to avoid requiring matplotlib.
+    if not show and (save_ext is None or len(save_ext) == 0):
+        return
     __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -207,6 +214,11 @@ def _plot_regression(
     save_ext=None,
 ):
     """plots regular and uncertainty explanations"""
+    # Allow no-op in CI when plotting is not requested and matplotlib is absent
+    if not show and plt is None:
+        return
+    if not show and (save_ext is None or len(save_ext) == 0):
+        return
     __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -320,6 +332,11 @@ def _plot_triangular(
     save_ext=None,
 ):
     """plots triangular explanations"""
+    # If user only requested no display (and no saving), avoid requiring matplotlib
+    if not show and plt is None:
+        return
+    if not show and (save_ext is None or len(save_ext) == 0):
+        return
     __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -415,6 +432,11 @@ def _plot_alternative(
     save_ext=None,
 ):
     """plots alternative explanations"""
+    # Allow lightweight no-op when plotting is not requested
+    if not show and plt is None:
+        return
+    if not show and (save_ext is None or len(save_ext) == 0):
+        return
     __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
@@ -565,6 +587,11 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
         The threshold value used with regression to get probability of being below the threshold.
         Only applicable to regression.
     """
+    show = kwargs.get("show", True)
+    # If we're not showing and matplotlib is not available, treat as no-op.
+    if not show and plt is None:
+        return
+    # Otherwise require matplotlib to proceed with plotting
     __require_matplotlib()
     is_regularized = True
     if "predict_proba" not in dir(explainer.learner) and threshold is None:
