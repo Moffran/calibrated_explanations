@@ -56,10 +56,8 @@ def _plot_probabilistic(
     """plots regular and uncertainty explanations"""
     # If caller does not want to show and matplotlib is not installed,
     # treat this as a no-op (useful for CI/core-only runs without viz extras).
-    if not show and plt is None:
-        return
-    # If not showing and not saving, no-op to avoid requiring matplotlib.
-    if not show and (save_ext is None or len(save_ext) == 0):
+    # Also treat as no-op if caller does not request saving (no path/title).
+    if not show and (plt is None or path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -215,9 +213,8 @@ def _plot_regression(
 ):
     """plots regular and uncertainty explanations"""
     # Allow no-op in CI when plotting is not requested and matplotlib is absent
-    if not show and plt is None:
-        return
-    if not show and (save_ext is None or len(save_ext) == 0):
+    # or when no saving is requested (no path/title provided).
+    if not show and (plt is None or path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -333,9 +330,7 @@ def _plot_triangular(
 ):
     """plots triangular explanations"""
     # If user only requested no display (and no saving), avoid requiring matplotlib
-    if not show and plt is None:
-        return
-    if not show and (save_ext is None or len(save_ext) == 0):
+    if not show and (plt is None or path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
@@ -432,10 +427,9 @@ def _plot_alternative(
     save_ext=None,
 ):
     """plots alternative explanations"""
-    # Allow lightweight no-op when plotting is not requested
-    if not show and plt is None:
-        return
-    if not show and (save_ext is None or len(save_ext) == 0):
+    # Allow lightweight no-op when plotting is not requested or when no save
+    # path/title are provided (so nothing would be written).
+    if not show and (plt is None or path is None or title is None):
         return
     __require_matplotlib()
     if save_ext is None:
