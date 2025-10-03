@@ -1,8 +1,8 @@
 # ADR-015 — Explanation Plugin Interface (Code-Grounded)
 
-Status: Proposed
+Status: Proposed (requires coordinated rollout)
 
-Date: 2025-09-18
+Date: 2025-09-18 (revised 2025-10-02)
 
 Author: Internal
 
@@ -17,7 +17,7 @@ We need a stable plugin surface for third‑party “explanation providers” th
   - Schema: `src/calibrated_explanations/schemas/explanation_schema_v1.json`
   - Domain models + (de)serialization: `src/calibrated_explanations/explanations/models.py`, `src/calibrated_explanations/serialization.py`
 
-This ADR aligns the “Explanation Plugin” contract to those real interfaces.
+This ADR aligns the “Explanation Plugin” contract to those real interfaces. The existing in-tree explanations remain the default behaviour: the plugin system must treat them as the reference implementation and expose them as the first registered provider so that current users see no change unless they explicitly opt into a third-party plugin.
 
 ## Decision
 
@@ -26,7 +26,22 @@ Adopt a dual contract for explanation plugins that reflects how the in‑tree cl
 - Batch initializer path (preferred for core integration): Plugins return batch‑level arrays/maps that feed directly into `CalibratedExplanations.finalize(...)` or `finalize_fast(...)`.
 - JSON‑first path: Plugins return per‑instance Explanation payloads conforming to schema v1, or domain model objects (`Explanation` / `FeatureRule`) that serialize via `serialization.to_json`.
 
-We reuse the existing plugin base (`ExplainerPlugin`) and extend it with an optional initialization hook and explicit mode capabilities. Plugins must declare which modes they support: `explanation:factual`, `explanation:alternative`, `explanation:fast`.
+We reuse the existing plugin base (`ExplainerPlugin`) and extend it with an optional initialization hook and explicit mode capabilities. Plugins must declare which modes they support: `explanation:factual`, `explanation:alternative`, `explanation:fast`. We ship two built-in providers: `core.explanation.legacy` covers the rule-based (factual/alternative) modes and remains the default fallback, while `core.explanation.fast` implements the FAST importance-only path and is treated as the second wave plugin. Both providers delegate to the existing `CalibratedExplanations.finalize` or `finalize_fast` flows, but they register separately so FAST is not grouped under the legacy identifier. Because FAST explanations reuse the factual probabilistic plots, whichever plot plugin is active (including the legacy default) can render their outputs without a dedicated FAST renderer.
+
+- **Registry metadata requirements.**
+  - Extend `calibrated_explanations.plugins.registry` with `register_explanation_plugin`, `find_explanation_plugin`, and `find_explanation_plugin_trusted`, mirroring ADR-006 semantics.
+  - Metadata must include: `modes` (set drawn from `explanation:factual`, `explanation:alternative`, `explanation:fast`), `dependencies`, optional `interval_dependency` (identifier of the calibrator plugin requested for this explanation mode), optional `plot_dependency` (style identifier for plots), shared ADR-006 fields (`trust`, `version`, `description`), and capability tags (`explanation:factual-conditional`, etc.).
+  - `core.explanation.legacy` registers with `interval_dependency="core.interval.legacy"` and marks itself trusted. `core.explanation.fast` registers with `interval_dependency="core.interval.fast"` and capability `explanation:factual-importance-only`.
+
+- **Configuration and resolution order.**
+  - Resolution order for explanation plugins is: explicit kwargs on `CalibratedExplainer` (`explanation_plugin`, `fast_explanation_plugin`) > environment variables (`CE_EXPLANATION_PLUGIN`, `CE_EXPLANATION_PLUGIN_FAST`) > project configuration (`pyproject.toml` under `[tool.calibrated_explanations.explanations]`) > package default.
+  - Fallbacks are expressed via `CE_EXPLANATION_PLUGIN_FALLBACKS` (comma-separated) and the corresponding `explanation_fallbacks` table in project configuration. The package seeds that chain with `core.explanation.legacy` so behaviour matches the current implementation if no overrides are supplied.
+  - CLI helpers (`ce.plugins list --explanations`, `ce.plugins validate-explanation --plugin <id>`, `ce.plugins set-default --explanation <id>`) mirror the plot and interval commands.
+
+- **Inter-plugin coordination.**
+  - During resolution the explainer inspects the selected explanation plugin metadata. If `interval_dependency` is present, that identifier is prepended to the interval plugin fallback chain (ADR-013). If `plot_dependency` is present, the plot resolver performs the same adjustment (ADR-014).
+  - FAST explanations therefore select `core.interval.fast` unless the caller passes an explicit interval plugin. Legacy explanations continue to use `core.interval.legacy` and request the `legacy` plot style by default.
+  - Plugins that require bespoke plotting styles must ship a compatible plot builder/renderer and advertise the corresponding `plot_dependency` identifier; otherwise, they inherit whichever plot plugin the caller configured.
 
 ## JSON Schema (v1)
 
@@ -47,7 +62,7 @@ Versioning: payloads may include `schema_version: "1.0.0"` (recommended). Valida
 
 ## Python Protocol
 
-Use the existing `ExplainerPlugin` Protocol (`src/calibrated_explanations/plugins/base.py`) and add a code‑grounded contract for initialization and mode‑specific explanation outputs. Plugins MUST NOT call the learner/model directly; all predictions and uncertainty come via a provided predict bridge that proxies to the interval calibrators (VennAbers/IntervalRegressor) exactly like `_predict` in core.
+Use the existing `ExplainerPlugin` Protocol (`src/calibrated_explanations/plugins/base.py`) and add a code‑grounded contract for initialization and mode‑specific explanation outputs. Plugins MUST NOT call the learner/model directly; all predictions and uncertainty come via a provided predict bridge that proxies to the interval calibrators (VennAbers/IntervalRegressor) exactly like `_predict` in core. The legacy plugin wraps that bridge with the same caching and batching semantics used by the legacy code so behaviour remains identical, while the FAST plugin reuses the bridge with the pared-down importance-only orchestration defined by the FAST framework.
 
 Type aliases (internal, for clarity):
 
@@ -102,11 +117,24 @@ class ExplanationProvider(Protocol):
 
     def supports(self, mode: str) -> bool: ...
 
-    def initialize(self, context: Dict[str, Any], predict_bridge: PredictBridge) -> None: ...  # optional but recommended
+    def initialize(
+        self,
+        context: Dict[str, Any],
+        predict_bridge: PredictBridge,
+        *,
+        legacy_handles: Dict[str, Any] | None = None,
+    ) -> None: ...  # optional but recommended
 
     # mode: "factual" | "alternative" | "fast"; no learner/model is passed
     # prefer returning BatchOutput; JSON-first also allowed
-    def explain(self, X: Any, *, mode: str, **kwargs: Any) -> Union[BatchOutput, ExplanationOutput]: ...
+    def explain(
+        self,
+        X: Any,
+        *,
+        mode: str,
+        legacy_handles: Dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> Union[BatchOutput, ExplanationOutput]: ...
 ```
 
 Required metadata and validation remain via `validate_plugin_meta`.
@@ -121,11 +149,11 @@ Prohibitions
 
 ## Initialization and Lifecycle
 
-Plugins may need contextual information to construct explanations efficiently and consistently with the core classes. We define an optional initialization stage and a mode‑aware execution stage, and we provide a predict bridge that mirrors the core `_predict` method and delegates to the interval calibrators:
+Plugins may need contextual information to construct explanations efficiently and consistently with the core classes. We define an optional initialization stage and a mode‑aware execution stage, and we provide a predict bridge that mirrors the core `_predict` method and delegates to the interval calibrators. We also pass `legacy_handles` so the built-in plugin can continue using the optimized numpy buffers created by `_build_explanations` without reallocation. Third-party plugins can safely ignore that parameter:
 
 1) Initialization (optional but recommended)
 
-- `initialize(context: Mapping[str, Any], predict_bridge: PredictBridge) -> None`
+- `initialize(context: Mapping[str, Any], predict_bridge: PredictBridge, *, legacy_handles: Mapping[str, Any] | None = None) -> None`
 - The core passes a read‑only context derived from `FrozenCalibratedExplainer` and current run‑time settings, and a `predict_bridge` callable bound to the current explainer. Suggested fields in `context`:
   - `task`, `mode`, `class_labels`, `feature_names`, `categorical_features`, `categorical_labels`, `feature_values`
   - `discretizer`, `rule_boundaries`, `bins` (Mondrian bins per instance if available)
@@ -135,12 +163,13 @@ Plugins may need contextual information to construct explanations efficiently an
 
 2) Explain (per batch)
 
-- `explain(X, *, mode=...) -> BatchOutput | ExplanationOutput`
+- `explain(X, *, mode=..., legacy_handles: Mapping[str, Any] | None = None) -> BatchOutput | ExplanationOutput`
 - Mode determines the minimal required outputs (see next section). The plugin uses `predict_bridge` internally to obtain calibrated predictions/intervals. The core bridges outputs to either `finalize(...)` / `finalize_fast(...)` (batch path) or builds `CalibratedExplanations` from JSON/domain payloads (JSON‑first path).
 
 Notes
 - Alternative explanations require richer inputs (binned arrays and rule boundaries) than fast explanations. See “Output Contracts by Mode”.
 - For classification, plugins may attach full per‑batch probability matrices under the magic key `__full_probabilities__` in `prediction` for golden baselines; unknown keys are ignored by schema v1.
+- The core passes `legacy_handles` that include the existing `RuleBuilder`, precomputed discretizer outputs, and numpy work arrays. External plugins MUST NOT mutate these handles; they are provided solely for the built-in adaptor. They may be `None` for third-party providers.
 
 ## Output Contracts by Mode
 

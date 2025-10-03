@@ -1,12 +1,12 @@
 # ADR-013: Interval Calibrator Plugin Strategy
 
-Status: Proposed
-Date: 2025-09-16
+Status: Proposed (needs implementation plan)
+Date: 2025-09-16 (revised 2025-10-02)
 Deciders: Core maintainers
 Reviewers: TBD
 Supersedes: ADR-013-interval-and-plot-plugin-strategy
 Superseded-by: None
-Related: ADR-006-plugin-registry-trust-model
+Related: ADR-006-plugin-registry-trust-model, ADR-015-explanation-plugin
 
 ## Context
 
@@ -14,36 +14,64 @@ Calibrated Explanations exposes two calibration backbones today: VennAbers for p
 
 IntervalRegressor already leans on VennAbers: the compute_proba_cal specialisations rebuild a binary VennAbers calibrator and predict_probability delegates to its predict_proba output to produce calibrated interval probabilities. Any extension mechanism therefore needs a shared contract that captures the classification semantics first and lets regression build on top of it.
 
-We therefore need a plugin model that lets external contributors add new interval behaviours while still driving the existing VennAbers and IntervalRegressor logic, sharing their calibration guarantees, and fitting inside the trust model defined in ADR-006.
+We therefore need a plugin model that lets external contributors add new interval behaviours while still driving the existing VennAbers and IntervalRegressor logic, sharing their calibration guarantees, and fitting inside the trust model defined in ADR-006. The legacy classes must keep working verbatim — they are the mathematical reference implementation and the default code path until a future ADR explicitly changes the default.
 
 ## Decision
 
 1. **Introduce layered calibrator protocols.**
-   - Define an IntervalCalibratorPlugin protocol whose create(context) method returns an object implementing ClassificationIntervalCalibrator. The context exposes read-only access to the learner, calibration splits, bins, residuals, and difficulty estimators so the plugin does not reimplement orchestration.
-   - ClassificationIntervalCalibrator captures the callable surface of VennAbers: predict_proba(X, *, output_interval=False, classes=None, bins=None), and helper introspection (is_multiclass(), is_mondrian()). Implementations must return numpy arrays with the same shapes and interval semantics as the in-tree VennAbers.
-   - RegressionIntervalCalibrator extends ClassificationIntervalCalibrator and adds the extra methods required by IntervalRegressor: predict_probability, predict_uncertainty, pre_fit_for_probabilistic, compute_proba_cal, and insert_calibration. Implementations compose or subclass IntervalRegressor so Mondrian bins, CPS updates, probability post-processing, and incremental calibration continue to flow through the existing logic.
+   - Define an `IntervalCalibratorContext` dataclass with read-only fields: `learner`, `calibration_splits`, `bins`, `residuals`, `difficulty`, `metadata`, and `fast_flags`. The context is prepared by `CalibratedExplainer` and handed to plugins; implementations MUST NOT mutate the contained structures.
+   - Define an `IntervalCalibratorPlugin` protocol with `create(self, context: IntervalCalibratorContext, *, fast: bool = False) -> ClassificationIntervalCalibrator`. The optional `fast` hint allows the runtime to request the reduced-computation path used by FAST while keeping the same protocol surface.
+   - `ClassificationIntervalCalibrator` must expose the exact callable surface of VennAbers:
+     ```python
+     def predict_proba(
+         self,
+         X,
+         *,
+         output_interval: bool = False,
+         classes=None,
+         bins=None,
+     ) -> numpy.ndarray
+     ```
+     Returning `(n_samples, n_classes)` arrays when `output_interval=False` and `(n_samples, n_classes, 3)` (`predict`, `low`, `high`) otherwise. Implementations also provide `is_multiclass() -> bool` and `is_mondrian() -> bool` accessors with the same semantics as VennAbers.
+   - `RegressionIntervalCalibrator` extends the classification protocol with the IntervalRegressor surface:
+     ```python
+     def predict_probability(self, X) -> numpy.ndarray  # shape (n_samples, 2) ordered (low, high)
+     def predict_uncertainty(self, X) -> numpy.ndarray  # shape (n_samples, 2) ordered (width, confidence)
+     def pre_fit_for_probabilistic(self, X, y) -> None
+     def compute_proba_cal(self, X, y, *, weights=None) -> numpy.ndarray
+     def insert_calibration(self, X, y, *, warm_start: bool = False) -> None
+     ```
+     Implementations may wrap or subclass `IntervalRegressor`, but probability/interval calculations must delegate to the reference logic so conformal guarantees remain intact.
    - When a plugin advertises regression support its returned calibrator object must satisfy the regression protocol. This ensures regression plugins necessarily expose the classification machinery they already depend on, preventing behavioural drift between modes.
    - Plugins can augment these calibrators (e.g., swapping the conformal engine used by IntervalRegressor), but they are required to invoke the base class logic when producing probabilities or intervals to preserve the calibrated guarantees.
+   - **Legacy default:** ship `DefaultIntervalCalibratorPlugin` inside the package. `create(context)` simply returns the frozen in-tree IntervalRegressor / VennAbers instances that are already constructed by the explainer. This plugin is registered under the identifier `core.interval.legacy` and marked as trusted. It is the mandatory fallback whenever resolution fails or no explicit plugin is configured.
+   - **FAST plugin (second wave):** ship `FastIntervalCalibratorPlugin` that layers the FAST heuristics on top of the shared protocols. It reuses the existing IntervalRegressor/VennAbers instances but applies the reduced-computation path used by the FAST framework. The plugin registers as `core.interval.fast`, is flagged `fast_compatible=True`, and is never part of the fallback chain for the primary interval mode so FAST remains an opt-in experience separate from the legacy flow.
 
 2. **Registry integration and metadata.**
    - Extend calibrated_explanations.plugins.registry with register_interval_plugin, find_interval_plugin, and find_interval_plugin_trusted helpers mirroring ADR-006 semantics.
-   - Plugin descriptors must publish metadata fields: modes (classification, regression, or both), fast_compatible, requires_bins, confidence_source, dependencies, and shared keys from ADR-006 (name, provider, schema_version, capability tags such as interval:classification or interval:regression).
+   - Plugin descriptors must publish metadata fields: modes (classification, regression, or both), fast_compatible, requires_bins, confidence_source, dependencies, optional `interval_dependency` (identifier string), and shared keys from ADR-006 (name, provider, schema_version, capability tags such as interval:classification or interval:regression).
    - Trusted defaults register at import time. Third party plugins must be explicitly trusted before selection.
+   - `DefaultIntervalCalibratorPlugin` self-registers during package import so that configuration toggles can reference it by identifier. `FastIntervalCalibratorPlugin` also self-registers under `core.interval.fast` with `fast_compatible=True` metadata, but it is not added to the default fallback chain so FAST activation is always explicit. These registrations keep the runtime behaviour identical to the legacy code path when no overrides are supplied.
 
 3. **Configuration surfaces.**
    - Respect configuration entry points scoped to intervals only:
      - Environment: CE_INTERVAL_PLUGIN for the default plugin, CE_INTERVAL_PLUGIN_FAST for the fast path adaptor, and CE_INTERVAL_PLUGIN_FALLBACKS (comma separated) for ordered fallback resolution.
      - CalibratedExplainer keyword arguments: interval_plugin and fast_interval_plugin accept identifiers or callables returning a plugin instance.
      - pyproject.toml ([tool.calibrated_explanations.plugins] interval, fast_interval, and optional interval_fallbacks). CLI helpers hydrate these settings at start-up.
+   - When no explicit fast plugin is configured, the resolver selects `core.interval.fast` exclusively for the FAST execution path; the primary interval plugin continues to default to `core.interval.legacy`.
+   - Explanation plugins may declare an `interval_dependency` metadata field (ADR-015). When present, the interval resolver prepends that identifier to the fallback chain for the matching explanation mode. `core.explanation.fast` advertises `interval_dependency="core.interval.fast"`, ensuring FAST explanations automatically pair with the FAST calibrator unless the user overrides either selection.
+   - If resolution fails, raise a configuration error after attempting the fallback chain and, finally, the legacy plugin. This protects the longstanding behaviour while still surfacing misconfiguration details to the user.
 
 4. **Lifecycle hooks and validation.**
    - During calibration setup the registry resolves the desired plugin, instantiates it with the context, and asserts that the returned object implements the protocol required for the explainer mode. Missing capabilities raise a configuration error before calibration begins.
    - All calibrator methods must proxy to the underlying VennAbers and IntervalRegressor contracts. Runtime validation checks shapes, dtypes, and monotonicity of probability outputs against expectations from the in-tree classes. Fast-mode calibrators reuse the same validation but may skip expensive recomputation steps when metadata marks them fast_compatible.
    - Incremental calibration hooks (insert_calibration, CPS updates) remain the responsibility of IntervalRegressor; plugin authors extending those flows must invoke the superclass logic and only layer extra behaviour afterwards.
+   - Provide a `LegacyIntervalContext` adaptor that wraps the existing `CalibratedExplainer` state without mutating it. Plugins receive a frozen view (read-only mappings, tuples) so they cannot accidentally leak mutations back into the explainer. The default plugin simply stores the objects it receives and returns them during `create()`.
 
 5. **Documentation and tooling.**
    - Developer docs gain a dedicated section that explains the layered protocol, the context object, and examples that subclass and compose IntervalRegressor / VennAbers.
    - CLI commands (ce.plugins list --intervals, ce.plugins explain-interval --plugin <id>) expose plugin availability and validation results to help detect misconfigured packages.
+   - Author migration guidance comparing “pre-plugin” helper functions to the new adaptor to make it clear that simply importing the default plugin yields the legacy behaviour.
 
 ## Security & Guardrails
 
