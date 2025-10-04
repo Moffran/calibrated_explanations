@@ -149,6 +149,28 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Return the string representation of the CalibratedExplanations object."""
         return self.__repr__()
 
+    # ------------------------------------------------------------------
+    # Plugin bridge helpers
+    # ------------------------------------------------------------------
+
+    def to_batch(self):
+        """Serialise the collection into an :class:`ExplanationBatch`."""
+
+        from ..plugins.builtins import _collection_to_batch  # lazy import
+
+        return _collection_to_batch(self)
+
+    @classmethod
+    def from_batch(cls, batch):
+        """Reconstruct a collection from an :class:`ExplanationBatch`."""
+
+        container = batch.collection_metadata.get("container")
+        if container is None:
+            raise ValueError("ExplanationBatch is missing container metadata")
+        if not isinstance(container, cls):
+            raise TypeError("ExplanationBatch container metadata has unexpected type")
+        return container
+
     @property
     def prediction_interval(self) -> List[Tuple[Optional[float], Optional[float]]]:
         """Get the prediction intervals from each prediction.

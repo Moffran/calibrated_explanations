@@ -41,6 +41,9 @@ from .registry import (  # noqa: F401
     clear_plot_plugins,
 )
 
+# Eagerly register in-tree plugins so they are available without explicit import
+from . import builtins as _builtins  # noqa: F401
+
 __all__ = [
     "ExplainerPlugin",
     "ClassificationIntervalCalibrator",
