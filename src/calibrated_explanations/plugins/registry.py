@@ -47,6 +47,7 @@ def _normalise_trust(meta: Mapping[str, Any]) -> bool:
 
 
 _EXPLANATION_PROTOCOL_VERSION = 1
+EXPLANATION_PROTOCOL_VERSION = _EXPLANATION_PROTOCOL_VERSION
 
 _EXPLANATION_MODE_ALIASES = {
     "explanation:factual": "factual",
@@ -516,6 +517,81 @@ def find_plot_plugin_trusted(identifier: str) -> Any | None:
     return None
 
 
+def _list_descriptors(
+    store: Dict[str, Any],
+    trusted_only: bool,
+    trusted_set: set[str],
+) -> Tuple[Any, ...]:
+    """Return descriptors from *store* with optional trust filtering."""
+
+    if trusted_only:
+        identifiers = sorted(identifier for identifier in trusted_set if identifier in store)
+    else:
+        identifiers = sorted(store.keys())
+    return tuple(store[identifier] for identifier in identifiers)
+
+
+def list_explanation_descriptors(*, trusted_only: bool = False) -> Tuple[ExplanationPluginDescriptor, ...]:
+    """Return registered explanation plugin descriptors."""
+
+    ensure_builtin_plugins()
+    return _list_descriptors(
+        _EXPLANATION_PLUGINS,
+        trusted_only,
+        _TRUSTED_EXPLANATIONS,
+    )
+
+
+def list_interval_descriptors(*, trusted_only: bool = False) -> Tuple[IntervalPluginDescriptor, ...]:
+    """Return registered interval plugin descriptors."""
+
+    ensure_builtin_plugins()
+    return _list_descriptors(_INTERVAL_PLUGINS, trusted_only, _TRUSTED_INTERVALS)
+
+
+def list_plot_descriptors(*, trusted_only: bool = False) -> Tuple[PlotPluginDescriptor, ...]:
+    """Return registered plot plugin descriptors."""
+
+    ensure_builtin_plugins()
+    return _list_descriptors(_PLOT_PLUGINS, trusted_only, _TRUSTED_PLOTS)
+
+
+def _refresh_descriptor_trust(identifier: str, *, trusted: bool) -> ExplanationPluginDescriptor:
+    """Return descriptor with updated trust metadata stored in registries."""
+
+    descriptor = find_explanation_descriptor(identifier)
+    if descriptor is None:
+        raise KeyError(f"Explanation plugin '{identifier}' is not registered")
+    updated = ExplanationPluginDescriptor(
+        identifier=descriptor.identifier,
+        plugin=descriptor.plugin,
+        metadata=descriptor.metadata,
+        trusted=trusted,
+    )
+    _EXPLANATION_PLUGINS[identifier] = updated
+    if trusted:
+        _TRUSTED_EXPLANATIONS.add(identifier)
+    else:
+        _TRUSTED_EXPLANATIONS.discard(identifier)
+    return updated
+
+
+def mark_explanation_trusted(identifier: str) -> ExplanationPluginDescriptor:
+    """Mark the explanation plugin *identifier* as trusted."""
+
+    descriptor = _refresh_descriptor_trust(identifier, trusted=True)
+    trust_plugin(descriptor.plugin)
+    return descriptor
+
+
+def mark_explanation_untrusted(identifier: str) -> ExplanationPluginDescriptor:
+    """Remove the explanation plugin *identifier* from the trusted set."""
+
+    descriptor = _refresh_descriptor_trust(identifier, trusted=False)
+    untrust_plugin(descriptor.plugin)
+    return descriptor
+
+
 def register(plugin: ExplainerPlugin) -> None:
     """Register a plugin after minimal metadata validation.
 
@@ -596,6 +672,7 @@ __all__ = [
     "ExplanationPluginDescriptor",
     "IntervalPluginDescriptor",
     "PlotPluginDescriptor",
+    "EXPLANATION_PROTOCOL_VERSION",
     "validate_explanation_metadata",
     "validate_interval_metadata",
     "validate_plot_metadata",
@@ -615,6 +692,11 @@ __all__ = [
     "find_explanation_plugin_trusted",
     "find_interval_plugin_trusted",
     "find_plot_plugin_trusted",
+    "list_explanation_descriptors",
+    "list_interval_descriptors",
+    "list_plot_descriptors",
+    "mark_explanation_trusted",
+    "mark_explanation_untrusted",
     "register",
     "unregister",
     "clear",

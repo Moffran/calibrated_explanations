@@ -4,7 +4,13 @@ import warnings
 
 import pytest
 
-from calibrated_explanations.plugins.registry import validate_explanation_metadata
+from calibrated_explanations.plugins.registry import (
+    ensure_builtin_plugins,
+    list_explanation_descriptors,
+    mark_explanation_trusted,
+    mark_explanation_untrusted,
+    validate_explanation_metadata,
+)
 
 
 def _base_metadata() -> dict:
@@ -80,4 +86,17 @@ def test_schema_version_future_rejected() -> None:
         validate_explanation_metadata(meta)
 
     assert "unsupported schema_version" in str(exc.value)
+
+
+def test_list_descriptors_respects_trust_state() -> None:
+    ensure_builtin_plugins()
+    descriptors = list_explanation_descriptors()
+    assert any(d.identifier == "core.explanation.factual" for d in descriptors)
+
+    mark_explanation_untrusted("core.explanation.factual")
+    try:
+        trusted_only = list_explanation_descriptors(trusted_only=True)
+        assert all(d.identifier != "core.explanation.factual" for d in trusted_only)
+    finally:
+        mark_explanation_trusted("core.explanation.factual")
 

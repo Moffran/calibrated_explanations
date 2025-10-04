@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping as MappingABC
+from collections.abc import MutableMapping as MutableMappingABC
+from collections.abc import Sequence as SequenceABC
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -82,5 +85,75 @@ __all__ = [
     "ExplanationPlugin",
     "ExplanationRequest",
     "PluginMeta",
+    "validate_explanation_batch",
 ]
+
+
+def validate_explanation_batch(
+    batch: ExplanationBatch,
+    *,
+    expected_mode: str | None = None,
+    expected_task: str | None = None,
+) -> ExplanationBatch:
+    """Validate runtime contracts for ``ExplanationBatch`` payloads."""
+
+    if not isinstance(batch, ExplanationBatch):
+        raise TypeError("explanation plugins must return an ExplanationBatch instance")
+
+    container_cls = batch.container_cls
+    if not isinstance(container_cls, type):
+        raise TypeError("batch.container_cls must be a class")
+    if not issubclass(container_cls, CalibratedExplanations):
+        raise TypeError(
+            "batch.container_cls must inherit from CalibratedExplanations"
+        )
+
+    explanation_cls = batch.explanation_cls
+    if not isinstance(explanation_cls, type):
+        raise TypeError("batch.explanation_cls must be a class")
+    if not issubclass(explanation_cls, AbstractCalibratedExplanation):
+        raise TypeError(
+            "batch.explanation_cls must inherit from CalibratedExplanation"
+        )
+
+    instances = batch.instances
+    if not isinstance(instances, SequenceABC) or isinstance(instances, (str, bytes)):
+        raise TypeError("batch.instances must be a sequence of mappings")
+    for index, instance in enumerate(instances):
+        if not isinstance(instance, MappingABC):
+            raise TypeError(
+                f"batch.instances[{index}] must be a mapping describing the instance"
+            )
+
+    metadata = batch.collection_metadata
+    if not isinstance(metadata, MutableMappingABC):
+        raise TypeError("batch.collection_metadata must be a mutable mapping")
+
+    mode_hint = metadata.get("mode")
+    if expected_mode is not None and mode_hint is not None:
+        if str(mode_hint) != expected_mode:
+            raise ValueError(
+                "ExplanationBatch metadata reports mode '"
+                + str(mode_hint)
+                + "' but runtime expected '"
+                + expected_mode
+                + "'"
+            )
+
+    task_hint = metadata.get("task")
+    if expected_task is not None and task_hint is not None:
+        if str(task_hint) != expected_task:
+            raise ValueError(
+                "ExplanationBatch metadata reports task '"
+                + str(task_hint)
+                + "' but runtime expected '"
+                + expected_task
+                + "'"
+            )
+
+    container = metadata.get("container")
+    if container is not None and not isinstance(container, container_cls):
+        raise TypeError("ExplanationBatch metadata 'container' has unexpected type")
+
+    return batch
 
