@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Mapping, MutableMapping, Protocol, Sequence, TypeAlias, runtime_checkable
+from typing import (
+    Any,
+    Mapping,
+    MutableMapping,
+    Protocol,
+    Sequence,
+    TypeAlias,
+    runtime_checkable,
+)
 
 from ..viz.plotspec import PlotSpec
 

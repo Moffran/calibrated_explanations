@@ -3,9 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, MutableMapping, Optional, Protocol, Sequence, Tuple, Type, runtime_checkable
+from typing import (
+    Any,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+    Type,
+    runtime_checkable,
+)
 
-from ..explanations.explanation import CalibratedExplanation as AbstractCalibratedExplanation
+from ..explanations.explanation import (
+    CalibratedExplanation as AbstractCalibratedExplanation,
+)
 from ..explanations.explanations import CalibratedExplanations
 from .base import ExplainerPlugin, PluginMeta
 from .predict import PredictBridge
