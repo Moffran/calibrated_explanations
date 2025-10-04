@@ -13,6 +13,7 @@ incrementally.
 from __future__ import annotations
 
 import contextlib
+import warnings
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, List, Mapping, Tuple
@@ -43,6 +44,17 @@ def _normalise_trust(meta: Mapping[str, Any]) -> bool:
         if "default" in trust:
             return bool(trust["default"])
     return bool(trust)
+
+
+_EXPLANATION_PROTOCOL_VERSION = 1
+
+_EXPLANATION_MODE_ALIASES = {
+    "explanation:factual": "factual",
+    "explanation:alternative": "alternative",
+    "explanation:fast": "fast",
+}
+
+_EXPLANATION_VALID_MODES = {"factual", "alternative", "fast"}
 
 
 def _ensure_sequence(
@@ -88,23 +100,115 @@ def _validate_dependencies(meta: Mapping[str, Any]) -> Tuple[str, ...]:
     return _ensure_sequence(meta, "dependencies", allow_empty=True)
 
 
-def validate_explanation_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
+def _coerce_string_collection(
+    value: Any,
+    *,
+    key: str,
+    allow_empty: bool = False,
+) -> Tuple[str, ...]:
+    """Coerce *value* to a tuple of strings."""
+
+    if isinstance(value, str):
+        result = (value,)
+    elif isinstance(value, Iterable):
+        collected: List[str] = []
+        for item in value:
+            if not isinstance(item, str):
+                raise ValueError(
+                    f"plugin_meta[{key!r}] must contain only string values"
+                )
+            collected.append(item)
+        result = tuple(collected)
+    else:
+        raise ValueError(
+            f"plugin_meta[{key!r}] must be a string or sequence of strings"
+        )
+
+    if not result and not allow_empty:
+        raise ValueError(f"plugin_meta[{key!r}] must not be empty")
+    return result
+
+
+def _normalise_dependency_field(
+    meta: Dict[str, Any],
+    key: str,
+    *,
+    optional: bool = False,
+    allow_empty: bool = False,
+) -> Tuple[str, ...] | None:
+    """Validate dependency style metadata fields."""
+
+    if key not in meta:
+        if optional:
+            return None
+        raise ValueError(f"plugin_meta missing required key: {key}")
+
+    value = meta[key]
+    normalised = _coerce_string_collection(value, key=key, allow_empty=allow_empty)
+    meta[key] = normalised
+    return normalised
+
+
+def _normalise_tasks(meta: Dict[str, Any]) -> Tuple[str, ...]:
+    """Validate the tasks field for explanation plugins."""
+
+    allowed_tasks = {"classification", "regression", "both"}
+    if "tasks" not in meta:
+        raise ValueError("plugin_meta missing required key: tasks")
+    tasks_value = meta["tasks"]
+    tasks = _coerce_string_collection(tasks_value, key="tasks")
+    unknown = sorted(set(tasks) - allowed_tasks)
+    if unknown:
+        raise ValueError(
+            "plugin_meta['tasks'] has unsupported values: " + ", ".join(unknown)
+        )
+    meta["tasks"] = tasks
+    return tasks
+
+
+def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
     """Validate ADR-015 metadata requirements for explanation plugins."""
 
-    modes = _ensure_sequence(
-        meta,
-        "modes",
-        allowed={
-            "explanation:factual",
-            "explanation:alternative",
-            "explanation:fast",
-        },
-    )
-    if not modes:
-        raise ValueError("explanation plugin must declare at least one mode")
+    if not isinstance(meta, dict):
+        meta = dict(meta)
+    schema_version = meta.get("schema_version")
+    if isinstance(schema_version, int) and schema_version > _EXPLANATION_PROTOCOL_VERSION:
+        raise ValueError(
+            "explanation plugin declares unsupported schema_version "
+            f"{schema_version}; runtime supports {_EXPLANATION_PROTOCOL_VERSION}"
+        )
 
-    _ensure_sequence(meta, "capabilities", allow_empty=False)
-    _validate_dependencies(meta)
+    allowed_modes = set(_EXPLANATION_VALID_MODES) | set(_EXPLANATION_MODE_ALIASES)
+    raw_modes = _ensure_sequence(meta, "modes", allowed=allowed_modes)
+    normalised_modes: List[str] = []
+    seen: set[str] = set()
+    for mode in raw_modes:
+        canonical = _EXPLANATION_MODE_ALIASES.get(mode, mode)
+        if mode in _EXPLANATION_MODE_ALIASES:
+            warnings.warn(
+                "explanation mode alias '" + mode + "' is deprecated; use '"
+                + canonical
+                + "'",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        if canonical not in _EXPLANATION_VALID_MODES:
+            raise ValueError(
+                f"plugin_meta['modes'] has unsupported values: {canonical}"
+            )
+        if canonical not in seen:
+            seen.add(canonical)
+            normalised_modes.append(canonical)
+    if not normalised_modes:
+        raise ValueError("explanation plugin must declare at least one mode")
+    meta["modes"] = tuple(normalised_modes)
+
+    meta["capabilities"] = _ensure_sequence(meta, "capabilities", allow_empty=False)
+    meta["dependencies"] = _validate_dependencies(meta)
+    _normalise_tasks(meta)
+    _normalise_dependency_field(meta, "interval_dependency", optional=True)
+    _normalise_dependency_field(meta, "plot_dependency", optional=True)
+    _normalise_dependency_field(meta, "fallbacks", optional=True, allow_empty=True)
     # Trust flags can be bool or mapping; ensure the key exists for explicitness
     if "trust" not in meta:
         raise ValueError("plugin_meta missing required key: trust")
@@ -234,7 +338,7 @@ def register_explanation_plugin(
         raise ValueError("plugin must expose plugin_meta metadata")
     meta: Dict[str, Any] = dict(raw_meta)
     validate_plugin_meta(meta)
-    validate_explanation_metadata(meta)
+    meta = validate_explanation_metadata(meta)
     trusted = _normalise_trust(meta)
 
     descriptor = ExplanationPluginDescriptor(

@@ -92,9 +92,13 @@ def test_register_and_trust_flow(tmp_path):
 class ExampleExplanationPlugin:
     plugin_meta = {
         "schema_version": 1,
-        "capabilities": ["explain", "explanation:factual"],
+        "capabilities": ["explain", "task:classification"],
         "name": "example.explanation",
-        "modes": ["explanation:factual"],
+        "modes": ["factual", "alternative"],
+        "tasks": ["classification", "regression"],
+        "interval_dependency": "core.interval.legacy",
+        "plot_dependency": ("legacy",),
+        "fallbacks": ["core.explanation.legacy"],
         "dependencies": ["core.interval.legacy"],
         "trust": {"default": True},
     }
@@ -120,6 +124,11 @@ def test_register_explanation_plugin_descriptor():
         registry.find_explanation_plugin_trusted("core.explanation.example")
         is plugin
     )
+    assert descriptor.metadata["modes"] == ("factual", "alternative")
+    assert descriptor.metadata["tasks"] == ("classification", "regression")
+    assert descriptor.metadata["interval_dependency"] == ("core.interval.legacy",)
+    assert descriptor.metadata["plot_dependency"] == ("legacy",)
+    assert descriptor.metadata["fallbacks"] == ("core.explanation.legacy",)
 
 
 def test_register_explanation_plugin_requires_modes():
@@ -131,11 +140,69 @@ def test_register_explanation_plugin_requires_modes():
             "capabilities": ["explain"],
             "name": "bad",
             "dependencies": [],
+            "tasks": "classification",
             "trust": False,
         }
 
     with pytest.raises(ValueError):
         registry.register_explanation_plugin("bad", BadExplanationPlugin())
+
+
+def test_register_explanation_plugin_requires_tasks():
+    registry.clear_explanation_plugins()
+
+    class NoTasksExplanationPlugin:
+        plugin_meta = {
+            "schema_version": 1,
+            "capabilities": ["explain"],
+            "name": "bad",  # pragma: no mutate - clarity
+            "modes": ["factual"],
+            "dependencies": [],
+            "trust": False,
+        }
+
+    with pytest.raises(ValueError):
+        registry.register_explanation_plugin("bad.tasks", NoTasksExplanationPlugin())
+
+
+def test_register_explanation_plugin_translates_aliases():
+    registry.clear_explanation_plugins()
+
+    class LegacyModePlugin:
+        plugin_meta = {
+            "schema_version": 1,
+            "capabilities": ["explain"],
+            "name": "legacy",
+            "modes": ["explanation:factual", "factual"],
+            "tasks": "classification",
+            "dependencies": [],
+            "trust": True,
+        }
+
+    with pytest.warns(DeprecationWarning):
+        descriptor = registry.register_explanation_plugin(
+            "legacy.mode", LegacyModePlugin()
+        )
+
+    assert descriptor.metadata["modes"] == ("factual",)
+
+
+def test_register_explanation_plugin_schema_version_future():
+    registry.clear_explanation_plugins()
+
+    class FuturePlugin:
+        plugin_meta = {
+            "schema_version": 999,
+            "capabilities": ["explain"],
+            "name": "future",
+            "modes": ["factual"],
+            "tasks": "classification",
+            "dependencies": [],
+            "trust": False,
+        }
+
+    with pytest.raises(ValueError):
+        registry.register_explanation_plugin("future", FuturePlugin())
 
 
 class ExampleIntervalPlugin:
