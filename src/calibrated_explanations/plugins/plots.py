@@ -21,7 +21,7 @@ class PlotRenderContext:
     intent: Mapping[str, Any]
     show: bool
     path: str | None
-    save_ext: str | None
+    save_ext: str | Sequence[str] | None
     options: Mapping[str, Any]
 
 

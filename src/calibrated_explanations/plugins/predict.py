@@ -23,7 +23,14 @@ class PredictBridge(Protocol):
     :class:`CalibratedExplainer`.
     """
 
-    def predict(self, X: Any, *, mode: str, task: str) -> Mapping[str, Any]:
+    def predict(
+        self,
+        X: Any,
+        *,
+        mode: str,
+        task: str,
+        bins: Any | None = None,
+    ) -> Mapping[str, Any]:
         """Return calibrated predictions for *X*.
 
         Parameters
@@ -38,7 +45,13 @@ class PredictBridge(Protocol):
             ``"regression"``).
         """
 
-    def predict_interval(self, X: Any, *, task: str) -> Sequence[Any]:
+    def predict_interval(
+        self,
+        X: Any,
+        *,
+        task: str,
+        bins: Any | None = None,
+    ) -> Sequence[Any]:
         """Return calibrated interval predictions for *X*.
 
         The return payload mirrors the interval calibrator outputs and is left
@@ -46,7 +59,7 @@ class PredictBridge(Protocol):
         their preferred artefacts.
         """
 
-    def predict_proba(self, X: Any) -> Sequence[Any]:
+    def predict_proba(self, X: Any, bins: Any | None = None) -> Sequence[Any]:
         """Return calibrated probability estimates for *X* when available."""
 
 

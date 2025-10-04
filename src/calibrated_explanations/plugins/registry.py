@@ -323,6 +323,31 @@ def clear_plot_plugins() -> None:
     _TRUSTED_PLOTS.clear()
 
 
+def ensure_builtin_plugins() -> None:
+    """Re-register in-tree plugins when registries have been cleared."""
+
+    expected_explanations = {
+        "core.explanation.factual",
+        "core.explanation.alternative",
+        "core.explanation.fast",
+    }
+    expected_intervals = {"core.interval.legacy", "core.interval.fast"}
+    expected_plots = {"legacy"}
+
+    missing = any(identifier not in _EXPLANATION_PLUGINS for identifier in expected_explanations)
+    missing = missing or any(
+        identifier not in _INTERVAL_PLUGINS for identifier in expected_intervals
+    )
+    missing = missing or any(identifier not in _PLOT_PLUGINS for identifier in expected_plots)
+
+    if not missing:
+        return
+
+    from . import builtins as _builtins  # Local import avoids circular dependency
+
+    _builtins._register_builtins()
+
+
 def register_explanation_plugin(
     identifier: str,
     plugin: ExplainerPlugin,
@@ -577,6 +602,7 @@ __all__ = [
     "clear_explanation_plugins",
     "clear_interval_plugins",
     "clear_plot_plugins",
+    "ensure_builtin_plugins",
     "register_explanation_plugin",
     "register_interval_plugin",
     "register_plot_plugin",

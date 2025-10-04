@@ -37,13 +37,24 @@ Functions
 import configparser
 import contextlib
 import os
+from pathlib import Path
+from types import MappingProxyType
 import warnings
 
 import numpy as np
+from typing import Any, Dict, List, Sequence
 
 # Legacy import to ensure legacy plotting is still working
 # while development of plotspec, adapters, and builders are unfinished.
 from . import _plots_legacy as legacy
+
+try:
+    import tomllib as _plot_tomllib
+except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
+    try:  # pragma: no cover - optional dependency path
+        import tomli as _plot_tomllib  # type: ignore[assignment]
+    except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
+        _plot_tomllib = None  # type: ignore[assignment]
 
 try:
     import matplotlib.colors as mcolors
@@ -57,6 +68,76 @@ else:
 
 # reuse shared color helper from viz
 from .viz.coloring import get_fill_color as __get_fill_color
+
+
+def _read_plot_pyproject() -> Dict[str, Any]:
+    """Return ``pyproject.toml`` plot configuration when available."""
+
+    if _plot_tomllib is None:
+        return {}
+
+    candidate = Path.cwd() / "pyproject.toml"
+    if not candidate.exists():
+        return {}
+    try:
+        with candidate.open("rb") as fh:  # type: ignore[arg-type]
+            data = _plot_tomllib.load(fh)
+    except Exception:  # pragma: no cover - permissive fallback
+        return {}
+
+    cursor: Any = data
+    for key in ("tool", "calibrated_explanations", "plots"):
+        if isinstance(cursor, dict) and key in cursor:
+            cursor = cursor[key]
+        else:
+            return {}
+    if isinstance(cursor, dict):
+        return dict(cursor)
+    return {}
+
+
+def _split_csv(value: Any) -> Sequence[str]:
+    if not value:
+        return ()
+    if isinstance(value, str):
+        return tuple(item.strip() for item in value.split(",") if item.strip())
+    if isinstance(value, Sequence):
+        return tuple(str(item).strip() for item in value if isinstance(item, str) and item.strip())
+    return ()
+
+
+def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence[str]:
+    """Determine the ordered style fallback chain for plot builders/renderers."""
+
+    chain: List[str] = []
+    if explicit_style:
+        chain.append(explicit_style)
+
+    env_style = os.environ.get("CE_PLOT_STYLE")
+    if env_style:
+        chain.append(env_style.strip())
+    chain.extend(_split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
+
+    py_settings = _read_plot_pyproject()
+    py_style = py_settings.get("style")
+    if isinstance(py_style, str) and py_style:
+        chain.append(py_style)
+    chain.extend(_split_csv(py_settings.get("fallbacks")))
+
+    mode = getattr(explainer, "_last_explanation_mode", None)
+    plot_fallbacks = getattr(explainer, "_plot_plugin_fallbacks", {})
+    if mode and isinstance(plot_fallbacks, dict):
+        chain.extend(plot_fallbacks.get(mode, ()))
+
+    chain.append("legacy")
+
+    ordered: List[str] = []
+    seen: set[str] = set()
+    for identifier in chain:
+        if identifier and identifier not in seen:
+            ordered.append(identifier)
+            seen.add(identifier)
+    return tuple(ordered)
 
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme
@@ -801,19 +882,11 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
         legacy._plot_global(explainer, X_test, y_test, threshold, **kwargs)
         return
 
-    # Allow no-op when not showing and no backend is present
-    if not show and plt is None:  # pragma: no cover - optional dep path
-        return
-
-    __require_matplotlib()
-    # config = __setup_plot_style(style_override)
-
-    # Route global plotting through the PlotSpec builder + adapter so the
-    # adapter emits canonical primitives (triangle_background, scatter,
-    # save_fig) rather than drawing inline here. This keeps a single
-    # authoritative rendering path per ADR-016.
-    from .viz.builders import build_global_plotspec_dict
-    from .viz.matplotlib_adapter import render as render_plotspec
+    style = kwargs.get("style")
+    path = kwargs.get("path")
+    save_ext_value = kwargs.get("save_ext")
+    if isinstance(save_ext_value, (list, tuple)):
+        save_ext_value = tuple(save_ext_value)
 
     # Gather model outputs in the same way legacy code did
     is_regularized = True
@@ -831,22 +904,77 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
         (np.array(high) - np.array(low)) if (low is not None and high is not None) else None
     )
 
-    spec_dict = build_global_plotspec_dict(
-        title=None,
-        proba=proba,
-        predict=predict,
-        low=low,
-        high=high,
-        uncertainty=uncertainty,
-        y_test=(list(y_test) if y_test is not None else None),
-        is_regularized=is_regularized,
+    payload = {
+        "proba": proba,
+        "predict": predict,
+        "low": low,
+        "high": high,
+        "uncertainty": uncertainty,
+        "y_test": (list(y_test) if y_test is not None else None),
+        "is_regularized": is_regularized,
+        "threshold": threshold,
+    }
+
+    from .plugins import PlotRenderContext
+    from .plugins.registry import (
+        ensure_builtin_plugins,
+        find_plot_plugin,
+        find_plot_plugin_trusted,
     )
 
-    # Let adapter decide how to render; adapter returns a wrapper for dict
-    # specs (and may emit save primitives). This centralizes saving
-    # behavior and primitive emission.
-    render_plotspec(spec_dict, show=show, save_path=None)
-    return
+    ensure_builtin_plugins()
+
+    chain = _resolve_plot_style_chain(explainer, style)
+    errors: List[str] = []
+
+    for identifier in chain:
+        plugin = find_plot_plugin_trusted(identifier)
+        if plugin is None:
+            plugin = find_plot_plugin(identifier)
+        if plugin is None:
+            errors.append(f"{identifier}: not registered")
+            continue
+        if not hasattr(plugin, "build") or not hasattr(plugin, "render"):
+            errors.append(f"{identifier}: missing build/render implementation")
+            continue
+
+        if identifier == "legacy" or getattr(plugin, "plugin_meta", {}).get("style") == "legacy":
+            __require_matplotlib()
+        elif show and plt is None:  # pragma: no cover - optional dep path
+            errors.append(f"{identifier}: matplotlib backend unavailable")
+            continue
+
+        context = PlotRenderContext(
+            explanation=getattr(explainer, "latest_explanation", None),
+            instance_metadata=MappingProxyType({"type": "global"}),
+            style=identifier,
+            intent=MappingProxyType(
+                {
+                    "type": "global",
+                    "explainer_mode": getattr(explainer, "_last_explanation_mode", None),
+                }
+            ),
+            show=show,
+            path=path,
+            save_ext=save_ext_value,
+            options=MappingProxyType({"payload": payload}),
+        )
+        try:
+            artifact = plugin.build(context)
+            result = plugin.render(artifact, context=context)
+        except Exception as exc:  # pragma: no cover - plugin failures
+            errors.append(f"{identifier}: {exc}")
+            continue
+        return result
+
+    from .core.exceptions import ConfigurationError as _PlotConfigurationError
+
+    raise _PlotConfigurationError(
+        "Unable to resolve plot plugin for global explanations; "
+        + "tried: "
+        + ", ".join(chain)
+        + ("; errors: " + "; ".join(errors) if errors else "")
+    )
 
 
 def _plot_proba_triangle():

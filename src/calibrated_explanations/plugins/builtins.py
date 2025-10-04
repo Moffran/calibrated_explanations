@@ -50,8 +50,15 @@ class LegacyPredictBridge(PredictBridge):
     def __init__(self, explainer: Any) -> None:
         self._explainer = explainer
 
-    def predict(self, X: Any, *, mode: str, task: str) -> Mapping[str, Any]:
-        prediction = self._explainer.predict(X, uq_interval=True)
+    def predict(
+        self,
+        X: Any,
+        *,
+        mode: str,
+        task: str,
+        bins: Any | None = None,
+    ) -> Mapping[str, Any]:
+        prediction = self._explainer.predict(X, uq_interval=True, bins=bins)
         if isinstance(prediction, tuple):
             preds, interval = prediction
             low, high = interval
@@ -67,14 +74,18 @@ class LegacyPredictBridge(PredictBridge):
             payload["low"] = np.asarray(low)
             payload["high"] = np.asarray(high)
         if task == "classification":
-            payload["classes"] = np.asarray(self._explainer.predict(X, calibrated=True))
+            payload["classes"] = np.asarray(
+                self._explainer.predict(X, calibrated=True, bins=bins)
+            )
         return payload
 
-    def predict_interval(self, X: Any, *, task: str):  # pragma: no cover - passthrough
-        return self._explainer.predict(X, uq_interval=True, calibrated=True)
+    def predict_interval(
+        self, X: Any, *, task: str, bins: Any | None = None
+    ):  # pragma: no cover - passthrough
+        return self._explainer.predict(X, uq_interval=True, calibrated=True, bins=bins)
 
-    def predict_proba(self, X: Any):  # pragma: no cover - passthrough
-        return self._explainer.predict_proba(X, uq_interval=True, calibrated=True)
+    def predict_proba(self, X: Any, bins: Any | None = None):  # pragma: no cover - passthrough
+        return self._explainer.predict_proba(X, uq_interval=True, calibrated=True, bins=bins)
 
 
 def _supports_calibrated_explainer(model: Any) -> bool:
@@ -188,7 +199,12 @@ class _LegacyExplanationBase(ExplanationPlugin):
 
         # Exercise the predict bridge lifecycle. The results are not used further
         # but calling the bridge ensures the contract is honoured.
-        self._bridge.predict(X, mode=self._mode, task=self._context.task)
+        self._bridge.predict(
+            X,
+            mode=self._mode,
+            task=self._context.task,
+            bins=request.bins,
+        )
 
         explanation_callable = getattr(self._explainer, self._explanation_attr)
 
@@ -199,6 +215,7 @@ class _LegacyExplanationBase(ExplanationPlugin):
         }
         if self._mode != "fast":
             kwargs["features_to_ignore"] = request.features_to_ignore
+        kwargs["_use_plugin"] = False
 
         collection: CalibratedExplanations = explanation_callable(X, **kwargs)
         return _collection_to_batch(collection)
