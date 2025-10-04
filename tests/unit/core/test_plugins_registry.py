@@ -213,6 +213,9 @@ class ExampleIntervalPlugin:
         "modes": ["classification"],
         "dependencies": [],
         "trust": {"trusted": False},
+        "fast_compatible": False,
+        "requires_bins": False,
+        "confidence_source": "legacy",
     }
 
 
@@ -239,35 +242,66 @@ def test_register_interval_plugin_requires_modes():
             "name": "bad.interval",
             "dependencies": [],
             "trust": False,
+            "fast_compatible": False,
+            "requires_bins": False,
+            "confidence_source": "legacy",
         }
 
     with pytest.raises(ValueError):
         registry.register_interval_plugin("bad.interval", BadIntervalPlugin())
 
 
-class ExamplePlotPlugin:
+class ExamplePlotBuilder:
     plugin_meta = {
         "schema_version": 1,
         "capabilities": ["plot:builder"],
-        "name": "example.plot",
-        "style": "legacy",
+        "name": "example.plot.builder",
+        "style": "example",
         "dependencies": ["matplotlib"],
         "trust": True,
         "output_formats": ["png"],
+        "legacy_compatible": True,
     }
 
 
-def test_register_plot_plugin_descriptor():
+class ExamplePlotRenderer:
+    plugin_meta = {
+        "schema_version": 1,
+        "capabilities": ["plot:renderer"],
+        "name": "example.plot.renderer",
+        "dependencies": ["matplotlib"],
+        "trust": True,
+        "output_formats": ["png"],
+        "supports_interactive": False,
+    }
+
+
+def test_register_plot_components():
     registry.clear_plot_plugins()
-    descriptor = registry.register_plot_plugin("core.plot.example", ExamplePlotPlugin())
-    assert descriptor.identifier == "core.plot.example"
-    assert registry.find_plot_plugin("core.plot.example") is descriptor.plugin
-    assert (
-        registry.find_plot_plugin_trusted("core.plot.example") is descriptor.plugin
+    builder = registry.register_plot_builder(
+        "core.plot.example", ExamplePlotBuilder()
     )
+    renderer = registry.register_plot_renderer(
+        "core.plot.example", ExamplePlotRenderer()
+    )
+    style = registry.register_plot_style(
+        "example",
+        metadata={
+            "style": "example",
+            "builder_id": builder.identifier,
+            "renderer_id": renderer.identifier,
+            "fallbacks": (),
+        },
+    )
+    assert builder.identifier == "core.plot.example"
+    assert renderer.identifier == "core.plot.example"
+    assert style.identifier == "example"
+    assert registry.find_plot_builder("core.plot.example") is builder.builder
+    assert registry.find_plot_renderer("core.plot.example") is renderer.renderer
+    assert registry.find_plot_style_descriptor("example") is style
 
 
-def test_register_plot_plugin_requires_style():
+def test_register_plot_builder_requires_style():
     registry.clear_plot_plugins()
 
     class BadPlotPlugin:
@@ -277,7 +311,9 @@ def test_register_plot_plugin_requires_style():
             "name": "bad.plot",
             "dependencies": [],
             "trust": False,
+            "output_formats": ["png"],
+            "legacy_compatible": False,
         }
 
     with pytest.raises(ValueError):
-        registry.register_plot_plugin("bad.plot", BadPlotPlugin())
+        registry.register_plot_builder("bad.plot", BadPlotPlugin())

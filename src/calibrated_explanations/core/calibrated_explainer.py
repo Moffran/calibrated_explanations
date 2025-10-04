@@ -724,8 +724,9 @@ class CalibratedExplainer:
             descriptor = find_explanation_descriptor(identifier)
             if descriptor:
                 plot_dependency = descriptor.metadata.get("plot_dependency")
-                if isinstance(plot_dependency, str) and plot_dependency:
-                    preferred.append(plot_dependency)
+                for hint in _coerce_string_tuple(plot_dependency):
+                    if hint:
+                        preferred.append(hint)
         # Legacy renderer remains the universal fallback
         preferred.append("legacy")
         seen: set[str] = set()

@@ -40,7 +40,9 @@ from .predict import PredictBridge
 from .registry import (
     register_explanation_plugin,
     register_interval_plugin,
-    register_plot_plugin,
+    register_plot_builder,
+    register_plot_renderer,
+    register_plot_style,
 )
 
 
@@ -128,6 +130,9 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         "dependencies": (),
         "trust": {"trusted": True},
         "fast_compatible": False,
+        "requires_bins": False,
+        "confidence_source": "legacy",
+        "legacy_compatible": True,
     }
 
     def create(
@@ -150,6 +155,9 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         "dependencies": (),
         "trust": {"trusted": True},
         "fast_compatible": True,
+        "requires_bins": False,
+        "confidence_source": "fast",
+        "legacy_compatible": True,
     }
 
     def create(
@@ -303,20 +311,36 @@ class FastExplanationPlugin(_LegacyExplanationBase):
         )
 
 
-class LegacyPlotPlugin(PlotBuilder, PlotRenderer):
-    """Minimal plot builder/renderer that keeps legacy behaviour."""
+class LegacyPlotBuilder(PlotBuilder):
+    """Minimal plot builder that keeps legacy behaviour."""
 
     plugin_meta = {
-        "name": "core.plot.legacy",
+        "name": "core.plot.legacy.builder",
         "schema_version": 1,
-        "capabilities": ["plot:builder", "plot:renderer"],
+        "capabilities": ["plot:builder"],
         "style": "legacy",
         "dependencies": (),
         "trust": {"trusted": True},
+        "output_formats": ["png"],
+        "legacy_compatible": True,
     }
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
         return {"context": context}
+
+
+class LegacyPlotRenderer(PlotRenderer):
+    """Minimal renderer mirroring the legacy matplotlib pathway."""
+
+    plugin_meta = {
+        "name": "core.plot.legacy.renderer",
+        "schema_version": 1,
+        "capabilities": ["plot:renderer"],
+        "dependencies": (),
+        "trust": {"trusted": True},
+        "output_formats": ["png"],
+        "supports_interactive": False,
+    }
 
     def render(
         self, artifact: Mapping[str, Any], *, context: PlotRenderContext
@@ -336,7 +360,19 @@ def _register_builtins() -> None:
     )
     register_explanation_plugin("core.explanation.fast", FastExplanationPlugin())
 
-    register_plot_plugin("legacy", LegacyPlotPlugin())
+    legacy_builder = LegacyPlotBuilder()
+    legacy_renderer = LegacyPlotRenderer()
+    register_plot_builder("core.plot.legacy", legacy_builder)
+    register_plot_renderer("core.plot.legacy", legacy_renderer)
+    register_plot_style(
+        "legacy",
+        metadata={
+            "style": "legacy",
+            "builder_id": "core.plot.legacy",
+            "renderer_id": "core.plot.legacy",
+            "fallbacks": (),
+        },
+    )
 
 
 _register_builtins()
@@ -348,6 +384,7 @@ __all__ = [
     "LegacyFactualExplanationPlugin",
     "LegacyAlternativeExplanationPlugin",
     "FastExplanationPlugin",
-    "LegacyPlotPlugin",
+    "LegacyPlotBuilder",
+    "LegacyPlotRenderer",
     "LegacyPredictBridge",
 ]

@@ -10,10 +10,10 @@ from typing import Any, Sequence
 from .registry import (
     find_explanation_descriptor,
     find_interval_descriptor,
-    find_plot_descriptor,
+    find_plot_style_descriptor,
     list_explanation_descriptors,
     list_interval_descriptors,
-    list_plot_descriptors,
+    list_plot_style_descriptors,
     mark_explanation_trusted,
     mark_explanation_untrusted,
 )
@@ -72,11 +72,11 @@ def _emit_interval_descriptor(descriptor) -> None:
 
 def _emit_plot_descriptor(descriptor) -> None:
     meta = descriptor.metadata
-    style = meta.get("style", "-")
-    deps = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
-    trust_state = "trusted" if descriptor.trusted else "untrusted"
-    print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
-    print(f"    style={style}; dependencies={deps}")
+    builder = meta.get("builder_id", "-")
+    renderer = meta.get("renderer_id", "-")
+    fallbacks = ", ".join(_string_tuple(meta.get("fallbacks"))) or "-"
+    print(f"  - {descriptor.identifier} (style)")
+    print(f"    builder={builder}; renderer={renderer}; fallbacks={fallbacks}")
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
@@ -106,8 +106,8 @@ def _cmd_list(args: argparse.Namespace) -> int:
             print()
 
     if kind in ("plots", "all"):
-        descriptors = list_plot_descriptors(trusted_only=trusted_only)
-        _emit_header("Plot plugins")
+        descriptors = list_plot_style_descriptors()
+        _emit_header("Plot styles")
         if not descriptors:
             print("  <none>")
         else:
@@ -125,7 +125,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
     elif kind == "intervals":
         descriptor = find_interval_descriptor(identifier)
     else:
-        descriptor = find_plot_descriptor(identifier)
+        descriptor = find_plot_style_descriptor(identifier)
 
     if descriptor is None:
         print(f"{kind[:-1].capitalize()} plugin '{identifier}' is not registered")
@@ -133,7 +133,8 @@ def _cmd_show(args: argparse.Namespace) -> int:
 
     meta = dict(descriptor.metadata)
     print(f"Identifier : {descriptor.identifier}")
-    print(f"Trusted    : {'yes' if descriptor.trusted else 'no'}")
+    if hasattr(descriptor, "trusted"):
+        print(f"Trusted    : {'yes' if descriptor.trusted else 'no'}")
     print("Metadata   :")
     print(pprint.pformat(meta, sort_dicts=True))
     return 0
