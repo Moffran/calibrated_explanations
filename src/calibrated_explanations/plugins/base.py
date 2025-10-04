@@ -12,11 +12,18 @@ Contract (v0.1, unstable):
     explain(model, X, **kwargs) -> Any  # typically an Explanation or legacy dict
 
 This mirrors ADR-006 minimal capability metadata and keeps behavior opt-in.
+
+ADR-015 refines this layer with dedicated explanation, interval, and plotting
+protocols. They build on the lightweight ``PluginMeta`` typing alias and the
+validation helper exported from this module.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, Protocol
+from typing import Any, Dict, Mapping, Protocol, TypeAlias
+
+
+PluginMeta: TypeAlias = Mapping[str, Any]
 
 
 class ExplainerPlugin(Protocol):
@@ -28,7 +35,7 @@ class ExplainerPlugin(Protocol):
     - explain(model, X, **kwargs) -> Any
     """
 
-    plugin_meta: Dict[str, Any]
+    plugin_meta: PluginMeta
 
     def supports(self, model: Any) -> bool:  # pragma: no cover - protocol
         ...
