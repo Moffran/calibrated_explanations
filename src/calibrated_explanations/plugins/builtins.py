@@ -23,9 +23,11 @@ import numpy as np
 from .. import __version__ as _PACKAGE_VERSION
 from ..explanations.explanation import (
     AlternativeExplanation,
-    CalibratedExplanation as _AbstractExplanation,
     FactualExplanation,
     FastExplanation,
+)
+from ..explanations.explanation import (
+    CalibratedExplanation as _AbstractExplanation,
 )
 from ..explanations.explanations import CalibratedExplanations
 from ..utils.helper import safe_isinstance
@@ -36,7 +38,7 @@ from .explanations import (
     ExplanationRequest,
 )
 from .intervals import IntervalCalibratorContext, IntervalCalibratorPlugin
-from .plots import PlotBuilder, PlotRenderContext, PlotRenderResult, PlotRenderer
+from .plots import PlotBuilder, PlotRenderContext, PlotRenderer, PlotRenderResult
 from .predict import PredictBridge
 from .registry import (
     register_explanation_plugin,
@@ -77,9 +79,7 @@ class LegacyPredictBridge(PredictBridge):
             payload["low"] = np.asarray(low)
             payload["high"] = np.asarray(high)
         if task == "classification":
-            payload["classes"] = np.asarray(
-                self._explainer.predict(X, calibrated=True, bins=bins)
-            )
+            payload["classes"] = np.asarray(self._explainer.predict(X, calibrated=True, bins=bins))
         return payload
 
     def predict_interval(
@@ -139,9 +139,7 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         "legacy_compatible": True,
     }
 
-    def create(
-        self, context: IntervalCalibratorContext, *, fast: bool = False
-    ) -> Any:
+    def create(self, context: IntervalCalibratorContext, *, fast: bool = False) -> Any:
         calibrator = context.metadata.get("calibrator")
         if calibrator is None:
             raise RuntimeError("Legacy interval context missing 'calibrator' entry")
@@ -167,9 +165,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         "legacy_compatible": True,
     }
 
-    def create(
-        self, context: IntervalCalibratorContext, *, fast: bool = True
-    ) -> Any:
+    def create(self, context: IntervalCalibratorContext, *, fast: bool = True) -> Any:
         calibrator = context.metadata.get("fast_calibrators")
         if calibrator is None:
             raise RuntimeError("FAST interval context missing 'fast_calibrators' entry")
@@ -367,7 +363,7 @@ class LegacyPlotRenderer(PlotRenderer):
     def render(
         self, artifact: Mapping[str, Any], *, context: PlotRenderContext
     ) -> PlotRenderResult:
-        return PlotRenderResult(artifact=artifact, figure=None, saved_paths=tuple(), extras={})
+        return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
 
 
 def _register_builtins() -> None:

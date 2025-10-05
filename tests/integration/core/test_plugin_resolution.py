@@ -124,10 +124,7 @@ def test_fallback_skips_incompatible_tasks(monkeypatch, binary_dataset):
 
         explanations = explainer.explain_factual(X_test)
         assert explanations is not None
-        assert (
-            explainer._explanation_plugin_identifiers["factual"]
-            == "core.explanation.factual"
-        )
+        assert explainer._explanation_plugin_identifiers["factual"] == "core.explanation.factual"
     finally:
         monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", raising=False)
         _cleanup_plugin(plugin)
@@ -145,12 +142,8 @@ def test_dependency_propagation_and_context_hints(binary_dataset):
         explanations = explainer.explain_factual(X_test)
         assert explanations is not None
 
-        assert explainer._explanation_plugin_identifiers["factual"] == (
-            "tests.recording.factual"
-        )
-        assert explainer._interval_plugin_hints["factual"] == (
-            "tests.interval.pref",
-        )
+        assert explainer._explanation_plugin_identifiers["factual"] == ("tests.recording.factual")
+        assert explainer._interval_plugin_hints["factual"] == ("tests.interval.pref",)
         assert explainer._plot_plugin_fallbacks["factual"] == (
             "tests.plot.pref",
             "legacy",
@@ -188,9 +181,7 @@ def test_schema_version_override_errors(binary_dataset):
 def test_missing_plugin_override_raises(monkeypatch, binary_dataset):
     monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL", raising=False)
 
-    explainer, X_test = _make_explainer(
-        binary_dataset, factual_plugin="tests.missing.plugin"
-    )
+    explainer, X_test = _make_explainer(binary_dataset, factual_plugin="tests.missing.plugin")
     with pytest.raises(ConfigurationError, match="not registered"):
         explainer.explain_factual(X_test)
 

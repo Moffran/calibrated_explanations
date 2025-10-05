@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 import sys
 from pathlib import Path
 
@@ -9,7 +10,10 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer, ConfigurationError
+from calibrated_explanations.core.calibrated_explainer import (
+    CalibratedExplainer,
+    ConfigurationError,
+)
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins.registry import (
     clear_explanation_plugins,
@@ -98,9 +102,7 @@ def _assert_collections_equal(lhs, rhs):
     for left, right in zip(lhs_items, rhs_items):
         for key in ("predict", "low", "high"):
             np.testing.assert_allclose(left.prediction[key], right.prediction[key])
-            np.testing.assert_allclose(
-                left.feature_weights[key], right.feature_weights[key]
-            )
+            np.testing.assert_allclose(left.feature_weights[key], right.feature_weights[key])
 
 
 def test_factual_plugin_fallback_skips_incompatible_task(monkeypatch, binary_dataset):
@@ -143,9 +145,7 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
 
 
 def test_missing_override_identifier_errors(binary_dataset):
-    explainer, X_test = _make_explainer(
-        binary_dataset, factual_plugin="tests.integration.missing"
-    )
+    explainer, X_test = _make_explainer(binary_dataset, factual_plugin="tests.integration.missing")
 
     with pytest.raises(ConfigurationError, match="missing: not registered"):
         explainer.explain_factual(X_test[:1])

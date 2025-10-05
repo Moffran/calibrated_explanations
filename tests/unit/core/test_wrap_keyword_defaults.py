@@ -42,8 +42,12 @@ class _DummyModel:
     value: float = 0.0
 
 
-def _configured_wrapper(threshold: float | None, percentiles: tuple[int, int]) -> tuple[WrapCalibratedExplainer, _RecordingExplainer]:
-    cfg = ExplainerConfig(model=_DummyModel(), threshold=threshold, low_high_percentiles=percentiles)
+def _configured_wrapper(
+    threshold: float | None, percentiles: tuple[int, int]
+) -> tuple[WrapCalibratedExplainer, _RecordingExplainer]:
+    cfg = ExplainerConfig(
+        model=_DummyModel(), threshold=threshold, low_high_percentiles=percentiles
+    )
     wrapper = WrapCalibratedExplainer._from_config(cfg)
     recorder = _RecordingExplainer()
     wrapper.explainer = recorder
@@ -94,4 +98,3 @@ def test_plot_inherits_threshold_and_bins_from_config_and_mc() -> None:
     assert kwargs["threshold"] == 0.33
     assert kwargs["low_high_percentiles"] == (20, 80)
     assert np.array_equal(kwargs["bins"], np.arange(len(X)))
-

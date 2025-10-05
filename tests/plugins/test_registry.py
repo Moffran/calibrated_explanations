@@ -99,4 +99,3 @@ def test_list_descriptors_respects_trust_state() -> None:
         assert all(d.identifier != "core.explanation.factual" for d in trusted_only)
     finally:
         mark_explanation_trusted("core.explanation.factual")
-

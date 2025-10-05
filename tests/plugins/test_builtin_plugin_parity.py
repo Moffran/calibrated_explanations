@@ -53,7 +53,9 @@ def _make_request(threshold=None, low_high_percentiles=(5, 95), bins=None):
 def _assert_collections_equal(lhs, rhs):
     assert len(lhs) == len(rhs)
     for left, right in zip(lhs, rhs):
-        np.testing.assert_allclose(left.feature_weights["predict"], right.feature_weights["predict"])
+        np.testing.assert_allclose(
+            left.feature_weights["predict"], right.feature_weights["predict"]
+        )
         np.testing.assert_allclose(left.feature_weights["low"], right.feature_weights["low"])
         np.testing.assert_allclose(left.feature_weights["high"], right.feature_weights["high"])
         np.testing.assert_allclose(left.prediction["predict"], right.prediction["predict"])

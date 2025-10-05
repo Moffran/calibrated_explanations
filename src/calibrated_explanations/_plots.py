@@ -39,12 +39,12 @@ from __future__ import annotations
 import configparser
 import contextlib
 import os
+import warnings
 from pathlib import Path
 from types import MappingProxyType
-import warnings
+from typing import Any, Dict, List, Sequence
 
 import numpy as np
-from typing import Any, Dict, List, Sequence
 
 # Legacy import to ensure legacy plotting is still working
 # while development of plotspec, adapters, and builders are unfinished.
@@ -140,6 +140,7 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
             ordered.append(identifier)
             seen.add(identifier)
     return tuple(ordered)
+
 
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme

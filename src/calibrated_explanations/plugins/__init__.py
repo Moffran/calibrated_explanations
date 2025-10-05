@@ -10,6 +10,8 @@ Security note: Registering/using third-party plugins executes arbitrary code.
 Only use plugins you trust. This API is opt-in and intentionally explicit.
 """
 
+# Eagerly register in-tree plugins so they are available without explicit import
+from . import builtins as _builtins  # noqa: F401
 from . import registry  # re-export module for convenience
 from .base import ExplainerPlugin, PluginMeta, validate_plugin_meta  # noqa: F401
 from .explanations import (  # noqa: F401
@@ -29,21 +31,18 @@ from .plots import (  # noqa: F401
     PlotArtifact,
     PlotBuilder,
     PlotRenderContext,
-    PlotRenderResult,
     PlotRenderer,
+    PlotRenderResult,
 )
 from .predict import PredictBridge  # noqa: F401
 from .registry import (  # noqa: F401
-    find_for_trusted,
-    trust_plugin,
-    untrust_plugin,
     clear_explanation_plugins,
     clear_interval_plugins,
     clear_plot_plugins,
+    find_for_trusted,
+    trust_plugin,
+    untrust_plugin,
 )
-
-# Eagerly register in-tree plugins so they are available without explicit import
-from . import builtins as _builtins  # noqa: F401
 
 __all__ = [
     "ExplainerPlugin",

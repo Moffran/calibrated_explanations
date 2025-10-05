@@ -64,4 +64,3 @@ class PredictBridge(Protocol):
 
 
 __all__ = ["PredictBridge"]
-

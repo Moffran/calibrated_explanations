@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 try:
     import tomllib as _tomllib
@@ -59,9 +59,15 @@ from ..plugins.registry import (
     ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
-    find_explanation_plugin_trusted,
 )
 from ..plugins.predict import PredictBridge
+
+from .exceptions import (
+    ValidationError,
+    DataShapeError,
+    ConfigurationError,
+    NotFittedError,
+)
 
 
 def _read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
@@ -94,7 +100,7 @@ def _split_csv(value: str | None) -> Tuple[str, ...]:
     """Split a comma separated environment variable into a tuple."""
 
     if not value:
-        return tuple()
+        return ()
     entries = [item.strip() for item in value.split(",") if item.strip()]
     return tuple(entries)
 
@@ -103,16 +109,16 @@ def _coerce_string_tuple(value: Any) -> Tuple[str, ...]:
     """Coerce a configuration value into a tuple of strings."""
 
     if value is None:
-        return tuple()
+        return ()
     if isinstance(value, str):
-        return (value,) if value else tuple()
+        return (value,) if value else ()
     if isinstance(value, Iterable):
         result: List[str] = []
         for item in value:
             if isinstance(item, str) and item:
                 result.append(item)
         return tuple(result)
-    return tuple()
+    return ()
 
 
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
@@ -166,12 +172,6 @@ class _PredictBridgeMonitor(PredictBridge):
     @property
     def used(self) -> bool:
         return bool(self._calls)
-from .exceptions import (
-    ValidationError,
-    DataShapeError,
-    ConfigurationError,
-    NotFittedError,
-)
 
 
 class CalibratedExplainer:
@@ -452,9 +452,7 @@ class CalibratedExplainer:
             seen.add(identifier)
             descriptor = find_explanation_descriptor(identifier)
             if descriptor:
-                for fallback in _coerce_string_tuple(
-                    descriptor.metadata.get("fallbacks")
-                ):
+                for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
                     if fallback and fallback not in seen:
                         expanded.append(fallback)
                         seen.add(fallback)
@@ -506,10 +504,7 @@ class CalibratedExplainer:
             return f"{prefix}: plugin metadata missing tasks declaration"
         if "both" not in tasks and self.mode not in tasks:
             declared = ", ".join(tasks)
-            return (
-                f"{prefix}: does not support task '{self.mode}' "
-                f"(declared: {declared})"
-            )
+            return f"{prefix}: does not support task '{self.mode}' " f"(declared: {declared})"
 
         modes = _coerce_string_tuple(metadata.get("modes"))
         if not modes:
@@ -572,7 +567,7 @@ class CalibratedExplainer:
             return plugin, identifier
 
         preferred_identifier = raw_override if isinstance(raw_override, str) else None
-        chain = self._explanation_plugin_fallbacks.get(mode, tuple())
+        chain = self._explanation_plugin_fallbacks.get(mode, ())
         errors: List[str] = []
         for identifier in chain:
             is_preferred = preferred_identifier is not None and identifier == preferred_identifier
@@ -588,9 +583,7 @@ class CalibratedExplainer:
             if plugin is None:
                 message = f"{identifier}: not registered"
                 if is_preferred:
-                    raise ConfigurationError(
-                        "Explanation plugin override failed: " + message
-                    )
+                    raise ConfigurationError("Explanation plugin override failed: " + message)
                 errors.append(message)
                 continue
 
@@ -608,7 +601,7 @@ class CalibratedExplainer:
 
             plugin = self._instantiate_plugin(plugin)
             try:
-                supports = getattr(plugin, "supports_mode")
+                supports = plugin.supports_mode
             except AttributeError as exc:
                 errors.append(f"{identifier}: missing supports_mode ({exc})")
                 continue
@@ -633,9 +626,9 @@ class CalibratedExplainer:
         """Return the plugin instance for *mode*, initialising on demand."""
 
         if mode in self._explanation_plugin_instances:
-            return self._explanation_plugin_instances[mode], self._explanation_plugin_identifiers.get(
+            return self._explanation_plugin_instances[
                 mode
-            )
+            ], self._explanation_plugin_identifiers.get(mode)
 
         plugin, identifier = self._resolve_explanation_plugin(mode)
         metadata: Mapping[str, Any] | None = None
@@ -684,7 +677,7 @@ class CalibratedExplainer:
 
         helper_handles = {"explainer": self}
         interval_settings = {
-            "dependencies": self._interval_plugin_hints.get(mode, tuple()),
+            "dependencies": self._interval_plugin_hints.get(mode, ()),
         }
         plot_chain = self._derive_plot_chain(mode, identifier)
         self._plot_plugin_fallbacks[mode] = plot_chain
@@ -700,8 +693,7 @@ class CalibratedExplainer:
             mode=mode,
             feature_names=tuple(self.feature_names),
             categorical_features=tuple(self.categorical_features),
-            categorical_labels=
-            (
+            categorical_labels=(
                 {k: dict(v) for k, v in (self.categorical_labels or {}).items()}
                 if self.categorical_labels
                 else {}
@@ -714,9 +706,7 @@ class CalibratedExplainer:
         )
         return context
 
-    def _derive_plot_chain(
-        self, mode: str, identifier: str | None
-    ) -> Tuple[str, ...]:
+    def _derive_plot_chain(self, mode: str, identifier: str | None) -> Tuple[str, ...]:
         """Return plot fallback chain seeded by plugin metadata."""
 
         preferred: List[str] = []
@@ -796,9 +786,7 @@ class CalibratedExplainer:
             result = container_cls.from_batch(batch)
             self._last_explanation_mode = mode
             return result
-        raise ConfigurationError(
-            "Explanation plugin returned a batch that cannot be materialised"
-        )
+        raise ConfigurationError("Explanation plugin returned a batch that cannot be materialised")
 
     @property
     def X_cal(self):

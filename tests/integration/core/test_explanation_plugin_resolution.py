@@ -123,11 +123,17 @@ def _compare_collections(lhs, rhs):
         np.testing.assert_allclose(
             left.feature_weights["predict"], right.feature_weights["predict"], rtol=1e-6
         )
-        np.testing.assert_allclose(left.prediction["predict"], right.prediction["predict"], rtol=1e-6)
+        np.testing.assert_allclose(
+            left.prediction["predict"], right.prediction["predict"], rtol=1e-6
+        )
         if "low" in left.feature_weights:
-            np.testing.assert_allclose(left.feature_weights["low"], right.feature_weights["low"], rtol=1e-6)
+            np.testing.assert_allclose(
+                left.feature_weights["low"], right.feature_weights["low"], rtol=1e-6
+            )
         if "high" in left.feature_weights:
-            np.testing.assert_allclose(left.feature_weights["high"], right.feature_weights["high"], rtol=1e-6)
+            np.testing.assert_allclose(
+                left.feature_weights["high"], right.feature_weights["high"], rtol=1e-6
+            )
         if "low" in left.prediction:
             np.testing.assert_allclose(left.prediction["low"], right.prediction["low"], rtol=1e-6)
         if "high" in left.prediction:
@@ -195,7 +201,10 @@ def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
         assert chain[0] == "tests.dependency_reporting.factual"
         assert "core.explanation.factual" in chain
         assert explainer._interval_plugin_hints["factual"] == ("core.interval.fast",)
-        assert explainer._explanation_plugin_identifiers["factual"] == "tests.dependency_reporting.factual"
+        assert (
+            explainer._explanation_plugin_identifiers["factual"]
+            == "tests.dependency_reporting.factual"
+        )
     finally:
         monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL", raising=False)
         _cleanup_plugin(plugin)
@@ -309,4 +318,3 @@ def test_fast_mode_predict_bridge_and_parity(binary_dataset):
     assert "legacy" in explainer._plot_plugin_fallbacks["fast"]
 
     _compare_collections(plugin_collection, legacy_collection)
-

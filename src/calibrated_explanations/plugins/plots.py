@@ -20,7 +20,6 @@ except ImportError:  # pragma: no cover - fallback when TypeAlias is unavailable
 
 from ..viz.plotspec import PlotSpec
 
-
 PlotArtifact: TypeAlias = Union[PlotSpec, Mapping[str, Any], Any]
 
 
@@ -64,9 +63,7 @@ class PlotRenderer(Protocol):
 
     plugin_meta: Mapping[str, Any]
 
-    def render(
-        self, artifact: PlotArtifact, *, context: PlotRenderContext
-    ) -> PlotRenderResult:
+    def render(self, artifact: PlotArtifact, *, context: PlotRenderContext) -> PlotRenderResult:
         """Render *artifact* using the runtime *context*."""
 
 
@@ -77,4 +74,3 @@ __all__ = [
     "PlotRenderResult",
     "PlotRenderer",
 ]
-

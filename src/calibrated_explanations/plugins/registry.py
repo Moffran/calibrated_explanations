@@ -19,6 +19,7 @@ import hashlib
 import importlib
 import importlib.metadata as importlib_metadata
 import inspect
+import logging
 import os
 import sys
 import warnings
@@ -39,6 +40,9 @@ _TRUSTED: List[ExplainerPlugin] = []
 _ENTRYPOINT_GROUP = "calibrated_explanations.plugins"
 _ENV_TRUST_CACHE: set[str] | None = None
 _WARNED_UNTRUSTED: set[str] = set()
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _freeze_meta(meta: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -87,9 +91,7 @@ def _should_trust(meta: Mapping[str, Any]) -> bool:
     if declared:
         return True
     name = meta.get("name")
-    if isinstance(name, str) and name in _env_trusted_names():
-        return True
-    return False
+    return isinstance(name, str) and name in _env_trusted_names()
 
 
 def _update_trust_keys(meta: Dict[str, Any], trusted: bool) -> None:
@@ -113,8 +115,8 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
     provider = meta.get("provider", "<unknown provider>")
     warnings.warn(
         "Skipping untrusted plugin '%s' from %s discovered via %s. "
-        "Set CE_TRUST_PLUGIN or call trust_plugin('%s') to load it." %
-        (name, provider, source, name),
+        "Set CE_TRUST_PLUGIN or call trust_plugin('%s') to load it."
+        % (name, provider, source, name),
         RuntimeWarning,
         stacklevel=3,
     )
@@ -150,10 +152,7 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
     if not checksum:
         return
 
-    if isinstance(checksum, Mapping):
-        checksum_value = checksum.get("sha256")
-    else:
-        checksum_value = checksum
+    checksum_value = checksum.get("sha256") if isinstance(checksum, Mapping) else checksum
 
     if not isinstance(checksum_value, str):
         raise ValueError("plugin_meta['checksum'] must be a string or mapping with 'sha256'")
@@ -162,7 +161,8 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
     module_file = _resolve_plugin_module_file(plugin)
     if module_file is None or not module_file.exists():
         warnings.warn(
-            "Cannot verify checksum for plugin '%s'; module file missing." % meta.get("name", "<unknown>"),
+            "Cannot verify checksum for plugin '%s'; module file missing."
+            % meta.get("name", "<unknown>"),
             RuntimeWarning,
             stacklevel=3,
         )
@@ -172,7 +172,8 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
         data = module_file.read_bytes()
     except OSError:
         warnings.warn(
-            "Cannot read module for checksum verification for plugin '%s'." % meta.get("name", "<unknown>"),
+            "Cannot read module for checksum verification for plugin '%s'."
+            % meta.get("name", "<unknown>"),
             RuntimeWarning,
             stacklevel=3,
         )
@@ -180,9 +181,7 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
 
     digest = hashlib.sha256(data).hexdigest()
     if digest != checksum_value:
-        raise ValueError(
-            f"Checksum mismatch for plugin '{meta.get('name', '<unknown>')}'."
-        )
+        raise ValueError(f"Checksum mismatch for plugin '{meta.get('name', '<unknown>')}'.")
 
 
 _EXPLANATION_PROTOCOL_VERSION = 1
@@ -215,9 +214,7 @@ def _ensure_sequence(
     collected: List[str] = []
     for item in value:
         if not isinstance(item, str):
-            raise ValueError(
-                f"plugin_meta[{key!r}] must contain only string values"
-            )
+            raise ValueError(f"plugin_meta[{key!r}] must contain only string values")
         collected.append(item)
 
     if not collected and not allow_empty:
@@ -227,9 +224,7 @@ def _ensure_sequence(
         allowed_set = set(allowed)
         unknown = sorted(set(collected) - allowed_set)
         if unknown:
-            raise ValueError(
-                f"plugin_meta[{key!r}] has unsupported values: {', '.join(unknown)}"
-            )
+            raise ValueError(f"plugin_meta[{key!r}] has unsupported values: {', '.join(unknown)}")
 
     return tuple(collected)
 
@@ -254,15 +249,11 @@ def _coerce_string_collection(
         collected: List[str] = []
         for item in value:
             if not isinstance(item, str):
-                raise ValueError(
-                    f"plugin_meta[{key!r}] must contain only string values"
-                )
+                raise ValueError(f"plugin_meta[{key!r}] must contain only string values")
             collected.append(item)
         result = tuple(collected)
     else:
-        raise ValueError(
-            f"plugin_meta[{key!r}] must be a string or sequence of strings"
-        )
+        raise ValueError(f"plugin_meta[{key!r}] must be a string or sequence of strings")
 
     if not result and not allow_empty:
         raise ValueError(f"plugin_meta[{key!r}] must not be empty")
@@ -299,9 +290,7 @@ def _normalise_tasks(meta: Dict[str, Any]) -> Tuple[str, ...]:
     tasks = _coerce_string_collection(tasks_value, key="tasks")
     unknown = sorted(set(tasks) - allowed_tasks)
     if unknown:
-        raise ValueError(
-            "plugin_meta['tasks'] has unsupported values: " + ", ".join(unknown)
-        )
+        raise ValueError("plugin_meta['tasks'] has unsupported values: " + ", ".join(unknown))
     meta["tasks"] = tasks
     return tasks
 
@@ -326,16 +315,12 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
         canonical = _EXPLANATION_MODE_ALIASES.get(mode, mode)
         if mode in _EXPLANATION_MODE_ALIASES:
             warnings.warn(
-                "explanation mode alias '" + mode + "' is deprecated; use '"
-                + canonical
-                + "'",
+                "explanation mode alias '" + mode + "' is deprecated; use '" + canonical + "'",
                 DeprecationWarning,
                 stacklevel=2,
             )
         if canonical not in _EXPLANATION_VALID_MODES:
-            raise ValueError(
-                f"plugin_meta['modes'] has unsupported values: {canonical}"
-            )
+            raise ValueError(f"plugin_meta['modes'] has unsupported values: {canonical}")
         if canonical not in seen:
             seen.add(canonical)
             normalised_modes.append(canonical)
@@ -454,17 +439,13 @@ def validate_plot_style_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
             normalised: list[str] = []
             for item in fallbacks:
                 if not isinstance(item, str) or not item:
-                    raise ValueError(
-                        "plugin_meta['fallbacks'] must contain non-empty strings"
-                    )
+                    raise ValueError("plugin_meta['fallbacks'] must contain non-empty strings")
                 normalised.append(item)
             fallbacks = tuple(normalised)
         else:
-            raise ValueError(
-                "plugin_meta['fallbacks'] must be a string or sequence of strings"
-            )
+            raise ValueError("plugin_meta['fallbacks'] must be a string or sequence of strings")
     else:
-        fallbacks = tuple()
+        fallbacks = ()
     meta = dict(meta)
     meta["fallbacks"] = fallbacks
     return meta
@@ -501,6 +482,7 @@ _TRUSTED_EXPLANATIONS: set[str] = set()
 
 _INTERVAL_PLUGINS: Dict[str, IntervalPluginDescriptor] = {}
 _TRUSTED_INTERVALS: set[str] = set()
+
 
 @dataclass(frozen=True)
 class PlotBuilderDescriptor:
@@ -595,9 +577,7 @@ def ensure_builtin_plugins() -> None:
     missing = missing or any(
         identifier not in _PLOT_RENDERERS for identifier in expected_plot_renderers
     )
-    missing = missing or any(
-        identifier not in _PLOT_STYLES for identifier in expected_plot_styles
-    )
+    missing = missing or any(identifier not in _PLOT_STYLES for identifier in expected_plot_styles)
 
     if not missing:
         return
@@ -863,76 +843,80 @@ def find_plot_style_descriptor(identifier: str) -> PlotStyleDescriptor | None:
 
 def find_plot_plugin(identifier: str) -> Any | None:
     """Return a combined plot plugin for the given style identifier."""
-    
+
     style_descriptor = find_plot_style_descriptor(identifier)
     if style_descriptor is None:
         return None
-    
+
     builder_id = style_descriptor.metadata.get("builder_id")
     renderer_id = style_descriptor.metadata.get("renderer_id")
-    
+
     if not builder_id or not renderer_id:
         return None
-    
+
     builder = find_plot_builder(builder_id)
     renderer = find_plot_renderer(renderer_id)
-    
+
     if builder is None or renderer is None:
         return None
-    
+
     # Create a combined plugin that has both build and render methods
     class CombinedPlotPlugin:
         def __init__(self, builder, renderer):
             self.builder = builder
             self.renderer = renderer
             self.plugin_meta = getattr(builder, "plugin_meta", {})
-        
+
         def build(self, *args, **kwargs):
             return self.builder.build(*args, **kwargs)
-        
+
         def render(self, *args, **kwargs):
             return self.renderer.render(*args, **kwargs)
-    
+
     return CombinedPlotPlugin(builder, renderer)
 
 
 def find_plot_plugin_trusted(identifier: str) -> Any | None:
     """Return a trusted combined plot plugin for the given style identifier."""
-    
+
     style_descriptor = find_plot_style_descriptor(identifier)
     if style_descriptor is None:
         return None
-    
+
     builder_id = style_descriptor.metadata.get("builder_id")
     renderer_id = style_descriptor.metadata.get("renderer_id")
-    
+
     if not builder_id or not renderer_id:
         return None
-    
+
     # Check if both builder and renderer are trusted
     builder_descriptor = find_plot_builder_descriptor(builder_id)
     renderer_descriptor = find_plot_renderer_descriptor(renderer_id)
-    
-    if (builder_descriptor is None or not builder_descriptor.trusted or
-        renderer_descriptor is None or not renderer_descriptor.trusted):
+
+    if (
+        builder_descriptor is None
+        or not builder_descriptor.trusted
+        or renderer_descriptor is None
+        or not renderer_descriptor.trusted
+    ):
         return None
-    
+
     builder = builder_descriptor.builder
     renderer = renderer_descriptor.renderer
-    
+
     # Create a combined plugin that has both build and render methods
     class CombinedPlotPlugin:
         def __init__(self, builder, renderer):
             self.builder = builder
             self.renderer = renderer
             self.plugin_meta = getattr(builder, "plugin_meta", {})
-        
+
         def build(self, *args, **kwargs):
             return self.builder.build(*args, **kwargs)
-        
+
         def render(self, *args, **kwargs):
             return self.renderer.render(*args, **kwargs)
-    
+
     return CombinedPlotPlugin(builder, renderer)
 
 
@@ -982,18 +966,17 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             RuntimeWarning,
             stacklevel=2,
         )
-        return tuple()
+        return ()
 
     try:
         candidates = entry_points.select(group=_ENTRYPOINT_GROUP)
     except AttributeError:  # pragma: no cover - Python <3.10 fallback
-        candidates = [
-            ep for ep in entry_points if getattr(ep, "group", None) == _ENTRYPOINT_GROUP
-        ]
+        candidates = [ep for ep in entry_points if getattr(ep, "group", None) == _ENTRYPOINT_GROUP]
 
     for entry_point in candidates:
         identifier = (
-            f"{entry_point.module}:{entry_point.attr}" if getattr(entry_point, "attr", None)
+            f"{entry_point.module}:{entry_point.attr}"
+            if getattr(entry_point, "attr", None)
             else entry_point.name
         )
         try:
@@ -1083,7 +1066,9 @@ def _list_descriptors(
     return tuple(store[identifier] for identifier in identifiers)
 
 
-def list_explanation_descriptors(*, trusted_only: bool = False) -> Tuple[ExplanationPluginDescriptor, ...]:
+def list_explanation_descriptors(
+    *, trusted_only: bool = False
+) -> Tuple[ExplanationPluginDescriptor, ...]:
     """Return registered explanation plugin descriptors."""
 
     ensure_builtin_plugins()
@@ -1094,7 +1079,9 @@ def list_explanation_descriptors(*, trusted_only: bool = False) -> Tuple[Explana
     )
 
 
-def list_interval_descriptors(*, trusted_only: bool = False) -> Tuple[IntervalPluginDescriptor, ...]:
+def list_interval_descriptors(
+    *, trusted_only: bool = False
+) -> Tuple[IntervalPluginDescriptor, ...]:
     """Return registered interval plugin descriptors."""
 
     ensure_builtin_plugins()
@@ -1164,7 +1151,11 @@ def register(plugin: ExplainerPlugin) -> None:
             raw_meta["trusted"] = meta["trusted"]
             raw_meta["trust"] = meta["trust"]
         except Exception:  # pragma: no cover - defensive
-            pass
+            _LOGGER.debug(
+                "Failed to propagate trust metadata for plugin %r",
+                plugin,
+                exc_info=True,
+            )
     if plugin in _REGISTRY:
         if trusted and plugin not in _TRUSTED:
             _TRUSTED.append(plugin)
@@ -1208,7 +1199,12 @@ def _resolve_plugin_from_name(name: str) -> ExplainerPlugin:
         try:
             plugin_name = getter("name")
         except Exception:  # pragma: no cover - defensive
-            continue
+            _LOGGER.debug(
+                "Failed to read plugin name for %r",
+                plugin,
+                exc_info=True,
+            )
+            plugin_name = None
         if plugin_name == name:
             return plugin
     for descriptor in _EXPLANATION_PLUGINS.values():

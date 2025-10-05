@@ -2,10 +2,10 @@
 
 Status: Accepted (implementation in progress)
 Date: 2025-09-16 (updated 2025-10-02)
-Deciders: Core maintainers  
-Reviewers: TBD  
-Supersedes: ADR-013-interval-and-plot-plugin-strategy  
-Superseded-by: None  
+Deciders: Core maintainers
+Reviewers: TBD
+Supersedes: ADR-013-interval-and-plot-plugin-strategy
+Superseded-by: None
 Related: ADR-006-plugin-registry-trust-model, ADR-007-visualization-abstraction-layer, ADR-016-plot-spec-separation
 
 ## Context

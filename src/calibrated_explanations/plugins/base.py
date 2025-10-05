@@ -71,13 +71,9 @@ def _ensure_sequence_of_strings(value: Any, *, key: str) -> Sequence[str]:
     result: list[str] = []
     for item in value:
         if not isinstance(item, str):
-            raise ValueError(
-                f"plugin_meta[{key!r}] must contain only string values"
-            )
+            raise ValueError(f"plugin_meta[{key!r}] must contain only string values")
         if not item:
-            raise ValueError(
-                f"plugin_meta[{key!r}] must contain non-empty string values"
-            )
+            raise ValueError(f"plugin_meta[{key!r}] must contain non-empty string values")
         result.append(item)
     if not result:
         raise ValueError(f"plugin_meta[{key!r}] must not be empty")
@@ -106,9 +102,7 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     capabilities = meta.get("capabilities")
     if capabilities is None:
         raise ValueError("plugin_meta missing required key: capabilities")
-    meta["capabilities"] = _ensure_sequence_of_strings(
-        capabilities, key="capabilities"
-    )
+    meta["capabilities"] = _ensure_sequence_of_strings(capabilities, key="capabilities")
 
     checksum = meta.get("checksum")
     if checksum is not None and not isinstance(checksum, (str, Mapping)):

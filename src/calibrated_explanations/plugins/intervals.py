@@ -56,9 +56,7 @@ class RegressionIntervalCalibrator(ClassificationIntervalCalibrator, Protocol):
     def compute_proba_cal(self, X: Any, y: Any, *, weights: Any | None = None) -> Any:
         """Compute probability calibration adjustments."""
 
-    def insert_calibration(
-        self, X: Any, y: Any, *, warm_start: bool = False
-    ) -> None:
+    def insert_calibration(self, X: Any, y: Any, *, warm_start: bool = False) -> None:
         """Insert additional calibration samples."""
 
 
@@ -80,4 +78,3 @@ __all__ = [
     "IntervalCalibratorPlugin",
     "RegressionIntervalCalibrator",
 ]
-

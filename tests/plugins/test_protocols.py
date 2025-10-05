@@ -206,15 +206,17 @@ class _BadIntervalPlugin:
 
 
 def test_interval_plugin_runtime_checks() -> None:
-    good_calibrator = _GoodIntervalPlugin().create(IntervalCalibratorContext(
-        learner=object(),
-        calibration_splits=(),
-        bins={},
-        residuals={},
-        difficulty={},
-        metadata={},
-        fast_flags={},
-    ))
+    good_calibrator = _GoodIntervalPlugin().create(
+        IntervalCalibratorContext(
+            learner=object(),
+            calibration_splits=(),
+            bins={},
+            residuals={},
+            difficulty={},
+            metadata={},
+            fast_flags={},
+        )
+    )
     assert isinstance(_GoodIntervalPlugin(), IntervalCalibratorPlugin)
     assert isinstance(good_calibrator, ClassificationIntervalCalibrator)
     assert not isinstance(_BadIntervalPlugin(), IntervalCalibratorPlugin)
@@ -292,7 +294,9 @@ class _GoodPlotRenderer:
         "trust": False,
     }
 
-    def render(self, artifact: Mapping[str, Any], *, context: PlotRenderContext) -> PlotRenderResult:
+    def render(
+        self, artifact: Mapping[str, Any], *, context: PlotRenderContext
+    ) -> PlotRenderResult:
         return PlotRenderResult(artifact=artifact, saved_paths=("/tmp/out.png",))
 
 
@@ -325,4 +329,3 @@ def test_plot_protocol_runtime_checks() -> None:
     assert isinstance(_GoodPlotRenderer(), PlotRenderer)
     assert not isinstance(_BadPlotBuilder(), PlotBuilder)
     assert not isinstance(_BadPlotRenderer(), PlotRenderer)
-

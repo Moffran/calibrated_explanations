@@ -175,16 +175,11 @@ def test_register_explanation_plugin_descriptor():
     registry.clear()
     registry.clear_explanation_plugins()
     plugin = ExampleExplanationPlugin()
-    descriptor = registry.register_explanation_plugin(
-        "core.explanation.example", plugin
-    )
+    descriptor = registry.register_explanation_plugin("core.explanation.example", plugin)
 
     assert descriptor.identifier == "core.explanation.example"
     assert registry.find_explanation_plugin("core.explanation.example") is plugin
-    assert (
-        registry.find_explanation_plugin_trusted("core.explanation.example")
-        is plugin
-    )
+    assert registry.find_explanation_plugin_trusted("core.explanation.example") is plugin
     assert descriptor.metadata["modes"] == ("factual", "alternative")
     assert descriptor.metadata["tasks"] == ("classification", "regression")
     assert descriptor.metadata["interval_dependency"] == ("core.interval.legacy",)
@@ -247,9 +242,7 @@ def test_register_explanation_plugin_translates_aliases():
         }
 
     with pytest.warns(DeprecationWarning):
-        descriptor = registry.register_explanation_plugin(
-            "legacy.mode", LegacyModePlugin()
-        )
+        descriptor = registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
 
     assert descriptor.metadata["modes"] == ("factual",)
 
@@ -355,14 +348,9 @@ class ExampleIntervalPlugin:
 
 def test_register_interval_plugin_descriptor():
     registry.clear_interval_plugins()
-    descriptor = registry.register_interval_plugin(
-        "core.interval.example", ExampleIntervalPlugin()
-    )
+    descriptor = registry.register_interval_plugin("core.interval.example", ExampleIntervalPlugin())
     assert descriptor.identifier == "core.interval.example"
-    assert (
-        registry.find_interval_plugin("core.interval.example")
-        is descriptor.plugin
-    )
+    assert registry.find_interval_plugin("core.interval.example") is descriptor.plugin
     assert registry.find_interval_plugin_trusted("core.interval.example") is None
 
 
@@ -420,12 +408,8 @@ class ExamplePlotRenderer:
 
 def test_register_plot_components():
     registry.clear_plot_plugins()
-    builder = registry.register_plot_builder(
-        "core.plot.example", ExamplePlotBuilder()
-    )
-    renderer = registry.register_plot_renderer(
-        "core.plot.example", ExamplePlotRenderer()
-    )
+    builder = registry.register_plot_builder("core.plot.example", ExamplePlotBuilder())
+    renderer = registry.register_plot_renderer("core.plot.example", ExamplePlotRenderer())
     style = registry.register_plot_style(
         "example",
         metadata={

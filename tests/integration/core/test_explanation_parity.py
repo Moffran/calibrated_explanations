@@ -204,14 +204,26 @@ def test_fast_explanation_roundtrip_classification(binary_dataset):
 def _assert_collections_close(lhs, rhs):
     assert len(lhs) == len(rhs)
     for left, right in zip(lhs, rhs):
-        npt.assert_allclose(left.feature_weights["predict"], right.feature_weights["predict"], rtol=1e-6, atol=1e-8)
-        npt.assert_allclose(left.feature_weights["low"], right.feature_weights["low"], rtol=1e-6, atol=1e-8)
-        npt.assert_allclose(left.feature_weights["high"], right.feature_weights["high"], rtol=1e-6, atol=1e-8)
-        npt.assert_allclose(left.prediction["predict"], right.prediction["predict"], rtol=1e-6, atol=1e-8)
+        npt.assert_allclose(
+            left.feature_weights["predict"], right.feature_weights["predict"], rtol=1e-6, atol=1e-8
+        )
+        npt.assert_allclose(
+            left.feature_weights["low"], right.feature_weights["low"], rtol=1e-6, atol=1e-8
+        )
+        npt.assert_allclose(
+            left.feature_weights["high"], right.feature_weights["high"], rtol=1e-6, atol=1e-8
+        )
+        npt.assert_allclose(
+            left.prediction["predict"], right.prediction["predict"], rtol=1e-6, atol=1e-8
+        )
         if "low" in left.prediction or "low" in right.prediction:
-            npt.assert_allclose(left.prediction.get("low"), right.prediction.get("low"), rtol=1e-6, atol=1e-8)
+            npt.assert_allclose(
+                left.prediction.get("low"), right.prediction.get("low"), rtol=1e-6, atol=1e-8
+            )
         if "high" in left.prediction or "high" in right.prediction:
-            npt.assert_allclose(left.prediction.get("high"), right.prediction.get("high"), rtol=1e-6, atol=1e-8)
+            npt.assert_allclose(
+                left.prediction.get("high"), right.prediction.get("high"), rtol=1e-6, atol=1e-8
+            )
 
 
 def test_plugin_runtime_matches_legacy_factual(binary_dataset):
