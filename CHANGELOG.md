@@ -2,34 +2,22 @@
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.0...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.1...main)
 
-### Added
 
-- Visualization: PlotSpec MVP with matplotlib adapter and docs
-  - New backend‑agnostic plot specification (`src/calibrated_explanations/viz/plotspec.py`) and matplotlib adapter (`viz/matplotlib_adapter.py`).
-  - Initial unit/integration tests under `tests/unit/viz` and `tests/integration/viz`.
-  - Documentation page: `docs/viz_plotspec.md`.
+## [v0.6.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.1) - 2025-10-05
 
-- PlotSpec parity: Converted one probabilistic/regression bar plot to PlotSpec and added parity unit tests comparing semantics and ordering to the legacy `_plot_*` implementations (see `tests/unit/viz/test_plotspec_mvp.py`).
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.0...v0.6.1)
 
-- Plot rendering mode: For now the adapter preserves the legacy visual behaviour by default: when an interval crosses zero the solid contribution is suppressed. The behaviour can be switched to parity (draw solids even when intervals cross zero) by passing `legacy_solid_behavior=False` to the builders; the underlying `BarItem` and `BarHPanelSpec` also expose `solid_on_interval_crosses_zero` for fine-grained control.
+### Tests
 
-- Performance foundations (feature‑flag groundwork)
-  - Tiny LRU cache and parallel backend surface: `calibrated_explanations.perf` (`cache.py`, `parallel.py`).
-  - Micro‑bench + checker scripts: `scripts/micro_bench_perf.py`, `scripts/check_perf_micro.py`.
-
-- Plugins (minimal registry and trust helpers)
-  - In‑process plugin registry and trusted discovery helpers (`src/calibrated_explanations/plugins/registry.py`).
-  - Unit tests for registry/trust behavior.
+- Added runtime regression coverage to compare plugin-orchestrated factual, alternative, and fast explanations against the legacy `_use_plugin=False` code paths (`tests/integration/core/test_explanation_parity.py`).
+- Exercised schema v1 guardrails by asserting that payloads missing required keys are rejected when `jsonschema` is installed (`tests/unit/core/test_serialization_and_quick.py::test_validate_payload_rejects_missing_required_fields`).
+- Locked in `WrapCalibratedExplainer` keyword defaults and alias handling when using configuration objects (`tests/unit/core/test_wrap_keyword_defaults.py`).
 
 ### Docs
 
-- Clarified deprecation alias warnings at public boundaries and referenced migration helper script.
-
-### Notes
-
-- Items above are groundwork and remain opt‑in; legacy behavior is unchanged by default.
+- Documented the v0.6.x hardening checklist covering plugin parity, schema validation, and wrapper default tests in `docs/plugins.md`.
 
 ## [v0.6.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.0) - 2025-09-04
 

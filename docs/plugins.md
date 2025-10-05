@@ -95,6 +95,45 @@ Runtime guards surface actionable errors when plugins drift from ADR contracts:
 These safeguards complement static registry validation and give CLI consumers a
 way to audit the active configuration before running explanations.
 
+## v0.6.x hardening checklist
+
+Patch release 0.6.1 focuses on regression coverage and operational guidance to
+keep plugin-first execution aligned with the legacy flows.
+
+### Regression tests
+
+- Ensure runtime parity between the plugin orchestrator and the legacy escape
+  hatch by comparing `CalibratedExplainer` results with and without
+  `_use_plugin` enabled:
+
+  ```bash
+  pytest tests/integration/core/test_explanation_parity.py::test_plugin_runtime_matches_legacy_factual \
+         tests/integration/core/test_explanation_parity.py::test_plugin_runtime_matches_legacy_alternative \
+         tests/integration/core/test_explanation_parity.py::test_plugin_runtime_matches_legacy_fast
+  ```
+
+- Keep schema validation sharp by exercising the v1 JSON Schema guardrails:
+
+  ```bash
+  pytest tests/unit/core/test_serialization_and_quick.py::test_validate_payload_rejects_missing_required_fields
+  ```
+
+- Lock in wrapper keyword defaults and alias handling when configs are used to
+  spin up explainers:
+
+  ```bash
+  pytest tests/unit/core/test_wrap_keyword_defaults.py
+  ```
+
+### Operational notes
+
+- The `_use_plugin=False` parameter remains supported as a safety valve for
+  enterprise deployments. The parity tests above ensure that disabling the
+  orchestrator still matches plugin-backed outputs.
+- Schema validation remains optional at runtime, but installing
+  `jsonschema>=4` enables the stricter guardrails covered by the regression
+  suite.
+
 ## Legacy compatibility and migration
 
 Legacy metadata aliases such as `"explanation:factual"` are still accepted but
