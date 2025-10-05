@@ -1,9 +1,27 @@
 import importlib
 import types
+from typing import Any
 
 import pytest
 
 from calibrated_explanations.plugins import registry
+
+
+class _FakeEntryPoint:
+    def __init__(self, plugin: Any) -> None:
+        self.name = plugin.plugin_meta["name"]
+        self.module = "tests.plugins.fake"
+        self.attr = None
+        self.group = registry._ENTRYPOINT_GROUP
+        self._plugin = plugin
+
+    def load(self):
+        return self._plugin
+
+
+class _FakeEntryPoints(list):
+    def select(self, *, group: str):
+        return [entry for entry in self if getattr(entry, "group", None) == group]
 
 
 def test_register_and_find_example_plugin(tmp_path, monkeypatch):
@@ -40,6 +58,35 @@ def test_register_and_find_example_plugin(tmp_path, monkeypatch):
     assert plugin not in registry.list_plugins()
 
 
+def test_env_trust_marks_plugin_trusted(monkeypatch):
+    registry.clear()
+    registry._ENV_TRUST_CACHE = None
+    monkeypatch.setenv("CE_TRUST_PLUGIN", "tests.env")
+
+    class EnvPlugin:
+        plugin_meta = {
+            "schema_version": 1,
+            "capabilities": ["explain"],
+            "name": "tests.env",
+            "version": "0.0-test",
+            "provider": "tests",
+            "trusted": False,
+            "trust": False,
+        }
+
+        def supports(self, model):
+            return True
+
+        def explain(self, model, X, **kwargs):
+            return {}
+
+    plugin = EnvPlugin()
+    registry.register(plugin)
+    assert plugin in registry.list_plugins(include_untrusted=False)
+    registry.unregister(plugin)
+    registry._ENV_TRUST_CACHE = None
+
+
 def test_validate_plugin_meta_rejects_bad_meta():
     class BadPlugin:
         plugin_meta = {"capabilities": ["explain"]}  # missing name and schema_version
@@ -55,7 +102,15 @@ def test_validate_plugin_meta_rejects_bad_meta():
 
 
 class DummyPlugin:
-    plugin_meta = {"schema_version": 1, "capabilities": ["explain"], "name": "dummy"}
+    plugin_meta = {
+        "schema_version": 1,
+        "capabilities": ["explain"],
+        "name": "dummy",
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
     def supports(self, model):
         return getattr(model, "is_dummy", False)
@@ -70,6 +125,7 @@ def test_register_and_trust_flow(tmp_path):
     registry.clear()
     registry.register(p)
     assert p in registry.list_plugins()
+    assert p not in registry.list_plugins(include_untrusted=False)
 
     # trusting unregistered plugin raises
     with pytest.raises(ValueError):
@@ -77,13 +133,15 @@ def test_register_and_trust_flow(tmp_path):
 
     # trust and find
     registry.trust_plugin(p)
+    assert p in registry.list_plugins(include_untrusted=False)
     trusted = registry.find_for_trusted(types.SimpleNamespace(is_dummy=True))
     assert p in trusted
 
     # untrust works
-    registry.untrust_plugin(p)
+    registry.untrust_plugin("dummy")
     trusted2 = registry.find_for_trusted(types.SimpleNamespace(is_dummy=True))
     assert p not in trusted2
+    assert p not in registry.list_plugins(include_untrusted=False)
 
     # cleanup
     registry.unregister(p)
@@ -94,12 +152,15 @@ class ExampleExplanationPlugin:
         "schema_version": 1,
         "capabilities": ["explain", "task:classification"],
         "name": "example.explanation",
+        "version": "0.0-test",
+        "provider": "tests",
         "modes": ["factual", "alternative"],
         "tasks": ["classification", "regression"],
         "interval_dependency": "core.interval.legacy",
         "plot_dependency": ("legacy",),
         "fallbacks": ["core.explanation.legacy"],
         "dependencies": ["core.interval.legacy"],
+        "trusted": True,
         "trust": {"default": True},
     }
 
@@ -139,6 +200,8 @@ def test_register_explanation_plugin_requires_modes():
             "schema_version": 1,
             "capabilities": ["explain"],
             "name": "bad",
+            "version": "0.0-test",
+            "provider": "tests",
             "dependencies": [],
             "tasks": "classification",
             "trust": False,
@@ -156,6 +219,8 @@ def test_register_explanation_plugin_requires_tasks():
             "schema_version": 1,
             "capabilities": ["explain"],
             "name": "bad",  # pragma: no mutate - clarity
+            "version": "0.0-test",
+            "provider": "tests",
             "modes": ["factual"],
             "dependencies": [],
             "trust": False,
@@ -173,6 +238,8 @@ def test_register_explanation_plugin_translates_aliases():
             "schema_version": 1,
             "capabilities": ["explain"],
             "name": "legacy",
+            "version": "0.0-test",
+            "provider": "tests",
             "modes": ["explanation:factual", "factual"],
             "tasks": "classification",
             "dependencies": [],
@@ -195,6 +262,8 @@ def test_register_explanation_plugin_schema_version_future():
             "schema_version": 999,
             "capabilities": ["explain"],
             "name": "future",
+            "version": "0.0-test",
+            "provider": "tests",
             "modes": ["factual"],
             "tasks": "classification",
             "dependencies": [],
@@ -205,13 +274,78 @@ def test_register_explanation_plugin_schema_version_future():
         registry.register_explanation_plugin("future", FuturePlugin())
 
 
+def _make_entry_plugin(name: str = "tests.entry"):
+    class EntryPlugin:
+        plugin_meta = {
+            "schema_version": 1,
+            "capabilities": ["explain"],
+            "name": name,
+            "version": "0.0-test",
+            "provider": "tests",
+            "trusted": False,
+            "trust": False,
+        }
+
+        def supports(self, model):
+            return True
+
+        def explain(self, model, X, **kwargs):
+            return {}
+
+    return EntryPlugin()
+
+
+def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
+    registry.clear()
+    registry._WARNED_UNTRUSTED.clear()
+    registry._ENV_TRUST_CACHE = None
+
+    plugin = _make_entry_plugin()
+    fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+    monkeypatch.setattr(
+        registry.importlib_metadata,
+        "entry_points",
+        lambda: fake_entries,
+    )
+
+    with pytest.warns(RuntimeWarning):
+        loaded = registry.load_entrypoint_plugins()
+
+    assert loaded == ()
+    assert plugin not in registry.list_plugins()
+
+
+def test_load_entrypoint_plugins_trusted_by_env(monkeypatch):
+    registry.clear()
+    registry._WARNED_UNTRUSTED.clear()
+    monkeypatch.setenv("CE_TRUST_PLUGIN", "tests.entry")
+    registry._ENV_TRUST_CACHE = None
+
+    plugin = _make_entry_plugin()
+    fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+    monkeypatch.setattr(
+        registry.importlib_metadata,
+        "entry_points",
+        lambda: fake_entries,
+    )
+
+    loaded = registry.load_entrypoint_plugins()
+    assert loaded == (plugin,)
+    assert plugin in registry.list_plugins(include_untrusted=False)
+    registry.unregister(plugin)
+    registry._ENV_TRUST_CACHE = None
+
+
 class ExampleIntervalPlugin:
     plugin_meta = {
         "schema_version": 1,
         "capabilities": ["interval:classification"],
         "name": "example.interval",
+        "version": "0.0-test",
+        "provider": "tests",
         "modes": ["classification"],
         "dependencies": [],
+        "trusted": False,
         "trust": {"trusted": False},
         "fast_compatible": False,
         "requires_bins": False,
@@ -240,6 +374,8 @@ def test_register_interval_plugin_requires_modes():
             "schema_version": 1,
             "capabilities": ["interval:classification"],
             "name": "bad.interval",
+            "version": "0.0-test",
+            "provider": "tests",
             "dependencies": [],
             "trust": False,
             "fast_compatible": False,
@@ -256,8 +392,11 @@ class ExamplePlotBuilder:
         "schema_version": 1,
         "capabilities": ["plot:builder"],
         "name": "example.plot.builder",
+        "version": "0.0-test",
+        "provider": "tests",
         "style": "example",
         "dependencies": ["matplotlib"],
+        "trusted": True,
         "trust": True,
         "output_formats": ["png"],
         "legacy_compatible": True,
@@ -269,7 +408,10 @@ class ExamplePlotRenderer:
         "schema_version": 1,
         "capabilities": ["plot:renderer"],
         "name": "example.plot.renderer",
+        "version": "0.0-test",
+        "provider": "tests",
         "dependencies": ["matplotlib"],
+        "trusted": True,
         "trust": True,
         "output_formats": ["png"],
         "supports_interactive": False,
@@ -309,6 +451,8 @@ def test_register_plot_builder_requires_style():
             "schema_version": 1,
             "capabilities": ["plot:builder"],
             "name": "bad.plot",
+            "version": "0.0-test",
+            "provider": "tests",
             "dependencies": [],
             "trust": False,
             "output_formats": ["png"],

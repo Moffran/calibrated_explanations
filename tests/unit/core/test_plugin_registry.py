@@ -8,6 +8,10 @@ class DummyPlugin:
         "schema_version": 1,
         "capabilities": ["explain"],
         "name": "dummy",
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
     }
 
     def supports(self, model: Any) -> bool:

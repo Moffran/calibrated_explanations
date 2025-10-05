@@ -91,7 +91,15 @@ def test_explanation_plugin_protocol_signatures() -> None:
 
 
 class _GoodExplanationPlugin:
-    plugin_meta = {"name": "dummy", "schema_version": 1, "capabilities": ["explain"]}
+    plugin_meta = {
+        "name": "dummy",
+        "schema_version": 1,
+        "capabilities": ["explain"],
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
     def supports(self, model: Any) -> bool:
         return True
@@ -115,7 +123,15 @@ class _GoodExplanationPlugin:
 
 
 class _BadExplanationPlugin:
-    plugin_meta = {"name": "bad", "schema_version": 1, "capabilities": ["explain"]}
+    plugin_meta = {
+        "name": "bad",
+        "schema_version": 1,
+        "capabilities": ["explain"],
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
     def supports_mode(self, mode: str, *, task: str) -> bool:  # pragma: no cover - protocol
         return True
@@ -146,7 +162,15 @@ def test_interval_context_is_frozen() -> None:
 
 
 class _GoodIntervalPlugin:
-    plugin_meta = {"name": "interval", "schema_version": 1, "capabilities": ["interval"]}
+    plugin_meta = {
+        "name": "interval",
+        "schema_version": 1,
+        "capabilities": ["interval"],
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
     def create(self, context: IntervalCalibratorContext, *, fast: bool = False):
         class _Calibrator:
@@ -170,7 +194,15 @@ class _GoodIntervalPlugin:
 
 
 class _BadIntervalPlugin:
-    plugin_meta = {"name": "interval", "schema_version": 1, "capabilities": ["interval"]}
+    plugin_meta = {
+        "name": "interval",
+        "schema_version": 1,
+        "capabilities": ["interval"],
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
 
 def test_interval_plugin_runtime_checks() -> None:
@@ -235,25 +267,57 @@ def test_plot_context_is_frozen() -> None:
 
 
 class _GoodPlotBuilder:
-    plugin_meta = {"name": "plot", "schema_version": 1, "capabilities": ["plot"]}
+    plugin_meta = {
+        "name": "plot",
+        "schema_version": 1,
+        "capabilities": ["plot"],
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
         return {"style": context.style}
 
 
 class _GoodPlotRenderer:
-    plugin_meta = {"name": "plot", "schema_version": 1, "capabilities": ["render"]}
+    plugin_meta = {
+        "name": "plot",
+        "schema_version": 1,
+        "capabilities": ["render"],
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
     def render(self, artifact: Mapping[str, Any], *, context: PlotRenderContext) -> PlotRenderResult:
         return PlotRenderResult(artifact=artifact, saved_paths=("/tmp/out.png",))
 
 
 class _BadPlotBuilder:
-    plugin_meta = {"name": "plot", "schema_version": 1, "capabilities": ["plot"]}
+    plugin_meta = {
+        "name": "plot",
+        "schema_version": 1,
+        "capabilities": ["plot"],
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
 
 class _BadPlotRenderer:
-    plugin_meta = {"name": "plot", "schema_version": 1, "capabilities": ["render"]}
+    plugin_meta = {
+        "name": "plot",
+        "schema_version": 1,
+        "capabilities": ["render"],
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
 
 def test_plot_protocol_runtime_checks() -> None:

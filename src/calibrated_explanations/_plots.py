@@ -34,6 +34,8 @@ Functions
     Get the fill color for the plot.
 """
 
+from __future__ import annotations
+
 import configparser
 import contextlib
 import os

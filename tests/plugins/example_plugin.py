@@ -11,7 +11,15 @@ from typing import Any
 
 
 class ExamplePlugin:
-    plugin_meta = {"schema_version": 1, "capabilities": ["explain"], "name": "tests.example_plugin"}
+    plugin_meta = {
+        "schema_version": 1,
+        "capabilities": ["explain"],
+        "name": "tests.example_plugin",
+        "version": "1.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
     def supports(self, model: Any) -> bool:
         # Support a simple sentinel model value or a dict marker for tests

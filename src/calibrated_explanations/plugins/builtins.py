@@ -20,6 +20,7 @@ from typing import Any, Mapping
 
 import numpy as np
 
+from .. import __version__ as _PACKAGE_VERSION
 from ..explanations.explanation import (
     AlternativeExplanation,
     CalibratedExplanation as _AbstractExplanation,
@@ -125,9 +126,12 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     plugin_meta = {
         "name": "core.interval.legacy",
         "schema_version": 1,
+        "version": _PACKAGE_VERSION,
+        "provider": "calibrated_explanations",
         "capabilities": ["interval:classification", "interval:regression"],
         "modes": ("classification", "regression"),
         "dependencies": (),
+        "trusted": True,
         "trust": {"trusted": True},
         "fast_compatible": False,
         "requires_bins": False,
@@ -150,9 +154,12 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     plugin_meta = {
         "name": "core.interval.fast",
         "schema_version": 1,
+        "version": _PACKAGE_VERSION,
+        "provider": "calibrated_explanations",
         "capabilities": ["interval:classification", "interval:regression"],
         "modes": ("classification", "regression"),
         "dependencies": (),
+        "trusted": True,
         "trust": {"trusted": True},
         "fast_compatible": True,
         "requires_bins": False,
@@ -235,6 +242,8 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
     plugin_meta = {
         "name": "core.explanation.factual",
         "schema_version": 1,
+        "version": _PACKAGE_VERSION,
+        "provider": "calibrated_explanations",
         "capabilities": [
             "explain",
             "explanation:factual",
@@ -246,6 +255,7 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
         "dependencies": ("core.interval.legacy", "legacy"),
         "interval_dependency": "core.interval.legacy",
         "plot_dependency": "legacy",
+        "trusted": True,
         "trust": {"trusted": True},
     }
 
@@ -264,6 +274,8 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
     plugin_meta = {
         "name": "core.explanation.alternative",
         "schema_version": 1,
+        "version": _PACKAGE_VERSION,
+        "provider": "calibrated_explanations",
         "capabilities": [
             "explain",
             "explanation:alternative",
@@ -275,6 +287,7 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
         "dependencies": ("core.interval.legacy", "legacy"),
         "interval_dependency": "core.interval.legacy",
         "plot_dependency": "legacy",
+        "trusted": True,
         "trust": {"trusted": True},
     }
 
@@ -293,12 +306,15 @@ class FastExplanationPlugin(_LegacyExplanationBase):
     plugin_meta = {
         "name": "core.explanation.fast",
         "schema_version": 1,
+        "version": _PACKAGE_VERSION,
+        "provider": "calibrated_explanations",
         "capabilities": ["explain", "explanation:fast", "task:classification", "task:regression"],
         "modes": ("fast",),
         "tasks": ("classification", "regression"),
         "dependencies": ("core.interval.fast", "legacy"),
         "interval_dependency": "core.interval.fast",
         "plot_dependency": "legacy",
+        "trusted": True,
         "trust": {"trusted": True},
     }
 
@@ -317,9 +333,12 @@ class LegacyPlotBuilder(PlotBuilder):
     plugin_meta = {
         "name": "core.plot.legacy.builder",
         "schema_version": 1,
+        "version": _PACKAGE_VERSION,
+        "provider": "calibrated_explanations",
         "capabilities": ["plot:builder"],
         "style": "legacy",
         "dependencies": (),
+        "trusted": True,
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "legacy_compatible": True,
@@ -335,8 +354,11 @@ class LegacyPlotRenderer(PlotRenderer):
     plugin_meta = {
         "name": "core.plot.legacy.renderer",
         "schema_version": 1,
+        "version": _PACKAGE_VERSION,
+        "provider": "calibrated_explanations",
         "capabilities": ["plot:renderer"],
         "dependencies": (),
+        "trusted": True,
         "trust": {"trusted": True},
         "output_formats": ["png"],
         "supports_interactive": False,
