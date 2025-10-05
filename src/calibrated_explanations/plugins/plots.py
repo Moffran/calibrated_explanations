@@ -9,14 +9,19 @@ from typing import (
     MutableMapping,
     Protocol,
     Sequence,
-    TypeAlias,
+    Union,
     runtime_checkable,
 )
+
+try:  # Python < 3.10 compatibility
+    from typing import TypeAlias
+except ImportError:  # pragma: no cover - fallback when TypeAlias is unavailable
+    TypeAlias = object  # type: ignore[assignment]
 
 from ..viz.plotspec import PlotSpec
 
 
-PlotArtifact: TypeAlias = PlotSpec | Mapping[str, Any] | Any
+PlotArtifact: TypeAlias = Union[PlotSpec, Mapping[str, Any], Any]
 
 
 @dataclass(frozen=True)

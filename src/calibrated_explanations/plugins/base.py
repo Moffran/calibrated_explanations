@@ -33,7 +33,12 @@ validation helper exported from this module.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, Mapping, Protocol, Sequence, TypeAlias
+from typing import Any, Dict, Iterable, Mapping, Protocol, Sequence
+
+try:  # Python < 3.10 compatibility
+    from typing import TypeAlias
+except ImportError:  # pragma: no cover - fallback when TypeAlias is unavailable
+    TypeAlias = object  # type: ignore[assignment]
 
 
 PluginMeta: TypeAlias = Mapping[str, Any]
