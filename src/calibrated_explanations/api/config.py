@@ -5,7 +5,7 @@ to simplify constructing explainers with validated options. In this phase,
 no wiring to core classes is performed to avoid behavior changes; consumers
 may import and use these types for future-facing code.
 
-See ACTION_PLAN Phase 2 and ADR-009 for preprocessing-related fields.
+See `RELEASE_PLAN_v1` milestone targets and ADR-009 for preprocessing-related fields.
 """
 
 from __future__ import annotations

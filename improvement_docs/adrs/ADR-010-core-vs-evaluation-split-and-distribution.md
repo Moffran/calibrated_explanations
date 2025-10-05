@@ -47,7 +47,7 @@ Negative / Risks:
 
 ## Adoption & Migration
 
-Phase 2S (see Action Plan):
+Phase 2S (see release plan):
 
 1. Add `[project.optional-dependencies]` groups in `pyproject.toml` for `viz`, `notebooks`, `dev`, `eval` (no behavior changes yet).
 2. Update README with install matrix and examples for extras.

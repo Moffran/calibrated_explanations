@@ -636,12 +636,12 @@ You can find a detailed guide for contributions in
 
 ### Roadmap and ADRs
 
-We are evolving the package according to a written Action Plan and ADRs:
+We are evolving the package according to a written release plan and ADRs:
 
-- Action Plan: see `improvement_docs/ACTION_PLAN.md` in the repository. Phases guide what changes are accepted at any given time.
+- Release Plan: see `improvement_docs/RELEASE_PLAN_v1.md` in the repository for milestones and readiness gates on the path to v1.0.0.
 - ADRs: see `improvement_docs/adrs/` for accepted and proposed architectural decisions.
 
-When opening a PR, please align with the current phase and reference the relevant Action Plan sections/ADRs. The PR template includes a short checklist to help.
+When opening a PR, please align with the active milestone and reference the relevant ADR sections. The PR template includes a short checklist to help.
 
 [Table of Content](#table-of-contents)
 

@@ -1,6 +1,6 @@
 # ADR-015 — Explanation Plugin Architecture
 
-Status: Proposed (implementation in progress)
+Status: Accepted (shipped in v0.6.0)
 
 Date: 2025-10-05
 
@@ -198,6 +198,14 @@ the pre-plugin implementation.
   `[tool.calibrated_explanations.explanations]` and may supply mode-specific
   fallback arrays. CLI helpers mirror the interval/plot commands for listing,
   validating, and setting explanation plugins.
+
+## Implementation status (2025-10-07)
+
+- Runtime orchestration, plugin validation, and built-in adapters are live in
+  `CalibratedExplainer` and `plugins.builtins`, matching the protocol described
+  above.【F:src/calibrated_explanations/core/calibrated_explainer.py†L388-L420】【F:src/calibrated_explanations/core/calibrated_explainer.py†L520-L606】【F:src/calibrated_explanations/plugins/builtins.py†L120-L318】
+- Remaining integration work focuses on interval/plot dependency surfaces and
+  CLI packaging, tracked in the plugin gap closure plan.【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L24-L70】
 - When a plugin advertises `interval_dependency` or `plot_dependency`, the
   resolver prepends those identifiers to the interval and plot fallback chains,
   respectively, ensuring explanation, interval, and plot selections remain

@@ -1,6 +1,6 @@
 # ADR-013: Interval Calibrator Plugin Strategy
 
-Status: Proposed (needs implementation plan)
+Status: Accepted (runtime wiring in progress)
 Date: 2025-09-16 (revised 2025-10-02)
 Deciders: Core maintainers
 Reviewers: TBD
@@ -78,6 +78,14 @@ We therefore need a plugin model that lets external contributors add new interva
 - Trust remains opt-in per ADR-006: only plugins explicitly marked as trusted are eligible for automatic selection.
 - Metadata validation occurs during registration. Missing required fields keeps the plugin out of the registry, preventing accidental downgrades to unsafe implementations.
 - Runtime guards assert that calibrators return probabilities and intervals identical in structure to the built-in classes. Failures bubble up with actionable diagnostics so the system never silently downgrades calibration quality.
+
+## Implementation status (2025-10-07)
+
+- Protocols and registry descriptors ship in `plugins.intervals`, and legacy/FAST
+  adapters are registered as trusted defaults.【F:src/calibrated_explanations/plugins/intervals.py†L1-L80】【F:src/calibrated_explanations/plugins/builtins.py†L120-L183】
+- Core calibration helpers still instantiate VennAbers/IntervalRegressor
+  directly; wiring to resolve plugins at runtime is tracked in the plugin gap
+  plan.【F:src/calibrated_explanations/core/calibration_helpers.py†L1-L78】【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L24-L43】
 - No network or sandbox changes are introduced. Plugin authors manage their own dependencies and distribution while inheriting the host Python process permissions.
 
 ## Consequences

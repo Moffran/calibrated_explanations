@@ -1,6 +1,6 @@
 # ADR-004: Parallel Backend Abstraction
 
-Status: Accepted (baseline, feature-flagged)
+Status: Deferred (post-1.0 evaluation)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -56,17 +56,9 @@ Negative / Risks:
 - Maintenance of strategy matrix as code evolves.
 - Added light abstraction layer overhead.
 
-## Adoption & Migration
+## Implementation status (2025-10-07)
 
-Phase E (v0.7.0): Introduce facade with SerialStrategy default and thread/process strategies behind feature flag; opt-in only.
-Phase later: Evaluate heuristic auto-select on eligible loops guarded by perf tests; consider joblib/other backends.
-
-## Open Questions
-
-- Do we expose granular per-call overrides or only global config? (Lean: allow per-call optional param.)
-- Collect reproducible seeds across processes? Provide seed forwarding utility.
-- Need backpressure for large task lists? (Chunk submission or joblib batching.)
-
-## Decision Notes
-
-Revisit after measuring overhead on representative micro benchmarks.
+- No parallel executor abstraction has been merged; related configuration flags
+  remain inert placeholders on `ExplainerConfig`.
+- Release plan schedules any parallel backend work after the v0.9.0 documentation
+  and packaging milestone, keeping it out of the v1.0.0 critical path.【F:improvement_docs/RELEASE_PLAN_v1.md†L84-L114】
