@@ -1,6 +1,6 @@
 # Plugin Solution Gap Closure Plan
 
-Last updated: 2025-10-07
+Last updated: 2025-10-05
 Status: Draft roadmap owned by core maintainers
 
 ## Context snapshot

@@ -1,6 +1,6 @@
 # ADR-015 — Explanation Plugin Architecture
 
-Status: Accepted (shipped in v0.6.0)
+Status: Accepted (Implementation is underway)
 
 Date: 2025-10-05
 

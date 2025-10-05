@@ -1,6 +1,6 @@
 # Release Plan to v1.0.0
 
-Last updated: 2025-10-07
+Last updated: 2025-10-05
 Maintainers: Core team
 Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution.
 
