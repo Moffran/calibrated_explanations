@@ -4,6 +4,11 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.1...main)
 
+### Added
+
+### Changed
+
+### Fixed
 
 ## [v0.6.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.1) - 2025-10-05
 
