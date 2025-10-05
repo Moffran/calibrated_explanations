@@ -8,11 +8,22 @@ The fixtures intentionally delegate to existing helpers where available to
 avoid duplicating parsing logic.
 """
 
-import os
+from __future__ import annotations
+
 import contextlib
+import os
+import sys
+from pathlib import Path
 
 import pytest
 from ._fixtures import regression_dataset, binary_dataset, multiclass_dataset
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_SRC_PATH = _REPO_ROOT / "src"
+if _SRC_PATH.exists():
+    _SRC_STR = str(_SRC_PATH)
+    if _SRC_STR not in sys.path:
+        sys.path.insert(0, _SRC_STR)
 
 # Ensure non-interactive backend is selected early so tests never require a GUI.
 import os as _os

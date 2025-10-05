@@ -52,13 +52,20 @@ from ..utils.helper import (
     safe_isinstance,
 )
 from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
-from ..plugins import ExplanationContext, ExplanationRequest, validate_explanation_batch
+from ..plugins import (
+    ExplanationContext,
+    ExplanationRequest,
+    IntervalCalibratorContext,
+    validate_explanation_batch,
+)
 from ..plugins.builtins import LegacyPredictBridge
 from ..plugins.registry import (
     EXPLANATION_PROTOCOL_VERSION,
     ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
+    find_interval_descriptor,
+    find_interval_plugin,
 )
 from ..plugins.predict import PredictBridge
 
@@ -389,6 +396,51 @@ class CalibratedExplainer:
         self.__set_mode(str.lower(mode), initialize=False)
 
         self.interval_learner: Any = None
+        self._pyproject_explanations = _read_pyproject_section(
+            ("tool", "calibrated_explanations", "explanations")
+        )
+        self._pyproject_intervals = _read_pyproject_section(
+            ("tool", "calibrated_explanations", "intervals")
+        )
+        self._pyproject_plots = _read_pyproject_section(
+            ("tool", "calibrated_explanations", "plots")
+        )
+        self._explanation_plugin_overrides: Dict[str, Any] = {
+            mode: kwargs.get(f"{mode}_plugin") for mode in _EXPLANATION_MODES
+        }
+        self._interval_plugin_override = kwargs.get("interval_plugin")
+        self._fast_interval_plugin_override = kwargs.get("fast_interval_plugin")
+        self._plot_style_override = kwargs.get("plot_style")
+        self._bridge_monitors: Dict[str, _PredictBridgeMonitor] = {}
+        self._explanation_plugin_instances: Dict[str, Any] = {}
+        self._explanation_plugin_identifiers: Dict[str, str] = {}
+        self._explanation_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
+        self._plot_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
+        self._interval_plugin_hints: Dict[str, Tuple[str, ...]] = {}
+        self._interval_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
+        self._interval_plugin_identifiers: Dict[str, str | None] = {
+            "default": None,
+            "fast": None,
+        }
+        self._telemetry_interval_sources: Dict[str, str | None] = {
+            "default": None,
+            "fast": None,
+        }
+        self._interval_preferred_identifier: Dict[str, str | None] = {
+            "default": None,
+            "fast": None,
+        }
+        self._plot_style_chain: Tuple[str, ...] | None = None
+        self._explanation_contexts: Dict[str, ExplanationContext] = {}
+        self._last_explanation_mode: str | None = None
+        self._last_telemetry: Dict[str, Any] = {}
+        self._ensure_interval_runtime_state()
+        for mode in _EXPLANATION_MODES:
+            self._explanation_plugin_fallbacks[mode] = self._build_explanation_chain(mode)
+        self._interval_plugin_fallbacks["default"] = self._build_interval_chain(fast=False)
+        self._interval_plugin_fallbacks["fast"] = self._build_interval_chain(fast=True)
+        self._plot_style_chain = self._build_plot_style_chain()
+
         # Phase 1A delegation: interval learner initialization via helper
         from .calibration_helpers import initialize_interval_learner as _init_il
 
@@ -398,22 +450,6 @@ class CalibratedExplainer:
         )
 
         self._predict_bridge = LegacyPredictBridge(self)
-        self._pyproject_explanations = _read_pyproject_section(
-            ("tool", "calibrated_explanations", "explanations")
-        )
-        self._explanation_plugin_overrides: Dict[str, Any] = {
-            mode: kwargs.get(f"{mode}_plugin") for mode in _EXPLANATION_MODES
-        }
-        self._bridge_monitors: Dict[str, _PredictBridgeMonitor] = {}
-        self._explanation_plugin_instances: Dict[str, Any] = {}
-        self._explanation_plugin_identifiers: Dict[str, str] = {}
-        self._explanation_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
-        self._plot_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
-        self._interval_plugin_hints: Dict[str, Tuple[str, ...]] = {}
-        self._explanation_contexts: Dict[str, ExplanationContext] = {}
-        self._last_explanation_mode: str | None = None
-        for mode in _EXPLANATION_MODES:
-            self._explanation_plugin_fallbacks[mode] = self._build_explanation_chain(mode)
 
         self.init_time = time() - init_time
 
@@ -461,6 +497,88 @@ class CalibratedExplainer:
         if default_identifier and default_identifier not in seen:
             expanded.append(default_identifier)
         return tuple(expanded)
+
+    def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
+        """Return the ordered interval plugin chain for the requested mode."""
+
+        entries: List[str] = []
+        override = (
+            self._fast_interval_plugin_override if fast else self._interval_plugin_override
+        )
+        preferred_identifier: str | None = None
+        if isinstance(override, str) and override:
+            entries.append(override)
+            preferred_identifier = override
+
+        env_key = "CE_INTERVAL_PLUGIN_FAST" if fast else "CE_INTERVAL_PLUGIN"
+        env_value = os.environ.get(env_key)
+        if env_value:
+            entries.append(env_value.strip())
+            if preferred_identifier is None:
+                preferred_identifier = env_value.strip()
+        entries.extend(_split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
+
+        py_settings = self._pyproject_intervals or {}
+        py_key = "fast" if fast else "default"
+        py_value = py_settings.get(py_key)
+        if isinstance(py_value, str) and py_value:
+            entries.append(py_value)
+        entries.extend(_coerce_string_tuple(py_settings.get(f"{py_key}_fallbacks")))
+
+        default_identifier = "core.interval.fast" if fast else "core.interval.legacy"
+        seen: set[str] = set()
+        ordered: List[str] = []
+        for identifier in entries:
+            if identifier and identifier not in seen:
+                ordered.append(identifier)
+                seen.add(identifier)
+        if default_identifier not in seen:
+            ordered.append(default_identifier)
+        key = "fast" if fast else "default"
+        self._interval_preferred_identifier[key] = preferred_identifier
+        return tuple(ordered)
+
+    def _build_plot_style_chain(self) -> Tuple[str, ...]:
+        """Return the ordered plot style fallback chain."""
+
+        entries: List[str] = []
+        if isinstance(self._plot_style_override, str) and self._plot_style_override:
+            entries.append(self._plot_style_override)
+
+        env_value = os.environ.get("CE_PLOT_STYLE")
+        if env_value:
+            entries.append(env_value.strip())
+        entries.extend(_split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
+
+        py_settings = self._pyproject_plots or {}
+        py_value = py_settings.get("style")
+        if isinstance(py_value, str) and py_value:
+            entries.append(py_value)
+        entries.extend(_coerce_string_tuple(py_settings.get("style_fallbacks")))
+
+        entries.append("legacy")
+        seen: set[str] = set()
+        ordered: List[str] = []
+        for identifier in entries:
+            if identifier and identifier not in seen:
+                ordered.append(identifier)
+                seen.add(identifier)
+        return tuple(ordered)
+
+    def _ensure_interval_runtime_state(self) -> None:
+        """Ensure interval tracking members exist for legacy instances."""
+
+        storage = self.__dict__
+        if "_interval_plugin_hints" not in storage:
+            storage["_interval_plugin_hints"] = {}
+        if "_interval_plugin_fallbacks" not in storage:
+            storage["_interval_plugin_fallbacks"] = {}
+        if "_interval_plugin_identifiers" not in storage:
+            storage["_interval_plugin_identifiers"] = {"default": None, "fast": None}
+        if "_telemetry_interval_sources" not in storage:
+            storage["_telemetry_interval_sources"] = {"default": None, "fast": None}
+        if "_interval_preferred_identifier" not in storage:
+            storage["_interval_preferred_identifier"] = {"default": None, "fast": None}
 
     def _coerce_plugin_override(self, override: Any) -> Any:
         """Normalise a plugin override into an instance when possible."""
@@ -553,6 +671,179 @@ class CalibratedExplainer:
                 return copy.deepcopy(prototype)
             except Exception:  # pragma: no cover - defensive
                 return prototype
+
+    def _gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
+        """Return interval dependency hints collected from explanation plugins."""
+
+        if fast:
+            return self._interval_plugin_hints.get("fast", ())
+        ordered: List[str] = []
+        seen: set[str] = set()
+        for mode in ("factual", "alternative"):
+            for identifier in self._interval_plugin_hints.get(mode, ()):  # noqa: B020
+                if identifier not in seen:
+                    ordered.append(identifier)
+                    seen.add(identifier)
+        return tuple(ordered)
+
+    def _check_interval_runtime_metadata(
+        self,
+        metadata: Mapping[str, Any] | None,
+        *,
+        identifier: str | None,
+        fast: bool,
+    ) -> str | None:
+        """Validate interval plugin metadata for the current execution."""
+
+        prefix = identifier or str((metadata or {}).get("name") or "<anonymous>")
+        if metadata is None:
+            return f"{prefix}: interval metadata unavailable"
+
+        schema_version = metadata.get("schema_version")
+        if schema_version not in (None, 1):
+            return f"{prefix}: unsupported interval schema_version {schema_version}"
+
+        modes = _coerce_string_tuple(metadata.get("modes"))
+        if not modes:
+            return f"{prefix}: plugin metadata missing modes declaration"
+        required_mode = "regression" if "regression" in self.mode else "classification"
+        if required_mode not in modes:
+            declared = ", ".join(modes)
+            return f"{prefix}: does not support mode '{required_mode}' (modes: {declared})"
+
+        capabilities = set(_coerce_string_tuple(metadata.get("capabilities")))
+        required_cap = (
+            "interval:regression" if "regression" in self.mode else "interval:classification"
+        )
+        if required_cap not in capabilities:
+            declared = ", ".join(sorted(capabilities)) or "<none>"
+            return f"{prefix}: missing capability '{required_cap}' (capabilities: {declared})"
+
+        if fast and not bool(metadata.get("fast_compatible")):
+            return f"{prefix}: not marked fast_compatible"
+        if metadata.get("requires_bins") and self.bins is None:
+            return f"{prefix}: requires bins but explainer has none configured"
+        return None
+
+    def _resolve_interval_plugin(
+        self,
+        *,
+        fast: bool,
+        hints: Sequence[str] = (),
+    ) -> Tuple[Any, str | None]:
+        """Resolve the interval plugin for the requested execution path."""
+
+        ensure_builtin_plugins()
+
+        raw_override = (
+            self._fast_interval_plugin_override if fast else self._interval_plugin_override
+        )
+        override = self._coerce_plugin_override(raw_override)
+        if override is not None and not isinstance(override, str):
+            identifier = getattr(override, "plugin_meta", {}).get("name")
+            return override, identifier
+
+        if isinstance(raw_override, str):
+            preferred_identifier = raw_override
+        else:
+            key = "fast" if fast else "default"
+            preferred_identifier = self._interval_preferred_identifier.get(key)
+        chain = list(self._interval_plugin_fallbacks.get("fast" if fast else "default", ()))
+        if hints:
+            ordered = []
+            seen: set[str] = set()
+            for identifier in tuple(hints) + tuple(chain):
+                if identifier and identifier not in seen:
+                    ordered.append(identifier)
+                    seen.add(identifier)
+            chain = ordered
+
+        errors: List[str] = []
+        for identifier in chain:
+            descriptor = find_interval_descriptor(identifier)
+            plugin = None
+            metadata: Mapping[str, Any] | None = None
+            if descriptor is not None:
+                metadata = descriptor.metadata
+                if descriptor.trusted or identifier == preferred_identifier:
+                    plugin = descriptor.plugin
+            if plugin is None:
+                plugin = find_interval_plugin(identifier)
+            if plugin is None:
+                message = f"{identifier}: not registered"
+                if preferred_identifier == identifier:
+                    raise ConfigurationError("Interval plugin override failed: " + message)
+                errors.append(message)
+                continue
+
+            meta_source = metadata or getattr(plugin, "plugin_meta", None)
+            error = self._check_interval_runtime_metadata(
+                meta_source,
+                identifier=identifier,
+                fast=fast,
+            )
+            if error:
+                if preferred_identifier == identifier:
+                    raise ConfigurationError(error)
+                errors.append(error)
+                continue
+
+            plugin = self._instantiate_plugin(plugin)
+            return plugin, identifier
+
+        raise ConfigurationError(
+            "Unable to resolve interval plugin for "
+            + ("fast" if fast else "default")
+            + " mode. Tried: "
+            + ", ".join(chain or ("<none>",))
+            + ("; errors: " + "; ".join(errors) if errors else "")
+        )
+
+    def _build_interval_context(
+        self,
+        *,
+        fast: bool,
+        metadata: Mapping[str, Any],
+    ) -> IntervalCalibratorContext:
+        """Construct the frozen interval calibrator context."""
+
+        calibration_splits: Tuple[Any, ...] = ((self.X_cal, self.y_cal),)
+        bins = {"calibration": self.bins}
+        difficulty = {"estimator": self.difficulty_estimator}
+        fast_flags = {"fast": fast}
+        residuals: Mapping[str, Any] = {}
+        return IntervalCalibratorContext(
+            learner=self.learner,
+            calibration_splits=calibration_splits,
+            bins=bins,
+            residuals=residuals,
+            difficulty=difficulty,
+            metadata=dict(metadata),
+            fast_flags=fast_flags,
+        )
+
+    def _obtain_interval_calibrator(
+        self,
+        *,
+        fast: bool,
+        metadata: Mapping[str, Any],
+    ) -> Tuple[Any, str | None]:
+        """Resolve and instantiate the interval calibrator for the active mode."""
+
+        self._ensure_interval_runtime_state()
+        hints = self._gather_interval_hints(fast=fast)
+        plugin, identifier = self._resolve_interval_plugin(fast=fast, hints=hints)
+        context = self._build_interval_context(fast=fast, metadata=metadata)
+        try:
+            calibrator = plugin.create(context, fast=fast)
+        except Exception as exc:  # pragma: no cover - defensive guard
+            raise ConfigurationError(
+                f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
+            ) from exc
+        key = "fast" if fast else "default"
+        self._interval_plugin_identifiers[key] = identifier
+        self._telemetry_interval_sources[key] = identifier
+        return calibrator, identifier
 
     def _resolve_explanation_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Resolve or instantiate the plugin handling *mode*."""
@@ -717,12 +1008,11 @@ class CalibratedExplainer:
                 for hint in _coerce_string_tuple(plot_dependency):
                     if hint:
                         preferred.append(hint)
-        # Legacy renderer remains the universal fallback
-        preferred.append("legacy")
+        base_chain = self._plot_style_chain or ("legacy",)
         seen: set[str] = set()
         ordered: List[str] = []
-        for item in preferred:
-            if item not in seen:
+        for item in tuple(preferred) + base_chain:
+            if item and item not in seen:
                 ordered.append(item)
                 seen.add(item)
         return tuple(ordered)
@@ -775,6 +1065,28 @@ class CalibratedExplainer:
             raise ConfigurationError(
                 f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
             ) from exc
+        metadata = batch.collection_metadata
+        metadata.setdefault("task", self.mode)
+        interval_key = "fast" if mode == "fast" else "default"
+        interval_source = self._telemetry_interval_sources.get(interval_key)
+        if interval_source:
+            metadata["interval_source"] = interval_source
+            metadata.setdefault("proba_source", interval_source)
+        metadata.setdefault(
+            "interval_dependencies",
+            tuple(self._interval_plugin_hints.get(mode, ())),
+        )
+        plot_chain = self._plot_plugin_fallbacks.get(mode)
+        if plot_chain:
+            metadata.setdefault("plot_fallbacks", tuple(plot_chain))
+        telemetry_payload = {
+            "mode": mode,
+            "task": self.mode,
+            "interval_source": interval_source,
+            "proba_source": metadata.get("proba_source"),
+            "plot_fallbacks": tuple(plot_chain or ()),
+        }
+        self._last_telemetry = telemetry_payload
         if monitor is not None and not monitor.used:
             raise ConfigurationError(
                 "Explanation plugin for mode '"
@@ -784,9 +1096,20 @@ class CalibratedExplainer:
         container_cls = batch.container_cls
         if hasattr(container_cls, "from_batch"):
             result = container_cls.from_batch(batch)
+            try:
+                setattr(result, "telemetry", dict(telemetry_payload))
+            except Exception:  # pragma: no cover - defensive
+                pass
+            self.latest_explanation = result
             self._last_explanation_mode = mode
             return result
         raise ConfigurationError("Explanation plugin returned a batch that cannot be materialised")
+
+    @property
+    def runtime_telemetry(self) -> Mapping[str, Any]:
+        """Return the most recent telemetry payload reported by the explainer."""
+
+        return dict(self._last_telemetry)
 
     @property
     def X_cal(self):

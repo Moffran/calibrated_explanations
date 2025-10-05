@@ -61,6 +61,9 @@ eval = [
   "seaborn",
 ]
 
+[project.scripts]
+ce.plugins = "calibrated_explanations.plugins.cli:main"
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 markers = [

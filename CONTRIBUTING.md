@@ -55,3 +55,15 @@ Additional checks:
 - Linting via ruff (style and simple correctness rules).
 - Type checking via mypy. During Phase 1B, new core modules (e.g., `core/exceptions.py`, `core/validation.py`) are checked with stricter settings.
 - Performance guard: see `scripts/check_perf_regression.py` and `benchmarks/perf_thresholds.json`.
+
+## Plugin tooling quickstart
+
+Plugin development relies on the shared registry introduced in ADR-006/ADR-013/ADR-015.
+Two practical helpers when working on plugins:
+
+- Use the `ce.plugins` console script (packaged via `pyproject.toml`) to inspect
+  registered explanation/interval/plot plugins and their trust state:
+  `ce.plugins list all`.
+- Inline smoke tests live under `tests/integration/plugins/test_cli_smoke.py`.
+  Keep them green when adding new commands or metadata fields so the CLI output
+  remains stable for operators.

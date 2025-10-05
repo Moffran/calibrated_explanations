@@ -196,3 +196,32 @@ def test_fast_mode_predict_bridge_usage(binary_dataset):
     assert monitor.used, "FAST plugin should exercise the predict bridge"
     assert explainer._interval_plugin_hints["fast"] == ("core.interval.fast",)
     assert explainer._plot_plugin_fallbacks["fast"] == ("legacy",)
+
+
+def test_interval_plugin_resolution_records_default_identifier(binary_dataset):
+    explainer, X_test = _make_explainer(binary_dataset)
+    assert explainer._interval_plugin_identifiers["default"] == "core.interval.legacy"
+
+    batch = explainer.explain_factual(X_test)
+    assert batch is not None
+    assert explainer.runtime_telemetry.get("interval_source") == "core.interval.legacy"
+    assert getattr(batch, "telemetry", {}).get("interval_source") == "core.interval.legacy"
+
+
+def test_fast_interval_plugin_resolution_records_identifier(binary_dataset):
+    explainer, X_test = _make_explainer(binary_dataset, fast=True)
+    assert explainer._interval_plugin_identifiers["fast"] == "core.interval.fast"
+
+    fast_batch = explainer.explain_fast(X_test)
+    assert fast_batch is not None
+    assert explainer.runtime_telemetry.get("interval_source") == "core.interval.fast"
+    assert getattr(fast_batch, "telemetry", {}).get("interval_source") == "core.interval.fast"
+
+
+def test_interval_override_missing_identifier(monkeypatch, binary_dataset):
+    monkeypatch.setenv("CE_INTERVAL_PLUGIN", "tests.missing.interval")
+    try:
+        with pytest.raises(ConfigurationError, match="not registered"):
+            _make_explainer(binary_dataset)
+    finally:
+        monkeypatch.delenv("CE_INTERVAL_PLUGIN", raising=False)

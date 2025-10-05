@@ -52,28 +52,38 @@ corruptions.
 
 Plugin selection is composed from multiple sources in priority order:
 
-1. Keyword overrides on `CalibratedExplainer` (`factual_plugin=…`) which may be
-   instances or identifiers.
-2. Environment variables (`CE_EXPLANATION_PLUGIN_FACTUAL`, plus
-   `…_FALLBACKS` for comma-separated chains).
+1. Keyword overrides on `CalibratedExplainer` which may be instances or
+   identifiers: `factual_plugin`, `alternative_plugin`, `fast_plugin`, plus the
+   interval/plot hooks `interval_plugin`, `fast_interval_plugin`, and
+   `plot_style`.
+2. Environment variables. Each explanation mode understands
+   `CE_EXPLANATION_PLUGIN_<MODE>` and `CE_EXPLANATION_PLUGIN_<MODE>_FALLBACKS`;
+   interval plugins honour `CE_INTERVAL_PLUGIN`, `CE_INTERVAL_PLUGIN_FALLBACKS`,
+   `CE_INTERVAL_PLUGIN_FAST`, `CE_INTERVAL_PLUGIN_FAST_FALLBACKS`; plots use
+   `CE_PLOT_STYLE` and `CE_PLOT_STYLE_FALLBACKS`.
 3. `pyproject.toml` entries under `[tool.calibrated_explanations.explanations]`,
-   where each mode can declare a primary identifier and fallback list.
+   `[tool.calibrated_explanations.intervals]`, and
+   `[tool.calibrated_explanations.plots]` to declare primary identifiers and
+   fallback lists.
 4. Metadata-provided fallbacks declared by plugins themselves (via the
-   `fallbacks` field).【F:src/calibrated_explanations/core/calibrated_explainer.py†L324-L418】
+   `fallbacks`, `interval_dependency`, or `plot_dependency` fields).【F:src/calibrated_explanations/core/calibrated_explainer.py†L324-L418】【F:src/calibrated_explanations/core/calibrated_explainer.py†L652-L722】
 
 Dependency hints are propagated to interval and plot registries so the explainer
 can align calibrators (`interval_dependency`) and preferred renderers
-(`plot_dependency`) automatically.【F:src/calibrated_explanations/core/calibrated_explainer.py†L500-L541】
+(`plot_dependency`) automatically. The runtime also records the selected
+`interval_source`, `proba_source`, and plot fallbacks on
+`CalibratedExplainer.runtime_telemetry` and attaches the same payload to
+returned `CalibratedExplanations` collections for downstream telemetry.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1006-L1099】
 
 ### CLI helpers
 
 The registry ships with a small CLI that surfaces this metadata:
 
 ```bash
-python -m calibrated_explanations.plugins.cli list            # list explanation/interval/plot plugins
-python -m calibrated_explanations.plugins.cli show <id>       # inspect metadata for a specific plugin
-python -m calibrated_explanations.plugins.cli trust <id>      # mark an explanation plugin as trusted
-python -m calibrated_explanations.plugins.cli untrust <id>    # revoke trust for an explanation plugin
+ce.plugins list all            # list explanation/interval/plot plugins
+ce.plugins show <id> --kind intervals
+ce.plugins trust <id>          # mark an explanation plugin as trusted
+ce.plugins untrust <id>        # revoke trust for an explanation plugin
 ```
 
 `list` accepts an optional category (`explanations`, `intervals`, `plots`, or
