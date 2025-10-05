@@ -1,98 +1,149 @@
-# Plugin registry and trust model
+# Plugin registry, trust model, and ADR protocols
 
-This page shows the minimal, opt-in plugin registry shipped in ADR-006 and how
-to use it today, plus a short note about the planned full workflow and the
-limits of what plugins can (and cannot) do.
+Calibrated explanations ship with an in-process plugin registry that now covers
+explanation strategies (ADR-015), interval calibrators (ADR-013), and plotting
+adapters (ADR-014). The registry keeps execution explicit: users opt-in by
+registering plugins and, when appropriate, marking them as trusted. Metadata is
+validated against the active schema version (`schema_version=1` today) so that
+future or incompatible payloads fail fast with actionable messages.
 
-## Quick start (today)
+## Registry overview
 
-The repository includes a tiny example plugin used by tests at
-`tests/plugins/example_plugin.py`.
+Plugins are keyed by identifiers (`core.explanation.factual`, `core.interval.fast`,
+`legacy`, …) and expose structured metadata. The registry normalises mode names,
+tracks declared tasks (`classification`, `regression`, or `both`), and records
+specialised dependency hints such as `interval_dependency`, `plot_dependency`,
+and per-mode fallback chains. These hints are used when constructing
+`ExplanationContext` objects so explanation plugins can request the interval
+calibrator or plot builder they expect without hard-coding imports.【F:src/calibrated_explanations/plugins/registry.py†L24-L171】【F:src/calibrated_explanations/core/calibrated_explainer.py†L482-L559】
 
-To register and trust a plugin at runtime you can do the following:
+The trusted state is stored alongside each descriptor. Trusted-only listings or
+resolution paths can therefore exclude unreviewed plugins, and the CLI helpers
+expose round-trip commands (`trust` / `untrust`) to toggle that bit without
+restarting the process.【F:src/calibrated_explanations/plugins/registry.py†L243-L333】【F:src/calibrated_explanations/plugins/cli.py†L75-L145】
 
-```py
-from calibrated_explanations.plugins import registry
-from tests.plugins.example_plugin import PLUGIN
+## Explanation plugin workflow (ADR-015)
 
-# Register the plugin (no side-effects beyond adding to the in-process registry)
-registry.register(PLUGIN)
+Explanation plugins receive two frozen dataclasses from the core explainer:
+`ExplanationContext` (static model metadata and dependency hints) and
+`ExplanationRequest` (per-batch parameters). Plugins must call the provided
+predict bridge to obtain calibrated predictions/intervals and return an
+`ExplanationBatch` describing the explanation collection they produced.【F:src/calibrated_explanations/plugins/explanations.py†L23-L74】【F:src/calibrated_explanations/core/calibrated_explainer.py†L525-L608】
 
-# Optionally mark the plugin as trusted (controls discoverability via 'trusted' helpers)
-registry.trust_plugin(PLUGIN)
+At runtime the explainer enforces ADR constraints:
 
-# List registered plugins
-print(registry.list_plugins())
+* Plugin metadata is checked for schema compatibility, declared modes, tasks,
+  and capability flags before the plugin instance is initialised. A plugin that
+  omits `explanation:{mode}` or lacks `task:{classification,regression}` is
+  rejected with a clear `ConfigurationError` before any predictions run.【F:src/calibrated_explanations/core/calibrated_explainer.py†L469-L559】
+* A monitor wraps the predict bridge to ensure plugins actually route inference
+  through the calibrated path. Batches produced without invoking
+  `PredictBridge.predict`, `predict_interval`, or `predict_proba` trigger an
+  error explaining the missing bridge call.【F:src/calibrated_explanations/core/calibrated_explainer.py†L104-L142】【F:src/calibrated_explanations/core/calibrated_explainer.py†L582-L606】
+* Returned batches are validated (`validate_explanation_batch`) to confirm the
+  container/explanation classes derive from the expected base types, metadata
+  modes/tasks align with the active request, and any embedded container instance
+  matches the declared class.【F:src/calibrated_explanations/plugins/explanations.py†L79-L132】【F:src/calibrated_explanations/core/calibrated_explainer.py†L582-L602】
 
-# Find plugins that claim to support a model
-registry.find_for("supported-model")
-# Find trusted plugins only
-registry.find_for_trusted("supported-model")
+These checks turn schema mismatches into precise diagnostics rather than silent
+corruptions.
 
-# Remove or untrust when needed
-registry.untrust_plugin(PLUGIN)
-registry.unregister(PLUGIN)
+## Configuring plugin selection
+
+Plugin selection is composed from multiple sources in priority order:
+
+1. Keyword overrides on `CalibratedExplainer` (`factual_plugin=…`) which may be
+   instances or identifiers.
+2. Environment variables (`CE_EXPLANATION_PLUGIN_FACTUAL`, plus
+   `…_FALLBACKS` for comma-separated chains).
+3. `pyproject.toml` entries under `[tool.calibrated_explanations.explanations]`,
+   where each mode can declare a primary identifier and fallback list.
+4. Metadata-provided fallbacks declared by plugins themselves (via the
+   `fallbacks` field).【F:src/calibrated_explanations/core/calibrated_explainer.py†L324-L418】
+
+Dependency hints are propagated to interval and plot registries so the explainer
+can align calibrators (`interval_dependency`) and preferred renderers
+(`plot_dependency`) automatically.【F:src/calibrated_explanations/core/calibrated_explainer.py†L500-L541】
+
+### CLI helpers
+
+The registry ships with a small CLI that surfaces this metadata:
+
+```bash
+python -m calibrated_explanations.plugins.cli list            # list explanation/interval/plot plugins
+python -m calibrated_explanations.plugins.cli show <id>       # inspect metadata for a specific plugin
+python -m calibrated_explanations.plugins.cli trust <id>      # mark an explanation plugin as trusted
+python -m calibrated_explanations.plugins.cli untrust <id>    # revoke trust for an explanation plugin
 ```
 
-Notes:
+`list` accepts an optional category (`explanations`, `intervals`, `plots`, or
+`all`) and a `--trusted-only` flag to focus on pre-authorised plugins. Output
+includes dependency fields so operators can spot missing interval or plot
+adapters before running large jobs.【F:src/calibrated_explanations/plugins/cli.py†L15-L145】
 
-- `register` validates minimal metadata (see `plugins.base.validate_plugin_meta`) and will raise `ValueError` for malformed `plugin_meta`.
-- `trust_plugin` is an explicit opt-in step; the registry does not implicitly trust third-party code.
-- The registry is in-process and performs no automatic sandboxing or network calls.
+## Runtime validation & compatibility
 
-Important: current status
+Runtime guards surface actionable errors when plugins drift from ADR contracts:
 
-- The registry and helper APIs are available, but plugins are not yet integrated into the library's main explain flows by default. Registering a plugin adds it to the in-process registry and allows discovery via `find_for`/`find_for_trusted`, but it will not automatically be invoked by core expose functions unless you explicitly call the plugin's API. This minimizes risk while the trust model and discovery semantics are stabilized.
+* Unsupported `schema_version` or mismatched capabilities raise immediately,
+  pointing to the offending identifier.
+* Batches that report the wrong mode/task or embed containers of unexpected
+  types are rejected before any consumer code touches them.
+* Plugins that bypass the calibrated prediction bridge are blocked so outputs
+  cannot silently diverge from calibrated expectations.【F:src/calibrated_explanations/core/calibrated_explainer.py†L469-L606】【F:src/calibrated_explanations/plugins/explanations.py†L79-L132】
 
-Example: invoking a registered plugin explicitly
+These safeguards complement static registry validation and give CLI consumers a
+way to audit the active configuration before running explanations.
 
-```py
-# after register/ trust as above
-from calibrated_explanations.plugins import registry
+## v0.6.x hardening checklist
 
-plugin = registry.find_for("supported-model")[0]
-# Call the plugin's explain method directly (explicit invocation) — this executes plugin code in-process
-result = plugin.explain("supported-model", X=[1, 2, 3])
-print(result)
-```
+Patch release 0.6.1 focuses on regression coverage and operational guidance to
+keep plugin-first execution aligned with the legacy flows.
 
-## Planned full-support workflow (what will be available when ADR-006 is fully realized)
+### Regression tests
 
-When the plugin model is fully supported the plan is to provide:
+- Ensure runtime parity between the plugin orchestrator and the legacy escape
+  hatch by comparing `CalibratedExplainer` results with and without
+  `_use_plugin` enabled:
 
-- Entry-point discovery: plugins can be discovered via the `calibrated_explanations.plugins`
-  setuptools entry point group or explicit programmatic registration.
-- Environment & CLI opt-in: a user can pre-authorize plugins using environment variables (e.g., `CE_TRUST_PLUGIN=<name>`) or a one-time programmatic trust API to allow safe, repeatable runs.
-- Richer metadata: plugins will expose structured metadata (name, version, provider, capabilities, optional checksum) to help discovery and basic compatibility checks.
-- Trust controls: `list_plugins(include_untrusted=True)` for diagnostics, and `find_for_trusted(...)` to only consider trusted plugins during automated discovery.
-- Documentation and examples: published examples showing how to write a plugin that implements explanation strategies and visualization adapters.
+  ```bash
+  pytest tests/integration/core/test_explanation_parity.py::test_plugin_runtime_matches_legacy_factual \
+         tests/integration/core/test_explanation_parity.py::test_plugin_runtime_matches_legacy_alternative \
+         tests/integration/core/test_explanation_parity.py::test_plugin_runtime_matches_legacy_fast
+  ```
 
-These features are deliberately conservative: the trust model is opt-in and the registry will emit actionable warnings when untrusted plugins are present.
+- Keep schema validation sharp by exercising the v1 JSON Schema guardrails:
 
-## What plugins are intended to do (capabilities)
+  ```bash
+  pytest tests/unit/core/test_serialization_and_quick.py::test_validate_payload_rejects_missing_required_fields
+  ```
 
-Plugins are intended to be small, focused extension points such as:
+- Lock in wrapper keyword defaults and alias handling when configs are used to
+  spin up explainers:
 
-- Custom explanation strategies (implement `explain(model, X, **kwargs)` and return either a domain `Explanation` or a legacy explanation dict).
-- Lightweight visualization adapters or renderers (return `PlotSpec` or render directly when requested by caller).
-- Small helper adapters that adapt model types not supported by the core library.
+  ```bash
+  pytest tests/unit/core/test_wrap_keyword_defaults.py
+  ```
 
-Each plugin should declare its capabilities via `plugin_meta["capabilities"]` so callers can filter available plugins by the features they need.
+### Operational notes
 
-## Limits and security considerations (important)
+- The `_use_plugin=False` parameter remains supported as a safety valve for
+  enterprise deployments. The parity tests above ensure that disabling the
+  orchestrator still matches plugin-backed outputs.
+- Schema validation remains optional at runtime, but installing
+  `jsonschema>=4` enables the stricter guardrails covered by the regression
+  suite.
 
-- In-process execution only: plugins run in the same Python process as the host library. There is no sandboxing. A plugin can execute arbitrary Python code and therefore may access or modify process state.
-- Coarse trust flag: the `trusted` marker is an explicit opt-in but it is not a security boundary. Treat it as a usability guard, not a sandbox.
-- Metadata validation only: the registry validates only minimal metadata (presence and basic types). It does not verify code provenance or cryptographic signatures. Optional checksum fields may be supported later but will be best-effort.
-- API surface constraints: plugins are limited to the public plugin Protocol (see `calibrated_explanations.plugins.base.ExplainerPlugin`) — they cannot alter private internals unless those internals are explicitly exposed by the library's plugin hooks or public APIs.
-- Schema compatibility: explanation outputs should conform to the documented Explanation schema (schema v1) or to the legacy shapes accepted by adapters; otherwise consumers may fail downstream serializers or visualizers.
+## Legacy compatibility and migration
 
-## Recommended practices for plugin authors
+Legacy metadata aliases such as `"explanation:factual"` are still accepted but
+now emit deprecation warnings and are normalised to canonical mode names. During
+migration, explanation and plotting APIs retain a `use_legacy=True` escape hatch
+that forces the original renderers; plugin metadata can also specify fallbacks to
+`legacy` builders to replicate prior behaviour until custom adapters are
+available.【F:src/calibrated_explanations/plugins/registry.py†L41-L170】【F:src/calibrated_explanations/_plots.py†L278-L559】
 
-- Keep plugins focused and small (one responsibility: explainers vs visualizers).
-- Declare capability metadata and a stable `name` and `version` in `plugin_meta`.
-- Avoid side-effects at import time; prefer lazy initialization and explicit `register` calls.
-- Provide a small test-suite or smoke test so consumers can validate behavior.
-
----
-For more on the ADR and the trust model, see `improvement_docs/adrs/ADR-006-plugin-registry-trust-model.md`.
+The default in-tree plugins (`core.explanation.factual`, `core.explanation.fast`,
+`core.interval.fast`, etc.) remain trusted and provide parity with historical
+flows. Third-party plugins can gradually opt in while benefitting from the
+runtime validation described above.【F:src/calibrated_explanations/plugins/builtins.py†L120-L318】

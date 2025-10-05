@@ -31,7 +31,15 @@ def test_make_key_is_deterministic():
 
 
 class _FakePlugin:
-    plugin_meta = {"schema_version": 1, "capabilities": ["explain"], "name": "fake"}
+    plugin_meta = {
+        "schema_version": 1,
+        "capabilities": ["explain"],
+        "name": "fake",
+        "version": "0.0-test",
+        "provider": "tests",
+        "trusted": False,
+        "trust": False,
+    }
 
     def supports(self, model):
         return True

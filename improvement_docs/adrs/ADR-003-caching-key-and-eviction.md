@@ -1,6 +1,6 @@
 # ADR-003: Caching Key & Eviction Strategy
 
-Status: Accepted (baseline, feature-flagged)
+Status: Deferred (post-1.0 evaluation)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -47,17 +47,9 @@ Negative / Risks:
 - Approximate memory sizing may mis-estimate (document variance; allow item count cap override).
 - Additional dependency (`cachetools`, optional `pympler`).
 
-## Adoption & Migration
+## Implementation status (2025-10-07)
 
-Phase E (v0.7.0): Introduce module `calibrated_explanations.cache` behind a feature flag (disabled by default). Start with pure, high-cost idempotent steps.
-Phase later: Expand to explanation generation if stable; add micro-benchmarks and perf guards.
-
-## Open Questions
-
-- Do we need per-model namespace segmentation beyond key hashing? (Likely no initially.)
-- Whether to surface a public cache API or keep internal until stable.
-- Should TTL be activated for stochastic strategies to avoid stale randomness perception?
-
-## Decision Notes
-
-Revisit after first perf measurements post Phase 2 to adjust defaults.
+- No cache layer has been introduced in v0.6.0; performance hooks remain stubbed
+  behind configuration flags.【F:src/calibrated_explanations/api/config.py†L33-L52】
+- Release plan defers any caching work until after interval/plot plugin
+  integration and documentation milestones land for v1.0.0.【F:improvement_docs/RELEASE_PLAN_v1.md†L47-L98】

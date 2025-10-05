@@ -4,12 +4,12 @@ Contributions are welcome. Please see the repository’s `CONTRIBUTING.md` for t
 
 ## Roadmap-driven development
 
-We are updating the package according to a written Action Plan and ADRs:
+We are updating the package according to a written release plan and ADRs:
 
-- Action Plan: `improvement_docs/ACTION_PLAN.md` in the repo. Phases guide what kinds of changes are in-scope.
+- Release Plan: `improvement_docs/RELEASE_PLAN_v1.md` tracks milestone scope and readiness gates on the way to v1.0.0.
 - ADRs: `improvement_docs/adrs/` contains accepted and proposed architectural decisions.
 
-When opening a PR, please align with the current phase and reference the relevant Action Plan sections and ADRs.
+When opening a PR, please align with the active milestone in the release plan and reference the relevant ADRs.
 
 ## Quality gates (summary)
 

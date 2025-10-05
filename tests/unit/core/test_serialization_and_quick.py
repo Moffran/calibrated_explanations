@@ -43,6 +43,25 @@ def test_domain_json_round_trip_and_schema_validation():
     assert len(back.rules) == len(exp.rules)
 
 
+def test_validate_payload_rejects_missing_required_fields():
+    jsonschema = pytest.importorskip("jsonschema")
+
+    rules = [
+        FeatureRule(
+            feature=0,
+            rule="x0 <= 0.5",
+            weight={"predict": 0.1, "low": 0.05, "high": 0.15},
+            prediction={"predict": 0.6, "low": 0.5, "high": 0.7},
+        )
+    ]
+    exp = Explanation(task="classification", index=0, prediction={"predict": 1.0}, rules=rules)
+    payload = to_json(exp)
+    payload.pop("prediction")
+
+    with pytest.raises(jsonschema.exceptions.ValidationError):
+        validate_payload(payload)
+
+
 def test_adapter_legacy_to_json_round_trip():
     legacy = {
         "task": "classification",

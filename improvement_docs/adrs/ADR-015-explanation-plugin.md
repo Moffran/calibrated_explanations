@@ -1,309 +1,285 @@
-# ADR-015 — Explanation Plugin Interface (Code-Grounded)
+# ADR-015 — Explanation Plugin Architecture
 
-Status: Proposed
+Status: Accepted (Implementation is underway)
 
-Date: 2025-09-18
+Date: 2025-10-05
 
-Author: Internal
+Authors: Core maintainers
+
+Supersedes: ADR-015 — Explanation Plugin Interface (Code-Grounded)
+
+Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-014-plot-plugin-strategy
 
 ## Context
 
-We need a stable plugin surface for third‑party “explanation providers” that plugs into calibrated_explanations without breaking the existing internal classes:
+`CalibratedExplainer` exposes three public entry points that all rely on the
+same calibration, perturbation, and plotting machinery: factual explanations,
+alternative (counterfactual-style) explanations, and the FAST importance-only
+variant. In the current implementation each path hard-codes how perturbations
+are generated, how results are materialised via
+`CalibratedExplanations.finalize/finalize_fast`, and which concrete
+`AbstractCalibratedExplanation` subclasses get instantiated. The factual and
+alternative helpers merely flip discretiser flags before delegating to the
+monolithic `explain` method, and the FAST pathway duplicates large sections of
+that method while routing through a separate finaliser.
 
-- Per‑instance explanation classes live in `src/calibrated_explanations/explanations/explanation.py` (abstract `CalibratedExplanation` and concrete `FactualExplanation` / `AlternativeExplanation` / `FastExplanation`).
-- The collection/iterator is `CalibratedExplanations` in `src/calibrated_explanations/explanations/explanations.py` which finalizes instances and exposes plotting/interop.
-- A minimal plugin registry scaffold exists at `src/calibrated_explanations/plugins/base.py` via `ExplainerPlugin(Protocol)` and `validate_plugin_meta`.
-- A v1 JSON schema and adapters already exist at:
-  - Schema: `src/calibrated_explanations/schemas/explanation_schema_v1.json`
-  - Domain models + (de)serialization: `src/calibrated_explanations/explanations/models.py`, `src/calibrated_explanations/serialization.py`
+This tight coupling prevents explanation strategies from being authored as
+plugins that integrate with the registry trust model (ADR-006) or that can
+signal dependencies to the interval (ADR-013) and plot (ADR-014) plugin
+resolvers. It also makes it difficult to refactor the 400+ line
+`CalibratedExplainer.explain` pipeline or to introduce new explanation
+collections without rewriting the container finalisation logic that sits deep
+inside `CalibratedExplanations` today.【F:src/calibrated_explanations/core/calibrated_explainer.py†L622-L900】【F:src/calibrated_explanations/explanations/explanations.py†L318-L433】
 
-This ADR aligns the “Explanation Plugin” contract to those real interfaces.
+We need a single orchestration surface that delegates explanation assembly to
+plugins, keeps legacy behaviour byte-for-byte intact, and allows new
+explanation strategies to participate in the same dependency coordination as
+interval and plot plugins.
 
 ## Decision
 
-Adopt a dual contract for explanation plugins that reflects how the in‑tree classes construct explanations today and adds an optional JSON‑first path:
+### 1. Single orchestrator with mode-aware plugin resolution
 
-- Batch initializer path (preferred for core integration): Plugins return batch‑level arrays/maps that feed directly into `CalibratedExplanations.finalize(...)` or `finalize_fast(...)`.
-- JSON‑first path: Plugins return per‑instance Explanation payloads conforming to schema v1, or domain model objects (`Explanation` / `FeatureRule`) that serialize via `serialization.to_json`.
+`CalibratedExplainer.explain` becomes the canonical orchestration entry. It
+prepares the perturbation context, resolves an explanation plugin for the
+requested mode, and delegates batch construction. Public helpers remain thin
+wrappers:
 
-We reuse the existing plugin base (`ExplainerPlugin`) and extend it with an optional initialization hook and explicit mode capabilities. Plugins must declare which modes they support: `explanation:factual`, `explanation:alternative`, `explanation:fast`.
+- `explain_factual(...)` forwards to `explain(..., mode="factual")` and seeds
+the resolution chain with `core.explanation.factual`.
+- `explore_alternatives(...)` calls `explain(..., mode="alternative")` with a
+fallback to `core.explanation.alternative`.
+- `explain_fast(...)` invokes `explain(..., mode="fast")` and prefers
+`core.explanation.fast`.
 
-## JSON Schema (v1)
+Resolution precedence mirrors ADR-006: explicit keyword arguments on the call
+(e.g. `explanation_plugin`, `fast_explanation_plugin`) > environment variables
+(`CE_EXPLANATION_PLUGIN`, `CE_EXPLANATION_PLUGIN_FAST`) > project configuration
+(`[tool.calibrated_explanations.explanations]`) > package defaults. Each mode
+maintains its own fallback chain, and plugin metadata may extend those chains
+with mode-specific fallbacks. The resolver filters candidates by the explainer
+`task` (classification/regression) and requires that selected plugins be
+trusted unless the user explicitly opts into an untrusted identifier.
 
-Canonical path: `src/calibrated_explanations/schemas/explanation_schema_v1.json`.
+### 2. Explanation plugin protocol and shared data structures
 
-Key properties (per instance):
-- `task: string` — e.g., "classification" | "regression"
-- `index: integer` — instance index in X
-- `prediction: object` — typically contains `predict`, `low`, `high`
-- `rules: array[object]` — each rule requires:
-  - `feature: integer | array` (array for conjunctive rules)
-  - `rule: string` (human‑readable condition)
-  - `weight: object` (e.g., `predict`/`low`/`high` for contribution)
-  - `prediction: object` (rule‑level predicted outcome; same keys as above)
-  - optional: `instance_prediction`, `feature_value`, `is_conjunctive`, `value_str`, `bin_index`
-
-Versioning: payloads may include `schema_version: "1.0.0"` (recommended). Validation via `serialization.validate_payload` is optional if `jsonschema` is installed.
-
-## Python Protocol
-
-Use the existing `ExplainerPlugin` Protocol (`src/calibrated_explanations/plugins/base.py`) and add a code‑grounded contract for initialization and mode‑specific explanation outputs. Plugins MUST NOT call the learner/model directly; all predictions and uncertainty come via a provided predict bridge that proxies to the interval calibrators (VennAbers/IntervalRegressor) exactly like `_predict` in core.
-
-Type aliases (internal, for clarity):
+Explanation plugins conform to a code-first protocol that exchanges frozen
+context and batch payloads. The protocol lives in
+`src/calibrated_explanations/plugins/explanations.py` and extends the common
+`ExplainerPlugin` base from ADR-006.
 
 ```python
-from typing import Any, Callable, Dict, List, Mapping, Protocol, TypedDict, runtime_checkable, Union
-from calibrated_explanations.explanations.models import Explanation
+from dataclasses import dataclass
+from typing import Mapping, MutableMapping, Optional, Protocol, Sequence, Tuple, Type
 
-# JSON-first outputs
-JSONPayload = Dict[str, Any]  # must conform to v1 schema
-ExplanationOutput = Union[Explanation, JSONPayload, List[Explanation], List[JSONPayload]]
+from calibrated_explanations.explanations.base import AbstractCalibratedExplanation
+from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.plugins.types import PluginMeta
+from calibrated_explanations.plugins.predict import PredictBridge
 
-# Batch initializer path (shapes mirror finalize/finalize_fast)
-class BatchFactualLike(TypedDict):  # used by factual and alternative
-    binned: Mapping[str, Any]  # e.g., {"predict": arr[f,i,b], "low": ..., "high": ..., "rule_values": ...}
-    feature_weights: Mapping[str, Any]  # {"predict": arr[f,i], "low": arr[f,i], "high": arr[f,i]}
-    feature_predict: Mapping[str, Any]  # {"predict": arr[f,i], "low": arr[f,i], "high": arr[f,i]}
-    prediction: Mapping[str, Any]  # {"predict": arr[i], "low": arr[i], "high": arr[i], optional extras}
-    instance_time: Any | None
-    total_time: Any | None
+@dataclass(frozen=True)
+class ExplanationContext:
+    task: str
+    mode: str  # "factual" | "alternative" | "fast" | vendor extensions
+    feature_names: Sequence[str]
+    categorical_features: Sequence[int]
+    categorical_labels: Mapping[int, Mapping[int, str]]
+    discretizer: object
+    helper_handles: Mapping[str, object]  # read-only perturbation buffers
+    predict_bridge: PredictBridge  # delegated calibrated predictor
+    interval_settings: Mapping[str, object]
+    plot_settings: Mapping[str, object]
 
-class BatchFast(TypedDict):  # used by fast explanations
-    feature_weights: Mapping[str, Any]
-    feature_predict: Mapping[str, Any]
-    prediction: Mapping[str, Any]
-    instance_time: Any | None
-    total_time: Any | None
+@dataclass(frozen=True)
+class ExplanationRequest:
+    threshold: Optional[object]
+    low_high_percentiles: Optional[Tuple[float, float]]
+    bins: Optional[object]
+    features_to_ignore: Sequence[int]
+    extras: Mapping[str, object]  # additional kwargs forwarded from callers
 
-BatchOutput = Union[BatchFactualLike, BatchFast]
+@dataclass
+class ExplanationBatch:
+    container_cls: Type[CalibratedExplanations]
+    explanation_cls: Type[AbstractCalibratedExplanation]
+    instances: Sequence[Mapping[str, object]]  # payload per explanation
+    collection_metadata: MutableMapping[str, object]
 
-# Predict bridge signature (bound to the current explainer)
-# Mirrors core._predict(X, threshold, low_high_percentiles, classes, bins, feature)
-PredictBridge = Callable[
-    [
-        Any,  # X
-        Any | None,  # threshold
-        tuple[float, float] | None,  # low_high_percentiles
-        Any | None,  # classes (classification targets, when applicable)
-        Any | None,  # bins (Mondrian categories)
-        int | None,  # feature (for fast/per-feature isolation)
-    ],
-    tuple[Any, Any, Any, Any],  # (predict, low, high, classes)
-]
+class ExplanationPlugin(Protocol):
+    plugin_meta: PluginMeta
 
-@runtime_checkable
-class ExplanationProvider(Protocol):
-    plugin_meta: Dict[str, Any]
-    # Should include e.g. {
-    #   "schema_version": 1,
-    #   "capabilities": ["explain", "explanation:factual", ...],
-    #   "name": str
-    # }
+    def supports_mode(self, mode: str, *, task: str) -> bool: ...
 
-    def supports(self, mode: str) -> bool: ...
+    def initialize(self, context: ExplanationContext) -> None: ...
 
-    def initialize(self, context: Dict[str, Any], predict_bridge: PredictBridge) -> None: ...  # optional but recommended
-
-    # mode: "factual" | "alternative" | "fast"; no learner/model is passed
-    # prefer returning BatchOutput; JSON-first also allowed
-    def explain(self, X: Any, *, mode: str, **kwargs: Any) -> Union[BatchOutput, ExplanationOutput]: ...
+    def explain_batch(
+        self,
+        X,
+        request: ExplanationRequest,
+    ) -> ExplanationBatch: ...
 ```
 
-Required metadata and validation remain via `validate_plugin_meta`.
+Key characteristics:
 
-Expected kwargs (mirrors core explainer and `_predict`):
-- `low_high_percentiles: tuple[float, float] | None` (regression intervals; supports one‑sided ±∞)
-- `threshold: float | tuple[float, float] | None` (probabilistic regression)
-- `bins`, `features_to_ignore`, `rnk_metric`, `rnk_weight`, `filter_top`, `allow_conjunctions` (where applicable)
+- `plugin_meta` reuses ADR-006 metadata and adds explanation-specific fields
+(`modes`, `tasks`, `interval_dependency`, `plot_dependency`, optional
+capability tags like `"explanation:factual"`).
+- `initialize(...)` is invoked once per `CalibratedExplainer` instance to give
+the plugin access to frozen context and the calibrated prediction bridge from
+ADR-013. Plugins must treat the context as read-only.
+- `explain_batch(...)` executes per request, returning a batch payload that
+  identifies the container class and explanation class, supplies per-instance
+  payloads, and can emit collection-level metadata (timings, provenance, raw
+  perturbed predictions, plugin-defined artefacts).
+- Plugins never call the learner directly; all predictions flow through the
+  `PredictBridge`, ensuring interval guarantees are respected (ADR-013).
+- The batch contract materialises instance payloads today, but the signature
+  is intentionally compatible with a future streaming or generator-based
+  `instances` provider so that extremely large datasets can opt into lazy
+  production without redesigning the protocol.
 
-Prohibitions
-- Plugins must not call the learner/model or interval calibrators directly. All predictions and uncertainty must go through `predict_bridge`.
+### 3. Collection construction and metadata handling
 
-## Initialization and Lifecycle
+`CalibratedExplanations` becomes a lightweight collection façade with a single
+`from_batch(...)` constructor used by the runtime and plugins alike. The class
+stores the originating `CalibratedExplainer`, request metadata, the ordered
+list of instantiated explanation objects, and any collection metadata supplied
+by the plugin. Convenience methods such as `.append(...)`, `.extend(...)`, and
+`.set_metadata(...)` remain available for in-tree plugins. The legacy
+`finalize` and `finalize_fast` helpers wrap `from_batch(...)` so external code
+that still calls them behaves identically but now routes through the plugin
+pipeline.
 
-Plugins may need contextual information to construct explanations efficiently and consistently with the core classes. We define an optional initialization stage and a mode‑aware execution stage, and we provide a predict bridge that mirrors the core `_predict` method and delegates to the interval calibrators:
+### 4. Built-in plugins and compatibility guarantees
 
-1) Initialization (optional but recommended)
+Three in-tree plugins preserve today’s behaviour while exercising the new
+contract:
 
-- `initialize(context: Mapping[str, Any], predict_bridge: PredictBridge) -> None`
-- The core passes a read‑only context derived from `FrozenCalibratedExplainer` and current run‑time settings, and a `predict_bridge` callable bound to the current explainer. Suggested fields in `context`:
-  - `task`, `mode`, `class_labels`, `feature_names`, `categorical_features`, `categorical_labels`, `feature_values`
-  - `discretizer`, `rule_boundaries`, `bins` (Mondrian bins per instance if available)
-  - `X_cal`, `y_cal`, `sample_percentiles`, `assign_threshold`, `low_high_percentiles`, `y_threshold`
-  - `learner`, `difficulty_estimator`
-  - `features_to_ignore`, `allow_conjunctions`
+1. **`LegacyFactualExplanationPlugin` (`core.explanation.factual`)**
+   - Reuses the existing perturbation logic (`_explain_predict_step`,
+     `_assign_weight`, discretiser helpers) to produce factual
+     `ExplanationBatch` payloads.
+   - Emits `FactualExplanation` instances inside a `CalibratedExplanations`
+     container and declares dependencies `interval_dependency="core.interval.legacy"`
+     and `plot_dependency="legacy"` so the interval and plot resolvers receive
+     the same hints as before.
 
-2) Explain (per batch)
+2. **`LegacyAlternativeExplanationPlugin` (`core.explanation.alternative`)**
+   - Shares the factual helper stack but instantiates `AlternativeExplanation`
+     objects inside an `AlternativeExplanations` collection.
+   - Exposes the same dependency metadata as the factual plugin.
 
-- `explain(X, *, mode=...) -> BatchOutput | ExplanationOutput`
-- Mode determines the minimal required outputs (see next section). The plugin uses `predict_bridge` internally to obtain calibrated predictions/intervals. The core bridges outputs to either `finalize(...)` / `finalize_fast(...)` (batch path) or builds `CalibratedExplanations` from JSON/domain payloads (JSON‑first path).
+3. **`FastExplanationPlugin` (`core.explanation.fast`)**
+   - Ports the FAST orchestration, relying on the calibrated prediction bridge
+     for per-feature perturbations without invoking the legacy rule grid.
+   - Declares `interval_dependency="core.interval.fast"` and inherits the
+     factual plot dependency so FAST plots continue to render through the
+     default renderer.
 
-Notes
-- Alternative explanations require richer inputs (binned arrays and rule boundaries) than fast explanations. See “Output Contracts by Mode”.
-- For classification, plugins may attach full per‑batch probability matrices under the magic key `__full_probabilities__` in `prediction` for golden baselines; unknown keys are ignored by schema v1.
+All three register as trusted plugins. When no overrides are supplied, the
+resolver selects these built-ins, producing byte-for-byte identical outputs to
+the pre-plugin implementation.
 
-## Output Contracts by Mode
+### 5. Registry metadata, configuration, and dependency coordination
 
-These contracts are shaped to match `CalibratedExplanations.finalize(...)` and `finalize_fast(...)`.
+- Plugin metadata extends ADR-006 with `modes` (subset of `{factual,
+  alternative, fast}`), `tasks` (`{"classification", "regression", "both"}`),
+  `interval_dependency`, `plot_dependency`, optional `fallbacks`, and an
+  explicit `capabilities` list. Capabilities capture task-specific support and
+  advanced behaviours (for example `"task:classification"`,
+  `"task:regression"`, `"rules:conjunctions"`) so downstream tooling can reason
+  about plugin features without inspecting code. Metadata validation is
+  implemented alongside existing registry checks.
+- `CalibratedExplainer` accepts keyword overrides per mode
+  (`factual_plugin`, `alternative_plugin`, `fast_plugin`) and honours
+  environment variables (`CE_EXPLANATION_PLUGIN_FACTUAL`,
+  `CE_EXPLANATION_PLUGIN_ALTERNATIVE`, `CE_EXPLANATION_PLUGIN_FAST`). Project
+  configuration mirrors these keys under
+  `[tool.calibrated_explanations.explanations]` and may supply mode-specific
+  fallback arrays. CLI helpers mirror the interval/plot commands for listing,
+  validating, and setting explanation plugins.
 
-- Factual (mode = "factual")
-  - Must return `BatchFactualLike`:
-    - `binned`: mapping with keys at least `predict`, `low`, `high`, and `rule_values`.
-      - Shapes: `predict[f][i][b]`, etc., where `f`=feature, `i`=instance, `b`=bin index (inner shape may be ragged for categorical).
-    - `feature_weights`: per‑feature contributions with keys `predict`, `low`, `high` shaped `[f][i]`.
-    - `feature_predict`: per‑feature predictions with keys `predict`, `low`, `high` shaped `[f][i]`.
-    - `prediction`: per‑instance mapping with keys `predict`, `low`, `high` shaped `[i]`; may include `classes` (class id) and `__full_probabilities__` for classification.
+## Implementation status (2025-10-07)
 
-- Alternative (mode = "alternative")
-  - Same as Factual, but `binned` must include per‑feature, per‑bin arrays for the alternative values used by `AlternativeExplanation`:
-    - `binned["predict"][f][i][value_bin]`, and similarly for `low`/`high`.
-    - `rule_values` must carry the original/current bin value used to render rule text.
-  - The `discretizer`, `rule_boundaries`, and categorical metadata in `context` are required to construct the alternatives consistently.
+- Runtime orchestration, plugin validation, and built-in adapters are live in
+  `CalibratedExplainer` and `plugins.builtins`, matching the protocol described
+  above.【F:src/calibrated_explanations/core/calibrated_explainer.py†L388-L420】【F:src/calibrated_explanations/core/calibrated_explainer.py†L520-L606】【F:src/calibrated_explanations/plugins/builtins.py†L120-L318】
+- Remaining integration work focuses on interval/plot dependency surfaces and
+  CLI packaging, tracked in the plugin gap closure plan.【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L24-L70】
+- When a plugin advertises `interval_dependency` or `plot_dependency`, the
+  resolver prepends those identifiers to the interval and plot fallback chains,
+  respectively, ensuring explanation, interval, and plot selections remain
+  coordinated across ADR-013 and ADR-014.
+- Protocol versioning reuses the existing `schema_version` field inside
+  `plugin_meta`; any change to the explanation protocol increments the schema
+  value, and the loader validates that the runtime understands the declared
+  version before activating the plugin.
 
-- Fast (mode = "fast")
-  - Must return `BatchFast`:
-    - No `binned` required.
-    - `feature_weights`, `feature_predict`, and `prediction` with the same key conventions and shapes as above.
-  - Core will route to `CalibratedExplanations.finalize_fast(...)`.
+### 6. JSON and external payloads
 
-Validation and Invariants
-- Keys `predict`, `low`, `high` must be present where intervals are applicable to the task.
-- One‑sided intervals are permitted for regression; the core will treat `±inf` percentiles as one‑sided and disable uncertainty bands in plots.
-- Indexing: arrays must be aligned such that the second dimension corresponds to instance index `i` used by `CalibratedExplanations`.
-- Feature‑level UQ: For per‑feature weights, plugins should compute
-  - `weight_predict[f] = assign_weight(instance_predict_predict[f], prediction_predict)` and
-  - bounds using low/high deltas with `weight_low[f] = min(assign_weight(instance_predict_low[f]), assign_weight(instance_predict_high[f]))` and `weight_high[f] = max(...)`,
-  matching core `_assign_weight` semantics to ensure `weight_low <= weight_high`.
-
-Conditional‑rule Consistency
-- For conditional rule engines (factual/alternative), plugins must ensure the same rule condition is used for both the lower and upper surfaces when generating rule text and per‑feature values (e.g., a single discretizer condition drives both low and high). This guarantees consistent interpretation across bounds.
-
-## Code‑Grounded Interface Notes
-
-- Per‑instance explanation objects provide `prediction` with keys `predict`, `low`, `high` and rule‑level arrays with parallel keys. See `FactualExplanation._get_rules()` and `AlternativeExplanation._get_rules()` in `src/calibrated_explanations/explanations/explanation.py`.
-- Collections are materialized via `CalibratedExplanations.finalize(...)`, which constructs per‑instance explanations and can be iterated or plotted.
-- Classification can also expose per‑instance probability vectors; internal enrichment may attach a `__full_probabilities__` key on the instance `prediction` mapping for golden baselines. Plugins should ignore unknown keys per schema’s `additionalProperties: true`.
-
-## Predict Bridge and Calibrators
-
-- The predict bridge mirrors `CalibratedExplainer._predict` and is the only route for plugins to obtain calibrated outputs. It dispatches to interval calibrators:
-  - Classification: `interval_learner.predict_proba(X, output_interval=True, bins=...)` (or `interval_learner[feature]` for fast/per-feature)
-  - Regression: `interval_learner.predict_uncertainty(X, low_high_percentiles, bins=...)` or `interval_learner.predict_probability(X, threshold, bins=...)`
-- Fast mode: per‑feature isolation is handled by `feature` argument to the bridge (internally selects `interval_learner[feature]`).
-- Plugins must treat the bridge as a pure function of inputs and must not attempt to access the learner or calibrators directly.
-
-## Finalization Bridge
-
-- The explanations collection remains the authority for constructing `FactualExplanation`, `AlternativeExplanation`, and `FastExplanation` instances.
-- Batch outputs from plugins are passed to:
-  - `CalibratedExplanations.finalize(...)` for conditional (factual/alternative) rules.
-  - `CalibratedExplanations.finalize_fast(...)` for importance‑only (fast) rules.
-- Recommendation: introduce user‑facing aliases to clarify intent without breaking compatibility:
-  - `finalize_conditional_rules(...)` (alias of `finalize`)
-  - `finalize_importance_rules(...)` (alias of `finalize_fast`)
-
-## Capability Metadata
-
-Extend plugin `plugin_meta["capabilities"]` with explicit tags so the registry/core can pick compatible providers:
-- `explanation:factual` | `explanation:alternative` | `explanation:fast`
-- `schema:explanation/v1` if using the JSON‑first path
-- Optional diagnostics tags, e.g., `supports:multiclass`, `supports:one_sided`
-- A hard requirement tag signaling bridge use: `predict:bridge`
-
-Example
-
-```json
-{
-  "schema_version": 1,
-  "name": "acme.adapter",
-  "capabilities": [
-    "explain",
-    "explanation:fast",
-    "predict:bridge",
-    "supports:multiclass"
-  ]
-}
-```
-
-## Conformance Checklist (Plugin Authors)
-
-- Metadata
-  - [ ] Provide `plugin_meta` with `schema_version: int`, `capabilities: list[str]` (must include `"explain"` and should include `"schema:explanation/v1"`), and `name`.
-  - [ ] Pass `plugin_meta` through `validate_plugin_meta` during registration.
-
-- Predictions (UQ)
-  - [ ] For every instance, include calibrated UQ in `prediction` — keys `predict`, `low`, `high` as applicable to task.
-  - [ ] For rule items, include rule‑level `prediction` with the same keys.
-
-- Importance (UQ)
-  - [ ] For every rule item, include `weight` with keys `predict`, `low`, `high` (or a task‑appropriate equivalent). For fast/no‑rule modes, emit per‑feature weights with intervals.
-
- - Batch initializer path
-   - [ ] Factual/Alternative: provide `binned`, `feature_weights`, `feature_predict`, `prediction` with shapes matching `CalibratedExplanations.finalize(...)`.
-   - [ ] Fast: provide `feature_weights`, `feature_predict`, `prediction` (no `binned`) for `CalibratedExplanations.finalize_fast(...)`.
-   - [ ] Optional: `instance_time` per instance and `total_time` for diagnostics.
-
- - JSON‑first path
-   - [ ] Emit schema v1 payloads or domain model objects; `serialization.validate_payload` can check shape if `jsonschema` is installed.
-   - [ ] Ensure `task`, `index`, `prediction`, and `rules[...]` populate required fields; unknown extra fields are allowed.
-
-- Semantics & Controls
-  - [ ] Honor `low_high_percentiles` for regression (accept one‑sided intervals).
-  - [ ] Treat `threshold` as probabilistic regression only (scalar or 2‑tuple). Reject misuse for plain regression.
-  - [ ] Support multiclass classification (rule `classes` may be present in internal pipelines); plugins should provide consistent rule semantics.
-  - [ ] If conjunctions are produced, set `is_conjunctive` and use `feature` as a sequence.
-
-- Output shape
-  - [ ] Return either a single Explanation payload, a list of payloads, or domain models convertible by `serialization.to_json`.
-  - [ ] When emitting JSON, optionally set `schema_version: "1.0.0"` and consider validating with `serialization.validate_payload`.
+The primary integration path is code-first batch construction. `CalibratedExplanations`
+continues to expose `.to_json()` utilities that serialise known explanation
+subclasses using the existing models and schema helpers. Third-party plugins
+may return custom subclasses that implement the serialisation hooks, or they
+may emit JSON artefacts inside `collection_metadata` for downstream consumers.
+No additional guardrails are imposed for plugins that choose to emit entirely
+custom containers; it is the plugin author’s responsibility to ensure
+downstream tooling can consume those results.
+No mandatory JSON contract is imposed by the plugin interface.
 
 ## Consequences
 
-- Plugins interoperate with existing plotting and downstream adapters by emitting schema v1 per‑instance payloads or by returning batch outputs for finalization.
-- The core remains owner of calibration. Third‑party plugins that do their own calibration MUST still return UQ fields in the v1 shape.
-- Future schema versions can be introduced alongside v1 with capability tags like `schema:explanation/v2`.
+- **Backward compatibility:** Public APIs and explanation outputs remain
+  unchanged for legacy modes because the built-in plugins reuse the existing
+  helper stack and containers. `CalibratedExplanations.finalize` wrappers keep
+  downstream integrations working during the migration window.
+- **Extensibility:** New explanation strategies can provide their own
+  `AbstractCalibratedExplanation` subclasses, containers, and metadata without
+  modifying `CalibratedExplainer`. They can request specific interval or plot
+  dependencies via metadata, giving them first-class participation in the
+  broader plugin ecosystem defined by ADR-006/013/014.
+- **Separation of concerns:** `CalibratedExplainer` focuses on perturbation
+  orchestration and plugin resolution, while plugins manage batch assembly and
+  container instantiation. The collection class centralises metadata handling
+  and validation, reducing duplication across legacy and future plugins.
+- **Testing impact:** Existing factual, alternative, and FAST unit tests run
+  unchanged against the built-in plugins. New protocol tests cover plugin
+  resolution, context immutability, dependency forwarding, and validation of
+  `ExplanationBatch` payloads.
 
-## Error Handling and Validation
+## Migration Plan
 
-- Plugins should raise clear `ValueError`s when required context is missing (e.g., `rule_boundaries` for alternative mode) or shapes are inconsistent.
-- Plugins must not access the underlying learner or calibrators directly; violations will be rejected in code review and may be guarded at runtime.
-- The core can perform early validation of shapes/keys before invoking `finalize(...)`/`finalize_fast(...)` to surface configuration errors upfront.
-- JSON‑first payloads may be validated against schema v1 when `jsonschema` is present; otherwise, rely on downstream adapters.
+1. Introduce the plugin protocol, dataclasses, and registry validation helpers
+   in `plugins/explanations.py`.
+2. Refactor `CalibratedExplainer.explain` to resolve plugins and delegate batch
+   execution, removing direct calls to `CalibratedExplanations.finalize` /
+   `finalize_fast`.
+3. Extract the legacy perturbation helpers into reusable functions that can be
+   invoked by the built-in plugins when constructing `ExplanationBatch`
+   payloads.
+4. Implement `CalibratedExplanations.from_batch(...)`, update existing
+   finalisers to delegate to it, and ensure collection metadata flows through.
+5. Ship the three built-in plugins described above, registering them as trusted
+   defaults.
+6. Update configuration surfaces, CLI commands, and developer documentation to
+   describe explanation plugin resolution and dependency coordination.
+7. Add regression tests asserting that legacy and plugin-mediated outputs are
+   identical across factual, alternative, and FAST modes, and add new tests for
+   plugin metadata validation and fallback resolution.
 
-Special Requirements for Conditional‑Rule Plugins
-- When emitting rule text, use the same discretizer boundaries/conditions for both lower and upper bound interpretations of a feature; do not create divergent conditions per bound.
-- At minimum, provide `binned["rule_values"]` so `FactualExplanation` can render feature value strings consistently. Other `binned` keys may be omitted for factual mode if not used by the plugin; alternative mode requires full per‑bin arrays.
+## Resolved Questions
 
-## Backwards Compatibility
-
-- Dual output paths allow gradual adoption without breaking existing code. Batch outputs drop into existing finalize methods; JSON‑first integrates via adapters.
-- Capability tags prevent accidental selection of incompatible plugins.
-
-## Rationale
-
-- Fast explanations do not require binned per‑feature arrays; factual and alternative do. Making initialization explicit avoids under‑specification and mis‑shapen outputs.
-- An initialization hook avoids recomputing static artefacts (e.g., rule boundaries) on every call and aligns with how `FrozenCalibratedExplainer` exposes state today.
-
-## Terminology and Renaming Plan
-
-- Current terms in code and docs:
-  - `factual` (conditional rules)
-  - `alternative` (conditional rules)
-  - `fast` (importance‑only)
-
-- Proposed canonical terminology going forward:
-  - `factual-conditional` (alias of `factual`)
-  - `alternative-conditional` (alias of `alternative`)
-  - `factual-importance-only` (alias of `fast`)
-  - `alternative-importance-only` (future; not yet implemented)
-
-- Capability tags and backward compatibility:
-  - Recognize both the legacy tags (`explanation:factual`, `explanation:alternative`, `explanation:fast`) and the new tags (`explanation:factual-conditional`, `explanation:alternative-conditional`, `explanation:factual-importance-only`).
-  - The new `explanation:alternative-importance-only` may be introduced later; until then, plugins should not advertise it.
-
-- Finalization aliases (non‑breaking, recommended):
-  - `finalize_conditional_rules(...)` → alias of `finalize(...)` (for conditional engines)
-  - `finalize_importance_rules(...)` → alias of `finalize_fast(...)` (for importance‑only engines)
-
-- Documentation and migration:
-  - Prefer the new, explicit names in future docs and examples to improve clarity; keep legacy names as aliases to preserve API stability.
+- **Streaming batches?** Not initially. The current design materialises
+  instance payloads, but both the protocol and the batch dataclass deliberately
+  leave room to swap `instances` for a streaming-friendly provider so the
+  architecture is ready when we prioritise that enhancement.
+- **Capability tags for specialised support?** Yes. Plugins must declare the
+  capabilities they support (tasks, rule features, etc.) through the mandatory
+  `capabilities` list so the runtime and downstream tooling can reason about
+  compatibility without executing plugin code.
+- **Protocol versioning?** We reuse the `schema_version` field already present
+  in `plugin_meta`. Protocol changes increment the schema version, and the
+  loader validates compatibility during plugin activation.
+- **Guardrails for custom containers?** No additional guardrails are added.
+  Plugins that emit bespoke containers are responsible for ensuring any
+  downstream tooling they care about can consume the result.

@@ -6,12 +6,12 @@ Since we are now open to contributions, we welcome your feedback, suggestions, a
 
 ## Roadmap and ADR-driven development
 
-This project follows a written Action Plan and Architecture Decision Records (ADRs):
+This project follows a written release plan and Architecture Decision Records (ADRs):
 
-- Action Plan: see `improvement_docs/ACTION_PLAN.md`. It defines phases (1A–6) and milestone slices. Please align PRs with the current phase and its scope.
+- Release Plan: see `improvement_docs/RELEASE_PLAN_v1.md`. It defines the remaining milestones and gates on the path to v1.0.0. Please align PRs with the current milestone and its scope.
 - ADRs: see `improvement_docs/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
 
-Current highlights coming from reported issues and the Action Plan:
+Current highlights coming from reported issues and the release plan:
 
 - Explanation storage redesign (internal domain model with rule objects), tracked in ADR-008.
 - Native non-numeric input support in the wrapper (preprocessing + mapping persistence), tracked in ADR-009.
@@ -39,8 +39,8 @@ so watch out for the automated test results.
 
 PR expectations:
 
-- Keep changes scoped to a single slice/milestone. Write a brief checklist in the PR description referencing the Action Plan section.
-- Add/adjust tests: unit tests for new modules/paths, and keep golden/API snapshot tests unchanged unless the Action Plan explicitly calls for a public change (then update snapshots intentionally).
+- Keep changes scoped to a single slice/milestone. Write a brief checklist in the PR description referencing the relevant release-plan milestone.
+- Add/adjust tests: unit tests for new modules/paths, and keep golden/API snapshot tests unchanged unless the release plan explicitly calls for a public change (then update snapshots intentionally).
 - Quality gates should pass: ruff lint/format, pytest, and mypy. New modules may be subject to stricter mypy settings (see `pyproject.toml`).
 - If touching performance-sensitive paths, run or reference the perf guard and baseline scripts in `benchmarks/` and `scripts/`.
 - For architectural/public changes, include/modify an ADR in `improvement_docs/adrs/` and link it in the PR.

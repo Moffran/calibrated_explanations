@@ -15,9 +15,19 @@ from __future__ import annotations
 
 import warnings as _warnings
 from time import time
+import os
+from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+
+try:
+    import tomllib as _tomllib
+except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
+    try:  # pragma: no cover - optional dependency path
+        import tomli as _tomllib  # type: ignore[assignment]
+    except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
+        _tomllib = None  # type: ignore[assignment]
 from crepes import ConformalClassifier
 from crepes.extras import hinge
 from sklearn.metrics import confusion_matrix
@@ -42,12 +52,126 @@ from ..utils.helper import (
     safe_isinstance,
 )
 from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
+from ..plugins import ExplanationContext, ExplanationRequest, validate_explanation_batch
+from ..plugins.builtins import LegacyPredictBridge
+from ..plugins.registry import (
+    EXPLANATION_PROTOCOL_VERSION,
+    ensure_builtin_plugins,
+    find_explanation_descriptor,
+    find_explanation_plugin,
+)
+from ..plugins.predict import PredictBridge
+
 from .exceptions import (
     ValidationError,
     DataShapeError,
     ConfigurationError,
     NotFittedError,
 )
+
+
+def _read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
+    """Return a mapping from the requested ``pyproject.toml`` section."""
+
+    if _tomllib is None:
+        return {}
+
+    candidate = Path.cwd() / "pyproject.toml"
+    if not candidate.exists():
+        return {}
+    try:
+        with candidate.open("rb") as fh:  # type: ignore[arg-type]
+            data = _tomllib.load(fh)
+    except Exception:  # pragma: no cover - permissive fallback
+        return {}
+
+    cursor: Any = data
+    for key in path:
+        if isinstance(cursor, dict) and key in cursor:
+            cursor = cursor[key]
+        else:
+            return {}
+    if isinstance(cursor, dict):
+        return dict(cursor)
+    return {}
+
+
+def _split_csv(value: str | None) -> Tuple[str, ...]:
+    """Split a comma separated environment variable into a tuple."""
+
+    if not value:
+        return ()
+    entries = [item.strip() for item in value.split(",") if item.strip()]
+    return tuple(entries)
+
+
+def _coerce_string_tuple(value: Any) -> Tuple[str, ...]:
+    """Coerce a configuration value into a tuple of strings."""
+
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        return (value,) if value else ()
+    if isinstance(value, Iterable):
+        result: List[str] = []
+        for item in value:
+            if isinstance(item, str) and item:
+                result.append(item)
+        return tuple(result)
+    return ()
+
+
+_EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
+
+_DEFAULT_EXPLANATION_IDENTIFIERS: Dict[str, str] = {
+    "factual": "core.explanation.factual",
+    "alternative": "core.explanation.alternative",
+    "fast": "core.explanation.fast",
+}
+
+
+class _PredictBridgeMonitor(PredictBridge):
+    """Runtime guard ensuring plugins use the calibrated predict bridge."""
+
+    def __init__(self, bridge: PredictBridge) -> None:
+        self._bridge = bridge
+        self._calls: List[str] = []
+
+    def reset_usage(self) -> None:
+        self._calls.clear()
+
+    def predict(
+        self,
+        X: Any,
+        *,
+        mode: str,
+        task: str,
+        bins: Any | None = None,
+    ) -> Mapping[str, Any]:
+        self._calls.append("predict")
+        return self._bridge.predict(X, mode=mode, task=task, bins=bins)
+
+    def predict_interval(
+        self,
+        X: Any,
+        *,
+        task: str,
+        bins: Any | None = None,
+    ) -> Sequence[Any]:
+        self._calls.append("predict_interval")
+        return self._bridge.predict_interval(X, task=task, bins=bins)
+
+    def predict_proba(self, X: Any, bins: Any | None = None) -> Sequence[Any]:
+        self._calls.append("predict_proba")
+        return self._bridge.predict_proba(X, bins=bins)
+
+    @property
+    def calls(self) -> Tuple[str, ...]:
+        return tuple(self._calls)
+
+    @property
+    def used(self) -> bool:
+        return bool(self._calls)
 
 
 class CalibratedExplainer:
@@ -273,7 +397,396 @@ class CalibratedExplainer:
             self.initialize_reject_learner() if kwargs.get("reject", False) else None
         )
 
+        self._predict_bridge = LegacyPredictBridge(self)
+        self._pyproject_explanations = _read_pyproject_section(
+            ("tool", "calibrated_explanations", "explanations")
+        )
+        self._explanation_plugin_overrides: Dict[str, Any] = {
+            mode: kwargs.get(f"{mode}_plugin") for mode in _EXPLANATION_MODES
+        }
+        self._bridge_monitors: Dict[str, _PredictBridgeMonitor] = {}
+        self._explanation_plugin_instances: Dict[str, Any] = {}
+        self._explanation_plugin_identifiers: Dict[str, str] = {}
+        self._explanation_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
+        self._plot_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
+        self._interval_plugin_hints: Dict[str, Tuple[str, ...]] = {}
+        self._explanation_contexts: Dict[str, ExplanationContext] = {}
+        self._last_explanation_mode: str | None = None
+        for mode in _EXPLANATION_MODES:
+            self._explanation_plugin_fallbacks[mode] = self._build_explanation_chain(mode)
+
         self.init_time = time() - init_time
+
+    # ------------------------------------------------------------------
+    # Plugin resolution helpers (ADR-015)
+    # ------------------------------------------------------------------
+
+    def _build_explanation_chain(self, mode: str) -> Tuple[str, ...]:
+        """Return the ordered identifier fallback chain for *mode*."""
+
+        entries: List[str] = []
+
+        override = self._explanation_plugin_overrides.get(mode)
+        if isinstance(override, str) and override:
+            entries.append(override)
+
+        env_key = f"CE_EXPLANATION_PLUGIN_{mode.upper()}"
+        env_value = os.environ.get(env_key)
+        if env_value:
+            entries.append(env_value.strip())
+        entries.extend(_split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
+
+        py_settings = self._pyproject_explanations or {}
+        py_value = py_settings.get(mode)
+        if isinstance(py_value, str) and py_value:
+            entries.append(py_value)
+        entries.extend(_coerce_string_tuple(py_settings.get(f"{mode}_fallbacks")))
+
+        # Deduplicate while maintaining order and extend using metadata fallbacks
+        seen: set[str] = set()
+        expanded: List[str] = []
+        for identifier in entries:
+            if not identifier or identifier in seen:
+                continue
+            expanded.append(identifier)
+            seen.add(identifier)
+            descriptor = find_explanation_descriptor(identifier)
+            if descriptor:
+                for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
+                    if fallback and fallback not in seen:
+                        expanded.append(fallback)
+                        seen.add(fallback)
+
+        default_identifier = _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode)
+        if default_identifier and default_identifier not in seen:
+            expanded.append(default_identifier)
+        return tuple(expanded)
+
+    def _coerce_plugin_override(self, override: Any) -> Any:
+        """Normalise a plugin override into an instance when possible."""
+
+        if override is None:
+            return None
+        if isinstance(override, str):
+            return override
+        if callable(override) and not hasattr(override, "plugin_meta"):
+            try:
+                candidate = override()
+            except Exception as exc:  # pragma: no cover - defensive
+                raise ConfigurationError(
+                    "Callable explanation plugin override raised an exception"
+                ) from exc
+            return candidate
+        return override
+
+    def _check_explanation_runtime_metadata(
+        self,
+        metadata: Mapping[str, Any] | None,
+        *,
+        identifier: str | None,
+        mode: str,
+    ) -> str | None:
+        """Return an error message if *metadata* is incompatible at runtime."""
+
+        prefix = identifier or str((metadata or {}).get("name") or "<anonymous>")
+        if metadata is None:
+            return f"{prefix}: plugin metadata unavailable"
+
+        schema_version = metadata.get("schema_version")
+        if schema_version != EXPLANATION_PROTOCOL_VERSION:
+            return (
+                f"{prefix}: explanation schema_version {schema_version} unsupported; "
+                f"expected {EXPLANATION_PROTOCOL_VERSION}"
+            )
+
+        tasks = _coerce_string_tuple(metadata.get("tasks"))
+        if not tasks:
+            return f"{prefix}: plugin metadata missing tasks declaration"
+        if "both" not in tasks and self.mode not in tasks:
+            declared = ", ".join(tasks)
+            return f"{prefix}: does not support task '{self.mode}' " f"(declared: {declared})"
+
+        modes = _coerce_string_tuple(metadata.get("modes"))
+        if not modes:
+            return f"{prefix}: plugin metadata missing modes declaration"
+        if mode not in modes:
+            declared = ", ".join(modes)
+            return f"{prefix}: does not declare mode '{mode}' (modes: {declared})"
+
+        capabilities = metadata.get("capabilities")
+        cap_set: set[str] = set()
+        if isinstance(capabilities, Iterable):
+            for capability in capabilities:
+                cap_set.add(str(capability))
+
+        missing: List[str] = []
+        if "explain" not in cap_set:
+            missing.append("explain")
+        mode_cap = f"explanation:{mode}"
+        if mode_cap not in cap_set:
+            alt_mode_cap = f"mode:{mode}"
+            if alt_mode_cap not in cap_set:
+                missing.append(mode_cap)
+        task_cap = f"task:{self.mode}"
+        if task_cap not in cap_set and "task:both" not in cap_set:
+            missing.append(task_cap)
+
+        if missing:
+            return f"{prefix}: missing required capabilities {', '.join(sorted(missing))}"
+
+        return None
+
+    def _instantiate_plugin(self, prototype: Any) -> Any:
+        """Best-effort instantiation that avoids sharing state across explainers."""
+
+        if prototype is None:
+            return None
+        if callable(prototype) and hasattr(prototype, "plugin_meta"):
+            return prototype
+        plugin_cls = type(prototype)
+        try:
+            return plugin_cls()
+        except Exception:
+            try:
+                import copy
+
+                return copy.deepcopy(prototype)
+            except Exception:  # pragma: no cover - defensive
+                return prototype
+
+    def _resolve_explanation_plugin(self, mode: str) -> Tuple[Any, str | None]:
+        """Resolve or instantiate the plugin handling *mode*."""
+
+        ensure_builtin_plugins()
+
+        raw_override = self._explanation_plugin_overrides.get(mode)
+        override = self._coerce_plugin_override(raw_override)
+        if override is not None and not isinstance(override, str):
+            plugin = override
+            identifier = getattr(plugin, "plugin_meta", {}).get("name")
+            return plugin, identifier
+
+        preferred_identifier = raw_override if isinstance(raw_override, str) else None
+        chain = self._explanation_plugin_fallbacks.get(mode, ())
+        errors: List[str] = []
+        for identifier in chain:
+            is_preferred = preferred_identifier is not None and identifier == preferred_identifier
+            descriptor = find_explanation_descriptor(identifier)
+            metadata: Mapping[str, Any] | None = None
+            plugin = None
+            if descriptor is not None:
+                metadata = descriptor.metadata
+                if descriptor.trusted:
+                    plugin = descriptor.plugin
+            if plugin is None:
+                plugin = find_explanation_plugin(identifier)
+            if plugin is None:
+                message = f"{identifier}: not registered"
+                if is_preferred:
+                    raise ConfigurationError("Explanation plugin override failed: " + message)
+                errors.append(message)
+                continue
+
+            meta_source = metadata or getattr(plugin, "plugin_meta", None)
+            error = self._check_explanation_runtime_metadata(
+                meta_source,
+                identifier=identifier,
+                mode=mode,
+            )
+            if error:
+                if is_preferred:
+                    raise ConfigurationError(error)
+                errors.append(error)
+                continue
+
+            plugin = self._instantiate_plugin(plugin)
+            try:
+                supports = plugin.supports_mode
+            except AttributeError as exc:
+                errors.append(f"{identifier}: missing supports_mode ({exc})")
+                continue
+            try:
+                if not supports(mode, task=self.mode):
+                    errors.append(f"{identifier}: mode '{mode}' unsupported for task {self.mode}")
+                    continue
+            except Exception as exc:  # pragma: no cover - defensive
+                errors.append(f"{identifier}: error during supports_mode ({exc})")
+                continue
+            return plugin, identifier
+
+        raise ConfigurationError(
+            "Unable to resolve explanation plugin for mode '"
+            + mode
+            + "'. Tried: "
+            + ", ".join(chain or ("<none>",))
+            + ("; errors: " + "; ".join(errors) if errors else "")
+        )
+
+    def _ensure_explanation_plugin(self, mode: str) -> Tuple[Any, str | None]:
+        """Return the plugin instance for *mode*, initialising on demand."""
+
+        if mode in self._explanation_plugin_instances:
+            return self._explanation_plugin_instances[
+                mode
+            ], self._explanation_plugin_identifiers.get(mode)
+
+        plugin, identifier = self._resolve_explanation_plugin(mode)
+        metadata: Mapping[str, Any] | None = None
+        if identifier:
+            descriptor = find_explanation_descriptor(identifier)
+            if descriptor:
+                metadata = descriptor.metadata
+                interval_dependency = metadata.get("interval_dependency")
+                hints = _coerce_string_tuple(interval_dependency)
+                if hints:
+                    self._interval_plugin_hints[mode] = hints
+            else:
+                metadata = getattr(plugin, "plugin_meta", None)
+        else:
+            metadata = getattr(plugin, "plugin_meta", None)
+
+        error = self._check_explanation_runtime_metadata(
+            metadata,
+            identifier=identifier,
+            mode=mode,
+        )
+        if error:
+            raise ConfigurationError(error)
+
+        if metadata is not None and not identifier:
+            hints = _coerce_string_tuple(metadata.get("interval_dependency"))
+            if hints:
+                self._interval_plugin_hints[mode] = hints
+        context = self._build_explanation_context(mode, plugin, identifier)
+        try:
+            plugin.initialize(context)
+        except Exception as exc:
+            raise ConfigurationError(
+                f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
+            ) from exc
+        self._explanation_plugin_instances[mode] = plugin
+        if identifier:
+            self._explanation_plugin_identifiers[mode] = identifier
+        self._explanation_contexts[mode] = context
+        return plugin, identifier
+
+    def _build_explanation_context(
+        self, mode: str, plugin: Any, identifier: str | None
+    ) -> ExplanationContext:
+        """Construct the immutable context passed to explanation plugins."""
+
+        helper_handles = {"explainer": self}
+        interval_settings = {
+            "dependencies": self._interval_plugin_hints.get(mode, ()),
+        }
+        plot_chain = self._derive_plot_chain(mode, identifier)
+        self._plot_plugin_fallbacks[mode] = plot_chain
+        plot_settings = {"fallbacks": plot_chain}
+
+        monitor = self._bridge_monitors.get(mode)
+        if monitor is None:
+            monitor = _PredictBridgeMonitor(self._predict_bridge)
+            self._bridge_monitors[mode] = monitor
+
+        context = ExplanationContext(
+            task=self.mode,
+            mode=mode,
+            feature_names=tuple(self.feature_names),
+            categorical_features=tuple(self.categorical_features),
+            categorical_labels=(
+                {k: dict(v) for k, v in (self.categorical_labels or {}).items()}
+                if self.categorical_labels
+                else {}
+            ),
+            discretizer=self.discretizer,
+            helper_handles=helper_handles,
+            predict_bridge=monitor,
+            interval_settings=interval_settings,
+            plot_settings=plot_settings,
+        )
+        return context
+
+    def _derive_plot_chain(self, mode: str, identifier: str | None) -> Tuple[str, ...]:
+        """Return plot fallback chain seeded by plugin metadata."""
+
+        preferred: List[str] = []
+        if identifier:
+            descriptor = find_explanation_descriptor(identifier)
+            if descriptor:
+                plot_dependency = descriptor.metadata.get("plot_dependency")
+                for hint in _coerce_string_tuple(plot_dependency):
+                    if hint:
+                        preferred.append(hint)
+        # Legacy renderer remains the universal fallback
+        preferred.append("legacy")
+        seen: set[str] = set()
+        ordered: List[str] = []
+        for item in preferred:
+            if item not in seen:
+                ordered.append(item)
+                seen.add(item)
+        return tuple(ordered)
+
+    def _infer_explanation_mode(self) -> str:
+        """Infer the explanation mode based on the active discretizer."""
+
+        if isinstance(self.discretizer, (EntropyDiscretizer, RegressorDiscretizer)):
+            return "alternative"
+        return "factual"
+
+    def _invoke_explanation_plugin(
+        self,
+        mode: str,
+        X_test,
+        threshold,
+        low_high_percentiles,
+        bins,
+        features_to_ignore,
+        extras: Mapping[str, Any] | None = None,
+    ) -> CalibratedExplanations:
+        """Invoke the configured plugin for *mode* and materialise the batch."""
+
+        plugin, _identifier = self._ensure_explanation_plugin(mode)
+        request = ExplanationRequest(
+            threshold=threshold,
+            low_high_percentiles=tuple(low_high_percentiles)
+            if low_high_percentiles is not None
+            else None,
+            bins=bins,
+            features_to_ignore=tuple(features_to_ignore or []),
+            extras=dict(extras or {}),
+        )
+        monitor = self._bridge_monitors.get(mode)
+        if monitor is not None:
+            monitor.reset_usage()
+        try:
+            batch = plugin.explain_batch(X_test, request)
+        except Exception as exc:
+            raise ConfigurationError(
+                f"Explanation plugin execution failed for mode '{mode}': {exc}"
+            ) from exc
+        try:
+            validate_explanation_batch(
+                batch,
+                expected_mode=mode,
+                expected_task=self.mode,
+            )
+        except Exception as exc:
+            raise ConfigurationError(
+                f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
+            ) from exc
+        if monitor is not None and not monitor.used:
+            raise ConfigurationError(
+                "Explanation plugin for mode '"
+                + mode
+                + "' did not use the calibrated predict bridge"
+            )
+        container_cls = batch.container_cls
+        if hasattr(container_cls, "from_batch"):
+            result = container_cls.from_batch(batch)
+            self._last_explanation_mode = mode
+            return result
+        raise ConfigurationError("Explanation plugin returned a batch that cannot be materialised")
 
     @property
     def X_cal(self):
@@ -626,6 +1139,8 @@ class CalibratedExplainer:
         low_high_percentiles=(5, 95),
         bins=None,
         features_to_ignore=None,
+        *,
+        _use_plugin: bool = True,
     ) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
@@ -654,7 +1169,14 @@ class CalibratedExplainer:
         """
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
         self.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
-        return self.explain(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
+        return self.explain(
+            X_test,
+            threshold,
+            low_high_percentiles,
+            bins,
+            features_to_ignore,
+            _use_plugin=_use_plugin,
+        )
 
     def explain_counterfactual(
         self,
@@ -690,6 +1212,8 @@ class CalibratedExplainer:
         low_high_percentiles=(5, 95),
         bins=None,
         features_to_ignore=None,
+        *,
+        _use_plugin: bool = True,
     ) -> AlternativeExplanations:
         """Create a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
@@ -724,7 +1248,14 @@ class CalibratedExplainer:
         self.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
         # At runtime, explain() will return an AlternativeExplanations when an alternative discretizer is set.
         # Help mypy with a narrow cast here without changing behavior.
-        return self.explain(X_test, threshold, low_high_percentiles, bins, features_to_ignore)  # type: ignore[return-value]
+        return self.explain(
+            X_test,
+            threshold,
+            low_high_percentiles,
+            bins,
+            features_to_ignore,
+            _use_plugin=_use_plugin,
+        )  # type: ignore[return-value]
 
     def __call__(
         self,
@@ -733,12 +1264,21 @@ class CalibratedExplainer:
         low_high_percentiles=(5, 95),
         bins=None,
         features_to_ignore=None,
+        *,
+        _use_plugin: bool = True,
     ) -> CalibratedExplanations:
         """Call self as a function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
 
         Since v0.4.0, this method is equivalent to the `explain` method.
         """
-        return self.explain(X_test, threshold, low_high_percentiles, bins, features_to_ignore)
+        return self.explain(
+            X_test,
+            threshold,
+            low_high_percentiles,
+            bins,
+            features_to_ignore,
+            _use_plugin=_use_plugin,
+        )
 
     def explain(
         self,
@@ -747,6 +1287,8 @@ class CalibratedExplainer:
         low_high_percentiles=(5, 95),
         bins=None,
         features_to_ignore=None,
+        *,
+        _use_plugin: bool = True,
     ) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
 
@@ -766,6 +1308,18 @@ class CalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
+        if _use_plugin:
+            mode = self._infer_explanation_mode()
+            return self._invoke_explanation_plugin(
+                mode,
+                X_test,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                extras={"mode": mode},
+            )
+
         # Track total explanation time
         total_time = time()
 
@@ -1135,6 +1689,7 @@ class CalibratedExplainer:
             total_time=total_time,
         )
         self.latest_explanation = explanation
+        self._last_explanation_mode = self._infer_explanation_mode()
         return explanation
 
     def _validate_and_prepare_input(self, X_test):
@@ -1322,6 +1877,8 @@ class CalibratedExplainer:
         threshold=None,
         low_high_percentiles=(5, 95),
         bins=None,
+        *,
+        _use_plugin: bool = True,
     ) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data.
 
@@ -1349,6 +1906,17 @@ class CalibratedExplainer:
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.
         """
+        if _use_plugin:
+            return self._invoke_explanation_plugin(
+                "fast",
+                X_test,
+                threshold,
+                low_high_percentiles,
+                bins,
+                tuple(self.features_to_ignore),
+                extras={"mode": "fast"},
+            )
+
         if not self.is_fast():
             try:
                 self.__fast = True
@@ -1475,6 +2043,7 @@ class CalibratedExplainer:
             total_time=total_time,
         )
         self.latest_explanation = explanation
+        self._last_explanation_mode = "fast"
         return explanation
 
     def explain_lime(
