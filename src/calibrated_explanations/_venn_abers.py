@@ -35,7 +35,7 @@ class VennAbers:
     -------
         __init__(X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
             Initializes the VennAbers class with calibration data and model.
-        __predict_proba_with_difficulty(X, bins=None):
+        __predict_proba_with_difficulty(x, bins=None):
             Predicts probabilities with difficulty adjustment.
         predict(x, bins=None):
             Predicts the class of the test samples.

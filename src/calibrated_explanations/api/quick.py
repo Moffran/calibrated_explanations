@@ -20,7 +20,7 @@ def quick_explain(
     y_train: Any,
     x_cal: Any,
     y_cal: Any,
-    x_test: Any,
+    x: Any,
     *,
     task: Literal["classification", "regression"] | None = None,
     threshold: float | None = None,
@@ -37,7 +37,7 @@ def quick_explain(
         Proper training data for the model.
     X_cal, y_cal : Any
         Calibration data for the explainer.
-    X_test : Any
+    x : Any
         Instances to explain.
     task : {"classification", "regression"}, optional
         Overrides automatic mode detection.
@@ -67,7 +67,7 @@ def quick_explain(
         cal_kwargs["mode"] = task
     w.calibrate(x_cal, y_cal, **cal_kwargs)
     # Use cfg defaults implicitly for factual explanations
-    return w.explain_factual(x_test)
+    return w.explain_factual(x)
 
 
 __all__ = ["quick_explain"]

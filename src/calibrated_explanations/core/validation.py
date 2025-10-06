@@ -95,19 +95,19 @@ def validate_inputs_matrix(
     n_features: int | None = None,
     check_finite: bool = True,
 ) -> None:
-    """Validate typical (X, y) input pairs.
+    """Validate typical (x, y) input pairs.
 
-    - Ensures X is 2D and y length matches X rows when provided/required.
+    - Ensures x is 2D and y length matches x rows when provided/required.
     - Validates finiteness according to allow_nan/check_finite.
     - Enforces feature count when n_features is provided.
     """
-    validate_not_none(x, "X")
+    validate_not_none(x, "x")
     x_arr = _as_2d_array(x)
     if x_arr.ndim != 2:
-        raise DataShapeError("Argument 'X' must be 2D (n_samples, n_features).")
+        raise DataShapeError("Argument 'x' must be 2D (n_samples, n_features).")
     n_samples = x_arr.shape[0]
     if n_features is not None and x_arr.shape[1] != n_features:
-        raise DataShapeError(f"Argument 'X' must have {n_features} features, got {x_arr.shape[1]}.")
+        raise DataShapeError(f"Argument 'x' must have {n_features} features, got {x_arr.shape[1]}.")
 
     if require_y and y is None:
         raise ValidationError("Argument 'y' must be provided when require_y=True.")
@@ -115,7 +115,7 @@ def validate_inputs_matrix(
         y_arr = _as_1d_array(y)
         if y_arr.shape[0] != n_samples:
             raise DataShapeError(
-                f"Length of 'y' ({y_arr.shape[0]}) does not match number of samples in X ({n_samples})."
+                f"Length of 'y' ({y_arr.shape[0]}) does not match number of samples in x ({n_samples})."
             )
         # Only perform finiteness checks on numeric dtypes to avoid TypeError for object/string labels
         if (
@@ -127,7 +127,7 @@ def validate_inputs_matrix(
             raise ValidationError("Argument 'y' contains NaN or infinite values.")
 
     if check_finite and not allow_nan and not np.isfinite(x_arr).all():
-        raise ValidationError("Argument 'X' contains NaN or infinite values.")
+        raise ValidationError("Argument 'x' contains NaN or infinite values.")
 
     # For now, task inference is unused here, but reserved for future checks
     _ = infer_task(x, y, None) if task == "auto" else task

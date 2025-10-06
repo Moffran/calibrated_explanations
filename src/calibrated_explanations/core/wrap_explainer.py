@@ -256,7 +256,7 @@ class WrapCalibratedExplainer:
         self.calibrated = True
         return self
 
-    def explain_factual(self, x_test: Any, **kwargs: Any) -> Any:
+    def explain_factual(self, x: Any, **kwargs: Any) -> Any:
         """Generate factual explanations for the test data.
 
         See Also
@@ -273,7 +273,7 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
         # Optional preprocessing
-        x_local = self._maybe_preprocess_for_inference(x_test)
+        x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         # If constructed via _from_config, prefer cfg defaults when absent
         cfg = getattr(self, "_cfg", None)
@@ -287,7 +287,7 @@ class WrapCalibratedExplainer:
         assert self.explainer is not None
         return self.explainer.explain_factual(x_local, **kwargs)
 
-    def explain_counterfactual(self, x_test: Any, **kwargs: Any) -> Any:
+    def explain_counterfactual(self, x: Any, **kwargs: Any) -> Any:
         """Generate counterfactual explanations for the test data.
 
         See Also
@@ -295,9 +295,9 @@ class WrapCalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_counterfactual` : Refer to the docstring for explain_counterfactual in CalibratedExplainer for more details.
 
         """
-        return self.explore_alternatives(x_test, **kwargs)
+        return self.explore_alternatives(x, **kwargs)
 
-    def explore_alternatives(self, x_test: Any, **kwargs: Any) -> Any:
+    def explore_alternatives(self, x: Any, **kwargs: Any) -> Any:
         """Generate alternative explanations for the test data.
 
         See Also
@@ -313,7 +313,7 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
-        x_local = self._maybe_preprocess_for_inference(x_test)
+        x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)
         if cfg is not None:
@@ -325,7 +325,7 @@ class WrapCalibratedExplainer:
         assert self.explainer is not None
         return self.explainer.explore_alternatives(x_local, **kwargs)
 
-    def explain_fast(self, x_test: Any, **kwargs: Any) -> Any:
+    def explain_fast(self, x: Any, **kwargs: Any) -> Any:
         """Generate fast explanations for the test data.
 
         See Also
@@ -340,7 +340,7 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
-        x_local = self._maybe_preprocess_for_inference(x_test)
+        x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         # Apply config defaults when available and not explicitly provided
         cfg = getattr(self, "_cfg", None)
@@ -353,7 +353,7 @@ class WrapCalibratedExplainer:
         assert self.explainer is not None
         return self.explainer.explain_fast(x_local, **kwargs)
 
-    def explain_lime(self, x_test: Any, **kwargs: Any) -> Any:
+    def explain_lime(self, x: Any, **kwargs: Any) -> Any:
         """Generate lime explanations for the test data.
 
         See Also
@@ -368,7 +368,7 @@ class WrapCalibratedExplainer:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
-        x_local = self._maybe_preprocess_for_inference(x_test)
+        x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
@@ -379,7 +379,7 @@ class WrapCalibratedExplainer:
     # pylint: disable=too-many-return-statements
     def predict(
         self,
-        x_test: Any,
+        x: Any,
         uq_interval: bool = False,
         calibrated: bool = True,
         **kwargs: Any,
@@ -404,12 +404,12 @@ class WrapCalibratedExplainer:
                     stacklevel=2,
                 )
             if uq_interval:
-                predict = self.learner.predict(x_test)
+                predict = self.learner.predict(x)
                 return predict, (predict, predict)
-            return self.learner.predict(x_test)
+            return self.learner.predict(x)
 
         # Optional preprocessing for inference consistency
-        x_local = self._maybe_preprocess_for_inference(x_test)
+        x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
@@ -421,7 +421,7 @@ class WrapCalibratedExplainer:
 
     def predict_proba(
         self,
-        x_test: Any,
+        x: Any,
         uq_interval: bool = False,
         calibrated: bool = True,
         threshold: float | None = None,
@@ -456,11 +456,11 @@ class WrapCalibratedExplainer:
                     stacklevel=2,
                 )
             # getattr to appease typing when learner may not expose predict_proba
-            proba = self.learner.predict_proba(x_test)
+            proba = self.learner.predict_proba(x)
             return self._format_proba_output(proba, uq_interval)
 
         # Optional preprocessing for inference consistency
-        x_local = self._maybe_preprocess_for_inference(x_test)
+        x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
@@ -524,14 +524,14 @@ class WrapCalibratedExplainer:
         assert self.explainer is not None
         return self.explainer.initialize_reject_learner(threshold=threshold)
 
-    def predict_reject(self, x_test: Any, bins: Any = None, confidence: float = 0.95) -> Any:
+    def predict_reject(self, x: Any, bins: Any = None, confidence: float = 0.95) -> Any:
         """Predict whether to reject the explanations for the test data.
 
         See Also
         --------
         :meth:`.CalibratedExplainer.predict_reject` : Refer to the docstring for predict_reject in CalibratedExplainer for more details.
         """
-        bins = self._get_bins(x_test, **{"bins": bins})
+        bins = self._get_bins(x, **{"bins": bins})
         if not self.fitted:
             raise NotFittedError(
                 "The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection."
@@ -541,11 +541,11 @@ class WrapCalibratedExplainer:
                 "The WrapCalibratedExplainer must be calibrated before predicting rejection."
             )
         assert self.explainer is not None
-        return self.explainer.predict_reject(x_test, bins=bins, confidence=confidence)
+        return self.explainer.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(
-        self, x_test: Any, y_test: Any = None, threshold: float | None = None, **kwargs: Any
+        self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any
     ) -> None:
         """Generate plots for the test data.
 
@@ -565,14 +565,14 @@ class WrapCalibratedExplainer:
             if threshold is None:
                 threshold = cfg.threshold
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
-        kwargs["bins"] = self._get_bins(x_test, **kwargs)
+        kwargs["bins"] = self._get_bins(x, **kwargs)
         assert self.explainer is not None
-        self.explainer.plot(x_test, y_test=y_test, threshold=threshold, **kwargs)
+        self.explainer.plot(x, y=y, threshold=threshold, **kwargs)
 
-    def _get_bins(self, x_test: Any, **kwargs: Any) -> Any:
+    def _get_bins(self, x: Any, **kwargs: Any) -> Any:
         if isinstance(self.mc, MondrianCategorizer):
-            return self.mc.apply(x_test)
-        return self.mc(x_test) if self.mc is not None else kwargs.get("bins")
+            return self.mc.apply(x)
+        return self.mc(x) if self.mc is not None else kwargs.get("bins")
 
     # ------ Internal helpers (reduce duplication) ------
     def _normalize_public_kwargs(
@@ -596,7 +596,7 @@ class WrapCalibratedExplainer:
         return {k: v for k, v in base.items() if k in allowed}
 
     def _pre_fit_preprocess(self, x: Any) -> Any:
-        """Fit the configured preprocessor and return transformed X.
+        """Fit the configured preprocessor and return transformed x.
 
         Controlled Phase 2 wiring: if a user-supplied preprocessor exposes
         fit/transform, we use it. No built-in auto encoding is activated here.
@@ -616,7 +616,7 @@ class WrapCalibratedExplainer:
             return x
 
     def _pre_transform(self, x: Any, stage: str = "predict") -> Any:
-        """Transform X with the fitted preprocessor if available."""
+        """Transform x with the fitted preprocessor if available."""
         try:
             if self._preprocessor is None or not self._pre_fitted:
                 return x

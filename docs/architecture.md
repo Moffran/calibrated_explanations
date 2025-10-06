@@ -76,7 +76,7 @@ Initial phases keep cache disabled & serial execution by default to preserve bas
 ## Validation and parameters (Phase 1B)
 
 - Validation is enforced at the wrapper boundary:
-- `WrapCalibratedExplainer.calibrate(...)` performs strict checks on inputs and the learner (no NaNs in X/y; model must implement `predict`, classification auto-detected via `predict_proba`).
+- `WrapCalibratedExplainer.calibrate(...)` performs strict checks on inputs and the learner (no NaNs in x/y; model must implement `predict`, classification auto-detected via `predict_proba`).
 - Other wrapper entry points (predict/explain/plot) run permissive input shape checks and allow NaNs to avoid behavior drift in Phase 1B.
 - Parameter canonicalization: known aliases are mapped to canonical names without changing behavior (e.g., `alpha`/`alphas` → `low_high_percentiles`, `n_jobs` → `parallel_workers`). Unknown keys are preserved.
 - The core `CalibratedExplainer` maintains legacy checks; the wrapper provides the unified validation surface for public use.

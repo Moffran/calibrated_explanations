@@ -17,22 +17,22 @@ class _RecordingExplainer:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.plot_calls: list[tuple[Any, dict[str, Any]]] = []
 
-    def explain_factual(self, x_test: Any, **kwargs: Any) -> str:
+    def explain_factual(self, x: Any, **kwargs: Any) -> str:
         self.calls.append(("factual", dict(kwargs)))
         return "factual"
 
-    def explore_alternatives(self, x_test: Any, **kwargs: Any) -> str:
+    def explore_alternatives(self, x: Any, **kwargs: Any) -> str:
         self.calls.append(("alternative", dict(kwargs)))
         return "alternative"
 
-    def explain_fast(self, x_test: Any, **kwargs: Any) -> str:
+    def explain_fast(self, x: Any, **kwargs: Any) -> str:
         self.calls.append(("fast", dict(kwargs)))
         return "fast"
 
-    def plot(self, x_test: Any, *, threshold: float | None = None, **kwargs: Any) -> None:
+    def plot(self, x: Any, *, threshold: float | None = None, **kwargs: Any) -> None:
         payload = dict(kwargs)
         payload["threshold"] = threshold
-        self.plot_calls.append((x_test, payload))
+        self.plot_calls.append((x, payload))
 
 
 @dataclass

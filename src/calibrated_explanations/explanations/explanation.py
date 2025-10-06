@@ -100,7 +100,7 @@ class CalibratedExplanation(ABC):
         self,
         calibrated_explanations,
         index,
-        x_test,
+        x,
         binned,
         feature_weights,
         feature_predict,
@@ -120,7 +120,7 @@ class CalibratedExplanation(ABC):
             The parent :class:`.CalibratedExplanations` object.
         index : int
             The index of the instance being explained.
-        X_test : array-like
+        x : array-like
             The test dataset containing the instances to be explained.
         binned : dict
             A mapping of binned feature values.
@@ -141,7 +141,7 @@ class CalibratedExplanation(ABC):
         prediction = MappingProxyType(prediction)
         self.calibrated_explanations = calibrated_explanations
         self.index = index
-        self.x_test = x_test
+        self.x_test = x
         self.binned = {}
         self.feature_weights = {}
         self.feature_predict = {}
@@ -685,7 +685,7 @@ class FactualExplanation(CalibratedExplanation):
         self,
         calibrated_explanations,
         index,
-        x_test,
+        x,
         binned,
         feature_weights,
         feature_predict,
@@ -705,7 +705,7 @@ class FactualExplanation(CalibratedExplanation):
             The parent CalibratedExplanations object.
         index : int
             The index of the instance being explained.
-        X_test : array-like
+        x : array-like
             The test dataset containing the instances to be explained.
         binned : dict
             A mapping of binned feature values.
@@ -723,7 +723,7 @@ class FactualExplanation(CalibratedExplanation):
         super().__init__(
             calibrated_explanations,
             index,
-            x_test,
+            x,
             binned,
             feature_weights,
             feature_predict,
@@ -1125,7 +1125,7 @@ class AlternativeExplanation(CalibratedExplanation):
         self,
         calibrated_explanations,
         index,
-        x_test,
+        x,
         binned,
         feature_weights,
         feature_predict,
@@ -1145,7 +1145,7 @@ class AlternativeExplanation(CalibratedExplanation):
             The parent CalibratedExplanations object.
         index : int
             The index of the instance being explained.
-        X_test : array-like
+        x : array-like
             The test dataset containing the instances to be explained.
         binned : dict
             A mapping of binned feature values.
@@ -1163,7 +1163,7 @@ class AlternativeExplanation(CalibratedExplanation):
         super().__init__(
             calibrated_explanations,
             index,
-            x_test,
+            x,
             binned,
             feature_weights,
             feature_predict,
@@ -1884,7 +1884,7 @@ class FastExplanation(CalibratedExplanation):
         self,
         calibrated_explanations,
         index,
-        x_test,
+        x,
         feature_weights,
         feature_predict,
         prediction,
@@ -1903,7 +1903,7 @@ class FastExplanation(CalibratedExplanation):
             The parent CalibratedExplanations object.
         index : int
             The index of the instance being explained.
-        X_test : array-like
+        x : array-like
             The test dataset containing the instances to be explained.
         feature_weights : dict
             A mapping of feature weights.
@@ -1919,7 +1919,7 @@ class FastExplanation(CalibratedExplanation):
         super().__init__(
             calibrated_explanations,
             index,
-            x_test,
+            x,
             {},
             feature_weights,
             feature_predict,

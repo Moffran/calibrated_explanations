@@ -11,7 +11,7 @@ def assert_valid_confidence_bounds(predictions, bounds, msg="Invalid confidence 
         assert low[i] <= pred <= high[i], f"{msg} at index {i}"
 
 
-def generic_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test):
+def generic_test(cal_exp, x_prop_train, y_prop_train, x, y):
     """Generic calibrated explainer test routine.
 
     This function encapsulates repeated assertions used across several
@@ -38,8 +38,8 @@ def generic_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test):
     assert new_exp.explainer == explainer
     assert new_exp.learner == learner
 
-    cal_exp.plot(x_test, show=False)
-    cal_exp.plot(x_test, y_test, show=False)
+    cal_exp.plot(x, show=False)
+    cal_exp.plot(x, y, show=False)
     return cal_exp
 
 

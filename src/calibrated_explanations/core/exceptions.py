@@ -40,7 +40,7 @@ class ValidationError(CalibratedError):
 
 
 class DataShapeError(ValidationError):
-    """Provided data has incompatible shape or dtype (e.g., X/y mismatch)."""
+    """Provided data has incompatible shape or dtype (e.g., x/y mismatch)."""
 
 
 class ConfigurationError(CalibratedError):

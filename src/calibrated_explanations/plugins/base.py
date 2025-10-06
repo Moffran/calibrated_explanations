@@ -22,7 +22,7 @@ Contract (v0.1, unstable):
 - Each plugin exposes two callables::
 
       supports(model) -> bool
-      explain(model, X, **kwargs) -> Any  # typically an Explanation or legacy dict
+      explain(model, x, **kwargs) -> Any  # typically an Explanation or legacy dict
 
 This mirrors ADR-006 minimal capability metadata and keeps behaviour opt-in.
 
@@ -50,7 +50,7 @@ class ExplainerPlugin(Protocol):
     Implementations are expected to provide:
     - plugin_meta: Dict[str, Any]
     - supports(model) -> bool
-    - explain(model, X, **kwargs) -> Any
+    - explain(model, x, **kwargs) -> Any
     """
 
     plugin_meta: PluginMeta

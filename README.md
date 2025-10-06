@@ -287,10 +287,10 @@ from sklearn.model_selection import train_test_split
 
 dataset = fetch_openml(name="wine", version=7, as_frame=True, parser='auto')
 
-X = dataset.data.values.astype(float)
+x = dataset.data.values.astype(float)
 y = (dataset.target.values == 'True').astype(int)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=2, stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=2, stratify=y)
 
 X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train,
                                                             test_size=0.25)
@@ -407,10 +407,10 @@ Extracting explanations for regression is very similar to how it is done for cla
 ```python
 dataset = fetch_openml(name="house_sales", version=3)
 
-X = dataset.data.values.astype(float)
+x = dataset.data.values.astype(float)
 y = dataset.target.values/1000
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=2, random_state=42)
 
 X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train,
                                                             test_size=200)
@@ -456,7 +456,7 @@ We can easily add a difficulty estimator by assigning a `DifficultyEstimator` to
 ```python
 from crepes.extras import DifficultyEstimator
 
-de = DifficultyEstimator().fit(X=X_prop_train, learner=regressor.learner, scaler=True)
+de = DifficultyEstimator().fit(x=X_prop_train, learner=regressor.learner, scaler=True)
 regressor.calibrate(X_cal, y_cal, difficulty_estimator=de)
 display(regressor)
 ```

@@ -12,7 +12,7 @@ def test_calibrate_rejects_nans_in_calibration():
     # small clean proper training set
     x_prop = np.array([[0.0, 1.0], [1.0, 0.0], [0.5, 0.5], [0.2, 0.8]])
     y_prop = np.array([0, 1, 1, 0])
-    # calibration with a NaN in X
+    # calibration with a NaN in x
     x_cal = np.array([[0.1, np.nan], [0.9, 0.1]])
     y_cal = np.array([0, 1])
 
@@ -30,7 +30,7 @@ def test_calibrate_rejects_nans_in_calibration():
 
 
 def test_predict_allows_nans_in_x_test_for_nan_tolerant_model():
-    # HistGradientBoostingClassifier supports NaNs in X
+    # HistGradientBoostingClassifier supports NaNs in x
     rng = np.random.RandomState(0)
     x_prop = rng.rand(20, 3)
     y_prop = (x_prop[:, 0] > 0.5).astype(int)

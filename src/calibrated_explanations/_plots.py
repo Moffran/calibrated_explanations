@@ -21,7 +21,7 @@ Functions
                     num_to_show, column_names, title, path, show, save_ext=None)
     Plot alternative explanations.
 
-- _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs)
+- _plot_global(explainer, X_test, y=None, threshold=None, **kwargs)
     Generate a global explanation plot for the given test data.
 
 - _plot_proba_triangle()
@@ -855,7 +855,7 @@ def _plot_alternative(
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
+def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
     """
     Generate a global explanation plot for the given test data.
 
@@ -868,9 +868,9 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
     ----------
     explainer : object
         The explainer object used to generate the explanations.
-    X_test : array-like
-        The test data for which predictions are to be made.
-    y_test : array-like, optional
+    x : array-like
+        The input data for which predictions are to be made.
+    y : array-like, optional
         The true labels of the test data.
     threshold : float, int, optional
         The threshold value used with regression to get probability of being below the threshold.
@@ -882,7 +882,7 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
     # style_override = kwargs.get("style_override")
     use_legacy = kwargs.get("use_legacy", True)
     if use_legacy:
-        legacy._plot_global(explainer, x_test, y_test, threshold, **kwargs)
+        legacy._plot_global(explainer, x, y, threshold, **kwargs)
         return
 
     style = kwargs.get("style")
@@ -894,12 +894,12 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
     # Gather model outputs in the same way legacy code did
     is_regularized = True
     if "predict_proba" not in dir(explainer.learner) and threshold is None:
-        predict, (low, high) = explainer.predict(x_test, uq_interval=True, bins=bins)
+        predict, (low, high) = explainer.predict(x, uq_interval=True, bins=bins)
         proba = None
         is_regularized = False
     else:
         proba, (low, high) = explainer.predict_proba(
-            x_test, uq_interval=True, threshold=threshold, bins=bins
+            x, uq_interval=True, threshold=threshold, bins=bins
         )
         predict = None
 
@@ -913,7 +913,7 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
         "low": low,
         "high": high,
         "uncertainty": uncertainty,
-        "y_test": (list(y_test) if y_test is not None else None),
+        "y": (list(y) if y is not None else None),
         "is_regularized": is_regularized,
         "threshold": threshold,
     }

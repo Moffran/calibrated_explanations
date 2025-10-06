@@ -1058,7 +1058,7 @@ class CalibratedExplainer:
     def _invoke_explanation_plugin(
         self,
         mode: str,
-        x_test,
+        x,
         threshold,
         low_high_percentiles,
         bins,
@@ -1081,7 +1081,7 @@ class CalibratedExplainer:
         if monitor is not None:
             monitor.reset_usage()
         try:
-            batch = plugin.explain_batch(x_test, request)
+            batch = plugin.explain_batch(x, request)
         except Exception as exc:
             raise ConfigurationError(
                 f"Explanation plugin execution failed for mode '{mode}': {exc}"
@@ -1210,7 +1210,7 @@ class CalibratedExplainer:
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
+        x : array-like of shape (n_samples, n_features)
             The new calibration input data to append.
         y : array-like of shape (n_samples,)
             The new calibration target data to append.
@@ -1314,7 +1314,7 @@ class CalibratedExplainer:
     # pylint: disable=invalid-name, too-many-return-statements
     def _predict(
         self,
-        x_test,
+        x,
         threshold=None,  # The same meaning as threshold has for cps in crepes.
         low_high_percentiles=(5, 95),
         classes=None,
@@ -1334,7 +1334,7 @@ class CalibratedExplainer:
 
         Parameters
         ----------
-        X_test : A set of test objects to predict
+        x : A set of test objects to predict
         threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression.
         low_high_percentiles : a tuple of floats, default=(5, 95)
@@ -1345,7 +1345,7 @@ class CalibratedExplainer:
         Raises
         ------
         ValueError: The length of the threshold-parameter must be either a constant or the same as the number of
-            instances in X_test.
+            instances in x.
 
         Returns
         -------
@@ -1377,11 +1377,11 @@ class CalibratedExplainer:
             if self.is_multiclass():
                 if self.is_fast():
                     predict, low, high, new_classes = self.interval_learner[feature].predict_proba(
-                        x_test, output_interval=True, classes=classes, bins=bins
+                        x, output_interval=True, classes=classes, bins=bins
                     )
                 else:
                     predict, low, high, new_classes = self.interval_learner.predict_proba(
-                        x_test, output_interval=True, classes=classes, bins=bins
+                        x, output_interval=True, classes=classes, bins=bins
                     )
                 if classes is None:
                     return (
@@ -1396,11 +1396,11 @@ class CalibratedExplainer:
 
             if self.is_fast():
                 predict, low, high = self.interval_learner[feature].predict_proba(
-                    x_test, output_interval=True, bins=bins
+                    x, output_interval=True, bins=bins
                 )
             else:
                 predict, low, high = self.interval_learner.predict_proba(
-                    x_test, output_interval=True, bins=bins
+                    x, output_interval=True, bins=bins
                 )
             return predict[:, 1], low, high, None
         if "regression" in self.mode:
@@ -1438,10 +1438,10 @@ class CalibratedExplainer:
                 try:
                     if self.is_fast():
                         return self.interval_learner[feature].predict_uncertainty(
-                            x_test, low_high_percentiles, bins=bins
+                            x, low_high_percentiles, bins=bins
                         )
                     return self.interval_learner.predict_uncertainty(
-                        x_test, low_high_percentiles, bins=bins
+                        x, low_high_percentiles, bins=bins
                     )
                 except Exception:  # typically crepes broadcasting/shape errors
                     if self.suppress_crepes_errors:
@@ -1451,7 +1451,7 @@ class CalibratedExplainer:
                             UserWarning,
                             stacklevel=2,
                         )
-                        n = x_test.shape[0]
+                        n = x.shape[0]
                         # produce zero-length or zero arrays consistent with expected shape
                         return np.zeros(n), np.zeros(n), np.zeros(n), None
                     # Preserve prior behavior: re-raise the original exception so callers/tests
@@ -1459,14 +1459,14 @@ class CalibratedExplainer:
                     raise
 
             # regression with threshold condition
-            assert_threshold(threshold, x_test)
+            assert_threshold(threshold, x)
             try:
                 if self.is_fast():
                     return self.interval_learner[feature].predict_probability(
-                        x_test, threshold, bins=bins
+                        x, threshold, bins=bins
                     )
                 # pylint: disable=unexpected-keyword-arg
-                return self.interval_learner.predict_probability(x_test, threshold, bins=bins)
+                return self.interval_learner.predict_probability(x, threshold, bins=bins)
             except Exception as exc:
                 if self.suppress_crepes_errors:
                     _warnings.warn(
@@ -1474,7 +1474,7 @@ class CalibratedExplainer:
                         UserWarning,
                         stacklevel=2,
                     )
-                    n = x_test.shape[0]
+                    n = x.shape[0]
                     return np.zeros(n), np.zeros(n), np.zeros(n), None
                     # Re-raise as a clearer DataShapeError with guidance
                     raise DataShapeError(
@@ -1488,7 +1488,7 @@ class CalibratedExplainer:
 
     def explain_factual(
         self,
-        x_test,
+        x,
         threshold=None,
         low_high_percentiles=(5, 95),
         bins=None,
@@ -1500,7 +1500,7 @@ class CalibratedExplainer:
 
         Parameters
         ----------
-        X_test : array-like
+        x : array-like
             A set with n_samples of test objects to predict.
         threshold : float, int or array-like, default=None
             Values for which p-values should be returned. Only used for probabilistic explanations for regression.
@@ -1514,7 +1514,7 @@ class CalibratedExplainer:
         ValueError: The number of features in the test data must be the same as in the calibration data.
         Warning: The threshold-parameter is only supported for mode='regression'.
         ValueError: The length of the threshold parameter must be either a constant or the same as the number of
-            instances in X_test.
+            instances in x.
 
         Returns
         -------
@@ -1524,7 +1524,7 @@ class CalibratedExplainer:
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
         self.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
         return self.explain(
-            x_test,
+            x,
             threshold,
             low_high_percentiles,
             bins,
@@ -1534,7 +1534,7 @@ class CalibratedExplainer:
 
     def explain_counterfactual(
         self,
-        x_test,
+        x,
         threshold=None,
         low_high_percentiles=(5, 95),
         bins=None,
@@ -1556,12 +1556,12 @@ class CalibratedExplainer:
             stacklevel=2,
         )
         return self.explore_alternatives(
-            x_test, threshold, low_high_percentiles, bins, features_to_ignore
+            x, threshold, low_high_percentiles, bins, features_to_ignore
         )
 
     def explore_alternatives(
         self,
-        x_test,
+        x,
         threshold=None,
         low_high_percentiles=(5, 95),
         bins=None,
@@ -1573,7 +1573,7 @@ class CalibratedExplainer:
 
         Parameters
         ----------
-        X_test : array-like
+        x : array-like
             A set with n_samples of test objects to predict.
         threshold : float, int or array-like, default=None
             Values for which p-values should be returned. Only used for probabilistic explanations for regression.
@@ -1587,7 +1587,7 @@ class CalibratedExplainer:
         ValueError: The number of features in the test data must be the same as in the calibration data.
         Warning: The threshold-parameter is only supported for mode='regression'.
         ValueError: The length of the threshold parameter must be either a constant or the same as the number of
-            instances in X_test.
+            instances in x.
 
         Returns
         -------
@@ -1603,7 +1603,7 @@ class CalibratedExplainer:
         # At runtime, explain() will return an AlternativeExplanations when an alternative discretizer is set.
         # Help mypy with a narrow cast here without changing behavior.
         return self.explain(
-            x_test,
+            x,
             threshold,
             low_high_percentiles,
             bins,
@@ -1613,7 +1613,7 @@ class CalibratedExplainer:
 
     def __call__(
         self,
-        x_test,
+        x,
         threshold=None,
         low_high_percentiles=(5, 95),
         bins=None,
@@ -1626,7 +1626,7 @@ class CalibratedExplainer:
         Since v0.4.0, this method is equivalent to the `explain` method.
         """
         return self.explain(
-            x_test,
+            x,
             threshold,
             low_high_percentiles,
             bins,
@@ -1636,7 +1636,7 @@ class CalibratedExplainer:
 
     def explain(
         self,
-        x_test,
+        x,
         threshold=None,
         low_high_percentiles=(5, 95),
         bins=None,
@@ -1666,7 +1666,7 @@ class CalibratedExplainer:
             mode = self._infer_explanation_mode()
             return self._invoke_explanation_plugin(
                 mode,
-                x_test,
+                x,
                 threshold,
                 low_high_percentiles,
                 bins,
@@ -1684,9 +1684,9 @@ class CalibratedExplainer:
         )
 
         # Validate inputs and initialize explanation object
-        x_test = self._validate_and_prepare_input(x_test)
+        x = self._validate_and_prepare_input(x)
         explanation = self._initialize_explanation(
-            x_test, low_high_percentiles, threshold, bins, features_to_ignore
+            x, low_high_percentiles, threshold, bins, features_to_ignore
         )
 
         instance_time = time()
@@ -1704,7 +1704,7 @@ class CalibratedExplainer:
             covered_values,
             x_cal,
         ) = self._explain_predict_step(
-            x_test, threshold, low_high_percentiles, bins, features_to_ignore
+            x, threshold, low_high_percentiles, bins, features_to_ignore
         )
 
         # Step 2: Initialize data structures to store feature-level results
@@ -1728,17 +1728,17 @@ class CalibratedExplainer:
         instance_binned: Dict[int, Dict[str, Dict[int, Any]]] = {}
 
         # Initialize data structures for each test instance
-        for i, x in enumerate(x_test):
+        for i, instance in enumerate(x):
             rule_values[i] = {}
             instance_weights[i] = {
-                "predict": np.zeros(x.shape[0]),
-                "low": np.zeros(x.shape[0]),
-                "high": np.zeros(x.shape[0]),
+                "predict": np.zeros(instance.shape[0]),
+                "low": np.zeros(instance.shape[0]),
+                "high": np.zeros(instance.shape[0]),
             }
             instance_predict[i] = {
-                "predict": np.zeros(x.shape[0]),
-                "low": np.zeros(x.shape[0]),
-                "high": np.zeros(x.shape[0]),
+                "predict": np.zeros(instance.shape[0]),
+                "low": np.zeros(instance.shape[0]),
+                "high": np.zeros(instance.shape[0]),
             }
             instance_binned[i] = {
                 "predict": {},
@@ -1753,8 +1753,8 @@ class CalibratedExplainer:
         # Step 3: Process each feature to analyze its effects
         for f in range(self.num_features):
             if f in features_to_ignore:
-                for i in range(len(x_test)):
-                    rule_values[i][f] = (self.feature_values[f], x_test[i, f], x_test[i, f])
+                for i in range(len(x)):
+                    rule_values[i][f] = (self.feature_values[f], x[i, f], x[i, f])
                     instance_binned[i]["predict"][f] = predict[i]
                     instance_binned[i]["low"][f] = low[i]
                     instance_binned[i]["high"][f] = high[i]
@@ -1786,7 +1786,7 @@ class CalibratedExplainer:
                         ]
 
                         # Track original feature value's bin
-                        if x_test[i, f] == value:
+                        if x[i, f] == value:
                             current_bin = bin_value
 
                         # Store predictions for this value
@@ -1802,7 +1802,7 @@ class CalibratedExplainer:
                         counts[bin_value] = len(np.where(x_cal[:, f] == value)[0])
 
                     # Store results for this instance
-                    rule_values[i][f] = (feature_values, x_test[i, f], x_test[i, f])
+                    rule_values[i][f] = (feature_values, x[i, f], x[i, f])
                     uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
                     fractions = counts[uncovered] / np.sum(counts[uncovered])
 
@@ -1857,7 +1857,7 @@ class CalibratedExplainer:
                 high_predict_map: Dict[int, np.ndarray] = {}
                 counts_map: Dict[int, np.ndarray] = {}
                 rule_value_map: Dict[int, List[np.ndarray]] = {}
-                for i in range(len(x_test)):
+                for i in range(len(x)):
                     # Set boundary values and initialize arrays based on number of bins
                     lower_boundary[i] = (
                         lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
@@ -1874,8 +1874,8 @@ class CalibratedExplainer:
                     rule_value_map[i] = []
 
                 # Track bin assignments
-                bin_value = np.zeros(len(x_test), dtype=int)
-                current_bin = -np.ones(len(x_test), dtype=int)
+                bin_value = np.zeros(len(x), dtype=int)
+                current_bin = -np.ones(len(x), dtype=int)
 
                 # Process instances below lower boundary
                 for j, val in enumerate(np.unique(lower_boundary)):
@@ -1936,7 +1936,7 @@ class CalibratedExplainer:
                         bin_value[i] += 1
 
                 # Process instances between boundaries
-                indices = range(len(x_test))
+                indices = range(len(x))
                 for i in indices:
                     for j, (_lower, _upper) in enumerate(
                         np.unique(list(zip(lower_boundary, upper_boundary)), axis=0)
@@ -1967,9 +1967,9 @@ class CalibratedExplainer:
                         rule_value_map[i].append(covered_values[f][j][0])
                         current_bin[i] = bin_value[i]
                 # For each test instance
-                for i in range(len(x_test)):
+                for i in range(len(x)):
                     # Store rule values for this feature and instance
-                    rule_values[i][f] = (rule_value_map[i], x_test[i, f], x_test[i, f])
+                    rule_values[i][f] = (rule_value_map[i], x[i, f], x[i, f])
 
                     # Get indices of bins not containing current value
                     uncovered = np.setdiff1d(np.arange(len(avg_predict_map[i])), current_bin[i])
@@ -2015,7 +2015,7 @@ class CalibratedExplainer:
                         instance_weights[i]["low"][f] = np.min([tmp_low, tmp_high])
                         instance_weights[i]["high"][f] = np.max([tmp_low, tmp_high])
 
-        for i in range(len(x_test)):
+        for i in range(len(x)):
             binned_predict["predict"].append(instance_binned[i]["predict"])
             binned_predict["low"].append(instance_binned[i]["low"])
             binned_predict["high"].append(instance_binned[i]["high"])
@@ -2032,7 +2032,7 @@ class CalibratedExplainer:
             feature_predict["low"].append(instance_predict[i]["low"])
             feature_predict["high"].append(instance_predict[i]["high"])
         elapsed_time = time() - instance_time
-        list_instance_time = [elapsed_time / len(x_test) for _ in range(len(x_test))]
+        list_instance_time = [elapsed_time / len(x) for _ in range(len(x))]
 
         explanation = explanation.finalize(
             binned_predict,
@@ -2046,22 +2046,22 @@ class CalibratedExplainer:
         self._last_explanation_mode = self._infer_explanation_mode()
         return explanation
 
-    def _validate_and_prepare_input(self, x_test):
+    def _validate_and_prepare_input(self, x):
         """Delegate to extracted helper (Phase 1A)."""
         from .prediction_helpers import validate_and_prepare_input as _vh
 
-        return _vh(self, x_test)
+        return _vh(self, x)
 
     def _initialize_explanation(
-        self, x_test, low_high_percentiles, threshold, bins, features_to_ignore
+        self, x, low_high_percentiles, threshold, bins, features_to_ignore
     ):
         """Delegate to extracted helper (Phase 1A)."""
         from .prediction_helpers import initialize_explanation as _ih
 
-        return _ih(self, x_test, low_high_percentiles, threshold, bins, features_to_ignore)
+        return _ih(self, x, low_high_percentiles, threshold, bins, features_to_ignore)
 
     def _explain_predict_step(
-        self, x_test, threshold, low_high_percentiles, bins, features_to_ignore
+        self, x, threshold, low_high_percentiles, bins, features_to_ignore
     ):
         # Phase 1A: delegate initial setup to prediction_helpers to lock behavior
         from .prediction_helpers import explain_predict_step as _eps
@@ -2081,7 +2081,7 @@ class CalibratedExplainer:
             perturbed_bins,
             perturbed_x,
             perturbed_class,
-        ) = _eps(self, x_test, threshold, low_high_percentiles, bins, features_to_ignore)
+        ) = _eps(self, x, threshold, low_high_percentiles, bins, features_to_ignore)
 
         # Sub-step 1.b: prepare and add the perturbed test instances (unchanged logic)
         # pylint: disable=too-many-nested-blocks
@@ -2090,26 +2090,26 @@ class CalibratedExplainer:
                 continue
             if f in self.categorical_features:
                 feature_values = self.feature_values[f]
-                x_copy = np.array(x_test, copy=True)
+                x_copy = np.array(x, copy=True)
                 for value in feature_values:
                     x_copy[:, f] = value
                     perturbed_x = np.concatenate((perturbed_x, np.array(x_copy)))
                     perturbed_feature = np.concatenate(
-                        (perturbed_feature, [(f, i, value, None) for i in range(x_test.shape[0])])
+                        (perturbed_feature, [(f, i, value, None) for i in range(x.shape[0])])
                     )
                     perturbed_bins = (
                         np.concatenate((perturbed_bins, bins)) if bins is not None else None
                     )
                     perturbed_class = np.concatenate((perturbed_class, prediction["predict"]))
                     perturbed_threshold = concatenate_thresholds(
-                        perturbed_threshold, threshold, list(range(x_test.shape[0]))
+                        perturbed_threshold, threshold, list(range(x.shape[0]))
                     )
             else:
-                x_copy = np.array(x_test, copy=True)
+                x_copy = np.array(x, copy=True)
                 feature_values = np.unique(np.array(x_cal[:, f]))
                 lower_boundary = rule_boundaries[:, f, 0]
                 upper_boundary = rule_boundaries[:, f, 1]
-                for i in range(len(x_test)):
+                for i in range(len(x)):
                     lower_boundary[i] = (
                         lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
                     )
@@ -2166,7 +2166,7 @@ class CalibratedExplainer:
                         perturbed_threshold = concatenate_thresholds(
                             perturbed_threshold, threshold, indices
                         )
-                indices = range(len(x_test))
+                indices = range(len(x))
                 for i in indices:
                     covered_values[f][i] = (
                         self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]),
@@ -2227,7 +2227,7 @@ class CalibratedExplainer:
 
     def explain_fast(
         self,
-        x_test,
+        x,
         threshold=None,
         low_high_percentiles=(5, 95),
         bins=None,
@@ -2238,7 +2238,7 @@ class CalibratedExplainer:
 
         Parameters
         ----------
-        X_test : array-like
+        x : array-like
             A set with n_samples of test objects to predict
         threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression.
@@ -2252,7 +2252,7 @@ class CalibratedExplainer:
         ValueError: The number of features in the test data must be the same as in the calibration data.
         Warning: The threshold-parameter is only supported for mode='regression'.
         ValueError: The length of the threshold parameter must be either a constant or the same as the number of
-            instances in X_test.
+            instances in x.
         RuntimeError: Fast explanations are only possible if the explainer is a Fast Calibrated Explainer.
 
         Returns
@@ -2263,7 +2263,7 @@ class CalibratedExplainer:
         if _use_plugin:
             return self._invoke_explanation_plugin(
                 "fast",
-                x_test,
+                x,
                 threshold,
                 low_high_percentiles,
                 bins,
@@ -2282,11 +2282,11 @@ class CalibratedExplainer:
                 ) from exc
         total_time = time()
         instance_time = []
-        if safe_isinstance(x_test, "pandas.core.frame.DataFrame"):
-            x_test = x_test.values  # pylint: disable=invalid-name
-        if len(x_test.shape) == 1:
-            x_test = x_test.reshape(1, -1)
-        if x_test.shape[1] != self.num_features:
+        if safe_isinstance(x, "pandas.core.frame.DataFrame"):
+            x = x.values  # pylint: disable=invalid-name
+        if len(x.shape) == 1:
+            x = x.reshape(1, -1)
+        if x.shape[1] != self.num_features:
             raise DataShapeError(
                 "The number of features in the test data must be the same as in the \
                             calibration data."
@@ -2296,18 +2296,18 @@ class CalibratedExplainer:
                 raise ValidationError(
                     "The bins parameter must be specified for Mondrian explanations."
                 )
-            if len(bins) != len(x_test):
+            if len(bins) != len(x):
                 raise DataShapeError(
-                    "The length of the bins parameter must be the same as the number of instances in X_test."
+                    "The length of the bins parameter must be the same as the number of instances in x."
                 )
-        explanation = CalibratedExplanations(self, x_test, threshold, bins)
+        explanation = CalibratedExplanations(self, x, threshold, bins)
 
         if threshold is not None:
             if "regression" not in self.mode:
                 raise ValidationError(
                     "The threshold parameter is only supported for mode='regression'."
                 )
-            assert_threshold(threshold, x_test)
+            assert_threshold(threshold, x)
         # explanation.low_high_percentiles = low_high_percentiles
         elif "regression" in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
@@ -2328,7 +2328,7 @@ class CalibratedExplainer:
                 "low": np.zeros(self.num_features),
                 "high": np.zeros(self.num_features),
             }
-            for _ in range(len(x_test))
+            for _ in range(len(x))
         ]
         instance_predict = [
             {
@@ -2336,19 +2336,19 @@ class CalibratedExplainer:
                 "low": np.zeros(self.num_features),
                 "high": np.zeros(self.num_features),
             }
-            for _ in range(len(x_test))
+            for _ in range(len(x))
         ]
 
         feature_time = time()
 
         predict, low, high, predicted_class = self._predict(
-            x_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
+            x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
         )
         prediction: Dict[str, Any] = {
             "predict": predict,
             "low": low,
             "high": high,
-            "classes": (predicted_class if self.is_multiclass() else np.ones(x_test.shape[0])),
+            "classes": (predicted_class if self.is_multiclass() else np.ones(x.shape[0])),
         }
         y_cal = self.y_cal
         self.y_cal = self.scaled_y_cal
@@ -2357,14 +2357,14 @@ class CalibratedExplainer:
                 continue
 
             predict, low, high, predicted_class = self._predict(
-                x_test,
+                x,
                 threshold=threshold,
                 low_high_percentiles=low_high_percentiles,
                 bins=bins,
                 feature=f,
             )
 
-            for i in range(len(x_test)):
+            for i in range(len(x)):
                 instance_weights[i]["predict"][f] = self._assign_weight(
                     predict[i], prediction["predict"][i]
                 )
@@ -2378,7 +2378,7 @@ class CalibratedExplainer:
                 instance_predict[i]["high"][f] = high[i]
         self.y_cal = y_cal
 
-        for i in range(len(x_test)):
+        for i in range(len(x)):
             feature_weights["predict"].append(instance_weights[i]["predict"])
             feature_weights["low"].append(instance_weights[i]["low"])
             feature_weights["high"].append(instance_weights[i]["high"])
@@ -2387,7 +2387,7 @@ class CalibratedExplainer:
             feature_predict["low"].append(instance_predict[i]["low"])
             feature_predict["high"].append(instance_predict[i]["high"])
         feature_time = time() - feature_time
-        instance_time = [feature_time / x_test.shape[0]] * x_test.shape[0]
+        instance_time = [feature_time / x.shape[0]] * x.shape[0]
 
         explanation.finalize_fast(
             feature_weights,
@@ -2402,7 +2402,7 @@ class CalibratedExplainer:
 
     def explain_lime(
         self,
-        x_test,
+        x,
         threshold=None,
         low_high_percentiles=(5, 95),
         bins=None,
@@ -2411,7 +2411,7 @@ class CalibratedExplainer:
 
         Parameters
         ----------
-        X_test : array-like
+        x : array-like
             A set with n_samples of test objects to predict
         threshold : float, int or array-like of shape (n_samples,), default=None
             values for which p-values should be returned. Only used for probabilistic explanations for regression.
@@ -2425,7 +2425,7 @@ class CalibratedExplainer:
         ValueError: The number of features in the test data must be the same as in the calibration data.
         Warning: The threshold-parameter is only supported for mode='regression'.
         ValueError: The length of the threshold parameter must be either a constant or the same as the number of
-            instances in X_test.
+            instances in x.
         RuntimeError: Fast explanations are only possible if the explainer is a Fast Calibrated Explainer.
 
         Returns
@@ -2437,11 +2437,11 @@ class CalibratedExplainer:
             self._preload_lime()
         total_time = time()
         instance_time = []
-        if safe_isinstance(x_test, "pandas.core.frame.DataFrame"):
-            x_test = x_test.values  # pylint: disable=invalid-name
-        if len(x_test.shape) == 1:
-            x_test = x_test.reshape(1, -1)
-        if x_test.shape[1] != self.num_features:
+        if safe_isinstance(x, "pandas.core.frame.DataFrame"):
+            x = x.values  # pylint: disable=invalid-name
+        if len(x.shape) == 1:
+            x = x.reshape(1, -1)
+        if x.shape[1] != self.num_features:
             raise DataShapeError(
                 "The number of features in the test data must be the same as in the \
                             calibration data."
@@ -2451,18 +2451,18 @@ class CalibratedExplainer:
                 raise ValidationError(
                     "The bins parameter must be specified for Mondrian explanations."
                 )
-            if len(bins) != len(x_test):
+            if len(bins) != len(x):
                 raise DataShapeError(
-                    "The length of the bins parameter must be the same as the number of instances in X_test."
+                    "The length of the bins parameter must be the same as the number of instances in x."
                 )
-        explanation = CalibratedExplanations(self, x_test, threshold, bins)
+        explanation = CalibratedExplanations(self, x, threshold, bins)
 
         if threshold is not None:
             if "regression" not in self.mode:
                 raise ValidationError(
                     "The threshold parameter is only supported for mode='regression'."
                 )
-            assert_threshold(threshold, x_test)
+            assert_threshold(threshold, x)
         # explanation.low_high_percentiles = low_high_percentiles
         elif "regression" in self.mode:
             explanation.low_high_percentiles = low_high_percentiles
@@ -2485,7 +2485,7 @@ class CalibratedExplainer:
                 "low": np.zeros(self.num_features),
                 "high": np.zeros(self.num_features),
             }
-            for _ in range(len(x_test))
+            for _ in range(len(x))
         ]
         instance_predict = [
             {
@@ -2493,11 +2493,11 @@ class CalibratedExplainer:
                 "low": np.zeros(self.num_features),
                 "high": np.zeros(self.num_features),
             }
-            for _ in range(len(x_test))
+            for _ in range(len(x))
         ]
 
         predict, low, high, predicted_class = self._predict(
-            x_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
+            x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
         )
         prediction["predict"] = predict
         prediction["low"] = low
@@ -2505,7 +2505,7 @@ class CalibratedExplainer:
         if self.is_multiclass():
             prediction["classes"] = predicted_class
         else:
-            prediction["classes"] = np.ones(x_test.shape[0])
+            prediction["classes"] = np.ones(x.shape[0])
 
             explainer = self.lime
 
@@ -2528,22 +2528,26 @@ class CalibratedExplainer:
         res_struct["low"]["abs_rank"], res_struct["high"]["abs_rank"] = [], []
         res_struct["low"]["values"], res_struct["high"]["values"] = [], []
 
-        for i, x in enumerate(x_test):
+        for i, instance in enumerate(x):
             instance_timer = time()
 
             assert explainer is not None
-            low = explainer.explain_instance(x, predict_fn=low_proba, num_features=len(x))
-            high = explainer.explain_instance(x, predict_fn=high_proba, num_features=len(x))
+            low = explainer.explain_instance(
+                instance, predict_fn=low_proba, num_features=len(instance)
+            )
+            high = explainer.explain_instance(
+                instance, predict_fn=high_proba, num_features=len(instance)
+            )
 
             res_struct["low"]["explanation"].append(low)
             res_struct["high"]["explanation"].append(high)
             res_struct["low"]["abs_rank"], res_struct["high"]["abs_rank"] = (
-                np.zeros(len(x)),
-                np.zeros(len(x)),
+                np.zeros(len(instance)),
+                np.zeros(len(instance)),
             )
             res_struct["low"]["values"], res_struct["high"]["values"] = (
-                np.zeros(len(x)),
-                np.zeros(len(x)),
+                np.zeros(len(instance)),
+                np.zeros(len(instance)),
             )
 
             for j, f in enumerate(low.local_exp[1]):
@@ -2863,14 +2867,14 @@ class CalibratedExplainer:
         self.reject_learner = ConformalClassifier().fit(alphas=alphas_cal, bins=classes)
         return self.reject_learner
 
-    def predict_reject(self, x_test, bins=None, confidence=0.95):
+    def predict_reject(self, x, bins=None, confidence=0.95):
         """Predict whether to reject the explanations for the test data.
 
         Use conformal classifier to identify test instances that may be too different from calibration data.
 
         Parameters
         ----------
-        X_test : array-like
+        x : array-like
             The test data.
         bins : array-like, optional
             Mondrian categories. Defaults to None.
@@ -2888,16 +2892,16 @@ class CalibratedExplainer:
                     "The reject learner is only available for regression with a threshold."
                 )
             proba_1, _, _, _ = self.interval_learner.predict_probability(
-                x_test, y_threshold=self.reject_threshold, bins=bins
+                x, y_threshold=self.reject_threshold, bins=bins
             )
             proba = np.array([[1 - proba_1[i], proba_1[i]] for i in range(len(proba_1))])
             classes = [0, 1]
         elif self.is_multiclass():  # pylint: disable=protected-access
-            proba, classes = self.interval_learner.predict_proba(x_test, bins=bins)
+            proba, classes = self.interval_learner.predict_proba(x, bins=bins)
             proba = np.array([[1 - proba[i, c], proba[i, c]] for i, c in enumerate(classes)])
             classes = [0, 1]
         else:
-            proba = self.interval_learner.predict_proba(x_test, bins=bins)
+            proba = self.interval_learner.predict_proba(x, bins=bins)
             classes = np.unique(self.y_cal)
         alphas_test = hinge(proba)
 
@@ -2911,7 +2915,7 @@ class CalibratedExplainer:
         ).T
         singleton = np.sum(np.sum(prediction_set, axis=1) == 1)
         empty = np.sum(np.sum(prediction_set, axis=1) == 0)
-        n = len(x_test)
+        n = len(x)
 
         epsilon = 1 - confidence
         error_rate = (n * epsilon - empty) / singleton
@@ -3051,12 +3055,12 @@ class CalibratedExplainer:
         return self.bins is not None
 
     # pylint: disable=too-many-return-statements
-    def predict(self, x_test, uq_interval=False, calibrated=True, **kwargs):
+    def predict(self, x, uq_interval=False, calibrated=True, **kwargs):
         """Generate predictions for the test data.
 
         Parameters
         ----------
-        X_test : array-like
+        x : array-like
             The test data.
         uq_interval : bool, default=False
             Whether to return uncertainty intervals.
@@ -3092,13 +3096,13 @@ class CalibratedExplainer:
 
         .. code-block:: python
 
-            w.predict(X_test)
+            w.predict(x)
 
         For a prediction with uncertainty quantification intervals:
 
         .. code-block:: python
 
-            w.predict(X_test, uq_interval=True)
+            w.predict(x, uq_interval=True)
 
         Notes
         -----
@@ -3115,12 +3119,12 @@ class CalibratedExplainer:
                     "A thresholded prediction is not possible for uncalibrated predictions."
                 )
             if uq_interval:
-                predict = self.learner.predict(x_test)
+                predict = self.learner.predict(x)
                 return predict, (predict, predict)
-            return self.learner.predict(x_test)
+            return self.learner.predict(x)
 
         if self.mode in "regression":
-            predict, low, high, _ = self._predict(x_test, **kwargs)
+            predict, low, high, _ = self._predict(x, **kwargs)
             if "threshold" in kwargs:
 
                 def get_label(predict, threshold):
@@ -3144,14 +3148,14 @@ class CalibratedExplainer:
                 return (new_classes, (low, high)) if uq_interval else new_classes
             return (predict, (low, high)) if uq_interval else predict
 
-        predict, low, high, new_classes = self._predict(x_test, **kwargs)
+        predict, low, high, new_classes = self._predict(x, **kwargs)
         if new_classes is None:
             new_classes = (predict >= 0.5).astype(int)
         if self.label_map is not None or self.class_labels is not None:
             new_classes = np.array([self.class_labels[c] for c in new_classes])
         return (new_classes, (low, high)) if uq_interval else new_classes
 
-    def predict_proba(self, x_test, uq_interval=False, calibrated=True, threshold=None, **kwargs):
+    def predict_proba(self, x, uq_interval=False, calibrated=True, threshold=None, **kwargs):
         """Generate probability predictions for the test data.
 
         This is a wrapper around the predict_proba method which is more similar to the scikit-learn predict_proba method for classification.
@@ -3159,7 +3163,7 @@ class CalibratedExplainer:
 
         Parameters
         ----------
-        X_test : array-like
+        x : array-like
             The test data for which predictions are to be made. This should be in a format compatible with sklearn (e.g., numpy arrays, pandas DataFrames).
         uq_interval : bool, default=False
             If true, then the prediction interval is returned as well.
@@ -3174,7 +3178,7 @@ class CalibratedExplainer:
             If the learner is not fitted before predicting.
 
         ValueError
-            If the `threshold` parameter's length does not match the number of instances in `X_test`, or if it is not a single constant value applicable to all instances.
+            If the `threshold` parameter's length does not match the number of instances in `x`, or if it is not a single constant value applicable to all instances.
 
         RuntimeError
             If the learner is not fitted before predicting.
@@ -3194,13 +3198,13 @@ class CalibratedExplainer:
 
         .. code-block:: python
 
-            w.predict_proba(X_test)
+            w.predict_proba(x)
 
         For a prediction with uncertainty quantification intervals:
 
         .. code-block:: python
 
-            w.predict_proba(X_test, uq_interval=True)
+            w.predict_proba(x, uq_interval=True)
 
         Notes
         -----
@@ -3219,39 +3223,39 @@ class CalibratedExplainer:
                     "A thresholded prediction is not possible for uncalibrated learners."
                 )
             if uq_interval:
-                proba = self.learner.predict_proba(x_test)
+                proba = self.learner.predict_proba(x)
                 if proba.shape[1] > 2:
                     return proba, (proba, proba)
                 return proba, (proba[:, 1], proba[:, 1])
-            return self.learner.predict_proba(x_test)
+            return self.learner.predict_proba(x)
         if self.mode in "regression":
             if isinstance(self.interval_learner, list):
                 proba_1, low, high, _ = self.interval_learner[-1].predict_probability(
-                    x_test, y_threshold=threshold, **kwargs
+                    x, y_threshold=threshold, **kwargs
                 )
             else:
                 proba_1, low, high, _ = self.interval_learner.predict_probability(
-                    x_test, y_threshold=threshold, **kwargs
+                    x, y_threshold=threshold, **kwargs
                 )
             proba = np.array([[1 - proba_1[i], proba_1[i]] for i in range(len(proba_1))])
             return (proba, (low, high)) if uq_interval else proba
         if self.is_multiclass():  # pylint: disable=protected-access
             if isinstance(self.interval_learner, list):
                 proba, low, high, _ = self.interval_learner[-1].predict_proba(
-                    x_test, output_interval=True, **kwargs
+                    x, output_interval=True, **kwargs
                 )
             else:
                 proba, low, high, _ = self.interval_learner.predict_proba(
-                    x_test, output_interval=True, **kwargs
+                    x, output_interval=True, **kwargs
                 )
             return (proba, (low, high)) if uq_interval else proba
         if isinstance(self.interval_learner, list):
             proba, low, high = self.interval_learner[-1].predict_proba(
-                x_test, output_interval=True, **kwargs
+                x, output_interval=True, **kwargs
             )
         else:
             proba, low, high = self.interval_learner.predict_proba(
-                x_test, output_interval=True, **kwargs
+                x, output_interval=True, **kwargs
             )
         return (proba, (low, high)) if uq_interval else proba
 
@@ -3337,12 +3341,12 @@ class CalibratedExplainer:
         return None, None
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-    def plot(self, x_test, y_test=None, threshold=None, **kwargs):
+    def plot(self, x, y=None, threshold=None, **kwargs):
         """Generate plots for the test data."""
         # Pass any style overrides along to the plotting function
         style_override = kwargs.pop("style_override", None)
         kwargs["style_override"] = style_override
-        _plot_global(self, x_test, y_test=y_test, threshold=threshold, **kwargs)
+        _plot_global(self, x, y=y, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
         """Generate a calibrated confusion matrix.

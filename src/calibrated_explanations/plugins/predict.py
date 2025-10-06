@@ -31,11 +31,11 @@ class PredictBridge(Protocol):
         task: str,
         bins: Any | None = None,
     ) -> Mapping[str, Any]:
-        """Return calibrated predictions for *X*.
+        """Return calibrated predictions for *x*.
 
         Parameters
         ----------
-        X:
+        x:
             Feature matrix or payload understood by the host explainer.
         mode:
             Explanation mode requesting the prediction (``"factual"``,
@@ -52,7 +52,7 @@ class PredictBridge(Protocol):
         task: str,
         bins: Any | None = None,
     ) -> Sequence[Any]:
-        """Return calibrated interval predictions for *X*.
+        """Return calibrated interval predictions for *x*.
 
         The return payload mirrors the interval calibrator outputs and is left
         intentionally loose so that downstream plugins can translate it into
@@ -60,7 +60,7 @@ class PredictBridge(Protocol):
         """
 
     def predict_proba(self, x: Any, bins: Any | None = None) -> Sequence[Any]:
-        """Return calibrated probability estimates for *X* when available."""
+        """Return calibrated probability estimates for *x* when available."""
 
 
 __all__ = ["PredictBridge"]

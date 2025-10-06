@@ -59,7 +59,7 @@ def safe_fit_difficulty(x, y, scaler=True):
                 # return zeros (easy examples) for all points
                 return _np.zeros(len(x_data))
 
-            # crepes DifficultyEstimator exposes apply(X) in codepaths
+            # crepes DifficultyEstimator exposes apply(x) in codepaths
             def apply(self, x_data):
                 return self.predict(x_data)
 

@@ -563,7 +563,7 @@ def _plot_alternative(
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
+def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
     """
     Generates a global explanation plot for the given test data. This plot is based on the
     probability distribution and the uncertainty quantification intervals.
@@ -572,10 +572,10 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
 
     Parameters
     ----------
-    X_test : array-like
-        The test data for which predictions are to be made. This should be in a format compatible
+    x : array-like
+        The input data for which predictions are to be made. This should be in a format compatible
         with sklearn (e.g., numpy arrays, pandas DataFrames).
-    y_test : array-like, optional
+    y : array-like, optional
         The true labels of the test data.
     threshold : float, int, optional
         The threshold value used with regression to get probability of being below the threshold.
@@ -589,11 +589,11 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
     __require_matplotlib()
     is_regularized = True
     if "predict_proba" not in dir(explainer.learner) and threshold is None:
-        predict, (low, high) = explainer.predict(x_test, uq_interval=True, **kwargs)
+        predict, (low, high) = explainer.predict(x, uq_interval=True, **kwargs)
         is_regularized = False
     else:
         proba, (low, high) = explainer.predict_proba(
-            x_test, uq_interval=True, threshold=threshold, **kwargs
+            x, uq_interval=True, threshold=threshold, **kwargs
         )
     uncertainty = np.array(high - low)
 
@@ -628,7 +628,7 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
         # # draw a line from (0.5,0) to halfway between (0.5,0) and (1,1)
         # ax.plot([mid_x, mid_x + mid_x / 2], [min_y, mid_y], color='black')
 
-    if y_test is None:
+    if y is None:
         if "predict_proba" not in dir(explainer.learner) and threshold is None:  # not probabilistic
             plt.scatter(predict, uncertainty, label="Predictions", marker=".", s=marker_size)
         else:
@@ -641,11 +641,11 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
             plt.scatter(proba, uncertainty, label="Predictions", marker=".", s=marker_size)
 
     elif "predict_proba" not in dir(explainer.learner) and threshold is None:  # not probabilistic
-        norm = mcolors.Normalize(vmin=y_test.min(), vmax=y_test.max())
+        norm = mcolors.Normalize(vmin=y.min(), vmax=y.max())
         # Choose a colormap
         colormap = plt.cm.viridis  # pylint: disable=no-member
         # Map the normalized values to colors
-        colors = colormap(norm(y_test))
+        colors = colormap(norm(y))
         ax.scatter(
             predict, uncertainty, label="Predictions", color=colors, marker=".", s=marker_size
         )
@@ -660,13 +660,13 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
             assert np.isscalar(
                 threshold
             ), "The threshold parameter must be a single constant value for all instances when used in plot_global."  # pylint: disable=line-too-long
-            y_test = np.array([0 if y_test[i] >= threshold else 1 for i in range(len(y_test))])
+            y = np.array([0 if y[i] >= threshold else 1 for i in range(len(y))])
             labels = [f"Y >= {threshold}", f"Y < {threshold}"]
         else:
             labels = (
                 [f"Y = {i}" for i in explainer.class_labels.values()]
                 if explainer.class_labels is not None
-                else [f"Y = {i}" for i in np.unique(y_test)]
+                else [f"Y = {i}" for i in np.unique(y)]
             )
         marker_size = 25
         if len(labels) == 2:
@@ -698,12 +698,12 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
                 "h",
                 "H",
             ][: len(labels)]  # pylint: disable=line-too-long
-            proba = proba[np.arange(len(proba)), y_test]
-            uncertainty = uncertainty[np.arange(len(uncertainty)), y_test]
-        for i, c in enumerate(np.unique(y_test)):
+            proba = proba[np.arange(len(proba)), y]
+            uncertainty = uncertainty[np.arange(len(uncertainty)), y]
+        for i, c in enumerate(np.unique(y)):
             plt.scatter(
-                proba[y_test == c],
-                uncertainty[y_test == c],
+                proba[y == c],
+                uncertainty[y == c],
                 color=colors[i],
                 label=labels[i],
                 marker=markers[i],
@@ -721,7 +721,7 @@ def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
             else:
                 plt.xlabel(f"Probability of {threshold[0]} <= Y < {threshold[1]}")
         elif explainer.is_multiclass():  # pylint: disable=protected-access
-            if y_test is None:
+            if y is None:
                 plt.xlabel("Probability of Y = predicted class")
             else:
                 plt.xlabel("Probability of Y = actual class")

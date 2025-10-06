@@ -444,18 +444,18 @@ def test_wrap_multiclass_conditional_ce(multiclass_dataset):
     )
 
 
-def multiple_failing_calls(cal_exp, x_test, y_test):
+def multiple_failing_calls(cal_exp, x, y):
     """Test multiple methods that should raise a RuntimeError when called before fitting or calibration."""
     with pytest.raises(NotFittedError):
-        cal_exp.plot(x_test, show=False)
+        cal_exp.plot(x, show=False)
     with pytest.raises(NotFittedError):
-        cal_exp.plot(x_test, y_test, show=False)
+        cal_exp.plot(x, y, show=False)
     with pytest.raises(NotFittedError):
         cal_exp.calibrated_confusion_matrix()
     with pytest.raises(NotFittedError):
         cal_exp.initialize_reject_learner()
     with pytest.raises(NotFittedError):
-        cal_exp.predict_reject(x_test)
+        cal_exp.predict_reject(x)
 
 
 # Add new test for handling missing values

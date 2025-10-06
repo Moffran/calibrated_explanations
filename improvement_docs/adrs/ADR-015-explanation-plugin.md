@@ -114,7 +114,7 @@ class ExplanationPlugin(Protocol):
 
     def explain_batch(
         self,
-        X,
+        x,
         request: ExplanationRequest,
     ) -> ExplanationBatch: ...
 ```

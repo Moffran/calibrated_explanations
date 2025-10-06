@@ -27,7 +27,7 @@ from calibrated_explanations.plugins import (
 
 class _DummyPredictBridge:
     def predict(self, x: Any, *, mode: str, task: str) -> Mapping[str, Any]:
-        return {"mode": mode, "task": task, "X": x}
+        return {"mode": mode, "task": task, "x": x}
 
     def predict_interval(self, x: Any, *, task: str):  # pragma: no cover - protocol
         return (task, x)

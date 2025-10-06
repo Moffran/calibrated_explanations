@@ -30,7 +30,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     """
 
     def __init__(
-        self, calibrated_explainer, x_test, y_threshold, bins, features_to_ignore=None
+        self, calibrated_explainer, x, y_threshold, bins, features_to_ignore=None
     ) -> None:
         """A class for storing and visualizing calibrated explanations.
 
@@ -43,7 +43,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         ----------
         calibrated_explainer : CalibratedExplainer
             The calibrated explainer object.
-        X_test : array-like
+        x : array-like
             The test data.
         y_threshold : float or tuple
             The threshold for regression explanations.
@@ -53,7 +53,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self.calibrated_explainer: FrozenCalibratedExplainer = FrozenCalibratedExplainer(
             calibrated_explainer
         )
-        self.x_test: np.ndarray = x_test
+        self.x_test: np.ndarray = x
         self.y_threshold: Optional[Union[float, Tuple[float, float], List[Tuple[float, float]]]] = (
             y_threshold
         )
@@ -63,7 +63,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         ] = []
         self.start_index: int = 0
         self.current_index: int = self.start_index
-        self.end_index: int = len(x_test[:, 0])
+        self.end_index: int = len(x[:, 0])
         self.bins: Optional[Sequence[Any]] = bins
         self.total_explain_time: Optional[float] = None
         self.features_to_ignore: List[int] = (
@@ -628,7 +628,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         _, lime_exp = self.calibrated_explainer._preload_lime()  # pylint: disable=protected-access
         exp = []
-        for explanation in self.explanations:  # range(len(self.X_test[:,0])):
+        for explanation in self.explanations:  # range(len(self.x[:,0])):
             tmp = deepcopy(lime_exp)
             tmp.intercept[1] = 0
             tmp.local_pred = explanation.prediction["predict"]
@@ -670,7 +670,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
         shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.x_test[0, :])))
         shap_exp.data = self.x_test
-        for i, explanation in enumerate(self.explanations):  # range(len(self.X_test[:,0])):
+        for i, explanation in enumerate(self.explanations):  # range(len(self.x[:,0])):
             # shap_exp.base_values[i] = explanation.prediction['predict']
             for f in range(len(self.x_test[0, :])):
                 shap_exp.values[i][f] = -explanation.feature_weights["predict"][f]

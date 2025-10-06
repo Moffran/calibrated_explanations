@@ -261,7 +261,7 @@ def test_wrap_conditional_regression_ce(regression_dataset):
     conditional_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test)
 
 
-def conditional_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test):
+def conditional_test(cal_exp, x_prop_train, y_prop_train, x, y):
     """
     Tests the functionality of a calibrated explainer for conditional regression.
     This function performs a series of assertions to ensure that the
@@ -272,16 +272,16 @@ def conditional_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test):
     cal_exp (object): The calibrated explainer to be tested.
     x_prop_train (array-like): Training data features for the explainer.
     y_prop_train (array-like): Training data labels for the explainer.
-    x_test (array-like): Test data features for plotting.
-    y_test (array-like): Test data labels for plotting.
+    x (array-like): Test data features for plotting.
+    y (array-like): Test data labels for plotting.
     Returns:
     object: The fitted and calibrated explainer (`cal_exp`).
     """
     assert cal_exp.fitted
     assert cal_exp.calibrated
 
-    y_test_hat1 = cal_exp.predict(x_test)
-    y_test_hat2, (low, high) = cal_exp.predict(x_test, uq_interval=True)
+    y_test_hat1 = cal_exp.predict(x)
+    y_test_hat2, (low, high) = cal_exp.predict(x, uq_interval=True)
 
     for i, y_hat in enumerate(y_test_hat2):
         # Point prediction should lie within the reported uncertainty interval
@@ -289,20 +289,20 @@ def conditional_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test):
         # And the conditional estimate should also be within the limits
         assert low[i] <= y_hat <= high[i]
 
-    y_test_hat1 = cal_exp.predict(x_test, threshold=y_test)
-    y_test_hat2, (low, high) = cal_exp.predict(x_test, uq_interval=True, threshold=y_test)
+    y_test_hat1 = cal_exp.predict(x, threshold=y)
+    y_test_hat2, (low, high) = cal_exp.predict(x, uq_interval=True, threshold=y)
 
-    cal_exp.explain_factual(x_test)
-    cal_exp.explore_alternatives(x_test)
-    cal_exp.explain_factual(x_test, threshold=y_test)
-    cal_exp.explore_alternatives(x_test, threshold=y_test)
+    cal_exp.explain_factual(x)
+    cal_exp.explore_alternatives(x)
+    cal_exp.explain_factual(x, threshold=y)
+    cal_exp.explore_alternatives(x, threshold=y)
 
     with pytest.raises(ValidationError):
-        cal_exp.predict_proba(x_test)
+        cal_exp.predict_proba(x)
     with pytest.raises(ValidationError):
-        cal_exp.predict_proba(x_test, uq_interval=True)
-    y_test_hat1 = cal_exp.predict_proba(x_test, threshold=y_test[0])
-    y_test_hat2, (low, high) = cal_exp.predict_proba(x_test, uq_interval=True, threshold=y_test[0])
+        cal_exp.predict_proba(x, uq_interval=True)
+    y_test_hat1 = cal_exp.predict_proba(x, threshold=y[0])
+    y_test_hat2, (low, high) = cal_exp.predict_proba(x, uq_interval=True, threshold=y[0])
 
     for i, y_hat in enumerate(y_test_hat2):
         assert low[i] <= y_test_hat2[i, 1] <= high[i]

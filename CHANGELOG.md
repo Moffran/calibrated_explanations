@@ -6,7 +6,35 @@
 
 ### Added
 
+- Interval calibrators now resolve through the plugin registry for both legacy
+  and FAST paths, enabling trusted override chains and capturing telemetry about
+  the `interval_source`/`proba_source` used for each explanation batch.
+- CalibratedExplainer accepts new keyword overrides (`interval_plugin`,
+  `fast_interval_plugin`, `plot_style`) and reads environment/pyproject
+  fallbacks so operators can configure intervals and plots without code changes.
+- Packaged a `ce.plugins` console script with smoke tests covering list/show and
+  trust management workflows.
+
 ### Changed
+
+- Interval plugin contexts surface FAST reuse hints and metadata to keep
+  calibrator reuse efficient while routing through the registry.
+- README, developer docs, and contributing guides document the new CLI,
+  configuration knobs, and plugin telemetry expectations.
+
+### Docs
+
+- ADR-013 and ADR-015 marked Accepted with implementation notes summarising the
+  registry-backed runtime.
+- ADR-017/ADR-018 ratified with quick-reference style excerpts in
+  `CONTRIBUTING.md` and contributor docs.
+
+### CI
+
+- Shared `.coveragerc` published and the test workflow now enforces
+  `--cov-fail-under=90` to meet ADR-019 phase 1 requirements.
+- Lint workflow surfaces Ruff naming warnings and docstring lint/coverage
+  reports, providing guardrails for ADR-017/ADR-018 adoption.
 
 #### Public API updates in v0.7.0
 This document summarises the signature adjustments introduced while aligning the

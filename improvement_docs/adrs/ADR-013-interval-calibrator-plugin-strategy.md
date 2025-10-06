@@ -25,7 +25,7 @@ We therefore need a plugin model that lets external contributors add new interva
      ```python
      def predict_proba(
          self,
-         X,
+         x,
          *,
          output_interval: bool = False,
          classes=None,
@@ -35,11 +35,11 @@ We therefore need a plugin model that lets external contributors add new interva
      Returning `(n_samples, n_classes)` arrays when `output_interval=False` and `(n_samples, n_classes, 3)` (`predict`, `low`, `high`) otherwise. Implementations also provide `is_multiclass() -> bool` and `is_mondrian() -> bool` accessors with the same semantics as VennAbers.
    - `RegressionIntervalCalibrator` extends the classification protocol with the IntervalRegressor surface:
      ```python
-     def predict_probability(self, X) -> numpy.ndarray  # shape (n_samples, 2) ordered (low, high)
-     def predict_uncertainty(self, X) -> numpy.ndarray  # shape (n_samples, 2) ordered (width, confidence)
-     def pre_fit_for_probabilistic(self, X, y) -> None
-     def compute_proba_cal(self, X, y, *, weights=None) -> numpy.ndarray
-     def insert_calibration(self, X, y, *, warm_start: bool = False) -> None
+     def predict_probability(self, x) -> numpy.ndarray  # shape (n_samples, 2) ordered (low, high)
+     def predict_uncertainty(self, x) -> numpy.ndarray  # shape (n_samples, 2) ordered (width, confidence)
+     def pre_fit_for_probabilistic(self, x, y) -> None
+     def compute_proba_cal(self, x, y, *, weights=None) -> numpy.ndarray
+     def insert_calibration(self, x, y, *, warm_start: bool = False) -> None
      ```
      Implementations may wrap or subclass `IntervalRegressor`, but probability/interval calculations must delegate to the reference logic so conformal guarantees remain intact.
    - When a plugin advertises regression support its returned calibrator object must satisfy the regression protocol. This ensures regression plugins necessarily expose the classification machinery they already depend on, preventing behavioural drift between modes.

@@ -10,11 +10,11 @@ Methods
 -------
 __init__(self, calibrated_explainer)
     Initialize an object with various attributes used for calibration and explanation extraction.
-predict_probability(self, X_test, y_threshold, bins=None)
+predict_probability(self, x, y_threshold, bins=None)
     Predict the probabilities for each instance in the dataset being above the threshold(s), along with confidence intervals.
-predict_uncertainty(self, X_test, low_high_percentiles, bins=None)
+predict_uncertainty(self, x, low_high_percentiles, bins=None)
     Predict the uncertainty of a given set of instances using a `ConformalPredictiveSystem`.
-predict_proba(self, X_test, bins=None)
+predict_proba(self, x, bins=None)
     Predict the probabilities for being above the y_threshold.
 pre_fit_for_probabilistic(self)
     Split the calibration set into two parts.
@@ -81,13 +81,13 @@ class IntervalRegressor:
         self.pre_fit_for_probabilistic()
 
     # pylint: disable=too-many-locals
-    def predict_probability(self, x_test, y_threshold, bins=None):
+    def predict_probability(self, x, y_threshold, bins=None):
         """Predict the probabilities for each instance in the dataset being above the threshold(s), along with confidence intervals.
 
         Parameters
         ----------
-        X_test
-            X_test is a numpy.ndarray containing the instance objects for which we want to predict the
+        x
+            x is a numpy.ndarray containing the instance objects for which we want to predict the
             probability.
         y_threshold
             The `y_threshold` parameter is used to determine the probability of the true value being
@@ -108,18 +108,18 @@ class IntervalRegressor:
             self.current_y_threshold = self.y_threshold
             self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.split["va"].predict_proba(
-                x_test, output_interval=True, bins=bins
+                x, output_interval=True, bins=bins
             )
             return proba[:, 1], low, high, None
 
-        bins = bins if bins is not None else [None] * x_test.shape[0]
-        interval = np.zeros((x_test.shape[0], 2))
-        proba = np.zeros(x_test.shape[0])
+        bins = bins if bins is not None else [None] * x.shape[0]
+        interval = np.zeros((x.shape[0], 2))
+        proba = np.zeros(x.shape[0])
         for i, _ in enumerate(proba):
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
             p, low, high = self.split["va"].predict_proba(
-                x_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]]
+                x[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]]
             )
             # import helper locally to avoid top-level dependency
             try:
@@ -135,13 +135,13 @@ class IntervalRegressor:
             interval[i, :] = np.array([low, high])
         return proba, interval[:, 0], interval[:, 1], None
 
-    def predict_uncertainty(self, x_test, low_high_percentiles, bins=None):
+    def predict_uncertainty(self, x, low_high_percentiles, bins=None):
         """Predict the uncertainty of a given set of instances using a `ConformalPredictiveSystem`.
 
         Parameters
         ----------
-        X_test
-            X_test is a numpy array containing the instance objects for which we want to predict the
+        x
+            x is a numpy array containing the instance objects for which we want to predict the
             uncertainty.
         low_high_percentiles
             The `low_high_percentiles` parameter is a list containing two values. The first value
@@ -157,9 +157,9 @@ class IntervalRegressor:
         -------
             four values: median, lower bound, upper bound, and None.
         """
-        y_test_hat = self.ce.predict_function(x_test).reshape(-1, 1)
+        y_test_hat = self.ce.predict_function(x).reshape(-1, 1)
 
-        sigma_test = self.ce._get_sigma_test(x=x_test)  # pylint: disable=protected-access
+        sigma_test = self.ce._get_sigma_test(x=x)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
         high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
@@ -182,13 +182,13 @@ class IntervalRegressor:
             None,
         )
 
-    def predict_proba(self, x_test, bins=None):
+    def predict_proba(self, x, bins=None):
         """Predict the probabilities for being below the y_threshold (for float threshold) or below the lower bound and above the upper bound (for tuple threshold).
 
         Parameters
         ----------
-        X_test
-            The X_test parameter is the input data for which you want to predict the probabilities. It
+        x
+            The x parameter is the input data for which you want to predict the probabilities. It
             should be a numpy array or a pandas DataFrame containing the features of the test data.
         bins
             array-like of shape (n_samples,), default=None
@@ -200,9 +200,9 @@ class IntervalRegressor:
             for being above or below the y_threshold. The first column represents the probability of the
             negative class (1-proba) and the second column represents the probability of the positive class (proba).
         """
-        y_test_hat = self.ce.predict_function(x_test).reshape(-1, 1)
+        y_test_hat = self.ce.predict_function(x).reshape(-1, 1)
 
-        sigma_test = self.ce._get_sigma_test(x=x_test)  # pylint: disable=protected-access
+        sigma_test = self.ce._get_sigma_test(x=x)  # pylint: disable=protected-access
         if isinstance(self.current_y_threshold, tuple):
             proba_lower = self.cps.predict(
                 y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[0], bins=bins
