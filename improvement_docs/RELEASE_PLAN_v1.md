@@ -26,6 +26,9 @@ Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution
   plot hints, `PredictBridge` monitoring.
 - Avoid scope creep (no new ML strategies) so we can reach v1.0.0 with a polished
   plugin stack, documentation, and support tooling.
+- Uphold ADR-017/ADR-018 naming and documentation conventions so contributor
+  workflows, linting, and prose stay aligned with the evolving plugin-first
+  architecture.【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L1-L37】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L1-L62】
 
 ## Release milestones
 
@@ -47,9 +50,13 @@ Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution
 3. Wire CLI console entry point and smoke tests; document usage in README and
    contributing guides.【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L63-L70】
 4. Update ADR-013/ADR-015 statuses to Accepted with implementation notes.
+5. Ratify ADR-017/ADR-018, publish contributor style excerpts, and land initial
+   lint/tooling guardrails for naming and docstring coverage per preparatory
+   phase plans.【F:improvement_docs/nomenclature_standardization_plan.md†L5-L13】【F:improvement_docs/documentation_standardization_plan.md†L7-L22】
 
 Release gate: parity tests green for factual/alternative/fast, interval override
-coverage exercised, CLI packaging verified.
+coverage exercised, CLI packaging verified, and nomenclature/doc lint warnings
+live in CI.
 
 ### v0.8.0 (plot routing & telemetry completeness)
 
@@ -61,8 +68,16 @@ coverage exercised, CLI packaging verified.
    enterprise integrations and provide examples in docs/plugins.md.
 4. Review preprocessing persistence contract (ADR-009) to confirm saved
    preprocessor metadata matches expectations.【F:improvement_docs/adrs/ADR-009-input-preprocessing-and-mapping-policy.md†L1-L80】
+5. Execute ADR-017 Phase 2 renames with legacy shims isolated under a
+   `legacy/` namespace and update imports/tests/docs to the canonical module
+   names.【F:improvement_docs/nomenclature_standardization_plan.md†L15-L24】
+6. Complete ADR-018 baseline remediation by adding module summaries and
+   upgrading priority package docstrings to numpydoc format with progress
+   tracking.【F:improvement_docs/documentation_standardization_plan.md†L16-L22】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】
 
-Release gate: PlotSpec default route parity, telemetry docs/tests in place.
+Release gate: PlotSpec default route parity, telemetry docs/tests in place,
+nomenclature renames shipped with shims, and docstring coverage dashboard shows
+baseline met.
 
 ### v0.9.0 (docs, packaging, performance polish)
 
@@ -74,9 +89,15 @@ Release gate: PlotSpec default route parity, telemetry docs/tests in place.
    as deferred beyond v1 or land minimal opt-in implementations guarded by docs.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】
 4. Publish migration notes summarising plugin configuration defaults and
    remaining legacy escapes.
+5. Turn ADR-018 tooling on by making docstring linting blocking in CI, adding
+   coverage gates for touched modules, and wiring badges/reporting into the docs
+   workflow.【F:improvement_docs/documentation_standardization_plan.md†L24-L34】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】
+6. Advance ADR-017 enforcement by pruning deprecated shims scheduled for removal
+   and locking naming lint rules in the release branch.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L28-L37】
 
 Release gate: Docs CI green, packaging metadata includes CLI, migration guide
-available.
+available, docstring lint gates passing, and no outstanding deprecated naming
+shims slated for removal.
 
 ### v1.0.0 (stability declaration)
 
@@ -87,9 +108,14 @@ available.
 3. Provide upgrade checklist covering environment variables, pyproject settings,
    and CLI usage.
 4. Tag release and backport documentation to enterprise extension repositories.
+5. Close ADR-017 by removing remaining transitional shims and confirm
+   nomenclature/tooling enforcement is stable post-release.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】
+6. Keep ADR-018 compliance at ≥90% docstring coverage and document the ongoing
+   maintenance process in changelog and docs.【F:improvement_docs/documentation_standardization_plan.md†L29-L34】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L43-L62】
 
 Release gate: No pending high-priority bugs, docs/tests/telemetry stable, plugin
-registry feature-complete for explanation/interval/plot categories.
+registry feature-complete for explanation/interval/plot categories, naming and
+docstring standards locked.
 
 ## Post-1.0 considerations
 
