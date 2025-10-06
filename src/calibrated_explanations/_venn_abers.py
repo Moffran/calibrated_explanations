@@ -37,9 +37,9 @@ class VennAbers:
             Initializes the VennAbers class with calibration data and model.
         __predict_proba_with_difficulty(X, bins=None):
             Predicts probabilities with difficulty adjustment.
-        predict(X_test, bins=None):
+        predict(x, bins=None):
             Predicts the class of the test samples.
-        predict_proba(X_test, output_interval=False, classes=None, bins=None):
+        predict_proba(x, output_interval=False, classes=None, bins=None):
             Predicts the probabilities of the test samples, optionally outputting the Venn-ABERS interval.
         is_multiclass() -> bool:
             Returns true if the problem is multiclass.
@@ -141,12 +141,12 @@ class VennAbers:
             probs = np.array([np.asarray(tmp) for tmp in probs_tmp])
         return probs
 
-    def predict(self, x_test, bins=None):
+    def predict(self, x, bins=None):
         """Predict the class of the test samples.
 
         Parameters
         ----------
-            X_test (n_test_samples, n_features): Test samples.
+            x (n_test_samples, n_features): Test samples.
             bins (array-like of shape (n_samples,), optional): Mondrian categories.
 
         Returns
@@ -155,18 +155,18 @@ class VennAbers:
                 If multiclass, the predicted class is 1 if the prediction from the underlying model is the same after calibration and 0 otherwise.
         """
         if self.is_multiclass():
-            tmp, _ = self.predict_proba(x_test, bins=bins)
+            tmp, _ = self.predict_proba(x, bins=bins)
             return np.asarray(np.round(tmp[:, 1]))
-        tmp = self.predict_proba(x_test, bins=bins)[:, 1]
+        tmp = self.predict_proba(x, bins=bins)[:, 1]
         return np.asarray(np.round(tmp))
 
     # pylint: disable=too-many-locals, too-many-branches
-    def predict_proba(self, x_test, output_interval=False, classes=None, bins=None):
+    def predict_proba(self, x, output_interval=False, classes=None, bins=None):
         """Predict the probabilities of the test samples, optionally outputting the VennAbers interval.
 
         Parameters
         ----------
-            X_test (n_test_samples, n_features): Test samples.
+            x (n_test_samples, n_features): Test samples.
             output_interval (bool, optional): If true, the VennAbers intervals are outputted. Defaults to False.
             classes (array-like, optional): A list of predicted classes. Defaults to None.
             bins (array-like of shape (n_samples,), optional): Mondrian categories.
@@ -179,7 +179,7 @@ class VennAbers:
                 high (n_test_samples,): Upper bounds of the VennAbers interval for each test sample.
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
-        tprobs = self.__predict_proba_with_difficulty(x_test, bins=bins)
+        tprobs = self.__predict_proba_with_difficulty(x, bins=bins)
         p0p1 = np.zeros((tprobs.shape[0], 2))
         va_proba = np.zeros(tprobs.shape)
 

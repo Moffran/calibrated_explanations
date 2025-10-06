@@ -12,7 +12,7 @@ import logging as _logging
 # Expose viz namespace (internal; subject to change). Avoid importing heavy backends eagerly.
 from . import viz  # noqa: F401
 from ._interval_regressor import IntervalRegressor  # noqa: F401
-from ._VennAbers import VennAbers  # noqa: F401
+from ._venn_abers import VennAbers  # noqa: F401
 from .explanations.explanation import (
     AlternativeExplanation,  # noqa: F401
     FactualExplanation,  # noqa: F401

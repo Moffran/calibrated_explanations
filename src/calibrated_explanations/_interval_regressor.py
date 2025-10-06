@@ -28,7 +28,7 @@ from functools import singledispatchmethod
 import crepes
 import numpy as np
 
-from ._VennAbers import VennAbers
+from ._venn_abers import VennAbers
 
 
 class IntervalRegressor:
