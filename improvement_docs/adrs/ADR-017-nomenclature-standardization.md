@@ -1,6 +1,6 @@
 # ADR-017: Internal nomenclature standardisation
 
-Status: Proposed (2025-02-16)
+Status: Acceåpted (2025-10-06)
 
 ## Context
 
