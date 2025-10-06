@@ -56,6 +56,39 @@ Additional checks:
 - Type checking via mypy. During Phase 1B, new core modules (e.g., `core/exceptions.py`, `core/validation.py`) are checked with stricter settings.
 - Performance guard: see `scripts/check_perf_regression.py` and `benchmarks/perf_thresholds.json`.
 
+## Naming and documentation style quick reference
+
+ADR-017 and ADR-018 define the internal style rules that keep the plugin-first
+architecture consistent. The cheat-sheet below summarises what reviewers expect
+in day-to-day contributions; consult the ADRs for the full context and
+motivation.【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L1-L37】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L1-L62】
+
+### Naming conventions (ADR-017)
+
+- **Modules and packages**: use `snake_case` filenames (e.g. `calibration_helpers.py`).
+  Transitional import shims live under a `legacy/` namespace or carry a
+  `deprecated_*.py` prefix.
+- **Classes**: keep `PascalCase` and add suffixes that clarify scope when useful
+  (e.g. `...Helper`, `...Mixin`).
+- **Functions and attributes**: `snake_case`, with boolean helpers prefixed by
+  verbs such as `is_`/`has_`. Avoid introducing new double-underscore attributes
+  outside compatibility shims.
+- **Plugin identifiers and schema keys**: prefer dot-delimited lowercase names
+  (`core.explanation.factual`). Document aliases and flag deprecations clearly.
+
+### Documentation conventions (ADR-018)
+
+- **Docstrings**: adopt numpydoc sections (`Parameters`, `Returns`, `Raises`)
+  for public functions, methods, and classes. Summaries must start with an
+  imperative sentence and fit on one line where possible.
+- **Module docs**: each module should start with a short prose summary outlining
+  its primary responsibility and noteworthy shims or legacy behaviours.
+- **Examples and references**: prefer runnable snippets; link to canonical
+  helper utilities instead of duplicating logic in prose.
+- **Coverage expectations**: when adding new modules, include docstrings with
+  at least the sections above so automated docstring coverage tools can report
+  progress accurately.
+
 ## Plugin tooling quickstart
 
 Plugin development relies on the shared registry introduced in ADR-006/ADR-013/ADR-015.

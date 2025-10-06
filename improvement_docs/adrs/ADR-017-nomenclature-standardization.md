@@ -1,6 +1,6 @@
 # ADR-017: Internal nomenclature standardisation
 
-Status: Acceåpted (2025-10-06)
+Status: Accepted (2025-10-06)
 
 ## Context
 
@@ -34,4 +34,8 @@ Adopt the following naming standards for all **non-public** code paths (tests an
 
 ## Status tracking
 
-- This ADR enters **Proposed** state immediately and should move to **Accepted** once the first batch of renames lands and automated checks enforce the conventions.
+- 2025-10-06 – Ratified as **Accepted** following maintainer sign-off; preparatory
+  guardrails scheduled for the v0.7.0 release to begin enforcing the conventions.
+- Upcoming – Initial lint guardrails (Ruff module-naming checks, double underscore
+  detectors) and contributor style excerpts land alongside documentation updates
+  so that new contributions adhere to the standard by default.

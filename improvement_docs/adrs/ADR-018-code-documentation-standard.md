@@ -67,3 +67,11 @@ Negative/Risks:
 - Do we enforce automated coverage thresholds per module or package-wide?
 - Can we auto-generate sections for dataclasses and simple containers via templates?
 
+## Implementation status
+
+- 2025-10-06 – ADR accepted with agreement to stage enforcement alongside the v0.7.0
+  release cycle.
+- Upcoming – Contributor documentation excerpts and initial tooling (pydocstyle
+  configuration, docstring coverage reporting) to be added so contributors receive
+  actionable feedback prior to strict CI enforcement.
+
