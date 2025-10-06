@@ -4,6 +4,7 @@ import pytest
 
 from calibrated_explanations._venn_abers import VennAbers
 from calibrated_explanations.core import calibration_helpers as ch
+from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
@@ -302,5 +303,167 @@ def test_fast_interval_override_requires_fast_capability(monkeypatch, binary_dat
             _make_explainer(binary_dataset, fast=True)
     finally:
         monkeypatch.delenv("CE_INTERVAL_PLUGIN_FAST", raising=False)
+        clear_interval_plugins()
+        ensure_builtin_plugins()
+
+
+class _ExplicitIntervalPlugin(IntervalCalibratorPlugin):
+    plugin_meta = {
+        "name": "tests.interval.explicit",
+        "schema_version": 1,
+        "version": "0.0-test",
+        "provider": "tests",
+        "capabilities": ["interval:classification"],
+        "modes": ("classification",),
+        "dependencies": (),
+        "trusted": False,
+        "trust": {"trusted": False},
+        "fast_compatible": False,
+        "requires_bins": False,
+        "confidence_source": "tests",
+    }
+
+    def create(self, context, *, fast: bool = False):
+        return object()
+
+
+def test_interval_override_allows_untrusted_plugin(binary_dataset):
+    ensure_builtin_plugins()
+    descriptor = register_interval_plugin("tests.interval.explicit", _ExplicitIntervalPlugin())
+    try:
+        explainer, _ = _make_explainer(binary_dataset, interval_plugin=descriptor.identifier)
+        ch.initialize_interval_learner(explainer)
+        assert explainer._interval_plugin_identifiers["default"] == descriptor.identifier
+        stored = explainer._interval_context_metadata["default"]
+        assert stored["calibrator"] is explainer.interval_learner
+    finally:
+        clear_interval_plugins()
+        ensure_builtin_plugins()
+
+
+class _MissingCapabilityPlugin(IntervalCalibratorPlugin):
+    plugin_meta = {
+        "name": "tests.interval.missing_cap",
+        "schema_version": 1,
+        "version": "0.0-test",
+        "provider": "tests",
+        "capabilities": ["interval:regression"],
+        "modes": ("regression",),
+        "dependencies": (),
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fast_compatible": False,
+        "requires_bins": False,
+        "confidence_source": "tests",
+    }
+
+    def create(self, context, *, fast: bool = False):  # pragma: no cover - defensive
+        raise AssertionError("Should not be called")
+
+
+def test_interval_override_missing_capability(binary_dataset):
+    ensure_builtin_plugins()
+    descriptor = register_interval_plugin(
+        "tests.interval.missing_cap", _MissingCapabilityPlugin()
+    )
+    try:
+        with pytest.raises(ConfigurationError) as excinfo:
+            _make_explainer(binary_dataset, interval_plugin=descriptor.identifier)
+        assert "does not support mode" in str(excinfo.value)
+    finally:
+        clear_interval_plugins()
+        ensure_builtin_plugins()
+
+
+class _FastRecordingPlugin(IntervalCalibratorPlugin):
+    plugin_meta = {
+        "name": "tests.interval.fast_override",
+        "schema_version": 1,
+        "version": "0.0-test",
+        "provider": "tests",
+        "capabilities": ["interval:classification"],
+        "modes": ("classification",),
+        "dependencies": (),
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fast_compatible": True,
+        "requires_bins": False,
+        "confidence_source": "tests",
+    }
+    invocations: list = []
+    returned: list = []
+
+    def __init__(self):
+        type(self).invocations.append([])
+
+    def create(self, context, *, fast: bool = True):
+        type(self).invocations[-1] = context.metadata.get("existing_fast_calibrators")
+        calibrators = [object(), object()]
+        type(self).returned.append(tuple(calibrators))
+        return calibrators
+
+
+def test_fast_interval_override_metadata_reuse(binary_dataset):
+    ensure_builtin_plugins()
+    _FastRecordingPlugin.invocations.clear()
+    _FastRecordingPlugin.returned.clear()
+    descriptor = register_interval_plugin(
+        "tests.interval.fast_override", _FastRecordingPlugin()
+    )
+    try:
+        explainer, _ = _make_explainer(
+            binary_dataset,
+            fast=True,
+            fast_interval_plugin=descriptor.identifier,
+        )
+        first_calibrators = _FastRecordingPlugin.returned[-1]
+        stored = explainer._interval_context_metadata["fast"]
+        assert stored["fast_calibrators"] == first_calibrators
+        assert isinstance(stored["fast_calibrators"], tuple)
+
+        # Invoke again to confirm metadata is reused without exposing mutable state
+        ch.initialize_interval_learner(explainer)
+        reuse_metadata = _FastRecordingPlugin.invocations[-1]
+        assert reuse_metadata == first_calibrators
+        assert isinstance(reuse_metadata, tuple)
+    finally:
+        clear_interval_plugins()
+        ensure_builtin_plugins()
+
+
+class _FastIncompatiblePlugin(IntervalCalibratorPlugin):
+    plugin_meta = {
+        "name": "tests.interval.fast_incompatible",
+        "schema_version": 1,
+        "version": "0.0-test",
+        "provider": "tests",
+        "capabilities": ["interval:classification"],
+        "modes": ("classification",),
+        "dependencies": (),
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fast_compatible": False,
+        "requires_bins": False,
+        "confidence_source": "tests",
+    }
+
+    def create(self, context, *, fast: bool = True):  # pragma: no cover - defensive
+        raise AssertionError("Should not be called when fast_compatible is False")
+
+
+def test_fast_interval_override_requires_fast_compatibility(binary_dataset):
+    ensure_builtin_plugins()
+    descriptor = register_interval_plugin(
+        "tests.interval.fast_incompatible", _FastIncompatiblePlugin()
+    )
+    try:
+        with pytest.raises(ConfigurationError) as excinfo:
+            _make_explainer(
+                binary_dataset,
+                fast=True,
+                fast_interval_plugin=descriptor.identifier,
+            )
+        assert "fast_compatible" in str(excinfo.value)
+    finally:
         clear_interval_plugins()
         ensure_builtin_plugins()

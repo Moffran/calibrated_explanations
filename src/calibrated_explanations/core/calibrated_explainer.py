@@ -431,6 +431,10 @@ class CalibratedExplainer:
             "default": None,
             "fast": None,
         }
+        self._interval_context_metadata: Dict[str, Dict[str, Any]] = {
+            "default": {},
+            "fast": {},
+        }
         self._plot_style_chain: Tuple[str, ...] | None = None
         self._explanation_contexts: Dict[str, ExplanationContext] = {}
         self._last_explanation_mode: str | None = None
@@ -586,6 +590,8 @@ class CalibratedExplainer:
             storage["_telemetry_interval_sources"] = {"default": None, "fast": None}
         if "_interval_preferred_identifier" not in storage:
             storage["_interval_preferred_identifier"] = {"default": None, "fast": None}
+        if "_interval_context_metadata" not in storage:
+            storage["_interval_context_metadata"] = {"default": {}, "fast": {}}
 
     def _coerce_plugin_override(self, override: Any) -> Any:
         """Normalise a plugin override into an instance when possible."""
@@ -823,7 +829,10 @@ class CalibratedExplainer:
         difficulty = {"estimator": self.difficulty_estimator}
         fast_flags = {"fast": fast}
         residuals: Mapping[str, Any] = {}
-        enriched_metadata = dict(metadata)
+        key = "fast" if fast else "default"
+        stored_metadata = dict(self._interval_context_metadata.get(key, {}))
+        enriched_metadata = stored_metadata
+        enriched_metadata.update(metadata)
         enriched_metadata.setdefault("task", self.mode)
         enriched_metadata.setdefault("mode", self.mode)
         enriched_metadata.setdefault("predict_function", getattr(self, "predict_function", None))
@@ -841,8 +850,18 @@ class CalibratedExplainer:
                 "rng": getattr(self, "rng", None),
             },
         )
-        if fast and isinstance(self.interval_learner, list):
-            enriched_metadata.setdefault("existing_fast_calibrators", tuple(self.interval_learner))
+        if fast:
+            existing_fast = enriched_metadata.get("existing_fast_calibrators")
+            if not existing_fast:
+                stored_fast = stored_metadata.get("fast_calibrators") or stored_metadata.get(
+                    "existing_fast_calibrators"
+                )
+                if stored_fast:
+                    existing_fast = stored_fast
+            if not existing_fast and isinstance(self.interval_learner, list):
+                existing_fast = tuple(self.interval_learner)
+            if existing_fast:
+                enriched_metadata["existing_fast_calibrators"] = tuple(existing_fast)
         return IntervalCalibratorContext(
             learner=self.learner,
             calibration_splits=calibration_splits,
@@ -879,6 +898,24 @@ class CalibratedExplainer:
         key = "fast" if fast else "default"
         self._interval_plugin_identifiers[key] = identifier
         self._telemetry_interval_sources[key] = identifier
+        metadata_dict: Dict[str, Any]
+        if isinstance(context.metadata, dict):
+            metadata_dict = context.metadata
+        else:
+            metadata_dict = dict(context.metadata)
+        if fast:
+            if isinstance(calibrator, Sequence) and not isinstance(calibrator, (str, bytes)):
+                calibrators_tuple = tuple(calibrator)
+            else:
+                calibrators_tuple = (calibrator,)
+            metadata_dict["fast_calibrators"] = calibrators_tuple
+            metadata_dict["existing_fast_calibrators"] = calibrators_tuple
+        else:
+            metadata_dict["calibrator"] = calibrator
+        # persist captured metadata for future invocations without sharing references
+        self._interval_context_metadata[key] = dict(metadata_dict)
+        if metadata_dict is not context.metadata and isinstance(context.metadata, dict):
+            context.metadata.update(metadata_dict)
         return calibrator, identifier
 
     def _capture_interval_calibrators(
