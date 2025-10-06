@@ -55,6 +55,7 @@ dev = [
   "ruff",
   "mypy",
   "jsonschema",
+  "pydocstyle",
 ]
 eval = [
   "shap",
@@ -94,6 +95,7 @@ select = [
   "SIM",# simplify
   "NPY",# NumPy
   "S",  # security (bandit-like)
+  "N",  # pep8-naming
 ]
 ignore = [
   "E501",    # line length (managed by formatter)
@@ -109,6 +111,14 @@ ignore = [
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
+
+[tool.pydocstyle]
+convention = "numpy"
+add-ignore = [
+  "D104",  # public package docstrings handled by module summaries
+]
+match-dir = "(?!tests|docs|benchmarks|notebooks|scripts|evaluation).*"
+match = "(?!test_).*\\.py"
 
 [tool.mypy]
 python_version = "3.11"

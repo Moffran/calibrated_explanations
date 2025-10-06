@@ -74,4 +74,8 @@ Negative/Risks:
 - Upcoming – Contributor documentation excerpts and initial tooling (pydocstyle
   configuration, docstring coverage reporting) to be added so contributors receive
   actionable feedback prior to strict CI enforcement.
+- Acceptance notes: numpydoc quick reference shipped in
+  `CONTRIBUTING.md`, docstring coverage script added under `scripts/`, and CI
+  emits pydocstyle warnings in exit-zero mode to baseline coverage ahead of full
+  enforcement.
 

@@ -1,0 +1,32 @@
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[dev]
+      - name: Ruff naming warnings (ADR-017)
+        run: |
+          ruff check --select N --exit-zero
+      - name: pydocstyle (ADR-018 baseline)
+        run: |
+          set +e
+          pydocstyle src tests
+          exit 0
+      - name: Docstring coverage report
+        run: |
+          python scripts/check_docstring_coverage.py

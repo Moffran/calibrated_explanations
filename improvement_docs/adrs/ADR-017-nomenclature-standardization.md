@@ -39,3 +39,6 @@ Adopt the following naming standards for all **non-public** code paths (tests an
 - Upcoming – Initial lint guardrails (Ruff module-naming checks, double underscore
   detectors) and contributor style excerpts land alongside documentation updates
   so that new contributions adhere to the standard by default.
+- Acceptance notes recorded for v0.7.0 staging: contributor quick
+  reference published in `CONTRIBUTING.md` and CI now surfaces Ruff naming
+  warnings to track adoption without blocking merges.

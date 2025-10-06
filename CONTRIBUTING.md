@@ -53,6 +53,9 @@ We use pytest as our testing framework and aim to achieve a code coverage of abo
 Additional checks:
 
 - Linting via ruff (style and simple correctness rules).
+- Naming guardrails: run `ruff check --select N` locally to preview the CI naming warnings introduced for the v0.7.0 release gate (ADR-017).
+- Docstring guardrails: run `pydocstyle --convention=numpy src tests` to surface ADR-018 numpydoc issues; CI reports the same warnings in exit-zero mode so they stay visible without blocking merges.
+- Docstring coverage: `python scripts/check_docstring_coverage.py` prints the current module/class/function/method coverage mix and accepts `--fail-under` for teams that want to experiment with stricter thresholds.
 - Type checking via mypy. During Phase 1B, new core modules (e.g., `core/exceptions.py`, `core/validation.py`) are checked with stricter settings.
 - Performance guard: see `scripts/check_perf_regression.py` and `benchmarks/perf_thresholds.json`.
 
@@ -65,29 +68,22 @@ motivation.【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†
 
 ### Naming conventions (ADR-017)
 
-- **Modules and packages**: use `snake_case` filenames (e.g. `calibration_helpers.py`).
-  Transitional import shims live under a `legacy/` namespace or carry a
-  `deprecated_*.py` prefix.
-- **Classes**: keep `PascalCase` and add suffixes that clarify scope when useful
-  (e.g. `...Helper`, `...Mixin`).
-- **Functions and attributes**: `snake_case`, with boolean helpers prefixed by
-  verbs such as `is_`/`has_`. Avoid introducing new double-underscore attributes
-  outside compatibility shims.
-- **Plugin identifiers and schema keys**: prefer dot-delimited lowercase names
-  (`core.explanation.factual`). Document aliases and flag deprecations clearly.
+| Scope | Requirements | Common pitfalls |
+| --- | --- | --- |
+| Modules & packages | `snake_case` filenames; transitional shims live in `legacy/` or start with `deprecated_` | CamelCase filenames, silently keeping duplicate module aliases |
+| Classes | `PascalCase` with clarifying suffixes when scope is narrow (`...Helper`, `...Mixin`) | Reusing ambiguous names such as `Manager`, `Wrapper` without context |
+| Functions & attributes | `snake_case`; boolean values begin with verbs (`is_`, `has_`, `should_`) | Introducing new double-underscore names or mismatching helper prefixes |
+| Registry identifiers | Dot-delimited lowercase paths (`core.explanation.factual`) | Forgetting to document aliases when keeping backward-compatible IDs |
 
 ### Documentation conventions (ADR-018)
 
-- **Docstrings**: adopt numpydoc sections (`Parameters`, `Returns`, `Raises`)
-  for public functions, methods, and classes. Summaries must start with an
-  imperative sentence and fit on one line where possible.
-- **Module docs**: each module should start with a short prose summary outlining
-  its primary responsibility and noteworthy shims or legacy behaviours.
-- **Examples and references**: prefer runnable snippets; link to canonical
-  helper utilities instead of duplicating logic in prose.
-- **Coverage expectations**: when adding new modules, include docstrings with
-  at least the sections above so automated docstring coverage tools can report
-  progress accurately.
+| Area | Minimum expectation | Notes |
+| --- | --- | --- |
+| Modules | One-paragraph summary describing primary responsibility and notable shims | Keep in sync with ADR names so readers can trace provenance |
+| Public callables | Full numpydoc sections (`Parameters`, `Returns`, `Raises`, `Examples` as appropriate) | Summaries start with an imperative verb and fit on one line |
+| Internal helpers (`_` prefix) | Single-line summary explaining purpose | Still counted in coverage; these should clarify side-effects/constraints |
+| Deprecations | `.. deprecated::` directive or explicit `Warnings` section | Reference the replacement module or helper |
+| Coverage tracking | Run `python scripts/check_docstring_coverage.py` before requesting review | Pair with `pydocstyle` output to keep ADR-018 coverage metrics honest |
 
 ## Plugin tooling quickstart
 
