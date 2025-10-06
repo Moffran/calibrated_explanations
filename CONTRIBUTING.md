@@ -48,7 +48,15 @@ PR expectations:
 
 ## Testing and Code Coverage
 
-We use pytest as our testing framework and aim to achieve a code coverage of about 90% in our tests. This ensures that our code is thoroughly tested and helps identify any potential issues or bugs. We encourage contributors to write comprehensive tests and strive for high code coverage. Code coverage tests are added and monitored at [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations).
+Pytest remains the primary regression harness. CI now enforces the ADR-019 coverage gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-report=term-missing --cov-report=xml --cov-fail-under=90`. The shared `.coveragerc` applies locally as well, so running the command above should mirror the CI behaviour. Coverage results are uploaded to [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations) for historical tracking.
+
+If a change cannot practically meet the 90% package-wide bar (for example, because it touches legacy shims slated for removal), request a coverage waiver:
+
+1. File an issue describing why the threshold cannot be met and outline the follow-up work required.
+2. Reference that issue in your pull request description and tick the waiver checkbox in the PR template.
+3. Add a brief note in the changelog entry or summary so reviewers can evaluate the trade-off.
+
+Waivers are exceptional and should include a plan with owners/dates so the debt does not linger past the next release.
 
 Additional checks:
 
