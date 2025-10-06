@@ -871,10 +871,38 @@ class CalibratedExplainer:
             raise ConfigurationError(
                 f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
             ) from exc
+        self._capture_interval_calibrators(
+            context=context,
+            calibrator=calibrator,
+            fast=fast,
+        )
         key = "fast" if fast else "default"
         self._interval_plugin_identifiers[key] = identifier
         self._telemetry_interval_sources[key] = identifier
         return calibrator, identifier
+
+    def _capture_interval_calibrators(
+        self,
+        *,
+        context: IntervalCalibratorContext,
+        calibrator: Any,
+        fast: bool,
+    ) -> None:
+        """Record the returned calibrator inside the interval context metadata."""
+
+        metadata = context.metadata
+        if not isinstance(metadata, dict):
+            return
+
+        if fast:
+            if isinstance(calibrator, Sequence) and not isinstance(
+                calibrator, (str, bytes, bytearray)
+            ):
+                metadata.setdefault("fast_calibrators", tuple(calibrator))
+            elif calibrator is not None:
+                metadata.setdefault("fast_calibrators", (calibrator,))
+        else:
+            metadata.setdefault("calibrator", calibrator)
 
     def _resolve_explanation_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Resolve or instantiate the plugin handling *mode*."""
