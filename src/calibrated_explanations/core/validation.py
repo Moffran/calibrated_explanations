@@ -48,7 +48,7 @@ def validate_inputs(*args: Any, **kwargs: Any) -> None:
 
 
 def infer_task(
-    X: Any = None, y: Any = None, model: Any = None
+    x: Any = None, y: Any = None, model: Any = None
 ) -> Literal["classification", "regression"]:
     """Infer task type using model capabilities or y dtype.
 
@@ -68,14 +68,14 @@ def infer_task(
     return "regression"
 
 
-def _as_2d_array(X: Any) -> npt.NDArray[np.generic]:
+def _as_2d_array(x: Any) -> npt.NDArray[np.generic]:
     # Accept numpy arrays and pandas DataFrames
-    if hasattr(X, "values") and hasattr(X, "shape"):
+    if hasattr(x, "values") and hasattr(x, "shape"):
         try:
-            return cast(npt.NDArray[np.generic], np.asarray(X.values))
+            return cast(npt.NDArray[np.generic], np.asarray(x.values))
         except Exception:  # pragma: no cover - fallback
-            return cast(npt.NDArray[np.generic], np.asarray(X))
-    return cast(npt.NDArray[np.generic], np.asarray(X))
+            return cast(npt.NDArray[np.generic], np.asarray(x))
+    return cast(npt.NDArray[np.generic], np.asarray(x))
 
 
 def _as_1d_array(y: Any) -> npt.NDArray[np.generic]:
@@ -86,7 +86,7 @@ def _as_1d_array(y: Any) -> npt.NDArray[np.generic]:
 
 
 def validate_inputs_matrix(
-    X: Any,
+    x: Any,
     y: Any | None = None,
     *,
     task: Literal["auto", "classification", "regression"] = "auto",
@@ -101,13 +101,13 @@ def validate_inputs_matrix(
     - Validates finiteness according to allow_nan/check_finite.
     - Enforces feature count when n_features is provided.
     """
-    validate_not_none(X, "X")
-    X_arr = _as_2d_array(X)
-    if X_arr.ndim != 2:
+    validate_not_none(x, "X")
+    x_arr = _as_2d_array(x)
+    if x_arr.ndim != 2:
         raise DataShapeError("Argument 'X' must be 2D (n_samples, n_features).")
-    n_samples = X_arr.shape[0]
-    if n_features is not None and X_arr.shape[1] != n_features:
-        raise DataShapeError(f"Argument 'X' must have {n_features} features, got {X_arr.shape[1]}.")
+    n_samples = x_arr.shape[0]
+    if n_features is not None and x_arr.shape[1] != n_features:
+        raise DataShapeError(f"Argument 'X' must have {n_features} features, got {x_arr.shape[1]}.")
 
     if require_y and y is None:
         raise ValidationError("Argument 'y' must be provided when require_y=True.")
@@ -126,11 +126,11 @@ def validate_inputs_matrix(
         ):
             raise ValidationError("Argument 'y' contains NaN or infinite values.")
 
-    if check_finite and not allow_nan and not np.isfinite(X_arr).all():
+    if check_finite and not allow_nan and not np.isfinite(x_arr).all():
         raise ValidationError("Argument 'X' contains NaN or infinite values.")
 
     # For now, task inference is unused here, but reserved for future checks
-    _ = infer_task(X, y, None) if task == "auto" else task
+    _ = infer_task(x, y, None) if task == "auto" else task
 
 
 def validate_model(model: Any) -> None:

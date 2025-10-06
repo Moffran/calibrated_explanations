@@ -77,7 +77,7 @@ def test_env_trust_marks_plugin_trusted(monkeypatch):
         def supports(self, model):
             return True
 
-        def explain(self, model, X, **kwargs):
+        def explain(self, model, x, **kwargs):
             return {}
 
     plugin = EnvPlugin()
@@ -94,7 +94,7 @@ def test_validate_plugin_meta_rejects_bad_meta():
         def supports(self, model):
             return False
 
-        def explain(self, model, X, **kwargs):
+        def explain(self, model, x, **kwargs):
             return {}
 
     with pytest.raises(ValueError):
@@ -115,7 +115,7 @@ class DummyPlugin:
     def supports(self, model):
         return getattr(model, "is_dummy", False)
 
-    def explain(self, model, X, **kwargs):
+    def explain(self, model, x, **kwargs):
         return {"explained": True}
 
 
@@ -167,7 +167,7 @@ class ExampleExplanationPlugin:
     def supports(self, model):  # pragma: no cover - unused for descriptor tests
         return False
 
-    def explain(self, model, X, **kwargs):  # pragma: no cover - unused
+    def explain(self, model, x, **kwargs):  # pragma: no cover - unused
         return {}
 
 
@@ -282,7 +282,7 @@ def _make_entry_plugin(name: str = "tests.entry"):
         def supports(self, model):
             return True
 
-        def explain(self, model, X, **kwargs):
+        def explain(self, model, x, **kwargs):
             return {}
 
     return EntryPlugin()

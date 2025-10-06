@@ -855,7 +855,7 @@ def _plot_alternative(
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
+def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
     """
     Generate a global explanation plot for the given test data.
 
@@ -882,7 +882,7 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     # style_override = kwargs.get("style_override")
     use_legacy = kwargs.get("use_legacy", True)
     if use_legacy:
-        legacy._plot_global(explainer, X_test, y_test, threshold, **kwargs)
+        legacy._plot_global(explainer, x_test, y_test, threshold, **kwargs)
         return
 
     style = kwargs.get("style")
@@ -894,12 +894,12 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     # Gather model outputs in the same way legacy code did
     is_regularized = True
     if "predict_proba" not in dir(explainer.learner) and threshold is None:
-        predict, (low, high) = explainer.predict(X_test, uq_interval=True, bins=bins)
+        predict, (low, high) = explainer.predict(x_test, uq_interval=True, bins=bins)
         proba = None
         is_regularized = False
     else:
         proba, (low, high) = explainer.predict_proba(
-            X_test, uq_interval=True, threshold=threshold, bins=bins
+            x_test, uq_interval=True, threshold=threshold, bins=bins
         )
         predict = None
 

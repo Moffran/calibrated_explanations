@@ -67,11 +67,11 @@ def test_factual_plugin_matches_legacy(binary_dataset):
     from tests._helpers import get_classification_model, initiate_explainer
 
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -79,10 +79,10 @@ def test_factual_plugin_matches_legacy(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -92,10 +92,10 @@ def test_factual_plugin_matches_legacy(binary_dataset):
 
     plugin = LegacyFactualExplanationPlugin()
     plugin.initialize(_make_context(explainer, "factual"))
-    batch = plugin.explain_batch(X_test, _make_request())
+    batch = plugin.explain_batch(x_test, _make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
-    legacy = explainer.explain_factual(X_test)
+    legacy = explainer.explain_factual(x_test)
 
     _assert_collections_equal(plugin_collection, legacy)
 
@@ -104,11 +104,11 @@ def test_alternative_plugin_matches_legacy(binary_dataset):
     from tests._helpers import get_classification_model, initiate_explainer
 
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -116,10 +116,10 @@ def test_alternative_plugin_matches_legacy(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -129,10 +129,10 @@ def test_alternative_plugin_matches_legacy(binary_dataset):
 
     plugin = LegacyAlternativeExplanationPlugin()
     plugin.initialize(_make_context(explainer, "alternative"))
-    batch = plugin.explain_batch(X_test, _make_request())
+    batch = plugin.explain_batch(x_test, _make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
-    legacy = explainer.explore_alternatives(X_test)
+    legacy = explainer.explore_alternatives(x_test)
 
     _assert_collections_equal(plugin_collection, legacy)
 
@@ -141,11 +141,11 @@ def test_fast_plugin_matches_legacy(binary_dataset):
     from tests._helpers import get_classification_model, initiate_explainer
 
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -153,10 +153,10 @@ def test_fast_plugin_matches_legacy(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -167,9 +167,9 @@ def test_fast_plugin_matches_legacy(binary_dataset):
 
     plugin = FastExplanationPlugin()
     plugin.initialize(_make_context(explainer, "fast"))
-    batch = plugin.explain_batch(X_test, _make_request())
+    batch = plugin.explain_batch(x_test, _make_request())
     plugin_collection = CalibratedExplanations.from_batch(batch)
 
-    legacy = explainer.explain_fast(X_test)
+    legacy = explainer.explain_fast(x_test)
 
     _assert_collections_equal(plugin_collection, legacy)

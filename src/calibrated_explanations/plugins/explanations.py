@@ -75,8 +75,8 @@ class ExplanationPlugin(ExplainerPlugin, Protocol):
     def initialize(self, context: ExplanationContext) -> None:
         """Initialise the plugin with immutable runtime *context*."""
 
-    def explain_batch(self, X: Any, request: ExplanationRequest) -> ExplanationBatch:
-        """Produce an :class:`ExplanationBatch` for payload *X*."""
+    def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
+        """Produce an :class:`ExplanationBatch` for payload *x*."""
 
 
 __all__ = [

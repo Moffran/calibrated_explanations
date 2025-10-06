@@ -25,7 +25,7 @@ class PredictBridge(Protocol):
 
     def predict(
         self,
-        X: Any,
+        x: Any,
         *,
         mode: str,
         task: str,
@@ -47,7 +47,7 @@ class PredictBridge(Protocol):
 
     def predict_interval(
         self,
-        X: Any,
+        x: Any,
         *,
         task: str,
         bins: Any | None = None,
@@ -59,7 +59,7 @@ class PredictBridge(Protocol):
         their preferred artefacts.
         """
 
-    def predict_proba(self, X: Any, bins: Any | None = None) -> Sequence[Any]:
+    def predict_proba(self, x: Any, bins: Any | None = None) -> Sequence[Any]:
         """Return calibrated probability estimates for *X* when available."""
 
 

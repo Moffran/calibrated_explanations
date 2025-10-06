@@ -21,8 +21,8 @@ class MisreportingFactualPlugin(LegacyFactualExplanationPlugin):
         "name": "tests.misreporting.factual",
     }
 
-    def explain_batch(self, X, request):
-        batch = super().explain_batch(X, request)
+    def explain_batch(self, x, request):
+        batch = super().explain_batch(x, request)
         batch.collection_metadata["mode"] = "alternative"
         return batch
 
@@ -33,7 +33,7 @@ class NonPredictingFactualPlugin(LegacyFactualExplanationPlugin):
         "name": "tests.nonpredicting.factual",
     }
 
-    def explain_batch(self, X, request):
+    def explain_batch(self, x, request):
         if self._explainer is None:
             raise RuntimeError("explainer handle was not initialised")
         explanation_callable = getattr(self._explainer, self._explanation_attr)
@@ -45,7 +45,7 @@ class NonPredictingFactualPlugin(LegacyFactualExplanationPlugin):
         }
         if self._mode != "fast":
             kwargs["features_to_ignore"] = request.features_to_ignore
-        collection = explanation_callable(X, **kwargs)
+        collection = explanation_callable(x, **kwargs)
         return collection.to_batch()
 
 
@@ -66,11 +66,11 @@ def _make_explainer(binary_dataset, **overrides):
     from tests._helpers import get_classification_model
 
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -78,10 +78,10 @@ def _make_explainer(binary_dataset, **overrides):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = CalibratedExplainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         mode="classification",
         feature_names=feature_names,
@@ -89,27 +89,27 @@ def _make_explainer(binary_dataset, **overrides):
         class_labels=["No", "Yes"],
         **overrides,
     )
-    return explainer, X_test
+    return explainer, x_test
 
 
 def test_invalid_batch_metadata_raises_configuration_error(binary_dataset):
-    explainer, X_test = _make_explainer(
+    explainer, x_test = _make_explainer(
         binary_dataset,
         factual_plugin=MisreportingFactualPlugin(),
     )
 
     with pytest.raises(ConfigurationError, match="invalid batch"):
-        explainer.explain_factual(X_test)
+        explainer.explain_factual(x_test)
 
 
 def test_predict_bridge_usage_enforced(binary_dataset):
-    explainer, X_test = _make_explainer(
+    explainer, x_test = _make_explainer(
         binary_dataset,
         factual_plugin=NonPredictingFactualPlugin(),
     )
 
     with pytest.raises(ConfigurationError, match="predict bridge"):
-        explainer.explain_factual(X_test)
+        explainer.explain_factual(x_test)
 
 
 def test_task_metadata_mismatch_rejected(binary_dataset):
@@ -118,13 +118,13 @@ def test_task_metadata_mismatch_rejected(binary_dataset):
     register_explanation_plugin("tests.regression_only", plugin)
 
     try:
-        explainer, X_test = _make_explainer(
+        explainer, x_test = _make_explainer(
             binary_dataset,
             factual_plugin="tests.regression_only",
         )
 
         with pytest.raises(ConfigurationError, match="does not support task"):
-            explainer.explain_factual(X_test)
+            explainer.explain_factual(x_test)
     finally:
         unregister(plugin)
         clear_explanation_plugins()

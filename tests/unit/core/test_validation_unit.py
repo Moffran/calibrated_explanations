@@ -6,12 +6,12 @@ from calibrated_explanations.core import validation
 
 def test_infer_task_from_model_like():
     class M:
-        def predict(self, X):
-            return X
+        def predict(self, x):
+            return x
 
     class C(M):
-        def predict_proba(self, X):
-            return X
+        def predict_proba(self, x):
+            return x
 
     assert validation.infer_task(model=M()) == "regression"
     assert validation.infer_task(model=C()) == "classification"

@@ -51,15 +51,15 @@ def __getattr__(name: str):
     surface for users and tests.
     """
     if name == "CalibratedExplainer":
-        from .core.calibrated_explainer import CalibratedExplainer as _C
+        from .core.calibrated_explainer import CalibratedExplainer
 
-        globals()[name] = _C
-        return _C
+        globals()[name] = CalibratedExplainer
+        return CalibratedExplainer
     if name == "WrapCalibratedExplainer":
-        from .core.wrap_explainer import WrapCalibratedExplainer as _W
+        from .core.wrap_explainer import WrapCalibratedExplainer
 
-        globals()[name] = _W
-        return _W
+        globals()[name] = WrapCalibratedExplainer
+        return WrapCalibratedExplainer
     raise AttributeError(name)
 
 

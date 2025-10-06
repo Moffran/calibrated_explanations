@@ -93,28 +93,28 @@ def _cleanup_plugin(plugin) -> None:
 
 def _build_regression_explainer(regression_dataset):
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _y_test,
         _num_features,
         categorical_features,
         feature_names,
     ) = regression_dataset
 
-    model, _ = get_regression_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
 
     explainer = CalibratedExplainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names=feature_names,
         categorical_features=categorical_features,
         mode="regression",
     )
-    return explainer, X_test
+    return explainer, x_test
 
 
 def _compare_collections(lhs, rhs):
@@ -147,9 +147,9 @@ def test_task_filtered_plugin_falls_back(monkeypatch, regression_dataset):
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "tests.classification_only.factual")
 
     try:
-        explainer, X_test = _build_regression_explainer(regression_dataset)
-        result = explainer.explain_factual(X_test)
-        assert len(result) == len(X_test)
+        explainer, x_test = _build_regression_explainer(regression_dataset)
+        result = explainer.explain_factual(x_test)
+        assert len(result) == len(x_test)
         assert ClassificationOnlyFactualPlugin.last_initialised is None
         assert explainer._explanation_plugin_identifiers["factual"] == "core.explanation.factual"
     finally:
@@ -165,11 +165,11 @@ def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
 
     try:
         (
-            X_prop_train,
+            x_prop_train,
             y_prop_train,
-            X_cal,
+            x_cal,
             y_cal,
-            X_test,
+            x_test,
             _y_test,
             _num_classes,
             _num_features,
@@ -177,10 +177,10 @@ def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
             feature_names,
         ) = binary_dataset
 
-        model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+        model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
         explainer = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
             feature_names=feature_names,
             categorical_features=categorical_features,
@@ -188,8 +188,8 @@ def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
             class_labels=["No", "Yes"],
         )
 
-        result = explainer.explain_factual(X_test)
-        assert len(result) == len(X_test)
+        result = explainer.explain_factual(x_test)
+        assert len(result) == len(x_test)
 
         assert DependencyReportingFactualPlugin.last_context is not None
         mode, interval_deps, plot_fallbacks = DependencyReportingFactualPlugin.last_context
@@ -215,11 +215,11 @@ def test_future_schema_plugin_rejected(binary_dataset):
     plugin = FutureSchemaFactualPlugin()
 
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _y_test,
         _num_classes,
         _num_features,
@@ -227,10 +227,10 @@ def test_future_schema_plugin_rejected(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = CalibratedExplainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names=feature_names,
         categorical_features=categorical_features,
@@ -240,7 +240,7 @@ def test_future_schema_plugin_rejected(binary_dataset):
     )
 
     with pytest.raises(ConfigurationError, match="schema_version"):
-        explainer.explain_factual(X_test)
+        explainer.explain_factual(x_test)
 
 
 def test_unknown_plugin_identifier_raises(monkeypatch, binary_dataset):
@@ -250,11 +250,11 @@ def test_unknown_plugin_identifier_raises(monkeypatch, binary_dataset):
 
     try:
         (
-            X_prop_train,
+            x_prop_train,
             y_prop_train,
-            X_cal,
+            x_cal,
             y_cal,
-            X_test,
+            x_test,
             _y_test,
             _num_classes,
             _num_features,
@@ -262,10 +262,10 @@ def test_unknown_plugin_identifier_raises(monkeypatch, binary_dataset):
             feature_names,
         ) = binary_dataset
 
-        model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+        model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
         explainer = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
             feature_names=feature_names,
             categorical_features=categorical_features,
@@ -274,7 +274,7 @@ def test_unknown_plugin_identifier_raises(monkeypatch, binary_dataset):
         )
 
         with pytest.raises(ConfigurationError, match="tests.missing.plugin"):
-            explainer.explain_factual(X_test)
+            explainer.explain_factual(x_test)
     finally:
         monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL", raising=False)
 
@@ -282,11 +282,11 @@ def test_unknown_plugin_identifier_raises(monkeypatch, binary_dataset):
 def test_fast_mode_predict_bridge_and_parity(binary_dataset):
     ensure_builtin_plugins()
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _y_test,
         _num_classes,
         _num_features,
@@ -294,10 +294,10 @@ def test_fast_mode_predict_bridge_and_parity(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -306,8 +306,8 @@ def test_fast_mode_predict_bridge_and_parity(binary_dataset):
         fast=True,
     )
 
-    plugin_collection = explainer.explain_fast(X_test)
-    legacy_collection = explainer.explain_fast(X_test, _use_plugin=False)
+    plugin_collection = explainer.explain_fast(x_test)
+    legacy_collection = explainer.explain_fast(x_test, _use_plugin=False)
 
     monitor = explainer._bridge_monitors["fast"]
     assert monitor.used

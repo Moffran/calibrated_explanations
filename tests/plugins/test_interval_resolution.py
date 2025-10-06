@@ -36,11 +36,11 @@ def _make_explainer(binary_dataset, **overrides):
     from tests._helpers import get_classification_model
 
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -48,10 +48,10 @@ def _make_explainer(binary_dataset, **overrides):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = CalibratedExplainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         mode="classification",
         feature_names=feature_names,
@@ -60,7 +60,7 @@ def _make_explainer(binary_dataset, **overrides):
         seed=42,
         **overrides,
     )
-    return explainer, X_test
+    return explainer, x_test
 
 
 def test_interval_resolution_skips_untrusted_fallback(monkeypatch, binary_dataset):

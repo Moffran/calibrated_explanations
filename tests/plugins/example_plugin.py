@@ -27,9 +27,9 @@ class ExamplePlugin:
             isinstance(model, dict) and model.get("kind") == "example"
         )
 
-    def explain(self, model: Any, X: Any, **kwargs: Any) -> dict[str, Any]:
+    def explain(self, model: Any, x: Any, **kwargs: Any) -> dict[str, Any]:
         # Return a tiny deterministic payload for assertions
-        return {"plugin": "example", "model": str(model), "n": (len(X) if X is not None else 0)}
+        return {"plugin": "example", "model": str(model), "n": (len(x) if x is not None else 0)}
 
 
 PLUGIN = ExamplePlugin()

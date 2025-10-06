@@ -26,14 +26,14 @@ from calibrated_explanations.plugins import (
 
 
 class _DummyPredictBridge:
-    def predict(self, X: Any, *, mode: str, task: str) -> Mapping[str, Any]:
-        return {"mode": mode, "task": task, "X": X}
+    def predict(self, x: Any, *, mode: str, task: str) -> Mapping[str, Any]:
+        return {"mode": mode, "task": task, "X": x}
 
-    def predict_interval(self, X: Any, *, task: str):  # pragma: no cover - protocol
-        return (task, X)
+    def predict_interval(self, x: Any, *, task: str):  # pragma: no cover - protocol
+        return (task, x)
 
-    def predict_proba(self, X: Any):  # pragma: no cover - protocol
-        return (X,)
+    def predict_proba(self, x: Any):  # pragma: no cover - protocol
+        return (x,)
 
 
 def test_explanation_context_is_frozen() -> None:
@@ -87,7 +87,7 @@ def test_explanation_plugin_protocol_signatures() -> None:
     assert supports_sig.parameters["task"].kind is inspect.Parameter.KEYWORD_ONLY
     assert tuple(supports_sig.parameters) == ("self", "mode", "task")
     assert tuple(initialize_sig.parameters) == ("self", "context")
-    assert tuple(batch_sig.parameters) == ("self", "X", "request")
+    assert tuple(batch_sig.parameters) == ("self", "x", "request")
 
 
 class _GoodExplanationPlugin:
@@ -104,7 +104,7 @@ class _GoodExplanationPlugin:
     def supports(self, model: Any) -> bool:
         return True
 
-    def explain(self, model: Any, X: Any, **kwargs: Any) -> Any:
+    def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:
         return None
 
     def supports_mode(self, mode: str, *, task: str) -> bool:
@@ -113,7 +113,7 @@ class _GoodExplanationPlugin:
     def initialize(self, context: ExplanationContext) -> None:  # pragma: no cover - protocol
         return None
 
-    def explain_batch(self, X: Any, request: ExplanationRequest) -> ExplanationBatch:
+    def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
         return ExplanationBatch(
             container_cls=type("Container", (), {}),
             explanation_cls=type("Explanation", (), {}),
@@ -176,13 +176,13 @@ class _GoodIntervalPlugin:
         class _Calibrator:
             def predict_proba(
                 self,
-                X: Any,
+                x: Any,
                 *,
                 output_interval: bool = False,
                 classes: Any | None = None,
                 bins: Any | None = None,
             ) -> Any:
-                return X
+                return x
 
             def is_multiclass(self) -> bool:
                 return False
@@ -223,8 +223,8 @@ def test_interval_plugin_runtime_checks() -> None:
 
 
 class _RegressionCalibrator:
-    def predict_proba(self, X: Any, *, output_interval: bool = False, classes=None, bins=None):
-        return X
+    def predict_proba(self, x: Any, *, output_interval: bool = False, classes=None, bins=None):
+        return x
 
     def is_multiclass(self) -> bool:
         return False
@@ -232,19 +232,19 @@ class _RegressionCalibrator:
     def is_mondrian(self) -> bool:
         return False
 
-    def predict_probability(self, X: Any) -> Any:  # pragma: no cover - protocol
-        return X
+    def predict_probability(self, x: Any) -> Any:  # pragma: no cover - protocol
+        return x
 
-    def predict_uncertainty(self, X: Any) -> Any:  # pragma: no cover - protocol
-        return X
+    def predict_uncertainty(self, x: Any) -> Any:  # pragma: no cover - protocol
+        return x
 
-    def pre_fit_for_probabilistic(self, X: Any, y: Any) -> None:  # pragma: no cover - protocol
+    def pre_fit_for_probabilistic(self, x: Any, y: Any) -> None:  # pragma: no cover - protocol
         return None
 
-    def compute_proba_cal(self, X: Any, y: Any, *, weights: Any | None = None) -> Any:
-        return X
+    def compute_proba_cal(self, x: Any, y: Any, *, weights: Any | None = None) -> Any:
+        return x
 
-    def insert_calibration(self, X: Any, y: Any, *, warm_start: bool = False) -> None:
+    def insert_calibration(self, x: Any, y: Any, *, warm_start: bool = False) -> None:
         return None
 
 

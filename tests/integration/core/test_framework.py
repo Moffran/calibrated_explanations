@@ -43,8 +43,8 @@ def test_check_is_fitted_with_fitted_model(binary_dataset):
     Args:
         binary_dataset (tuple): The binary classification dataset.
     """
-    X_prop_train, y_prop_train, _, _, _, _, _, _, _, _ = binary_dataset
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    x_prop_train, y_prop_train, _, _, _, _, _, _, _, _ = binary_dataset
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     try:
         check_is_fitted(model)
     except TypeError:
@@ -100,11 +100,11 @@ def test_explanation_functions_classification(binary_dataset):
     Args:
         binary_dataset (tuple): The binary classification dataset.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _, _ = binary_dataset
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
-    ce = CalibratedExplainer(model, X_cal, y_cal, verbose=True)
+    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, _, _, _ = binary_dataset
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+    ce = CalibratedExplainer(model, x_cal, y_cal, verbose=True)
 
-    factual_explanations = ce.explain_factual(X_test)
+    factual_explanations = ce.explain_factual(x_test)
     factual_explanations._get_rules()
     factual_explanations._is_alternative()
     factual_explanations._is_one_sided()
@@ -120,12 +120,12 @@ def test_explanation_functions_classification(binary_dataset):
         factual_explanations.as_lime()
     # factual_explanations.as_shap() # generates an insane number of warnings
 
-    de = DifficultyEstimator().fit(X=X_prop_train, y=y_prop_train, scaler=True)
-    ce = CalibratedExplainer(model, X_cal, y_cal, difficulty_estimator=de, verbose=True)
-    ce.predict(X_test)
-    ce.predict_proba(X_test)
+    de = DifficultyEstimator().fit(X=x_prop_train, y=y_prop_train, scaler=True)
+    ce = CalibratedExplainer(model, x_cal, y_cal, difficulty_estimator=de, verbose=True)
+    ce.predict(x_test)
+    ce.predict_proba(x_test)
 
-    alternative_explanations = ce.explore_alternatives(X_test)
+    alternative_explanations = ce.explore_alternatives(x_test)
     alternative_explanations._get_rules()
     alternative_explanations._is_alternative()
     alternative_explanations._is_one_sided()
@@ -143,11 +143,11 @@ def test_explanation_functions_regression(regression_dataset):
     Args:
         regression_dataset (tuple): The regression dataset.
     """
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, _, _, _, _ = regression_dataset
-    model, _ = get_regression_model("RF", X_prop_train, y_prop_train)
-    ce = CalibratedExplainer(model, X_cal, y_cal, mode="regression", verbose=True)
+    x_prop_train, y_prop_train, x_cal, y_cal, x_test, _, _, _, _ = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    ce = CalibratedExplainer(model, x_cal, y_cal, mode="regression", verbose=True)
 
-    factual_explanations = ce.explain_factual(X_test)
+    factual_explanations = ce.explain_factual(x_test)
     factual_explanations._get_rules()
     factual_explanations._is_alternative()
     factual_explanations._is_one_sided()
@@ -156,7 +156,7 @@ def test_explanation_functions_regression(regression_dataset):
     # factual_explanations.as_lime() # requires lime to be installed, which is optional
     # factual_explanations.as_shap() # generates an insane number of warnings
 
-    alternative_explanations = ce.explore_alternatives(X_test)
+    alternative_explanations = ce.explore_alternatives(x_test)
     alternative_explanations._get_rules()
     alternative_explanations._is_alternative()
     alternative_explanations._is_one_sided()

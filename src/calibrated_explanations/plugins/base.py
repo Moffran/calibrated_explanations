@@ -58,7 +58,7 @@ class ExplainerPlugin(Protocol):
     def supports(self, model: Any) -> bool:  # pragma: no cover - protocol
         ...
 
-    def explain(self, model: Any, X: Any, **kwargs: Any) -> Any:  # pragma: no cover - protocol
+    def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:  # pragma: no cover - protocol
         ...
 
 

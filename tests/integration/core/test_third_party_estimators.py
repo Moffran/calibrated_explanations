@@ -41,7 +41,7 @@ pytestmark = [
 
 
 def _tiny_binary_dataset(n_samples: int = 120, n_features: int = 8, random_state: int = 42):
-    X, y = make_classification(
+    x_data, y = make_classification(
         n_samples=n_samples,
         n_features=n_features,
         n_informative=max(2, n_features // 3),
@@ -51,11 +51,11 @@ def _tiny_binary_dataset(n_samples: int = 120, n_features: int = 8, random_state
         random_state=random_state,
     )
     # Split into proper-train, calibration, test
-    X_tmp, X_test, y_tmp, y_test = train_test_split(X, y, test_size=0.2, random_state=random_state)
-    X_train, X_cal, y_train, y_cal = train_test_split(
-        X_tmp, y_tmp, test_size=0.25, random_state=random_state
+    x_tmp, x_test, y_tmp, y_test = train_test_split(x_data, y, test_size=0.2, random_state=random_state)
+    x_train, x_cal, y_train, y_cal = train_test_split(
+        x_tmp, y_tmp, test_size=0.25, random_state=random_state
     )  # 0.25 x 0.8 = 0.2
-    return X_train, y_train, X_cal, y_cal, X_test, y_test
+    return x_train, y_train, x_cal, y_cal, x_test, y_test
 
 
 @pytest.mark.slow
@@ -64,7 +64,7 @@ def test_xgboost_classifier_basic_integration():
         import xgboost as xgb
     except Exception as exc:  # pragma: no cover - environment-specific
         pytest.skip(f"xgboost unavailable or misconfigured: {exc}")
-    X_train, y_train, X_cal, y_cal, X_test, _ = _tiny_binary_dataset()
+    x_train, y_train, x_cal, y_cal, x_test, _ = _tiny_binary_dataset()
 
     # Use lightweight params for speed; rely on sklearn-compatible wrapper
     clf = xgb.XGBClassifier(
@@ -77,24 +77,24 @@ def test_xgboost_classifier_basic_integration():
         verbosity=0,
         random_state=42,
     )
-    clf.fit(X_train, y_train)
+    clf.fit(x_train, y_train)
 
-    ce = CalibratedExplainer(clf, X_cal, y_cal, mode="classification")
+    ce = CalibratedExplainer(clf, x_cal, y_cal, mode="classification")
 
     # Uncalibrated predictions (from the learner)
-    proba_uncal = ce.predict_proba(X_test, calibrated=False)
-    assert proba_uncal.shape[0] == X_test.shape[0]
+    proba_uncal = ce.predict_proba(x_test, calibrated=False)
+    assert proba_uncal.shape[0] == x_test.shape[0]
     assert proba_uncal.shape[1] == 2
 
     # Calibrated predictions with intervals
-    proba_cal, (low, high) = ce.predict_proba(X_test, uq_interval=True)
+    proba_cal, (low, high) = ce.predict_proba(x_test, uq_interval=True)
     assert proba_cal.shape == proba_uncal.shape
-    assert len(low) == len(high) == X_test.shape[0]
+    assert len(low) == len(high) == x_test.shape[0]
     assert np.all(np.isfinite(proba_cal))
 
-    y_hat, (low_y, high_y) = ce.predict(X_test, uq_interval=True)
-    assert len(y_hat) == X_test.shape[0]
-    assert len(low_y) == len(high_y) == X_test.shape[0]
+    y_hat, (low_y, high_y) = ce.predict(x_test, uq_interval=True)
+    assert len(y_hat) == x_test.shape[0]
+    assert len(low_y) == len(high_y) == x_test.shape[0]
 
 
 @pytest.mark.slow
@@ -103,7 +103,7 @@ def test_lightgbm_classifier_basic_integration():
         import lightgbm as lgb
     except Exception as exc:  # pragma: no cover - environment-specific
         pytest.skip(f"lightgbm unavailable or misconfigured: {exc}")
-    X_train, y_train, X_cal, y_cal, X_test, _ = _tiny_binary_dataset()
+    x_train, y_train, x_cal, y_cal, x_test, _ = _tiny_binary_dataset()
 
     clf = lgb.LGBMClassifier(
         n_estimators=25,
@@ -113,22 +113,22 @@ def test_lightgbm_classifier_basic_integration():
         colsample_bytree=0.9,
         random_state=42,
     )
-    clf.fit(X_train, y_train)
+    clf.fit(x_train, y_train)
 
-    ce = CalibratedExplainer(clf, X_cal, y_cal, mode="classification")
+    ce = CalibratedExplainer(clf, x_cal, y_cal, mode="classification")
 
-    proba_uncal = ce.predict_proba(X_test, calibrated=False)
-    assert proba_uncal.shape[0] == X_test.shape[0]
+    proba_uncal = ce.predict_proba(x_test, calibrated=False)
+    assert proba_uncal.shape[0] == x_test.shape[0]
     assert proba_uncal.shape[1] == 2
 
-    proba_cal, (low, high) = ce.predict_proba(X_test, uq_interval=True)
+    proba_cal, (low, high) = ce.predict_proba(x_test, uq_interval=True)
     assert proba_cal.shape == proba_uncal.shape
-    assert len(low) == len(high) == X_test.shape[0]
+    assert len(low) == len(high) == x_test.shape[0]
     assert np.all(np.isfinite(proba_cal))
 
-    y_hat, (low_y, high_y) = ce.predict(X_test, uq_interval=True)
-    assert len(y_hat) == X_test.shape[0]
-    assert len(low_y) == len(high_y) == X_test.shape[0]
+    y_hat, (low_y, high_y) = ce.predict(x_test, uq_interval=True)
+    assert len(y_hat) == x_test.shape[0]
+    assert len(low_y) == len(high_y) == x_test.shape[0]
 
 
 @pytest.mark.slow
@@ -137,7 +137,7 @@ def test_catboost_classifier_basic_integration():
         import catboost as cb
     except Exception as exc:  # pragma: no cover - environment-specific
         pytest.skip(f"catboost unavailable or misconfigured: {exc}")
-    X_train, y_train, X_cal, y_cal, X_test, _ = _tiny_binary_dataset()
+    x_train, y_train, x_cal, y_cal, x_test, _ = _tiny_binary_dataset()
 
     clf = cb.CatBoostClassifier(
         iterations=40,
@@ -147,19 +147,19 @@ def test_catboost_classifier_basic_integration():
         verbose=False,
         random_seed=42,
     )
-    clf.fit(X_train, y_train)
+    clf.fit(x_train, y_train)
 
-    ce = CalibratedExplainer(clf, X_cal, y_cal, mode="classification")
+    ce = CalibratedExplainer(clf, x_cal, y_cal, mode="classification")
 
-    proba_uncal = ce.predict_proba(X_test, calibrated=False)
-    assert proba_uncal.shape[0] == X_test.shape[0]
+    proba_uncal = ce.predict_proba(x_test, calibrated=False)
+    assert proba_uncal.shape[0] == x_test.shape[0]
     assert proba_uncal.shape[1] == 2
 
-    proba_cal, (low, high) = ce.predict_proba(X_test, uq_interval=True)
+    proba_cal, (low, high) = ce.predict_proba(x_test, uq_interval=True)
     assert proba_cal.shape == proba_uncal.shape
-    assert len(low) == len(high) == X_test.shape[0]
+    assert len(low) == len(high) == x_test.shape[0]
     assert np.all(np.isfinite(proba_cal))
 
-    y_hat, (low_y, high_y) = ce.predict(X_test, uq_interval=True)
-    assert len(y_hat) == X_test.shape[0]
-    assert len(low_y) == len(high_y) == X_test.shape[0]
+    y_hat, (low_y, high_y) = ce.predict(x_test, uq_interval=True)
+    assert len(y_hat) == x_test.shape[0]
+    assert len(low_y) == len(high_y) == x_test.shape[0]

@@ -44,7 +44,7 @@ class _FakePlugin:
     def supports(self, model):
         return True
 
-    def explain(self, model, X, **kwargs):
+    def explain(self, model, x, **kwargs):
         return {"explained": True}
 
 

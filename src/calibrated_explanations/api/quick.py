@@ -16,11 +16,11 @@ from .config import ExplainerConfig
 
 def quick_explain(
     model: Any,
-    X_train: Any,
+    x_train: Any,
     y_train: Any,
-    X_cal: Any,
+    x_cal: Any,
     y_cal: Any,
-    X_test: Any,
+    x_test: Any,
     *,
     task: Literal["classification", "regression"] | None = None,
     threshold: float | None = None,
@@ -60,14 +60,14 @@ def quick_explain(
         preprocessor=preprocessor,
     )
     w = WrapCalibratedExplainer._from_config(cfg)  # private constructor by design
-    w.fit(X_train, y_train)
+    w.fit(x_train, y_train)
     # Calibrate; pass explicit mode if provided
     cal_kwargs: dict[str, Any] = {}
     if task is not None:
         cal_kwargs["mode"] = task
-    w.calibrate(X_cal, y_cal, **cal_kwargs)
+    w.calibrate(x_cal, y_cal, **cal_kwargs)
     # Use cfg defaults implicitly for factual explanations
-    return w.explain_factual(X_test)
+    return w.explain_factual(x_test)
 
 
 __all__ = ["quick_explain"]

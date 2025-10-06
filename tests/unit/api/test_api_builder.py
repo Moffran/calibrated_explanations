@@ -63,10 +63,10 @@ def test_wrap_from_config_applies_defaults(monkeypatch):
 
     # Monkeypatch underlying explainer to capture kwargs passed through
     class DummyExplainer:
-        def explain_factual(self, X, **kwargs):  # noqa: D401
+        def explain_factual(self, x, **kwargs):  # noqa: D401
             return kwargs
 
-        def explore_alternatives(self, X, **kwargs):  # noqa: D401
+        def explore_alternatives(self, x, **kwargs):  # noqa: D401
             return kwargs
 
     w.fitted = True
@@ -96,7 +96,7 @@ def test_wrap_from_config_applies_defaults_fast():
     w = WrapCalibratedExplainer._from_config(cfg)
 
     class DummyExplainerFast:
-        def explain_fast(self, X, **kwargs):  # noqa: D401
+        def explain_fast(self, x, **kwargs):  # noqa: D401
             return kwargs
 
     w.fitted = True

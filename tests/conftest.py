@@ -57,18 +57,18 @@ def sample_limit():
     - Else if FAST_TESTS is enabled, return a small limit (100).
     - Otherwise return default 500.
     """
-    MINIMUM_LIMIT = 20
+    minimum_limit = 20
     val = os.getenv("SAMPLE_LIMIT")
     if val:
         try:
             v = int(val)
             # enforce a sensible lower bound to avoid dataset-splitting errors
-            return v if v >= MINIMUM_LIMIT else MINIMUM_LIMIT
+            return v if v >= minimum_limit else minimum_limit
         except Exception:
             pass
     if _env_flag("FAST_TESTS"):
-        return max(100, MINIMUM_LIMIT)
-    return max(500, MINIMUM_LIMIT)
+        return max(100, minimum_limit)
+    return max(500, minimum_limit)
 
 
 def _ensure_matplotlib():
@@ -113,10 +113,10 @@ def small_random_forest():
     import numpy as np
 
     # tiny deterministic dataset
-    X = np.vstack([np.arange(8), np.arange(8) + 1]).T
+    x = np.vstack([np.arange(8), np.arange(8) + 1]).T
     y = np.arange(8) / 8.0
     rf = RandomForestRegressor(n_estimators=3, random_state=42)
-    rf.fit(X, y)
+    rf.fit(x, y)
     return rf
 
 
@@ -125,10 +125,10 @@ def small_random_forest_classifier():
     from sklearn.ensemble import RandomForestClassifier
     import numpy as np
 
-    X = np.vstack([np.arange(8), np.arange(8) + 1]).T
+    x = np.vstack([np.arange(8), np.arange(8) + 1]).T
     y = np.arange(8) % 2
     rf = RandomForestClassifier(n_estimators=3, random_state=42)
-    rf.fit(X, y)
+    rf.fit(x, y)
     return rf
 
 
@@ -138,10 +138,10 @@ def small_decision_tree():
     from sklearn.tree import DecisionTreeClassifier
     import numpy as np
 
-    X = np.vstack([np.arange(8), np.arange(8) + 1]).T
+    x = np.vstack([np.arange(8), np.arange(8) + 1]).T
     y = np.arange(8) % 2
     dt = DecisionTreeClassifier(max_depth=2, random_state=0)
-    dt.fit(X, y)
+    dt.fit(x, y)
     return dt
 
 
@@ -158,13 +158,13 @@ def patch_difficulty_estimator(monkeypatch):
             def fit(self, *a, **k):
                 return self
 
-            def predict(self, X):
+            def predict(self, x):
                 import numpy as _np
 
-                return _np.zeros(len(X))
+                return _np.zeros(len(x))
 
-            def __call__(self, X):
-                return self.predict(X)
+            def __call__(self, x):
+                return self.predict(x)
 
         monkeypatch.setattr(_extras, "DifficultyEstimator", lambda *a, **k: _StubDifficulty())
 

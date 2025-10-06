@@ -563,7 +563,7 @@ def _plot_alternative(
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
+def _plot_global(explainer, x_test, y_test=None, threshold=None, **kwargs):
     """
     Generates a global explanation plot for the given test data. This plot is based on the
     probability distribution and the uncertainty quantification intervals.
@@ -589,11 +589,11 @@ def _plot_global(explainer, X_test, y_test=None, threshold=None, **kwargs):
     __require_matplotlib()
     is_regularized = True
     if "predict_proba" not in dir(explainer.learner) and threshold is None:
-        predict, (low, high) = explainer.predict(X_test, uq_interval=True, **kwargs)
+        predict, (low, high) = explainer.predict(x_test, uq_interval=True, **kwargs)
         is_regularized = False
     else:
         proba, (low, high) = explainer.predict_proba(
-            X_test, uq_interval=True, threshold=threshold, **kwargs
+            x_test, uq_interval=True, threshold=threshold, **kwargs
         )
     uncertainty = np.array(high - low)
 

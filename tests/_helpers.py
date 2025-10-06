@@ -11,14 +11,14 @@ def assert_valid_confidence_bounds(predictions, bounds, msg="Invalid confidence 
         assert low[i] <= pred <= high[i], f"{msg} at index {i}"
 
 
-def generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
+def generic_test(cal_exp, x_prop_train, y_prop_train, x_test, y_test):
     """Generic calibrated explainer test routine.
 
     This function encapsulates repeated assertions used across several
     test modules. Tests should import and call this helper rather than
     importing from another test module.
     """
-    cal_exp.fit(X_prop_train, y_prop_train)
+    cal_exp.fit(x_prop_train, y_prop_train)
     assert cal_exp.fitted
     assert cal_exp.calibrated
 
@@ -38,12 +38,12 @@ def generic_test(cal_exp, X_prop_train, y_prop_train, X_test, y_test):
     assert new_exp.explainer == explainer
     assert new_exp.learner == learner
 
-    cal_exp.plot(X_test, show=False)
-    cal_exp.plot(X_test, y_test, show=False)
+    cal_exp.plot(x_test, show=False)
+    cal_exp.plot(x_test, y_test, show=False)
     return cal_exp
 
 
-def get_classification_model(model_name, X_prop_train, y_prop_train):
+def get_classification_model(model_name, x_prop_train, y_prop_train):
     """Return a fitted classification model (RF or DT)."""
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.tree import DecisionTreeClassifier
@@ -55,11 +55,11 @@ def get_classification_model(model_name, X_prop_train, y_prop_train):
     model_dict = {"RF": (r1, "RF"), "DT": (t1, "DT")}
 
     model, model_name = model_dict[model_name]
-    model.fit(X_prop_train, y_prop_train)
+    model.fit(x_prop_train, y_prop_train)
     return model, model_name
 
 
-def get_regression_model(model_name, X_prop_train, y_prop_train):
+def get_regression_model(model_name, x_prop_train, y_prop_train):
     """Return a fitted regression model (RF or DT)."""
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.tree import DecisionTreeRegressor
@@ -71,13 +71,13 @@ def get_regression_model(model_name, X_prop_train, y_prop_train):
     model_dict = {"RF": (r1, "RF"), "DT": (t1, "DT")}
 
     model, model_name = model_dict[model_name]
-    model.fit(X_prop_train, y_prop_train)
+    model.fit(x_prop_train, y_prop_train)
     return model, model_name
 
 
 def initiate_explainer(
     model,
-    X_cal,
+    x_cal,
     y_cal,
     feature_names,
     categorical_features,
@@ -93,7 +93,7 @@ def initiate_explainer(
 
     return CalibratedExplainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names=feature_names,
         categorical_features=categorical_features,

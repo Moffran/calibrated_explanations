@@ -14,28 +14,28 @@ def _make_binary_dataset():
     df = pd.read_csv(f"data/{dataset}.csv", dtype=np.float64)
     df = df.iloc[:500, :]
     target = "Y"
-    X, y = df.drop(target, axis=1), df[target]
-    no_of_features = X.shape[1]
-    columns = X.columns
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X.iloc[:, i])) < 10]
+    x, y = df.drop(target, axis=1), df[target]
+    no_of_features = x.shape[1]
+    columns = x.columns
+    categorical_features = [i for i in range(no_of_features) if len(np.unique(x.iloc[:, i])) < 10]
     idx = np.argsort(y.values).astype(int)
-    X, y = X.values[idx, :], y.values[idx]
+    x, y = x.values[idx, :], y.values[idx]
     num_to_test = 2
     test_index = np.array(
         [*range(num_to_test // 2), *range(len(y) - 1, len(y) - num_to_test // 2 - 1, -1)]
     )
     train_index = np.setdiff1d(np.array(range(len(y))), test_index)
-    trainX_cal, X_test = X[train_index, :], X[test_index, :]
+    trainx_cal, x_test = x[train_index, :], x[test_index, :]
     y_train, y_test = y[train_index], y[test_index]
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        trainX_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
+    x_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
+        trainx_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
     )
     return (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         y_test,
         None,
         no_of_features,
@@ -58,11 +58,11 @@ def _build_payload_from_exp(exp):
 def test_explain_factual_and_roundtrip():
     # Build an explainer using test helper and get factual explanations
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -73,10 +73,10 @@ def test_explain_factual_and_roundtrip():
     # Trained model helper used across tests
     from tests._helpers import get_classification_model
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -84,7 +84,7 @@ def test_explain_factual_and_roundtrip():
         class_labels=["No", "Yes"],
     )
 
-    factual = cal_exp.explain_factual(X_test)
+    factual = cal_exp.explain_factual(x_test)
     # add conjunctive rules as in the public flows
     factual.add_conjunctions()
 
@@ -113,11 +113,11 @@ def test_explain_factual_and_roundtrip():
 
 def test_explore_alternatives_and_conjunctive_rules():
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -126,10 +126,10 @@ def test_explore_alternatives_and_conjunctive_rules():
     ) = _make_binary_dataset()
     from tests._helpers import get_classification_model
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -137,7 +137,7 @@ def test_explore_alternatives_and_conjunctive_rules():
         class_labels=["No", "Yes"],
     )
 
-    alternatives = cal_exp.explore_alternatives(X_test)
+    alternatives = cal_exp.explore_alternatives(x_test)
     alternatives.add_conjunctions()
 
     # ensure alternatives produced rules and conjunctive transformation added
@@ -171,11 +171,11 @@ def test_explore_alternatives_and_conjunctive_rules():
 
 def test_fast_explanation_roundtrip_classification(binary_dataset):
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -185,12 +185,12 @@ def test_fast_explanation_roundtrip_classification(binary_dataset):
 
     from tests._helpers import get_classification_model
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, X_cal, y_cal, feature_names, categorical_features, mode="classification", fast=True
+        model, x_cal, y_cal, feature_names, categorical_features, mode="classification", fast=True
     )
 
-    fast = cal_exp.explain_fast(X_test)
+    fast = cal_exp.explain_fast(x_test)
 
     # round-trip each fast explanation via legacy->domain->json->domain
     for orig in fast:
@@ -228,11 +228,11 @@ def _assert_collections_close(lhs, rhs):
 
 def test_plugin_runtime_matches_legacy_factual(binary_dataset):
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _y_test,
         _num_classes,
         _num_features,
@@ -242,10 +242,10 @@ def test_plugin_runtime_matches_legacy_factual(binary_dataset):
 
     from tests._helpers import get_classification_model
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -253,19 +253,19 @@ def test_plugin_runtime_matches_legacy_factual(binary_dataset):
         class_labels=["No", "Yes"],
     )
 
-    plugin = cal_exp.explain_factual(X_test)
-    legacy = cal_exp.explain_factual(X_test, _use_plugin=False)
+    plugin = cal_exp.explain_factual(x_test)
+    legacy = cal_exp.explain_factual(x_test, _use_plugin=False)
 
     _assert_collections_close(plugin, legacy)
 
 
 def test_plugin_runtime_matches_legacy_alternative(binary_dataset):
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _y_test,
         _num_classes,
         _num_features,
@@ -275,10 +275,10 @@ def test_plugin_runtime_matches_legacy_alternative(binary_dataset):
 
     from tests._helpers import get_classification_model
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -286,19 +286,19 @@ def test_plugin_runtime_matches_legacy_alternative(binary_dataset):
         class_labels=["No", "Yes"],
     )
 
-    plugin = cal_exp.explore_alternatives(X_test)
-    legacy = cal_exp.explore_alternatives(X_test, _use_plugin=False)
+    plugin = cal_exp.explore_alternatives(x_test)
+    legacy = cal_exp.explore_alternatives(x_test, _use_plugin=False)
 
     _assert_collections_close(plugin, legacy)
 
 
 def test_plugin_runtime_matches_legacy_fast(binary_dataset):
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _y_test,
         _num_classes,
         _num_features,
@@ -308,10 +308,10 @@ def test_plugin_runtime_matches_legacy_fast(binary_dataset):
 
     from tests._helpers import get_classification_model
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         feature_names,
         categorical_features,
@@ -320,19 +320,19 @@ def test_plugin_runtime_matches_legacy_fast(binary_dataset):
         fast=True,
     )
 
-    plugin = cal_exp.explain_fast(X_test)
-    legacy = cal_exp.explain_fast(X_test, _use_plugin=False)
+    plugin = cal_exp.explain_fast(x_test)
+    legacy = cal_exp.explain_fast(x_test, _use_plugin=False)
 
     _assert_collections_close(plugin, legacy)
 
 
 def test_regression_factual_and_alternatives_roundtrip(regression_dataset):
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         y_test,
         _,
         categorical_features,
@@ -341,13 +341,13 @@ def test_regression_factual_and_alternatives_roundtrip(regression_dataset):
 
     from tests._helpers import get_regression_model
 
-    model, _ = get_regression_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, X_cal, y_cal, feature_names, categorical_features, mode="regression"
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
     )
 
     # probabilistic / thresholded factual path
-    factual = cal_exp.explain_factual(X_test, y_test)
+    factual = cal_exp.explain_factual(x_test, y_test)
     factual.add_conjunctions()
     for orig in factual:
         payload = _build_payload_from_exp(orig)
@@ -358,7 +358,7 @@ def test_regression_factual_and_alternatives_roundtrip(regression_dataset):
         assert rt.task == domain.task
 
     # alternatives including threshold variants
-    alternatives = cal_exp.explore_alternatives(X_test, y_test)
+    alternatives = cal_exp.explore_alternatives(x_test, y_test)
     alternatives.add_conjunctions()
     any_rules_found = False
     for alt in alternatives:

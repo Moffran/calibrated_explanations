@@ -8,12 +8,12 @@ from sklearn.model_selection import train_test_split
 
 def test_calibration_helpers_round_trip():
     data = load_iris()
-    X_train, X_cal, y_train, y_cal = train_test_split(
+    x_train, x_cal, y_train, y_cal = train_test_split(
         data.data, data.target, test_size=0.2, random_state=42, stratify=data.target
     )
     clf = RandomForestClassifier(n_estimators=10, random_state=42, max_depth=3)
-    clf.fit(X_train, y_train)
-    explainer = CalibratedExplainer(clf, X_cal, y_cal, mode="classification", seed=42)
+    clf.fit(x_train, y_train)
+    explainer = CalibratedExplainer(clf, x_cal, y_cal, mode="classification", seed=42)
 
     # assign_threshold wrapper behavior parity
     assert ch.assign_threshold(explainer, None) is None
@@ -24,6 +24,6 @@ def test_calibration_helpers_round_trip():
     assert explainer.interval_learner is not None
 
     # update_interval_learner wrapper should accept new data
-    X_new, y_new = X_cal[:5], y_cal[:5]
-    ch.update_interval_learner(explainer, X_new, y_new, bins=None)
+    x_new, y_new = x_cal[:5], y_cal[:5]
+    ch.update_interval_learner(explainer, x_new, y_new, bins=None)
     assert explainer.interval_learner is not None

@@ -17,22 +17,22 @@ class _RecordingExplainer:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.plot_calls: list[tuple[Any, dict[str, Any]]] = []
 
-    def explain_factual(self, X_test: Any, **kwargs: Any) -> str:
+    def explain_factual(self, x_test: Any, **kwargs: Any) -> str:
         self.calls.append(("factual", dict(kwargs)))
         return "factual"
 
-    def explore_alternatives(self, X_test: Any, **kwargs: Any) -> str:
+    def explore_alternatives(self, x_test: Any, **kwargs: Any) -> str:
         self.calls.append(("alternative", dict(kwargs)))
         return "alternative"
 
-    def explain_fast(self, X_test: Any, **kwargs: Any) -> str:
+    def explain_fast(self, x_test: Any, **kwargs: Any) -> str:
         self.calls.append(("fast", dict(kwargs)))
         return "fast"
 
-    def plot(self, X_test: Any, *, threshold: float | None = None, **kwargs: Any) -> None:
+    def plot(self, x_test: Any, *, threshold: float | None = None, **kwargs: Any) -> None:
         payload = dict(kwargs)
         payload["threshold"] = threshold
-        self.plot_calls.append((X_test, payload))
+        self.plot_calls.append((x_test, payload))
 
 
 @dataclass
@@ -59,9 +59,9 @@ def _configured_wrapper(
 
 def test_config_defaults_forwarded_when_missing() -> None:
     wrapper, recorder = _configured_wrapper(threshold=0.42, percentiles=(10, 90))
-    X = np.ones((3, 2))
+    x = np.ones((3, 2))
 
-    wrapper.explain_factual(X)
+    wrapper.explain_factual(x)
 
     assert recorder.calls, "expected explain_factual to be forwarded"
     mode, kwargs = recorder.calls[-1]
@@ -73,10 +73,10 @@ def test_config_defaults_forwarded_when_missing() -> None:
 
 def test_user_overrides_win_and_aliases_are_dropped() -> None:
     wrapper, recorder = _configured_wrapper(threshold=0.15, percentiles=(5, 95))
-    X = np.ones((2, 2))
+    x = np.ones((2, 2))
 
     with pytest.deprecated_call():
-        wrapper.explore_alternatives(X, threshold=0.7, alpha=(1, 99))
+        wrapper.explore_alternatives(x, threshold=0.7, alpha=(1, 99))
 
     mode, kwargs = recorder.calls[-1]
     assert mode == "alternative"
@@ -88,13 +88,13 @@ def test_user_overrides_win_and_aliases_are_dropped() -> None:
 
 def test_plot_inherits_threshold_and_bins_from_config_and_mc() -> None:
     wrapper, recorder = _configured_wrapper(threshold=0.33, percentiles=(20, 80))
-    wrapper.mc = lambda X: np.arange(len(X))
-    X = np.zeros((4, 2))
+    wrapper.mc = lambda x: np.arange(len(x))
+    x = np.zeros((4, 2))
 
-    wrapper.plot(X)
+    wrapper.plot(x)
 
     assert recorder.plot_calls, "expected plot call to be forwarded"
-    _X_payload, kwargs = recorder.plot_calls[-1]
+    x_payload, kwargs = recorder.plot_calls[-1]
     assert kwargs["threshold"] == 0.33
     assert kwargs["low_high_percentiles"] == (20, 80)
-    assert np.array_equal(kwargs["bins"], np.arange(len(X)))
+    assert np.array_equal(kwargs["bins"], np.arange(len(x)))

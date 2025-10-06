@@ -1,3 +1,4 @@
+# ruff: noqa: N999
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments, fixme
 """
@@ -48,7 +49,7 @@ class VennAbers:
 
     def __init__(
         self,
-        X_cal,
+        x_cal,
         y_cal,
         learner,
         bins=None,
@@ -76,10 +77,10 @@ class VennAbers:
         self._predict_proba = (
             predict_function if predict_function is not None else learner.predict_proba
         )
-        self.X_cal = X_cal
+        self.x_cal = x_cal
         self.__is_multiclass = len(np.unique(self.y_cal_numeric)) > 2
 
-        cprobs = self.__predict_proba_with_difficulty(X_cal) if cprobs is None else cprobs
+        cprobs = self.__predict_proba_with_difficulty(x_cal) if cprobs is None else cprobs
         self.cprobs = cprobs
         self.bins = bins
 
@@ -123,13 +124,13 @@ class VennAbers:
             self.va.fit(cprobs, self.ctargets, precision=4)
         warnings.filterwarnings("default", category=RuntimeWarning)
 
-    def __predict_proba_with_difficulty(self, X, bins=None):
+    def __predict_proba_with_difficulty(self, x, bins=None):
         if "bins" in self._predict_proba.__code__.co_varnames:
-            probs = self._predict_proba(X, bins=bins)
+            probs = self._predict_proba(x, bins=bins)
         else:
-            probs = self._predict_proba(X)
+            probs = self._predict_proba(x)
         if self.de is not None:
-            difficulty = self.de.apply(X)
+            difficulty = self.de.apply(x)
             # method = logit_based_scaling_list
             method = exponent_scaling_list
             # method = sigmoid_scaling_list
@@ -140,7 +141,7 @@ class VennAbers:
             probs = np.array([np.asarray(tmp) for tmp in probs_tmp])
         return probs
 
-    def predict(self, X_test, bins=None):
+    def predict(self, x_test, bins=None):
         """Predict the class of the test samples.
 
         Parameters
@@ -154,13 +155,13 @@ class VennAbers:
                 If multiclass, the predicted class is 1 if the prediction from the underlying model is the same after calibration and 0 otherwise.
         """
         if self.is_multiclass():
-            tmp, _ = self.predict_proba(X_test, bins=bins)
+            tmp, _ = self.predict_proba(x_test, bins=bins)
             return np.asarray(np.round(tmp[:, 1]))
-        tmp = self.predict_proba(X_test, bins=bins)[:, 1]
+        tmp = self.predict_proba(x_test, bins=bins)[:, 1]
         return np.asarray(np.round(tmp))
 
     # pylint: disable=too-many-locals, too-many-branches
-    def predict_proba(self, X_test, output_interval=False, classes=None, bins=None):
+    def predict_proba(self, x_test, output_interval=False, classes=None, bins=None):
         """Predict the probabilities of the test samples, optionally outputting the VennAbers interval.
 
         Parameters
@@ -178,7 +179,7 @@ class VennAbers:
                 high (n_test_samples,): Upper bounds of the VennAbers interval for each test sample.
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
-        tprobs = self.__predict_proba_with_difficulty(X_test, bins=bins)
+        tprobs = self.__predict_proba_with_difficulty(x_test, bins=bins)
         p0p1 = np.zeros((tprobs.shape[0], 2))
         va_proba = np.zeros(tprobs.shape)
 

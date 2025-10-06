@@ -30,7 +30,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     """
 
     def __init__(
-        self, calibrated_explainer, X_test, y_threshold, bins, features_to_ignore=None
+        self, calibrated_explainer, x_test, y_threshold, bins, features_to_ignore=None
     ) -> None:
         """A class for storing and visualizing calibrated explanations.
 
@@ -53,7 +53,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self.calibrated_explainer: FrozenCalibratedExplainer = FrozenCalibratedExplainer(
             calibrated_explainer
         )
-        self.X_test: np.ndarray = X_test
+        self.x_test: np.ndarray = x_test
         self.y_threshold: Optional[Union[float, Tuple[float, float], List[Tuple[float, float]]]] = (
             y_threshold
         )
@@ -63,7 +63,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         ] = []
         self.start_index: int = 0
         self.current_index: int = self.start_index
-        self.end_index: int = len(X_test[:, 0])
+        self.end_index: int = len(x_test[:, 0])
         self.bins: Optional[Sequence[Any]] = bins
         self.total_explain_time: Optional[float] = None
         self.features_to_ignore: List[int] = (
@@ -92,7 +92,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def __len__(self):
         """Return the number of explanations."""
-        return len(self.X_test[:, 0])
+        return len(self.x_test[:, 0])
 
     def __getitem__(self, key: Union[int, slice, List[int], List[bool], np.ndarray]):
         """Return the explanation for the given key.
@@ -125,7 +125,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             new_.current_index = new_.start_index
             new_.end_index = len(new_.explanations)
             new_.bins = None if self.bins is None else [self.bins[e.index] for e in new_]
-            new_.X_test = np.array([self.X_test[e.index, :] for e in new_])
+            new_.x_test = np.array([self.x_test[e.index, :] for e in new_])
             if self.y_threshold is None:
                 new_.y_threshold = None
             elif isinstance(self.y_threshold, (int, float)):
@@ -369,7 +369,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self : object
             Returns the instance of the class with explanations finalized.
         """
-        for i, instance in enumerate(self.X_test):
+        for i, instance in enumerate(self.x_test):
             instance_bin = self.bins[i] if self.bins is not None else None
             if self._is_alternative():
                 explanation: Union[FactualExplanation, AlternativeExplanation, FastExplanation]
@@ -400,10 +400,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             self.explanations.append(explanation)
         self.total_explain_time = time() - total_time if total_time is not None else None
         if self._is_alternative():
-            return self.__convert_to_AlternativeExplanations()
+            return self.__convert_to_alternative_explanations()
         return self
 
-    def __convert_to_AlternativeExplanations(self) -> "AlternativeExplanations":
+    def __convert_to_alternative_explanations(self) -> "AlternativeExplanations":
         alternative_explanations = AlternativeExplanations.__new__(AlternativeExplanations)
         alternative_explanations.__dict__.update(self.__dict__)
         return alternative_explanations
@@ -437,7 +437,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         - The explanation time for each instance is recorded if `instance_time` is provided.
         - The total explanation time is calculated if `total_time` is provided.
         """
-        for i, instance in enumerate(self.X_test):
+        for i, instance in enumerate(self.x_test):
             instance_bin = self.bins[i] if self.bins is not None else None
             explanation = FastExplanation(
                 self,
@@ -527,7 +527,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             raise TypeError("index must be an integer")
         if index < 0:
             raise ValueError("index must be greater than or equal to 0")
-        if index >= len(self.X_test):
+        if index >= len(self.x_test):
             raise ValueError("index must be less than the number of test instances")
         return self.explanations[index]
 
@@ -654,7 +654,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 tmp.local_exp[1][j] = (f, feature_weights[f])
             del tmp.local_exp[1][num_to_show:]
             tmp.domain_mapper.discretized_feature_names = rules
-            tmp.domain_mapper.feature_values = explanation.X_test
+            tmp.domain_mapper.feature_values = explanation.x_test
             exp.append(tmp)
         return exp
 
@@ -668,11 +668,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         _, shap_exp = self.calibrated_explainer._preload_shap()  # pylint: disable=protected-access
         shap_exp.base_values = np.resize(shap_exp.base_values, len(self))
-        shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.X_test[0, :])))
-        shap_exp.data = self.X_test
+        shap_exp.values = np.resize(shap_exp.values, (len(self), len(self.x_test[0, :])))
+        shap_exp.data = self.x_test
         for i, explanation in enumerate(self.explanations):  # range(len(self.X_test[:,0])):
             # shap_exp.base_values[i] = explanation.prediction['predict']
-            for f in range(len(self.X_test[0, :])):
+            for f in range(len(self.x_test[0, :])):
                 shap_exp.values[i][f] = -explanation.feature_weights["predict"][f]
         return shap_exp
 
@@ -801,7 +801,7 @@ class FrozenCalibratedExplainer:
         self._explainer = deepcopy(explainer)
 
     @property
-    def X_cal(self):
+    def x_cal(self):
         """
         Retrieves the calibrated feature matrix from the underlying explainer.
 
@@ -811,7 +811,7 @@ class FrozenCalibratedExplainer:
         -------
             numpy.ndarray: The calibrated feature matrix.
         """
-        return self._explainer.X_cal
+        return self._explainer.x_cal
 
     @property
     def y_cal(self):

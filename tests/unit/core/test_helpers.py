@@ -30,7 +30,7 @@ class MockEstimator(BaseEstimator):
     def __init__(self):
         self.fitted_ = False
 
-    def fit(self, X, y):
+    def fit(self, x, y):
         self.fitted_ = True
 
 
@@ -154,7 +154,7 @@ def test_check_is_fitted_with_sklearn_is_fitted_method():
         def __sklearn_is_fitted__(self):
             return True
 
-        def fit(self, X, y):
+        def fit(self, x, y):
             pass
 
     estimator = CustomEstimator()

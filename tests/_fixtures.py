@@ -33,26 +33,26 @@ def regression_dataset(sample_limit):
 
     ds = _read_csv_cached(f"data/reg/{dataset}")
     max_rows = sample_limit
-    X = ds.drop("REGRESSION", axis=1).values[:max_rows, :]
+    x = ds.drop("REGRESSION", axis=1).values[:max_rows, :]
     y = ds["REGRESSION"].values[:max_rows]
     calibration_size = min(1000, max(2, max_rows - num_to_test - 2))
     y = (y - np.min(y)) / (np.max(y) - np.min(y))
-    no_of_features = X.shape[1]
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(X[:, i])) < 10]
+    no_of_features = x.shape[1]
+    categorical_features = [i for i in range(no_of_features) if len(np.unique(x[:, i])) < 10]
     columns = ds.drop("REGRESSION", axis=1).columns
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=num_to_test, random_state=42
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y, test_size=num_to_test, random_state=42
     )
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        X_train, y_train, test_size=calibration_size, random_state=42
+    x_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
+        x_train, y_train, test_size=calibration_size, random_state=42
     )
     return (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         y_test,
         no_of_features,
         categorical_features,
@@ -63,20 +63,20 @@ def regression_dataset(sample_limit):
 @pytest.fixture
 def binary_dataset():
     """Shared binary classification dataset fixture."""
-    dataSet = "diabetes_full"
+    dataset = "diabetes_full"
     delimiter = ","
     num_to_test = 2
     target_column = "Y"
 
-    fileName = f"data/{dataSet}.csv"
-    df = _read_csv_cached(fileName, delimiter=delimiter, dtype=np.float64)
+    filename = f"data/{dataset}.csv"
+    df = _read_csv_cached(filename, delimiter=delimiter, dtype=np.float64)
 
     columns = df.drop(target_column, axis=1).columns
     num_classes = len(np.unique(df[target_column]))
     num_features = df.drop(target_column, axis=1).shape[1]
 
     sorted_indices = np.argsort(df[target_column].values).astype(int)
-    X, y = (
+    x, y = (
         df.drop(target_column, axis=1).values[sorted_indices, :],
         df[target_column].values[sorted_indices],
     )
@@ -92,21 +92,21 @@ def binary_dataset():
     )
     train_index = np.setdiff1d(np.array(range(len(y))), test_index)
 
-    trainX_cal, X_test = X[train_index, :], X[test_index, :]
+    trainx_cal, x_test = x[train_index, :], x[test_index, :]
     y_train, y_test = y[train_index], y[test_index]
 
     from sklearn.model_selection import train_test_split
 
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        trainX_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
+    x_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
+        trainx_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
     )
 
     return (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         y_test,
         num_classes,
         num_features,
@@ -137,7 +137,7 @@ def multiclass_dataset():
     num_features = df.drop(target_column, axis=1).shape[1]
 
     sorted_indices = np.argsort(df[target_column].values).astype(int)
-    X, y = (
+    x, y = (
         df.drop(target_column, axis=1).values[sorted_indices, :],
         df[target_column].values[sorted_indices],
     )
@@ -147,21 +147,21 @@ def multiclass_dataset():
     )
     train_indices = np.setdiff1d(np.arange(len(y)), test_indices)
 
-    X_train_cal, X_test = X[train_indices, :], X[test_indices, :]
+    x_train_cal, x_test = x[train_indices, :], x[test_indices, :]
     y_train, y_test = y[train_indices], y[test_indices]
 
     from sklearn.model_selection import train_test_split
 
-    X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(
-        X_train_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
+    x_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
+        x_train_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
     )
 
     return (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         y_test,
         num_classes,
         num_features,

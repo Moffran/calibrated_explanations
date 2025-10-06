@@ -100,7 +100,7 @@ class CalibratedExplanation(ABC):
         self,
         calibrated_explanations,
         index,
-        X_test,
+        x_test,
         binned,
         feature_weights,
         feature_predict,
@@ -141,7 +141,7 @@ class CalibratedExplanation(ABC):
         prediction = MappingProxyType(prediction)
         self.calibrated_explanations = calibrated_explanations
         self.index = index
-        self.X_test = X_test
+        self.x_test = x_test
         self.binned = {}
         self.feature_weights = {}
         self.feature_predict = {}
@@ -378,7 +378,7 @@ class CalibratedExplanation(ABC):
         """
         self.conditions = []
         # pylint: disable=invalid-name
-        x = self._get_explainer().discretizer.discretize(self.X_test)
+        x = self._get_explainer().discretizer.discretize(self.x_test)
         for f in range(self._get_explainer().num_features):
             if f in self.calibrated_explanations.features_to_ignore:
                 self.conditions.append("")
@@ -528,8 +528,8 @@ class CalibratedExplanation(ABC):
             )
             return self
 
-        X_copy = np.array(self.X_test, copy=True)
-        is_lesser = self._is_lesser(rule_boundary, X_copy[f])
+        x_copy = np.array(self.x_test, copy=True)
+        is_lesser = self._is_lesser(rule_boundary, x_copy[f])
         new_rule = self._get_rules()
         rule = self._get_rule_str(is_lesser, f, rule_boundary)
         if np.any([new_rule["rule"][i] == rule for i in range(len(new_rule["rule"]))]):
@@ -539,12 +539,12 @@ class CalibratedExplanation(ABC):
         threshold = self.y_threshold
         perturbed_threshold = self._get_explainer().assign_threshold(threshold)
         perturbed_bins = np.empty((0,)) if self.bin is not None else None
-        perturbed_X = np.empty((0, self._get_explainer().num_features))
+        perturbed_x = np.empty((0, self._get_explainer().num_features))
         perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
         perturbed_class = np.empty((0,), dtype=int)
 
-        cal_X_f = self._get_explainer().X_cal[:, f]
-        feature_values = np.unique(np.array(cal_X_f))
+        cal_x_f = self._get_explainer().x_cal[:, f]
+        feature_values = np.unique(np.array(cal_x_f))
         sample_percentiles = self._get_explainer().sample_percentiles
 
         if is_lesser:
@@ -554,8 +554,8 @@ class CalibratedExplanation(ABC):
                     stacklevel=2,
                 )
                 return self
-            values = np.percentile(cal_X_f[cal_X_f < rule_boundary], sample_percentiles)
-            covered = np.percentile(cal_X_f[cal_X_f >= rule_boundary], sample_percentiles)
+            values = np.percentile(cal_x_f[cal_x_f < rule_boundary], sample_percentiles)
+            covered = np.percentile(cal_x_f[cal_x_f >= rule_boundary], sample_percentiles)
         else:
             if not np.any(feature_values > rule_boundary):
                 warnings.warn(
@@ -563,13 +563,13 @@ class CalibratedExplanation(ABC):
                     stacklevel=2,
                 )
                 return self
-            values = np.percentile(cal_X_f[cal_X_f > rule_boundary], sample_percentiles)
-            covered = np.percentile(cal_X_f[cal_X_f <= rule_boundary], sample_percentiles)
+            values = np.percentile(cal_x_f[cal_x_f > rule_boundary], sample_percentiles)
+            covered = np.percentile(cal_x_f[cal_x_f <= rule_boundary], sample_percentiles)
 
         for value in values:
-            X_local = np.reshape(X_copy, (1, -1))
-            X_local[0, f] = value
-            perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
+            x_local = np.reshape(x_copy, (1, -1))
+            x_local[0, f] = value
+            perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
             perturbed_feature = np.concatenate((perturbed_feature, [(f, 0, None, is_lesser)]))
             perturbed_bins = (
                 np.concatenate((perturbed_bins, self.bin)) if self.bin is not None else None
@@ -587,9 +587,9 @@ class CalibratedExplanation(ABC):
                 perturbed_threshold = np.concatenate((perturbed_threshold, threshold))
 
         for value in covered:
-            X_local = np.reshape(X_copy, (1, -1))
-            X_local[0, f] = value
-            perturbed_X = np.concatenate((perturbed_X, np.array(X_local)))
+            x_local = np.reshape(x_copy, (1, -1))
+            x_local[0, f] = value
+            perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
             perturbed_feature = np.concatenate((perturbed_feature, [(f, 0, None, None)]))
             perturbed_bins = (
                 np.concatenate((perturbed_bins, self.bin)) if self.bin is not None else None
@@ -608,7 +608,7 @@ class CalibratedExplanation(ABC):
 
         # pylint: disable=protected-access
         predict, low, high, _ = self._get_explainer()._predict(
-            perturbed_X,
+            perturbed_x,
             threshold=perturbed_threshold,
             low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
             classes=perturbed_class,
@@ -643,7 +643,7 @@ class CalibratedExplanation(ABC):
         new_rule["weight_high"].append(
             safe_mean(rule_high) - safe_mean(instance_predict) if rule_high != np.inf else rule_high
         )
-        new_rule["value"].append(str(np.around(self.X_test[f], decimals=2)))
+        new_rule["value"].append(str(np.around(self.x_test[f], decimals=2)))
         new_rule["feature"].append(f)
         new_rule["feature_value"].append(self.binned["rule_values"][f][0][0])
         new_rule["is_conjunctive"].append(False)
@@ -685,7 +685,7 @@ class FactualExplanation(CalibratedExplanation):
         self,
         calibrated_explanations,
         index,
-        X_test,
+        x_test,
         binned,
         feature_weights,
         feature_predict,
@@ -723,7 +723,7 @@ class FactualExplanation(CalibratedExplanation):
         super().__init__(
             calibrated_explanations,
             index,
-            X_test,
+            x_test,
             binned,
             feature_weights,
             feature_predict,
@@ -810,7 +810,7 @@ class FactualExplanation(CalibratedExplanation):
             return self.rules
         self._has_rules = False
         # i = self.index
-        instance = np.array(self.X_test, copy=True)
+        instance = np.array(self.x_test, copy=True)
         factual = {
             "base_predict": [],
             "base_predict_low": [],
@@ -887,7 +887,7 @@ class FactualExplanation(CalibratedExplanation):
         self.conjunctive_rules = []
         # pylint: disable=unsubscriptable-object, invalid-name
         threshold = None if self.y_threshold is None else self.y_threshold
-        x_original = deepcopy(self.X_test)
+        x_original = deepcopy(self.x_test)
 
         num_rules = len(factual["rule"])
         predicted_class = factual["classes"]
@@ -1125,7 +1125,7 @@ class AlternativeExplanation(CalibratedExplanation):
         self,
         calibrated_explanations,
         index,
-        X_test,
+        x_test,
         binned,
         feature_weights,
         feature_predict,
@@ -1163,7 +1163,7 @@ class AlternativeExplanation(CalibratedExplanation):
         super().__init__(
             calibrated_explanations,
             index,
-            X_test,
+            x_test,
             binned,
             feature_weights,
             feature_predict,
@@ -1230,7 +1230,7 @@ class AlternativeExplanation(CalibratedExplanation):
             return self.rules
         self.rules = []
         self.labels = {}  # pylint: disable=attribute-defined-outside-init
-        instance = np.array(self.X_test, copy=True)
+        instance = np.array(self.x_test, copy=True)
         instance.flags.writeable = False
         # pylint: disable=protected-access
         discretized = self._get_explainer()._discretize(instance.reshape(1, -1))[0]
@@ -1288,7 +1288,7 @@ class AlternativeExplanation(CalibratedExplanation):
                         )
                     alternative["is_conjunctive"].append(False)
             else:
-                values = np.array(self._get_explainer().X_cal[:, f])
+                values = np.array(self._get_explainer().x_cal[:, f])
                 lesser = rule_boundaries[f][0]
                 greater = rule_boundaries[f][1]
 
@@ -1628,7 +1628,7 @@ class AlternativeExplanation(CalibratedExplanation):
         self.conjunctive_rules = []
         # pylint: disable=unsubscriptable-object, invalid-name
         threshold = None if self.y_threshold is None else self.y_threshold
-        x_original = deepcopy(self.X_test)
+        x_original = deepcopy(self.x_test)
 
         num_rules = len(alternative["rule"])
         predicted_class = alternative["classes"]
@@ -1884,7 +1884,7 @@ class FastExplanation(CalibratedExplanation):
         self,
         calibrated_explanations,
         index,
-        X_test,
+        x_test,
         feature_weights,
         feature_predict,
         prediction,
@@ -1919,7 +1919,7 @@ class FastExplanation(CalibratedExplanation):
         super().__init__(
             calibrated_explanations,
             index,
-            X_test,
+            x_test,
             {},
             feature_weights,
             feature_predict,
@@ -2009,7 +2009,7 @@ class FastExplanation(CalibratedExplanation):
             return self.rules
         self._has_rules = False
         # i = self.index
-        instance = np.array(self.X_test, copy=True)
+        instance = np.array(self.x_test, copy=True)
         fast = {
             "base_predict": [],
             "base_predict_low": [],
