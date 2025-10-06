@@ -66,6 +66,7 @@ from ..plugins.registry import (
     find_explanation_plugin,
     find_interval_descriptor,
     find_interval_plugin,
+    find_interval_plugin_trusted,
 )
 from ..plugins.predict import PredictBridge
 
@@ -532,6 +533,12 @@ class CalibratedExplainer:
             if identifier and identifier not in seen:
                 ordered.append(identifier)
                 seen.add(identifier)
+                descriptor = find_interval_descriptor(identifier)
+                if descriptor:
+                    for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
+                        if fallback and fallback not in seen:
+                            ordered.append(fallback)
+                            seen.add(fallback)
         if default_identifier not in seen:
             ordered.append(default_identifier)
         key = "fast" if fast else "default"
@@ -763,12 +770,16 @@ class CalibratedExplainer:
             descriptor = find_interval_descriptor(identifier)
             plugin = None
             metadata: Mapping[str, Any] | None = None
+            preferred = preferred_identifier == identifier
             if descriptor is not None:
                 metadata = descriptor.metadata
-                if descriptor.trusted or identifier == preferred_identifier:
+                if descriptor.trusted or preferred:
                     plugin = descriptor.plugin
             if plugin is None:
-                plugin = find_interval_plugin(identifier)
+                if preferred:
+                    plugin = find_interval_plugin(identifier)
+                else:
+                    plugin = find_interval_plugin_trusted(identifier)
             if plugin is None:
                 message = f"{identifier}: not registered"
                 if preferred_identifier == identifier:
@@ -812,13 +823,33 @@ class CalibratedExplainer:
         difficulty = {"estimator": self.difficulty_estimator}
         fast_flags = {"fast": fast}
         residuals: Mapping[str, Any] = {}
+        enriched_metadata = dict(metadata)
+        enriched_metadata.setdefault("task", self.mode)
+        enriched_metadata.setdefault("mode", self.mode)
+        enriched_metadata.setdefault("predict_function", getattr(self, "predict_function", None))
+        enriched_metadata.setdefault("difficulty_estimator", self.difficulty_estimator)
+        enriched_metadata.setdefault("explainer", self)
+        enriched_metadata.setdefault("categorical_features", tuple(self.categorical_features))
+        enriched_metadata.setdefault("num_features", self.num_features)
+        enriched_metadata.setdefault(
+            "noise_config",
+            {
+                "noise_type": getattr(self, "_CalibratedExplainer__noise_type", None),
+                "scale_factor": getattr(self, "_CalibratedExplainer__scale_factor", None),
+                "severity": getattr(self, "_CalibratedExplainer__severity", None),
+                "seed": getattr(self, "seed", None),
+                "rng": getattr(self, "rng", None),
+            },
+        )
+        if fast and isinstance(self.interval_learner, list):
+            enriched_metadata.setdefault("existing_fast_calibrators", tuple(self.interval_learner))
         return IntervalCalibratorContext(
             learner=self.learner,
             calibration_splits=calibration_splits,
             bins=bins,
             residuals=residuals,
             difficulty=difficulty,
-            metadata=dict(metadata),
+            metadata=enriched_metadata,
             fast_flags=fast_flags,
         )
 

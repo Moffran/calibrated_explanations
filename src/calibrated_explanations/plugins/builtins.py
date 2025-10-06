@@ -21,6 +21,8 @@ from typing import Any, Mapping
 import numpy as np
 
 from .. import __version__ as _PACKAGE_VERSION
+from .._VennAbers import VennAbers
+from .._interval_regressor import IntervalRegressor
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
@@ -31,6 +33,7 @@ from ..explanations.explanation import (
 )
 from ..explanations.explanations import CalibratedExplanations
 from ..utils.helper import safe_isinstance
+from ..utils.perturbation import perturb_dataset
 from .explanations import (
     ExplanationBatch,
     ExplanationContext,
@@ -140,9 +143,33 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     }
 
     def create(self, context: IntervalCalibratorContext, *, fast: bool = False) -> Any:
-        calibrator = context.metadata.get("calibrator")
-        if calibrator is None:
-            raise RuntimeError("Legacy interval context missing 'calibrator' entry")
+        task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
+        learner = context.learner
+        bins = context.bins.get("calibration")
+        difficulty = context.difficulty.get("estimator")
+        X_cal, y_cal = context.calibration_splits[0]
+        if "regression" in task:
+            explainer = context.metadata.get("explainer")
+            if explainer is None:
+                raise RuntimeError("Legacy interval context missing 'explainer' handle")
+            calibrator = IntervalRegressor(explainer)
+        else:
+            predict_function = context.metadata.get("predict_function")
+            if predict_function is None:
+                explainer = context.metadata.get("explainer")
+                if explainer is None:
+                    raise RuntimeError("Legacy interval context missing 'predict_function' entry")
+                predict_function = getattr(explainer, "predict_function", None)
+            calibrator = VennAbers(
+                X_cal,
+                y_cal,
+                learner,
+                bins,
+                difficulty_estimator=difficulty,
+                predict_function=predict_function,
+            )
+        if isinstance(context.metadata, dict):
+            context.metadata.setdefault("calibrator", calibrator)
         return calibrator
 
 
@@ -166,10 +193,89 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     }
 
     def create(self, context: IntervalCalibratorContext, *, fast: bool = True) -> Any:
-        calibrator = context.metadata.get("fast_calibrators")
-        if calibrator is None:
-            raise RuntimeError("FAST interval context missing 'fast_calibrators' entry")
-        return calibrator
+        metadata = context.metadata
+        task = str(metadata.get("task") or metadata.get("mode") or "")
+        explainer = metadata.get("explainer")
+        if explainer is None:
+            raise RuntimeError("FAST interval context missing 'explainer' handle")
+
+        X_cal, y_cal = context.calibration_splits[0]
+        bins = context.bins.get("calibration")
+        learner = context.learner
+        difficulty = metadata.get("difficulty_estimator")
+        categorical_features = tuple(metadata.get("categorical_features", ()))
+        noise_cfg = metadata.get("noise_config", {})
+        (
+            explainer.fast_X_cal,
+            explainer.scaled_X_cal,
+            explainer.scaled_y_cal,
+            scale_factor,
+        ) = perturb_dataset(
+            X_cal,
+            y_cal,
+            categorical_features,
+            noise_type=noise_cfg.get("noise_type"),
+            scale_factor=noise_cfg.get("scale_factor"),
+            severity=noise_cfg.get("severity"),
+            seed=noise_cfg.get("seed"),
+            rng=noise_cfg.get("rng"),
+        )
+        expanded_bins = (
+            np.tile(bins.copy(), scale_factor) if bins is not None else None
+        )
+        original_bins = explainer.bins
+        original_X_cal = explainer.X_cal
+        original_y_cal = explainer.y_cal
+        explainer.bins = expanded_bins
+
+        calibrators: list[Any] = []
+        num_features = int(metadata.get("num_features", 0) or 0)
+        if "classification" in task:
+            for f in range(num_features):
+                fast_X_cal = explainer.scaled_X_cal.copy()
+                fast_X_cal[:, f] = explainer.fast_X_cal[:, f]
+                calibrators.append(
+                    VennAbers(
+                        fast_X_cal,
+                        explainer.scaled_y_cal,
+                        learner,
+                        explainer.bins,
+                        difficulty_estimator=difficulty,
+                    )
+                )
+        else:
+            for f in range(num_features):
+                fast_X_cal = explainer.scaled_X_cal.copy()
+                fast_X_cal[:, f] = explainer.fast_X_cal[:, f]
+                explainer.X_cal = fast_X_cal
+                explainer.y_cal = explainer.scaled_y_cal
+                calibrators.append(IntervalRegressor(explainer))
+
+        explainer.X_cal = original_X_cal
+        explainer.y_cal = original_y_cal
+        explainer.bins = original_bins
+
+        if "classification" in task:
+            calibrators.append(
+                VennAbers(
+                    X_cal,
+                    y_cal,
+                    learner,
+                    bins,
+                    difficulty_estimator=difficulty,
+                    predict_function=(
+                        metadata.get("predict_function")
+                        if metadata.get("predict_function") is not None
+                        else getattr(explainer, "predict_function", None)
+                    ),
+                )
+            )
+        else:
+            calibrators.append(IntervalRegressor(explainer))
+
+        if isinstance(metadata, dict):
+            metadata.setdefault("fast_calibrators", tuple(calibrators))
+        return calibrators
 
 
 @dataclass
