@@ -668,6 +668,9 @@ Please send bug reports, feature requests or pull requests through
 the project page on [GitHub](https://github.com/Moffran/calibrated_explanations).
 You can find a detailed guide for contributions in
 [CONTRIBUTING.md](https://github.com/Moffran/calibrated_explanations/blob/main/CONTRIBUTING.md).
+The guide includes the ADR-017/ADR-018 naming and documentation style cheat-sheet
+along with the ADR-019 coverage guardrails so reviewers and contributors share the
+same expectations before opening a pull request.
 
 ### Roadmap and ADRs
 

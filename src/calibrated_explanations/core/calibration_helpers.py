@@ -69,4 +69,9 @@ def initialize_interval_learner_for_fast_explainer(explainer) -> None:
     )
     explainer.interval_learner = interval
 
-__all__ = ["assign_threshold", "initialize_interval_learner", "update_interval_learner"]
+__all__ = [
+    "assign_threshold",
+    "initialize_interval_learner",
+    "initialize_interval_learner_for_fast_explainer",
+    "update_interval_learner",
+]

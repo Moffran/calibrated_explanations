@@ -2,6 +2,9 @@
 
 This plan complements ADR-019 and breaks the remediation into concrete workstreams.
 
+See also the [Test Coverage Gap Plan](test_coverage_gap_plan.md) for the module-level
+backlog associated with the current coverage report.
+
 ## Phase 0 – Tooling foundation (Week 1)
 1. Add `.coveragerc` with package/critical-path thresholds and explicitly documented excludes.
 2. Update `pytest.ini` default `addopts` to include `--cov=src/calibrated_explanations --cov-report=term-missing --cov-fail-under=90` once debt burn-down reaches 90%.
