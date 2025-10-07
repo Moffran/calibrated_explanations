@@ -159,6 +159,14 @@ def test_dependency_propagation_and_context_hints(binary_dataset):
             "legacy",
         )
         assert runtime_plugin.requests, "plugin should record at least one request"
+
+        telemetry = explainer.runtime_telemetry
+        assert telemetry.get("proba_source") == "core.interval.legacy"
+        assert telemetry.get("plot_fallbacks") == ("tests.plot.pref", "legacy")
+
+        batch_telemetry = getattr(explanations, "telemetry", {})
+        assert batch_telemetry.get("proba_source") == "core.interval.legacy"
+        assert batch_telemetry.get("plot_fallbacks") == ("tests.plot.pref", "legacy")
     finally:
         _cleanup_plugin(plugin)
 
@@ -206,6 +214,11 @@ def test_interval_plugin_resolution_records_default_identifier(binary_dataset):
     assert batch is not None
     assert explainer.runtime_telemetry.get("interval_source") == "core.interval.legacy"
     assert getattr(batch, "telemetry", {}).get("interval_source") == "core.interval.legacy"
+    assert explainer.runtime_telemetry.get("proba_source") == "core.interval.legacy"
+    assert explainer.runtime_telemetry.get("plot_fallbacks") == ("legacy",)
+    batch_telemetry = getattr(batch, "telemetry", {})
+    assert batch_telemetry.get("proba_source") == "core.interval.legacy"
+    assert batch_telemetry.get("plot_fallbacks") == ("legacy",)
 
 
 def test_fast_interval_plugin_resolution_records_identifier(binary_dataset):
@@ -216,6 +229,11 @@ def test_fast_interval_plugin_resolution_records_identifier(binary_dataset):
     assert fast_batch is not None
     assert explainer.runtime_telemetry.get("interval_source") == "core.interval.fast"
     assert getattr(fast_batch, "telemetry", {}).get("interval_source") == "core.interval.fast"
+    assert explainer.runtime_telemetry.get("proba_source") == "core.interval.fast"
+    assert explainer.runtime_telemetry.get("plot_fallbacks") == ("legacy",)
+    fast_telemetry = getattr(fast_batch, "telemetry", {})
+    assert fast_telemetry.get("proba_source") == "core.interval.fast"
+    assert fast_telemetry.get("plot_fallbacks") == ("legacy",)
 
 
 def test_interval_override_missing_identifier(monkeypatch, binary_dataset):
