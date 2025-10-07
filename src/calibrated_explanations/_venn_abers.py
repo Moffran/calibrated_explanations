@@ -1,12 +1,10 @@
 # ruff: noqa: N999
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments, fixme
-"""
-This module contains the VennAbers class for calibrating model predictions using the Venn-Abers method.
+"""Venn-Abers calibration utilities for post-processing model probabilities.
 
-Classes
--------
-    VennAbers: A class to calibrate the predictions of a model using the Venn-Abers method.
+Wraps the `venn_abers` package to offer Mondrian-aware calibration
+integrated with the calibrated explanations toolkit.
 """
 
 import warnings
@@ -18,33 +16,41 @@ from .utils.helper import convert_targets_to_numeric
 
 
 class VennAbers:
-    """
-    A class to calibrate the predictions of a model using the Venn-Abers method.
-
+    """Calibrate probabilistic predictions with the Venn-Abers method.
+    
+    Parameters
+    ----------
+        x_cal : array-like
+            Calibration feature set used to fit the post-hoc model.
+        y_cal : array-like
+            Calibration target values.
+        learner : object
+            Estimator exposing a `predict_proba` method.
+        bins : array-like, optional
+            Mondrian categories associated with the calibration data.
+        cprobs : array-like, optional
+            Pre-computed calibration probabilities.
+        difficulty_estimator : callable, optional
+            Callable that scores sample difficulty.
+        predict_function : callable, optional
+            Custom probability function overriding `learner.predict_proba`.
+    
     Attributes
     ----------
-        de (callable): A difficulty estimator function.
-        learner (object): A machine learning model with a `predict_proba` method.
-        X_cal (array-like): Calibration feature set.
-        ctargets (array-like): Calibration target values.
-        __is_multiclass (bool): Indicates if the problem is multiclass.
-        cprobs (array-like): Calibration probabilities.
-        bins (array-like): Mondrian categories for calibration.
-        va (dict or object): Venn-Abers model(s) for calibration.
-    Methods
-    -------
-        __init__(X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
-            Initializes the VennAbers class with calibration data and model.
-        __predict_proba_with_difficulty(x, bins=None):
-            Predicts probabilities with difficulty adjustment.
-        predict(x, bins=None):
-            Predicts the class of the test samples.
-        predict_proba(x, output_interval=False, classes=None, bins=None):
-            Predicts the probabilities of the test samples, optionally outputting the Venn-ABERS interval.
-        is_multiclass() -> bool:
-            Returns true if the problem is multiclass.
-        is_mondrian() -> bool:
-            Returns true if Mondrian categories are used.
+        de : callable or None
+            Difficulty estimator applied to inputs.
+        learner : object
+            Base estimator used for predictions.
+        x_cal : array-like
+            Calibration feature set.
+        ctargets : ndarray
+            Numeric calibration targets.
+        cprobs : ndarray
+            Calibration probabilities for each sample.
+        bins : array-like or None
+            Mondrian categories used during calibration.
+        va : dict or venn_abers.VennAbers
+            Underlying Venn-Abers models fitted per class or bin.
     """
 
     def __init__(
@@ -57,17 +63,24 @@ class VennAbers:
         difficulty_estimator=None,
         predict_function=None,
     ):
-        """Initialize the VennAbers class with calibration data and model.
-
+        """Initialize the VennAbers calibrator.
+        
         Parameters
         ----------
-            X_cal (array-like): Calibration feature set.
-            y_cal (array-like): Calibration target values.
-            learner (object): A machine learning model with a `predict_proba` method.
-            bins (array-like, optional): Mondrian categories for calibration. Defaults to None.
-            cprobs (array-like, optional): Calibration probabilities. Defaults to None.
-            difficulty_estimator (callable, optional): A difficulty estimator function. Defaults to None.
-            predict_function (callable, optional): A predict_proba function. Defaults to None.
+            x_cal : array-like
+                Calibration feature set.
+            y_cal : array-like
+                Calibration target values.
+            learner : object
+                Estimator exposing a `predict_proba` method.
+            bins : array-like, optional
+                Mondrian categories associated with calibration data.
+            cprobs : array-like, optional
+                Pre-computed calibration probabilities.
+            difficulty_estimator : callable, optional
+                Callable that scores sample difficulty.
+            predict_function : callable, optional
+                Custom function used instead of `learner.predict_proba`.
         """
         self.y_cal_numeric, self.label_map = convert_targets_to_numeric(y_cal)
         self.original_labels = y_cal

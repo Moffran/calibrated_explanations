@@ -1,25 +1,8 @@
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes
-"""This module contains the class for the interval regressors.
+"""Interval regression helpers built on conformal calibration.
 
-Classes
--------
-IntervalRegressor
-    The main class for performing regression analysis on intervals of data.
-
-Methods
--------
-__init__(self, calibrated_explainer)
-    Initialize an object with various attributes used for calibration and explanation extraction.
-predict_probability(self, x, y_threshold, bins=None)
-    Predict the probabilities for each instance in the dataset being above the threshold(s), along with confidence intervals.
-predict_uncertainty(self, x, low_high_percentiles, bins=None)
-    Predict the uncertainty of a given set of instances using a `ConformalPredictiveSystem`.
-predict_proba(self, x, bins=None)
-    Predict the probabilities for being above the y_threshold.
-pre_fit_for_probabilistic(self)
-    Split the calibration set into two parts.
-compute_proba_cal(self, y_threshold: float)
-    Calculate the probability calibration for a given threshold.
+Exposes `IntervalRegressor`, which combines conformal predictive systems
+and Venn-Abers scaling to deliver calibrated probabilities and intervals.
 """
 
 import numbers
@@ -32,7 +15,7 @@ from ._venn_abers import VennAbers
 
 
 class IntervalRegressor:
-    """The IntervalRegressor class is used for regression analysis on intervals of data."""
+    """Estimate predictive intervals using calibrated explanations."""
 
     def __init__(self, calibrated_explainer):
         """Initialize an object with various attributes used for calibration and explanation extraction.
@@ -245,27 +228,23 @@ class IntervalRegressor:
 
     @singledispatchmethod
     def compute_proba_cal(self, y_threshold):
-        """Base method for computing the probability calibration.
-
+        """Validate threshold types before computing probability calibration.
+        
         Parameters
         ----------
-        y_threshold : float or tuple
-            The `y_threshold` parameter is a float or tuple value that represents the threshold for the probability.
-            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the
-            calibration set for a given threshold value.
+            y_threshold : float or tuple
+                Threshold defining the calibration target event.
         """
         raise TypeError("y_threshold must be a float or a tuple.")
 
     @compute_proba_cal.register(numbers.Real)
     def _(self, y_threshold: numbers.Real):
-        """Calculate the probability calibration for a given threshold.
-
+        """Compute the probability calibration for a scalar threshold.
+        
         Parameters
         ----------
-        y_threshold : float
-            The `y_threshold` parameter is a float value that represents the threshold for the probability.
-            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the
-            calibration set for a given threshold value.
+            y_threshold : float
+                Threshold value that defines the calibration target.
         """
         cal_va = self.split["parts"][1]
         bins = None if self.bins is None else self.bins[cal_va]
@@ -283,14 +262,12 @@ class IntervalRegressor:
 
     @compute_proba_cal.register(tuple)
     def _(self, y_threshold: tuple):
-        """Calculate the probability calibration for a given interval threshold.
-
+        """Compute the probability calibration for an interval threshold.
+        
         Parameters
         ----------
-        y_threshold : tuple
-            The `y_threshold` parameter is a tuple that represents the interval threshold for the probability.
-            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the
-            calibration set for a given threshold value.
+            y_threshold : tuple
+                Lower and upper bounds that define the calibration target interval.
         """
         cal_va = self.split["parts"][1]
         bins = None if self.bins is None else self.bins[cal_va]
@@ -313,7 +290,17 @@ class IntervalRegressor:
         )
 
     def insert_calibration(self, xs, ys, bins=None):
-        """Make a sorted insert of the calibration values"""
+        """Insert calibration instances while preserving the conformal splits.
+        
+        Parameters
+        ----------
+            xs : ndarray
+                New calibration features.
+            ys : ndarray
+                New calibration targets.
+            bins : array-like, optional
+                Mondrian categories associated with the new instances.
+        """
         num_add = len(ys)  # number of new instances
         if num_add % 2 != 0:  # is odd?
             parts = self.split["parts"]

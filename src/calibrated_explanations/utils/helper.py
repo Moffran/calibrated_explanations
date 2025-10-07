@@ -1,26 +1,8 @@
 # pylint: disable=line-too-long
-"""
-This module contains helper functions for various tasks.
+"""Helper utilities for filesystem, typing, and data transformations.
 
-These tasks include directory creation, safe importing,
-type checking, data transformation, and metric calculation. It includes functions to handle
-categorical data, check if an estimator is fitted, and determine if the code is running in a
-Jupyter notebook.
-
-Functions
----------
-- make_directory: Create a directory if it does not exist.
-- safe_isinstance: Safely check if an object is an instance of a specified class.
-- safe_import: Safely import a module or class, with error handling for missing modules or classes.
-- check_is_fitted: Check if an estimator is fitted by verifying the presence of fitted attributes.
-- is_notebook: Check if the code is running in a Jupyter notebook.
-- transform_to_numeric: Transform categorical features in a DataFrame to numeric values.
-- assert_threshold: Validate and return thresholds.
-- calculate_metrics: Calculate various metrics based on uncertainty and prediction values.
-- convert_targets_to_numeric: Convert string/categorical targets to numeric values while preserving labels.
-
-Created on 2023-07-01
-Author: Tuwe Löfström
+Centralizes small routines for safe imports, conversions, and metric
+calculations shared across calibrated explanations.
 """
 
 import importlib
