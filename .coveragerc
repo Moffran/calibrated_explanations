@@ -1,0 +1,37 @@
+# Shared coverage configuration enforced by ADR-019
+
+[run]
+branch = True
+source =
+    src/calibrated_explanations
+omit =
+    tests/*
+    docs/*
+    notebooks/*
+    benchmarks/*
+    scripts/*
+    evaluation/*
+    setup.py
+parallel = False
+
+[paths]
+calibrated_explanations =
+    src/calibrated_explanations
+    */site-packages/calibrated_explanations
+
+[report]
+fail_under = 90
+show_missing = True
+skip_covered = False
+precision = 1
+# Patterns we intentionally exclude from coverage accounting because they
+# represent defensive programming or module entry points rather than runtime
+# logic exercised in production. Keep this list short and documented.
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.
+    if TYPE_CHECKING:
+    raise NotImplementedError
+
+[html]
+directory = coverage_html

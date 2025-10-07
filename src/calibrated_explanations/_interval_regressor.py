@@ -1,25 +1,8 @@
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes
-"""This module contains the class for the interval regressors.
+"""Interval regression helpers built on conformal calibration.
 
-Classes
--------
-IntervalRegressor
-    The main class for performing regression analysis on intervals of data.
-
-Methods
--------
-__init__(self, calibrated_explainer)
-    Initialize an object with various attributes used for calibration and explanation extraction.
-predict_probability(self, X_test, y_threshold, bins=None)
-    Predict the probabilities for each instance in the dataset being above the threshold(s), along with confidence intervals.
-predict_uncertainty(self, X_test, low_high_percentiles, bins=None)
-    Predict the uncertainty of a given set of instances using a `ConformalPredictiveSystem`.
-predict_proba(self, X_test, bins=None)
-    Predict the probabilities for being above the y_threshold.
-pre_fit_for_probabilistic(self)
-    Split the calibration set into two parts.
-compute_proba_cal(self, y_threshold: float)
-    Calculate the probability calibration for a given threshold.
+Exposes `IntervalRegressor`, which combines conformal predictive systems
+and Venn-Abers scaling to deliver calibrated probabilities and intervals.
 """
 
 import numbers
@@ -28,11 +11,11 @@ from functools import singledispatchmethod
 import crepes
 import numpy as np
 
-from ._VennAbers import VennAbers
+from ._venn_abers import VennAbers
 
 
 class IntervalRegressor:
-    """The IntervalRegressor class is used for regression analysis on intervals of data."""
+    """Estimate predictive intervals using calibrated explanations."""
 
     def __init__(self, calibrated_explainer):
         """Initialize an object with various attributes used for calibration and explanation extraction.
@@ -61,7 +44,7 @@ class IntervalRegressor:
         self.residual_cal = (
             self.ce.y_cal - self.y_cal_hat
         )  # can be calculated through calibrated_explainer
-        self.sigma_cal = self.ce._get_sigma_test(X=self.ce.X_cal)  # pylint: disable=protected-access
+        self.sigma_cal = self.ce._get_sigma_test(x=self.ce.x_cal)  # pylint: disable=protected-access
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
             cps.fit(
@@ -81,13 +64,13 @@ class IntervalRegressor:
         self.pre_fit_for_probabilistic()
 
     # pylint: disable=too-many-locals
-    def predict_probability(self, X_test, y_threshold, bins=None):
+    def predict_probability(self, x, y_threshold, bins=None):
         """Predict the probabilities for each instance in the dataset being above the threshold(s), along with confidence intervals.
 
         Parameters
         ----------
-        X_test
-            X_test is a numpy.ndarray containing the instance objects for which we want to predict the
+        x
+            x is a numpy.ndarray containing the instance objects for which we want to predict the
             probability.
         y_threshold
             The `y_threshold` parameter is used to determine the probability of the true value being
@@ -108,18 +91,18 @@ class IntervalRegressor:
             self.current_y_threshold = self.y_threshold
             self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.split["va"].predict_proba(
-                X_test, output_interval=True, bins=bins
+                x, output_interval=True, bins=bins
             )
             return proba[:, 1], low, high, None
 
-        bins = bins if bins is not None else [None] * X_test.shape[0]
-        interval = np.zeros((X_test.shape[0], 2))
-        proba = np.zeros(X_test.shape[0])
+        bins = bins if bins is not None else [None] * x.shape[0]
+        interval = np.zeros((x.shape[0], 2))
+        proba = np.zeros(x.shape[0])
         for i, _ in enumerate(proba):
             self.current_y_threshold = self.y_threshold[i]
             self.compute_proba_cal(self.y_threshold[i])
             p, low, high = self.split["va"].predict_proba(
-                X_test[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]]
+                x[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]]
             )
             # import helper locally to avoid top-level dependency
             try:
@@ -135,13 +118,13 @@ class IntervalRegressor:
             interval[i, :] = np.array([low, high])
         return proba, interval[:, 0], interval[:, 1], None
 
-    def predict_uncertainty(self, X_test, low_high_percentiles, bins=None):
+    def predict_uncertainty(self, x, low_high_percentiles, bins=None):
         """Predict the uncertainty of a given set of instances using a `ConformalPredictiveSystem`.
 
         Parameters
         ----------
-        X_test
-            X_test is a numpy array containing the instance objects for which we want to predict the
+        x
+            x is a numpy array containing the instance objects for which we want to predict the
             uncertainty.
         low_high_percentiles
             The `low_high_percentiles` parameter is a list containing two values. The first value
@@ -157,9 +140,9 @@ class IntervalRegressor:
         -------
             four values: median, lower bound, upper bound, and None.
         """
-        y_test_hat = self.ce.predict_function(X_test).reshape(-1, 1)
+        y_test_hat = self.ce.predict_function(x).reshape(-1, 1)
 
-        sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
+        sigma_test = self.ce._get_sigma_test(x=x)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
         high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
 
@@ -182,13 +165,13 @@ class IntervalRegressor:
             None,
         )
 
-    def predict_proba(self, X_test, bins=None):
+    def predict_proba(self, x, bins=None):
         """Predict the probabilities for being below the y_threshold (for float threshold) or below the lower bound and above the upper bound (for tuple threshold).
 
         Parameters
         ----------
-        X_test
-            The X_test parameter is the input data for which you want to predict the probabilities. It
+        x
+            The x parameter is the input data for which you want to predict the probabilities. It
             should be a numpy array or a pandas DataFrame containing the features of the test data.
         bins
             array-like of shape (n_samples,), default=None
@@ -200,9 +183,9 @@ class IntervalRegressor:
             for being above or below the y_threshold. The first column represents the probability of the
             negative class (1-proba) and the second column represents the probability of the positive class (proba).
         """
-        y_test_hat = self.ce.predict_function(X_test).reshape(-1, 1)
+        y_test_hat = self.ce.predict_function(x).reshape(-1, 1)
 
-        sigma_test = self.ce._get_sigma_test(X=X_test)  # pylint: disable=protected-access
+        sigma_test = self.ce._get_sigma_test(x=x)  # pylint: disable=protected-access
         if isinstance(self.current_y_threshold, tuple):
             proba_lower = self.cps.predict(
                 y_hat=y_test_hat, sigmas=sigma_test, y=self.current_y_threshold[0], bins=bins
@@ -245,27 +228,23 @@ class IntervalRegressor:
 
     @singledispatchmethod
     def compute_proba_cal(self, y_threshold):
-        """Base method for computing the probability calibration.
-
+        """Validate threshold types before computing probability calibration.
+        
         Parameters
         ----------
-        y_threshold : float or tuple
-            The `y_threshold` parameter is a float or tuple value that represents the threshold for the probability.
-            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the
-            calibration set for a given threshold value.
+            y_threshold : float or tuple
+                Threshold defining the calibration target event.
         """
         raise TypeError("y_threshold must be a float or a tuple.")
 
     @compute_proba_cal.register(numbers.Real)
     def _(self, y_threshold: numbers.Real):
-        """Calculate the probability calibration for a given threshold.
-
+        """Compute the probability calibration for a scalar threshold.
+        
         Parameters
         ----------
-        y_threshold : float
-            The `y_threshold` parameter is a float value that represents the threshold for the probability.
-            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the
-            calibration set for a given threshold value.
+            y_threshold : float
+                Threshold value that defines the calibration target.
         """
         cal_va = self.split["parts"][1]
         bins = None if self.bins is None else self.bins[cal_va]
@@ -283,14 +262,12 @@ class IntervalRegressor:
 
     @compute_proba_cal.register(tuple)
     def _(self, y_threshold: tuple):
-        """Calculate the probability calibration for a given interval threshold.
-
+        """Compute the probability calibration for an interval threshold.
+        
         Parameters
         ----------
-        y_threshold : tuple
-            The `y_threshold` parameter is a tuple that represents the interval threshold for the probability.
-            It is used in the `compute_proba_cal` method to determine the predicted probabilities of the
-            calibration set for a given threshold value.
+            y_threshold : tuple
+                Lower and upper bounds that define the calibration target interval.
         """
         cal_va = self.split["parts"][1]
         bins = None if self.bins is None else self.bins[cal_va]
@@ -313,7 +290,17 @@ class IntervalRegressor:
         )
 
     def insert_calibration(self, xs, ys, bins=None):
-        """Make a sorted insert of the calibration values"""
+        """Insert calibration instances while preserving the conformal splits.
+        
+        Parameters
+        ----------
+            xs : ndarray
+                New calibration features.
+            ys : ndarray
+                New calibration targets.
+            bins : array-like, optional
+                Mondrian categories associated with the new instances.
+        """
         num_add = len(ys)  # number of new instances
         if num_add % 2 != 0:  # is odd?
             parts = self.split["parts"]
@@ -339,7 +326,7 @@ class IntervalRegressor:
         # Update y_hat, residuals, and sigma
         y_cal_hat = self.ce.predict_function(xs)
         residuals = ys - y_cal_hat
-        sigmas = self.ce._get_sigma_test(X=xs)  # pylint: disable=protected-access
+        sigmas = self.ce._get_sigma_test(x=xs)  # pylint: disable=protected-access
         self.y_cal_hat = np.append(self.y_cal_hat, y_cal_hat)
         self.residual_cal = np.append(self.residual_cal, residuals)
         self.sigma_cal = np.append(self.sigma_cal, sigmas)

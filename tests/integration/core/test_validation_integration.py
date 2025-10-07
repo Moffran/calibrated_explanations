@@ -16,13 +16,13 @@ from calibrated_explanations.core.exceptions import (
 
 
 class _DummyReg:
-    def predict(self, X):  # noqa: D401
-        return np.zeros((len(X),), dtype=float)
+    def predict(self, x):  # noqa: D401
+        return np.zeros((len(x),), dtype=float)
 
 
 class _DummyCls(_DummyReg):
-    def predict_proba(self, X):
-        return np.tile([0.5, 0.5], (len(X), 1))
+    def predict_proba(self, x):
+        return np.tile([0.5, 0.5], (len(x), 1))
 
 
 def test_infer_task_prefers_model_capabilities():
@@ -53,23 +53,23 @@ def test_validate_model_and_fit_state():
 
 
 def test_validate_inputs_matrix_shapes_and_finite():
-    X = np.ones((3, 2), dtype=float)
+    x = np.ones((3, 2), dtype=float)
     y = np.array([1.0, 2.0, 3.0])
     # happy path
-    validate_inputs_matrix(X, y, require_y=True)
+    validate_inputs_matrix(x, y, require_y=True)
     # shape mismatch (y length)
     with pytest.raises(DataShapeError, match=r"Length of 'y' \("):
-        validate_inputs_matrix(X, y[:2], require_y=True)
+        validate_inputs_matrix(x, y[:2], require_y=True)
     # not 2D
-    with pytest.raises(DataShapeError, match="Argument 'X' must be 2D"):
+    with pytest.raises(DataShapeError, match="Argument 'x' must be 2D"):
         validate_inputs_matrix(np.ones((3,)), y)
     # n_features mismatch
-    with pytest.raises(DataShapeError, match="Argument 'X' must have 3 features"):
-        validate_inputs_matrix(X, y, n_features=3)
+    with pytest.raises(DataShapeError, match="Argument 'x' must have 3 features"):
+        validate_inputs_matrix(x, y, n_features=3)
     # NaN check
-    X_bad = X.copy()
-    X_bad[0, 0] = np.nan
+    x_bad = x.copy()
+    x_bad[0, 0] = np.nan
     with pytest.raises(ValidationError):
-        validate_inputs_matrix(X_bad, y)
+        validate_inputs_matrix(x_bad, y)
     # allow NaN
-    validate_inputs_matrix(X_bad, y, allow_nan=True)
+    validate_inputs_matrix(x_bad, y, allow_nan=True)

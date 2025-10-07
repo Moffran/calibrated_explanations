@@ -48,10 +48,59 @@ PR expectations:
 
 ## Testing and Code Coverage
 
-We use pytest as our testing framework and aim to achieve a code coverage of about 90% in our tests. This ensures that our code is thoroughly tested and helps identify any potential issues or bugs. We encourage contributors to write comprehensive tests and strive for high code coverage. Code coverage tests are added and monitored at [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations).
+Pytest remains the primary regression harness. CI now enforces the ADR-019 coverage gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-report=term-missing --cov-report=xml --cov-fail-under=90`. The shared `.coveragerc` applies locally as well, so running the command above should mirror the CI behaviour. Coverage results are uploaded to [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations) for historical tracking.
+
+If a change cannot practically meet the 90% package-wide bar (for example, because it touches legacy shims slated for removal), request a coverage waiver:
+
+1. File an issue describing why the threshold cannot be met and outline the follow-up work required.
+2. Reference that issue in your pull request description and tick the waiver checkbox in the PR template.
+3. Add a brief note in the changelog entry or summary so reviewers can evaluate the trade-off.
+
+Waivers are exceptional and should include a plan with owners/dates so the debt does not linger past the next release.
 
 Additional checks:
 
 - Linting via ruff (style and simple correctness rules).
+- Naming guardrails: run `ruff check --select N` locally to preview the CI naming warnings introduced for the v0.7.0 release gate (ADR-017).
+- Docstring guardrails: run `pydocstyle --convention=numpy src tests` to surface ADR-018 numpydoc issues; CI reports the same warnings in exit-zero mode so they stay visible without blocking merges.
+- Docstring coverage: `python scripts/check_docstring_coverage.py` prints the current module/class/function/method coverage mix and accepts `--fail-under` for teams that want to experiment with stricter thresholds.
 - Type checking via mypy. During Phase 1B, new core modules (e.g., `core/exceptions.py`, `core/validation.py`) are checked with stricter settings.
 - Performance guard: see `scripts/check_perf_regression.py` and `benchmarks/perf_thresholds.json`.
+
+## Naming and documentation style quick reference
+
+ADR-017 and ADR-018 define the internal style rules that keep the plugin-first
+architecture consistent. The cheat-sheet below summarises what reviewers expect
+in day-to-day contributions; consult the ADRs for the full context and
+motivation.【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L1-L37】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L1-L62】
+
+### Naming conventions (ADR-017)
+
+| Scope | Requirements | Common pitfalls |
+| --- | --- | --- |
+| Modules & packages | `snake_case` filenames; transitional shims live in `legacy/` or start with `deprecated_` | CamelCase filenames, silently keeping duplicate module aliases |
+| Classes | `PascalCase` with clarifying suffixes when scope is narrow (`...Helper`, `...Mixin`) | Reusing ambiguous names such as `Manager`, `Wrapper` without context |
+| Functions & attributes | `snake_case`; boolean values begin with verbs (`is_`, `has_`, `should_`) | Introducing new double-underscore names or mismatching helper prefixes |
+| Registry identifiers | Dot-delimited lowercase paths (`core.explanation.factual`) | Forgetting to document aliases when keeping backward-compatible IDs |
+
+### Documentation conventions (ADR-018)
+
+| Area | Minimum expectation | Notes |
+| --- | --- | --- |
+| Modules | One-paragraph summary describing primary responsibility and notable shims | Keep in sync with ADR names so readers can trace provenance |
+| Public callables | Full numpydoc sections (`Parameters`, `Returns`, `Raises`, `Examples` as appropriate) | Summaries start with an imperative verb and fit on one line |
+| Internal helpers (`_` prefix) | Single-line summary explaining purpose | Still counted in coverage; these should clarify side-effects/constraints |
+| Deprecations | `.. deprecated::` directive or explicit `Warnings` section | Reference the replacement module or helper |
+| Coverage tracking | Run `python scripts/check_docstring_coverage.py` before requesting review | Pair with `pydocstyle` output to keep ADR-018 coverage metrics honest |
+
+## Plugin tooling quickstart
+
+Plugin development relies on the shared registry introduced in ADR-006/ADR-013/ADR-015.
+Two practical helpers when working on plugins:
+
+- Use the `ce.plugins` console script (packaged via `pyproject.toml`) to inspect
+  registered explanation/interval/plot plugins and their trust state:
+  `ce.plugins list all`.
+- Inline smoke tests live under `tests/integration/plugins/test_cli_smoke.py`.
+  Keep them green when adding new commands or metadata fields so the CLI output
+  remains stable for operators.

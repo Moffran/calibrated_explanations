@@ -69,11 +69,11 @@ def _make_explainer(binary_dataset, **overrides):
     from tests._helpers import get_classification_model
 
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _,
         _,
         _,
@@ -81,10 +81,10 @@ def _make_explainer(binary_dataset, **overrides):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = CalibratedExplainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         mode="classification",
         feature_names=feature_names,
@@ -92,7 +92,7 @@ def _make_explainer(binary_dataset, **overrides):
         class_labels=["No", "Yes"],
         **overrides,
     )
-    return explainer, X_test
+    return explainer, x_test
 
 
 def _assert_collections_equal(lhs, rhs):
@@ -113,8 +113,8 @@ def test_factual_plugin_fallback_skips_incompatible_task(monkeypatch, binary_dat
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", identifier)
 
     try:
-        explainer, X_test = _make_explainer(binary_dataset)
-        explainer.explain_factual(X_test[:3])
+        explainer, x_test = _make_explainer(binary_dataset)
+        explainer.explain_factual(x_test[:3])
         assert plugin._context is None
         assert explainer._explanation_plugin_identifiers["factual"] == "core.explanation.factual"
     finally:
@@ -129,8 +129,8 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", identifier)
 
     try:
-        explainer, X_test = _make_explainer(binary_dataset)
-        explainer.explain_factual(X_test[:2])
+        explainer, x_test = _make_explainer(binary_dataset)
+        explainer.explain_factual(x_test[:2])
         assert plugin._context is None
 
         chain = explainer._explanation_plugin_fallbacks["factual"]
@@ -145,40 +145,42 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
 
 
 def test_missing_override_identifier_errors(binary_dataset):
-    explainer, X_test = _make_explainer(binary_dataset, factual_plugin="tests.integration.missing")
+    explainer, x_test = _make_explainer(
+        binary_dataset, factual_plugin="tests.integration.missing"
+    )
 
     with pytest.raises(ConfigurationError, match="missing: not registered"):
-        explainer.explain_factual(X_test[:1])
+        explainer.explain_factual(x_test[:1])
 
 
 def test_schema_version_override_error(binary_dataset):
     plugin = FutureSchemaFactualPlugin()
-    explainer, X_test = _make_explainer(binary_dataset, factual_plugin=plugin)
+    explainer, x_test = _make_explainer(binary_dataset, factual_plugin=plugin)
 
     with pytest.raises(ConfigurationError, match="schema_version"):
-        explainer.explain_factual(X_test[:1])
+        explainer.explain_factual(x_test[:1])
 
 
 def test_factual_explanations_match_legacy(binary_dataset):
-    explainer, X_test = _make_explainer(binary_dataset)
-    legacy = explainer.explain_factual(X_test[:3], _use_plugin=False)
-    plugin_result = explainer.explain_factual(X_test[:3])
+    explainer, x_test = _make_explainer(binary_dataset)
+    legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
+    plugin_result = explainer.explain_factual(x_test[:3])
 
     _assert_collections_equal(plugin_result, legacy)
 
 
 def test_alternative_explanations_match_legacy(binary_dataset):
-    explainer, X_test = _make_explainer(binary_dataset)
-    legacy = explainer.explore_alternatives(X_test[:3], _use_plugin=False)
-    plugin_result = explainer.explore_alternatives(X_test[:3])
+    explainer, x_test = _make_explainer(binary_dataset)
+    legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
+    plugin_result = explainer.explore_alternatives(x_test[:3])
 
     _assert_collections_equal(plugin_result, legacy)
 
 
 def test_fast_mode_plugin_matches_legacy(binary_dataset):
-    explainer, X_test = _make_explainer(binary_dataset, fast=True)
-    legacy = explainer.explain_fast(X_test[:2], _use_plugin=False)
-    plugin_result = explainer.explain_fast(X_test[:2])
+    explainer, x_test = _make_explainer(binary_dataset, fast=True)
+    legacy = explainer.explain_fast(x_test[:2], _use_plugin=False)
+    plugin_result = explainer.explain_fast(x_test[:2])
 
     _assert_collections_equal(plugin_result, legacy)
 

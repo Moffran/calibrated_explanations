@@ -1,11 +1,10 @@
+# ruff: noqa: N999
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-instance-attributes, too-many-arguments, too-many-positional-arguments, fixme
-"""
-This module contains the VennAbers class for calibrating model predictions using the Venn-Abers method.
+"""Venn-Abers calibration utilities for post-processing model probabilities.
 
-Classes
--------
-    VennAbers: A class to calibrate the predictions of a model using the Venn-Abers method.
+Wraps the `venn_abers` package to offer Mondrian-aware calibration
+integrated with the calibrated explanations toolkit.
 """
 
 import warnings
@@ -17,38 +16,46 @@ from .utils.helper import convert_targets_to_numeric
 
 
 class VennAbers:
-    """
-    A class to calibrate the predictions of a model using the Venn-Abers method.
-
+    """Calibrate probabilistic predictions with the Venn-Abers method.
+    
+    Parameters
+    ----------
+        x_cal : array-like
+            Calibration feature set used to fit the post-hoc model.
+        y_cal : array-like
+            Calibration target values.
+        learner : object
+            Estimator exposing a `predict_proba` method.
+        bins : array-like, optional
+            Mondrian categories associated with the calibration data.
+        cprobs : array-like, optional
+            Pre-computed calibration probabilities.
+        difficulty_estimator : callable, optional
+            Callable that scores sample difficulty.
+        predict_function : callable, optional
+            Custom probability function overriding `learner.predict_proba`.
+    
     Attributes
     ----------
-        de (callable): A difficulty estimator function.
-        learner (object): A machine learning model with a `predict_proba` method.
-        X_cal (array-like): Calibration feature set.
-        ctargets (array-like): Calibration target values.
-        __is_multiclass (bool): Indicates if the problem is multiclass.
-        cprobs (array-like): Calibration probabilities.
-        bins (array-like): Mondrian categories for calibration.
-        va (dict or object): Venn-Abers model(s) for calibration.
-    Methods
-    -------
-        __init__(X_cal, y_cal, learner, bins=None, cprobs=None, difficulty_estimator=None):
-            Initializes the VennAbers class with calibration data and model.
-        __predict_proba_with_difficulty(X, bins=None):
-            Predicts probabilities with difficulty adjustment.
-        predict(X_test, bins=None):
-            Predicts the class of the test samples.
-        predict_proba(X_test, output_interval=False, classes=None, bins=None):
-            Predicts the probabilities of the test samples, optionally outputting the Venn-ABERS interval.
-        is_multiclass() -> bool:
-            Returns true if the problem is multiclass.
-        is_mondrian() -> bool:
-            Returns true if Mondrian categories are used.
+        de : callable or None
+            Difficulty estimator applied to inputs.
+        learner : object
+            Base estimator used for predictions.
+        x_cal : array-like
+            Calibration feature set.
+        ctargets : ndarray
+            Numeric calibration targets.
+        cprobs : ndarray
+            Calibration probabilities for each sample.
+        bins : array-like or None
+            Mondrian categories used during calibration.
+        va : dict or venn_abers.VennAbers
+            Underlying Venn-Abers models fitted per class or bin.
     """
 
     def __init__(
         self,
-        X_cal,
+        x_cal,
         y_cal,
         learner,
         bins=None,
@@ -56,17 +63,24 @@ class VennAbers:
         difficulty_estimator=None,
         predict_function=None,
     ):
-        """Initialize the VennAbers class with calibration data and model.
-
+        """Initialize the VennAbers calibrator.
+        
         Parameters
         ----------
-            X_cal (array-like): Calibration feature set.
-            y_cal (array-like): Calibration target values.
-            learner (object): A machine learning model with a `predict_proba` method.
-            bins (array-like, optional): Mondrian categories for calibration. Defaults to None.
-            cprobs (array-like, optional): Calibration probabilities. Defaults to None.
-            difficulty_estimator (callable, optional): A difficulty estimator function. Defaults to None.
-            predict_function (callable, optional): A predict_proba function. Defaults to None.
+            x_cal : array-like
+                Calibration feature set.
+            y_cal : array-like
+                Calibration target values.
+            learner : object
+                Estimator exposing a `predict_proba` method.
+            bins : array-like, optional
+                Mondrian categories associated with calibration data.
+            cprobs : array-like, optional
+                Pre-computed calibration probabilities.
+            difficulty_estimator : callable, optional
+                Callable that scores sample difficulty.
+            predict_function : callable, optional
+                Custom function used instead of `learner.predict_proba`.
         """
         self.y_cal_numeric, self.label_map = convert_targets_to_numeric(y_cal)
         self.original_labels = y_cal
@@ -76,10 +90,10 @@ class VennAbers:
         self._predict_proba = (
             predict_function if predict_function is not None else learner.predict_proba
         )
-        self.X_cal = X_cal
+        self.x_cal = x_cal
         self.__is_multiclass = len(np.unique(self.y_cal_numeric)) > 2
 
-        cprobs = self.__predict_proba_with_difficulty(X_cal) if cprobs is None else cprobs
+        cprobs = self.__predict_proba_with_difficulty(x_cal) if cprobs is None else cprobs
         self.cprobs = cprobs
         self.bins = bins
 
@@ -123,13 +137,13 @@ class VennAbers:
             self.va.fit(cprobs, self.ctargets, precision=4)
         warnings.filterwarnings("default", category=RuntimeWarning)
 
-    def __predict_proba_with_difficulty(self, X, bins=None):
+    def __predict_proba_with_difficulty(self, x, bins=None):
         if "bins" in self._predict_proba.__code__.co_varnames:
-            probs = self._predict_proba(X, bins=bins)
+            probs = self._predict_proba(x, bins=bins)
         else:
-            probs = self._predict_proba(X)
+            probs = self._predict_proba(x)
         if self.de is not None:
-            difficulty = self.de.apply(X)
+            difficulty = self.de.apply(x)
             # method = logit_based_scaling_list
             method = exponent_scaling_list
             # method = sigmoid_scaling_list
@@ -140,12 +154,12 @@ class VennAbers:
             probs = np.array([np.asarray(tmp) for tmp in probs_tmp])
         return probs
 
-    def predict(self, X_test, bins=None):
+    def predict(self, x, bins=None):
         """Predict the class of the test samples.
 
         Parameters
         ----------
-            X_test (n_test_samples, n_features): Test samples.
+            x (n_test_samples, n_features): Test samples.
             bins (array-like of shape (n_samples,), optional): Mondrian categories.
 
         Returns
@@ -154,18 +168,18 @@ class VennAbers:
                 If multiclass, the predicted class is 1 if the prediction from the underlying model is the same after calibration and 0 otherwise.
         """
         if self.is_multiclass():
-            tmp, _ = self.predict_proba(X_test, bins=bins)
+            tmp, _ = self.predict_proba(x, bins=bins)
             return np.asarray(np.round(tmp[:, 1]))
-        tmp = self.predict_proba(X_test, bins=bins)[:, 1]
+        tmp = self.predict_proba(x, bins=bins)[:, 1]
         return np.asarray(np.round(tmp))
 
     # pylint: disable=too-many-locals, too-many-branches
-    def predict_proba(self, X_test, output_interval=False, classes=None, bins=None):
+    def predict_proba(self, x, output_interval=False, classes=None, bins=None):
         """Predict the probabilities of the test samples, optionally outputting the VennAbers interval.
 
         Parameters
         ----------
-            X_test (n_test_samples, n_features): Test samples.
+            x (n_test_samples, n_features): Test samples.
             output_interval (bool, optional): If true, the VennAbers intervals are outputted. Defaults to False.
             classes (array-like, optional): A list of predicted classes. Defaults to None.
             bins (array-like of shape (n_samples,), optional): Mondrian categories.
@@ -178,7 +192,7 @@ class VennAbers:
                 high (n_test_samples,): Upper bounds of the VennAbers interval for each test sample.
         """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
-        tprobs = self.__predict_proba_with_difficulty(X_test, bins=bins)
+        tprobs = self.__predict_proba_with_difficulty(x, bins=bins)
         p0p1 = np.zeros((tprobs.shape[0], 2))
         va_proba = np.zeros(tprobs.shape)
 

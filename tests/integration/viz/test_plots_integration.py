@@ -11,7 +11,7 @@ class _FakeExplanation:
         self.y_minmax = (0.0, 1.0)
 
         class _CE:
-            def get_confidence(self_inner):
+            def get_confidence(self):
                 return 95
 
         self.calibrated_explanations = _CE()
@@ -32,11 +32,11 @@ class _FakeExplainer:
         # sample calibration values
         self.y_cal = np.array([0.1, 0.2, 0.3])
 
-    def predict(self, X, uq_interval=False, bins=None):
+    def predict(self, x, uq_interval=False, bins=None):
         # return (predictions, (low, high)) similar shape to usage
-        preds = np.zeros(len(X))
-        low = np.zeros(len(X))
-        high = np.ones(len(X))
+        preds = np.zeros(len(x))
+        low = np.zeros(len(x))
+        high = np.ones(len(x))
         return preds, (low, high)
 
     def is_multiclass(self):
@@ -102,10 +102,12 @@ def test_plot_alternative_writes_file(tmp_path):
 
 def test_plot_global_non_probabilistic_runs_without_error():
     expl = _FakeExplainer()
-    # small X_test
-    X_test = np.zeros((3, 2))
+    # small x_test
+    x_test = np.zeros((3, 2))
     # should not raise
-    _plots._plot_global(expl, X_test, y_test=None, threshold=None, show=False, use_legacy=False)
+    _plots._plot_global(
+        expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False
+    )
 
 
 def test_plot_proba_triangle_returns_figure():
@@ -157,8 +159,8 @@ def test_plot_global_probabilistic_branch_runs():
             self.learner = self
 
         # accept optional args used by plotting helper
-        def predict_proba(self, X, uq_interval=False, threshold=None, bins=None):
-            proba = np.tile(np.array([[0.3, 0.7]]), (len(X), 1))
+        def predict_proba(self, x, uq_interval=False, threshold=None, bins=None):
+            proba = np.tile(np.array([[0.3, 0.7]]), (len(x), 1))
             # return per-class low/high arrays matching proba shape
             low = np.zeros_like(proba)
             high = np.ones_like(proba)
@@ -167,13 +169,15 @@ def test_plot_global_probabilistic_branch_runs():
         def is_multiclass(self):
             return True
 
-        def predict(self, X, uq_interval=False, bins=None):
-            return np.zeros(len(X)), (np.zeros(len(X)), np.ones(len(X)))
+        def predict(self, x, uq_interval=False, bins=None):
+            return np.zeros(len(x)), (np.zeros(len(x)), np.ones(len(x)))
 
     expl = _FakeExplainerProba()
-    X_test = np.zeros((3, 2))
+    x_test = np.zeros((3, 2))
     # should not raise
-    _plots._plot_global(expl, X_test, y_test=None, threshold=None, show=False, use_legacy=False)
+    _plots._plot_global(
+        expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False
+    )
 
 
 def test_plot_alternative_early_noop_when_not_saving():

@@ -1,14 +1,92 @@
+<!-- markdownlint-disable-file -->
 # Changelog
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.1...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.7.0...main)
 
 ### Added
 
 ### Changed
 
 ### Fixed
+
+## [v0.7.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.7.0) - 2025-10-07
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.1...v0.7.0)
+
+### Added
+
+- Interval calibrators now resolve through the plugin registry for both legacy
+  and FAST paths, enabling trusted override chains and capturing telemetry about
+  the `interval_source`/`proba_source` used for each explanation batch.
+- CalibratedExplainer accepts new keyword overrides (`interval_plugin`,
+  `fast_interval_plugin`, `plot_style`) and reads environment/pyproject
+  fallbacks so operators can configure intervals and plots without code changes.
+- Packaged a `ce.plugins` console script with smoke tests covering list/show and
+  trust management workflows.
+
+### Changed
+
+- Interval plugin contexts surface FAST reuse hints and metadata to keep
+  calibrator reuse efficient while routing through the registry.
+- README, developer docs, and contributing guides document the new CLI,
+  configuration knobs, and plugin telemetry expectations.
+
+### Docs
+
+- ADR-013 and ADR-015 marked Accepted with implementation notes summarising the
+  registry-backed runtime.
+- ADR-017/ADR-018 ratified with quick-reference style excerpts in
+  `CONTRIBUTING.md` and contributor docs.
+- Harmonised `core.validation` docstrings with numpy-style lint guardrails (ADR-018).
+
+### CI
+
+- Shared `.coveragerc` published and the test workflow now enforces
+  `--cov-fail-under=80` to meet ADR-019 phase 1 requirements (with gradual increase for each new version).
+- Lint workflow surfaces Ruff naming warnings and docstring lint/coverage
+  reports, providing guardrails for ADR-017/ADR-018 adoption.
+
+#### Public API updates in v0.7.0
+This document summarises the signature adjustments introduced while aligning the
+codebase with the new Ruff style baseline. Reference it from the v0.7.0 changelog
+when communicating breaking or user-visible updates.
+
+##### Function parameter renames
+The following parameters have been renamed across multiple functions and methods:
+- X_test → x
+- y_test → y
+
+##### Wrapper keyword normalisation
+The following `WrapCalibratedExplainer` entry points now strip deprecated alias
+arguments after emitting a `DeprecationWarning`:
+- `calibrate`
+- `explain_factual`
+- `explore_alternatives`
+- `explain_fast`
+- `predict`
+- `predict_proba`
+Alias keys such as `alpha`, `alphas`, and `n_jobs` are therefore ignored going
+forward. Callers must provide the canonical keyword names (`low_high_percentiles`,
+`parallel_workers`, etc.) for custom behaviour to take effect.【F:src/calibrated_explanations/core/wrap_explainer.py†L201-L409】【F:src/calibrated_explanations/api/params.py†L16-L70】
+
+##### Explanation plugin toggle
+`CalibratedExplainer` now exposes a keyword-only `_use_plugin` flag across all
+explanation factories (`explain_factual`, `explore_alternatives`, `explain_fast`,
+`explain`, and the `__call__` shorthand). The flag defaults to `True`, enabling
+the plugin orchestrator. Pass `_use_plugin=False` to route through the legacy
+implementation when needed.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1489-L1665】
+
+##### Conjunction helper parameters
+All `add_conjunctions` helpers across explanation containers use the renamed
+keyword arguments `n_top_features` and `max_rule_size` (previously exposed as
+`num_to_include` and `num_rule_size`). Update downstream code, documentation,
+and notebooks accordingly.【F:src/calibrated_explanations/explanations/explanations.py†L460-L501】
+
+### Fixed
+
+- Fixed test helper stubs and plugin descriptors to satisfy Ruff naming guardrails (ADR-017), keeping `ruff check --select N` green.
 
 ## [v0.6.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.1) - 2025-10-05
 

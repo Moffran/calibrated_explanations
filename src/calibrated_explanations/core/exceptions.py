@@ -31,6 +31,7 @@ class CalibratedError(Exception):
         self.details: dict[str, Any] | None = details
 
     def __repr__(self) -> str:  # pragma: no cover - repr stability check in tests
+        """Return the exception representation with the message payload."""
         cls = self.__class__.__name__
         return f"{cls}({super().__str__()!r})"
 
@@ -40,7 +41,7 @@ class ValidationError(CalibratedError):
 
 
 class DataShapeError(ValidationError):
-    """Provided data has incompatible shape or dtype (e.g., X/y mismatch)."""
+    """Provided data has incompatible shape or dtype (e.g., x/y mismatch)."""
 
 
 class ConfigurationError(CalibratedError):

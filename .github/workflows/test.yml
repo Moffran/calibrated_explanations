@@ -38,7 +38,13 @@ jobs:
 
       - name: Run tests with coverage
         id: run_tests
-        run: pytest --cov=src/calibrated_explanations
+        run: |
+          pytest \
+            --cov=src/calibrated_explanations \
+            --cov-config=.coveragerc \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=80
 
       - name: Run doctests
         run: python src/calibrated_explanations/utils/helper.py
@@ -47,6 +53,7 @@ jobs:
         uses: codecov/codecov-action@v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
 
   core-only:
     runs-on: ubuntu-latest

@@ -7,11 +7,6 @@ instance is passed in and used directly to avoid re-wiring state.
 
 from __future__ import annotations
 
-import numpy as np
-
-from .._interval_regressor import IntervalRegressor
-from .._VennAbers import VennAbers
-from ..utils.perturbation import perturb_dataset
 from .exceptions import ConfigurationError
 
 
@@ -31,14 +26,11 @@ def update_interval_learner(explainer, xs, ys, bins=None) -> None:
     if explainer.is_fast():
         raise ConfigurationError("Fast explanations are not supported in this update path.")
     if explainer.mode == "classification":
-        explainer.interval_learner = VennAbers(
-            explainer.X_cal,
-            explainer.y_cal,
-            explainer.learner,
-            explainer.bins,
-            difficulty_estimator=explainer.difficulty_estimator,
-            predict_function=explainer.predict_function,
+        interval, _identifier = explainer._obtain_interval_calibrator(
+            fast=False,
+            metadata={"operation": "update"},
         )
+        explainer.interval_learner = interval
     elif "regression" in explainer.mode:
         if isinstance(explainer.interval_learner, list):
             raise ConfigurationError("Fast explanations are not supported in this update path.")
@@ -49,76 +41,35 @@ def update_interval_learner(explainer, xs, ys, bins=None) -> None:
 
 def initialize_interval_learner(explainer) -> None:
     """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner``."""
+    ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
+    if callable(ensure_state):
+        ensure_state()
+
     if explainer.is_fast():
         initialize_interval_learner_for_fast_explainer(explainer)
-    elif explainer.mode == "classification":
-        explainer.interval_learner = VennAbers(
-            explainer.X_cal,
-            explainer.y_cal,
-            explainer.learner,
-            explainer.bins,
-            difficulty_estimator=explainer.difficulty_estimator,
-            predict_function=explainer.predict_function,
+    elif explainer.mode == "classification" or "regression" in explainer.mode:
+        interval, _identifier = explainer._obtain_interval_calibrator(
+            fast=False,
+            metadata={"operation": "initialize"},
         )
-    elif "regression" in explainer.mode:
-        explainer.interval_learner = IntervalRegressor(explainer)
+        explainer.interval_learner = interval
     explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
-
 
 def initialize_interval_learner_for_fast_explainer(explainer) -> None:
     """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner_for_fast_explainer``."""
-    explainer.interval_learner = []
-    X_cal, y_cal, bins = explainer.X_cal, explainer.y_cal, explainer.bins
-    (
-        explainer.fast_X_cal,
-        explainer.scaled_X_cal,
-        explainer.scaled_y_cal,
-        scale_factor,
-    ) = perturb_dataset(
-        explainer.X_cal,
-        explainer.y_cal,
-        explainer.categorical_features,
-        noise_type=explainer._CalibratedExplainer__noise_type,  # noqa: SLF001
-        scale_factor=explainer._CalibratedExplainer__scale_factor,  # noqa: SLF001
-        severity=explainer._CalibratedExplainer__severity,  # noqa: SLF001
-        seed=getattr(explainer, "seed", None),
-        rng=getattr(explainer, "rng", None),
+    ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
+    if callable(ensure_state):
+        ensure_state()
+
+    interval, _identifier = explainer._obtain_interval_calibrator(
+        fast=True,
+        metadata={"operation": "initialize_fast"},
     )
-    explainer.bins = (
-        np.tile(explainer.bins.copy(), scale_factor) if explainer.bins is not None else None
-    )
-    for f in range(explainer.num_features):
-        fast_X_cal = explainer.scaled_X_cal.copy()
-        fast_X_cal[:, f] = explainer.fast_X_cal[:, f]
-        if explainer.mode == "classification":
-            explainer.interval_learner.append(
-                VennAbers(
-                    fast_X_cal,
-                    explainer.scaled_y_cal,
-                    explainer.learner,
-                    explainer.bins,
-                    difficulty_estimator=explainer.difficulty_estimator,
-                )
-            )
-        elif "regression" in explainer.mode:
-            explainer.X_cal = fast_X_cal
-            explainer.y_cal = explainer.scaled_y_cal
-            explainer.interval_learner.append(IntervalRegressor(explainer))
+    explainer.interval_learner = interval
 
-    explainer.X_cal, explainer.y_cal, explainer.bins = X_cal, y_cal, bins
-    if explainer.mode == "classification":
-        explainer.interval_learner.append(
-            VennAbers(
-                explainer.X_cal,
-                explainer.y_cal,
-                explainer.learner,
-                explainer.bins,
-                difficulty_estimator=explainer.difficulty_estimator,
-            )
-        )
-    elif "regression" in explainer.mode:
-        # Add a reference learner using the original calibration data last
-        explainer.interval_learner.append(IntervalRegressor(explainer))
-
-
-__all__ = ["assign_threshold", "initialize_interval_learner", "update_interval_learner"]
+__all__ = [
+    "assign_threshold",
+    "initialize_interval_learner",
+    "initialize_interval_learner_for_fast_explainer",
+    "update_interval_learner",
+]

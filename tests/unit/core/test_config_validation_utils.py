@@ -7,8 +7,8 @@ from calibrated_explanations.utils import helper
 
 def test_explainer_builder_builds_config_and_perf_factory_is_optional():
     class DummyModel:
-        def predict(self, X):
-            return np.zeros(len(X))
+        def predict(self, x):
+            return np.zeros(len(x))
 
     b = ExplainerBuilder(DummyModel())
     b.task("regression").perf_cache(True, max_items=5)
@@ -21,8 +21,8 @@ def test_explainer_builder_builds_config_and_perf_factory_is_optional():
 def test_infer_task_from_y_and_model():
     # model with predict_proba -> classification
     class M1:
-        def predict_proba(self, X):
-            return np.zeros((len(X), 2))
+        def predict_proba(self, x):
+            return np.zeros((len(x), 2))
 
     assert val.infer_task(model=M1()) == "classification"
 
@@ -36,10 +36,10 @@ def test_infer_task_from_y_and_model():
 
 
 def test_validate_inputs_matrix_mismatch_y_length_raises():
-    X = np.zeros((3, 2))
+    x = np.zeros((3, 2))
     y = np.zeros(2)
     try:
-        val.validate_inputs_matrix(X, y)
+        val.validate_inputs_matrix(x, y)
     except Exception as e:
         assert "does not match number of samples" in str(e)
 

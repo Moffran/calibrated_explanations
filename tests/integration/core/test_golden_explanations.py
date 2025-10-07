@@ -84,13 +84,13 @@ def _approx_equal(a, b):
 def test_golden_classification():
     rng = 42
     data = load_iris()
-    X_train, X_cal, y_train, y_cal = train_test_split(
+    x_train, x_cal, y_train, y_cal = train_test_split(
         data.data, data.target, test_size=0.2, random_state=rng, stratify=data.target
     )
     clf = RandomForestClassifier(n_estimators=25, random_state=rng, max_depth=3)
-    clf.fit(X_train, y_train)
-    explainer = CalibratedExplainer(clf, X_cal, y_cal, mode="classification", seed=rng)
-    factual = explainer.explain_factual(X_cal[:5])
+    clf.fit(x_train, y_train)
+    explainer = CalibratedExplainer(clf, x_cal, y_cal, mode="classification", seed=rng)
+    factual = explainer.explain_factual(x_cal[:5])
     payload = _serialize_classification(factual)
     if not CLASS_FILE.exists():
         _write_if_missing(CLASS_FILE, payload)
@@ -106,13 +106,13 @@ def test_golden_classification():
 def test_golden_regression():
     rng = 42
     data = load_diabetes()
-    X_train, X_cal, y_train, y_cal = train_test_split(
+    x_train, x_cal, y_train, y_cal = train_test_split(
         data.data, data.target, test_size=0.2, random_state=rng
     )
     reg = RandomForestRegressor(n_estimators=30, random_state=rng, max_depth=4)
-    reg.fit(X_train, y_train)
-    explainer = CalibratedExplainer(reg, X_cal, y_cal, mode="regression", seed=rng)
-    factual = explainer.explain_factual(X_cal[:5])
+    reg.fit(x_train, y_train)
+    explainer = CalibratedExplainer(reg, x_cal, y_cal, mode="regression", seed=rng)
+    factual = explainer.explain_factual(x_cal[:5])
     payload = _serialize_regression(factual)
     if not REG_FILE.exists():
         _write_if_missing(REG_FILE, payload)

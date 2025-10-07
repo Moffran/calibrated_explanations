@@ -30,10 +30,10 @@ Exception taxonomy (finalized for 1B):
 
 Validation and helper contracts:
 
-- `validate_inputs(X, y=None, task="auto", allow_nan=False, require_y=False, n_features=None, class_labels=None, check_finite=True) -> None`
+- `validate_inputs(x, y=None, task="auto", allow_nan=False, require_y=False, n_features=None, class_labels=None, check_finite=True) -> None`
 - `validate_model(model) -> None`
 - `validate_fit_state(explainer, require=True) -> None`
-- `infer_task(X, y, model) -> Literal["classification","regression"]`
+- `infer_task(x, y, model) -> Literal["classification","regression"]`
 - (Optional) `validate(condition, exc_cls, message, *, details=None)` helper; details may include short error codes for machine consumption.
 
 Messaging guidelines: imperative, specify expected vs actual, reference the parameter name; keep message substrings stable to avoid breaking tests.

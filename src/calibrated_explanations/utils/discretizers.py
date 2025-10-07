@@ -1,57 +1,9 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-arguments, too-many-positional-arguments, line-too-long
-"""
-This module contains classes and functions for discretizing data.
+"""Discretization helpers used by calibrated explanations.
 
-This module defines the discretizers used by CalibratedExplainer.
-
-The discretizers are defined using the same super class as the discretizers from the LIME package.
-
-Classes
--------
-BaseDiscretizer
-    Abstract class for creating custom discretizers.
-EntropyDiscretizer
-    A dynamic entropy discretizer for the CalibratedExplainer.
-BinaryEntropyDiscretizer
-    A binary entropy discretizer for the CalibratedExplainer.
-RegressorDiscretizer
-    A dynamic Regressor discretizer for the CalibratedExplainer.
-BinaryRegressorDiscretizer
-    A dynamic binary Regressor discretizer for the CalibratedExplainer.
-
-Methods
--------
-BaseDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
-    Initialize the BaseDiscretizer.
-BaseDiscretizer.bins(self, data, labels)
-    To be overridden. Returns the boundaries that form each bin of the discretizer.
-BaseDiscretizer.discretize(self, data)
-    Discretizes the data.
-EntropyDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
-    Initialize the EntropyDiscretizer.
-EntropyDiscretizer.__repr__(self)
-    Return a string representation of the EntropyDiscretizer.
-EntropyDiscretizer.bins(self, data, labels)
-    Calculate the bins for the EntropyDiscretizer.
-BinaryEntropyDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
-    Initialize the BinaryEntropyDiscretizer.
-BinaryEntropyDiscretizer.__repr__(self)
-    Return a string representation of the BinaryEntropyDiscretizer.
-BinaryEntropyDiscretizer.bins(self, data, labels)
-    Calculate the bins for the BinaryEntropyDiscretizer.
-RegressorDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
-    Initialize the RegressorDiscretizer.
-RegressorDiscretizer.__repr__(self)
-    Return a string representation of the RegressorDiscretizer.
-RegressorDiscretizer.bins(self, data, labels)
-    Calculate the bins for the RegressorDiscretizer.
-BinaryRegressorDiscretizer.__init__(self, data, categorical_features, feature_names, labels=None, random_state=None)
-    Initialize the BinaryRegressorDiscretizer.
-BinaryRegressorDiscretizer.__repr__(self)
-    Return a string representation of the BinaryRegressorDiscretizer.
-BinaryRegressorDiscretizer.bins(self, data, labels)
-    Calculate the bins for the BinaryRegressorDiscretizer.
+Provides entropy- and regression-based discretizers compatible with LIME's
+interfaces while exposing additional helpers for interval calibration.
 """
 
 from abc import ABCMeta, abstractmethod

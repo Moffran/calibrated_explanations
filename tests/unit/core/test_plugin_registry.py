@@ -17,7 +17,7 @@ class DummyPlugin:
     def supports(self, model: Any) -> bool:
         return getattr(model, "is_dummy", False)
 
-    def explain(self, model: Any, X: Any, **kwargs: Any) -> Any:
+    def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:
         return {"ok": True}
 
 
@@ -43,7 +43,7 @@ def test_register_validation():
         def supports(self, model: Any) -> bool:
             return False
 
-        def explain(self, model: Any, X: Any, **kwargs: Any) -> Any:
+        def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:
             return None
 
     try:

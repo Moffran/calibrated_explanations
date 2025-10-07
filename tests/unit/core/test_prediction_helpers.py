@@ -8,20 +8,20 @@ from sklearn.model_selection import train_test_split
 
 def test_prediction_helpers_round_trip():
     data = load_iris()
-    X_train, X_cal, y_train, y_cal = train_test_split(
+    x_train, x_cal, y_train, y_cal = train_test_split(
         data.data, data.target, test_size=0.2, random_state=42, stratify=data.target
     )
     clf = RandomForestClassifier(n_estimators=10, random_state=42, max_depth=3)
-    clf.fit(X_train, y_train)
-    explainer = CalibratedExplainer(clf, X_cal, y_cal, mode="classification", seed=42)
+    clf.fit(x_train, y_train)
+    explainer = CalibratedExplainer(clf, x_cal, y_cal, mode="classification", seed=42)
 
-    X_test = X_cal[:2]
+    x_test = x_cal[:2]
     # Delegated validation should produce identical array
-    X_valid = ph.validate_and_prepare_input(explainer, X_test)
-    assert np.array_equal(X_valid, X_test)
+    x_valid = ph.validate_and_prepare_input(explainer, x_test)
+    assert np.array_equal(x_valid, x_test)
 
     explanation = ph.initialize_explanation(
-        explainer, X_valid, (5, 95), None, None, features_to_ignore=None
+        explainer, x_valid, (5, 95), None, None, features_to_ignore=None
     )
     assert explanation is not None
 
@@ -29,10 +29,10 @@ def test_prediction_helpers_round_trip():
     explainer.set_discretizer("binaryEntropy")
     # Predict step returns tuple; sanity check shape length invariants
     predict, low, high, prediction, *_rest = ph.explain_predict_step(
-        explainer, X_valid, None, (5, 95), None, features_to_ignore=[]
+        explainer, x_valid, None, (5, 95), None, features_to_ignore=[]
     )
     # The internal predict step includes perturbed instances, so length should be >= original
-    assert len(predict) >= len(X_valid)
+    assert len(predict) >= len(x_valid)
     assert len(low) == len(predict)
     assert len(high) == len(predict)
     # The base prediction vector stored in prediction dict should align with original test size
@@ -41,4 +41,4 @@ def test_prediction_helpers_round_trip():
         if hasattr(prediction["predict"], "__len__")
         else prediction["predict"].shape[0]
     )  # type: ignore[index]
-    assert base_pred_len == len(X_valid)
+    assert base_pred_len == len(x_valid)

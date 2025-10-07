@@ -142,7 +142,7 @@ def uniform_perturbation(column, severity, rng: Optional[np.random.Generator] = 
 
 # pylint: disable=invalid-name, too-many-arguments
 def perturb_dataset(
-    X_cal,
+    x_cal,
     y_cal,
     categorical_features=None,
     noise_type="uniform",
@@ -176,8 +176,8 @@ def perturb_dataset(
         Tuple containing perturbed feature matrix, scaled feature matrix,
         scaled target vector, and scale factor.
     """
-    perturbed_X_cal = np.tile(X_cal.copy(), (scale_factor, 1))
-    scaled_X_cal = perturbed_X_cal.copy()
+    perturbed_x_cal = np.tile(x_cal.copy(), (scale_factor, 1))
+    scaled_x_cal = perturbed_x_cal.copy()
     scaled_y_cal = np.tile(y_cal.copy(), scale_factor)
     if noise_type not in [
         "uniform",
@@ -192,17 +192,17 @@ def perturb_dataset(
         else (np.random.default_rng(seed) if seed is not None else np.random.default_rng())
     )
 
-    for f in range(scaled_X_cal.shape[1]):
+    for f in range(scaled_x_cal.shape[1]):
         if f in categorical_features:
-            perturbed_X_cal[:, f] = categorical_perturbation(perturbed_X_cal[:, f], rng=local_rng)
+            perturbed_x_cal[:, f] = categorical_perturbation(perturbed_x_cal[:, f], rng=local_rng)
         elif noise_type == "uniform":
             # Apply numerical alternative perturbation to the selected column -- uniform
-            perturbed_X_cal[:, f] = uniform_perturbation(
-                perturbed_X_cal[:, f], severity, rng=local_rng
+            perturbed_x_cal[:, f] = uniform_perturbation(
+                perturbed_x_cal[:, f], severity, rng=local_rng
             )
         elif noise_type == "gaussian":
             # Apply numerical alternative perturbation to the selected column -- gaussian
-            perturbed_X_cal[:, f] = gaussian_perturbation(
-                perturbed_X_cal[:, f], severity, rng=local_rng
+            perturbed_x_cal[:, f] = gaussian_perturbation(
+                perturbed_x_cal[:, f], severity, rng=local_rng
             )
-    return perturbed_X_cal, scaled_X_cal, scaled_y_cal, scale_factor
+    return perturbed_x_cal, scaled_x_cal, scaled_y_cal, scale_factor

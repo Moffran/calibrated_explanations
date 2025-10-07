@@ -1,6 +1,6 @@
 # ADR-013: Interval Calibrator Plugin Strategy
 
-Status: Accepted (runtime wiring in progress)
+Status: Accepted
 Date: 2025-09-16 (revised 2025-10-02)
 Deciders: Core maintainers
 Reviewers: TBD
@@ -10,7 +10,7 @@ Related: ADR-006-plugin-registry-trust-model, ADR-015-explanation-plugin
 
 ## Context
 
-Calibrated Explanations exposes two calibration backbones today: VennAbers for probabilistic classification (src/calibrated_explanations/_VennAbers.py) and IntervalRegressor for regression-style interval predictors (src/calibrated_explanations/_interval_regressor.py). Both classes are orchestrated from CalibratedExplainer and its helpers, and they encapsulate critical behaviours such as Mondrian bin handling, residual-based conformal updates, and difficulty-aware probability adjustment. Previous discussions bundled interval and plotting extensions into a single plugin plan, but practise shows that any interval plugin must compose these backbones directly. Drifting from the proven implementations would change the mathematics and invalidate the guarantees that define the package.
+Calibrated Explanations exposes two calibration backbones today: VennAbers for probabilistic classification (src/calibrated_explanations/_venn_abers.py) and IntervalRegressor for regression-style interval predictors (src/calibrated_explanations/_interval_regressor.py). Both classes are orchestrated from CalibratedExplainer and its helpers, and they encapsulate critical behaviours such as Mondrian bin handling, residual-based conformal updates, and difficulty-aware probability adjustment. Previous discussions bundled interval and plotting extensions into a single plugin plan, but practise shows that any interval plugin must compose these backbones directly. Drifting from the proven implementations would change the mathematics and invalidate the guarantees that define the package.
 
 IntervalRegressor already leans on VennAbers: the compute_proba_cal specialisations rebuild a binary VennAbers calibrator and predict_probability delegates to its predict_proba output to produce calibrated interval probabilities. Any extension mechanism therefore needs a shared contract that captures the classification semantics first and lets regression build on top of it.
 
@@ -25,7 +25,7 @@ We therefore need a plugin model that lets external contributors add new interva
      ```python
      def predict_proba(
          self,
-         X,
+         x,
          *,
          output_interval: bool = False,
          classes=None,
@@ -35,11 +35,11 @@ We therefore need a plugin model that lets external contributors add new interva
      Returning `(n_samples, n_classes)` arrays when `output_interval=False` and `(n_samples, n_classes, 3)` (`predict`, `low`, `high`) otherwise. Implementations also provide `is_multiclass() -> bool` and `is_mondrian() -> bool` accessors with the same semantics as VennAbers.
    - `RegressionIntervalCalibrator` extends the classification protocol with the IntervalRegressor surface:
      ```python
-     def predict_probability(self, X) -> numpy.ndarray  # shape (n_samples, 2) ordered (low, high)
-     def predict_uncertainty(self, X) -> numpy.ndarray  # shape (n_samples, 2) ordered (width, confidence)
-     def pre_fit_for_probabilistic(self, X, y) -> None
-     def compute_proba_cal(self, X, y, *, weights=None) -> numpy.ndarray
-     def insert_calibration(self, X, y, *, warm_start: bool = False) -> None
+     def predict_probability(self, x) -> numpy.ndarray  # shape (n_samples, 2) ordered (low, high)
+     def predict_uncertainty(self, x) -> numpy.ndarray  # shape (n_samples, 2) ordered (width, confidence)
+     def pre_fit_for_probabilistic(self, x, y) -> None
+     def compute_proba_cal(self, x, y, *, weights=None) -> numpy.ndarray
+     def insert_calibration(self, x, y, *, warm_start: bool = False) -> None
      ```
      Implementations may wrap or subclass `IntervalRegressor`, but probability/interval calculations must delegate to the reference logic so conformal guarantees remain intact.
    - When a plugin advertises regression support its returned calibrator object must satisfy the regression protocol. This ensures regression plugins necessarily expose the classification machinery they already depend on, preventing behavioural drift between modes.
@@ -79,14 +79,15 @@ We therefore need a plugin model that lets external contributors add new interva
 - Metadata validation occurs during registration. Missing required fields keeps the plugin out of the registry, preventing accidental downgrades to unsafe implementations.
 - Runtime guards assert that calibrators return probabilities and intervals identical in structure to the built-in classes. Failures bubble up with actionable diagnostics so the system never silently downgrades calibration quality.
 
-## Implementation status (2025-10-07)
+## Implementation status (2025-10-10)
 
-- Protocols and registry descriptors ship in `plugins.intervals`, and legacy/FAST
-  adapters are registered as trusted defaults.【F:src/calibrated_explanations/plugins/intervals.py†L1-L80】【F:src/calibrated_explanations/plugins/builtins.py†L120-L183】
-- Core calibration helpers still instantiate VennAbers/IntervalRegressor
-  directly; wiring to resolve plugins at runtime is tracked in the plugin gap
-  plan.【F:src/calibrated_explanations/core/calibration_helpers.py†L1-L78】【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L24-L43】
-- No network or sandbox changes are introduced. Plugin authors manage their own dependencies and distribution while inheriting the host Python process permissions.
+- `CalibratedExplainer` now resolves both legacy and FAST interval calibrators
+  through the registry, honouring environment/pyproject overrides and metadata
+  fallbacks.【F:src/calibrated_explanations/core/calibrated_explainer.py†L412-L513】【F:src/calibrated_explanations/core/calibration_helpers.py†L18-L88】
+- Interval plugin identifiers are tracked for telemetry (`interval_source` /
+  `proba_source`) and exposed alongside explanation results.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1006-L1099】
+- Registry protocols and trusted defaults remain the same; no sandboxing or
+  distribution changes are required.【F:src/calibrated_explanations/plugins/intervals.py†L1-L80】【F:src/calibrated_explanations/plugins/builtins.py†L120-L183】
 
 ## Consequences
 
@@ -108,6 +109,6 @@ Negative / Risks:
 
 ## Future Work
 
-- Implement the default plugin as a formal adapter over the existing IntervalRegressor and VennAbers classes to validate the contract.
-- Extend integration tests to exercise registry selection, protocol validation, and failure paths when plugins omit required capabilities.
+- Extend integration tests to cover third-party interval plugins with custom trust
+  policies and capability matrices.
 - Evaluate the need for caching hooks or memoisation in the context object once additional plugins exist.

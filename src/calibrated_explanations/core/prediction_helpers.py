@@ -34,7 +34,7 @@ ThresholdLike = Union[
 class _ExplainerProtocol(Protocol):
     num_features: int
     mode: str
-    X_cal: np.ndarray
+    x_cal: np.ndarray
     interval_learner: Any
 
     def _is_mondrian(self) -> bool: ...
@@ -45,7 +45,7 @@ class _ExplainerProtocol(Protocol):
 
     def _predict(
         self,
-        X_test: np.ndarray,
+        x: np.ndarray,
         *,
         threshold: Optional[ThresholdLike] = ...,  # noqa: D401
         low_high_percentiles: Tuple[int, int] = ...,
@@ -56,32 +56,32 @@ class _ExplainerProtocol(Protocol):
 
     def assign_threshold(self, threshold: Optional[ThresholdLike]) -> Any: ...
 
-    def _discretize(self, X: np.ndarray) -> np.ndarray: ...
+    def _discretize(self, x: np.ndarray) -> np.ndarray: ...
 
-    def rule_boundaries(self, X: np.ndarray, X_perturbed: np.ndarray) -> Any: ...
+    def rule_boundaries(self, x: np.ndarray, x_perturbed: np.ndarray) -> Any: ...
 
 
 # NOTE: We intentionally avoid importing CalibratedExplainer for type-only usage to
 # prevent cyclical import complexity during the gradual split.
 
 
-def validate_and_prepare_input(explainer: _ExplainerProtocol, X_test: Any) -> np.ndarray:
+def validate_and_prepare_input(explainer: _ExplainerProtocol, x: Any) -> np.ndarray:
     """Validate and prepare input data (extracted logic).
 
     Mechanical move from ``CalibratedExplainer._validate_and_prepare_input``.
     """
-    if safe_isinstance(X_test, "pandas.core.frame.DataFrame"):
-        X_test = X_test.values  # pragma: no cover - passthrough
-    if len(X_test.shape) == 1:  # noqa: PLR2004
-        X_test = X_test.reshape(1, -1)
-    if X_test.shape[1] != explainer.num_features:
+    if safe_isinstance(x, "pandas.core.frame.DataFrame"):
+        x = x.values  # pragma: no cover - passthrough
+    if len(x.shape) == 1:  # noqa: PLR2004
+        x = x.reshape(1, -1)
+    if x.shape[1] != explainer.num_features:
         raise DataShapeError("Number of features must match calibration data")
-    return cast(np.ndarray, np.asarray(X_test))
+    return cast(np.ndarray, np.asarray(x))
 
 
 def initialize_explanation(
     explainer: _ExplainerProtocol,
-    X_test: np.ndarray,
+    x: np.ndarray,
     low_high_percentiles: Tuple[int, int],
     threshold: Optional[ThresholdLike],
     bins: Optional[np.ndarray],
@@ -91,9 +91,9 @@ def initialize_explanation(
     if explainer._is_mondrian():  # noqa: SLF001
         if bins is None:
             raise ValidationError("Bins required for Mondrian explanations")
-        if len(bins) != len(X_test):  # pragma: no cover - defensive
+        if len(bins) != len(x):  # pragma: no cover - defensive
             raise DataShapeError("The length of bins must match the number of added instances.")
-    explanation = CalibratedExplanations(explainer, X_test, threshold, bins, features_to_ignore)
+    explanation = CalibratedExplanations(explainer, x, threshold, bins, features_to_ignore)
     if threshold is not None:
         if "regression" not in explainer.mode:
             raise ValidationError(
@@ -104,7 +104,7 @@ def initialize_explanation(
                 "Having a list of interval thresholds (i.e. a list of tuples) is likely going to be very slow. Consider using a single interval threshold for all instances.",
                 stacklevel=2,
             )
-        assert_threshold(threshold, X_test)
+        assert_threshold(threshold, x)
     elif "regression" in explainer.mode:
         explanation.low_high_percentiles = low_high_percentiles
     return explanation
@@ -112,17 +112,17 @@ def initialize_explanation(
 
 def predict_internal(
     explainer: _ExplainerProtocol,
-    X_test: np.ndarray,
+    x: np.ndarray,
     threshold: Optional[ThresholdLike] = None,
     low_high_percentiles: Tuple[int, int] = (5, 95),
     classes: Optional[Sequence[int]] = None,
     bins: Optional[np.ndarray] = None,
     feature: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Internal prediction logic (mechanically moved)."""
+    """Run the internal prediction logic (mechanically moved)."""
     # (Body kept inside calibrated_explainer for now to limit patch size) -- placeholder stub if future isolation needed
     return explainer._predict(  # noqa: SLF001
-        X_test,
+        x,
         threshold=threshold,
         low_high_percentiles=low_high_percentiles,
         classes=classes,
@@ -133,7 +133,7 @@ def predict_internal(
 
 def explain_predict_step(
     explainer: _ExplainerProtocol,
-    X_test: np.ndarray,
+    x: np.ndarray,
     threshold: Optional[ThresholdLike],
     low_high_percentiles: Tuple[int, int],
     bins: Optional[np.ndarray],
@@ -155,9 +155,9 @@ def explain_predict_step(
     np.ndarray,
 ]:
     """Execute the initial prediction step for explanation (mechanically moved)."""
-    X_cal = explainer.X_cal
+    x_cal = explainer.x_cal
     predict, low, high, predicted_class = explainer._predict(  # noqa: SLF001
-        X_test, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
+        x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
     )
 
     prediction = {
@@ -172,19 +172,19 @@ def explain_predict_step(
                 if explainer.is_fast():
                     full_probs = explainer.interval_learner[  # noqa: SLF001
                         explainer.num_features
-                    ].predict_proba(X_test, bins=bins)
+                    ].predict_proba(x, bins=bins)
                 else:
                     full_probs = explainer.interval_learner.predict_proba(  # noqa: SLF001
-                        X_test, bins=bins
+                        x, bins=bins
                     )
             else:  # binary
                 if explainer.is_fast():
                     full_probs = explainer.interval_learner[  # noqa: SLF001
                         explainer.num_features
-                    ].predict_proba(X_test, bins=bins)
+                    ].predict_proba(x, bins=bins)
                 else:
                     full_probs = explainer.interval_learner.predict_proba(  # noqa: SLF001
-                        X_test, bins=bins
+                        x, bins=bins
                     )
             prediction["__full_probabilities__"] = full_probs
         except Exception as exc:  # pragma: no cover
@@ -192,15 +192,15 @@ def explain_predict_step(
                 "Failed to compute full calibrated probabilities: %s", exc
             )
 
-    X_test.flags.writeable = False
-    assert_threshold(threshold, X_test)
+    x.flags.writeable = False
+    assert_threshold(threshold, x)
     perturbed_threshold = explainer.assign_threshold(threshold)
     perturbed_bins = np.empty((0,)) if bins is not None else None
-    perturbed_X = np.empty((0, explainer.num_features))
+    perturbed_x = np.empty((0, explainer.num_features))
     perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
     perturbed_class = np.empty((0,), dtype=int)
-    X_perturbed = explainer._discretize(X_test)  # noqa: SLF001
-    rule_boundaries = explainer.rule_boundaries(X_test, X_perturbed)  # noqa: SLF001
+    x_perturbed = explainer._discretize(x)  # noqa: SLF001
+    rule_boundaries = explainer.rule_boundaries(x, x_perturbed)  # noqa: SLF001
 
     lesser_values: dict[int, Any] = {}
     greater_values: dict[int, Any] = {}
@@ -216,10 +216,10 @@ def explain_predict_step(
         lesser_values,
         greater_values,
         covered_values,
-        X_cal,
+        x_cal,
         perturbed_threshold,
         perturbed_bins,
-        perturbed_X,
+        perturbed_x,
         perturbed_class,
     )
 

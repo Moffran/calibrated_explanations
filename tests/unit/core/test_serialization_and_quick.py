@@ -82,11 +82,13 @@ def test_adapter_legacy_to_json_round_trip():
 
 def test_quick_explain_smoke():
     data = load_iris()
-    X_train, X_cal, y_train, y_cal = train_test_split(
+    x_train, x_cal, y_train, y_cal = train_test_split(
         data.data, data.target, test_size=0.2, random_state=0, stratify=data.target
     )
     model = RandomForestClassifier(n_estimators=10, random_state=0, max_depth=2)
-    exp = quick_explain(model, X_train, y_train, X_cal, y_cal, X_cal[:5], task="classification")
+    exp = quick_explain(
+        model, x_train, y_train, x_cal, y_cal, x_cal[:5], task="classification"
+    )
     # Basic shape checks
     assert hasattr(exp, "explanations")
     assert len(exp.explanations) == 5

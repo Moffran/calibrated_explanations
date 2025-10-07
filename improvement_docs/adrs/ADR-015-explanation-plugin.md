@@ -1,6 +1,6 @@
 # ADR-015 — Explanation Plugin Architecture
 
-Status: Accepted (Implementation is underway)
+Status: Accepted
 
 Date: 2025-10-05
 
@@ -114,7 +114,7 @@ class ExplanationPlugin(Protocol):
 
     def explain_batch(
         self,
-        X,
+        x,
         request: ExplanationRequest,
     ) -> ExplanationBatch: ...
 ```
@@ -199,21 +199,17 @@ the pre-plugin implementation.
   fallback arrays. CLI helpers mirror the interval/plot commands for listing,
   validating, and setting explanation plugins.
 
-## Implementation status (2025-10-07)
+## Implementation status (2025-10-10)
 
-- Runtime orchestration, plugin validation, and built-in adapters are live in
-  `CalibratedExplainer` and `plugins.builtins`, matching the protocol described
-  above.【F:src/calibrated_explanations/core/calibrated_explainer.py†L388-L420】【F:src/calibrated_explanations/core/calibrated_explainer.py†L520-L606】【F:src/calibrated_explanations/plugins/builtins.py†L120-L318】
-- Remaining integration work focuses on interval/plot dependency surfaces and
-  CLI packaging, tracked in the plugin gap closure plan.【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L24-L70】
-- When a plugin advertises `interval_dependency` or `plot_dependency`, the
-  resolver prepends those identifiers to the interval and plot fallback chains,
-  respectively, ensuring explanation, interval, and plot selections remain
-  coordinated across ADR-013 and ADR-014.
-- Protocol versioning reuses the existing `schema_version` field inside
-  `plugin_meta`; any change to the explanation protocol increments the schema
-  value, and the loader validates that the runtime understands the declared
-  version before activating the plugin.
+- Runtime orchestration, plugin validation, telemetry, and built-in adapters are
+  live in `CalibratedExplainer` and `plugins.builtins`, matching the protocol
+  described above.【F:src/calibrated_explanations/core/calibrated_explainer.py†L324-L606】【F:src/calibrated_explanations/plugins/builtins.py†L120-L318】
+- Interval and plot dependency chains now honour metadata hints, environment
+  overrides, and project configuration, keeping ADR-013/ADR-014 selections in
+  sync with explanation plugins.【F:src/calibrated_explanations/core/calibrated_explainer.py†L652-L737】
+- The `ce.plugins` console script surfaces registry state for explanations,
+  intervals, and plots, enabling operators to audit trust and dependencies from
+  packaging environments.【F:pyproject.toml†L33-L60】【F:src/calibrated_explanations/plugins/cli.py†L1-L145】
 
 ### 6. JSON and external payloads
 

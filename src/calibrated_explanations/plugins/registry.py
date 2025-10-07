@@ -28,7 +28,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterable, List, Mapping, Tuple
 
-from .. import __version__ as _PACKAGE_VERSION
+from .. import __version__ as package_version
 from .base import ExplainerPlugin, validate_plugin_meta
 
 _REGISTRY: List[ExplainerPlugin] = []
@@ -1142,7 +1142,7 @@ def register(plugin: ExplainerPlugin) -> None:
     _update_trust_keys(meta, trusted)
     _verify_plugin_checksum(plugin, meta)
     if isinstance(raw_meta, dict):
-        raw_meta.setdefault("version", meta.get("version", _PACKAGE_VERSION))
+        raw_meta.setdefault("version", meta.get("version", package_version))
         raw_meta.setdefault("provider", meta.get("provider"))
         raw_meta["trusted"] = meta["trusted"]
         raw_meta["trust"] = meta["trust"]

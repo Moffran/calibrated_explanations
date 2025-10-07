@@ -12,7 +12,7 @@ import logging as _logging
 # Expose viz namespace (internal; subject to change). Avoid importing heavy backends eagerly.
 from . import viz  # noqa: F401
 from ._interval_regressor import IntervalRegressor  # noqa: F401
-from ._VennAbers import VennAbers  # noqa: F401
+from ._venn_abers import VennAbers  # noqa: F401
 from .explanations.explanation import (
     AlternativeExplanation,  # noqa: F401
     FactualExplanation,  # noqa: F401
@@ -30,7 +30,7 @@ from .utils.helper import transform_to_numeric
 # Provide a default no-op handler to avoid "No handler" warnings for library users.
 _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
-__version__ = "v0.6.1"
+__version__ = "v0.7.0"
 
 # Note: core submodules are intentionally not imported here to avoid importing
 # large backends and to make deprecation transitions explicit. We still expose
@@ -51,15 +51,15 @@ def __getattr__(name: str):
     surface for users and tests.
     """
     if name == "CalibratedExplainer":
-        from .core.calibrated_explainer import CalibratedExplainer as _C
+        from .core.calibrated_explainer import CalibratedExplainer
 
-        globals()[name] = _C
-        return _C
+        globals()[name] = CalibratedExplainer
+        return CalibratedExplainer
     if name == "WrapCalibratedExplainer":
-        from .core.wrap_explainer import WrapCalibratedExplainer as _W
+        from .core.wrap_explainer import WrapCalibratedExplainer
 
-        globals()[name] = _W
-        return _W
+        globals()[name] = WrapCalibratedExplainer
+        return WrapCalibratedExplainer
     raise AttributeError(name)
 
 

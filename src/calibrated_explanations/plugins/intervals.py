@@ -25,13 +25,13 @@ class ClassificationIntervalCalibrator(Protocol):
 
     def predict_proba(
         self,
-        X: Any,
+        x: Any,
         *,
         output_interval: bool = False,
         classes: Sequence[Any] | None = None,
         bins: Sequence[Any] | None = None,
     ) -> Any:
-        """Return calibrated probabilities or intervals for *X*."""
+        """Return calibrated probabilities or intervals for *x*."""
 
     def is_multiclass(self) -> bool:
         """Return ``True`` when the calibrator handles multiclass data."""
@@ -44,19 +44,19 @@ class ClassificationIntervalCalibrator(Protocol):
 class RegressionIntervalCalibrator(ClassificationIntervalCalibrator, Protocol):
     """Protocol extending classification calibrators with regression helpers."""
 
-    def predict_probability(self, X: Any) -> Any:
-        """Return calibrated low/high probabilities for *X*."""
+    def predict_probability(self, x: Any) -> Any:
+        """Return calibrated low/high probabilities for *x*."""
 
-    def predict_uncertainty(self, X: Any) -> Any:
-        """Return uncertainty estimates for *X*."""
+    def predict_uncertainty(self, x: Any) -> Any:
+        """Return uncertainty estimates for *x*."""
 
-    def pre_fit_for_probabilistic(self, X: Any, y: Any) -> None:
+    def pre_fit_for_probabilistic(self, x: Any, y: Any) -> None:
         """Prepare the calibrator for probabilistic inference."""
 
-    def compute_proba_cal(self, X: Any, y: Any, *, weights: Any | None = None) -> Any:
+    def compute_proba_cal(self, x: Any, y: Any, *, weights: Any | None = None) -> Any:
         """Compute probability calibration adjustments."""
 
-    def insert_calibration(self, X: Any, y: Any, *, warm_start: bool = False) -> None:
+    def insert_calibration(self, x: Any, y: Any, *, warm_start: bool = False) -> None:
         """Insert additional calibration samples."""
 
 

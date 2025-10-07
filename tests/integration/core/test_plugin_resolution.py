@@ -56,9 +56,9 @@ class _RecordingFactualPlugin(LegacyFactualExplanationPlugin):
         self.initialized_context = context
         super().initialize(context)
 
-    def explain_batch(self, X, request):  # type: ignore[override]
+    def explain_batch(self, x, request):  # type: ignore[override]
         self.requests.append(request)
-        return super().explain_batch(X, request)
+        return super().explain_batch(x, request)
 
 
 class _LegacySchemaFactualPlugin(LegacyFactualExplanationPlugin):
@@ -76,11 +76,11 @@ def _make_explainer(binary_dataset, **overrides):
     from tests._helpers import get_classification_model
 
     (
-        X_prop_train,
+        x_prop_train,
         y_prop_train,
-        X_cal,
+        x_cal,
         y_cal,
-        X_test,
+        x_test,
         _y_test,
         _num_classes,
         _num_features,
@@ -88,10 +88,10 @@ def _make_explainer(binary_dataset, **overrides):
         feature_names,
     ) = binary_dataset
 
-    model, _ = get_classification_model("RF", X_prop_train, y_prop_train)
+    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     explainer = CalibratedExplainer(
         model,
-        X_cal,
+        x_cal,
         y_cal,
         mode="classification",
         feature_names=feature_names,
@@ -99,7 +99,7 @@ def _make_explainer(binary_dataset, **overrides):
         class_labels=["No", "Yes"],
         **overrides,
     )
-    return explainer, X_test
+    return explainer, x_test
 
 
 def _cleanup_plugin(plugin):
@@ -118,11 +118,11 @@ def test_fallback_skips_incompatible_tasks(monkeypatch, binary_dataset):
     )
 
     try:
-        explainer, X_test = _make_explainer(binary_dataset)
+        explainer, x_test = _make_explainer(binary_dataset)
         chain = explainer._explanation_plugin_fallbacks["factual"]
         assert chain[0] == "tests.regression_only.factual"
 
-        explanations = explainer.explain_factual(X_test)
+        explanations = explainer.explain_factual(x_test)
         assert explanations is not None
         assert explainer._explanation_plugin_identifiers["factual"] == "core.explanation.factual"
     finally:
@@ -136,10 +136,10 @@ def test_dependency_propagation_and_context_hints(binary_dataset):
     register_explanation_plugin("tests.recording.factual", plugin)
 
     try:
-        explainer, X_test = _make_explainer(
+        explainer, x_test = _make_explainer(
             binary_dataset, factual_plugin="tests.recording.factual"
         )
-        explanations = explainer.explain_factual(X_test)
+        explanations = explainer.explain_factual(x_test)
         assert explanations is not None
 
         assert explainer._explanation_plugin_identifiers["factual"] == ("tests.recording.factual")
@@ -159,6 +159,14 @@ def test_dependency_propagation_and_context_hints(binary_dataset):
             "legacy",
         )
         assert runtime_plugin.requests, "plugin should record at least one request"
+
+        telemetry = explainer.runtime_telemetry
+        assert telemetry.get("proba_source") == "core.interval.legacy"
+        assert telemetry.get("plot_fallbacks") == ("tests.plot.pref", "legacy")
+
+        batch_telemetry = getattr(explanations, "telemetry", {})
+        assert batch_telemetry.get("proba_source") == "core.interval.legacy"
+        assert batch_telemetry.get("plot_fallbacks") == ("tests.plot.pref", "legacy")
     finally:
         _cleanup_plugin(plugin)
 
@@ -169,11 +177,11 @@ def test_schema_version_override_errors(binary_dataset):
     register_explanation_plugin("tests.legacy_schema.factual", plugin)
 
     try:
-        explainer, X_test = _make_explainer(
+        explainer, x_test = _make_explainer(
             binary_dataset, factual_plugin="tests.legacy_schema.factual"
         )
         with pytest.raises(ConfigurationError, match="schema_version 0"):
-            explainer.explain_factual(X_test)
+            explainer.explain_factual(x_test)
     finally:
         _cleanup_plugin(plugin)
 
@@ -181,14 +189,14 @@ def test_schema_version_override_errors(binary_dataset):
 def test_missing_plugin_override_raises(monkeypatch, binary_dataset):
     monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL", raising=False)
 
-    explainer, X_test = _make_explainer(binary_dataset, factual_plugin="tests.missing.plugin")
+    explainer, x_test = _make_explainer(binary_dataset, factual_plugin="tests.missing.plugin")
     with pytest.raises(ConfigurationError, match="not registered"):
-        explainer.explain_factual(X_test)
+        explainer.explain_factual(x_test)
 
 
 def test_fast_mode_predict_bridge_usage(binary_dataset):
-    explainer, X_test = _make_explainer(binary_dataset)
-    fast_batch = explainer.explain_fast(X_test)
+    explainer, x_test = _make_explainer(binary_dataset)
+    fast_batch = explainer.explain_fast(x_test)
 
     assert fast_batch is not None
     monitor = explainer._bridge_monitors.get("fast")
@@ -196,3 +204,42 @@ def test_fast_mode_predict_bridge_usage(binary_dataset):
     assert monitor.used, "FAST plugin should exercise the predict bridge"
     assert explainer._interval_plugin_hints["fast"] == ("core.interval.fast",)
     assert explainer._plot_plugin_fallbacks["fast"] == ("legacy",)
+
+
+def test_interval_plugin_resolution_records_default_identifier(binary_dataset):
+    explainer, x_test = _make_explainer(binary_dataset)
+    assert explainer._interval_plugin_identifiers["default"] == "core.interval.legacy"
+
+    batch = explainer.explain_factual(x_test)
+    assert batch is not None
+    assert explainer.runtime_telemetry.get("interval_source") == "core.interval.legacy"
+    assert getattr(batch, "telemetry", {}).get("interval_source") == "core.interval.legacy"
+    assert explainer.runtime_telemetry.get("proba_source") == "core.interval.legacy"
+    assert explainer.runtime_telemetry.get("plot_fallbacks") == ("legacy",)
+    batch_telemetry = getattr(batch, "telemetry", {})
+    assert batch_telemetry.get("proba_source") == "core.interval.legacy"
+    assert batch_telemetry.get("plot_fallbacks") == ("legacy",)
+
+
+def test_fast_interval_plugin_resolution_records_identifier(binary_dataset):
+    explainer, x_test = _make_explainer(binary_dataset, fast=True)
+    assert explainer._interval_plugin_identifiers["fast"] == "core.interval.fast"
+
+    fast_batch = explainer.explain_fast(x_test)
+    assert fast_batch is not None
+    assert explainer.runtime_telemetry.get("interval_source") == "core.interval.fast"
+    assert getattr(fast_batch, "telemetry", {}).get("interval_source") == "core.interval.fast"
+    assert explainer.runtime_telemetry.get("proba_source") == "core.interval.fast"
+    assert explainer.runtime_telemetry.get("plot_fallbacks") == ("legacy",)
+    fast_telemetry = getattr(fast_batch, "telemetry", {})
+    assert fast_telemetry.get("proba_source") == "core.interval.fast"
+    assert fast_telemetry.get("plot_fallbacks") == ("legacy",)
+
+
+def test_interval_override_missing_identifier(monkeypatch, binary_dataset):
+    monkeypatch.setenv("CE_INTERVAL_PLUGIN", "tests.missing.interval")
+    try:
+        with pytest.raises(ConfigurationError, match="not registered"):
+            _make_explainer(binary_dataset)
+    finally:
+        monkeypatch.delenv("CE_INTERVAL_PLUGIN", raising=False)

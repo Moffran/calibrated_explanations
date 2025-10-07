@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrated_explanations"
-version = "0.6.1"
+version = "0.7.0"
 authors = [
   { name="Helena Löfström", email="helena.lofstrom@ju.se" },
   { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },
@@ -55,11 +55,15 @@ dev = [
   "ruff",
   "mypy",
   "jsonschema",
+  "pydocstyle",
 ]
 eval = [
   "shap",
   "seaborn",
 ]
+
+[project.scripts]
+"ce.plugins" = "calibrated_explanations.plugins.cli:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -91,6 +95,7 @@ select = [
   "SIM",# simplify
   "NPY",# NumPy
   "S",  # security (bandit-like)
+  "N",  # pep8-naming
 ]
 ignore = [
   "E501",    # line length (managed by formatter)
@@ -106,6 +111,14 @@ ignore = [
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
+
+[tool.pydocstyle]
+convention = "numpy"
+add-ignore = [
+  "D104",  # public package docstrings handled by module summaries
+]
+match-dir = "(?!tests|docs|benchmarks|notebooks|scripts|evaluation).*"
+match = "(?!test_).*\\.py"
 
 [tool.mypy]
 python_version = "3.11"

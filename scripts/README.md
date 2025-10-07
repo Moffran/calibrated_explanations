@@ -2,6 +2,7 @@
 
 - `micro_bench_perf.py`: quick local micro-benchmark for import time and simple map throughput. Prints JSON.
 - `check_perf_micro.py`: compares two micro-benchmark JSON outputs against `benchmarks/perf_thresholds.json` and fails on import-time regressions.
+- `check_docstring_coverage.py`: reports module/class/function/method docstring coverage so ADR-018 adoption can be monitored. Use `--fail-under` locally when experimenting with stricter thresholds.
 
 Example (manual):
 

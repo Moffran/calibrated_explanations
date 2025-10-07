@@ -42,3 +42,21 @@ def test_cli_show_outputs_metadata(capsys):
     out = capsys.readouterr().out
     assert "Identifier : core.explanation.factual" in out
     assert "Metadata   :" in out
+
+
+def test_cli_list_intervals(capsys):
+    ensure_builtin_plugins()
+    exit_code = cli.main(["list", "intervals"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "Interval calibrators" in out
+    assert "core.interval.legacy" in out
+
+
+def test_cli_show_interval_descriptor(capsys):
+    ensure_builtin_plugins()
+    exit_code = cli.main(["show", "core.interval.legacy", "--kind", "intervals"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "Identifier : core.interval.legacy" in out
+    assert "Metadata   :" in out

@@ -8,11 +8,35 @@ The fixtures intentionally delegate to existing helpers where available to
 avoid duplicating parsing logic.
 """
 
-import os
+from __future__ import annotations
+
 import contextlib
+import os
+import sys
+from pathlib import Path
 
 import pytest
 from ._fixtures import regression_dataset, binary_dataset, multiclass_dataset
+
+try:  # pragma: no cover - exercised indirectly when pytest-cov is absent
+    import pytest_cov as _pytest_cov  # type: ignore[attr-defined]
+
+    _HAS_PYTEST_COV = True
+    _pytest_cov  # placate linters
+    _coverage_module = None
+except Exception:  # pragma: no cover - executed in minimalist environments
+    _HAS_PYTEST_COV = False
+    try:
+        import coverage as _coverage_module  # type: ignore[import-not-found]
+    except Exception:  # pragma: no cover - defensive
+        _coverage_module = None
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_SRC_PATH = _REPO_ROOT / "src"
+if _SRC_PATH.exists():
+    _SRC_STR = str(_SRC_PATH)
+    if _SRC_STR not in sys.path:
+        sys.path.insert(0, _SRC_STR)
 
 # Ensure non-interactive backend is selected early so tests never require a GUI.
 import os as _os
@@ -46,18 +70,18 @@ def sample_limit():
     - Else if FAST_TESTS is enabled, return a small limit (100).
     - Otherwise return default 500.
     """
-    MINIMUM_LIMIT = 20
+    minimum_limit = 20
     val = os.getenv("SAMPLE_LIMIT")
     if val:
         try:
             v = int(val)
             # enforce a sensible lower bound to avoid dataset-splitting errors
-            return v if v >= MINIMUM_LIMIT else MINIMUM_LIMIT
+            return v if v >= minimum_limit else minimum_limit
         except Exception:
             pass
     if _env_flag("FAST_TESTS"):
-        return max(100, MINIMUM_LIMIT)
-    return max(500, MINIMUM_LIMIT)
+        return max(100, minimum_limit)
+    return max(500, minimum_limit)
 
 
 def _ensure_matplotlib():
@@ -102,10 +126,10 @@ def small_random_forest():
     import numpy as np
 
     # tiny deterministic dataset
-    X = np.vstack([np.arange(8), np.arange(8) + 1]).T
+    x = np.vstack([np.arange(8), np.arange(8) + 1]).T
     y = np.arange(8) / 8.0
     rf = RandomForestRegressor(n_estimators=3, random_state=42)
-    rf.fit(X, y)
+    rf.fit(x, y)
     return rf
 
 
@@ -114,10 +138,10 @@ def small_random_forest_classifier():
     from sklearn.ensemble import RandomForestClassifier
     import numpy as np
 
-    X = np.vstack([np.arange(8), np.arange(8) + 1]).T
+    x = np.vstack([np.arange(8), np.arange(8) + 1]).T
     y = np.arange(8) % 2
     rf = RandomForestClassifier(n_estimators=3, random_state=42)
-    rf.fit(X, y)
+    rf.fit(x, y)
     return rf
 
 
@@ -127,10 +151,10 @@ def small_decision_tree():
     from sklearn.tree import DecisionTreeClassifier
     import numpy as np
 
-    X = np.vstack([np.arange(8), np.arange(8) + 1]).T
+    x = np.vstack([np.arange(8), np.arange(8) + 1]).T
     y = np.arange(8) % 2
     dt = DecisionTreeClassifier(max_depth=2, random_state=0)
-    dt.fit(X, y)
+    dt.fit(x, y)
     return dt
 
 
@@ -147,15 +171,94 @@ def patch_difficulty_estimator(monkeypatch):
             def fit(self, *a, **k):
                 return self
 
-            def predict(self, X):
+            def predict(self, x):
                 import numpy as _np
 
-                return _np.zeros(len(X))
+                return _np.zeros(len(x))
 
-            def __call__(self, X):
-                return self.predict(X)
+            __call__ = predict
 
         monkeypatch.setattr(_extras, "DifficultyEstimator", lambda *a, **k: _StubDifficulty())
+
+
+def pytest_addoption(parser):  # pragma: no cover - simple option registration
+    """Provide coverage CLI flags when pytest-cov is unavailable."""
+
+    if _HAS_PYTEST_COV:
+        return
+
+    group = parser.getgroup("coverage")
+    group.addoption(
+        "--cov",
+        action="append",
+        default=[],
+        help="Measure coverage for the specified package or path.",
+    )
+    group.addoption(
+        "--cov-report",
+        action="append",
+        default=[],
+        help="Generate coverage reports (supports term, term-missing, html, xml).",
+    )
+    group.addoption(
+        "--cov-fail-under",
+        action="store",
+        type=float,
+        default=None,
+        help="Fail if coverage percentage is below this value.",
+    )
+
+
+def pytest_configure(config):  # pragma: no cover - integration glue
+    """Start coverage measurement when the real pytest-cov plugin is unavailable."""
+
+    if _HAS_PYTEST_COV or _coverage_module is None:
+        return
+
+    targets = config.getoption("--cov")
+    reports = config.getoption("--cov-report")
+    fail_under = config.getoption("--cov-fail-under")
+
+    if not targets and not reports and fail_under is None:
+        return
+
+    cov_kwargs = {"source": targets or None}
+    coverage_controller = _coverage_module.Coverage(**cov_kwargs)
+    coverage_controller.start()
+    config._ce_cov_controller = coverage_controller  # type: ignore[attr-defined]
+    config._ce_cov_reports = reports  # type: ignore[attr-defined]
+    config._ce_cov_fail_under = fail_under  # type: ignore[attr-defined]
+
+
+def pytest_unconfigure(config):  # pragma: no cover - integration glue
+    """Emit coverage reports for the stub coverage integration."""
+
+    coverage_controller = getattr(config, "_ce_cov_controller", None)
+    if coverage_controller is None:
+        return
+
+    reports = getattr(config, "_ce_cov_reports", []) or []
+    fail_under = getattr(config, "_ce_cov_fail_under", None)
+
+    coverage_controller.stop()
+    coverage_controller.save()
+
+    report_kind = next((rep for rep in reports if rep in ("term", "term-missing")), None)
+    show_missing = report_kind == "term-missing"
+    coverage_controller.report(
+        show_missing=show_missing,
+        fail_under=fail_under,
+    )
+
+    for rep in reports:
+        if rep.startswith("html"):
+            _, _, directory = rep.partition(":")
+            directory = directory or "htmlcov"
+            coverage_controller.html_report(directory=directory)
+        elif rep.startswith("xml"):
+            _, _, outfile = rep.partition(":")
+            outfile = outfile or "coverage.xml"
+            coverage_controller.xml_report(outfile=outfile)
 
 
 def pytest_collection_modifyitems(config, items):

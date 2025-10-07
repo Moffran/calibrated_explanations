@@ -20,7 +20,9 @@ from typing import Any, Mapping
 
 import numpy as np
 
-from .. import __version__ as _PACKAGE_VERSION
+from .. import __version__ as package_version
+from .._venn_abers import VennAbers
+from .._interval_regressor import IntervalRegressor
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
@@ -31,6 +33,7 @@ from ..explanations.explanation import (
 )
 from ..explanations.explanations import CalibratedExplanations
 from ..utils.helper import safe_isinstance
+from ..utils.perturbation import perturb_dataset
 from .explanations import (
     ExplanationBatch,
     ExplanationContext,
@@ -57,13 +60,13 @@ class LegacyPredictBridge(PredictBridge):
 
     def predict(
         self,
-        X: Any,
+        x: Any,
         *,
         mode: str,
         task: str,
         bins: Any | None = None,
     ) -> Mapping[str, Any]:
-        prediction = self._explainer.predict(X, uq_interval=True, bins=bins)
+        prediction = self._explainer.predict(x, uq_interval=True, bins=bins)
         if isinstance(prediction, tuple):
             preds, interval = prediction
             low, high = interval
@@ -79,16 +82,16 @@ class LegacyPredictBridge(PredictBridge):
             payload["low"] = np.asarray(low)
             payload["high"] = np.asarray(high)
         if task == "classification":
-            payload["classes"] = np.asarray(self._explainer.predict(X, calibrated=True, bins=bins))
+            payload["classes"] = np.asarray(self._explainer.predict(x, calibrated=True, bins=bins))
         return payload
 
     def predict_interval(
-        self, X: Any, *, task: str, bins: Any | None = None
+        self, x: Any, *, task: str, bins: Any | None = None
     ):  # pragma: no cover - passthrough
-        return self._explainer.predict(X, uq_interval=True, calibrated=True, bins=bins)
+        return self._explainer.predict(x, uq_interval=True, calibrated=True, bins=bins)
 
-    def predict_proba(self, X: Any, bins: Any | None = None):  # pragma: no cover - passthrough
-        return self._explainer.predict_proba(X, uq_interval=True, calibrated=True, bins=bins)
+    def predict_proba(self, x: Any, bins: Any | None = None):  # pragma: no cover - passthrough
+        return self._explainer.predict_proba(x, uq_interval=True, calibrated=True, bins=bins)
 
 
 def _supports_calibrated_explainer(model: Any) -> bool:
@@ -126,7 +129,7 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     plugin_meta = {
         "name": "core.interval.legacy",
         "schema_version": 1,
-        "version": _PACKAGE_VERSION,
+        "version": package_version,
         "provider": "calibrated_explanations",
         "capabilities": ["interval:classification", "interval:regression"],
         "modes": ("classification", "regression"),
@@ -140,9 +143,33 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     }
 
     def create(self, context: IntervalCalibratorContext, *, fast: bool = False) -> Any:
-        calibrator = context.metadata.get("calibrator")
-        if calibrator is None:
-            raise RuntimeError("Legacy interval context missing 'calibrator' entry")
+        task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
+        learner = context.learner
+        bins = context.bins.get("calibration")
+        difficulty = context.difficulty.get("estimator")
+        x_cal, y_cal = context.calibration_splits[0]
+        if "regression" in task:
+            explainer = context.metadata.get("explainer")
+            if explainer is None:
+                raise RuntimeError("Legacy interval context missing 'explainer' handle")
+            calibrator = IntervalRegressor(explainer)
+        else:
+            predict_function = context.metadata.get("predict_function")
+            if predict_function is None:
+                explainer = context.metadata.get("explainer")
+                if explainer is None:
+                    raise RuntimeError("Legacy interval context missing 'predict_function' entry")
+                predict_function = getattr(explainer, "predict_function", None)
+            calibrator = VennAbers(
+                x_cal,
+                y_cal,
+                learner,
+                bins,
+                difficulty_estimator=difficulty,
+                predict_function=predict_function,
+            )
+        if isinstance(context.metadata, dict):
+            context.metadata.setdefault("calibrator", calibrator)
         return calibrator
 
 
@@ -152,7 +179,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     plugin_meta = {
         "name": "core.interval.fast",
         "schema_version": 1,
-        "version": _PACKAGE_VERSION,
+        "version": package_version,
         "provider": "calibrated_explanations",
         "capabilities": ["interval:classification", "interval:regression"],
         "modes": ("classification", "regression"),
@@ -166,10 +193,89 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     }
 
     def create(self, context: IntervalCalibratorContext, *, fast: bool = True) -> Any:
-        calibrator = context.metadata.get("fast_calibrators")
-        if calibrator is None:
-            raise RuntimeError("FAST interval context missing 'fast_calibrators' entry")
-        return calibrator
+        metadata = context.metadata
+        task = str(metadata.get("task") or metadata.get("mode") or "")
+        explainer = metadata.get("explainer")
+        if explainer is None:
+            raise RuntimeError("FAST interval context missing 'explainer' handle")
+
+        x_cal, y_cal = context.calibration_splits[0]
+        bins = context.bins.get("calibration")
+        learner = context.learner
+        difficulty = metadata.get("difficulty_estimator")
+        categorical_features = tuple(metadata.get("categorical_features", ()))
+        noise_cfg = metadata.get("noise_config", {})
+        (
+            explainer.fast_x_cal,
+            explainer.scaled_x_cal,
+            explainer.scaled_y_cal,
+            scale_factor,
+        ) = perturb_dataset(
+            x_cal,
+            y_cal,
+            categorical_features,
+            noise_type=noise_cfg.get("noise_type"),
+            scale_factor=noise_cfg.get("scale_factor"),
+            severity=noise_cfg.get("severity"),
+            seed=noise_cfg.get("seed"),
+            rng=noise_cfg.get("rng"),
+        )
+        expanded_bins = (
+            np.tile(bins.copy(), scale_factor) if bins is not None else None
+        )
+        original_bins = explainer.bins
+        original_x_cal = explainer.x_cal
+        original_y_cal = explainer.y_cal
+        explainer.bins = expanded_bins
+
+        calibrators: list[Any] = []
+        num_features = int(metadata.get("num_features", 0) or 0)
+        if "classification" in task:
+            for f in range(num_features):
+                fast_x_cal = explainer.scaled_x_cal.copy()
+                fast_x_cal[:, f] = explainer.fast_x_cal[:, f]
+                calibrators.append(
+                    VennAbers(
+                        fast_x_cal,
+                        explainer.scaled_y_cal,
+                        learner,
+                        explainer.bins,
+                        difficulty_estimator=difficulty,
+                    )
+                )
+        else:
+            for f in range(num_features):
+                fast_x_cal = explainer.scaled_x_cal.copy()
+                fast_x_cal[:, f] = explainer.fast_x_cal[:, f]
+                explainer.x_cal = fast_x_cal
+                explainer.y_cal = explainer.scaled_y_cal
+                calibrators.append(IntervalRegressor(explainer))
+
+        explainer.x_cal = original_x_cal
+        explainer.y_cal = original_y_cal
+        explainer.bins = original_bins
+
+        if "classification" in task:
+            calibrators.append(
+                VennAbers(
+                    x_cal,
+                    y_cal,
+                    learner,
+                    bins,
+                    difficulty_estimator=difficulty,
+                    predict_function=(
+                        metadata.get("predict_function")
+                        if metadata.get("predict_function") is not None
+                        else getattr(explainer, "predict_function", None)
+                    ),
+                )
+            )
+        else:
+            calibrators.append(IntervalRegressor(explainer))
+
+        if isinstance(metadata, dict):
+            metadata.setdefault("fast_calibrators", tuple(calibrators))
+        return calibrators
 
 
 @dataclass
@@ -188,11 +294,11 @@ class _LegacyExplanationBase(ExplanationPlugin):
     def supports(self, model: Any) -> bool:
         return _supports_calibrated_explainer(model)
 
-    def explain(self, model: Any, X: Any, **kwargs: Any) -> Any:  # pragma: no cover - legacy
+    def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:  # pragma: no cover - legacy
         if not self.supports(model):
             raise ValueError("Unsupported model for legacy plugin")
         explanation_callable = getattr(model, self._explanation_attr)
-        return explanation_callable(X, **kwargs)
+        return explanation_callable(x, **kwargs)
 
     def supports_mode(self, mode: str, *, task: str) -> bool:
         return mode == self._mode
@@ -204,14 +310,14 @@ class _LegacyExplanationBase(ExplanationPlugin):
         if self._explainer is None:
             raise RuntimeError("Explanation context missing 'explainer' handle")
 
-    def explain_batch(self, X: Any, request: ExplanationRequest) -> ExplanationBatch:
+    def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
         if self._context is None or self._bridge is None or self._explainer is None:
             raise RuntimeError("Plugin must be initialised before use")
 
         # Exercise the predict bridge lifecycle. The results are not used further
         # but calling the bridge ensures the contract is honoured.
         self._bridge.predict(
-            X,
+            x,
             mode=self._mode,
             task=self._context.task,
             bins=request.bins,
@@ -228,7 +334,7 @@ class _LegacyExplanationBase(ExplanationPlugin):
             kwargs["features_to_ignore"] = request.features_to_ignore
         kwargs["_use_plugin"] = False
 
-        collection: CalibratedExplanations = explanation_callable(X, **kwargs)
+        collection: CalibratedExplanations = explanation_callable(x, **kwargs)
         return _collection_to_batch(collection)
 
 
@@ -238,7 +344,7 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
     plugin_meta = {
         "name": "core.explanation.factual",
         "schema_version": 1,
-        "version": _PACKAGE_VERSION,
+        "version": package_version,
         "provider": "calibrated_explanations",
         "capabilities": [
             "explain",
@@ -270,7 +376,7 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
     plugin_meta = {
         "name": "core.explanation.alternative",
         "schema_version": 1,
-        "version": _PACKAGE_VERSION,
+        "version": package_version,
         "provider": "calibrated_explanations",
         "capabilities": [
             "explain",
@@ -302,7 +408,7 @@ class FastExplanationPlugin(_LegacyExplanationBase):
     plugin_meta = {
         "name": "core.explanation.fast",
         "schema_version": 1,
-        "version": _PACKAGE_VERSION,
+        "version": package_version,
         "provider": "calibrated_explanations",
         "capabilities": ["explain", "explanation:fast", "task:classification", "task:regression"],
         "modes": ("fast",),
@@ -329,7 +435,7 @@ class LegacyPlotBuilder(PlotBuilder):
     plugin_meta = {
         "name": "core.plot.legacy.builder",
         "schema_version": 1,
-        "version": _PACKAGE_VERSION,
+        "version": package_version,
         "provider": "calibrated_explanations",
         "capabilities": ["plot:builder"],
         "style": "legacy",
@@ -350,7 +456,7 @@ class LegacyPlotRenderer(PlotRenderer):
     plugin_meta = {
         "name": "core.plot.legacy.renderer",
         "schema_version": 1,
-        "version": _PACKAGE_VERSION,
+        "version": package_version,
         "provider": "calibrated_explanations",
         "capabilities": ["plot:renderer"],
         "dependencies": (),

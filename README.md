@@ -212,12 +212,47 @@ A tiny micro-benchmark is available at `scripts/micro_bench_perf.py` that prints
 
 ## Plugin registry (experimental)
 
-An early, opt-in plugin interface and registry is available under `calibrated_explanations.plugins`:
+Calibrated explanations include a plugin registry covering explanation strategies,
+interval calibrators, and plot renderers. The registry honours the ADR-006 trust
+model: only plugins marked as trusted (either via metadata or
+`CE_TRUST_PLUGIN=<identifier>`) are selected automatically. Security note:
+registering or using third-party plugins executes arbitrary code—only load
+plugins you trust.
 
-- Protocol: `ExplainerPlugin` (expects `plugin_meta`, `supports(model)`, `explain(model, X, **kwargs)`).
-- Registry: `calibrated_explanations.plugins.registry` with `register`, `unregister`, `list_plugins`, and `find_for(model)`.
+### Configuring plugin selection
 
-Security note: registering/using third-party plugins executes arbitrary code—use only trusted plugins.
+Configuration sources are layered in priority order. For each explanation mode
+(`factual`, `alternative`, `fast`) you can pass keyword overrides to
+`CalibratedExplainer`, specify environment variables, or set defaults in
+`pyproject.toml`:
+
+- Keyword arguments: `CalibratedExplainer(..., factual_plugin="...", interval_plugin="...", fast_interval_plugin="...", plot_style="...")`
+- Environment variables:
+  - `CE_EXPLANATION_PLUGIN_<MODE>` with optional `..._FALLBACKS`
+  - `CE_INTERVAL_PLUGIN`, `CE_INTERVAL_PLUGIN_FALLBACKS`,
+    `CE_INTERVAL_PLUGIN_FAST`, `CE_INTERVAL_PLUGIN_FAST_FALLBACKS`
+  - `CE_PLOT_STYLE`, `CE_PLOT_STYLE_FALLBACKS`
+- `pyproject.toml` tables:
+  - `[tool.calibrated_explanations.explanations]` for per-mode explanation
+    plugins
+  - `[tool.calibrated_explanations.intervals]` with `default`, `fast`, and
+    `_fallbacks` keys
+  - `[tool.calibrated_explanations.plots]` with `style` and `style_fallbacks`
+
+### CLI helpers
+
+A small console entry point, `ce.plugins`, lists registered plugins and inspects
+metadata without importing the entire library:
+
+```bash
+ce.plugins list all                # show explanations, intervals, plots
+ce.plugins show core.interval.fast --kind intervals
+ce.plugins trust <id>              # mark an explanation plugin as trusted
+ce.plugins untrust <id>            # revoke trust for an explanation plugin
+```
+
+The CLI surfaces dependency hints (interval/plot fallbacks) and trust state so
+operators can validate configuration before running large jobs.
    calib_y_hat_cls, (low, high) = classifier.predict(X_test_cls, uq_interval=True)
    calib_y_hat_reg, low_high = regressor.predict(X_test_reg, uq_interval=True) # default low_high_percentiles=(5, 95)
    calib_y_hat_reg, low_high = regressor.predict(X_test_reg, low_high_percentiles=(10,90), uq_interval=True)
@@ -252,10 +287,10 @@ from sklearn.model_selection import train_test_split
 
 dataset = fetch_openml(name="wine", version=7, as_frame=True, parser='auto')
 
-X = dataset.data.values.astype(float)
+x = dataset.data.values.astype(float)
 y = (dataset.target.values == 'True').astype(int)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=2, stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=2, stratify=y)
 
 X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train,
                                                             test_size=0.25)
@@ -372,10 +407,10 @@ Extracting explanations for regression is very similar to how it is done for cla
 ```python
 dataset = fetch_openml(name="house_sales", version=3)
 
-X = dataset.data.values.astype(float)
+x = dataset.data.values.astype(float)
 y = dataset.target.values/1000
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=2, random_state=42)
 
 X_prop_train, X_cal, y_prop_train, y_cal = train_test_split(X_train, y_train,
                                                             test_size=200)
@@ -421,7 +456,7 @@ We can easily add a difficulty estimator by assigning a `DifficultyEstimator` to
 ```python
 from crepes.extras import DifficultyEstimator
 
-de = DifficultyEstimator().fit(X=X_prop_train, learner=regressor.learner, scaler=True)
+de = DifficultyEstimator().fit(x=X_prop_train, learner=regressor.learner, scaler=True)
 regressor.calibrate(X_cal, y_cal, difficulty_estimator=de)
 display(regressor)
 ```
@@ -633,6 +668,9 @@ Please send bug reports, feature requests or pull requests through
 the project page on [GitHub](https://github.com/Moffran/calibrated_explanations).
 You can find a detailed guide for contributions in
 [CONTRIBUTING.md](https://github.com/Moffran/calibrated_explanations/blob/main/CONTRIBUTING.md).
+The guide includes the ADR-017/ADR-018 naming and documentation style cheat-sheet
+along with the ADR-019 coverage guardrails so reviewers and contributors share the
+same expectations before opening a pull request.
 
 ### Roadmap and ADRs
 

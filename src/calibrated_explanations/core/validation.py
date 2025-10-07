@@ -1,6 +1,8 @@
-"""Phase 1B validation module.
+"""Validation helpers shared across the core package.
 
-Provides input validation helpers for calibrated_explanations. Raises clear errors early for invalid inputs.
+These utilities centralize defensive argument checks while preserving
+existing behavior, ensuring future refactors can rely on a consistent
+error vocabulary.
 """
 
 from __future__ import annotations
@@ -10,7 +12,7 @@ from typing import Any, Literal, Sequence, cast
 import numpy as np
 import numpy.typing as npt
 
-from calibrated_explanations.core.exceptions import (
+from .exceptions import (
     DataShapeError,
     ModelNotSupportedError,
     NotFittedError,
@@ -19,11 +21,13 @@ from calibrated_explanations.core.exceptions import (
 
 
 def validate_not_none(value: Any, name: str) -> None:
+    """Raise ``ValidationError`` when ``value`` is ``None``."""
     if value is None:
         raise ValidationError(f"Argument '{name}' must not be None.")
 
 
 def validate_type(value: Any, expected_type: type, name: str) -> None:
+    """Ensure that ``value`` is an instance of ``expected_type``."""
     if not isinstance(value, expected_type):
         raise DataShapeError(
             f"Argument '{name}' must be of type {expected_type.__name__}, got {type(value).__name__}."
@@ -31,12 +35,13 @@ def validate_type(value: Any, expected_type: type, name: str) -> None:
 
 
 def validate_non_empty(value: Any, name: str) -> None:
+    """Ensure that length-aware inputs are not empty."""
     if hasattr(value, "__len__") and len(value) == 0:
         raise ValidationError(f"Argument '{name}' must not be empty.")
 
 
 def validate_inputs(*args: Any, **kwargs: Any) -> None:
-    """Basic input validation: checks for None and empty sequences."""
+    """Validate positional and keyword arguments for non-null, non-empty values."""
     for idx, arg in enumerate(args):
         validate_not_none(arg, f"arg{idx}")
         if isinstance(arg, (str, Sequence)) and not isinstance(arg, (bytes, bytearray)):
@@ -48,13 +53,13 @@ def validate_inputs(*args: Any, **kwargs: Any) -> None:
 
 
 def infer_task(
-    X: Any = None, y: Any = None, model: Any = None
+    x: Any = None, y: Any = None, model: Any = None
 ) -> Literal["classification", "regression"]:
-    """Infer task type using model capabilities or y dtype.
+    """Infer the task type using model capabilities or target dtype.
 
-    Priority: model.predict_proba -> classification; else regression.
-    If model is None, use y: non-integer float -> regression, binary/int -> classification (best-effort).
-    Fallback to regression.
+    Priority is given to model capabilities (``predict_proba`` implies
+    classification). When a model is unavailable, heuristics based on the
+    target dtype are used. Regression is the safe fallback.
     """
     if model is not None:
         if hasattr(model, "predict_proba"):
@@ -68,25 +73,26 @@ def infer_task(
     return "regression"
 
 
-def _as_2d_array(X: Any) -> npt.NDArray[np.generic]:
-    # Accept numpy arrays and pandas DataFrames
-    if hasattr(X, "values") and hasattr(X, "shape"):
+def _as_2d_array(x: Any) -> npt.NDArray[np.generic]:
+    """Return ``x`` coerced to a 2D ``ndarray``."""
+    if hasattr(x, "values") and hasattr(x, "shape"):
         try:
-            return cast(npt.NDArray[np.generic], np.asarray(X.values))
+            return cast(npt.NDArray[np.generic], np.asarray(x.values))
         except Exception:  # pragma: no cover - fallback
-            return cast(npt.NDArray[np.generic], np.asarray(X))
-    return cast(npt.NDArray[np.generic], np.asarray(X))
+            return cast(npt.NDArray[np.generic], np.asarray(x))
+    return cast(npt.NDArray[np.generic], np.asarray(x))
 
 
 def _as_1d_array(y: Any) -> npt.NDArray[np.generic]:
-    if hasattr(y, "values") and not isinstance(y, (np.ndarray,)):
+    """Return ``y`` coerced to a flattened 1D ``ndarray``."""
+    if hasattr(y, "values") and not isinstance(y, np.ndarray):
         y = y.values
     arr = cast(npt.NDArray[np.generic], np.asarray(y))
     return cast(npt.NDArray[np.generic], arr.reshape(-1))
 
 
 def validate_inputs_matrix(
-    X: Any,
+    x: Any,
     y: Any | None = None,
     *,
     task: Literal["auto", "classification", "regression"] = "auto",
@@ -95,19 +101,19 @@ def validate_inputs_matrix(
     n_features: int | None = None,
     check_finite: bool = True,
 ) -> None:
-    """Validate typical (X, y) input pairs.
+    """Validate a feature/target matrix pair for downstream operations.
 
-    - Ensures X is 2D and y length matches X rows when provided/required.
-    - Validates finiteness according to allow_nan/check_finite.
-    - Enforces feature count when n_features is provided.
+    - Ensure ``x`` is 2D and matches the expected feature count when provided.
+    - Confirm that ``y`` has the same number of samples when supplied.
+    - Guard against NaN or infinite values unless explicitly allowed.
     """
-    validate_not_none(X, "X")
-    X_arr = _as_2d_array(X)
-    if X_arr.ndim != 2:
-        raise DataShapeError("Argument 'X' must be 2D (n_samples, n_features).")
-    n_samples = X_arr.shape[0]
-    if n_features is not None and X_arr.shape[1] != n_features:
-        raise DataShapeError(f"Argument 'X' must have {n_features} features, got {X_arr.shape[1]}.")
+    validate_not_none(x, "x")
+    x_arr = _as_2d_array(x)
+    if x_arr.ndim != 2:
+        raise DataShapeError("Argument 'x' must be 2D (n_samples, n_features).")
+    n_samples = x_arr.shape[0]
+    if n_features is not None and x_arr.shape[1] != n_features:
+        raise DataShapeError(f"Argument 'x' must have {n_features} features, got {x_arr.shape[1]}.")
 
     if require_y and y is None:
         raise ValidationError("Argument 'y' must be provided when require_y=True.")
@@ -115,9 +121,8 @@ def validate_inputs_matrix(
         y_arr = _as_1d_array(y)
         if y_arr.shape[0] != n_samples:
             raise DataShapeError(
-                f"Length of 'y' ({y_arr.shape[0]}) does not match number of samples in X ({n_samples})."
+                f"Length of 'y' ({y_arr.shape[0]}) does not match number of samples in x ({n_samples})."
             )
-        # Only perform finiteness checks on numeric dtypes to avoid TypeError for object/string labels
         if (
             check_finite
             and not allow_nan
@@ -126,32 +131,22 @@ def validate_inputs_matrix(
         ):
             raise ValidationError("Argument 'y' contains NaN or infinite values.")
 
-    if check_finite and not allow_nan and not np.isfinite(X_arr).all():
-        raise ValidationError("Argument 'X' contains NaN or infinite values.")
+    if check_finite and not allow_nan and not np.isfinite(x_arr).all():
+        raise ValidationError("Argument 'x' contains NaN or infinite values.")
 
-    # For now, task inference is unused here, but reserved for future checks
-    _ = infer_task(X, y, None) if task == "auto" else task
+    # Reserve task inference for future behavior without changing runtime output.
+    _ = infer_task(x, y, None) if task == "auto" else task
 
 
 def validate_model(model: Any) -> None:
-    """Validate model protocol minimally.
-
-    - Must have predict.
-    - If supports classification (predict_proba present), that's fine; otherwise
-      regression is assumed.
-    """
+    """Validate minimal model protocol requirements."""
     validate_not_none(model, "model")
     if not hasattr(model, "predict"):
         raise ModelNotSupportedError("Model must implement a 'predict' method.")
-    # No further checks here to avoid behavior changes; predict_proba is checked at call sites.
 
 
 def validate_fit_state(obj: Any, *, require: bool = True) -> None:
-    """Validate that an object with fitted/calibrated flags is in the right state.
-
-    - If require is True: ensure obj.fitted is True; if obj has calibrated for
-      operations requiring it, callers should check that separately.
-    """
+    """Validate fit state flags before executing stateful operations."""
     if not require:
         return
     if hasattr(obj, "fitted") and not obj.fitted:
