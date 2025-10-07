@@ -27,25 +27,18 @@ if TYPE_CHECKING:  # pragma: no cover - import only for type checking
 
 
 class WrapCalibratedExplainer:
+    """Provide a high-level fit/calibrate/explain workflow for learners.
+
+    The wrapper mirrors :class:`CalibratedExplainer` while orchestrating
+    fitting, calibration, and explanation steps behind a scikit-learn style
+    interface.
+    """
+
     learner: Any
     explainer: CalibratedExplainer | None
     calibrated: bool
     mc: Callable[[Any], Any] | MondrianCategorizer | None
     _logger: _logging.Logger
-    """Calibrated Explanations for Black-Box Predictions (calibrated-explanations).
-
-    The calibrated explanations explanation method is based on the paper
-    "Calibrated Explanations: with Uncertainty Information and Counterfactuals"
-    by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
-
-    Calibrated explanations are a way to explain the predictions of a black-box learner
-    using Venn-Abers predictors (classification & regression) or
-    conformal predictive systems (regression).
-
-    :class:`.WrapCalibratedExplainer` is a wrapper class for the :class:`.CalibratedExplainer`. It allows to fit, calibrate, and explain the learner.
-    Like the :class:`.CalibratedExplainer`, it allows access to the predict and predict_proba methods of
-    the calibrated explainer, making it easy to get the same output as shown in the explanations.
-    """
 
     def __init__(self, learner: Any):
         """Initialize the WrapCalibratedExplainer with a predictive learner.
@@ -100,7 +93,7 @@ class WrapCalibratedExplainer:
     # Phase 2: internal wiring for config
     @classmethod
     def _from_config(cls, cfg: ExplainerConfig) -> WrapCalibratedExplainer:
-        """Internal helper to construct from an ExplainerConfig.
+        """Construct a wrapper from an :class:`ExplainerConfig`.
 
         Notes
         -----
@@ -150,7 +143,7 @@ class WrapCalibratedExplainer:
 
         Parameters
         ----------
-        X_proper_train : array-like
+        x_proper_train : array-like
             The training input samples.
         y_proper_train : array-like
             The target values.
@@ -178,12 +171,12 @@ class WrapCalibratedExplainer:
 
         Parameters
         ----------
-        X_calibration : array-like
+        x_calibration : array-like
             The calibration input samples.
         y_calibration : array-like
             The calibration target values.
-        mc : optional
-            Mondrian categories. Defaults to None.
+        mc : callable or MondrianCategorizer, optional
+            Optional Mondrian categories helper. Defaults to ``None``.
 
         **kwargs
             Keyword arguments to be passed to the :class:`.CalibratedExplainer`'s __init__ method
@@ -203,13 +196,13 @@ class WrapCalibratedExplainer:
 
         .. code-block:: python
 
-            w.calibrate(X_calibration, y_calibration)
+            w.calibrate(x_calibration, y_calibration)
 
         Provide additional keyword arguments to the :class:`.CalibratedExplainer`:
 
         .. code-block:: python
 
-            w.calibrate(X_calibration, y_calibration, feature_names=feature_names,
+            w.calibrate(x_calibration, y_calibration, feature_names=feature_names,
                         categorical_features=categorical_features)
 
         Notes

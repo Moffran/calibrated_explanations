@@ -61,35 +61,93 @@ class ExplainerBuilder:
 
     # Simple fluent setters
     def task(self, task: TaskLiteral) -> ExplainerBuilder:
+        """Set the task type for the explainer configuration.
+
+        Parameters
+        ----------
+        task : {"classification", "regression", "auto"}
+            Desired task literal to store in the configuration.
+        """
         self._cfg.task = task
         return self
 
     def low_high_percentiles(self, p: tuple[int, int]) -> ExplainerBuilder:
+        """Update the percentile pair for interval explanations.
+
+        Parameters
+        ----------
+        p : tuple of int
+            Inclusive lower and upper percentiles used for interval computation.
+        """
         self._cfg.low_high_percentiles = p
         return self
 
     def threshold(self, t: float | None) -> ExplainerBuilder:
+        """Store a regression-style threshold value on the configuration.
+
+        Parameters
+        ----------
+        t : float or None
+            Threshold applied when producing probabilistic regression outputs.
+        """
         self._cfg.threshold = t
         return self
 
     def preprocessor(self, pre: Any | None) -> ExplainerBuilder:
+        """Attach an optional preprocessing object to the configuration.
+
+        Parameters
+        ----------
+        pre : Any or None
+            Preprocessor applied to inputs prior to fitting or calibration.
+        """
         self._cfg.preprocessor = pre
         return self
 
     def auto_encode(self, flag: bool | Literal["auto"]) -> ExplainerBuilder:
+        """Toggle automatic categorical encoding behavior.
+
+        Parameters
+        ----------
+        flag : bool or "auto"
+            Whether to auto-encode categorical inputs when preprocessing.
+        """
         self._cfg.auto_encode = flag
         return self
 
     def unseen_category_policy(self, policy: Literal["ignore", "error"]) -> ExplainerBuilder:
+        """Select the strategy for handling unseen categorical values.
+
+        Parameters
+        ----------
+        policy : {"ignore", "error"}
+            Policy to apply when encountering unseen categories at inference time.
+        """
         self._cfg.unseen_category_policy = policy
         return self
 
     def parallel_workers(self, n: int | None) -> ExplainerBuilder:
+        """Configure the desired number of parallel worker processes.
+
+        Parameters
+        ----------
+        n : int or None
+            Worker count for parallel execution; ``None`` leaves the default in place.
+        """
         self._cfg.parallel_workers = n
         return self
 
     # Perf flags (feature-flagged; no behavior change when off)
     def perf_cache(self, enabled: bool, *, max_items: int | None = None) -> ExplainerBuilder:
+        """Enable or disable the performance cache options.
+
+        Parameters
+        ----------
+        enabled : bool
+            Flag indicating whether caching primitives should be provisioned.
+        max_items : int, optional
+            Maximum number of cached entries when caching is enabled.
+        """
         self._cfg.perf_cache_enabled = enabled
         if max_items is not None:
             self._cfg.perf_cache_max_items = max_items
@@ -98,6 +156,15 @@ class ExplainerBuilder:
     def perf_parallel(
         self, enabled: bool, *, backend: Literal["auto", "sequential", "joblib"] | None = None
     ) -> ExplainerBuilder:
+        """Configure the parallel backend used for performance operations.
+
+        Parameters
+        ----------
+        enabled : bool
+            Whether parallel primitives should be created.
+        backend : {"auto", "sequential", "joblib"}, optional
+            Explicit backend selection overriding the default when provided.
+        """
         self._cfg.perf_parallel_enabled = enabled
         if backend is not None:
             self._cfg.perf_parallel_backend = backend

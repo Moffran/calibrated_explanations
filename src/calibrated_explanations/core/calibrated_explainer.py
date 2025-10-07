@@ -80,7 +80,6 @@ from .exceptions import (
 
 def _read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
     """Return a mapping from the requested ``pyproject.toml`` section."""
-
     if _tomllib is None:
         return {}
 
@@ -106,7 +105,6 @@ def _read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
 
 def _split_csv(value: str | None) -> Tuple[str, ...]:
     """Split a comma separated environment variable into a tuple."""
-
     if not value:
         return ()
     entries = [item.strip() for item in value.split(",") if item.strip()]
@@ -115,7 +113,6 @@ def _split_csv(value: str | None) -> Tuple[str, ...]:
 
 def _coerce_string_tuple(value: Any) -> Tuple[str, ...]:
     """Coerce a configuration value into a tuple of strings."""
-
     if value is None:
         return ()
     if isinstance(value, str):
@@ -209,86 +206,40 @@ class CalibratedExplainer:
         difficulty_estimator=None,
         **kwargs,
     ) -> None:
-        """The :class:`.CalibratedExplainer` class is used for explaining machine learning learners with calibrated predictions.
+        """Initialize the explainer with calibration data and metadata.
 
-        The calibrated explanations are based on the paper
-        "Calibrated Explanations for Black-Box Predictions"
-        by Helena Löfström, Tuwe Löfström, Ulf Johansson and Cecilia Sönströd.
-
-        Calibrated explanations provides a way to explain the predictions of a black-box learner
-        using Venn-Abers predictors (classification) or
-        conformal predictive systems (regression).
+        Parameters
+        ----------
+        learner : Any
+            Predictive learner that must already expose ``fit``/``predict`` and,
+            for classification, ``predict_proba``.
+        x_cal : array-like of shape (n_calibration_samples, n_features)
+            Calibration feature matrix used to fit interval calibrators.
+        y_cal : array-like of shape (n_calibration_samples,)
+            Calibration targets paired with ``x_cal``.
+        mode : {"classification", "regression"}, default="classification"
+            Operating mode controlling which calibrators/plugins are used.
+        feature_names : Sequence[str] or None, optional
+            Optional list of human-readable feature names.
+        categorical_features : Sequence[int] or None, optional
+            Indices describing which features should be treated as categorical.
+        categorical_labels : Mapping[int, Mapping[int, str]] or None, optional
+            Optional mapping translating categorical feature values to labels.
+        class_labels : Mapping[int, str] or None, optional
+            Optional mapping translating class indices to display labels.
+        bins : array-like or None, optional
+            Pre-computed Mondrian categories for fast explanations.
+        difficulty_estimator : Any or None, optional
+            Optional crepes ``DifficultyEstimator`` instance for regression tasks.
+        **kwargs : Any
+            Advanced configuration flags preserved for backward compatibility.
 
         Notes
         -----
-        Minimal lifecycle logging is available at INFO level. To enable, configure:
+        Minimal lifecycle logging is available at INFO level. To enable, run::
 
-        >>> import logging; logging.getLogger('calibrated_explanations').setLevel(logging.INFO)
-
-        Initialize the :class:`.CalibratedExplainer` object for explaining the predictions of a black-box learner.
-
-            Parameters
-            ----------
-            learner : predictive learner
-                A predictive learner that can be used to predict the target variable. The learner must be fitted and have a predict_proba method (for classification) or a predict method (for regression).
-            X_cal : array-like of shape (n_calibrations_samples, n_features)
-                The calibration input data for the learner.
-            y_cal : array-like of shape (n_calibrations_samples,)
-                The calibration target data for the learner.
-            mode : str, default="classification"
-                The mode parameter specifies the type of problem being solved.
-            feature_names : list of str, default=None
-                A list of feature names for the input data. Each feature name should be a string. If not
-                provided, the feature names will be assigned as "0", "1", "2", etc.
-            categorical_features : list of int, default=None
-                A list of indices for categorical features. These are the features that have discrete values
-                and are not continuous.
-            categorical_labels : dict(int, dict(int, str)), default=None
-                A nested dictionary that maps the index of categorical features to another dictionary. The
-                inner dictionary maps each feature value to a feature label. This is used for categorical
-                feature encoding in the explanations. If None, the feature values will be used as labels.
-            class_labels : dict(int, str), default=None
-                A dictionary mapping numerical target values to class names. This parameter is only applicable
-                for classification learners. If None, the numerical target values will be used as labels.
-            bins : array-like of shape (n_samples,), default=None
-                Mondrian categories
-            difficulty_estimator : :class:`crepes.extras.DifficultyEstimator`, default=None
-                A `DifficultyEstimator` object from the `crepes` package. It is used to estimate the difficulty of
-                explaining a prediction. If None, no difficulty estimation is used. This parameter is only used
-                for regression learners.
-            sample_percentiles : list of int, default=[25, 50, 75]
-                An array-like object that specifies the percentiles used to sample values for evaluation of
-                numerical features. For example, if `sample_percentiles = [25, 50, 75]`, then the values at the
-                25th, 50th, and 75th percentiles within each discretized group will be sampled from the calibration
-                data for each numerical feature.
-            seed : int, default=42
-                The seed parameter is an integer that is used to set the random state for
-                reproducibility. It is used in various parts of the code where randomization is involved, such
-                as sampling values for evaluation of numerical features or initializing the random state for
-                certain operations.
-            verbose : bool, default=False
-                A boolean parameter that determines whether additional printouts should be enabled during the
-                operation of the class. If set to True, it will print out additional information during the
-                execution of the code. If set to False, it will not print out any additional information.
-            fast : bool, default=False
-                A boolean parameter that determines whether the explainer should initiate the Fast Calibrated Explanations.
-            reject : bool, default=False
-                A boolean parameter that determines whether the explainer should reject explanations that are
-                deemed too difficult to explain. If set to True, the explainer will reject explanations that are
-                deemed too difficult to explain. If set to False, the explainer will not reject any explanations.
-            oob : bool, default=False
-                A boolean parameter that determines whether the explainer should use out-of-bag samples for calibration.
-                If set to True, the explainer will use out-of-bag samples for calibration. If set to False, the explainer
-                will not use out-of-bag samples for calibration. This requires the learner to be a RandomForestClassifier
-            predict_function : function handle
-                A function handle that takes an array-like input and returns an array-like output of probabilities
-                for classification or predictions for regression. If not provided, defaults to predict_proba for
-                classification mode or predict for regression mode. This allows customizing how predictions are
-                generated from the learner.
-
-            Returns
-            -------
-            :class:`.CalibratedExplainer` : A :class:`.CalibratedExplainer` object that can be used to explain predictions from a predictive learner.
+            import logging
+            logging.getLogger("calibrated_explanations").setLevel(logging.INFO)
         """
         init_time = time()
         self.__initialized = False
@@ -464,7 +415,6 @@ class CalibratedExplainer:
 
     def _build_explanation_chain(self, mode: str) -> Tuple[str, ...]:
         """Return the ordered identifier fallback chain for *mode*."""
-
         entries: List[str] = []
 
         override = self._explanation_plugin_overrides.get(mode)
@@ -505,7 +455,6 @@ class CalibratedExplainer:
 
     def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
         """Return the ordered interval plugin chain for the requested mode."""
-
         entries: List[str] = []
         override = (
             self._fast_interval_plugin_override if fast else self._interval_plugin_override
@@ -551,7 +500,6 @@ class CalibratedExplainer:
 
     def _build_plot_style_chain(self) -> Tuple[str, ...]:
         """Return the ordered plot style fallback chain."""
-
         entries: List[str] = []
         if isinstance(self._plot_style_override, str) and self._plot_style_override:
             entries.append(self._plot_style_override)
@@ -578,7 +526,6 @@ class CalibratedExplainer:
 
     def _ensure_interval_runtime_state(self) -> None:
         """Ensure interval tracking members exist for legacy instances."""
-
         storage = self.__dict__
         if "_interval_plugin_hints" not in storage:
             storage["_interval_plugin_hints"] = {}
@@ -595,7 +542,6 @@ class CalibratedExplainer:
 
     def _coerce_plugin_override(self, override: Any) -> Any:
         """Normalise a plugin override into an instance when possible."""
-
         if override is None:
             return None
         if isinstance(override, str):
@@ -618,7 +564,6 @@ class CalibratedExplainer:
         mode: str,
     ) -> str | None:
         """Return an error message if *metadata* is incompatible at runtime."""
-
         prefix = identifier or str((metadata or {}).get("name") or "<anonymous>")
         if metadata is None:
             return f"{prefix}: plugin metadata unavailable"
@@ -669,7 +614,6 @@ class CalibratedExplainer:
 
     def _instantiate_plugin(self, prototype: Any) -> Any:
         """Best-effort instantiation that avoids sharing state across explainers."""
-
         if prototype is None:
             return None
         if callable(prototype) and hasattr(prototype, "plugin_meta"):
@@ -687,7 +631,6 @@ class CalibratedExplainer:
 
     def _gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
         """Return interval dependency hints collected from explanation plugins."""
-
         if fast:
             return self._interval_plugin_hints.get("fast", ())
         ordered: List[str] = []
@@ -707,7 +650,6 @@ class CalibratedExplainer:
         fast: bool,
     ) -> str | None:
         """Validate interval plugin metadata for the current execution."""
-
         prefix = identifier or str((metadata or {}).get("name") or "<anonymous>")
         if metadata is None:
             return f"{prefix}: interval metadata unavailable"
@@ -745,7 +687,6 @@ class CalibratedExplainer:
         hints: Sequence[str] = (),
     ) -> Tuple[Any, str | None]:
         """Resolve the interval plugin for the requested execution path."""
-
         ensure_builtin_plugins()
 
         raw_override = (
@@ -823,7 +764,6 @@ class CalibratedExplainer:
         metadata: Mapping[str, Any],
     ) -> IntervalCalibratorContext:
         """Construct the frozen interval calibrator context."""
-
         calibration_splits: Tuple[Any, ...] = ((self.x_cal, self.y_cal),)
         bins = {"calibration": self.bins}
         difficulty = {"estimator": self.difficulty_estimator}
@@ -879,7 +819,6 @@ class CalibratedExplainer:
         metadata: Mapping[str, Any],
     ) -> Tuple[Any, str | None]:
         """Resolve and instantiate the interval calibrator for the active mode."""
-
         self._ensure_interval_runtime_state()
         hints = self._gather_interval_hints(fast=fast)
         plugin, identifier = self._resolve_interval_plugin(fast=fast, hints=hints)
@@ -926,7 +865,6 @@ class CalibratedExplainer:
         fast: bool,
     ) -> None:
         """Record the returned calibrator inside the interval context metadata."""
-
         metadata = context.metadata
         if not isinstance(metadata, dict):
             return
@@ -943,7 +881,6 @@ class CalibratedExplainer:
 
     def _resolve_explanation_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Resolve or instantiate the plugin handling *mode*."""
-
         ensure_builtin_plugins()
 
         raw_override = self._explanation_plugin_overrides.get(mode)
@@ -1011,7 +948,6 @@ class CalibratedExplainer:
 
     def _ensure_explanation_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Return the plugin instance for *mode*, initialising on demand."""
-
         if mode in self._explanation_plugin_instances:
             return self._explanation_plugin_instances[
                 mode
@@ -1061,7 +997,6 @@ class CalibratedExplainer:
         self, mode: str, plugin: Any, identifier: str | None
     ) -> ExplanationContext:
         """Construct the immutable context passed to explanation plugins."""
-
         helper_handles = {"explainer": self}
         interval_settings = {
             "dependencies": self._interval_plugin_hints.get(mode, ()),
@@ -1095,7 +1030,6 @@ class CalibratedExplainer:
 
     def _derive_plot_chain(self, mode: str, identifier: str | None) -> Tuple[str, ...]:
         """Return plot fallback chain seeded by plugin metadata."""
-
         preferred: List[str] = []
         if identifier:
             descriptor = find_explanation_descriptor(identifier)
@@ -1115,7 +1049,6 @@ class CalibratedExplainer:
 
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode based on the active discretizer."""
-
         if isinstance(self.discretizer, (EntropyDiscretizer, RegressorDiscretizer)):
             return "alternative"
         return "factual"
@@ -1131,7 +1064,6 @@ class CalibratedExplainer:
         extras: Mapping[str, Any] | None = None,
     ) -> CalibratedExplanations:
         """Invoke the configured plugin for *mode* and materialise the batch."""
-
         plugin, _identifier = self._ensure_explanation_plugin(mode)
         request = ExplanationRequest(
             threshold=threshold,
@@ -1204,7 +1136,6 @@ class CalibratedExplainer:
     @property
     def runtime_telemetry(self) -> Mapping[str, Any]:
         """Return the most recent telemetry payload reported by the explainer."""
-
         return dict(self._last_telemetry)
 
     @property
@@ -1387,7 +1318,7 @@ class CalibratedExplainer:
         feature=None,
         **kwargs,
     ):
-        """Internal prediction method that handles both classification and regression cases.
+        """Execute the internal prediction method for classification and regression cases.
 
         For classification:
         - Returns probabilities and intervals for binary/multiclass
@@ -2766,22 +2697,28 @@ class CalibratedExplainer:
         return np.array(all_min_max)
 
     def __get_greater_values(self, f: int, greater: float):
-        """Get sample values greater than the given threshold for a numerical feature.
-        Uses percentile sampling from calibration data."""
+        """Get sampled values above ``greater`` for numerical features.
+
+        Uses percentile sampling from calibration data.
+        """
         if not np.any(self.x_cal[:, f] > greater):
             return np.array([])
         return np.percentile(self.x_cal[self.x_cal[:, f] > greater, f], self.sample_percentiles)
 
     def __get_lesser_values(self, f: int, lesser: float):
-        """Get sample values less than the given threshold for a numerical feature.
-        Uses percentile sampling from calibration data."""
+        """Get sampled values below ``lesser`` for numerical features.
+
+        Uses percentile sampling from calibration data.
+        """
         if not np.any(self.x_cal[:, f] < lesser):
             return np.array([])
         return np.percentile(self.x_cal[self.x_cal[:, f] < lesser, f], self.sample_percentiles)
 
     def __get_covered_values(self, f: int, lesser: float, greater: float):
-        """Get sample values between lower and upper bounds for a numerical feature.
-        Uses percentile sampling from calibration data."""
+        """Get sampled values within the ``[lesser, greater]`` interval.
+
+        Uses percentile sampling from calibration data.
+        """
         covered = np.where((self.x_cal[:, f] >= lesser) & (self.x_cal[:, f] <= greater))[0]
         return np.percentile(self.x_cal[covered, f], self.sample_percentiles)
 

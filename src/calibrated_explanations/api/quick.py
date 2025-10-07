@@ -33,9 +33,9 @@ def quick_explain(
     ----------
     model : Any
         Estimator exposing fit/predict (and optionally predict_proba).
-    X_train, y_train : Any
+    x_train, y_train : Any
         Proper training data for the model.
-    X_cal, y_cal : Any
+    x_cal, y_cal : Any
         Calibration data for the explainer.
     x : Any
         Instances to explain.

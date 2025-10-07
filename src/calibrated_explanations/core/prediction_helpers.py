@@ -119,7 +119,7 @@ def predict_internal(
     bins: Optional[np.ndarray] = None,
     feature: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Internal prediction logic (mechanically moved)."""
+    """Run the internal prediction logic (mechanically moved)."""
     # (Body kept inside calibrated_explainer for now to limit patch size) -- placeholder stub if future isolation needed
     return explainer._predict(  # noqa: SLF001
         x,

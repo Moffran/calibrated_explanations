@@ -41,7 +41,6 @@ def update_interval_learner(explainer, xs, ys, bins=None) -> None:
 
 def initialize_interval_learner(explainer) -> None:
     """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner``."""
-
     ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
     if callable(ensure_state):
         ensure_state()
@@ -58,7 +57,6 @@ def initialize_interval_learner(explainer) -> None:
 
 def initialize_interval_learner_for_fast_explainer(explainer) -> None:
     """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner_for_fast_explainer``."""
-
     ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
     if callable(ensure_state):
         ensure_state()

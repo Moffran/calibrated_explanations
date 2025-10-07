@@ -59,6 +59,7 @@ Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution
    lint/tooling guardrails for naming and docstring coverage per preparatory
    phase plans.【F:improvement_docs/nomenclature_standardization_plan.md†L5-L13】【F:improvement_docs/documentation_standardization_plan.md†L7-L22】
    - 2025-10-07 – Updated test helpers (`tests/conftest.py`, `tests/unit/core/test_calibrated_explainer_interval_plugins.py`) to comply with Ruff naming guardrails, keeping ADR-017 lint checks green.
+   - 2025-10-07 – Harmonised `core.validation` docstring spacing with numpy-style guardrails to satisfy ADR-018 pydocstyle checks.
 6. Implement ADR-019 phase 1 changes: ship shared `.coveragerc`, enable
    `--cov-fail-under=80` in CI, and document waiver workflow in contributor
    templates.【F:improvement_docs/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:improvement_docs/test_coverage_standardization_plan.md†L9-L27】
@@ -80,9 +81,9 @@ live in CI with coverage thresholds enforcing ≥90% package-level coverage.
 5. Execute ADR-017 Phase 2 renames with legacy shims isolated under a
    `legacy/` namespace and update imports/tests/docs to the canonical module
    names.【F:improvement_docs/nomenclature_standardization_plan.md†L15-L24】
-6. Complete ADR-018 baseline remediation by adding module summaries and
+6. Complete ADR-018 baseline remediation by finishing pydocstyle batches C (`explanations/`, `perf/`) and D (`plugins/`), adding module summaries and
    upgrading priority package docstrings to numpydoc format with progress
-   tracking.【F:improvement_docs/documentation_standardization_plan.md†L16-L22】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】
+   tracking.【F:improvement_docs/documentation_standardization_plan.md†L16-L22】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】【F:improvement_docs/pydocstyle_breakdown.md†L26-L27】
 7. Extend ADR-019 enforcement to critical-path modules (≥95% coverage) and
    enable Codecov patch gating at ≥85% for PRs touching runtime/calibration
    logic, enable
@@ -102,9 +103,9 @@ baseline met, and ADR-019 critical-path thresholds pass consistently.
    as deferred beyond v1 or land minimal opt-in implementations guarded by docs.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】
 4. Publish migration notes summarising plugin configuration defaults and
    remaining legacy escapes.
-5. Turn ADR-018 tooling on by making docstring linting blocking in CI, adding
+5. Turn ADR-018 tooling on by finishing pydocstyle batches E (`viz/`, `_plots.py`, `_plots_legacy.py`) and F (`serialization.py`, `core.py`), then making docstring linting blocking in CI, adding
    coverage gates for touched modules, and wiring badges/reporting into the docs
-   workflow.【F:improvement_docs/documentation_standardization_plan.md†L24-L34】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】
+   workflow.【F:improvement_docs/documentation_standardization_plan.md†L24-L34】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】【F:improvement_docs/pydocstyle_breakdown.md†L28-L29】
 6. Advance ADR-017 enforcement by pruning deprecated shims scheduled for removal
    and locking naming lint rules in the release branch.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L28-L37】
 7. Audit ADR-019 waiver inventory, trim expired exemptions, and raise

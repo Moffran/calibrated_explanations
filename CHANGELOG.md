@@ -29,6 +29,7 @@
   registry-backed runtime.
 - ADR-017/ADR-018 ratified with quick-reference style excerpts in
   `CONTRIBUTING.md` and contributor docs.
+- Harmonised `core.validation` docstrings with numpy-style lint guardrails (ADR-018).
 
 ### CI
 

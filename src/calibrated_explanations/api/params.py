@@ -50,7 +50,7 @@ def canonicalize_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_param_combination(kwargs: dict[str, Any]) -> None:
-    """Basic consistency checks for parameter combinations.
+    """Perform basic consistency checks for parameter combinations.
 
     Phase 1B keeps this intentionally minimal to avoid changing existing behavior.
     Add stricter checks in Phase 2 alongside clearer user-facing messaging.
