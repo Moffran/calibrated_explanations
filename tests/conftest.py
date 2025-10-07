@@ -18,6 +18,19 @@ from pathlib import Path
 import pytest
 from ._fixtures import regression_dataset, binary_dataset, multiclass_dataset
 
+try:  # pragma: no cover - exercised indirectly when pytest-cov is absent
+    import pytest_cov as _pytest_cov  # type: ignore[attr-defined]
+
+    _HAS_PYTEST_COV = True
+    _pytest_cov  # placate linters
+    _coverage_module = None
+except Exception:  # pragma: no cover - executed in minimalist environments
+    _HAS_PYTEST_COV = False
+    try:
+        import coverage as _coverage_module  # type: ignore[import-not-found]
+    except Exception:  # pragma: no cover - defensive
+        _coverage_module = None
+
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SRC_PATH = _REPO_ROOT / "src"
 if _SRC_PATH.exists():
@@ -157,6 +170,86 @@ def patch_difficulty_estimator(monkeypatch):
         class _StubDifficulty:
             def fit(self, *a, **k):
                 return self
+
+
+def pytest_addoption(parser):  # pragma: no cover - simple option registration
+    """Provide coverage CLI flags when pytest-cov is unavailable."""
+
+    if _HAS_PYTEST_COV:
+        return
+
+    group = parser.getgroup("coverage")
+    group.addoption(
+        "--cov",
+        action="append",
+        default=[],
+        help="Measure coverage for the specified package or path.",
+    )
+    group.addoption(
+        "--cov-report",
+        action="append",
+        default=[],
+        help="Generate coverage reports (supports term, term-missing, html, xml).",
+    )
+    group.addoption(
+        "--cov-fail-under",
+        action="store",
+        type=float,
+        default=None,
+        help="Fail if coverage percentage is below this value.",
+    )
+
+
+def pytest_configure(config):  # pragma: no cover - integration glue
+    """Start coverage measurement when the real pytest-cov plugin is unavailable."""
+
+    if _HAS_PYTEST_COV or _coverage_module is None:
+        return
+
+    targets = config.getoption("--cov")
+    reports = config.getoption("--cov-report")
+    fail_under = config.getoption("--cov-fail-under")
+
+    if not targets and not reports and fail_under is None:
+        return
+
+    cov_kwargs = {"source": targets or None}
+    coverage_controller = _coverage_module.Coverage(**cov_kwargs)
+    coverage_controller.start()
+    config._ce_cov_controller = coverage_controller  # type: ignore[attr-defined]
+    config._ce_cov_reports = reports  # type: ignore[attr-defined]
+    config._ce_cov_fail_under = fail_under  # type: ignore[attr-defined]
+
+
+def pytest_unconfigure(config):  # pragma: no cover - integration glue
+    """Emit coverage reports for the stub coverage integration."""
+
+    coverage_controller = getattr(config, "_ce_cov_controller", None)
+    if coverage_controller is None:
+        return
+
+    reports = getattr(config, "_ce_cov_reports", []) or []
+    fail_under = getattr(config, "_ce_cov_fail_under", None)
+
+    coverage_controller.stop()
+    coverage_controller.save()
+
+    report_kind = next((rep for rep in reports if rep in ("term", "term-missing")), None)
+    show_missing = report_kind == "term-missing"
+    coverage_controller.report(
+        show_missing=show_missing,
+        fail_under=fail_under,
+    )
+
+    for rep in reports:
+        if rep.startswith("html"):
+            _, _, directory = rep.partition(":")
+            directory = directory or "htmlcov"
+            coverage_controller.html_report(directory=directory)
+        elif rep.startswith("xml"):
+            _, _, outfile = rep.partition(":")
+            outfile = outfile or "coverage.xml"
+            coverage_controller.xml_report(outfile=outfile)
 
             def predict(self, x):
                 import numpy as _np

@@ -4,7 +4,6 @@ import pytest
 
 from calibrated_explanations._venn_abers import VennAbers
 from calibrated_explanations.core import calibration_helpers as ch
-from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
