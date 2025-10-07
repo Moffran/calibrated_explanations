@@ -75,7 +75,7 @@ Status: Draft roadmap owned by core maintainers
 
 - Provide example third-party plugins (interval + explanation) in docs/tests to
   exercise trust/onboarding guidance end-to-end.
-- Evaluate exposing registry bootstrap hooks for enterprise extensions so they
+- Expose registry bootstrap hooks for enterprise extensions so they
   can auto-register trusted plugins when packages are installed.
 - Consider shipping a light plugin-scaffold cookiecutter or CLI command once the
   APIs stabilise.

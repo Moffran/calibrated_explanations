@@ -21,7 +21,7 @@ Establish a versioned explanation envelope:
   "type": "feature_attribution",
   "generator": {
     "library_version": "0.6.0",
-    "strategy": "isotonic_conformal",
+    "strategy": "...",
     "parameters_hash": "<blake2-short>"
   },
   "meta": {"dataset_hash": "...", "n_features": 42, "created_at": "ISO8601"},
