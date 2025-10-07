@@ -72,8 +72,14 @@ live in CI with coverage thresholds enforcing ≥90% package-level coverage.
 
 1. Promote PlotSpec builders to default for at least factual/alternative plots
    while keeping legacy style available as fallback.【F:src/calibrated_explanations/core/calibrated_explainer.py†L680-L720】【F:src/calibrated_explanations/viz/builders.py†L150-L208】
-2. Ensure explain* APIs emit CE-formatted intervals when percentile arguments are
-   provided; extend tests covering dict payloads and telemetry fields.【F:src/calibrated_explanations/core/calibrated_explainer.py†L760-L820】
+2. Ensure explain* APIs emit CE-formatted intervals for both percentile and
+   thresholded regression requests. When the mode is regression and
+   `threshold` is provided, calibrate the percentile representing
+   \(\Pr(y \leq \text{threshold})\) via Venn-Abers and expose the resulting
+   probability interval alongside the CE-formatted interval metadata. Extend
+   tests covering dict payloads, telemetry fields, and thresholded regression
+   fixtures so callers see the calibrated probability interval reflected in the
+   API response.【F:src/calibrated_explanations/core/calibrated_explainer.py†L760-L820】
 3. Document telemetry schema (interval_source/proba_source/plot_source) for
    enterprise integrations and provide examples in docs/plugins.md.
 4. Review preprocessing persistence contract (ADR-009) to confirm saved
