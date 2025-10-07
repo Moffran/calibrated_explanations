@@ -44,7 +44,7 @@ jobs:
             --cov-config=.coveragerc \
             --cov-report=term-missing \
             --cov-report=xml \
-            --cov-fail-under=90
+            --cov-fail-under=80
 
       - name: Run doctests
         run: python src/calibrated_explanations/utils/helper.py

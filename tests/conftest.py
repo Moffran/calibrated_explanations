@@ -171,6 +171,15 @@ def patch_difficulty_estimator(monkeypatch):
             def fit(self, *a, **k):
                 return self
 
+            def predict(self, x):
+                import numpy as _np
+
+                return _np.zeros(len(x))
+
+            __call__ = predict
+
+        monkeypatch.setattr(_extras, "DifficultyEstimator", lambda *a, **k: _StubDifficulty())
+
 
 def pytest_addoption(parser):  # pragma: no cover - simple option registration
     """Provide coverage CLI flags when pytest-cov is unavailable."""
@@ -250,16 +259,6 @@ def pytest_unconfigure(config):  # pragma: no cover - integration glue
             _, _, outfile = rep.partition(":")
             outfile = outfile or "coverage.xml"
             coverage_controller.xml_report(outfile=outfile)
-
-            def predict(self, x):
-                import numpy as _np
-
-                return _np.zeros(len(x))
-
-            def __call__(self, x):
-                return self.predict(x)
-
-        monkeypatch.setattr(_extras, "DifficultyEstimator", lambda *a, **k: _StubDifficulty())
 
 
 def pytest_collection_modifyitems(config, items):

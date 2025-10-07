@@ -54,13 +54,13 @@ def test_resolve_interval_plugin_collects_errors_before_success(monkeypatch):
     explainer._interval_plugin_fallbacks["default"] = ("alpha", "omega")
     explainer._interval_preferred_identifier["default"] = None
 
-    BetaPlugin = type("BetaPlugin", (), {})
-    AlphaPlugin = type("AlphaPlugin", (), {})
-    OmegaPlugin = type("OmegaPlugin", (), {})
+    beta_plugin_type = type("BetaPlugin", (), {})
+    alpha_plugin_type = type("AlphaPlugin", (), {})
+    omega_plugin_type = type("OmegaPlugin", (), {})
 
     descriptors = {
         "beta": DummyDescriptor(
-            plugin=BetaPlugin,
+            plugin=beta_plugin_type,
             metadata={
                 "name": "beta",
                 "capabilities": ("interval:regression",),
@@ -68,7 +68,7 @@ def test_resolve_interval_plugin_collects_errors_before_success(monkeypatch):
             trusted=True,
         ),
         "alpha": DummyDescriptor(
-            plugin=AlphaPlugin,
+            plugin=alpha_plugin_type,
             metadata={
                 "name": "alpha",
                 "modes": ("regression",),
@@ -78,7 +78,7 @@ def test_resolve_interval_plugin_collects_errors_before_success(monkeypatch):
             trusted=True,
         ),
         "omega": DummyDescriptor(
-            plugin=OmegaPlugin,
+            plugin=omega_plugin_type,
             metadata={
                 "name": "omega",
                 "modes": ("regression",),
@@ -101,7 +101,7 @@ def test_resolve_interval_plugin_collects_errors_before_success(monkeypatch):
     )
 
     assert identifier == "omega"
-    assert plugin is OmegaPlugin
+    assert plugin is omega_plugin_type
 
 
 def test_resolve_interval_plugin_reports_aggregated_errors(monkeypatch):
@@ -126,12 +126,12 @@ def test_resolve_interval_plugin_fast_mode_requires_flag(monkeypatch):
     explainer = _make_explainer()
     explainer._interval_plugin_fallbacks["fast"] = ("fast-primary", "fast-backup")
 
-    FastPrimaryPlugin = type("FastPrimaryPlugin", (), {})
-    FastBackupPlugin = type("FastBackupPlugin", (), {})
+    fast_primary_plugin_type = type("FastPrimaryPlugin", (), {})
+    fast_backup_plugin_type = type("FastBackupPlugin", (), {})
 
     descriptors = {
         "fast-primary": DummyDescriptor(
-            plugin=FastPrimaryPlugin,
+            plugin=fast_primary_plugin_type,
             metadata={
                 "name": "fast-primary",
                 "modes": ("regression",),
@@ -141,7 +141,7 @@ def test_resolve_interval_plugin_fast_mode_requires_flag(monkeypatch):
             trusted=True,
         ),
         "fast-backup": DummyDescriptor(
-            plugin=FastBackupPlugin,
+            plugin=fast_backup_plugin_type,
             metadata={
                 "name": "fast-backup",
                 "modes": ("regression",),
@@ -162,4 +162,4 @@ def test_resolve_interval_plugin_fast_mode_requires_flag(monkeypatch):
     plugin, identifier = explainer._resolve_interval_plugin(fast=True)
 
     assert identifier == "fast-backup"
-    assert plugin is FastBackupPlugin
+    assert plugin is fast_backup_plugin_type

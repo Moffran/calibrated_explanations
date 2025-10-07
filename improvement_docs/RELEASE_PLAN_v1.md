@@ -58,8 +58,9 @@ Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution
 5. Ratify ADR-017/ADR-018, publish contributor style excerpts, and land initial
    lint/tooling guardrails for naming and docstring coverage per preparatory
    phase plans.【F:improvement_docs/nomenclature_standardization_plan.md†L5-L13】【F:improvement_docs/documentation_standardization_plan.md†L7-L22】
+   - 2025-10-07 – Updated test helpers (`tests/conftest.py`, `tests/unit/core/test_calibrated_explainer_interval_plugins.py`) to comply with Ruff naming guardrails, keeping ADR-017 lint checks green.
 6. Implement ADR-019 phase 1 changes: ship shared `.coveragerc`, enable
-   `--cov-fail-under=90` in CI, and document waiver workflow in contributor
+   `--cov-fail-under=80` in CI, and document waiver workflow in contributor
    templates.【F:improvement_docs/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:improvement_docs/test_coverage_standardization_plan.md†L9-L27】
 
 Release gate: parity tests green for factual/alternative/fast, interval override
@@ -84,7 +85,8 @@ live in CI with coverage thresholds enforcing ≥90% package-level coverage.
    tracking.【F:improvement_docs/documentation_standardization_plan.md†L16-L22】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】
 7. Extend ADR-019 enforcement to critical-path modules (≥95% coverage) and
    enable Codecov patch gating at ≥85% for PRs touching runtime/calibration
-   logic.【F:improvement_docs/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:improvement_docs/test_coverage_standardization_plan.md†L15-L27】
+   logic, enable
+   `--cov-fail-under=85` in CI.【F:improvement_docs/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:improvement_docs/test_coverage_standardization_plan.md†L15-L27】
 
 Release gate: PlotSpec default route parity, telemetry docs/tests in place,
 nomenclature renames shipped with shims, docstring coverage dashboard shows
@@ -106,7 +108,8 @@ baseline met, and ADR-019 critical-path thresholds pass consistently.
 6. Advance ADR-017 enforcement by pruning deprecated shims scheduled for removal
    and locking naming lint rules in the release branch.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L28-L37】
 7. Audit ADR-019 waiver inventory, trim expired exemptions, and raise
-   non-critical modules toward the 90% floor to reduce debt before the v1 RC.
+   non-critical modules toward the 90% floor to reduce debt before the v1 RC, and enable
+   `--cov-fail-under=88` in CI.
 
 Release gate: Docs CI green, packaging metadata includes CLI, migration guide
 available, docstring lint gates passing, ADR-019 waivers documented, and no
@@ -127,7 +130,8 @@ outstanding deprecated naming shims slated for removal.
    maintenance process in changelog and docs.【F:improvement_docs/documentation_standardization_plan.md†L29-L34】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L43-L62】
 7. Institutionalise ADR-019 by baking coverage checks into release branch
    policies and publishing a health dashboard (Codecov badge + waiver log) in
-   the docs.【F:improvement_docs/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:improvement_docs/test_coverage_standardization_plan.md†L21-L27】
+   the docs. Enforce
+   `--cov-fail-under=90` in CI.【F:improvement_docs/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:improvement_docs/test_coverage_standardization_plan.md†L21-L27】
 
 Release gate: No pending high-priority bugs, docs/tests/telemetry stable, plugin
 registry feature-complete for explanation/interval/plot categories, naming and

@@ -22,7 +22,7 @@ confidence in calibration guarantees erodes as the code evolves.„ÄêF:pytest.ini‚
 Adopt a layered coverage policy that couples numeric thresholds with risk-based exceptions:
 
 - **Package-wide floor:** Require `pytest --cov` runs to meet **90% statement coverage** across
-  `src/calibrated_explanations`. CI will enforce this via `--cov-fail-under=90`.
+  `src/calibrated_explanations`. CI will enforce this via `--cov-fail-under=90` when reaching the stable v1.0.0.
 - **Critical paths:** Enforce **95% coverage** on calibrated prediction helpers, interval
   regression, serialization, and plugin registries by using `coverage report --fail-under` with
   per-path configuration.

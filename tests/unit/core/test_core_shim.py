@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
 
+import calibrated_explanations
 
 def _load_core_shim(module_name: str):
     """Load ``core.py`` under a temporary module name and return the module."""
@@ -29,16 +31,6 @@ def test_core_shim_reexports_calibrated_explainer():
 
     assert module.CalibratedExplainer is CalibratedExplainer
 """Tests for the legacy ``calibrated_explanations.core`` shim module."""
-
-from __future__ import annotations
-
-import importlib.util
-import sys
-from pathlib import Path
-
-import pytest
-
-import calibrated_explanations
 
 
 def _load_legacy_core_module(module_name: str):
