@@ -1047,6 +1047,19 @@ class CalibratedExplainer:
                 seen.add(item)
         return tuple(ordered)
 
+    def _build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
+        """Extract telemetry details from the first explanation instance, if present."""
+        try:
+            first_explanation = explanations[0]  # type: ignore[index]
+        except Exception:  # pragma: no cover - defensive: empty or non-indexable containers
+            return {}
+        builder = getattr(first_explanation, "to_telemetry", None)
+        if callable(builder):
+            payload = builder()
+            if isinstance(payload, dict):
+                return payload
+        return {}
+
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode based on the active discretizer."""
         if isinstance(self.discretizer, (EntropyDiscretizer, RegressorDiscretizer)):
@@ -1107,14 +1120,16 @@ class CalibratedExplainer:
         plot_chain = self._plot_plugin_fallbacks.get(mode)
         if plot_chain:
             metadata.setdefault("plot_fallbacks", tuple(plot_chain))
+            metadata.setdefault("plot_source", plot_chain[0])
         telemetry_payload = {
             "mode": mode,
             "task": self.mode,
             "interval_source": interval_source,
             "proba_source": metadata.get("proba_source"),
+            "plot_source": metadata.get("plot_source"),
             "plot_fallbacks": tuple(plot_chain or ()),
         }
-        self._last_telemetry = telemetry_payload
+        self._last_telemetry = dict(telemetry_payload)
         if monitor is not None and not monitor.used:
             raise ConfigurationError(
                 "Explanation plugin for mode '"
@@ -1124,6 +1139,10 @@ class CalibratedExplainer:
         container_cls = batch.container_cls
         if hasattr(container_cls, "from_batch"):
             result = container_cls.from_batch(batch)
+            instance_payload = self._build_instance_telemetry_payload(result)
+            if instance_payload:
+                telemetry_payload.update(instance_payload)
+                self._last_telemetry.update(instance_payload)
             try:
                 setattr(result, "telemetry", dict(telemetry_payload))
             except Exception:  # pragma: no cover - defensive
@@ -3398,3 +3417,6 @@ class CalibratedExplainer:
 
 
 __all__ = ["CalibratedExplainer"]
+
+
+

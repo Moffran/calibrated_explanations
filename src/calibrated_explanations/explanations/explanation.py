@@ -17,12 +17,15 @@ Classes:
 """
 
 import contextlib
+import math
+import re
 import warnings
 from abc import ABC, abstractmethod
 
 # from dataclasses import dataclass
 from copy import deepcopy
 from types import MappingProxyType
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 from pandas import Categorical
@@ -366,6 +369,335 @@ class CalibratedExplanation(ABC):
         """Remove any conjunctive rules."""
         self._has_conjunctive_rules = False
         return self
+
+    # ------------------------------------------------------------------
+    # Telemetry helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _to_python_number(value: Any) -> Any:
+        """Convert numpy/scalar values to native Python types suitable for telemetry."""
+        if isinstance(value, np.generic):
+            value = value.item()
+        if isinstance(value, np.ndarray):
+            return [CalibratedExplanation._to_python_number(v) for v in value.tolist()]
+        if isinstance(value, (list, tuple)):
+            return [CalibratedExplanation._to_python_number(v) for v in value]
+        if value is None:
+            return None
+        if isinstance(value, (np.bool_, bool)):
+            return bool(value)
+        if isinstance(value, (np.integer, int)):
+            return int(value)
+        if isinstance(value, (np.floating, float)):
+            if math.isnan(value):
+                return None
+            return float(value)
+        return value
+
+    @staticmethod
+    def _normalize_percentile_value(value: Any) -> Optional[float]:
+        """Normalise percentile inputs to decimal fractions."""
+        value = CalibratedExplanation._to_python_number(value)
+        if value is None:
+            return None
+        if isinstance(value, (float, int)):
+            value = float(value)
+            if math.isinf(value):
+                return value
+            if abs(value) > 1.0:
+                return value / 100.0
+            return value
+        return None
+
+    def _get_percentiles(self) -> Optional[Tuple[Optional[float], Optional[float]]]:
+        """Return decimal percentiles if available."""
+        percentiles = getattr(self.calibrated_explanations, "low_high_percentiles", None)
+        if percentiles is None or len(percentiles) != 2:
+            return None
+        low = self._normalize_percentile_value(percentiles[0])
+        high = self._normalize_percentile_value(percentiles[1])
+        return (low, high)
+
+    @staticmethod
+    def _compute_confidence_level(
+        percentiles: Optional[Tuple[Optional[float], Optional[float]]]
+    ) -> Optional[float]:
+        """Compute confidence level from decimal percentiles."""
+        if not percentiles:
+            return None
+        low, high = percentiles
+        if low is None or high is None:
+            return None
+        if low == -math.inf:
+            return None if high in (None, math.inf) else high
+        if high == math.inf:
+            return None if low is None else 1 - low
+        return max(0.0, high - low)
+
+    def _normalize_threshold_value(self) -> Any:
+        """Normalise threshold metadata to telemetry-friendly structure."""
+        threshold = self.y_threshold
+        if threshold is None:
+            return None
+        if isinstance(threshold, np.ndarray):
+            threshold = threshold.tolist()
+        if isinstance(threshold, (list, tuple)):
+            if len(threshold) == 0:
+                return None
+            values = [CalibratedExplanation._to_python_number(threshold[0])]
+            if len(threshold) > 1:
+                values.append(CalibratedExplanation._to_python_number(threshold[1]))
+            return values
+        return CalibratedExplanation._to_python_number(threshold)
+
+    def _build_uncertainty_payload(
+        self,
+        *,
+        value: Any,
+        low: Any,
+        high: Any,
+        representation: str,
+        percentiles: Optional[Tuple[Optional[float], Optional[float]]] = None,
+        threshold: Any = None,
+        include_percentiles: bool = True,
+    ) -> Dict[str, Any]:
+        """Create a structured uncertainty payload."""
+        lower = CalibratedExplanation._to_python_number(low)
+        upper = CalibratedExplanation._to_python_number(high)
+        payload: Dict[str, Any] = {
+            "representation": representation,
+            "calibrated_value": CalibratedExplanation._to_python_number(value),
+            "lower_bound": lower,
+            "upper_bound": upper,
+            "legacy_interval": [lower, upper],
+        }
+        payload["threshold"] = threshold
+        payload["raw_percentiles"] = None
+        payload["confidence_level"] = None
+        if include_percentiles and percentiles:
+            payload["raw_percentiles"] = [
+                CalibratedExplanation._to_python_number(percentiles[0]),
+                CalibratedExplanation._to_python_number(percentiles[1]),
+            ]
+            confidence = self._compute_confidence_level(percentiles)
+            if confidence is not None:
+                payload["confidence_level"] = confidence
+        return payload
+
+    def _build_instance_uncertainty(self) -> Dict[str, Any]:
+        """Build uncertainty payload for the current instance prediction."""
+        if self.is_thresholded():
+            return self._build_uncertainty_payload(
+                value=self.prediction["predict"],
+                low=self.prediction["low"],
+                high=self.prediction["high"],
+                representation="threshold",
+                threshold=self._normalize_threshold_value(),
+                include_percentiles=False,
+            )
+        if self.is_probabilistic():
+            return self._build_uncertainty_payload(
+                value=self.prediction["predict"],
+                low=self.prediction["low"],
+                high=self.prediction["high"],
+                representation="venn_abers",
+                include_percentiles=False,
+            )
+        percentiles = self._get_percentiles()
+        return self._build_uncertainty_payload(
+            value=self.prediction["predict"],
+            low=self.prediction["low"],
+            high=self.prediction["high"],
+            representation="percentile",
+            percentiles=percentiles,
+            include_percentiles=True,
+        )
+
+    def _safe_feature_name(self, feature_index: Any) -> str:
+        """Return a readable feature name for telemetry."""
+        feature_names = getattr(self._get_explainer(), "feature_names", None)
+        try:
+            idx = int(feature_index)
+        except (TypeError, ValueError):
+            return str(feature_index)
+        if feature_names and 0 <= idx < len(feature_names):
+            return str(feature_names[idx])
+        return str(idx)
+
+    @staticmethod
+    def _convert_condition_value(raw_value: Optional[str], fallback: Any) -> Any:
+        """Convert textual condition payloads to structured values."""
+        if raw_value is None:
+            return CalibratedExplanation._to_python_number(fallback)
+        text = raw_value.strip()
+        if text.lower() in {"-inf", "-infinity"}:
+            return float("-inf")
+        if text.lower() in {"inf", "+inf", "infinity"}:
+            return float("inf")
+        try:
+            return float(text)
+        except ValueError:
+            return text
+
+    def _parse_condition(self, feature_name: str, rule_text: str) -> Tuple[str, Optional[str]]:
+        """Attempt to parse rule text into operator and value tokens."""
+        if not rule_text:
+            return "raw", None
+        text = rule_text.strip()
+        pattern = rf"^{re.escape(feature_name)}\s*(<=|>=|==|=|<|>|in)\s*(.+)$"
+        match = re.match(pattern, text)
+        if match:
+            operator = match.group(1)
+            value_text = match.group(2).strip()
+            if operator == "=":
+                operator = "=="
+            return operator.lower(), value_text
+        return "raw", text
+
+    def _build_condition_payload(
+        self,
+        feature_index: Any,
+        rule_text: str,
+        feature_value: Any,
+        display_value: Any,
+    ) -> Dict[str, Any]:
+        """Convert rule metadata into telemetry condition payload."""
+        feature_name = self._safe_feature_name(feature_index)
+        operator, parsed_value = self._parse_condition(feature_name, rule_text)
+        if operator == "raw":
+            value = CalibratedExplanation._to_python_number(display_value)
+        else:
+            value = self._convert_condition_value(parsed_value, display_value)
+        return {
+            "feature": feature_name,
+            "operator": operator,
+            "value": value,
+            "text": rule_text,
+        }
+
+    def _build_factual_rules_payload(self) -> List[Dict[str, Any]]:
+        """Serialise factual/fast explanation rules."""
+        rules = self._get_rules()
+        if not rules or "rule" not in rules:
+            return []
+        percentiles = None
+        if not self.is_probabilistic() and not self.is_thresholded():
+            percentiles = self._get_percentiles()
+        payload: List[Dict[str, Any]] = []
+        count = len(rules.get("rule", []))
+        for idx in range(count):
+            feature_index = rules["feature"][idx]
+            condition = self._build_condition_payload(
+                feature_index,
+                rules["rule"][idx],
+                rules["feature_value"][idx],
+                rules["value"][idx],
+            )
+            weight_value = CalibratedExplanation._to_python_number(rules["weight"][idx])
+            representation = "venn_abers" if self.is_probabilistic() else "percentile"
+            weight_uncertainty = self._build_uncertainty_payload(
+                value=weight_value,
+                low=rules["weight_low"][idx],
+                high=rules["weight_high"][idx],
+                representation=representation,
+                percentiles=percentiles if representation == "percentile" else None,
+                include_percentiles=representation == "percentile",
+            )
+            prediction_uncertainty = self._build_uncertainty_payload(
+                value=rules["predict"][idx],
+                low=rules["predict_low"][idx],
+                high=rules["predict_high"][idx],
+                representation=representation if not self.is_thresholded() else "threshold",
+                percentiles=percentiles if representation == "percentile" and not self.is_thresholded() else None,
+                threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
+                include_percentiles=representation == "percentile" and not self.is_thresholded(),
+            )
+            payload.append(
+                {
+                    "kind": "factual",
+                    "feature": self._safe_feature_name(feature_index),
+                    "weight": weight_value,
+                    "uncertainty": weight_uncertainty,
+                    "condition": condition,
+                    "prediction": prediction_uncertainty,
+                    "baseline_prediction": CalibratedExplanation._to_python_number(
+                        rules.get("base_predict", [None])[0]
+                    ),
+                }
+            )
+        return payload
+
+    def _build_alternative_rules_payload(self) -> List[Dict[str, Any]]:
+        """Serialise alternative explanation rules."""
+        rules = self._get_rules()
+        if not rules or "rule" not in rules:
+            return []
+        percentiles = None
+        if not self.is_probabilistic() and not self.is_thresholded():
+            percentiles = self._get_percentiles()
+        payload: List[Dict[str, Any]] = []
+        count = len(rules.get("rule", []))
+        for idx in range(count):
+            feature_index = rules["feature"][idx]
+            condition = self._build_condition_payload(
+                feature_index,
+                rules["rule"][idx],
+                rules["feature_value"][idx],
+                rules["value"][idx],
+            )
+            representation = "threshold" if self.is_thresholded() else (
+                "venn_abers" if self.is_probabilistic() else "percentile"
+            )
+            prediction_uncertainty = self._build_uncertainty_payload(
+                value=rules["predict"][idx],
+                low=rules["predict_low"][idx],
+                high=rules["predict_high"][idx],
+                representation=representation,
+                percentiles=None if representation != "percentile" else percentiles,
+                threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
+                include_percentiles=representation == "percentile",
+            )
+            weight_representation = "venn_abers" if self.is_probabilistic() else "percentile"
+            feature_rule_uncertainty = self._build_uncertainty_payload(
+                value=rules["weight"][idx],
+                low=rules["weight_low"][idx],
+                high=rules["weight_high"][idx],
+                representation=weight_representation,
+                percentiles=None if weight_representation != "percentile" else percentiles,
+                include_percentiles=weight_representation == "percentile",
+            )
+            feature_rule = {
+                "feature": self._safe_feature_name(feature_index),
+                "weight": CalibratedExplanation._to_python_number(rules["weight"][idx]),
+                "uncertainty": feature_rule_uncertainty,
+                "condition": deepcopy(condition),
+            }
+            rule_payload: Dict[str, Any] = {
+                "kind": "alternative",
+                "conditions": [condition],
+                "calibrated_prediction": CalibratedExplanation._to_python_number(
+                    rules["predict"][idx]
+                ),
+                "uncertainty": prediction_uncertainty,
+                "feature_rules": [feature_rule],
+            }
+            if self.is_thresholded():
+                rule_payload["threshold"] = self._normalize_threshold_value()
+            payload.append(rule_payload)
+        return payload
+
+    def build_rules_payload(self) -> List[Dict[str, Any]]:
+        """Return a telemetry-ready list of rule payloads."""
+        if isinstance(self, AlternativeExplanation):
+            return self._build_alternative_rules_payload()
+        return self._build_factual_rules_payload()
+
+    def to_telemetry(self) -> Dict[str, Any]:
+        """Return telemetry payload for this explanation instance."""
+        return {
+            "uncertainty": self._build_instance_uncertainty(),
+            "rules": self.build_rules_payload(),
+        }
 
     def _define_conditions(self):
         """
