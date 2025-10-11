@@ -253,6 +253,8 @@ ce.plugins untrust <id>            # revoke trust for an explanation plugin
 
 The CLI surfaces dependency hints (interval/plot fallbacks) and trust state so
 operators can validate configuration before running large jobs.
+
+```python
    calib_y_hat_cls, (low, high) = classifier.predict(X_test_cls, uq_interval=True)
    calib_y_hat_reg, low_high = regressor.predict(X_test_reg, uq_interval=True) # default low_high_percentiles=(5, 95)
    calib_y_hat_reg, low_high = regressor.predict(X_test_reg, low_high_percentiles=(10,90), uq_interval=True)
