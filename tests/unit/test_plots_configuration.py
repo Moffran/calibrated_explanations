@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.calibrated_explanations import plotting
+from src.calibrated_explanations import plotting, _plots
 
 
 @pytest.fixture(autouse=True)
