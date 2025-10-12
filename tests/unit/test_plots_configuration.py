@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.calibrated_explanations import plotting, _plots
+from src.calibrated_explanations import plotting
 
 
 @pytest.fixture(autouse=True)
@@ -81,12 +81,12 @@ def test_resolve_plot_style_chain_defaults_to_legacy(monkeypatch):
 
 
 def test_require_matplotlib_raises_helpful_error(monkeypatch):
-    monkeypatch.setattr(_plots, "plt", None)
-    monkeypatch.setattr(_plots, "mcolors", None)
-    monkeypatch.setattr(_plots, "_MATPLOTLIB_IMPORT_ERROR", RuntimeError("missing"))
+    monkeypatch.setattr(plotting, "plt", None)
+    monkeypatch.setattr(plotting, "mcolors", None)
+    monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", RuntimeError("missing"))
 
     with pytest.raises(RuntimeError) as excinfo:
-        _plots.__require_matplotlib()
+        plotting.__require_matplotlib()
 
     message = str(excinfo.value)
     assert "Plotting requires matplotlib" in message
