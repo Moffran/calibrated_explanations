@@ -51,11 +51,12 @@ from .registry import (
     register_plot_style,
 )
 
-
 class LegacyPredictBridge(PredictBridge):
     """Predict bridge delegating to :class:`CalibratedExplainer` methods."""
 
     def __init__(self, explainer: Any) -> None:
+        """Store the wrapped explainer used for legacy compatibility calls."""
+
         self._explainer = explainer
 
     def predict(
@@ -66,6 +67,7 @@ class LegacyPredictBridge(PredictBridge):
         task: str,
         bins: Any | None = None,
     ) -> Mapping[str, Any]:
+        """Return calibrated predictions routed through the wrapped explainer."""
         prediction = self._explainer.predict(x, uq_interval=True, bins=bins)
         if isinstance(prediction, tuple):
             preds, interval = prediction
@@ -88,23 +90,21 @@ class LegacyPredictBridge(PredictBridge):
     def predict_interval(
         self, x: Any, *, task: str, bins: Any | None = None
     ):  # pragma: no cover - passthrough
+        """Return calibrated prediction intervals for ``x``."""
         return self._explainer.predict(x, uq_interval=True, calibrated=True, bins=bins)
 
     def predict_proba(self, x: Any, bins: Any | None = None):  # pragma: no cover - passthrough
+        """Return calibrated probabilities for ``x`` when available."""
         return self._explainer.predict_proba(x, uq_interval=True, calibrated=True, bins=bins)
 
-
 def _supports_calibrated_explainer(model: Any) -> bool:
-    """Best-effort runtime check for :class:`CalibratedExplainer`."""
-
+    """Return ``True`` when *model* is a ``CalibratedExplainer`` instance."""
     return safe_isinstance(
         model, "calibrated_explanations.core.calibrated_explainer.CalibratedExplainer"
     )
 
-
 def _collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch:
     """Convert a legacy explanation collection into an :class:`ExplanationBatch`."""
-
     explanation_cls: type[_AbstractExplanation]
     if collection.explanations:
         explanation_cls = type(collection.explanations[0])
@@ -121,7 +121,6 @@ def _collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch
         instances=instances,
         collection_metadata=metadata,
     )
-
 
 class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     """Wrapper returning the already-initialised legacy calibrator."""
@@ -143,6 +142,7 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     }
 
     def create(self, context: IntervalCalibratorContext, *, fast: bool = False) -> Any:
+        """Instantiate the legacy interval calibrator for the supplied context."""
         task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
         learner = context.learner
         bins = context.bins.get("calibration")
@@ -172,7 +172,6 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
             context.metadata.setdefault("calibrator", calibrator)
         return calibrator
 
-
 class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     """FAST adapter returning the precomputed list of interval learners."""
 
@@ -193,6 +192,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     }
 
     def create(self, context: IntervalCalibratorContext, *, fast: bool = True) -> Any:
+        """Return the FAST calibrator list already prepared by the explainer."""
         metadata = context.metadata
         task = str(metadata.get("task") or metadata.get("mode") or "")
         explainer = metadata.get("explainer")
@@ -277,7 +277,6 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
             metadata.setdefault("fast_calibrators", tuple(calibrators))
         return calibrators
 
-
 @dataclass
 class _LegacyExplanationBase(ExplanationPlugin):
     """Shared adapter logic for legacy explanation flows."""
@@ -292,18 +291,26 @@ class _LegacyExplanationBase(ExplanationPlugin):
     _explainer: Any | None = None
 
     def supports(self, model: Any) -> bool:
+        """Return True when the legacy plugin can handle the supplied model instance."""
+
         return _supports_calibrated_explainer(model)
 
     def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:  # pragma: no cover - legacy
+        """Dispatch to the underlying explainer for single-instance explanations."""
+
         if not self.supports(model):
             raise ValueError("Unsupported model for legacy plugin")
         explanation_callable = getattr(model, self._explanation_attr)
         return explanation_callable(x, **kwargs)
 
     def supports_mode(self, mode: str, *, task: str) -> bool:
+        """Return True when the plugin implements the requested explanation mode."""
+
         return mode == self._mode
 
     def initialize(self, context: ExplanationContext) -> None:
+        """Capture context dependencies required by legacy explanation flows."""
+
         self._context = context
         self._bridge = context.predict_bridge
         self._explainer = context.helper_handles.get("explainer")
@@ -311,6 +318,8 @@ class _LegacyExplanationBase(ExplanationPlugin):
             raise RuntimeError("Explanation context missing 'explainer' handle")
 
     def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
+        """Execute the explanation call and adapt legacy collections into batches."""
+
         if self._context is None or self._bridge is None or self._explainer is None:
             raise RuntimeError("Plugin must be initialised before use")
 
@@ -337,7 +346,6 @@ class _LegacyExplanationBase(ExplanationPlugin):
         collection: CalibratedExplanations = explanation_callable(x, **kwargs)
         return _collection_to_batch(collection)
 
-
 class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
     """Plugin wrapping ``CalibratedExplainer.explain_factual``."""
 
@@ -362,13 +370,14 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
     }
 
     def __init__(self) -> None:
+        """Configure the plugin to proxy factual explanation calls."""
+
         super().__init__(
             _mode="factual",
             _explanation_attr="explain_factual",
             _expected_cls=FactualExplanation,
             plugin_meta=self.plugin_meta,
         )
-
 
 class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
     """Plugin wrapping ``CalibratedExplainer.explore_alternatives``."""
@@ -394,13 +403,14 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
     }
 
     def __init__(self) -> None:
+        """Configure the plugin to proxy alternative explanation calls."""
+
         super().__init__(
             _mode="alternative",
             _explanation_attr="explore_alternatives",
             _expected_cls=AlternativeExplanation,
             plugin_meta=self.plugin_meta,
         )
-
 
 class FastExplanationPlugin(_LegacyExplanationBase):
     """Plugin wrapping ``CalibratedExplainer.explain_fast``."""
@@ -421,13 +431,14 @@ class FastExplanationPlugin(_LegacyExplanationBase):
     }
 
     def __init__(self) -> None:
+        """Configure the plugin to proxy fast explanation calls."""
+
         super().__init__(
             _mode="fast",
             _explanation_attr="explain_fast",
             _expected_cls=FastExplanation,
             plugin_meta=self.plugin_meta,
         )
-
 
 class LegacyPlotBuilder(PlotBuilder):
     """Minimal plot builder that keeps legacy behaviour."""
@@ -447,8 +458,8 @@ class LegacyPlotBuilder(PlotBuilder):
     }
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
+        """Return a legacy-compatible payload representing the plot request."""
         return {"context": context}
-
 
 class LegacyPlotRenderer(PlotRenderer):
     """Minimal renderer mirroring the legacy matplotlib pathway."""
@@ -469,12 +480,88 @@ class LegacyPlotRenderer(PlotRenderer):
     def render(
         self, artifact: Mapping[str, Any], *, context: PlotRenderContext
     ) -> PlotRenderResult:
+        """Render the placeholder legacy artefact and return an empty result."""
         return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
 
+class PlotSpecDefaultBuilder(PlotBuilder):
+    """PlotSpec-first builder for global plots."""
+
+    plugin_meta = {
+        "name": "core.plot.plot_spec.default.builder",
+        "schema_version": 1,
+        "version": package_version,
+        "provider": "calibrated_explanations",
+        "capabilities": ["plot:builder"],
+        "style": "plot_spec.default",
+        "dependencies": (),
+        "trusted": True,
+        "trust": {"trusted": True},
+        "legacy_compatible": True,
+        "output_formats": ["png", "svg", "pdf"],
+    }
+
+    def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
+        """Construct a PlotSpec-compatible payload for global plots."""
+        intent = context.intent if isinstance(context.intent, Mapping) else {}
+        intent_type = intent.get("type") if isinstance(intent, Mapping) else None
+        if intent_type == "global":
+            options = context.options if isinstance(context.options, Mapping) else {}
+            payload = options.get("payload", {})
+            if not isinstance(payload, Mapping):
+                raise RuntimeError("PlotSpec default builder expected payload mapping for global plot")
+            payload_dict = dict(payload)
+            payload_dict.pop("threshold", None)  # legacy-only field
+            if "y" in payload_dict and "y_test" not in payload_dict:
+                payload_dict["y_test"] = payload_dict.pop("y")
+            from ..viz.builders import build_global_plotspec_dict
+
+            title = intent.get("title") if isinstance(intent, Mapping) else None
+            return build_global_plotspec_dict(title=title, **payload_dict)
+
+        raise RuntimeError("PlotSpec default builder currently supports only global plots")
+
+class PlotSpecDefaultRenderer(PlotRenderer):
+    """Renderer delegating PlotSpec payloads to the matplotlib adapter."""
+
+    plugin_meta = {
+        "name": "core.plot.plot_spec.default.renderer",
+        "schema_version": 1,
+        "version": package_version,
+        "provider": "calibrated_explanations",
+        "capabilities": ["plot:renderer"],
+        "dependencies": (),
+        "trusted": True,
+        "trust": {"trusted": True},
+        "output_formats": ["png", "svg", "pdf"],
+        "supports_interactive": False,
+    }
+
+    def render(
+        self, artifact: Mapping[str, Any], *, context: PlotRenderContext
+    ) -> PlotRenderResult:
+        """Render a PlotSpec artefact via the matplotlib adapter."""
+        from ..viz.matplotlib_adapter import render as render_plotspec
+
+        saved: list[str] = []
+        save_ext = context.save_ext
+        base_path = context.path
+
+        try:
+            if save_ext:
+                for ext in save_ext if isinstance(save_ext, (list, tuple)) else (save_ext,):
+                    target = f"{base_path}{ext}" if base_path else ext
+                    render_plotspec(artifact, show=False, save_path=target)
+                    saved.append(target)
+                if context.show:
+                    render_plotspec(artifact, show=True, save_path=None)
+            else:
+                render_plotspec(artifact, show=context.show, save_path=base_path)
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            raise RuntimeError(f"PlotSpec renderer failed: {exc}") from exc
+        return PlotRenderResult(artifact=artifact, figure=None, saved_paths=tuple(saved), extras={})
 
 def _register_builtins() -> None:
     """Register in-tree plugins with the shared registry."""
-
     register_interval_plugin("core.interval.legacy", LegacyIntervalCalibratorPlugin())
     register_interval_plugin("core.interval.fast", FastIntervalCalibratorPlugin())
 
@@ -495,12 +582,30 @@ def _register_builtins() -> None:
             "builder_id": "core.plot.legacy",
             "renderer_id": "core.plot.legacy",
             "fallbacks": (),
+            "legacy_compatible": True,
+            "is_default": False,
+            "default_for": (),
         },
     )
 
+    plotspec_builder = PlotSpecDefaultBuilder()
+    plotspec_renderer = PlotSpecDefaultRenderer()
+    register_plot_builder("core.plot.plot_spec.default", plotspec_builder)
+    register_plot_renderer("core.plot.plot_spec.default", plotspec_renderer)
+    register_plot_style(
+        "plot_spec.default",
+        metadata={
+            "style": "plot_spec.default",
+            "builder_id": "core.plot.plot_spec.default",
+            "renderer_id": "core.plot.plot_spec.default",
+            "fallbacks": ("legacy",),
+            "legacy_compatible": True,
+            "is_default": True,
+            "default_for": ("global",),
+        },
+    )
 
 _register_builtins()
-
 
 __all__ = [
     "LegacyIntervalCalibratorPlugin",
@@ -510,5 +615,7 @@ __all__ = [
     "FastExplanationPlugin",
     "LegacyPlotBuilder",
     "LegacyPlotRenderer",
+    "PlotSpecDefaultBuilder",
+    "PlotSpecDefaultRenderer",
     "LegacyPredictBridge",
 ]

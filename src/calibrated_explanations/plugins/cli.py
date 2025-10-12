@@ -1,5 +1,4 @@
 """Command-line helpers for inspecting and managing explainer plugins."""
-
 from __future__ import annotations
 
 import argparse
@@ -22,6 +21,7 @@ _KIND_CHOICES = ("explanations", "intervals", "plots", "all")
 
 
 def _string_tuple(value: Any) -> Sequence[str]:
+    """Normalize arbitrary metadata values into a tuple of strings."""
     if value is None:
         return ()
     if isinstance(value, str):
@@ -36,17 +36,20 @@ def _string_tuple(value: Any) -> Sequence[str]:
 
 
 def _emit_header(title: str) -> None:
+    """Print a section header for CLI output."""
     print(title)
     print("=" * len(title))
 
 
 def _format_common_metadata(metadata: Mapping[str, Any]) -> str:
+    """Render a concise key summary for plugin metadata dictionaries."""
     name = metadata.get("name", "<unnamed>")
     schema = metadata.get("schema_version", "?")
     return f"name={name}, schema_version={schema}"
 
 
 def _emit_explanation_descriptor(descriptor) -> None:
+    """Display an explanation plugin descriptor in human-readable form."""
     meta = descriptor.metadata
     modes = ", ".join(_string_tuple(meta.get("modes"))) or "-"
     tasks = ", ".join(_string_tuple(meta.get("tasks"))) or "-"
@@ -62,6 +65,7 @@ def _emit_explanation_descriptor(descriptor) -> None:
 
 
 def _emit_interval_descriptor(descriptor) -> None:
+    """Display an interval calibrator descriptor for the CLI."""
     meta = descriptor.metadata
     modes = ", ".join(_string_tuple(meta.get("modes"))) or "-"
     deps = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
@@ -71,15 +75,27 @@ def _emit_interval_descriptor(descriptor) -> None:
 
 
 def _emit_plot_descriptor(descriptor) -> None:
+    """Display a plot style descriptor along with fallback details."""
     meta = descriptor.metadata
     builder = meta.get("builder_id", "-")
     renderer = meta.get("renderer_id", "-")
     fallbacks = ", ".join(_string_tuple(meta.get("fallbacks"))) or "-"
     print(f"  - {descriptor.identifier} (style)")
     print(f"    builder={builder}; renderer={renderer}; fallbacks={fallbacks}")
+    extras: list[str] = []
+    if "is_default" in meta:
+        extras.append(f"is_default={'yes' if meta.get('is_default') else 'no'}")
+    if "legacy_compatible" in meta:
+        extras.append(f"legacy_compatible={'yes' if meta.get('legacy_compatible') else 'no'}")
+    default_for = ", ".join(_string_tuple(meta.get("default_for"))) or ""
+    if default_for:
+        extras.append(f"default_for={default_for}")
+    if extras:
+        print(f"    {'; '.join(extras)}")
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
+    """Handle the `plugins list` subcommand."""
     kind = args.kind
     trusted_only = args.trusted_only
 
@@ -118,6 +134,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
 
 
 def _cmd_show(args: argparse.Namespace) -> int:
+    """Handle the `plugins show` subcommand."""
     identifier = args.identifier
     kind = args.kind
     if kind == "explanations":
@@ -141,6 +158,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
 
 
 def _cmd_trust(args: argparse.Namespace) -> int:
+    """Handle the `plugins trust|untrust` subcommand."""
     identifier = args.identifier
     if args.action == "trust":
         descriptor = mark_explanation_trusted(identifier)
@@ -152,6 +170,7 @@ def _cmd_trust(args: argparse.Namespace) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run the plugin CLI entry point and return the exit code."""
     parser = argparse.ArgumentParser(
         description="Inspect and manage calibrated_explanations plugin metadata",
     )

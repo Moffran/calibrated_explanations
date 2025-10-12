@@ -1,13 +1,9 @@
-"""Explainer plugin interfaces and registry.
+"""Plugin interfaces, registry utilities, and in-tree plugin registrations.
 
-This subpackage exposes core plugin protocols and registry utilities covering
-explanation, interval, and plotting integrations. The foundational
-``ExplainerPlugin`` protocol and ``validate_plugin_meta`` helper derive from
-ADR-006, while ADR-013/ADR-014/ADR-015 extend the surface with richer
-contracts for calibrated explanations.
-
-Security note: Registering/using third-party plugins executes arbitrary code.
-Only use plugins you trust. This API is opt-in and intentionally explicit.
+The package exposes protocol definitions (`base`, `explanations`, `intervals`,
+`plots`) plus the shared registry machinery described in ADR-006/013/014/015.
+Importing this module eagerly registers the built-in plugins so callers simply
+need to `import calibrated_explanations.plugins` before resolving identifiers.
 """
 
 # Eagerly register in-tree plugins so they are available without explicit import

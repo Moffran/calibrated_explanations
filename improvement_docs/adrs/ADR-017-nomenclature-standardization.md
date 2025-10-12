@@ -8,7 +8,7 @@ Repeated refactors have left the package with a patchwork of naming schemes. Mix
 
 ## Decision
 
-Adopt the following naming standards for all **non-public** code paths (tests and tooling included) while keeping the public API stable:
+Adopt the following naming standards for all **non-public** code paths (tests and tooling included) while keeping the public API stable, explicitly preserving the WrapCalibratedExplainer contract (fit/calibrate/explain/predict routines, plotting helpers, and uncertainty/threshold options) without renames or deprecation notices:
 
 1. **Module and package names** must use `snake_case`. Leading underscores are reserved for private transitional modules that are scheduled for removal. CamelCase file names are prohibited.
 2. **Class names** use `PascalCase`; helper classes intended for local use should include a suffix clarifying scope (e.g. `...Helper`, `...Mixin`).
@@ -34,11 +34,20 @@ Adopt the following naming standards for all **non-public** code paths (tests an
 
 ## Status tracking
 
-- 2025-10-06 – Ratified as **Accepted** following maintainer sign-off; preparatory
-  guardrails scheduled for the v0.7.0 release to begin enforcing the conventions.
-- Upcoming – Initial lint guardrails (Ruff module-naming checks, double underscore
-  detectors) and contributor style excerpts land alongside documentation updates
-  so that new contributions adhere to the standard by default.
-- Acceptance notes recorded for v0.7.0 staging: contributor quick
-  reference published in `CONTRIBUTING.md` and CI now surfaces Ruff naming
-  warnings to track adoption without blocking merges.
+- 2025-10-06 – Ratified as **Accepted** following maintainer sign-off with
+  preparatory guardrails targeting the v0.7.0 milestone.
+- v0.7.0 – Ruff naming checks and double-underscore detectors run in
+  non-blocking mode, CONTRIBUTING.md gains the quick-reference guide, and
+  telemetry captures naming lint drift to size the remaining debt.
+- v0.8.0 – Phase 2 renames move priority packages to canonical names with
+  shims captured under `legacy/`, and CI surfaces warnings when new
+  aliases appear outside the allowed namespace.
+- v0.9.0 – Deprecated shims scheduled for removal are pruned, naming lint
+  promotion to blocking status is completed on the release branch, and
+  release notes document the surviving compatibility shims.
+- v1.0.0-rc – Remaining transitional imports are removed, and the release
+  candidate checklist verifies lint parity between `main` and the RC
+  branch before freeze.
+- v1.0.0 – Post-tag monitoring keeps the naming lint suite blocking and
+  schedules quarterly audits of the legacy namespace to guard against
+  regressions.

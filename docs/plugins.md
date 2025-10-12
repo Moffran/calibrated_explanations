@@ -75,6 +75,28 @@ can align calibrators (`interval_dependency`) and preferred renderers
 `CalibratedExplainer.runtime_telemetry` and attaches the same payload to
 returned `CalibratedExplanations` collections for downstream telemetry.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1006-L1099】
 
+### Telemetry payloads
+
+Every call to `explain_*`, `predict`, or `predict_proba` refreshes the telemetry
+dictionary returned by `CalibratedExplainer.runtime_telemetry` and attached to
+the explanation collection. The payload mirrors the v0.8.0 data model:
+
+| Key                | Description                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `mode` / `task`    | Explanation mode (`factual`, `alternative`, `fast`) and learner task (`classification`/`regression`). |
+| `interval_source`  | The identifier of the interval calibrator that produced the uncertainty bounds.            |
+| `proba_source`     | Source identifier for calibrated probabilities (often the same as `interval_source`).      |
+| `plot_source`      | The plot style that rendered the figure (defaults to `plot_spec.default.*`).                |
+| `plot_fallbacks`   | Ordered tuple of plot style fallbacks (e.g. `("plot_spec.default.factual", "legacy")`).     |
+| `interval_dependencies` | Tuple of interval plugin hints propagated from explanation metadata.                  |
+| `uncertainty`      | Structured CE interval object containing calibrated value, bounds, percentiles, threshold metadata, and the backward-compatible `legacy_interval`. |
+| `rules`            | Per-feature rule telemetry (factual and alternative) including feature-level uncertainty.  |
+| `preprocessor`     | ADR-009 snapshot describing preprocessing (auto-encode policy, transformer id, optional mapping snapshot). |
+
+Downstream services can therefore audit which plugin branches executed, confirm
+PlotSpec routing versus legacy fallbacks, and capture preprocessing provenance
+without probing runtime internals.【F:calibrated-explanations/specs/v0.8.0/data-model.md†L93-L142】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1098-L1138】
+
 ### CLI helpers
 
 The registry ships with a small CLI that surfaces this metadata:
@@ -89,7 +111,10 @@ ce.plugins untrust <id>        # revoke trust for an explanation plugin
 `list` accepts an optional category (`explanations`, `intervals`, `plots`, or
 `all`) and a `--trusted-only` flag to focus on pre-authorised plugins. Output
 includes dependency fields so operators can spot missing interval or plot
-adapters before running large jobs.【F:src/calibrated_explanations/plugins/cli.py†L15-L145】
+adapters before running large jobs. Plot listings now surface
+`is_default`, `legacy_compatible`, and `default_for` metadata so the active
+PlotSpec default is discoverable at the CLI (JSON output includes the same
+fields for automation-friendly consumption).【F:src/calibrated_explanations/plugins/cli.py†L15-L145】
 
 ## Runtime validation & compatibility
 
@@ -151,7 +176,7 @@ now emit deprecation warnings and are normalised to canonical mode names. During
 migration, explanation and plotting APIs retain a `use_legacy=True` escape hatch
 that forces the original renderers; plugin metadata can also specify fallbacks to
 `legacy` builders to replicate prior behaviour until custom adapters are
-available.【F:src/calibrated_explanations/plugins/registry.py†L41-L170】【F:src/calibrated_explanations/_plots.py†L278-L559】
+available.【F:src/calibrated_explanations/plugins/registry.py†L41-L170】【F:src/calibrated_explanations/plotting.py†L278-L559】
 
 The default in-tree plugins (`core.explanation.factual`, `core.explanation.fast`,
 `core.interval.fast`, etc.) remain trusted and provide parity with historical
