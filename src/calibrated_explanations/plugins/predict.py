@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
 
-
 @runtime_checkable
 class PredictBridge(Protocol):
     """Protocol describing calibrated prediction helpers.
@@ -44,7 +43,6 @@ class PredictBridge(Protocol):
             Calibrated task identifier (``"classification"`` or
             ``"regression"``).
         """
-
     def predict_interval(
         self,
         x: Any,
@@ -58,9 +56,6 @@ class PredictBridge(Protocol):
         intentionally loose so that downstream plugins can translate it into
         their preferred artefacts.
         """
-
     def predict_proba(self, x: Any, bins: Any | None = None) -> Sequence[Any]:
         """Return calibrated probability estimates for *x* when available."""
-
-
 __all__ = ["PredictBridge"]

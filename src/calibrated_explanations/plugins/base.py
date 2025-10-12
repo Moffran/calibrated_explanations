@@ -1,35 +1,4 @@
-"""Plugin base interfaces (ADR-006 skeleton).
-
-Minimal interfaces to support a registry of third-party explainers. This is an
-opt-in surface; users should understand that loading external plugins executes
-arbitrary code. We will document risks and keep the registry explicit.
-
-Contract (v0.1, unstable):
-- Each plugin module exposes a ``plugin_meta`` dict with at least::
-
-      {
-          "schema_version": int,
-          "capabilities": Sequence[str],
-          "name": str,
-          "version": str,
-          "provider": str,
-      }
-
-  Optional integrity metadata can include a ``checksum`` entry (currently
-  SHA256). Plugins must also surface a ``trusted`` boolean so the registry can
-  enforce ADR-006's opt-in trust model. Older plugins that only expose the
-  ``trust`` key continue to be normalised for backwards compatibility.
-- Each plugin exposes two callables::
-
-      supports(model) -> bool
-      explain(model, x, **kwargs) -> Any  # typically an Explanation or legacy dict
-
-This mirrors ADR-006 minimal capability metadata and keeps behaviour opt-in.
-
-ADR-015 refines this layer with dedicated explanation, interval, and plotting
-protocols. They build on the lightweight ``PluginMeta`` typing alias and the
-validation helper exported from this module.
-"""
+"""Base plugin protocols and metadata validation helpers (ADR-006)."""
 
 from __future__ import annotations
 
@@ -40,31 +9,23 @@ try:  # Python < 3.10 compatibility
 except ImportError:  # pragma: no cover - fallback when TypeAlias is unavailable
     TypeAlias = object  # type: ignore[assignment]
 
-
 PluginMeta: TypeAlias = Mapping[str, Any]
 
-
 class ExplainerPlugin(Protocol):
-    """Protocol for explainer plugins.
-
-    Implementations are expected to provide:
-    - plugin_meta: Dict[str, Any]
-    - supports(model) -> bool
-    - explain(model, x, **kwargs) -> Any
-    """
+    """Protocol describing the minimal explainer plugin contract."""
 
     plugin_meta: PluginMeta
 
     def supports(self, model: Any) -> bool:  # pragma: no cover - protocol
+        """Return whether this plugin can operate on the supplied model."""
         ...
 
     def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:  # pragma: no cover - protocol
+        """Produce an explanation for ``model`` and feature matrix ``x``."""
         ...
-
 
 def _ensure_sequence_of_strings(value: Any, *, key: str) -> Sequence[str]:
     """Return *value* as a sequence of strings or raise ``ValueError``."""
-
     if isinstance(value, str) or not isinstance(value, Iterable):
         raise ValueError(f"plugin_meta[{key!r}] must be a sequence of strings")
 
@@ -79,10 +40,8 @@ def _ensure_sequence_of_strings(value: Any, *, key: str) -> Sequence[str]:
         raise ValueError(f"plugin_meta[{key!r}] must not be empty")
     return tuple(result)
 
-
 def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     """Validate minimal plugin metadata required by ADR-006."""
-
     if not isinstance(meta, dict):
         raise ValueError("plugin_meta must be a dict")
 
@@ -122,6 +81,5 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     else:
         # Default to False for clarity; registry callers can still override.
         meta["trusted"] = False
-
 
 __all__ = ["ExplainerPlugin", "validate_plugin_meta"]

@@ -9,6 +9,13 @@
 
 ### Changed
 
+- Promoted PlotSpec rendering to the canonical pipeline by introducing the
+  snake_case `calibrated_explanations.plotting` module, moving legacy
+  Matplotlib helpers into `legacy/plotting.py`, and keeping `_plots*` only as
+  warning shims to satisfy ADR-017 phase-two renames. Runtime and tests now
+  import from the new modules, and telemetry records the PlotSpec defaults for
+  auditability.
+
 ### Fixed
 
 ## [v0.7.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.7.0) - 2025-10-07
@@ -34,6 +41,11 @@
   configuration knobs, and plugin telemetry expectations.
 
 ### Docs
+
+- README Quick Start and `docs/plugins.md` now demonstrate PlotSpec-first
+  plotting, telemetry inspection (including preprocess metadata), and the
+  enhanced `ce.plugins` CLI output, folding the guardrail narrative into the
+  user-facing docs for the v0.8.0 release.
 
 - ADR-013 and ADR-015 marked Accepted with implementation notes summarising the
   registry-backed runtime.

@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from calibrated_explanations import _plots
+from calibrated_explanations import plotting as _plots
 
 
 class _FakeExplanation:

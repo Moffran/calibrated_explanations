@@ -1,6 +1,6 @@
 # pylint: disable=unknown-option-value
 # pylint: disable=too-many-lines, too-many-arguments, invalid-name, too-many-positional-arguments, line-too-long
-"""This module contains classes for storing and visualizing individual calibrated explanations.
+"""Module containing classes for storing and visualizing calibrated explanations.
 
 Classes:
     :class:`.CalibratedExplanation`:
@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 from pandas import Categorical
 
-from .._plots import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
+from ..plotting import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 from ..utils.discretizers import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
@@ -353,10 +353,14 @@ class CalibratedExplanation(ABC):
 
     @abstractmethod
     def _check_preconditions(self):
+        """Validate that required explanation inputs and state are available."""
+
         pass
 
     @abstractmethod
     def _get_rules(self):
+        """Populate the underlying rule structures when first accessed."""
+
         pass
 
     def reset(self):
@@ -818,6 +822,8 @@ class CalibratedExplanation(ABC):
 
     @abstractmethod
     def _is_lesser(self, rule_boundary, instance_value):
+        """Return True when an instance value satisfies a 'less than' rule boundary."""
+
         pass
 
     # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-return-statements
@@ -1111,6 +1117,8 @@ class FactualExplanation(CalibratedExplanation):
         return "\n".join(output) + "\n"
 
     def _check_preconditions(self):
+        """Warn when the selected discretizer is incompatible with factual explanations."""
+
         if self.is_regression():
             if not isinstance(self._get_explainer().discretizer, BinaryRegressorDiscretizer):
                 warnings.warn(
@@ -1304,6 +1312,8 @@ class FactualExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size - 1)
 
     def _is_lesser(self, rule_boundary, instance_value):
+        """Return whether `instance_value` falls below the provided rule boundary."""
+
         return instance_value < rule_boundary
 
     def plot(self, filter_top=None, **kwargs):
@@ -1340,6 +1350,7 @@ class FactualExplanation(CalibratedExplanation):
         """
         # Ensure style_override gets passed through
         style_override = kwargs.get("style_override")
+        plot_use_legacy = kwargs.get("use_legacy")
 
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
@@ -1427,6 +1438,7 @@ class FactualExplanation(CalibratedExplanation):
                 idx=self.index,
                 save_ext=save_ext,
                 style_override=style_override,
+                use_legacy=plot_use_legacy,
             )
         else:
             _plot_regression(
@@ -1444,6 +1456,7 @@ class FactualExplanation(CalibratedExplanation):
                 idx=self.index,
                 save_ext=save_ext,
                 style_override=style_override,
+                use_legacy=plot_use_legacy,
             )
 
 
@@ -1530,6 +1543,8 @@ class AlternativeExplanation(CalibratedExplanation):
         return "\n".join(output) + "\n"
 
     def _check_preconditions(self):
+        """Warn when the configured discretizer is unsuitable for alternative explanations."""
+
         if self.is_regression():
             if not isinstance(self._get_explainer().discretizer, RegressorDiscretizer):
                 warnings.warn(
@@ -1695,6 +1710,8 @@ class AlternativeExplanation(CalibratedExplanation):
         return self.rules
 
     def __set_up_result(self):
+        """Initialise the container used to build alternative explanation rules."""
+
         result = {
             "base_predict": [],
             "base_predict_low": [],
@@ -1810,8 +1827,9 @@ class AlternativeExplanation(CalibratedExplanation):
         self.rules = new_rules
         return self
 
-    # extract non-conjunctive rules
     def __extracted_non_conjunctive_rules(self, new_rules):
+        """Split out non-conjunctive rules while preserving the original mapping."""
+
         self.conjunctive_rules = MappingProxyType(new_rules)
         new_rules["predict"] = [
             value
@@ -2045,6 +2063,8 @@ class AlternativeExplanation(CalibratedExplanation):
         return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size - 1)
 
     def _is_lesser(self, rule_boundary, instance_value):
+        """Return whether the instance value exceeds the provided rule boundary."""
+
         return rule_boundary < instance_value
 
     # pylint: disable=consider-iterating-dictionary
@@ -2078,6 +2098,7 @@ class AlternativeExplanation(CalibratedExplanation):
         """
         # Ensure style_override gets passed through
         style_override = kwargs.get("style_override")
+        plot_use_legacy = kwargs.get("use_legacy")
 
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
@@ -2203,6 +2224,7 @@ class AlternativeExplanation(CalibratedExplanation):
             show=show,
             save_ext=save_ext,
             style_override=style_override,
+            use_legacy=plot_use_legacy,
         )
 
 
@@ -2287,7 +2309,7 @@ class FastExplanation(CalibratedExplanation):
         return "\n".join(output) + "\n"
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
-        """This method is currently not supported for `FastExplanation`, making this call result in no change.
+        """Warn that conjunctions are not supported for ``FastExplanation`` and perform no work.
 
         Parameters
         ----------
@@ -2307,6 +2329,8 @@ class FastExplanation(CalibratedExplanation):
         # pass
 
     def _is_lesser(self, rule_boundary, instance_value):
+        """Return False as fast explanations do not support ordered rule comparisons."""
+
         pass
 
     def add_new_rule_condition(self, feature, rule_boundary):
@@ -2323,6 +2347,8 @@ class FastExplanation(CalibratedExplanation):
         # pass
 
     def _check_preconditions(self):
+        """Provide a placeholder hook; FAST explanations require no extra checks."""
+
         pass
 
     # pylint: disable=too-many-statements, too-many-branches
@@ -2438,6 +2464,7 @@ class FastExplanation(CalibratedExplanation):
         """
         # Ensure style_override gets passed through
         style_override = kwargs.get("style_override")
+        plot_use_legacy = kwargs.get("use_legacy")
 
         filename = kwargs.get("filename", "")
         show = kwargs.get("show", filename == "")
@@ -2525,6 +2552,7 @@ class FastExplanation(CalibratedExplanation):
                 idx=self.index,
                 save_ext=save_ext,
                 style_override=style_override,
+                use_legacy=plot_use_legacy,
             )
         else:
             _plot_regression(
@@ -2542,4 +2570,5 @@ class FastExplanation(CalibratedExplanation):
                 idx=self.index,
                 save_ext=save_ext,
                 style_override=style_override,
+                use_legacy=plot_use_legacy,
             )

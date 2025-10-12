@@ -32,7 +32,6 @@ def legacy_to_domain(idx: int, payload: Mapping[str, Any]) -> models.Explanation
     Explanation
         Domain model representation of the explanation.
     """
-
     return models.from_legacy_dict(idx, payload)
 
 
@@ -52,7 +51,6 @@ def domain_to_legacy(exp: models.Explanation) -> Dict[str, Any]:
     - Only fields represented in the domain model will be populated; additional
       legacy fields not modeled today are intentionally omitted.
     """
-
     out: Dict[str, Any] = {
         "task": exp.task,
         "prediction": dict(exp.prediction),

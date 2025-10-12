@@ -187,5 +187,6 @@ def test_build_plot_style_chain_includes_pyproject_entries():
     assert chain == (
         "tests.plot.pyproject",
         "tests.plot.secondary",
+        "plot_spec.default",
         "legacy",
     )

@@ -32,12 +32,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self, calibrated_explainer, x, y_threshold, bins, features_to_ignore=None
     ) -> None:
-        """A class for storing and visualizing calibrated explanations.
-
-        This class is created by :class:`.CalibratedExplainer` and provides methods for managing
-        and accessing explanations for test instances.
-
-        Initialize the CalibratedExplanations object.
+        """Initialize the explanation collection for a calibrated explainer.
 
         Parameters
         ----------
@@ -155,7 +150,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def to_batch(self):
         """Serialise the collection into an :class:`ExplanationBatch`."""
-
         from ..plugins.builtins import _collection_to_batch  # lazy import
 
         return _collection_to_batch(self)
@@ -163,7 +157,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_batch(cls, batch):
         """Reconstruct a collection from an :class:`ExplanationBatch`."""
-
         container = batch.collection_metadata.get("container")
         if container is None:
             raise ValueError("ExplanationBatch is missing container metadata")
@@ -173,7 +166,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     @property
     def prediction_interval(self) -> List[Tuple[Optional[float], Optional[float]]]:
-        """Get the prediction intervals from each prediction.
+        """Return the prediction intervals for each explanation.
 
         Returns
         -------
@@ -184,7 +177,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     @property
     def predict(self) -> List[Any]:
-        """Get the predictions from each prediction.
+        """Return the scalar prediction for every explanation.
 
         Returns
         -------
@@ -196,6 +189,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     # ---- Rich baseline exposure (Phase 1A golden snapshot enrichment) ----
     @property
     def feature_names(self):  # consistent naming with underlying explainer
+        """Return cached feature names sourced from the underlying explainer."""
         if self._feature_names_cache is None:
             # Underlying FrozenCalibratedExplainer exposes feature_names via original explainer
             try:
@@ -206,6 +200,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     @property
     def class_labels(self):
+        """Return class labels for classification explanations if available."""
         if self._class_labels_cache is None:
             try:
                 labels = getattr(self.calibrated_explainer._explainer, "class_labels", None)  # noqa: SLF001
@@ -230,6 +225,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     @property
     def probabilities(self):  # classification only
+        """Return cached probability matrices for classification explanations."""
         if self._probabilities_cache is None:
             try:
                 # Each explanation may store:
@@ -254,6 +250,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     @property
     def lower(self):  # regression only
+        """Return cached lower bounds for regression prediction intervals."""
         if self._lower_cache is None:
             try:
                 lows = [
@@ -267,6 +264,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     @property
     def upper(self):  # regression only
+        """Return cached upper bounds for regression prediction intervals."""
         if self._upper_cache is None:
             try:
                 highs = [
@@ -404,6 +402,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         return self
 
     def __convert_to_alternative_explanations(self) -> "AlternativeExplanations":
+        """Return an ``AlternativeExplanations`` view sharing this collection's backing data."""
+
         alternative_explanations = AlternativeExplanations.__new__(AlternativeExplanations)
         alternative_explanations.__dict__.update(self.__dict__)
         return alternative_explanations
@@ -454,11 +454,13 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self.total_explain_time = time() - total_time if total_time is not None else None
 
     def _get_explainer(self):
-        # """get the explainer object
-        # """
+        """Return the underlying :class:`~calibrated_explanations.core.calibrated_explainer.CalibratedExplainer` instance."""
+
         return self.calibrated_explainer
 
     def _get_rules(self):
+        """Return the materialised rule payload for each explanation in the collection."""
+
         return [
             # pylint: disable=protected-access
             explanation._get_rules()
@@ -532,13 +534,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         return self.explanations[index]
 
     def _is_alternative(self):
-        # '''The function checks if the explanations are alternatives by checking if the `discretizer` attribute of the `calibrated_explainer` object is an
-        # instance of either `DecileDiscretizer` or `EntropyDiscretizer`.
+        """Return True when the collection represents an alternative explanation workflow."""
 
-        # Returns
-        # -------
-        #     a boolean value indicating whether the explanations are alternatives.
-        # '''
         return isinstance(
             self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer)
         )

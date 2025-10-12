@@ -32,7 +32,7 @@ from crepes import ConformalClassifier
 from crepes.extras import hinge
 from sklearn.metrics import confusion_matrix
 
-from .._plots import _plot_global
+from ..plotting import _plot_global
 from .._venn_abers import VennAbers
 from ..explanations import AlternativeExplanations, CalibratedExplanations
 from ..utils.discretizers import (
@@ -243,6 +243,11 @@ class CalibratedExplainer:
         """
         init_time = time()
         self.__initialized = False
+        preprocessor_metadata = kwargs.pop("preprocessor_metadata", None)
+        if isinstance(preprocessor_metadata, Mapping):
+            self._preprocessor_metadata: Dict[str, Any] | None = dict(preprocessor_metadata)
+        else:
+            self._preprocessor_metadata = None
         check_is_fitted(learner)
         self.learner = learner
         self.predict_function = kwargs.get("predict_function")
@@ -514,7 +519,6 @@ class CalibratedExplainer:
         if isinstance(py_value, str) and py_value:
             entries.append(py_value)
         entries.extend(_coerce_string_tuple(py_settings.get("style_fallbacks")))
-
         entries.append("legacy")
         seen: set[str] = set()
         ordered: List[str] = []
@@ -522,6 +526,14 @@ class CalibratedExplainer:
             if identifier and identifier not in seen:
                 ordered.append(identifier)
                 seen.add(identifier)
+        if "plot_spec.default" not in seen:
+            if "legacy" in ordered:
+                legacy_index = ordered.index("legacy")
+                ordered.insert(legacy_index, "plot_spec.default")
+            else:
+                ordered.append("plot_spec.default")
+        if "legacy" not in ordered:
+            ordered.append("legacy")
         return tuple(ordered)
 
     def _ensure_interval_runtime_state(self) -> None:
@@ -1117,6 +1129,9 @@ class CalibratedExplainer:
             "interval_dependencies",
             tuple(self._interval_plugin_hints.get(mode, ())),
         )
+        preprocessor_meta = self.preprocessor_metadata
+        if preprocessor_meta:
+            metadata.setdefault("preprocessor", preprocessor_meta)
         plot_chain = self._plot_plugin_fallbacks.get(mode)
         if plot_chain:
             metadata.setdefault("plot_fallbacks", tuple(plot_chain))
@@ -1129,6 +1144,8 @@ class CalibratedExplainer:
             "plot_source": metadata.get("plot_source"),
             "plot_fallbacks": tuple(plot_chain or ()),
         }
+        if preprocessor_meta:
+            telemetry_payload["preprocessor"] = preprocessor_meta
         self._last_telemetry = dict(telemetry_payload)
         if monitor is not None and not monitor.used:
             raise ConfigurationError(
@@ -1156,6 +1173,20 @@ class CalibratedExplainer:
     def runtime_telemetry(self) -> Mapping[str, Any]:
         """Return the most recent telemetry payload reported by the explainer."""
         return dict(self._last_telemetry)
+
+    @property
+    def preprocessor_metadata(self) -> Dict[str, Any] | None:
+        """Return the telemetry-safe preprocessing snapshot if available."""
+        if self._preprocessor_metadata is None:
+            return None
+        return dict(self._preprocessor_metadata)
+
+    def set_preprocessor_metadata(self, metadata: Mapping[str, Any] | None) -> None:
+        """Update the stored preprocessing metadata snapshot."""
+        if metadata is None:
+            self._preprocessor_metadata = None
+        else:
+            self._preprocessor_metadata = dict(metadata)
 
     @property
     def x_cal(self):

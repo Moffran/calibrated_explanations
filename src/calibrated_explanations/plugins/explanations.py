@@ -25,7 +25,6 @@ from ..explanations.explanations import CalibratedExplanations
 from .base import ExplainerPlugin, PluginMeta
 from .predict import PredictBridge
 
-
 @dataclass(frozen=True)
 class ExplanationContext:
     """Frozen request-independent context shared with explanation plugins."""
@@ -41,7 +40,6 @@ class ExplanationContext:
     interval_settings: Mapping[str, object]
     plot_settings: Mapping[str, object]
 
-
 @dataclass(frozen=True)
 class ExplanationRequest:
     """Frozen context for a specific explanation batch request."""
@@ -52,7 +50,6 @@ class ExplanationRequest:
     features_to_ignore: Sequence[int]
     extras: Mapping[str, object]
 
-
 @dataclass
 class ExplanationBatch:
     """Batch payload returned by ``ExplanationPlugin.explain_batch``."""
@@ -62,7 +59,6 @@ class ExplanationBatch:
     instances: Sequence[Mapping[str, Any]]
     collection_metadata: MutableMapping[str, Any]
 
-
 @runtime_checkable
 class ExplanationPlugin(ExplainerPlugin, Protocol):
     """Extended protocol for explanation plugins."""
@@ -71,14 +67,10 @@ class ExplanationPlugin(ExplainerPlugin, Protocol):
 
     def supports_mode(self, mode: str, *, task: str) -> bool:
         """Return ``True`` when the plugin supports *mode* for *task*."""
-
     def initialize(self, context: ExplanationContext) -> None:
         """Initialise the plugin with immutable runtime *context*."""
-
     def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
         """Produce an :class:`ExplanationBatch` for payload *x*."""
-
-
 __all__ = [
     "ExplanationBatch",
     "ExplanationContext",
@@ -88,7 +80,6 @@ __all__ = [
     "validate_explanation_batch",
 ]
 
-
 def validate_explanation_batch(
     batch: ExplanationBatch,
     *,
@@ -96,14 +87,28 @@ def validate_explanation_batch(
     expected_task: str | None = None,
 ) -> ExplanationBatch:
     """Validate runtime contracts for ``ExplanationBatch`` payloads."""
-
     if not isinstance(batch, ExplanationBatch):
         raise TypeError("explanation plugins must return an ExplanationBatch instance")
 
     container_cls = batch.container_cls
     if not isinstance(container_cls, type):
         raise TypeError("batch.container_cls must be a class")
-    if not issubclass(container_cls, CalibratedExplanations):
+
+    def _inherits_calibrated_explanations(cls: type) -> bool:
+        try:
+            if issubclass(cls, CalibratedExplanations):
+                return True
+        except TypeError:
+            return False
+        # Fall back to name-based check in case multiple module copies exist (e.g. notebooks)
+        for base in getattr(cls, "__mro__", ()):
+            if base is cls:
+                continue
+            if base.__name__ == "CalibratedExplanations":
+                return True
+        return False
+
+    if not _inherits_calibrated_explanations(container_cls):
         raise TypeError("batch.container_cls must inherit from CalibratedExplanations")
 
     explanation_cls = batch.explanation_cls

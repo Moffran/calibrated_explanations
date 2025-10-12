@@ -4,7 +4,7 @@ import importlib
 pytest.importorskip("matplotlib")
 
 # dynamic import after optional dependency check
-_plots = importlib.import_module("calibrated_explanations._plots")
+_plots = importlib.import_module("calibrated_explanations.plotting")
 
 
 def test_plot_proba_triangle_returns_fig():

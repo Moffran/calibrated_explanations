@@ -139,7 +139,9 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
 
         context = explainer._explanation_contexts["factual"]
         assert context.interval_settings["dependencies"] == ("core.interval.legacy",)
-        assert context.plot_settings["fallbacks"] == ("legacy",)
+        fallbacks = context.plot_settings["fallbacks"]
+        assert "legacy" in fallbacks
+        assert "plot_spec.default" in fallbacks
     finally:
         unregister(plugin)
 
@@ -189,7 +191,9 @@ def test_fast_mode_plugin_matches_legacy(binary_dataset):
 
     context = explainer._explanation_contexts["fast"]
     assert context.interval_settings["dependencies"] == ("core.interval.fast",)
-    assert context.plot_settings["fallbacks"] == ("legacy",)
+    fast_fallbacks = context.plot_settings["fallbacks"]
+    assert "legacy" in fast_fallbacks
+    assert "plot_spec.default" in fast_fallbacks
 
     monitor = explainer._bridge_monitors["fast"]
     assert monitor.used

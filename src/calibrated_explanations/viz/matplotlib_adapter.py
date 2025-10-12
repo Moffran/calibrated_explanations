@@ -12,9 +12,9 @@ import math
 
 import numpy as np
 
-from .._plots import _MATPLOTLIB_IMPORT_ERROR  # noqa: F401  (exported indirectly)
-from .._plots import __require_matplotlib as _require_mpl  # reuse lazy guard
-from .._plots import __setup_plot_style as _setup_style
+from ..plotting import _MATPLOTLIB_IMPORT_ERROR  # noqa: F401  (exported indirectly)
+from ..plotting import __require_matplotlib as _require_mpl  # reuse lazy guard
+from ..plotting import __setup_plot_style as _setup_style
 from .coloring import get_fill_color
 from .plotspec import BarHPanelSpec, PlotSpec
 

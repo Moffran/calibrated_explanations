@@ -1,0 +1,36 @@
+Docstring coverage snapshot (2025-10-10)
+========================================
+
+Command: `python3 scripts/check_docstring_coverage.py`
+
+- Overall (src/calibrated_explanations)
+  * Modules   : 47/47  (100.00%)
+  * Classes   : 67/68  ( 98.53%)
+  * Functions : 166/175 ( 94.86%)
+  * Methods   : 319/346 ( 92.20%)
+  * Overall   : 94.18%
+
+- Explanations package (`src/calibrated_explanations/explanations`)
+  * Modules   : 5/5   (100.00%)
+  * Classes   : 9/9   (100.00%)
+  * Functions : 3/3   (100.00%)
+  * Methods   : 135/135 (100.00%)
+  * Overall   : 100.00%
+
+- Perf package (`src/calibrated_explanations/perf`)
+  * Modules   : 3/3   (100.00%)
+  * Classes   : 4/4   (100.00%)
+  * Functions : 3/3   (100.00%)
+  * Methods   : 9/9   (100.00%)
+  * Overall   : 100.00%
+
+- Plugins package (`src/calibrated_explanations/plugins`)
+  * Modules   : 9/9   (100.00%)
+  * Classes   : 30/30 (100.00%)
+  * Functions : 79/79 (100.00%)
+  * Methods   : 42/42 (100.00%)
+  * Overall   : 100.00%
+
+Notes:
+- Achieves ADR-018 guardrail of ≥90% coverage for documentation-critical packages.
+- Residual gaps reside in shared utility modules slated for Phase 3 remediation.
