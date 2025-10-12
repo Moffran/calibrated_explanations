@@ -47,8 +47,8 @@ extensions = [
     "myst_parser",
 ]
 
-# Avoid importing LaTeX builder on environments missing optional deps
-latex_engine = None
+# Use the default LaTeX engine to keep Sphinx config validation happy even when we only build HTML
+latex_engine = "pdflatex"
 latex_elements = {}
 
 # The master toctree document
