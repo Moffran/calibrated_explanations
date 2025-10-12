@@ -45,11 +45,20 @@ extensions = [
     "numpydoc",
     "nbsphinx",
     "myst_parser",
+    "sphinxcontrib.mermaid",
 ]
 
 # Use the default LaTeX engine to keep Sphinx config validation happy even when we only build HTML
 latex_engine = "pdflatex"
 latex_elements = {}
+
+# Treat custom section headers used in legacy docstrings as recognised by numpydoc
+numpydoc_custom_sections = [
+    ("Rules", "Parameters"),
+    ("Warning", "Warnings"),
+]
+# Avoid generating autosummary stubs for every class member; keeps Sphinx -W builds clean
+numpydoc_class_members_toctree = False
 
 # The master toctree document
 master_doc = "index"
@@ -70,6 +79,12 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # Pygments style for syntax highlighting
 pygments_style = "sphinx"
+
+# Enable extended MyST features for directive fences (e.g. mermaid diagrams)
+myst_enable_extensions = [
+    "colon_fence",
+    "linkify",
+]
 
 # -- Options for HTML output -------------------------------------------------
 

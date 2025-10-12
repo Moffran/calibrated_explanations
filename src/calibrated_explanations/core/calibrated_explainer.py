@@ -3122,7 +3122,7 @@ class CalibratedExplainer:
             Additional parameters to customize the explanation process. Supported parameters include:
 
             - threshold : float, int, or array-like of shape (n_samples,), optional, default=None
-                Specifies the threshold(s) to get a thresholded prediction for regression tasks (prediction labels: `y_hat<=threshold-value` | `y_hat>threshold-value`). This parameter is ignored for classification tasks.
+                Specifies the threshold(s) to get a thresholded prediction for regression tasks (prediction labels such as ``y_hat <= threshold`` or ``y_hat > threshold``). This parameter is ignored for classification tasks.
 
             - low_high_percentiles : tuple of two floats, optional, default=(5, 95)
                 The lower and upper percentiles used to calculate the prediction interval for regression tasks. Determines the breadth of the interval based on the distribution of the predictions. This parameter is ignored for classification tasks.
@@ -3138,9 +3138,9 @@ class CalibratedExplainer:
         Returns
         -------
         calibrated_prediction : float or array-like, or str
-            The calibrated prediction. For regression tasks, this is the median of the conformal predictive system or a thresholded prediction if `threshold`is set. For classification tasks, it is the class label with the highest calibrated probability.
+            The calibrated prediction. For regression tasks, this is the median of the conformal predictive system or a thresholded prediction if ``threshold`` is set. For classification tasks, it is the class label with the highest calibrated probability.
         interval : tuple of floats, optional
-            A tuple (low, high) representing the lower and upper bounds of the uncertainty interval. This is returned only if `uq_interval=True`.
+            A tuple (low, high) representing the lower and upper bounds of the uncertainty interval. This is returned only if ``uq_interval=True``.
 
         Examples
         --------

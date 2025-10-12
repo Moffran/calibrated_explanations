@@ -1,5 +1,5 @@
 Calibrated Explanations documentation
-====================================
+======================================
 
 Calibrated Explanations delivers uncertainty-aware feature importance for
 classification and regression models. The documentation is organised by audience

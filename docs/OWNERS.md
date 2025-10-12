@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Documentation ownership
 
 The documentation aligns with ADR-022 and is governed by section leads. With a

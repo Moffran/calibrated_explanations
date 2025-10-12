@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Getting started
 
 The quickstart content now lives in the role-based navigation introduced with
