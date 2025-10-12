@@ -179,6 +179,10 @@ def perturb_dataset(
     perturbed_x_cal = np.tile(x_cal.copy(), (scale_factor, 1))
     scaled_x_cal = perturbed_x_cal.copy()
     scaled_y_cal = np.tile(y_cal.copy(), scale_factor)
+    if categorical_features is None:
+        categorical_feature_set = set()
+    else:
+        categorical_feature_set = set(categorical_features)
     if noise_type not in [
         "uniform",
         "gaussian",
@@ -193,7 +197,7 @@ def perturb_dataset(
     )
 
     for f in range(scaled_x_cal.shape[1]):
-        if f in categorical_features:
+        if f in categorical_feature_set:
             perturbed_x_cal[:, f] = categorical_perturbation(perturbed_x_cal[:, f], rng=local_rng)
         elif noise_type == "uniform":
             # Apply numerical alternative perturbation to the selected column -- uniform
