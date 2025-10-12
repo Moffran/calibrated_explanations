@@ -1,73 +1,55 @@
-.. Calibrated-explanations documentation master file, created by
-   sphinx-quickstart on Mon Aug  7 14:45:06 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Calibrated Explanations documentation
+====================================
 
-Welcome to Calibrated-explanations's documentation!
-===================================================
-
-.. raw:: html
-
-   <hr>
-
-.. title:: Calibrated-explanations
-
-``calibrated-explanations`` is a Python package that implements the calibrated-explanations method for classification and regression models.
-
-.. raw:: html
-
-   <hr>
-
-Contents
---------
+Calibrated Explanations delivers uncertainty-aware feature importance for
+classification and regression models. The documentation is organised by audience
+so you can jump straight to the content that matches your role.
 
 .. toctree::
+   :caption: Overview
    :maxdepth: 1
-   :caption: Contents:
 
-   getting_started
-   citing
-   contributing
-   pr_guide
-   calibrated_explanations
-   error_handling
-   architecture
-   schema_v1
-   migration_0_5_to_0_6
-   viz_plotspec
+   overview/index
 
-Optional extras
-----------------
+.. toctree::
+   :caption: Get started
+   :maxdepth: 1
 
-Some functionality is provided via optional extras to keep the core lean:
+   get-started/index
 
-* Visualization (matplotlib): ``pip install "calibrated_explanations[viz]"``
-* LIME integration: ``pip install "calibrated_explanations[lime]"``
+.. toctree::
+   :caption: How-to guides
+   :maxdepth: 1
 
-Plotting will raise a friendly error if matplotlib isn’t installed, with a hint to install the ``viz`` extra.
+   how-to/index
 
-Introduction
-------------
+.. toctree::
+   :caption: Concepts & architecture
+   :maxdepth: 1
 
-`calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both `classification <https://doi.org/10.1016/j.eswa.2024.123154>`__ and `regression <https://arxiv.org/abs/2308.16245>`__.
-The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
+   concepts/index
 
-   * Fast, reliable, stable and robust feature importance explanations for:
-      * Binary classification models (`classification paper <https://doi.org/10.1016/j.eswa.2024.123154>`__)
-      * Multi-class classification models (`multi-class paper <https://easychair.org/publications/preprint/rqdD/>`_)
-      * Regression models (`regression paper <https://arxiv.org/abs/2308.16245>`__)
-         * Including probabilistic explanations of the probability that the target exceeds a user-defined threshold
-         * With difficulty adaptable explanations (conformal normalization)
-   * Calibration of the underlying model to ensure that predictions reflect reality.
-   * Uncertainty quantification of the prediction from the underlying model and the feature importance weights.
-   * Rules with straightforward interpretation in relation to instance values and feature weights.
-   * Possibility to generate alternative rules with uncertainty quantification of the expected predictions.
-   * Conjunctional rules conveying feature importance for the interaction of included features.
-   * Conditional rules, allowing users the ability to create contextual explanations to handle e.g. bias and fairness constraints (`read paper <https://doi.org/10.1007/978-3-031-63787-2_17>`__).
+.. toctree::
+   :caption: Reference
+   :maxdepth: 1
 
-Example
--------
+   reference/index
 
-Below is an example of a probabilistic alternative explanation for an instance of the regression dataset California Housing (with the threshold 180 000). The light red area in the background is representing the calibrated probability interval (for the prediction being below the threshold) of the underlying model, as indicated by a Conformal Predictive System and calibrated through Venn-Abers. The darker red bars for each rule show the probability intervals that Venn-Abers indicate for an instance changing a feature value in accordance with the rule condition.
+.. toctree::
+   :caption: Extending the library
+   :maxdepth: 1
 
-.. image:: images/counterfactual_probabilistic_house_regression.png
+   extending/index
+
+.. toctree::
+   :caption: Governance & support
+   :maxdepth: 1
+
+   governance/index
+
+.. admonition:: Need help?
+   :class: tip
+
+   Check the :doc:`governance/release_notes` page for release highlights and use
+   the troubleshooting checklist in :doc:`get-started/troubleshooting` if
+   quickstart snippets fail in your environment.
