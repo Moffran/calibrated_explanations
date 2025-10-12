@@ -9,11 +9,14 @@ line with ADR-022:
 2. **Quickstart validation** – execute the classification and regression
    quickstarts (or CI equivalent) to ensure code snippets run without edits and
    update {doc}`../get-started/troubleshooting` with any new callouts.
-3. **Telemetry review** – confirm the telemetry schema page reflects the latest
+3. **Interpretation guide audit** – confirm {doc}`../how-to/interpret_explanations`
+   reflects the latest telemetry schema, alternative rule structure, and
+   quickstart outputs. Ensure README and upgrade notes still link to it.
+4. **Telemetry review** – confirm the telemetry schema page reflects the latest
    runtime keys and that plugin docs reference new identifiers.
-4. **Reference refresh** – regenerate autosummary output, review schema version
+5. **Reference refresh** – regenerate autosummary output, review schema version
    notes, and update API alias guidance.
-5. **Gating checks** – block release unless the following pass locally or in CI:
+6. **Gating checks** – block release unless the following pass locally or in CI:
 
    ```bash
    python -m sphinx -b html -W docs docs/_build/html
@@ -21,9 +24,9 @@ line with ADR-022:
    pytest tests/docs
    ```
 
-6. **Ownership sign-off** – collect sign-off from the section owners listed in
+7. **Ownership sign-off** – collect sign-off from the section owners listed in
    :doc:`../OWNERS`.
-7. **Release notes** – summarise highlights and link to the release plan milestone
+8. **Release notes** – summarise highlights and link to the release plan milestone
    (`improvement_docs/RELEASE_PLAN_v1.md`).
 
 Document completion in the release issue template so regressions surface quickly

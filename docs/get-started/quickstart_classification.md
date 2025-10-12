@@ -65,6 +65,15 @@ The `telemetry` dictionary records which explanation, interval, and plot
 strategies executed, together with preprocessing metadata. This payload mirrors
 what `explainer.runtime_telemetry` returns.
 
+```{admonition} Learn how to interpret the outputs
+:class: seealso
+
+Once you have the payload, read {doc}`../how-to/interpret_explanations`, paying
+special attention to the sections on factual rule tables, alternative scenarios,
+and PlotSpec visuals. They explain exactly how to interpret the outputs printed
+above.
+```
+
 ## 4. Explore alternatives or fast explanations
 
 Switch modes by calling `explore_alternatives` or `explain_fast`:

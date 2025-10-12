@@ -87,6 +87,14 @@ probabilistic.plot(interval=True, sort_by="abs")
 PlotSpec fallbacks are tracked in telemetry so you can confirm whether the
 PlotSpec adapter or legacy renderer produced the chart.
 
+```{admonition} Learn how to interpret the outputs
+:class: seealso
+
+Visit {doc}`../how-to/interpret_explanations` to understand how calibrated
+intervals, threshold probabilities, alternative scenarios, and PlotSpec visuals
+translate into decisions, and how telemetry fields capture provenance.
+```
+
 ## Troubleshooting tips
 
 - Regression quickstarts expect numeric arrays without NaNs. Use a

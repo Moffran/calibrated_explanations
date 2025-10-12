@@ -9,4 +9,5 @@ integrate_with_pipelines
 configure_telemetry
 export_explanations
 plot_with_plotspec
+interpret_explanations
 ```

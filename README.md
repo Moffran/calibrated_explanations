@@ -47,6 +47,9 @@
 
 ## Introduction
 
+> 🧭 **Need help interpreting results?** Read the [Interpret Calibrated Explanations](docs/how-to/interpret_explanations.md) guide for a deep dive into factual and alternative explanations, rule tables, PlotSpec visuals, and telemetry provenance.
+
+
 **Calibrated Explanations** is an explanation method for machine learning designed to enhance both the interpretability of model predictions and the quantification of uncertainty. In many real-world applications, understanding how confident a model is about its predictions is just as important as the predictions themselves. This framework provides calibrated explanations for both predictions and feature importance by minimizing **aleatoric** and quantifying **epistemic uncertainty** — two types of uncertainty that offer critical insights into both data and model reliability.
 
 - **Aleatoric uncertainty** represents the noise inherent in the data. It affects the spread of probability distributions (for probabilistic outcomes) and predictions (for regression). This uncertainty is **irreducible** because it reflects limitations in the data generation process itself. Incorporating calibration ensures accurate decision support. The difference between the calibrated and the uncalibrated predictions is a measure of the aleatoric uncertainty.
@@ -114,6 +117,8 @@ The darker red bars for each rule (left) show the probability intervals provided
 ## Quick Start
 The snippet below mirrors the workflow used in the notebooks and CLI. Prepare
 your own train / calibration / test splits, then:
+
+> 📘 **Interpret the outputs:** After running the snippet, review the new [Interpret Calibrated Explanations](docs/how-to/interpret_explanations.md) guide. It explains how to read calibrated predictions, interval semantics, counterfactual rules, and telemetry provenance so you can act on the results safely.
 
 ```python
 from calibrated_explanations import WrapCalibratedExplainer

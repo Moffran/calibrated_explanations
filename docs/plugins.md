@@ -96,7 +96,9 @@ the explanation collection. The payload mirrors the v0.8.0 data model:
 Downstream services can therefore audit which plugin branches executed, confirm
 PlotSpec routing versus legacy fallbacks, and capture preprocessing provenance
 without probing runtime internals.【F:calibrated-explanations/specs/v0.8.0/data-model.md†L93-L142】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1098-L1138】
-See also {doc}`concepts/telemetry` for schema details and export practices.
+See also {doc}`concepts/telemetry` for schema details, and point practitioners to
+{doc}`how-to/interpret_explanations` so they understand how the telemetry fields
+translate into actionable insights.
 
 ### CLI helpers
 
