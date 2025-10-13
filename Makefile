@@ -4,6 +4,6 @@
 test:
 pytest
 
-# Mirror the CI coverage invocation so contributors can reproduce gate failures locally.
+# Mirror the CI coverage invocation (coverage options are centralised in pytest.ini).
 test-cov:
-pytest --cov=src/calibrated_explanations --cov-report=term-missing --cov-fail-under=90
+pytest

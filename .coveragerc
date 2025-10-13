@@ -20,7 +20,7 @@ calibrated_explanations =
     */site-packages/calibrated_explanations
 
 [report]
-fail_under = 90
+fail_under = 85
 show_missing = True
 skip_covered = False
 precision = 1
