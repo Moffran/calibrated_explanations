@@ -269,3 +269,75 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if item.get_closest_marker("slow") is not None:
             item.add_marker(skip_marker)
+
+
+_MODULE_COVERAGE_THRESHOLDS = {
+    "src/calibrated_explanations/_interval_regressor.py": 85.0,
+    "src/calibrated_explanations/core/calibrated_explainer.py": 85.0,
+    "src/calibrated_explanations/plugins/registry.py": 85.0,
+    "src/calibrated_explanations/plugins/cli.py": 85.0,
+    "src/calibrated_explanations/api/config.py": 85.0,
+    "src/calibrated_explanations/utils/helper.py": 85.0,
+    "src/calibrated_explanations/utils/perturbation.py": 85.0,
+    "src/calibrated_explanations/_plots.py": 85.0,
+    "src/calibrated_explanations/_plots_legacy.py": 85.0,
+    "src/calibrated_explanations/viz/matplotlib_adapter.py": 85.0,
+    "src/calibrated_explanations/explanations/explanation.py": 85.0,
+}
+
+
+def _get_active_coverage_controller(config):
+    plugin = config.pluginmanager.get_plugin("_cov")
+    if plugin is not None:
+        controller = getattr(plugin, "cov_controller", None)
+        if controller is not None:
+            return controller.cov
+    controller = getattr(config, "_ce_cov_controller", None)
+    if controller is not None:
+        return controller
+    return None
+
+
+def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - exercised indirectly
+    cov = _get_active_coverage_controller(session.config)
+    if cov is None:
+        return
+
+    try:
+        data = cov.get_data()
+    except Exception:  # pragma: no cover - defensive
+        return
+    if data is None:
+        return
+
+    root = Path(session.config.rootpath).resolve()
+    measured = {Path(filename).resolve() for filename in data.measured_files()}
+    failures: list[str] = []
+
+    for relative, threshold in _MODULE_COVERAGE_THRESHOLDS.items():
+        target = (root / relative).resolve()
+        if target not in measured:
+            continue
+        try:
+            analysis = cov._analyze(str(target))  # pylint: disable=protected-access
+            percent = analysis.numbers.pc_covered
+        except Exception:  # pragma: no cover - fallback for coverage API changes
+            try:
+                _, statements, _, missing, _ = cov.analysis2(str(target))
+            except Exception:
+                continue
+            if not statements:
+                percent = 100.0
+            else:
+                percent = 100.0 * (len(statements) - len(missing)) / len(statements)
+        if percent + 1e-6 < threshold:
+            failures.append(
+                f"Coverage for {relative} is {percent:.1f}% (required {threshold:.1f}%)"
+            )
+
+    if failures:
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        for message in failures:
+            if reporter:
+                reporter.write_line(message, red=True)  # pragma: no cover - side effect
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED

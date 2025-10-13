@@ -102,6 +102,34 @@ def _make_explainer(binary_dataset, **overrides):
     return explainer, x_test
 
 
+def _make_regression_explainer(regression_dataset, **overrides):
+    from tests._helpers import get_regression_model
+
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _num_features,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    explainer = CalibratedExplainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names=feature_names,
+        categorical_features=categorical_features,
+        mode="regression",
+        **overrides,
+    )
+    return explainer, x_test
+
+
 def _cleanup_plugin(plugin):
     unregister(plugin)
     clear_explanation_plugins()
@@ -246,6 +274,48 @@ def test_fast_interval_plugin_resolution_records_identifier(binary_dataset):
     fast_batch_fallbacks = fast_telemetry.get("plot_fallbacks")
     assert "legacy" in fast_batch_fallbacks
     assert "plot_spec.default" in fast_batch_fallbacks
+
+
+def test_alternative_classification_records_plot_fallbacks(binary_dataset):
+    ensure_builtin_plugins()
+    explainer, x_test = _make_explainer(binary_dataset)
+
+    alternatives = explainer.explore_alternatives(x_test[:2])
+    assert alternatives is not None
+
+    fallbacks = explainer._plot_plugin_fallbacks["alternative"]
+    assert fallbacks[0] == "plot_spec.default"
+    assert fallbacks[-1] == "legacy"
+
+    telemetry = explainer.runtime_telemetry
+    assert telemetry.get("mode") == "alternative"
+    assert telemetry.get("plot_source") == "plot_spec.default"
+    assert telemetry.get("plot_fallbacks")[0] == "plot_spec.default"
+
+    batch_telemetry = getattr(alternatives, "telemetry", {})
+    assert batch_telemetry.get("plot_source") == "plot_spec.default"
+    assert batch_telemetry.get("plot_fallbacks")[0] == "plot_spec.default"
+
+
+def test_alternative_regression_records_plot_fallbacks(regression_dataset):
+    ensure_builtin_plugins()
+    explainer, x_test = _make_regression_explainer(regression_dataset)
+
+    alternatives = explainer.explore_alternatives(x_test[:2])
+    assert alternatives is not None
+
+    fallbacks = explainer._plot_plugin_fallbacks["alternative"]
+    assert fallbacks[0] == "plot_spec.default"
+    assert fallbacks[-1] == "legacy"
+
+    telemetry = explainer.runtime_telemetry
+    assert telemetry.get("mode") == "alternative"
+    assert telemetry.get("plot_source") == "plot_spec.default"
+    assert telemetry.get("plot_fallbacks")[0] == "plot_spec.default"
+
+    batch_telemetry = getattr(alternatives, "telemetry", {})
+    assert batch_telemetry.get("plot_source") == "plot_spec.default"
+    assert batch_telemetry.get("plot_fallbacks")[0] == "plot_spec.default"
 
 
 def test_interval_override_missing_identifier(monkeypatch, binary_dataset):

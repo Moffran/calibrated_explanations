@@ -203,3 +203,63 @@ def test_plot_alternative_early_noop_when_not_saving():
         save_ext=None,
         use_legacy=False,
     )
+
+
+def test_plot_alternative_probabilistic_headless_noop():
+    class _ProbabilisticExplanation(_FakeExplanation):
+        def __init__(self):
+            super().__init__(mode="classification")
+            self.prediction = {"classes": 1}
+
+        def get_class_labels(self):
+            return ["no", "yes"]
+
+    feature_predict = {
+        "predict": np.array([0.3, 0.7]),
+        "low": np.array([0.2, 0.6]),
+        "high": np.array([0.4, 0.8]),
+    }
+
+    _plots._plot_alternative(
+        explanation=_ProbabilisticExplanation(),
+        instance=[0.1, 0.2],
+        predict={"predict": 0.55, "low": 0.4, "high": 0.7},
+        feature_predict=feature_predict,
+        features_to_plot=[0, 1],
+        num_to_show=2,
+        column_names=["a", "b"],
+        title="noop",
+        path=None,
+        show=False,
+        save_ext=None,
+        use_legacy=False,
+    )
+
+
+def test_plot_alternative_infers_features_to_plot(tmp_path):
+    expl = _FakeExplanation(mode="regression")
+    feature_predict = {
+        "predict": np.array([0.2, 0.8, 0.4]),
+        "low": np.array([0.1, 0.7, 0.35]),
+        "high": np.array([0.3, 0.9, 0.45]),
+    }
+
+    outdir = str(tmp_path)
+    title = "alt_infer"
+
+    _plots._plot_alternative(
+        explanation=expl,
+        instance=[1, 2, 3],
+        predict={"predict": 0.6},
+        feature_predict=feature_predict,
+        features_to_plot=None,
+        num_to_show=3,
+        column_names=None,
+        title=title,
+        path=outdir + os.path.sep,
+        show=False,
+        save_ext=[".png"],
+        use_legacy=False,
+    )
+
+    assert os.path.exists(os.path.join(outdir, title + ".png"))

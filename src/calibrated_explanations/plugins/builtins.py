@@ -15,8 +15,9 @@ having to rehydrate individual explanations.
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
@@ -364,7 +365,7 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
         "tasks": ("classification", "regression"),
         "dependencies": ("core.interval.legacy", "legacy"),
         "interval_dependency": "core.interval.legacy",
-        "plot_dependency": "legacy",
+        "plot_dependency": "plot_spec.default",
         "trusted": True,
         "trust": {"trusted": True},
     }
@@ -397,7 +398,7 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
         "tasks": ("classification", "regression"),
         "dependencies": ("core.interval.legacy", "legacy"),
         "interval_dependency": "core.interval.legacy",
-        "plot_dependency": "legacy",
+        "plot_dependency": "plot_spec.default",
         "trusted": True,
         "trust": {"trusted": True},
     }
@@ -518,6 +519,194 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             title = intent.get("title") if isinstance(intent, Mapping) else None
             return build_global_plotspec_dict(title=title, **payload_dict)
 
+        if intent_type == "alternative":
+            options = context.options if isinstance(context.options, Mapping) else {}
+            payload = options.get("payload", {})
+            if not isinstance(payload, Mapping):
+                raise RuntimeError(
+                    "PlotSpec default builder expected payload mapping for alternative plot"
+                )
+
+            feature_payload = payload.get("feature_predict")
+            if feature_payload is None:
+                feature_payload = payload.get("feature_weights")
+            if feature_payload is None:
+                raise RuntimeError(
+                    "Alternative plot payload must supply 'feature_predict' or 'feature_weights'"
+                )
+
+            predict_payload = payload.get("predict", {})
+            if not isinstance(predict_payload, Mapping):
+                predict_payload = dict(predict_payload or {})
+            else:
+                predict_payload = dict(predict_payload)
+
+            def _safe_float(value: Any) -> float | None:
+                try:
+                    val = float(value)
+                except Exception:
+                    return None
+                if not np.isfinite(val):
+                    return None
+                return val
+
+            y_minmax = payload.get("y_minmax")
+            if y_minmax is None and context.explanation is not None:
+                with contextlib.suppress(Exception):
+                    candidate = getattr(context.explanation, "y_minmax", None)
+                    if candidate is not None:
+                        y_minmax = candidate
+            normalised_y_minmax: tuple[float, float] | None = None
+            if isinstance(y_minmax, Sequence) and len(y_minmax) >= 2:
+                try:
+                    y0, y1 = float(y_minmax[0]), float(y_minmax[1])
+                except Exception:
+                    normalised_y_minmax = None
+                else:
+                    if np.isfinite(y0) and np.isfinite(y1):
+                        normalised_y_minmax = (y0, y1)
+
+            base_pred = _safe_float(predict_payload.get("predict"))
+            if base_pred is None:
+                base_pred = 0.0
+
+            low_default = base_pred
+            high_default = base_pred
+            if normalised_y_minmax is not None:
+                low_default = normalised_y_minmax[0]
+                high_default = normalised_y_minmax[1]
+
+            pred_low = _safe_float(predict_payload.get("low"))
+            pred_high = _safe_float(predict_payload.get("high"))
+
+            predict_payload["predict"] = base_pred
+            predict_payload["low"] = pred_low if pred_low is not None else low_default
+            predict_payload["high"] = pred_high if pred_high is not None else high_default
+
+            def _normalise_sequence(values: Any, fallback: float) -> list[float]:
+                if isinstance(values, np.ndarray):
+                    seq = values.tolist()
+                elif isinstance(values, Sequence) and not isinstance(values, (str, bytes)):
+                    seq = list(values)
+                else:
+                    seq = [values]
+                normalised: list[float] = []
+                for item in seq:
+                    val = _safe_float(item)
+                    normalised.append(val if val is not None else float(fallback))
+                return normalised
+
+            feature_count = 0
+            fallback_map = {
+                "predict": predict_payload["predict"],
+                "low": predict_payload["low"],
+                "high": predict_payload["high"],
+            }
+            if isinstance(feature_payload, Mapping):
+                sanitised: dict[str, list[float]] = {}
+                for key, values in feature_payload.items():
+                    fallback_value = fallback_map.get(key, predict_payload["predict"])
+                    sanitised[key] = _normalise_sequence(values, fallback_value)
+                    feature_count = max(feature_count, len(sanitised[key]))
+                feature_payload = sanitised
+            else:
+                normalised_seq = _normalise_sequence(feature_payload, predict_payload["predict"])
+                feature_payload = normalised_seq
+                feature_count = len(normalised_seq)
+
+            features_to_plot_raw = payload.get("features_to_plot", ())
+            features_to_plot: list[int] = []
+            if feature_count:
+                for idx in features_to_plot_raw:
+                    try:
+                        value = int(idx)
+                    except Exception:
+                        continue
+                    if 0 <= value < feature_count:
+                        features_to_plot.append(value)
+                if not features_to_plot:
+                    features_to_plot = list(range(feature_count))
+
+            column_names = payload.get("column_names")
+            if column_names is None:
+                column_names = payload.get("feature_names")
+            if column_names is not None:
+                column_names = list(column_names)
+            elif feature_count:
+                column_names = [str(idx) for idx in range(feature_count)]
+
+            rule_labels = payload.get("rule_labels")
+            if rule_labels is not None:
+                rule_labels = list(rule_labels)
+            else:
+                rule_labels = column_names
+
+            instance_values = payload.get("instance")
+            if instance_values is None:
+                instance_values = payload.get("instance_values")
+
+            interval = payload.get("interval")
+            if interval is None:
+                interval = (
+                    isinstance(feature_payload, Mapping)
+                    and "low" in feature_payload
+                    and "high" in feature_payload
+                )
+
+            sort_by = payload.get("sort_by")
+            ascending = bool(payload.get("ascending", False))
+            legacy_behavior = payload.get("legacy_solid_behavior", True)
+            uncertainty_color = payload.get("uncertainty_color")
+            uncertainty_alpha = payload.get("uncertainty_alpha")
+
+            variant_hint = str(
+                intent.get("mode")
+                or intent.get("variant")
+                or intent.get("task")
+                or payload.get("mode")
+                or payload.get("variant")
+                or payload.get("task")
+                or ""
+            ).lower()
+            if not variant_hint and context.explanation is not None:
+                with contextlib.suppress(Exception):
+                    maybe_mode = context.explanation.get_mode()
+                    if isinstance(maybe_mode, str):
+                        variant_hint = maybe_mode.lower()
+
+            from ..viz.builders import (
+                build_alternative_probabilistic_spec,
+                build_alternative_regression_spec,
+            )
+
+            builder_kwargs = {
+                "title": intent.get("title") if isinstance(intent, Mapping) else None,
+                "predict": predict_payload,
+                "feature_weights": feature_payload,
+                "features_to_plot": features_to_plot,
+                "column_names": column_names,
+                "rule_labels": rule_labels,
+                "instance": instance_values,
+                "y_minmax": normalised_y_minmax,
+                "interval": bool(interval),
+                "sort_by": sort_by,
+                "ascending": ascending,
+                "legacy_solid_behavior": bool(legacy_behavior),
+                "uncertainty_color": uncertainty_color,
+                "uncertainty_alpha": uncertainty_alpha,
+            }
+
+            if "regression" in variant_hint:
+                return build_alternative_regression_spec(**builder_kwargs)
+
+            builder_kwargs.update(
+                {
+                    "neg_label": payload.get("neg_label"),
+                    "pos_label": payload.get("pos_label"),
+                }
+            )
+            return build_alternative_probabilistic_spec(**builder_kwargs)
+
         raise RuntimeError("PlotSpec default builder currently supports only global plots")
 
 class PlotSpecDefaultRenderer(PlotRenderer):
@@ -601,7 +790,7 @@ def _register_builtins() -> None:
             "fallbacks": ("legacy",),
             "legacy_compatible": True,
             "is_default": True,
-            "default_for": ("global",),
+            "default_for": ("global", "alternative"),
         },
     )
 

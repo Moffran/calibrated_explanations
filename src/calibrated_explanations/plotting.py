@@ -13,7 +13,7 @@ import os
 import warnings
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Mapping, Sequence
 
 import numpy as np
 
@@ -38,10 +38,6 @@ except Exception as _e:  # pragma: no cover - optional dependency guard
     _MATPLOTLIB_IMPORT_ERROR = _e
 else:
     _MATPLOTLIB_IMPORT_ERROR = None
-
-# reuse shared color helper from viz
-from .viz.coloring import get_fill_color as __get_fill_color
-
 
 def _read_plot_pyproject() -> Dict[str, Any]:
     """Return ``pyproject.toml`` plot configuration when available."""
@@ -766,108 +762,214 @@ def _plot_alternative(
         return
 
     __require_matplotlib()
-    config = __setup_plot_style(style_override)
 
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
-    # Get figure width from config, with fallback to default value
-    fig_width = float(config["figure"].get("width", 10))
-    # Base prediction for the instance (probability for classification or value for regression)
-    pred = predict["predict"]
-    pred_low = predict["low"] if predict["low"] != -np.inf else explanation.y_minmax[0]
-    pred_high = predict["high"] if predict["high"] != np.inf else explanation.y_minmax[1]
-    venn_abers = {"low_high": [pred_low, pred_high], "predict": pred}
-    alpha_val = float(config["colors"]["alpha"])
-    pos_color = config["colors"]["positive"]
-    # Respect incoming order from caller (already ranked/filtered by rnk_metric)
-    n_show = min(num_to_show, len(features_to_plot))
-    if n_show <= 0:
+
+    features_to_plot = list(features_to_plot or [])
+
+    # Ensure y_minmax is finite when available
+    y_minmax = getattr(explanation, "y_minmax", None)
+    normalised_y_minmax: tuple[float, float] | None = None
+    if isinstance(y_minmax, Sequence) and len(y_minmax) >= 2:
+        try:
+            y0, y1 = float(y_minmax[0]), float(y_minmax[1])
+        except Exception:
+            normalised_y_minmax = None
+        else:
+            if np.isfinite(y0) and np.isfinite(y1):
+                normalised_y_minmax = (y0, y1)
+
+    def _safe_float(value: Any) -> float | None:
+        try:
+            val = float(value)
+        except Exception:
+            return None
+        if not np.isfinite(val):
+            return None
+        return val
+
+    predict_payload: Dict[str, Any] = {}
+    if isinstance(predict, Mapping):
+        predict_payload.update(predict)
+
+    base_pred = _safe_float(predict_payload.get("predict"))
+    if base_pred is None:
+        base_pred = 0.0
+
+    low_default = base_pred
+    high_default = base_pred
+    if normalised_y_minmax is not None:
+        low_default = normalised_y_minmax[0]
+        high_default = normalised_y_minmax[1]
+
+    pred_low = _safe_float(predict_payload.get("low"))
+    pred_high = _safe_float(predict_payload.get("high"))
+
+    predict_payload["predict"] = base_pred
+    predict_payload["low"] = pred_low if pred_low is not None else low_default
+    predict_payload["high"] = pred_high if pred_high is not None else high_default
+
+    feature_payload: Any = feature_predict
+    if isinstance(feature_predict, Mapping):
+        fallback_map = {
+            "predict": base_pred,
+            "low": predict_payload["low"],
+            "high": predict_payload["high"],
+        }
+        sanitised: Dict[str, List[float]] = {}
+        for key, values in feature_predict.items():
+            if isinstance(values, np.ndarray):
+                seq = values.tolist()
+            elif isinstance(values, Sequence):
+                seq = list(values)
+            else:
+                seq = [values]
+            fallback = fallback_map.get(key, base_pred)
+            sanitised[key] = [
+                val if (val := _safe_float(item)) is not None else float(fallback)
+                for item in seq
+            ]
+        feature_payload = sanitised
+    else:
+        values_seq: Sequence[Any]
+        if isinstance(feature_predict, np.ndarray):
+            values_seq = feature_predict.tolist()
+        elif isinstance(feature_predict, Sequence):
+            values_seq = list(feature_predict)
+        else:
+            values_seq = [feature_predict]
+        feature_payload = [
+            val if (val := _safe_float(item)) is not None else float(base_pred)
+            for item in values_seq
+        ]
+
+    feature_count = 0
+    if isinstance(feature_payload, Mapping):
+        for values in feature_payload.values():
+            if isinstance(values, Sequence):
+                try:
+                    feature_count = max(feature_count, len(values))
+                except TypeError:  # pragma: no cover - defensive
+                    continue
+                if feature_count:
+                    break
+    elif isinstance(feature_payload, Sequence):
+        try:
+            feature_count = len(feature_payload)
+        except TypeError:  # pragma: no cover - defensive
+            feature_count = 0
+
+    normalised_indices: list[int] = []
+    for idx in features_to_plot:
+        try:
+            value = int(idx)
+        except Exception:
+            continue
+        if value < 0:
+            continue
+        normalised_indices.append(value)
+    features_to_plot = normalised_indices
+
+    if not features_to_plot and feature_count:
+        features_to_plot = list(range(feature_count))
+
+    if len(features_to_plot) == 0 or num_to_show <= 0:
         return
 
-    # Create figure sized to the number of visible rules
-    fig = plt.figure(figsize=(fig_width, n_show * 0.5))
-    ax_main = fig.add_subplot(111)
+    if column_names is None and feature_count:
+        column_names = [str(idx) for idx in range(feature_count)]
+
+    interval = (
+        isinstance(feature_payload, Mapping)
+        and "low" in feature_payload
+        and "high" in feature_payload
+    )
 
     try:
-        # Horizontal positions for bars
-        x = np.linspace(0, n_show - 1, n_show)
+        mode = ""
+        try:
+            mode = str(explanation.get_mode() or "")
+        except Exception:
+            mode = ""
+        is_regression = "regression" in mode
 
-        # Fill original Venn Abers interval
-        xl = np.linspace(-0.5, x[0], 2) if len(x) > 0 else np.linspace(-0.5, 0, 2)
-        xh = np.linspace(x[-1], x[-1] + 0.5, 2) if len(x) > 0 else np.linspace(0, 0.5, 2)
-        if (
-            (pred_low < 0.5 and pred_high < 0.5)
-            or (pred_low > 0.5 and pred_high > 0.5)
-            or "regression" in explanation.get_mode()
-        ):
-            color = (
-                __get_fill_color({"predict": 1}, 0.15)
-                if "regression" in explanation.get_mode()
-                else __get_fill_color(venn_abers, 0.15)
-            )
-            ax_main.fill_betweenx(x, [pred_low] * n_show, [pred_high] * n_show, color=color)
-            # Fill up to the edges
-            ax_main.fill_betweenx(xl, [pred_low] * 2, [pred_high] * 2, color=color)
-            ax_main.fill_betweenx(xh, [pred_low] * 2, [pred_high] * 2, color=color)
-            if "regression" in explanation.get_mode():
-                ax_main.fill_betweenx(x, pred, pred, color=pos_color, alpha=alpha_val)
-                # Fill up to the edges
-                ax_main.fill_betweenx(xl, pred, pred, color=pos_color, alpha=alpha_val)
-                ax_main.fill_betweenx(xh, pred, pred, color=pos_color, alpha=alpha_val)
+        neg_label = None
+        pos_label = None
+        if not is_regression:
+            class_labels = None
+            try:
+                class_labels = explanation.get_class_labels()
+            except Exception:
+                class_labels = None
+            if class_labels is not None and len(class_labels) >= 2:
+                try:
+                    prediction = getattr(explanation, "prediction", {})
+                    cls_idx = 1
+                    if isinstance(prediction, Mapping):
+                        cls_idx = int(prediction.get("classes", 1))
+                    pos_label = class_labels[cls_idx]
+                    neg_idx = 0 if cls_idx != 0 else 1
+                    neg_label = class_labels[neg_idx]
+                except Exception:
+                    neg_label = None
+                    pos_label = None
+
+        from .viz.builders import (
+            build_alternative_probabilistic_spec,
+            build_alternative_regression_spec,
+        )
+        from .viz.matplotlib_adapter import render as render_plotspec
+
+        builder_kwargs = {
+            "title": title,
+            "predict": predict_payload,
+            "feature_weights": feature_payload,
+            "features_to_plot": features_to_plot,
+            "column_names": column_names,
+            "rule_labels": column_names,
+            "instance": instance,
+            "y_minmax": normalised_y_minmax,
+            "interval": interval,
+            "sort_by": None,
+            "ascending": False,
+            "legacy_solid_behavior": True,
+        }
+        if is_regression:
+            spec = build_alternative_regression_spec(**builder_kwargs)
         else:
-            venn_abers["predict"] = pred_low
-            color = __get_fill_color(venn_abers, 0.15)
-            ax_main.fill_betweenx(x, [pred_low] * n_show, [0.5] * n_show, color=color)
-            # Fill up to the edges
-            ax_main.fill_betweenx(xl, [pred_low] * 2, [0.5] * 2, color=color)
-            ax_main.fill_betweenx(xh, [pred_low] * 2, [0.5] * 2, color=color)
-            venn_abers["predict"] = pred_high
-            color = __get_fill_color(venn_abers, 0.15)
-            ax_main.fill_betweenx(x, [0.5] * n_show, [pred_high] * n_show, color=color)
-            # Fill up to the edges
-            ax_main.fill_betweenx(xl, [0.5] * 2, [pred_high] * 2, color=color)
-            ax_main.fill_betweenx(xh, [0.5] * 2, [pred_high] * 2, color=color)
+            builder_kwargs.update({
+                "neg_label": neg_label,
+                "pos_label": pos_label,
+            })
+            spec = build_alternative_probabilistic_spec(**builder_kwargs)
 
-        for jx, j in enumerate(features_to_plot):
-            pred_low = (
-                feature_predict["low"][j]
-                if feature_predict["low"][j] != -np.inf
-                else explanation.y_minmax[0]
+        try:
+            render_plotspec(spec, show=show, save_path=None)
+            if save_ext and path is not None and title is not None:
+                for ext in save_ext:
+                    render_plotspec(spec, show=False, save_path=path + title + ext)
+        except Exception as exc:  # pragma: no cover - fallback path
+            warnings.warn(
+                f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
+                stacklevel=2,
             )
-            pred_high = (
-                feature_predict["high"][j]
-                if feature_predict["high"][j] != np.inf
-                else explanation.y_minmax[1]
+            legacy._plot_alternative(
+                explanation,
+                instance,
+                predict,
+                feature_predict,
+                features_to_plot,
+                num_to_show,
+                column_names,
+                title,
+                path,
+                show,
+                save_ext,
             )
-            pred = feature_predict["predict"][j]
-            xj = np.linspace(x[jx] - 0.2, x[jx] + 0.2, 2)
-            venn_abers = {"low_high": [pred_low, pred_high], "predict": pred}
-            # Fill each feature impact
-            if "regression" in explanation.get_mode():
-                ax_main.fill_betweenx(xj, pred_low, pred_high, color=pos_color, alpha=alpha_val)
-                ax_main.fill_betweenx(xj, pred, pred, color=pos_color)
-            elif (pred_low < 0.5 and pred_high < 0.5) or (pred_low > 0.5 and pred_high > 0.5):
-                ax_main.fill_betweenx(xj, pred_low, pred_high, color=__get_fill_color(venn_abers, 0.99))
-            else:
-                venn_abers["predict"] = pred_low
-                ax_main.fill_betweenx(xj, pred_low, 0.5, color=__get_fill_color(venn_abers, 0.99))
-                venn_abers["predict"] = pred_high
-                ax_main.fill_betweenx(xj, 0.5, pred_high, color=__get_fill_color(venn_abers, 0.99))
-
-        ax_main.set_yticks(range(n_show))
-        ax_main.set_yticklabels(
-            labels=[column_names[i] for i in features_to_plot]
-        ) if column_names is not None else ax_main.set_yticks(range(n_show))  # pylint: disable=expression-not-assigned
-        ax_main.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
-        ax_main.set_ylabel("Alternative rules")
-        ax_main_twin = ax_main.twinx()
-        ax_main_twin.set_yticks(range(n_show))
-        ax_main_twin.set_yticklabels([instance[i] for i in features_to_plot])
-        ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
-        ax_main_twin.set_ylabel("Instance values")
     except Exception as exc:  # pragma: no cover - fallback path
         warnings.warn(
-            f"Plot rendering failed with '{exc}'. Falling back to legacy plot.",
+            f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
             stacklevel=2,
         )
         legacy._plot_alternative(
@@ -884,67 +986,6 @@ def _plot_alternative(
             save_ext,
         )
         return
-
-    if explanation.is_thresholded():
-        # pylint: disable=unsubscriptable-object
-        if np.isscalar(explanation.y_threshold):
-            ax_main.set_xlabel(
-                f"Probability of target being below {float(explanation.y_threshold):.2f}"
-            )
-        elif isinstance(explanation.y_threshold, tuple):
-            ax_main.set_xlabel(
-                f"Probability of target being between {float(explanation.y_threshold[0]):.3f} and "
-                + f"{float(explanation.y_threshold[1]):.3f}"
-            )
-        else:
-            ax_main.set_xlabel(
-                f"Probability of target being below {float(explanation.y_threshold):.2f}"
-            )
-        ax_main.set_xlim(0, 1)
-        ax_main.set_xticks(np.linspace(0, 1, 11))
-    elif "regression" in explanation.get_mode():
-        # pylint: disable=line-too-long
-        ax_main.set_xlabel(
-            f"Prediction interval with {explanation.calibrated_explanations.get_confidence()}% confidence"
-        )
-        # Ensure y_minmax contains finite numbers; handle tiny datasets where
-        # min==max or values may be NaN/Inf. Fall back to a safe interval.
-        try:
-            y0, y1 = float(explanation.y_minmax[0]), float(explanation.y_minmax[1])
-        except Exception:
-            y0, y1 = 0.0, 1.0
-        if not (np.isfinite(y0) and np.isfinite(y1)):
-            y0, y1 = 0.0, 1.0
-        if y0 == y1:
-            # expand a small epsilon around the single value
-            eps = max(0.05, abs(y0) * 0.01)
-            y0 -= eps
-            y1 += eps
-        ax_main.set_xlim([y0, y1])
-    else:
-        if explanation.get_class_labels() is None:
-            if explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
-                ax_main.set_xlabel(f'Probability for class \'{explanation.prediction["classes"]}\'')
-            else:
-                ax_main.set_xlabel("Probability for the positive class")
-        elif explanation._get_explainer().is_multiclass():  # pylint: disable=protected-access
-            # pylint: disable=line-too-long
-            ax_main.set_xlabel(
-                f'Probability for class \'{explanation.get_class_labels()[explanation.prediction["classes"]]}\''
-            )
-        else:
-            ax_main.set_xlabel(f"Probability for class '{explanation.get_class_labels()[1]}'")
-        ax_main.set_xlim(0, 1)
-        ax_main.set_xticks(np.linspace(0, 1, 11))
-
-    with contextlib.suppress(Exception):
-        fig.tight_layout()
-    for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
