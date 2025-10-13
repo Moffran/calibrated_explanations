@@ -44,3 +44,39 @@ def test_make_key_handles_generators() -> None:
 
     assert key == (0, 2, 4)
     assert isinstance(key, tuple)
+
+
+def test_lru_cache_updates_existing_keys_without_eviction() -> None:
+    """Updating a cached key should refresh recency and preserve the entry."""
+    cache: LRUCache[str, int] = LRUCache(max_items=2)
+    cache.set("a", 1)
+    cache.set("b", 2)
+
+    # Updating an existing key hits the "already present" branch and moves it to the end.
+    cache.set("a", 42)
+
+    # Adding a new item now evicts the other key rather than the refreshed one.
+    cache.set("c", 3)
+
+    assert cache.get("a") == 42
+    assert cache.get("b") is None
+    assert cache.get("c") == 3
+
+
+def test_lru_cache_rejects_non_positive_capacity() -> None:
+    """The cache guard clause enforces a sensible positive capacity."""
+    with pytest.raises(ValueError):
+        LRUCache(max_items=0)
+
+    with pytest.raises(ValueError):
+        LRUCache(max_items=-5)
+
+
+def test_cache_helpers_cover_len_contains_and_make_key() -> None:
+    """Convenience helpers should behave consistently for typical usage."""
+    cache: LRUCache[str, str] = LRUCache(max_items=1)
+    cache.set("feature", "value")
+
+    assert "feature" in cache
+    assert len(cache) == 1
+    assert make_key(["feature", 1]) == ("feature", 1)
