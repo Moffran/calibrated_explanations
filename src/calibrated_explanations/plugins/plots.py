@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 from dataclasses import dataclass, field
 from typing import (
     Any,
@@ -13,10 +14,18 @@ from typing import (
     runtime_checkable,
 )
 
-try:  # Python < 3.10 compatibility
-    from typing import TypeAlias
-except ImportError:  # pragma: no cover - fallback when TypeAlias is unavailable
-    TypeAlias = object  # type: ignore[assignment]
+def _resolve_type_alias() -> Any:
+    """Return ``typing.TypeAlias`` when available, otherwise fall back to ``object``."""
+
+    try:  # pragma: no branch - helper used to exercise fallback in tests
+        typing_mod = importlib.import_module("typing")
+    except ImportError:  # pragma: no cover - stdlib module is always present on supported versions
+        return object
+
+    return getattr(typing_mod, "TypeAlias", object)
+
+
+TypeAlias = _resolve_type_alias()
 
 from ..viz.plotspec import PlotSpec
 

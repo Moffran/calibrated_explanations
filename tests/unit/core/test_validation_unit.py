@@ -84,3 +84,58 @@ def test_validate_model_and_fit_state_errors():
 
     # Non-required check should not raise even if attribute present
     validation.validate_fit_state(Dummy(), require=False)
+
+
+def test_validate_inputs_allows_sequence_and_bytes():
+    # Non-empty sequences pass validation for both args and kwargs.
+    validation.validate_inputs([1, 2, 3], config=("a", "b"))
+
+    # Empty byte strings are intentionally exempt from the non-empty guard.
+    validation.validate_inputs(b"", payload=bytearray(b""))
+
+
+def test_validate_model_and_fit_state_success():
+    class Model:
+        def predict(self, x):
+            return x
+
+    validation.validate_model(Model())
+
+    class Fitted:
+        fitted = True
+
+    validation.validate_fit_state(Fitted())
+
+
+def test_infer_task_defaults_to_regression_when_unknown():
+    assert validation.infer_task() == "regression"
+
+
+def test_validate_inputs_matrix_supports_frame_like_objects(monkeypatch):
+    class FrameLike:
+        def __init__(self, arr):
+            self.values = arr
+            self.shape = arr.shape
+
+    class SeriesLike:
+        def __init__(self, arr):
+            self.values = arr
+
+    x = FrameLike(np.arange(6).reshape(3, 2))
+    y = SeriesLike(np.array([0, 1, 0]))
+
+    recorded = {}
+
+    def fake_infer_task(x_arg, y_arg, model):  # pragma: no cover - monkeypatched
+        recorded["args"] = (x_arg, y_arg, model)
+        return "classification"
+
+    monkeypatch.setattr(validation, "infer_task", fake_infer_task)
+
+    # No exception should be raised and the monkeypatched infer_task should run.
+    validation.validate_inputs_matrix(x, y, task="auto")
+    assert recorded["args"] == (x, y, None)
+
+
+def test_validate_inputs_matrix_accepts_none_y_when_optional():
+    validation.validate_inputs_matrix(np.zeros((2, 2)))

@@ -404,6 +404,35 @@ def test_insert_calibration_updates_with_bins(monkeypatch):
     assert regressor.cps.alphas[1][1][-1] == pytest.approx(0.5)
 
 
+def test_insert_calibration_updates_alphas_without_bins(monkeypatch):
+    """Residual insertions update both CPS views when no Mondrian bins are used."""
+
+    regressor = _make_regressor(monkeypatch)
+
+    base_split_alphas = np.array(regressor.split["cps"].alphas, copy=True)
+    base_cps_alphas = np.array(regressor.cps.alphas, copy=True)
+
+    xs = np.array([[0.2, 0.7], [0.4, 0.1]])
+    ys = np.array([0.95, 0.55])
+
+    regressor.insert_calibration(xs, ys)
+
+    residuals = ys - regressor.ce.predict_function(xs)
+    expected_split = np.insert(
+        base_split_alphas,
+        np.searchsorted(base_split_alphas, residuals[0]),
+        residuals[0],
+    )
+    expected_cps = np.insert(
+        base_cps_alphas,
+        np.searchsorted(base_cps_alphas, residuals),
+        residuals,
+    )
+
+    assert np.allclose(regressor.split["cps"].alphas, expected_split)
+    assert np.allclose(regressor.cps.alphas, expected_cps)
+
+
 def test_compute_proba_cal_invalid_type(monkeypatch):
     regressor = _make_regressor(monkeypatch)
 
