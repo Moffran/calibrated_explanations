@@ -1,0 +1,202 @@
+"""Regression telemetry schema regression tests.
+
+This suite exercises calibrated regression explanations across factual,
+alternative, percentile, and thresholded modes to ensure the telemetry payload
+emitted by :class:`CalibratedExplanation` matches the ADR-022 interval schema.
+"""
+
+from __future__ import annotations
+
+import pytest
+from sklearn.datasets import load_breast_cancer, load_diabetes
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.model_selection import train_test_split
+
+from calibrated_explanations import WrapCalibratedExplainer
+
+
+def _train_regression_explainer():
+    dataset = load_diabetes()
+    X, y = dataset.data, dataset.target
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=0
+    )
+    X_proper, X_cal, y_proper, y_cal = train_test_split(
+        X_train, y_train, test_size=0.25, random_state=0
+    )
+
+    explainer = WrapCalibratedExplainer(RandomForestRegressor(random_state=0))
+    explainer.fit(X_proper, y_proper)
+    explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
+    return explainer, X_test
+
+
+def _train_classification_explainer():
+    dataset = load_breast_cancer()
+    X, y = dataset.data, dataset.target
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, stratify=y, random_state=0
+    )
+    X_proper, X_cal, y_proper, y_cal = train_test_split(
+        X_train, y_train, test_size=0.25, stratify=y_train, random_state=0
+    )
+
+    explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
+    explainer.fit(X_proper, y_proper)
+    explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
+    return explainer, X_test
+
+
+def _extract_percentile_values(raw_percentiles):
+    """Return normalized low/high percentile values from telemetry payloads."""
+    if raw_percentiles is None:
+        return None, None
+    if isinstance(raw_percentiles, dict):
+        low = raw_percentiles.get("low")
+        high = raw_percentiles.get("high")
+        if isinstance(low, dict):
+            low = low.get("value", low.get("percentile", low.get("bound")))
+        if isinstance(high, dict):
+            high = high.get("value", high.get("percentile", high.get("bound")))
+    else:
+        assert isinstance(raw_percentiles, (list, tuple))
+        assert len(raw_percentiles) == 2
+        low, high = raw_percentiles
+    return low, high
+
+
+def _extract_threshold_value(threshold):
+    """Return a scalar threshold from telemetry metadata."""
+    if threshold is None:
+        return None
+    if isinstance(threshold, dict):
+        for candidate_key in ("value", "threshold", "amount"):
+            candidate = threshold.get(candidate_key)
+            if isinstance(candidate, (int, float)):
+                return candidate
+        return None
+    if isinstance(threshold, (list, tuple)):
+        for item in threshold:
+            value = _extract_threshold_value(item)
+            if value is not None:
+                return value
+        return None
+    if isinstance(threshold, (int, float)):
+        return threshold
+    return None
+
+
+def _assert_uncertainty_schema(
+    payload, representation: str, expect_percentiles: bool, threshold_value
+):
+    expected_keys = {
+        "representation",
+        "calibrated_value",
+        "lower_bound",
+        "upper_bound",
+        "legacy_interval",
+        "threshold",
+        "raw_percentiles",
+        "confidence_level",
+    }
+    assert expected_keys.issubset(payload.keys())
+    assert payload["representation"] == representation
+    assert isinstance(payload["calibrated_value"], (int, float))
+    assert isinstance(payload["lower_bound"], (int, float))
+    assert isinstance(payload["upper_bound"], (int, float))
+    legacy_interval = payload["legacy_interval"]
+    assert isinstance(legacy_interval, (list, tuple))
+    assert len(legacy_interval) == 2
+    assert legacy_interval[0] == pytest.approx(payload["lower_bound"])
+    assert legacy_interval[1] == pytest.approx(payload["upper_bound"])
+
+    percentiles = payload.get("raw_percentiles")
+    if expect_percentiles:
+        assert percentiles is not None
+        low, high = _extract_percentile_values(percentiles)
+        for value in (low, high):
+            assert value is None or isinstance(value, (int, float))
+        confidence = payload.get("confidence_level")
+        assert confidence is None or isinstance(confidence, (int, float))
+    else:
+        if percentiles is not None:
+            low, high = _extract_percentile_values(percentiles)
+            assert low is None and high is None
+        assert payload.get("confidence_level") in (None,)
+
+    extracted_threshold = _extract_threshold_value(payload.get("threshold"))
+    if threshold_value is None:
+        assert extracted_threshold is None
+    else:
+        assert extracted_threshold == pytest.approx(threshold_value)
+
+
+def test_regression_batches_publish_full_uncertainty_schema():
+    """Telemetry for regression explanations must follow ADR-022."""
+
+    explainer, X_test = _train_regression_explainer()
+    sample = X_test[:1]
+
+    factual = explainer.explain_factual(sample)
+    alternative = explainer.explore_alternatives(sample)
+    thresholded = explainer.explain_factual(sample, threshold=2.5)
+    thresholded_alt = explainer.explore_alternatives(sample, threshold=2.5)
+
+    expectations = (
+        (factual, "percentile", True, None),
+        (alternative, "percentile", True, None),
+        (thresholded, "threshold", False, 2.5),
+        (thresholded_alt, "threshold", False, 2.5),
+    )
+
+    for batch, representation, expect_percentiles, threshold_value in expectations:
+        telemetry = getattr(batch, "telemetry", {})
+        assert "uncertainty" in telemetry
+        _assert_uncertainty_schema(
+            telemetry["uncertainty"], representation, expect_percentiles, threshold_value
+        )
+
+        telemetry_rules = telemetry.get("rules")
+        assert telemetry_rules == batch[0].build_rules_payload()
+
+        first_rule = telemetry_rules[0]
+        if telemetry.get("mode") == "factual":
+            _assert_uncertainty_schema(
+                first_rule["prediction"],
+                representation,
+                expect_percentiles,
+                threshold_value,
+            )
+        else:
+            _assert_uncertainty_schema(
+                first_rule["uncertainty"],
+                representation,
+                expect_percentiles,
+                threshold_value,
+            )
+            if threshold_value is not None:
+                assert _extract_threshold_value(first_rule.get("threshold")) == pytest.approx(
+                    threshold_value
+                )
+
+
+def test_build_rules_payload_covers_probabilistic_and_thresholded_alternatives():
+    """Rule payloads must include uncertainty metadata for all alternatives."""
+
+    class_explainer, class_test = _train_classification_explainer()
+    class_batch = class_explainer.explore_alternatives(class_test[:1])
+    class_rule = class_batch[0].build_rules_payload()[0]
+    _assert_uncertainty_schema(class_rule["uncertainty"], "venn_abers", False, None)
+    feature_rule = class_rule["feature_rules"][0]
+    _assert_uncertainty_schema(feature_rule["uncertainty"], "venn_abers", False, None)
+
+    reg_explainer, reg_test = _train_regression_explainer()
+    reg_batch = reg_explainer.explore_alternatives(reg_test[:1], threshold=2.5)
+    reg_rule = reg_batch[0].build_rules_payload()[0]
+    _assert_uncertainty_schema(reg_rule["uncertainty"], "threshold", False, 2.5)
+    assert _extract_threshold_value(reg_rule.get("threshold")) == pytest.approx(2.5)
+    reg_feature_rule = reg_rule["feature_rules"][0]
+    # Feature-level weights retain probabilistic uncertainty blocks for thresholds.
+    _assert_uncertainty_schema(
+        reg_feature_rule["uncertainty"], "venn_abers", False, None
+    )
