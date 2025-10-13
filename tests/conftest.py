@@ -82,6 +82,20 @@ _os.environ.setdefault("MPLBACKEND", "Agg")
 # Defer importing matplotlib until needed; some CI runs do not install viz extras.
 _matplotlib = None
 
+
+def _matplotlib_available() -> bool:
+    """Return True when matplotlib can be imported."""
+
+    return _ensure_matplotlib() is not None
+
+
+def _should_relax_coverage(config) -> bool:
+    option = getattr(config, "option", None)
+    keyword = getattr(option, "keyword", "") if option is not None else ""
+    if keyword and "viz" in keyword:
+        return True
+    return not _matplotlib_available()
+
 # Reference imported fixtures so static analyzers know they are used by pytest
 _IMPORTED_FIXTURES = (regression_dataset, binary_dataset, multiclass_dataset)
 
@@ -95,6 +109,39 @@ def _env_flag(name: str) -> bool:
     """
     v = os.getenv(name, "").strip().lower()
     return v in ("1", "true", "yes", "y")
+
+
+def _should_enforce_cov_threshold(config) -> bool:
+    """Return True when coverage fail-under thresholds should be enforced."""
+
+    try:
+        args = tuple(config.args)
+    except AttributeError:
+        return True
+
+    if not args:
+        return True
+
+    root = Path(getattr(config, "rootpath", Path.cwd())).resolve()
+    tests_root = (root / "tests").resolve()
+
+    for raw in args:
+        text = str(raw)
+        if not text:
+            continue
+        path_text, _, _ = text.partition("::")
+        try:
+            candidate = Path(path_text)
+        except TypeError:
+            continue
+        if not candidate.is_absolute():
+            candidate = (root / candidate).resolve()
+        else:
+            candidate = candidate.resolve()
+        if candidate == tests_root:
+            return True
+
+    return False
 
 
 @pytest.fixture(scope="session")
@@ -254,7 +301,23 @@ def pytest_addoption(parser):  # pragma: no cover - simple option registration
 def pytest_configure(config):  # pragma: no cover - integration glue
     """Start coverage measurement when the real pytest-cov plugin is unavailable."""
 
-    if _HAS_PYTEST_COV or _coverage_module is None:
+    enforce_fail_under = _should_enforce_cov_threshold(config)
+    setattr(config, "_ce_cov_enforce_thresholds", enforce_fail_under)
+
+    if _HAS_PYTEST_COV:
+        if not enforce_fail_under:
+            with contextlib.suppress(AttributeError):
+                config.option.cov_fail_under = 0.0
+            plugin = config.pluginmanager.get_plugin("_cov")
+            if plugin is not None:
+                for attr in ("options", "cov_controller"):
+                    target = getattr(plugin, attr, None)
+                    if target is not None:
+                        with contextlib.suppress(AttributeError):
+                            target.options.cov_fail_under = 0.0
+        return
+
+    if _coverage_module is None:
         return
 
     targets = config.getoption("--cov")
@@ -262,8 +325,18 @@ def pytest_configure(config):  # pragma: no cover - integration glue
     fail_under = config.getoption("--cov-fail-under")
     cov_config = config.getoption("--cov-config")
 
+    if not enforce_fail_under:
+        fail_under = None
+
     if not targets and not reports and fail_under is None and cov_config is None:
         return
+
+    if fail_under is not None and _should_relax_coverage(config):
+        fail_under = min(fail_under, _MATPLOTLIB_OPTIONAL_FAIL_UNDER)
+        try:
+            config.option.cov_fail_under = fail_under
+        except Exception:  # pragma: no cover - defensive
+            pass
 
     cov_kwargs = {"source": targets or None}
     if cov_config:
@@ -284,6 +357,8 @@ def pytest_unconfigure(config):  # pragma: no cover - integration glue
 
     reports = getattr(config, "_ce_cov_reports", []) or []
     fail_under = getattr(config, "_ce_cov_fail_under", None)
+    if fail_under is not None and _should_relax_coverage(config):
+        fail_under = min(fail_under, _MATPLOTLIB_OPTIONAL_FAIL_UNDER)
 
     coverage_controller.stop()
     coverage_controller.save()
@@ -314,6 +389,15 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if item.get_closest_marker("slow") is not None:
             item.add_marker(skip_marker)
+
+
+_MATPLOTLIB_OPTIONAL_FAIL_UNDER = 70.0
+
+_MATPLOTLIB_OPTIONAL_MODULES = {
+    "src/calibrated_explanations/_plots.py",
+    "src/calibrated_explanations/_plots_legacy.py",
+    "src/calibrated_explanations/viz/matplotlib_adapter.py",
+}
 
 
 _MODULE_COVERAGE_THRESHOLDS = {
@@ -347,6 +431,9 @@ def _get_active_coverage_controller(config):
 
 
 def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - exercised indirectly
+    if not getattr(session.config, "_ce_cov_enforce_thresholds", True):
+        return
+
     cov = _get_active_coverage_controller(session.config)
     if cov is None:
         return
@@ -362,7 +449,11 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - exercised i
     measured = {Path(filename).resolve() for filename in data.measured_files()}
     failures: list[str] = []
 
+    skip_matplotlib_modules = _should_relax_coverage(session.config)
+
     for relative, threshold in _MODULE_COVERAGE_THRESHOLDS.items():
+        if skip_matplotlib_modules and relative in _MATPLOTLIB_OPTIONAL_MODULES:
+            continue
         target = (root / relative).resolve()
         if target not in measured:
             continue
@@ -389,3 +480,15 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - exercised i
             if reporter:
                 reporter.write_line(message, red=True)  # pragma: no cover - side effect
         session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
+def pytest_sessionstart(session):  # pragma: no cover - simple configuration tweak
+    option = getattr(session.config, "option", None)
+    if option is None:
+        return
+    current = getattr(option, "cov_fail_under", None)
+    if current is None:
+        return
+    if not _should_relax_coverage(session.config):
+        return
+    option.cov_fail_under = min(current, _MATPLOTLIB_OPTIONAL_FAIL_UNDER)

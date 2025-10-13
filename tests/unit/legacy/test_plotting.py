@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-import matplotlib
+matplotlib = pytest.importorskip("matplotlib", reason="matplotlib is required for legacy plotting tests")
 
 matplotlib.use("Agg", force=True)
 
