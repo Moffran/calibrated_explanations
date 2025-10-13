@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from calibrated_explanations import plotting
+from calibrated_explanations.viz import plots as plotting
 
 
 def test_read_plot_pyproject_handles_missing_file(tmp_path, monkeypatch):

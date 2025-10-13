@@ -7,8 +7,8 @@ The latest repository-wide coverage run (`pytest --cov=src/calibrated_explanatio
 | --- | ---: | ---: | ---: | ---: |
 | `core/calibrated_explainer.py` | 1,442 | 277 | 727 | 77.4% |
 | `explanations/explanation.py` | 818 | 106 | 318 | 85.1% |
-| `_plots.py` | 366 | 114 | 177 | 64.0% |
-| `_plots_legacy.py` | 428 | 121 | 169 | 68.9% |
+| `viz/plots.py` | 366 | 114 | 177 | 64.0% |
+| `legacy/_plots_legacy.py` | 428 | 121 | 169 | 68.9% |
 | `viz/matplotlib_adapter.py` | 512 | 99 | 296 | 76.9% |
 | `plugins/registry.py` | 672 | 145 | 288 | 72.2% |
 | `_interval_regressor.py` | 142 | 49 | 35 | 59.1% |
@@ -21,8 +21,8 @@ The same run highlighted thin coverage in `api/__init__.py` (48.1%) and `core/ca
 ## Gap analysis by subsystem
 
 ### 1. Interval calibration runtime
-* `_interval_regressor.IntervalRegressor.predict_probability` contains an error path when test bins are supplied without calibration bins, plus iterative per-threshold execution that is never validated; no unit test ensures the branch importing `safe_first_element` behaves correctly when the relative import fails.【F:src/calibrated_explanations/_interval_regressor.py†L104-L135】
-* The singledispatch `compute_proba_cal` has an untested `TypeError` fallback and tuple threshold branch, and the `insert_calibration` routine mutates conformal predictor state and bins—scenarios absent from the suite.【F:src/calibrated_explanations/_interval_regressor.py†L246-L378】
+* `_interval_regressor.IntervalRegressor.predict_probability` contains an error path when test bins are supplied without calibration bins, plus iterative per-threshold execution that is never validated; no unit test ensures the branch importing `safe_first_element` behaves correctly when the relative import fails.【F:src/calibrated_explanations/core/interval_regressor.py†L104-L135】
+* The singledispatch `compute_proba_cal` has an untested `TypeError` fallback and tuple threshold branch, and the `insert_calibration` routine mutates conformal predictor state and bins—scenarios absent from the suite.【F:src/calibrated_explanations/core/interval_regressor.py†L246-L378】
 * `core/calibrated_explainer._resolve_interval_plugin` performs layered fallback resolution with metadata gating (fast mode, capability checks, bin requirements) yet lacks targeted mocks verifying override precedence and error aggregation.【F:src/calibrated_explanations/core/calibrated_explainer.py†L720-L789】
 
 **Remediation tactics**
@@ -41,8 +41,8 @@ The same run highlighted thin coverage in `api/__init__.py` (48.1%) and `core/ca
 3. Test `Explanation` rendering helpers for thresholded/regression modes, ensuring caching branches (e.g., when prediction metadata is missing) behave as expected.
 
 ### 3. Plotting stack (modern + legacy)
-* `_plots._plot_regression` performs numerous matplotlib operations, with early exits when `show=False` and no save path; none of the fill-between branches or axis labeling logic are validated through the new plot spec adapter.【F:src/calibrated_explanations/_plots.py†L700-L817】
-* `_plots_legacy` still ships for backward compatibility yet lacks tests across its procedural drawing functions, including sampling-based label ordering and color interpolation.【F:src/calibrated_explanations/_plots_legacy.py†L217-L365】
+* `_plots._plot_regression` performs numerous matplotlib operations, with early exits when `show=False` and no save path; none of the fill-between branches or axis labeling logic are validated through the new plot spec adapter.【F:src/calibrated_explanations/viz/plots.py†L700-L817】
+* `_plots_legacy` still ships for backward compatibility yet lacks tests across its procedural drawing functions, including sampling-based label ordering and color interpolation.【F:src/calibrated_explanations/legacy/_plots_legacy.py†L217-L365】
 * `viz/matplotlib_adapter.render` manages lazy imports, renderer fallbacks, DPI overrides, and multiple save-path workflows with little to no automated validation.【F:src/calibrated_explanations/viz/matplotlib_adapter.py†L54-L228】
 
 **Remediation tactics**
@@ -75,7 +75,7 @@ The same run highlighted thin coverage in `api/__init__.py` (48.1%) and `core/ca
 
 | Phase | Scope | Target modules | Success criteria |
 | --- | --- | --- | --- |
-| Sprint 1 | Interval regression + validation foundations | `_interval_regressor`, `core/calibrated_explainer` (init + plugin resolution), `core/validation` | Branch coverage for interval insertion and plugin resolution ≥80%; validation error branches exercised in new tests. |
+| Sprint 1 | Interval regression + validation foundations | `core.interval_regressor`, `core/calibrated_explainer` (init + plugin resolution), `core/validation` | Branch coverage for interval insertion and plugin resolution ≥80%; validation error branches exercised in new tests. |
 | Sprint 2 | Registry + utility backfill | `plugins/registry`, `plugins/cli`, `api/config`, `utils/helper`, `utils/perturbation` | All public API/CLI entry points have smoke tests; helper/perturbation modules reach ≥90% line coverage. |
 | Sprint 3 | Plotting stack | `_plots`, `_plots_legacy`, `viz/matplotlib_adapter`, `viz/builders` | Headless plotting tests cover both modern and legacy renderers; aggregate plotting coverage ≥85% with decisions on legacy exclusions documented. |
 | Sprint 4 | Explanation rendering depth | `explanations/explanation`, `core/calibrated_explainer` (explanation caching paths) | Tests for regression vs. classification explanations, cache invalidation, and shap/lime fallbacks; explanation module coverage ≥90%. |

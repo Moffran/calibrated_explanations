@@ -5,7 +5,7 @@ import builtins
 import numpy as np
 import pytest
 
-from calibrated_explanations import _interval_regressor as interval_module
+from calibrated_explanations.core import interval_regressor as interval_module
 from calibrated_explanations.utils import helper as helper_module
 
 

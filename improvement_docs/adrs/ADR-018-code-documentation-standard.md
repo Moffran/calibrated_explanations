@@ -82,7 +82,7 @@ Negative/Risks:
 - v0.8.0 – Batches C (`explanations/`, `perf/`) and D (`plugins/`) reach
   compliance, CI starts reporting docstring coverage per module, and the
   documentation standardisation plan is updated with progress dashboards.
-- v0.9.0 – Batches E (`viz/`, `_plots.py`, `_plots_legacy.py`) and F
+- v0.9.0 – Batches E (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) and F
   (`serialization.py`, `core.py`) are completed, docstring linting flips
   to blocking in CI, and badges/reporting integrate with the docs build
   workflow per the release gate.

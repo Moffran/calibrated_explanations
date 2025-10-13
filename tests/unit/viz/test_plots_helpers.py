@@ -1,7 +1,7 @@
 import warnings
 
 
-from calibrated_explanations import plotting as _plots
+from calibrated_explanations.viz import plots as _plots
 from calibrated_explanations.viz import coloring
 
 

@@ -21,11 +21,11 @@ Group files into batches that are small enough to review easily but large enough
 ### 2.1 Production Packages (src/calibrated_explanations)
 | Batch | Scope | Rationale |
 |-------|-------|-----------|
-| A | `utils/`, `_interval_regressor.py`, `_VennAbers.py` | Low file count, foundational utilities likely reused by many modules. Fixing them early reduces duplicate effort later. |
+| A | `utils/`, `core/interval_regressor.py`, `core/venn_abers.py` | Low file count, foundational utilities likely reused by many modules. Fixing them early reduces duplicate effort later. |
 | B | `api/` and `core/` package | Public-facing entry points; improving these files ensures that the surface area users see first meets style expectations. |
 | C | `explanations/` and `perf/` packages | Mid-sized groups that are conceptually cohesive; tackle them after the high-visibility API pieces. |
 | D | `plugins/` package | Largest cluster (9 files); split further per plugin if needed. |
-| E | Visualization modules (`viz/`, `_plots.py`, `_plots_legacy.py`) | Visualization code often has long docstrings—tackle after gaining momentum with earlier batches. |
+| E | Visualization modules (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) | Visualization code often has long docstrings—tackle after gaining momentum with earlier batches. |
 | F | Serialization and compatibility shims (`serialization.py`, `core.py`) | Final cleanup once the main logic is compliant. |
 
 For each batch:

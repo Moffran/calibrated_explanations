@@ -14,8 +14,8 @@ continuous integration enforce minimum coverage. `pytest.ini` runs tests quietly
 loading `pytest-cov`, while the CI workflow executes `pytest --cov=src/calibrated_explanations`
 without a `--cov-fail-under` threshold. Contributors are asked to target roughly 90% coverage,
 with reports uploaded to Codecov, but there is no guardrail preventing significant regressions.
-Legacy runtime modules (for example `_interval_regressor`) remain effectively untested, so
-confidence in calibration guarantees erodes as the code evolves.【F:pytest.ini†L1-L17】【F:.github/workflows/test.yml†L33-L49】【F:CONTRIBUTING.md†L49-L58】【F:src/calibrated_explanations/_interval_regressor.py†L1-L120】
+Legacy runtime modules (for example `core.interval_regressor`) remain effectively untested, so
+confidence in calibration guarantees erodes as the code evolves.【F:pytest.ini†L1-L17】【F:.github/workflows/test.yml†L33-L49】【F:CONTRIBUTING.md†L49-L58】【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】
 
 ## Decision
 

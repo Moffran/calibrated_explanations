@@ -11,8 +11,6 @@ import logging as _logging
 
 # Expose viz namespace (internal; subject to change). Avoid importing heavy backends eagerly.
 from . import viz  # noqa: F401
-from ._interval_regressor import IntervalRegressor  # noqa: F401
-from ._venn_abers import VennAbers  # noqa: F401
 from .explanations.explanation import (
     AlternativeExplanation,  # noqa: F401
     FactualExplanation,  # noqa: F401
@@ -60,6 +58,16 @@ def __getattr__(name: str):
 
         globals()[name] = WrapCalibratedExplainer
         return WrapCalibratedExplainer
+    if name == "IntervalRegressor":
+        from .core.interval_regressor import IntervalRegressor
+
+        globals()[name] = IntervalRegressor
+        return IntervalRegressor
+    if name == "VennAbers":
+        from .core.venn_abers import VennAbers
+
+        globals()[name] = VennAbers
+        return VennAbers
     raise AttributeError(name)
 
 

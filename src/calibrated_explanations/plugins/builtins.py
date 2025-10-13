@@ -21,8 +21,8 @@ from typing import Any, Mapping
 import numpy as np
 
 from .. import __version__ as package_version
-from .._venn_abers import VennAbers
-from .._interval_regressor import IntervalRegressor
+from ..core.venn_abers import VennAbers
+from ..core.interval_regressor import IntervalRegressor
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,

@@ -61,12 +61,12 @@ between the three paths.
 * The same plugin resolution yields an `IntervalRegressor` for regression
   modes. Initialization fits a `ConformalPredictiveSystem` (CPS) over the
   calibration residuals, optionally conditioned on Mondrian bins and difficulty
-  estimates, and keeps the structure attached to the explainer.【F:src/calibrated_explanations/_interval_regressor.py†L20-L64】
+  estimates, and keeps the structure attached to the explainer.【F:src/calibrated_explanations/core/interval_regressor.py†L20-L64】
 * When `threshold` is `None`, `_predict` validates the requested percentiles,
   converts one- or two-sided bounds into CPS inputs, and delegates to
   `IntervalRegressor.predict_uncertainty`. That method calls the CPS to produce
   `(median, low, high)` triples and returns them in the format expected by the
-  explanation pipeline.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1402-L1455】【F:src/calibrated_explanations/_interval_regressor.py†L121-L166】
+  explanation pipeline.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1402-L1455】【F:src/calibrated_explanations/core/interval_regressor.py†L121-L166】
 * `prediction_helpers.initialize_explanation` records the active percentile
   pair on each `CalibratedExplanations` container so downstream consumers know
   the bounds are conformal percentiles rather than probability events. If no
@@ -90,7 +90,7 @@ between the three paths.
   threshold event (`y \leq t` or `t_0 < y \leq t_1`). The CPS supplies calibrated
   probabilities for the event, which become the pseudo-scores passed into
   Venn-Abers; the resulting predictor returns the probability interval along
-  with the calibrated mean.【F:src/calibrated_explanations/_interval_regressor.py†L67-L205】【F:src/calibrated_explanations/_interval_regressor.py†L203-L290】
+  with the calibrated mean.【F:src/calibrated_explanations/core/interval_regressor.py†L67-L205】【F:src/calibrated_explanations/core/interval_regressor.py†L203-L290】
 * Because the Venn-Abers step is recomputed whenever the threshold changes,
   `predict_probability` caches the latest threshold under
   `self.current_y_threshold` so the helper can expose a `predict_proba` method

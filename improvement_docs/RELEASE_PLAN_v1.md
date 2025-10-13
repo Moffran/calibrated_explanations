@@ -124,7 +124,7 @@ critical-path thresholds pass consistently.
    in release notes and guidance for plugin authors.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】
 5. Publish migration notes summarising plugin configuration defaults and
    remaining legacy escapes.
-6. Turn ADR-018 tooling on by finishing pydocstyle batches E (`viz/`, `_plots.py`, `_plots_legacy.py`) and F (`serialization.py`, `core.py`), then making docstring linting blocking in CI, adding
+6. Turn ADR-018 tooling on by finishing pydocstyle batches E (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) and F (`serialization.py`, `core.py`), then making docstring linting blocking in CI, adding
    coverage gates for touched modules, and wiring badges/reporting into the docs
    workflow.【F:improvement_docs/documentation_standardization_plan.md†L24-L34】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】【F:improvement_docs/pydocstyle_breakdown.md†L28-L29】
 7. Advance ADR-017 enforcement by pruning deprecated shims scheduled for removal

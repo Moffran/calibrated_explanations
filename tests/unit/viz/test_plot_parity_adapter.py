@@ -152,7 +152,7 @@ def test_render_dict_global_via_shim(tmp_path):
 
 def test_plot_triangular_delegates_to_adapter(monkeypatch, tmp_path):
     """Ensure `_plot_triangular` delegates to builder+adapter and handles save_ext."""
-    from calibrated_explanations import plotting as _plots
+    from calibrated_explanations.viz import plots as _plots
 
     calls = []
 

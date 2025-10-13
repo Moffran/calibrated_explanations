@@ -33,7 +33,7 @@ from crepes.extras import hinge
 from sklearn.metrics import confusion_matrix
 
 from ..plotting import _plot_global
-from .._venn_abers import VennAbers
+from .venn_abers import VennAbers
 from ..explanations import AlternativeExplanations, CalibratedExplanations
 from ..utils.discretizers import (
     BinaryEntropyDiscretizer,
