@@ -6,8 +6,6 @@ Importing this module eagerly registers the built-in plugins so callers simply
 need to `import calibrated_explanations.plugins` before resolving identifiers.
 """
 
-# Eagerly register in-tree plugins so they are available without explicit import
-from . import builtins as _builtins  # noqa: F401
 from . import registry  # re-export module for convenience
 from .base import ExplainerPlugin, PluginMeta, validate_plugin_meta  # noqa: F401
 from .explanations import (  # noqa: F401
@@ -66,3 +64,13 @@ __all__ = [
     "clear_interval_plugins",
     "clear_plot_plugins",
 ]
+
+# Eagerly register in-tree plugins so they are available without explicit import.
+# Import at the end to avoid circular import during core initialisation.
+try:  # pragma: no cover - import-order guard
+    from . import builtins as _builtins  # noqa: F401
+except Exception:
+    # If core is importing plugins while builtins also imports core, avoid
+    # raising on partially initialised modules. The builtins can be imported
+    # explicitly by consumers after initialisation if needed.
+    pass

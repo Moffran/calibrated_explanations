@@ -283,6 +283,9 @@ _MODULE_COVERAGE_THRESHOLDS = {
     "src/calibrated_explanations/_plots_legacy.py": 85.0,
     "src/calibrated_explanations/viz/matplotlib_adapter.py": 85.0,
     "src/calibrated_explanations/explanations/explanation.py": 85.0,
+    "src/calibrated_explanations/perf/cache.py": 85.0,
+    "src/calibrated_explanations/perf/parallel.py": 85.0,
+    "src/calibrated_explanations/perf/__init__.py": 85.0,
 }
 
 

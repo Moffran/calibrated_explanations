@@ -347,12 +347,18 @@ def validate_interval_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     _ensure_string(meta, "confidence_source")
     if "legacy_compatible" in meta:
         _ensure_bool(meta, "legacy_compatible")
+    # Trust must be explicitly present; interval metadata should not infer it
+    # solely from 'trusted' when the 'trust' key is missing.
     if "trust" not in meta:
-        if "trusted" in meta:
-            meta["trust"] = meta["trusted"]
-        else:
-            raise ValueError("plugin_meta missing required key: trust")
-    return meta
+        raise ValueError("plugin_meta missing required key: trust")
+    # Reconcile trust/trusted to be consistent, mutating in place when possible
+    declared_trust = _normalise_trust(meta)
+    if isinstance(meta, dict):
+        _update_trust_keys(meta, declared_trust)  # type: ignore[arg-type]
+        return meta
+    meta_copy: Dict[str, Any] = dict(meta)
+    _update_trust_keys(meta_copy, declared_trust)
+    return meta_copy
 
 def validate_plot_builder_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate ADR-014 metadata requirements for plot builders."""
@@ -361,12 +367,13 @@ def validate_plot_builder_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]
     _validate_dependencies(meta)
     _ensure_bool(meta, "legacy_compatible")
     _ensure_sequence(meta, "output_formats", allow_empty=False)
-    if "trust" not in meta:
-        if "trusted" in meta:
-            meta["trust"] = meta["trusted"]
-        else:
-            raise ValueError("plugin_meta missing required key: trust")
-    return meta
+    declared_trust = _normalise_trust(meta)
+    if isinstance(meta, dict):
+        _update_trust_keys(meta, declared_trust)  # type: ignore[arg-type]
+        return meta
+    meta_copy: Dict[str, Any] = dict(meta)
+    _update_trust_keys(meta_copy, declared_trust)
+    return meta_copy
 
 def validate_plot_renderer_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate ADR-014 metadata requirements for plot renderers."""
@@ -374,12 +381,13 @@ def validate_plot_renderer_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any
     _validate_dependencies(meta)
     _ensure_sequence(meta, "output_formats", allow_empty=False)
     _ensure_bool(meta, "supports_interactive")
-    if "trust" not in meta:
-        if "trusted" in meta:
-            meta["trust"] = meta["trusted"]
-        else:
-            raise ValueError("plugin_meta missing required key: trust")
-    return meta
+    declared_trust = _normalise_trust(meta)
+    if isinstance(meta, dict):
+        _update_trust_keys(meta, declared_trust)  # type: ignore[arg-type]
+        return meta
+    meta_copy: Dict[str, Any] = dict(meta)
+    _update_trust_keys(meta_copy, declared_trust)
+    return meta_copy
 
 def validate_plot_style_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate metadata for plot style registrations."""
