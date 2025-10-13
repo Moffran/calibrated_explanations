@@ -31,6 +31,42 @@ except Exception:  # pragma: no cover - executed in minimalist environments
     except Exception:  # pragma: no cover - defensive
         _coverage_module = None
 
+
+if not _HAS_PYTEST_COV:
+
+    def pytest_addoption(parser):  # pragma: no cover - exercised when pytest-cov absent
+        """Register stub coverage options so pytest.ini remains compatible."""
+
+        group = parser.getgroup("cov", "coverage reporting")
+        group.addoption(
+            "--cov",
+            action="append",
+            default=[],
+            metavar="path",
+            help="stub option accepted when pytest-cov is unavailable",
+        )
+        group.addoption(
+            "--cov-report",
+            action="append",
+            default=[],
+            metavar="type",
+            help="stub option accepted when pytest-cov is unavailable",
+        )
+        group.addoption(
+            "--cov-config",
+            action="store",
+            default=None,
+            metavar="path",
+            help="stub option accepted when pytest-cov is unavailable",
+        )
+        group.addoption(
+            "--cov-fail-under",
+            action="store",
+            default=None,
+            metavar="float",
+            help="stub option accepted when pytest-cov is unavailable",
+        )
+
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SRC_PATH = _REPO_ROOT / "src"
 if _SRC_PATH.exists():
@@ -207,6 +243,12 @@ def pytest_addoption(parser):  # pragma: no cover - simple option registration
         default=None,
         help="Fail if coverage percentage is below this value.",
     )
+    group.addoption(
+        "--cov-config",
+        action="store",
+        default=None,
+        help="Read coverage configuration from the given file.",
+    )
 
 
 def pytest_configure(config):  # pragma: no cover - integration glue
@@ -218,11 +260,14 @@ def pytest_configure(config):  # pragma: no cover - integration glue
     targets = config.getoption("--cov")
     reports = config.getoption("--cov-report")
     fail_under = config.getoption("--cov-fail-under")
+    cov_config = config.getoption("--cov-config")
 
-    if not targets and not reports and fail_under is None:
+    if not targets and not reports and fail_under is None and cov_config is None:
         return
 
     cov_kwargs = {"source": targets or None}
+    if cov_config:
+        cov_kwargs["config_file"] = cov_config
     coverage_controller = _coverage_module.Coverage(**cov_kwargs)
     coverage_controller.start()
     config._ce_cov_controller = coverage_controller  # type: ignore[attr-defined]

@@ -29,7 +29,7 @@ Functions:
 import numpy as np
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import NotFittedError
+from calibrated_explanations.core.exceptions import NotFittedError, ValidationError
 from crepes.extras import DifficultyEstimator
 
 from tests._helpers import get_regression_model, initiate_explainer
@@ -68,6 +68,21 @@ def safe_fit_difficulty(x, y, scaler=True):
                 return self.apply(x_data)
 
         return _StubDifficulty().fit()
+
+
+def test_safe_fit_difficulty_fallback(monkeypatch):
+    """Ensure the helper returns a stub difficulty estimator when fitting fails."""
+
+    def _failing_fit(self, *args, **kwargs):  # noqa: D401  - short helper, no doc needed
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(DifficultyEstimator, "fit", _failing_fit, raising=True)
+
+    stub = safe_fit_difficulty(np.zeros((3, 2)), np.zeros(3), scaler=False)
+
+    assert getattr(stub, "fitted", False) is True
+    assert np.allclose(stub.predict(np.ones((2, 2))), 0.0)
+    assert np.allclose(stub.apply(np.ones((2, 2))), 0.0)
 
 
 def test_failure_regression(regression_dataset):
@@ -133,6 +148,65 @@ def test_regression_ce(regression_dataset):
     alternative_explanation.plot(show=False)
     alternative_explanation.semi_explanations()
     alternative_explanation.counter_explanations()
+
+
+def test_regression_predict_reject_requires_threshold(regression_dataset):
+    """Regression reject predictions should fail when the threshold is missing."""
+
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
+
+    cal_exp.initialize_reject_learner(threshold=0.5)
+    cal_exp.reject_threshold = None
+
+    with pytest.raises(ValidationError):
+        cal_exp.predict_reject(x_test)
+
+
+def test_regression_reject_learner_custom_calibration(regression_dataset):
+    """Explicit calibration sets should be accepted when initializing the reject learner."""
+
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
+
+    # Use a list to exercise the fallback calibration_set path inside initialize_reject_learner
+    calibration_subset = [x_cal[:25], y_cal[:25]]
+    learner = cal_exp.initialize_reject_learner(calibration_set=calibration_subset, threshold=0.6)
+
+    assert learner is cal_exp.reject_learner
+    assert cal_exp.reject_threshold == 0.6
+
+    rejected, error_rate, reject_rate = cal_exp.predict_reject(x_test, confidence=0.9)
+
+    assert rejected.shape == (len(x_test),)
+    assert not np.isnan(error_rate)
+    assert not np.isnan(reject_rate)
 
 
 def test_probabilistic_regression_ce(regression_dataset):
