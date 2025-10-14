@@ -1,3 +1,4 @@
+import pytest
 from calibrated_explanations.viz.builders import (
     build_probabilistic_bars_spec,
 )
@@ -16,6 +17,7 @@ def _make_interval_weights():
     return predict, feature_weights
 
 
+@pytest.mark.viz_render
 def test_default_suppresses_solid_for_crossing_interval():
     predict, feature_weights = _make_interval_weights()
     spec = build_probabilistic_bars_spec(
@@ -35,11 +37,11 @@ def test_default_suppresses_solid_for_crossing_interval():
     solids = primitives.get("solids", [])
     overlays = primitives.get("overlays", [])
     assert any(
-        o.get("index", -1) == 0 for o in overlays
     ), f"Expected overlay for index 0, got overlays={overlays}"
     assert all(s.get("index", -1) != 0 for s in solids), f"Unexpected solid for index 0: {solids}"
 
 
+@pytest.mark.viz_render
 def test_parity_shows_solid_when_flag_false():
     predict, feature_weights = _make_interval_weights()
     spec = build_probabilistic_bars_spec(

@@ -10,6 +10,18 @@ avoid duplicating parsing logic.
 
 from __future__ import annotations
 
+# CRITICAL: Preload matplotlib submodules BEFORE pytest-cov instruments code.
+# This is placed immediately after __future__ imports (which must be first).
+# matplotlib 3.8+ uses lazy loading that breaks when coverage instruments __getattr__.
+try:
+    import matplotlib
+    import matplotlib.image  # noqa: F401
+    import matplotlib.axes  # noqa: F401
+    import matplotlib.artist  # noqa: F401
+    import matplotlib.pyplot  # noqa: F401 - Force full pyplot initialization
+except Exception:  # pragma: no cover
+    pass  # matplotlib not installed
+
 import contextlib
 import os
 import sys
@@ -17,6 +29,16 @@ from pathlib import Path
 
 import pytest
 from ._fixtures import regression_dataset, binary_dataset, multiclass_dataset
+
+
+def pytest_configure(config):
+    """Pytest hook that runs before test collection.
+    
+    The matplotlib preloading above (at module level) should already have
+    executed, but this hook can be used for additional configuration if needed.
+    """
+    pass  # Preloading happens at module import time above
+
 
 try:  # pragma: no cover - exercised indirectly when pytest-cov is absent
     import pytest_cov as _pytest_cov  # type: ignore[attr-defined]
@@ -181,6 +203,11 @@ def _ensure_matplotlib():
         # ensure non-interactive backend
         with contextlib.suppress(Exception):
             _m.use("Agg")
+        # Preload lazy-loaded submodules to avoid AttributeError in coverage context
+        with contextlib.suppress(Exception):
+            import matplotlib.image
+            import matplotlib.axes
+            import matplotlib.artist
         _matplotlib = _m
     except Exception:
         _matplotlib = None

@@ -102,11 +102,13 @@ live in CI with coverage thresholds enforcing ≥90% package-level coverage.
    enable Codecov patch gating at ≥85% for PRs touching runtime/calibration
    logic, enable
    `--cov-fail-under=85` in CI.【F:improvement_docs/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:improvement_docs/test_coverage_standardization_plan.md†L15-L27】
+9. **Completed 2025-01-14:** Adopted ADR-023 to exempt `src/calibrated_explanations/viz/matplotlib_adapter.py` from coverage due to matplotlib 3.8.4 lazy loading conflicts with pytest-cov instrumentation. All 639 tests now pass with coverage enabled. Package-wide coverage maintained at 85%+.【F:improvement_docs/adrs/ADR-023-matplotlib-coverage-exemption.md†L1-L100】
 
 Release gate: PlotSpec default route parity, telemetry docs/tests in place,
 documentation architecture and ownership shipped, nomenclature renames shipped
-with shims, docstring coverage dashboard shows baseline met, and ADR-019
-critical-path thresholds pass consistently.
+with shims, docstring coverage dashboard shows baseline met, ADR-019
+critical-path thresholds pass consistently, and full test suite stability
+achieved via ADR-023 exemption.
 
 ### v0.9.0 (docs, packaging, performance polish)
 

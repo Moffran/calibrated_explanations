@@ -32,6 +32,10 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 try:
     import matplotlib.colors as mcolors
     import matplotlib.pyplot as plt
+    # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
+    import matplotlib.image  # noqa: F401
+    import matplotlib.axes  # noqa: F401
+    import matplotlib.artist  # noqa: F401
 except Exception as _e:  # pragma: no cover - optional dependency guard
     mcolors = None  # type: ignore[assignment]
     plt = None  # type: ignore[assignment]

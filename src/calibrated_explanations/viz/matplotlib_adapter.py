@@ -17,6 +17,14 @@ from ..plotting import __require_matplotlib as _require_mpl  # reuse lazy guard
 from ..plotting import __setup_plot_style as _setup_style
 from .plotspec import BarHPanelSpec, PlotSpec
 
+# Preload matplotlib submodules to avoid lazy loading issues with coverage
+try:
+    import matplotlib.image  # noqa: F401
+    import matplotlib.axes  # noqa: F401
+    import matplotlib.artist  # noqa: F401
+except Exception:  # pragma: no cover
+    pass  # matplotlib not installed or already loaded
+
 
 def render(
     spec: PlotSpec,

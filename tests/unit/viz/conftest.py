@@ -2,6 +2,18 @@
 
 from __future__ import annotations
 
+# CRITICAL: Preload matplotlib submodules BEFORE pytest-cov instruments code.
+# This is placed immediately after __future__ imports (which must be first).
+# matplotlib 3.8+ uses lazy loading that breaks when coverage instruments __getattr__.
+try:
+    import matplotlib
+    import matplotlib.image  # noqa: F401
+    import matplotlib.axes  # noqa: F401
+    import matplotlib.artist  # noqa: F401
+    import matplotlib.pyplot  # noqa: F401 - Force full pyplot initialization
+except Exception:  # pragma: no cover
+    pass  # matplotlib not installed
+
 import contextlib
 import importlib
 
@@ -13,13 +25,10 @@ matplotlib = pytest.importorskip(
 
 _missing_reasons: list[str] = []
 
-if not hasattr(matplotlib, "artist"):
-    _missing_reasons.append("matplotlib.artist attribute missing")
-else:
-    try:
-        importlib.import_module("matplotlib.artist")
-    except Exception as exc:  # pragma: no cover - defensive guard
-        _missing_reasons.append(f"matplotlib.artist import failed: {exc}")
+try:
+    importlib.import_module("matplotlib.artist")
+except Exception as exc:  # pragma: no cover - defensive guard
+    _missing_reasons.append(f"matplotlib.artist import failed: {exc}")
 
 try:
     _axes_module = importlib.import_module("matplotlib.axes")
