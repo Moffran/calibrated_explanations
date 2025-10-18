@@ -155,6 +155,27 @@ def render(
     if spec.title:
         fig.suptitle(spec.title, y=0.98)
 
+    def _regression_sign_colors(colors_cfg):
+        """Return colors for positive/negative regression contributions.
+
+        Legacy regression plots draw positive contributions using the style
+        configuration's "negative" color (historically blue) and negative
+        contributions using the "positive" color (historically red). This
+        helper centralizes that mapping so both the factual and alternative
+        regression paths stay in sync with the legacy implementation.
+        """
+
+        pos_color = colors_cfg.get("negative")
+        neg_color = colors_cfg.get("positive")
+        # Fall back to the opposite entry when a color is missing so we always
+        # return something sensible even if the style configuration is
+        # partially specified.
+        if pos_color is None:
+            pos_color = colors_cfg.get("positive")
+        if neg_color is None:
+            neg_color = colors_cfg.get("negative")
+        return pos_color, neg_color
+
     def _render_header(ax, header):
         pred, low, high = header.pred, header.low, header.high
         # layout: explicit band centers for top (negative) and bottom (positive)
@@ -282,6 +303,8 @@ def render(
             if spec.header is not None and getattr(spec.header, "pred", None) is not None
             else 0.0
         )
+        pos_contrib_color, neg_contrib_color = _regression_sign_colors(config["colors"])
+
         # If header is dual/probabilistic, we still render the body in the
         # contribution coordinate system (centered at zero). Legacy v0.5.1
         # showed solids anchored at zero with translucent interval overlays on
@@ -294,8 +317,8 @@ def render(
             # are drawn with the 'positive' config color but historically the
             # plot used a swapped mapping (blue for positive). Keep the swap
             # so visuals match legacy imagery.
-            pos_color = config["colors"]["negative"]
-            neg_color = config["colors"]["positive"]
+            pos_color = pos_contrib_color
+            neg_color = neg_contrib_color
             alpha_val = float(config["colors"]["alpha"])
 
             # draw base prediction uncertainty band across the whole body
@@ -330,17 +353,12 @@ def render(
                     wh = float(item.interval_high)
                     # normalize ordering
                     wh, wl = (max(wh, wl), min(wh, wl))
-                    # Map interval and value into contribution/body coordinates
-                    # by subtracting the header prediction so that intervals that
-                    # cross the prediction become centered around zero and are
-                    # handled like the non-dual (regression) branch.
-                    try:
-                        header_pred = float(spec.header.pred)
-                    except Exception:  # pragma: no cover - defensive fallback
-                        header_pred = 0.0
-                    val_body = float(val) - header_pred
-                    wl_body = wl - header_pred
-                    wh_body = wh - header_pred
+                    # Map interval and value directly into contribution/body
+                    # coordinates without shifting by the header prediction so
+                    # we match the legacy probabilistic coordinate system.
+                    val_body = float(val)
+                    wl_body = wl
+                    wh_body = wh
 
                     # compute solid endpoints consistently: draw solids from
                     # contribution-space zero to the bar value (val_body).
@@ -387,20 +405,25 @@ def render(
 
                     # draw translucent overlay: if the interval crosses the pivot
                     # split it on either side using the sign colors; else draw
-                    # the interval wl_body..wh_body tinted via chosen color.
+                    # the interval wl_body..wh_body tinted via the unswapped
+                    # probability-space sign colors (positive==blue, negative==red).
                     if draw_intervals:
+                        # Use unswapped colors for overlays so tests and
+                        # legacy coordinate-space expectations are met.
+                        overlay_pos = config["colors"]["positive"]
+                        overlay_neg = config["colors"]["negative"]
                         if wl_body < pivot < wh_body:
                             # negative side: wl_body .. pivot
-                            ax.fill_betweenx(xj, wl_body, pivot, color=neg_color, alpha=alpha_val)
+                            ax.fill_betweenx(xj, wl_body, pivot, color=overlay_neg, alpha=alpha_val)
                             # positive side: pivot .. wh_body
-                            ax.fill_betweenx(xj, pivot, wh_body, color=pos_color, alpha=alpha_val)
+                            ax.fill_betweenx(xj, pivot, wh_body, color=overlay_pos, alpha=alpha_val)
                             if export_drawn_primitives:
                                 primitives.setdefault("overlays", []).append(
                                     {
                                         "index": j,
                                         "x0": float(wl_body),
                                         "x1": float(pivot),
-                                        "color": neg_color,
+                                        "color": overlay_neg,
                                         "alpha": float(alpha_val),
                                     }
                                 )
@@ -409,19 +432,23 @@ def render(
                                         "index": j,
                                         "x0": float(pivot),
                                         "x1": float(wh_body),
-                                        "color": pos_color,
+                                        "color": overlay_pos,
                                         "alpha": float(alpha_val),
                                     }
                                 )
                         else:
-                            ax.fill_betweenx(xj, wl_body, wh_body, color=color, alpha=alpha_val)
+                            # choose overlay color by interval center sign using
+                            # unswapped probability colors
+                            center = (wl_body + wh_body) / 2.0
+                            overlay_color = overlay_pos if center >= 0.0 else overlay_neg
+                            ax.fill_betweenx(xj, wl_body, wh_body, color=overlay_color, alpha=alpha_val)
                             if export_drawn_primitives:
                                 primitives.setdefault("overlays", []).append(
                                     {
                                         "index": j,
                                         "x0": float(wl_body),
                                         "x1": float(wh_body),
-                                        "color": color,
+                                        "color": overlay_color,
                                         "alpha": float(alpha_val),
                                     }
                                 )
@@ -520,15 +547,14 @@ def render(
             for j, item in enumerate(body.bars):
                 xj = np.linspace(xs[j] - 0.2, xs[j] + 0.2, 2)
                 val = float(item.value)
-                # Determine solid bar colors: for dual/probabilistic headers we want
-                # positive contributions drawn with the 'blue' style and negative
-                # with 'red' (legacy visual). The config historically labels
-                # these as 'positive'/'negative'; to avoid depending on their
-                # exact values we swap them for dual headers so positive uses
-                # the 'negative' config color and vice versa (this matches
-                # legacy imagery where blue==positive).
-                pos = config["colors"]["positive"]
-                neg = config["colors"]["negative"]
+                # Determine solid bar colors: regression visuals match legacy
+                # by drawing positive contributions with the configured
+                # "negative" color (historically blue) and negative
+                # contributions with the configured "positive" color
+                # (historically red). Reuse the shared helper so factual and
+                # alternative regression paths stay aligned.
+                pos = pos_contrib_color
+                neg = neg_contrib_color
                 color = pos if val > 0 else neg
                 # Determine an overlay color for the translucent interval overlay.
                 # Choose the overlay color based on the sign of the mapped interval
@@ -537,16 +563,16 @@ def render(
                 # solid colors but still pick overlay_color by interval sign.
                 overlay_color = None
                 try:
-                    # compute mapped interval center (in header-relative body coords)
+                    # compute interval center directly in legacy coordinates so
+                    # overlay colors align with the provided values.
                     if item.interval_low is not None and item.interval_high is not None:
-                        # map into body coordinates relative to header pred
                         wl_f = float(item.interval_low)
                         wh_f = float(item.interval_high)
-                        center = ((wl_f + wh_f) / 2.0) - header_pred_f
+                        center = (wl_f + wh_f) / 2.0
                         # decide which color to use for overlay based on center sign
                         # positive center -> positive overlay color; negative -> negative color
-                        pos_col = config["colors"]["positive"]
-                        neg_col = config["colors"]["negative"]
+                        pos_col = pos_contrib_color
+                        neg_col = neg_contrib_color
                         overlay_color = pos_col if center >= 0.0 else neg_col
                         # If VennAbers coloring is available, use it but only to tint
                         # the chosen overlay color (keep sign correctness).
@@ -571,18 +597,8 @@ def render(
                         logging.getLogger(__name__).debug(  # pragma: no cover
                             "Failed to compare item interval to header interval: %s", exc
                         )
-                    # Map interval into body coordinates (zero-centred) by subtracting header prediction
-                    try:
-                        ilo = wl - header_pred_f
-                        ihi = wh - header_pred_f
-                    except Exception as exc:
-                        logging.getLogger(__name__).debug(  # pragma: no cover
-                            "Failed to map interval into body coords: %s", exc
-                        )
-                        ilo, ihi = wl, wh
-                    ilo, ihi = (ilo, ihi) if ilo <= ihi else (ihi, ilo)
-                    # Map value into body coords as well
-                    val_body = val - header_pred_f
+                    ilo, ihi = (wl, wh) if wl <= wh else (wh, wl)
+                    val_body = val
                     # Determine legacy compatibility: default to suppressing
                     # solids when interval crosses zero (legacy behaviour),
                     # but respect explicit flags provided by builder/body or
@@ -603,9 +619,7 @@ def render(
                                 xj,
                                 ilo,
                                 0.0,
-                                color=(
-                                    neg_col if "neg_col" in locals() else (overlay_color or color)
-                                ),
+                                color=neg_col,
                                 alpha=alpha_val,
                             )
                             # draw positive side overlay (0 .. ihi)
@@ -613,9 +627,7 @@ def render(
                                 xj,
                                 0.0,
                                 ihi,
-                                color=(
-                                    pos_col if "pos_col" in locals() else (overlay_color or color)
-                                ),
+                                color=pos_col,
                                 alpha=alpha_val,
                             )
                             if export_drawn_primitives:
@@ -624,11 +636,7 @@ def render(
                                         "index": j,
                                         "x0": float(ilo),
                                         "x1": 0.0,
-                                        "color": (
-                                            neg_col
-                                            if "neg_col" in locals()
-                                            else (overlay_color or color)
-                                        ),
+                                        "color": neg_col,
                                         "alpha": float(alpha_val),
                                     }
                                 )
@@ -637,11 +645,7 @@ def render(
                                         "index": j,
                                         "x0": 0.0,
                                         "x1": float(ihi),
-                                        "color": (
-                                            pos_col
-                                            if "pos_col" in locals()
-                                            else (overlay_color or color)
-                                        ),
+                                        "color": pos_col,
                                         "alpha": float(alpha_val),
                                     }
                                 )
@@ -667,11 +671,7 @@ def render(
                                     xj,
                                     ilo,
                                     0.0,
-                                    color=(
-                                        neg_col
-                                        if "neg_col" in locals()
-                                        else (overlay_color or color)
-                                    ),
+                                    color=neg_col,
                                     alpha=alpha_val,
                                 )
                                 # positive side (0 .. ihi)
@@ -679,11 +679,7 @@ def render(
                                     xj,
                                     0.0,
                                     ihi,
-                                    color=(
-                                        pos_col
-                                        if "pos_col" in locals()
-                                        else (overlay_color or color)
-                                    ),
+                                    color=pos_col,
                                     alpha=alpha_val,
                                 )
                                 if export_drawn_primitives:
@@ -692,11 +688,7 @@ def render(
                                             "index": j,
                                             "x0": float(ilo),
                                             "x1": 0.0,
-                                            "color": (
-                                                neg_col
-                                                if "neg_col" in locals()
-                                                else (overlay_color or color)
-                                            ),
+                                            "color": neg_col,
                                             "alpha": float(alpha_val),
                                         }
                                     )
@@ -705,11 +697,7 @@ def render(
                                             "index": j,
                                             "x0": 0.0,
                                             "x1": float(ihi),
-                                            "color": (
-                                                pos_col
-                                                if "pos_col" in locals()
-                                                else (overlay_color or color)
-                                            ),
+                                            "color": pos_col,
                                             "alpha": float(alpha_val),
                                         }
                                     )
