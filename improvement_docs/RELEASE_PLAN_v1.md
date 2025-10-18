@@ -137,10 +137,21 @@ achieved via ADR-023 exemption.
    non-critical modules toward the 90% floor to reduce debt before the v1 RC, and enable
    `--cov-fail-under=88` in CI.
 
+9. Extend plugin CLI trust toggles to interval and plot plugins.
+   - Add trust/untrust commands for interval calibrators and plot components (builders/renderers/styles) mirroring existing explanation plugin flows; update docs and CLI tests.
+   - Ensure trust state is reflected in `list` output and respected by resolution helpers.
+10. Enable entry-point discovery for interval and plot plugins.
+    - Discover and register identifier-keyed interval and plot plugins via entry points alongside explanations; surface discovery in CLI and guard with the trust model.
+    - Document entry-point group names and add smoke tests.
+11. Add first-class explanation export convenience.
+    - Provide `to_json()`/`from_json()` (or `export_json`) on explanation collections/instances that wrap existing schema v1 helpers; document usage and keep adapters as the single source of truth.
+
 Release gate: Docs CI green, packaging metadata includes CLI, caching/parallel
 controls implemented with ADR updates merged, migration guide available,
-docstring lint gates passing, ADR-019 waivers documented, and no outstanding
-deprecated naming shims slated for removal.
+docstring lint gates passing, ADR-019 waivers documented, plugin CLI supports
+trust toggles for explanations/intervals/plots, entry-point discovery enabled
+for interval/plot plugins, explanation export convenience documented, and no
+outstanding deprecated naming shims slated for removal.
 
 ### v1.0.0-rc (release candidate readiness)
 
