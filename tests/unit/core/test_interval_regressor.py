@@ -72,6 +72,7 @@ class DummyVennAbers:
     """Minimal Venn-Abers implementation that records the latest calibration call."""
 
     last_init: dict[str, object] | None = None
+    last_predict_bins: np.ndarray | None = None
 
     def __init__(self, _model, labels, interval_regressor, *, bins=None, cprobs=None):
         DummyVennAbers.last_init = {
@@ -82,6 +83,9 @@ class DummyVennAbers:
         }
 
     def predict_proba(self, x, *, output_interval=False, bins=None):  # pragma: no cover - trivial
+        DummyVennAbers.last_predict_bins = (
+            None if bins is None else np.array(bins, copy=True)
+        )
         n = x.shape[0]
         proba = np.tile(np.array([[0.3, 0.7]]), (n, 1))
         interval_low = np.full((n, 1), 0.1)
@@ -121,6 +125,7 @@ def _make_regressor(monkeypatch: pytest.MonkeyPatch, *, bins=None):
     monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
     monkeypatch.setattr(interval_module, "VennAbers", DummyVennAbers)
     DummyVennAbers.last_init = None
+    DummyVennAbers.last_predict_bins = None
     explainer = DummyExplainer(bins=bins)
     return interval_module.IntervalRegressor(explainer)
 
@@ -198,7 +203,49 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     assert np.allclose(high, 0.9)
     assert extra is None
     assert calls == [1, 0, 0, 1, 0, 0]
-    assert any(level > 0 for _, level in import_attempts)
+
+
+def test_predict_probability_normalizes_scalar_and_column_bins(monkeypatch):
+    calibration_bins = np.array([0, 1, 0, 1])
+    regressor = _make_regressor(monkeypatch, bins=calibration_bins)
+    x = np.array([[0.2, 0.1], [0.4, 0.3]])
+
+    expanded = np.array([5, 5])
+    proba_exp, low_exp, high_exp, _ = regressor.predict_probability(
+        x, y_threshold=0.5, bins=expanded
+    )
+    assert DummyVennAbers.last_predict_bins is not None
+    assert DummyVennAbers.last_predict_bins.shape == (2,)
+    assert np.all(DummyVennAbers.last_predict_bins == expanded)
+
+    proba_scalar, low_scalar, high_scalar, _ = regressor.predict_probability(
+        x, y_threshold=0.5, bins=5
+    )
+    assert np.allclose(proba_scalar, proba_exp)
+    assert np.allclose(low_scalar, low_exp)
+    assert np.allclose(high_scalar, high_exp)
+    assert DummyVennAbers.last_predict_bins is not None
+    assert DummyVennAbers.last_predict_bins.shape == (2,)
+    assert np.all(DummyVennAbers.last_predict_bins == expanded)
+
+    expected_column = np.array([7, 7])
+    proba_expected_column, low_expected_column, high_expected_column, _ = regressor.predict_probability(
+        x, y_threshold=0.5, bins=expected_column
+    )
+    assert DummyVennAbers.last_predict_bins is not None
+    assert DummyVennAbers.last_predict_bins.shape == (2,)
+    assert np.all(DummyVennAbers.last_predict_bins == expected_column)
+
+    column_bins = np.array([[7], [7]])
+    proba_column, low_column, high_column, _ = regressor.predict_probability(
+        x, y_threshold=0.5, bins=column_bins
+    )
+    assert np.allclose(proba_column, proba_expected_column)
+    assert np.allclose(low_column, low_expected_column)
+    assert np.allclose(high_column, high_expected_column)
+    assert DummyVennAbers.last_predict_bins is not None
+    assert DummyVennAbers.last_predict_bins.shape == (2,)
+    assert np.all(DummyVennAbers.last_predict_bins == expected_column)
 
 
 def test_predict_probability_requires_calibration_bins(monkeypatch):

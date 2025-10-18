@@ -86,16 +86,35 @@ class IntervalRegressor:
         """
         if bins is not None and self.bins is None:
             raise ValueError("Calibration bins must be assigned when test bins are submitted.")
+
+        n_samples = x.shape[0]
+        normalized_bins = None
+        if bins is not None:
+            candidate = np.asarray(bins)
+            if candidate.ndim == 0:
+                candidate = np.repeat(candidate, n_samples)
+            elif candidate.ndim > 1:
+                candidate = candidate.reshape(-1)
+            if candidate.shape[0] != n_samples:
+                raise ValueError(
+                    "The length of test bins must match the number of test instances."
+                )
+            normalized_bins = candidate.tolist()
+
+        iter_bins = normalized_bins if normalized_bins is not None else [None] * n_samples
+
         self.y_threshold = y_threshold
         if np.isscalar(self.y_threshold) or isinstance(self.y_threshold, tuple):
             self.current_y_threshold = self.y_threshold
             self.compute_proba_cal(self.y_threshold)
             proba, low, high = self.split["va"].predict_proba(
-                x, output_interval=True, bins=bins
+                x,
+                output_interval=True,
+                bins=normalized_bins if normalized_bins is not None else None,
             )
             return proba[:, 1], low, high, None
 
-        bins = bins if bins is not None else [None] * x.shape[0]
+        bins = iter_bins
         interval = np.zeros((x.shape[0], 2))
         proba = np.zeros(x.shape[0])
         for i, _ in enumerate(proba):
