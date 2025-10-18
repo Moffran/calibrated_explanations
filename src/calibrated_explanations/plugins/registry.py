@@ -94,6 +94,36 @@ def _update_trust_keys(meta: Dict[str, Any], trusted: bool) -> None:
     else:
         meta["trust"] = bool(trusted)
 
+
+def _propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
+    """Best-effort propagation of trust metadata back onto *plugin*."""
+
+    raw_meta = getattr(plugin, "plugin_meta", None)
+    if raw_meta is None:
+        return
+
+    trusted_value = meta.get("trusted", bool(meta))
+    trust_value = meta.get("trust", trusted_value)
+
+    if isinstance(raw_meta, dict):
+        raw_meta["trusted"] = trusted_value
+        raw_meta["trust"] = trust_value
+        return
+
+    setter = getattr(raw_meta, "__setitem__", None)
+    if setter is None:
+        return
+
+    try:
+        raw_meta["trusted"] = trusted_value
+        raw_meta["trust"] = trust_value
+    except Exception:  # pragma: no cover - defensive
+        _LOGGER.debug(
+            "Failed to propagate trust metadata for plugin %r",
+            plugin,
+            exc_info=True,
+        )
+
 def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
     """Emit a warning about an untrusted plugin once."""
     name = meta.get("name", "<unknown>")
@@ -1036,6 +1066,129 @@ def mark_explanation_untrusted(identifier: str) -> ExplanationPluginDescriptor:
     untrust_plugin(descriptor.plugin)
     return descriptor
 
+
+def _refresh_interval_descriptor_trust(
+    identifier: str, *, trusted: bool
+) -> IntervalPluginDescriptor:
+    """Return interval descriptor with updated trust state."""
+
+    descriptor = find_interval_descriptor(identifier)
+    if descriptor is None:
+        raise KeyError(f"Interval plugin '{identifier}' is not registered")
+
+    updated_meta = dict(descriptor.metadata)
+    _update_trust_keys(updated_meta, trusted)
+
+    updated = IntervalPluginDescriptor(
+        identifier=descriptor.identifier,
+        plugin=descriptor.plugin,
+        metadata=updated_meta,
+        trusted=trusted,
+    )
+
+    _INTERVAL_PLUGINS[identifier] = updated
+    if trusted:
+        _TRUSTED_INTERVALS.add(identifier)
+    else:
+        _TRUSTED_INTERVALS.discard(identifier)
+
+    _propagate_trust_metadata(descriptor.plugin, updated_meta)
+    return updated
+
+
+def mark_interval_trusted(identifier: str) -> IntervalPluginDescriptor:
+    """Mark the interval plugin *identifier* as trusted."""
+
+    return _refresh_interval_descriptor_trust(identifier, trusted=True)
+
+
+def mark_interval_untrusted(identifier: str) -> IntervalPluginDescriptor:
+    """Remove the interval plugin *identifier* from the trusted set."""
+
+    return _refresh_interval_descriptor_trust(identifier, trusted=False)
+
+
+def _refresh_plot_builder_trust(
+    identifier: str, *, trusted: bool
+) -> PlotBuilderDescriptor:
+    """Return builder descriptor with updated trust metadata."""
+
+    descriptor = find_plot_builder_descriptor(identifier)
+    if descriptor is None:
+        raise KeyError(f"Plot builder '{identifier}' is not registered")
+
+    updated_meta = dict(descriptor.metadata)
+    _update_trust_keys(updated_meta, trusted)
+
+    updated = PlotBuilderDescriptor(
+        identifier=descriptor.identifier,
+        builder=descriptor.builder,
+        metadata=updated_meta,
+        trusted=trusted,
+    )
+
+    _PLOT_BUILDERS[identifier] = updated
+    if trusted:
+        _TRUSTED_PLOT_BUILDERS.add(identifier)
+    else:
+        _TRUSTED_PLOT_BUILDERS.discard(identifier)
+
+    _propagate_trust_metadata(descriptor.builder, updated_meta)
+    return updated
+
+
+def mark_plot_builder_trusted(identifier: str) -> PlotBuilderDescriptor:
+    """Mark the plot builder *identifier* as trusted."""
+
+    return _refresh_plot_builder_trust(identifier, trusted=True)
+
+
+def mark_plot_builder_untrusted(identifier: str) -> PlotBuilderDescriptor:
+    """Remove the plot builder *identifier* from the trusted set."""
+
+    return _refresh_plot_builder_trust(identifier, trusted=False)
+
+
+def _refresh_plot_renderer_trust(
+    identifier: str, *, trusted: bool
+) -> PlotRendererDescriptor:
+    """Return renderer descriptor with updated trust metadata."""
+
+    descriptor = find_plot_renderer_descriptor(identifier)
+    if descriptor is None:
+        raise KeyError(f"Plot renderer '{identifier}' is not registered")
+
+    updated_meta = dict(descriptor.metadata)
+    _update_trust_keys(updated_meta, trusted)
+
+    updated = PlotRendererDescriptor(
+        identifier=descriptor.identifier,
+        renderer=descriptor.renderer,
+        metadata=updated_meta,
+        trusted=trusted,
+    )
+
+    _PLOT_RENDERERS[identifier] = updated
+    if trusted:
+        _TRUSTED_PLOT_RENDERERS.add(identifier)
+    else:
+        _TRUSTED_PLOT_RENDERERS.discard(identifier)
+
+    _propagate_trust_metadata(descriptor.renderer, updated_meta)
+    return updated
+
+
+def mark_plot_renderer_trusted(identifier: str) -> PlotRendererDescriptor:
+    """Mark the plot renderer *identifier* as trusted."""
+
+    return _refresh_plot_renderer_trust(identifier, trusted=True)
+
+
+def mark_plot_renderer_untrusted(identifier: str) -> PlotRendererDescriptor:
+    """Remove the plot renderer *identifier* from the trusted set."""
+
+    return _refresh_plot_renderer_trust(identifier, trusted=False)
+
 def register(plugin: ExplainerPlugin) -> None:
     """Register a plugin after minimal metadata validation.
 
@@ -1204,6 +1357,12 @@ __all__ = [
     "load_entrypoint_plugins",
     "mark_explanation_trusted",
     "mark_explanation_untrusted",
+    "mark_interval_trusted",
+    "mark_interval_untrusted",
+    "mark_plot_builder_trusted",
+    "mark_plot_builder_untrusted",
+    "mark_plot_renderer_trusted",
+    "mark_plot_renderer_untrusted",
     "register",
     "unregister",
     "clear",

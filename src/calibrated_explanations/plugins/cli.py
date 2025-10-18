@@ -9,15 +9,42 @@ from typing import Any, Sequence
 from .registry import (
     find_explanation_descriptor,
     find_interval_descriptor,
+    find_plot_builder_descriptor,
+    find_plot_renderer_descriptor,
     find_plot_style_descriptor,
     list_explanation_descriptors,
     list_interval_descriptors,
+    list_plot_builder_descriptors,
+    list_plot_renderer_descriptors,
     list_plot_style_descriptors,
     mark_explanation_trusted,
     mark_explanation_untrusted,
+    mark_interval_trusted,
+    mark_interval_untrusted,
+    mark_plot_builder_trusted,
+    mark_plot_builder_untrusted,
+    mark_plot_renderer_trusted,
+    mark_plot_renderer_untrusted,
 )
 
-_KIND_CHOICES = ("explanations", "intervals", "plots", "all")
+_LIST_KIND_CHOICES = (
+    "explanations",
+    "intervals",
+    "plot-builders",
+    "plot-renderers",
+    "plots",
+    "all",
+)
+_SHOW_KIND_CHOICES = _LIST_KIND_CHOICES[:-1]
+_TRUST_KIND_CHOICES = _LIST_KIND_CHOICES[:-2]
+
+_SINGULAR_LABELS = {
+    "explanations": "Explanation plugin",
+    "intervals": "Interval plugin",
+    "plot-builders": "Plot builder",
+    "plot-renderers": "Plot renderer",
+    "plots": "Plot style",
+}
 
 
 def _string_tuple(value: Any) -> Sequence[str]:
@@ -94,6 +121,37 @@ def _emit_plot_descriptor(descriptor) -> None:
         print(f"    {'; '.join(extras)}")
 
 
+def _emit_plot_builder_descriptor(descriptor) -> None:
+    """Display a plot builder descriptor with trust context."""
+
+    meta = descriptor.metadata
+    trust_state = "trusted" if descriptor.trusted else "untrusted"
+    style = meta.get("style", "-")
+    capabilities = ", ".join(_string_tuple(meta.get("capabilities"))) or "-"
+    outputs = ", ".join(_string_tuple(meta.get("output_formats"))) or "-"
+    dependencies = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
+    print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
+    print(f"    style={style}; capabilities={capabilities}")
+    print(f"    output_formats={outputs}; dependencies={dependencies}")
+    if "legacy_compatible" in meta:
+        legacy = "yes" if meta.get("legacy_compatible") else "no"
+        print(f"    legacy_compatible={legacy}")
+
+
+def _emit_plot_renderer_descriptor(descriptor) -> None:
+    """Display a plot renderer descriptor with trust context."""
+
+    meta = descriptor.metadata
+    trust_state = "trusted" if descriptor.trusted else "untrusted"
+    capabilities = ", ".join(_string_tuple(meta.get("capabilities"))) or "-"
+    outputs = ", ".join(_string_tuple(meta.get("output_formats"))) or "-"
+    dependencies = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
+    interactive = "yes" if meta.get("supports_interactive") else "no"
+    print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
+    print(f"    capabilities={capabilities}; output_formats={outputs}")
+    print(f"    supports_interactive={interactive}; dependencies={dependencies}")
+
+
 def _cmd_list(args: argparse.Namespace) -> int:
     """Handle the `plugins list` subcommand."""
     kind = args.kind
@@ -121,6 +179,28 @@ def _cmd_list(args: argparse.Namespace) -> int:
         if kind == "all":
             print()
 
+    if kind in ("plot-builders", "all"):
+        descriptors = list_plot_builder_descriptors(trusted_only=trusted_only)
+        _emit_header("Plot builders")
+        if not descriptors:
+            print("  <none>")
+        else:
+            for descriptor in descriptors:
+                _emit_plot_builder_descriptor(descriptor)
+        if kind == "all":
+            print()
+
+    if kind in ("plot-renderers", "all"):
+        descriptors = list_plot_renderer_descriptors(trusted_only=trusted_only)
+        _emit_header("Plot renderers")
+        if not descriptors:
+            print("  <none>")
+        else:
+            for descriptor in descriptors:
+                _emit_plot_renderer_descriptor(descriptor)
+        if kind == "all":
+            print()
+
     if kind in ("plots", "all"):
         descriptors = list_plot_style_descriptors()
         _emit_header("Plot styles")
@@ -141,11 +221,16 @@ def _cmd_show(args: argparse.Namespace) -> int:
         descriptor = find_explanation_descriptor(identifier)
     elif kind == "intervals":
         descriptor = find_interval_descriptor(identifier)
+    elif kind == "plot-builders":
+        descriptor = find_plot_builder_descriptor(identifier)
+    elif kind == "plot-renderers":
+        descriptor = find_plot_renderer_descriptor(identifier)
     else:
         descriptor = find_plot_style_descriptor(identifier)
 
     if descriptor is None:
-        print(f"{kind[:-1].capitalize()} plugin '{identifier}' is not registered")
+        label = _SINGULAR_LABELS.get(kind, kind.capitalize())
+        print(f"{label} '{identifier}' is not registered")
         return 1
 
     meta = dict(descriptor.metadata)
@@ -160,12 +245,27 @@ def _cmd_show(args: argparse.Namespace) -> int:
 def _cmd_trust(args: argparse.Namespace) -> int:
     """Handle the `plugins trust|untrust` subcommand."""
     identifier = args.identifier
-    if args.action == "trust":
-        descriptor = mark_explanation_trusted(identifier)
-        print(f"Marked '{descriptor.identifier}' as trusted")
+    kind = args.kind
+    action = args.action
+
+    if kind == "explanations":
+        marker = mark_explanation_trusted if action == "trust" else mark_explanation_untrusted
+    elif kind == "intervals":
+        marker = mark_interval_trusted if action == "trust" else mark_interval_untrusted
+    elif kind == "plot-builders":
+        marker = mark_plot_builder_trusted if action == "trust" else mark_plot_builder_untrusted
     else:
-        descriptor = mark_explanation_untrusted(identifier)
-        print(f"Marked '{descriptor.identifier}' as untrusted")
+        marker = mark_plot_renderer_trusted if action == "trust" else mark_plot_renderer_untrusted
+
+    try:
+        descriptor = marker(identifier)
+    except KeyError as exc:  # pragma: no cover - exercised via CLI tests
+        message = exc.args[0] if exc.args else str(exc)
+        print(message)
+        return 1
+
+    state = "trusted" if action == "trust" else "untrusted"
+    print(f"Marked '{descriptor.identifier}' as {state}")
     return 0
 
 
@@ -179,7 +279,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     list_parser = subparsers.add_parser("list", help="List registered plugins")
     list_parser.add_argument(
         "kind",
-        choices=_KIND_CHOICES,
+        choices=_LIST_KIND_CHOICES,
         nargs="?",
         default="explanations",
         help="Plugin category to list",
@@ -195,7 +295,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     show_parser.add_argument("identifier", help="Plugin identifier to inspect")
     show_parser.add_argument(
         "--kind",
-        choices=_KIND_CHOICES[:-1],
+        choices=_SHOW_KIND_CHOICES,
         default="explanations",
         help="Plugin category to inspect",
     )
@@ -203,16 +303,28 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     trust_parser = subparsers.add_parser(
         "trust",
-        help="Mark an explanation plugin as trusted",
+        help="Mark a plugin as trusted",
     )
-    trust_parser.add_argument("identifier", help="Explanation plugin identifier")
+    trust_parser.add_argument("identifier", help="Plugin identifier")
+    trust_parser.add_argument(
+        "--kind",
+        choices=_TRUST_KIND_CHOICES,
+        default="explanations",
+        help="Plugin category to mark as trusted",
+    )
     trust_parser.set_defaults(func=_cmd_trust, action="trust")
 
     untrust_parser = subparsers.add_parser(
         "untrust",
-        help="Remove an explanation plugin from the trusted set",
+        help="Remove a plugin from the trusted set",
     )
-    untrust_parser.add_argument("identifier", help="Explanation plugin identifier")
+    untrust_parser.add_argument("identifier", help="Plugin identifier")
+    untrust_parser.add_argument(
+        "--kind",
+        choices=_TRUST_KIND_CHOICES,
+        default="explanations",
+        help="Plugin category to mark as untrusted",
+    )
     untrust_parser.set_defaults(func=_cmd_trust, action="untrust")
 
     args = parser.parse_args(argv)
