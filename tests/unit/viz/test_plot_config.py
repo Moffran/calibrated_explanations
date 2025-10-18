@@ -1,5 +1,8 @@
 """Tests for the plot configuration module"""
 
+import configparser
+from pathlib import Path
+
 import numpy as np
 import pytest
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
@@ -36,6 +39,39 @@ def test_default_plot_config():
     config = plotting.load_plot_config()
     assert config["style"]["base"] == "seaborn-v0_8-whitegrid"
     assert config["fonts"]["family"] == "sans-serif"
+
+
+def test_plot_config_reads_and_writes_expected_file():
+    """Ensure configuration helpers target the packaged configuration file."""
+
+    config_path = (
+        Path(__file__).resolve().parents[3]
+        / "src"
+        / "calibrated_explanations"
+        / "utils"
+        / "configurations"
+        / "plot_config.ini"
+    )
+    assert config_path.exists(), "Expected packaged plot_config.ini to exist"
+
+    original_contents = config_path.read_text(encoding="utf-8")
+    parser = configparser.ConfigParser()
+    parser.read_string(original_contents)
+
+    parser["style"]["base"] = "test-read-style"
+
+    try:
+        with config_path.open("w", encoding="utf-8") as file_handle:
+            parser.write(file_handle)
+
+        config = plotting.load_plot_config()
+        assert config["style"]["base"] == "test-read-style"
+
+        plotting.update_plot_config({"style": {"base": "test-write-style"}})
+        updated_text = config_path.read_text(encoding="utf-8")
+        assert "test-write-style" in updated_text
+    finally:
+        config_path.write_text(original_contents, encoding="utf-8")
 
 
 def test_plotting_update_plot_config():

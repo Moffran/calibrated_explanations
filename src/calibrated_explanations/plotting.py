@@ -125,12 +125,16 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments, fixme
 
 
+def _plot_config_path() -> Path:
+    """Return the resolved path to the plot configuration file."""
+
+    return Path(__file__).resolve().parent / "utils" / "configurations" / "plot_config.ini"
+
+
 def load_plot_config():
     """Load plot configuration from INI file."""
     config = configparser.ConfigParser()
-    config_path = os.path.join(
-        os.path.dirname(__file__), "../calibrated-explanations/utils/configurations/plot_config.ini"
-    )
+    config_path = _plot_config_path()
 
     # Set default values
     config["style"] = {"base": "seaborn-v0_8-whitegrid"}
@@ -163,7 +167,7 @@ def load_plot_config():
     }
 
     # Read config file if it exists
-    config.read(config_path)
+    config.read(str(config_path), encoding="utf-8")
     return config
 
 
@@ -179,11 +183,9 @@ def update_plot_config(new_config):
             config[section][key] = str(value)
 
     # Write updated config to file
-    config_path = os.path.join(
-        os.path.dirname(__file__), "../calibrated-explanations/utils/configurations/plot_config.ini"
-    )
-    os.makedirs(os.path.dirname(config_path), exist_ok=True)  # Ensure directory exists
-    with open(config_path, "w", encoding="utf-8") as f:
+    config_path = _plot_config_path()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with config_path.open("w", encoding="utf-8") as f:
         config.write(f)
 
 
