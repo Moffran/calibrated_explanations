@@ -103,7 +103,9 @@ def safe_isinstance(obj, class_path_str):
 def safe_import(module_name, class_name=None):
     """Safely import a module, if it is not installed, print a message and return None."""
     try:
-        imported_module = importlib.import_module(module_name)
+        imported_module = sys.modules.get(module_name)
+        if imported_module is None:
+            imported_module = importlib.import_module(module_name)
         if class_name is None:
             return imported_module
         if isinstance(class_name, (list, np.ndarray)):

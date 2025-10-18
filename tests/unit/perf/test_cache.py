@@ -80,3 +80,34 @@ def test_cache_helpers_cover_len_contains_and_make_key() -> None:
     assert "feature" in cache
     assert len(cache) == 1
     assert make_key(["feature", 1]) == ("feature", 1)
+
+
+def test_lru_cache_evicts_least_recently_used_entry():
+    cache = LRUCache(max_items=2)
+    cache.set("a", 1)
+    cache.set("b", 2)
+    # Touch "a" so it becomes most recently used.
+    assert cache.get("a") == 1
+    cache.set("c", 3)
+
+    assert cache.get("a") == 1
+    assert cache.get("c") == 3
+    # "b" should have been evicted because it was the least recently used.
+    assert cache.get("b") is None
+
+
+def test_lru_cache_get_returns_default_when_missing():
+    cache = LRUCache(max_items=1)
+    assert cache.get("missing") is None
+    assert cache.get("missing", default=42) == 42
+
+
+def test_lru_cache_rejects_non_positive_capacity():
+    with pytest.raises(ValueError, match="max_items"):
+        LRUCache(max_items=0)
+
+
+def test_make_key_returns_tuple_of_hashable_parts():
+    key = make_key(["a", 1, ("nested", 2)])
+    assert key == ("a", 1, ("nested", 2))
+    assert isinstance(key, tuple)
