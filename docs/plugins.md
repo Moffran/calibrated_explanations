@@ -22,13 +22,17 @@ resolution paths can therefore exclude unreviewed plugins, and the CLI helpers
 expose round-trip commands (`trust` / `untrust`) to toggle that bit without
 restarting the process.【F:src/calibrated_explanations/plugins/registry.py†L243-L333】【F:src/calibrated_explanations/plugins/cli.py†L75-L145】
 
-## Explanation plugin workflow (ADR-015)
+## Explanation plugin workflow (ADR-015 & ADR-026)
 
 Explanation plugins receive two frozen dataclasses from the core explainer:
 `ExplanationContext` (static model metadata and dependency hints) and
-`ExplanationRequest` (per-batch parameters). Plugins must call the provided
-predict bridge to obtain calibrated predictions/intervals and return an
-`ExplanationBatch` describing the explanation collection they produced.【F:src/calibrated_explanations/plugins/explanations.py†L23-L74】【F:src/calibrated_explanations/core/calibrated_explainer.py†L525-L608】
+`ExplanationRequest` (per-batch parameters). ADR-026 documents the runtime
+semantics expected from explanation plugins—when metadata is injected, how the
+bridge monitor is enforced, and which collection hooks must be preserved—so new
+implementations can reason about behaviour without cloning the legacy code. In
+practice, plugins must call the provided predict bridge to obtain calibrated
+predictions/intervals and return an `ExplanationBatch` describing the
+explanation collection they produced.【F:src/calibrated_explanations/plugins/explanations.py†L23-L74】【F:src/calibrated_explanations/core/calibrated_explainer.py†L525-L608】【F:improvement_docs/adrs/ADR-026-explanation-plugin-semantics.md†L1-L153】
 
 At runtime the explainer enforces ADR constraints:
 
@@ -95,7 +99,7 @@ the explanation collection. The payload mirrors the v0.8.0 data model:
 
 Downstream services can therefore audit which plugin branches executed, confirm
 PlotSpec routing versus legacy fallbacks, and capture preprocessing provenance
-without probing runtime internals.【F:calibrated-explanations/specs/v0.8.0/data-model.md†L93-L142】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1098-L1138】
+without probing runtime internals.【F:docs/concepts/telemetry.md†L1-L25】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1098-L1138】
 See also {doc}`concepts/telemetry` for schema details, and point practitioners to
 {doc}`how-to/interpret_explanations` so they understand how the telemetry fields
 translate into actionable insights.
