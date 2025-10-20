@@ -1,6 +1,6 @@
 # ADR-020: Legacy User API Stability Guardrails
 
-Status: Proposed
+Status: Draft
 Date: 2025-10-07
 Deciders: Core maintainers
 Reviewers: TBD

@@ -1,7 +1,7 @@
 # ADR-025: Legacy Plot Rendering Semantics
 
 Status: Draft
-Date: 2025-02-14
+Date: 2025-10-18
 Deciders: Core maintainers
 Reviewers: TBD
 Supersedes: None

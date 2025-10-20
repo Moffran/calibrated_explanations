@@ -1,7 +1,7 @@
 # ADR-026 — Explanation Plugin Semantics and Legacy Contracts
 
 Status: Draft  
-Date: 2025-10-10  
+Date: 2025-10-18  
 Deciders: Core maintainers  
 Reviewers: TBD  
 Supersedes: None  

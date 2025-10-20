@@ -1,7 +1,7 @@
 # ADR-022: Documentation Information Architecture
 
 Status: Accepted
-Date: 2025-10-08
+Date: 2025-10-12
 Deciders: Documentation Working Group
 Reviewers: Core maintainers
 Supersedes: None
