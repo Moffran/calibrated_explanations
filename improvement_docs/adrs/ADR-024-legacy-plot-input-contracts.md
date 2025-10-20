@@ -1,12 +1,12 @@
 # ADR-024: Legacy Plot Input Contracts
 
 Status: Draft
-Date: 2025-02-14
+Date: 2025-10-07
 Deciders: Core maintainers
 Reviewers: TBD
 Supersedes: None
 Superseded-by: None
-Related: ADR-014, ADR-016, ADR-021
+Related: ADR-014, ADR-016, ADR-020, ADR-021
 
 ## Context
 
@@ -21,7 +21,8 @@ producers risk omitting required values (e.g., calibrated intervals, feature
 weights, class labels) or mis-shaping payloads (for example, confusing
 probability dictionaries with raw arrays). This ADR captures the exact input
 structure, optional behaviours, and error guards enforced by the legacy
-plotting layer so that plotspec definitions can be constructed faithfully.
+plotting layer so that plotspec definitions can be constructed faithfully, and
+supplies enough colour/figure metadata to recreate the historical imagery.
 
 ## Decision
 
@@ -30,14 +31,30 @@ any plotspec generator. The contracts below describe every positional argument,
 its expected structure, and any derived values the renderer pulls from the
 `CalibratedExplanation`/`CalibratedExplainer` context.
 
+### Shared invocation contract
+
+* Every helper defers to `__require_matplotlib()` once plotting is requested so
+  import-time guards keep optional dependencies lazy. Callers that pass
+  `show=False` **and** omit save metadata (`path`/`title`) short-circuit before
+  the guard, enabling headless operation without the viz extra. `_plot_global`
+  reads `show` from `kwargs`; the remaining helpers take it positionally.【F:src/calibrated_explanations/legacy/plotting.py†L24-L65】【F:src/calibrated_explanations/legacy/plotting.py†L192-L195】【F:src/calibrated_explanations/legacy/plotting.py†L331-L339】【F:src/calibrated_explanations/legacy/plotting.py†L584-L605】
+* `save_ext` defaults to `("svg", "pdf", "png")` (lists in code) and is
+  iterated verbatim when saving. Filenames are produced via `path + title + ext`
+  without inserting separators, so builders must ensure any directory separator
+  or dot is already embedded in `path` or `title`.【F:src/calibrated_explanations/legacy/plotting.py†L63-L65】【F:src/calibrated_explanations/legacy/plotting.py†L193-L195】【F:src/calibrated_explanations/legacy/plotting.py†L398-L401】【F:src/calibrated_explanations/legacy/plotting.py†L559-L562】
+* Figure height scales directly with `num_to_show` (`figsize=(10, num_to_show *
+  0.5 + offset)`), so mismatched feature counts distort the vertical layout in
+  every bar-style helper.【F:src/calibrated_explanations/legacy/plotting.py†L63-L68】【F:src/calibrated_explanations/legacy/plotting.py†L214-L225】【F:src/calibrated_explanations/legacy/plotting.py†L398-L401】
+* Interval plots require both `interval=True` and a non-null `idx`. The helpers
+  also raise when `explanation.is_one_sided()` is true, preserving legacy limits
+  on uncertainty views.【F:src/calibrated_explanations/legacy/plotting.py†L65-L72】【F:src/calibrated_explanations/legacy/plotting.py†L222-L229】
+
 ### `_plot_probabilistic`
 
 * **Explanation handle** (`explanation`): must expose `is_one_sided()`,
   `is_thresholded()`, `get_class_labels()`, `prediction`, `y_minmax`,
-  `y_threshold`, `is_multiclass`, and `_get_explainer().is_multiclass()`
-  attributes used to tailor labels and guard one-sided interval plots.
-  `calibrated_explanations.get_confidence()` is not referenced here, but the
-  object must provide `get_mode()` for interval colouring.【F:src/calibrated_explanations/legacy/plotting.py†L70-L133】【F:src/calibrated_explanations/legacy/plotting.py†L171-L178】
+  `y_threshold`, `is_multiclass`, `_get_explainer().is_multiclass()`, and
+  `get_mode()` for axis labelling, palette selection, and interval guards.【F:src/calibrated_explanations/legacy/plotting.py†L70-L133】【F:src/calibrated_explanations/legacy/plotting.py†L171-L178】
 * **Instance values** (`instance`): indexable collection used to annotate the
   twin y-axis with per-feature values. The indices must align with
   `features_to_plot` ordering.【F:src/calibrated_explanations/legacy/plotting.py†L187-L191】
@@ -46,16 +63,18 @@ its expected structure, and any derived values the renderer pulls from the
   renderer substitutes `explanation.y_minmax` bounds in those cases.【F:src/calibrated_explanations/legacy/plotting.py†L81-L83】
 * **Feature weights** (`feature_weights`): either a 1-D array of signed weights
   (non-interval mode) or a mapping with `"predict"`, `"low"`, and `"high"` keys
-  holding per-feature arrays (interval mode). When interval data is supplied the
-  renderer expects finite lower/upper arrays aligned with
-  `features_to_plot` indices.【F:src/calibrated_explanations/legacy/plotting.py†L156-L178】
+  holding per-feature arrays (interval mode). Interval payloads are interpreted
+  relative to zero, shading separate red/blue lobes when uncertainty crosses 0
+  for classification; the renderer clamps mixed-sign spans to avoid solid
+  fills.【F:src/calibrated_explanations/legacy/plotting.py†L152-L178】
 * **Feature selection** (`features_to_plot`): ordered iterable of integer
-  indices controlling both the plotting order and the per-axis labels.【F:src/calibrated_explanations/legacy/plotting.py†L152-L190】
+  indices controlling both the plotting order and the per-axis labels. Bars are
+  plotted via `enumerate(features_to_plot)`, so order is preserved verbatim.【F:src/calibrated_explanations/legacy/plotting.py†L152-L191】
 * **Display budget** (`num_to_show`): integer count of features to display. The
   renderer builds axis ranges and figure sizes directly from this value, so it
   must match the length of `features_to_plot` and available data in
   `feature_weights`/`instance`. Zero suppresses feature plotting while still
-  emitting probability gauges.【F:src/calibrated_explanations/legacy/plotting.py†L67-L191】
+  emitting probability gauges.【F:src/calibrated_explanations/legacy/plotting.py†L63-L191】
 * **Column labels** (`column_names`): optional sequence that maps feature
   indices to display names. When `None`, y-axis ticks are left numeric.【F:src/calibrated_explanations/legacy/plotting.py†L180-L186】
 * **Output controls** (`title`, `path`, `show`, `save_ext`): `title` and `path`
@@ -78,14 +97,16 @@ its expected structure, and any derived values the renderer pulls from the
   gating. The same no-op logic applies when `show` is false and saving is not
   requested.【F:src/calibrated_explanations/legacy/plotting.py†L214-L226】【F:src/calibrated_explanations/legacy/plotting.py†L312-L315】
 * `predict` again requires `"predict"`, `"low"`, and `"high"` entries and uses
-  `explanation.y_minmax` when bounds are infinite.【F:src/calibrated_explanations/legacy/plotting.py†L236-L238】
+  `explanation.y_minmax` when bounds are infinite.【F:src/calibrated_explanations/legacy/plotting.py†L233-L239】
 * `feature_weights` follows the same bifurcation: vector in standard mode or
-  dictionary for interval mode.【F:src/calibrated_explanations/legacy/plotting.py†L269-L292】
+  dictionary for interval mode. Positive widths shade blue and negative widths
+  shade red to match the legacy regression palette.【F:src/calibrated_explanations/legacy/plotting.py†L269-L296】
 * The regression-specific header axis references
   `explanation.calibrated_explanations.get_confidence()` and the global interval
   span, so the explanation object must expose the nested
   `calibrated_explanations` container with `get_confidence()` and `y_minmax`
-  metadata.【F:src/calibrated_explanations/legacy/plotting.py†L233-L250】
+  metadata. Interval summaries subtract the median prediction (`p - low/high`) to
+  obtain the background shading extents.【F:src/calibrated_explanations/legacy/plotting.py†L227-L295】
 
 ### `_plot_triangular`
 
@@ -117,6 +138,10 @@ its expected structure, and any derived values the renderer pulls from the
   are rendered; regression mode requires calibrated confidence metadata; and
   classification uses either raw class IDs or mapped labels depending on
   availability.【F:src/calibrated_explanations/legacy/plotting.py†L451-L555】
+* Colours derive from the helper utilities `__color_brew()` and
+  `__get_fill_color()`, which blend palette entries against white based on the
+  Venn-Abers probability mass. Plotspec payloads must therefore capture both the
+  predicted probability and bounds so renderers can compute matching fills.【F:src/calibrated_explanations/legacy/plotting.py†L441-L521】【F:src/calibrated_explanations/legacy/plotting.py†L747-L785】
 
 ### `_plot_global`
 
@@ -141,16 +166,17 @@ its expected structure, and any derived values the renderer pulls from the
 * The helper always constructs uncertainty as `high - low` from the returned
   tuple, so prediction routines must emit two arrays of identical shape. The
   scatter plotting logic expects the prediction/probability arrays to share the
-  same leading dimension as `x`/`y`.【F:src/calibrated_explanations/legacy/plotting.py†L592-L641】【F:src/calibrated_explanations/legacy/plotting.py†L701-L711】
+  same leading dimension as `x`/`y`. Axes expand by 10% of the observed range in
+  regression mode, mirroring `_plot_triangular` padding.【F:src/calibrated_explanations/legacy/plotting.py†L592-L641】【F:src/calibrated_explanations/legacy/plotting.py†L631-L706】
 
-### Shared optional dependency handling
+### Helper colour derivation
 
-All helpers respect a shared pattern: when `show` is false and saving metadata is
-incomplete, the call may exit early without requiring matplotlib. When plotting
-is requested the helper invokes `__require_matplotlib()` to raise a
-user-friendly error if the optional dependency is missing. Plotspec generators
-must maintain this behaviour to avoid import-time failures in core-only
-installations.【F:src/calibrated_explanations/legacy/plotting.py†L57-L65】【F:src/calibrated_explanations/legacy/plotting.py†L332-L337】【F:src/calibrated_explanations/legacy/plotting.py†L584-L605】
+* `_plot_proba_triangle()` draws the probability simplex background leveraged by
+  both `_plot_triangular` and `_plot_global` whenever probabilistic rendering is
+  active.【F:src/calibrated_explanations/legacy/plotting.py†L320-L401】【F:src/calibrated_explanations/legacy/plotting.py†L590-L634】
+* `__color_brew(n)` returns integer RGB triplets tuned to the legacy palette;
+  `_plot_alternative` only ever requests two slots and then blends against white
+  via `__get_fill_color()` to achieve semi-transparent fills.【F:src/calibrated_explanations/legacy/plotting.py†L747-L785】【F:src/calibrated_explanations/legacy/plotting.py†L441-L521】
 
 ## Consequences
 

@@ -22,6 +22,23 @@ implementations and automated checks can validate parity.
 
 ## Decision
 
+### Shared rendering rules
+
+* Every helper begins by calling `__require_matplotlib()` unless it can exit
+  early because both `show=False` and no `path`/`title` pair were provided. The
+  guard raises a runtime error instructing users to install the `viz` extra when
+  Matplotlib is absent, and it must remain in place for drop-in renderer
+  replacements.【F:src/calibrated_explanations/legacy/plotting.py†L52-L83】
+* Figure width is fixed at 10 inches. Helpers scale height using
+  `num_to_show`—stacked layouts use `num_to_show * 0.5 + 2` inches while
+  single-axis alternatives use `num_to_show * 0.5`. These proportions keep
+  feature rows evenly spaced across all renderers.【F:src/calibrated_explanations/legacy/plotting.py†L67-L77】【F:src/calibrated_explanations/legacy/plotting.py†L224-L225】【F:src/calibrated_explanations/legacy/plotting.py†L437-L438】
+* Persistence follows the same loop: iterate `save_ext` (defaulting to
+  `['svg', 'pdf', 'png']`), write each artefact as `path + title + ext` with
+  `bbox_inches="tight"`, then call `fig.show()`/`plt.show()` when `show=True`.
+  Renderers must preserve both the concatenation order and the “save before
+  show” sequence to avoid breaking existing automation.【F:src/calibrated_explanations/legacy/plotting.py†L186-L195】【F:src/calibrated_explanations/legacy/plotting.py†L398-L401】【F:src/calibrated_explanations/legacy/plotting.py†L559-L562】
+
 ### `_plot_probabilistic`
 
 * **Layout:** constructs a `(10, num_to_show * 0.5 + 2)` inch figure and splits
