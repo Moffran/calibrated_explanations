@@ -49,6 +49,13 @@ clear contract without duplicating the in-tree implementation details.
   raises a configuration error if the bridge is never touched, ensuring interval
   semantics from ADR-013/ADR-021 are honoured even when plugins generate their
   own perturbations.【F:src/calibrated_explanations/core/calibrated_explainer.py†L138-L179】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1149-L1155】
+  The bridge additionally validates that every returned triple satisfies the
+  inclusive bounds invariant (`low <= predict <= high`). Any violation—whether
+  detected by the bridge, the plugin, or downstream consumers of feature-level
+  intervals—**must** be treated as a hard failure rather than coerced or
+  truncated output. `[low, high]` pairs that do not contain their `predict`
+  component are nonsensical in this system, and silently accepting them
+  reintroduces the very calibration drift these ADRs forbid.
 * Legacy adapters demonstrate the contract by invoking the bridge before calling
   the underlying `CalibratedExplainer` method. New implementations may ignore the
   return value but must exercise the bridge to keep telemetry and interval

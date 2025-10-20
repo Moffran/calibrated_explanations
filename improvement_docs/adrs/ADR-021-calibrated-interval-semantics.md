@@ -112,6 +112,14 @@ between the three paths.
   lower and upper interval bounds (`low`, `high`), and—when available—the full
   class probability cube. This invariant means CE-formatted outputs remain
   stable regardless of the calibration backbone used for the active mode.【F:src/calibrated_explanations/core/prediction_helpers.py†L158-L218】
+* Calibrated intervals are only considered valid when the prediction lies
+  within its bounds. Every runtime pathway—`PredictBridge`, interval plugins,
+  explanation containers, and downstream helpers—**must** assert
+  `low <= predict <= high`. Any output that violates this inclusive invariant is
+  treated as a failure rather than a recoverable warning. The rule applies to
+  all `[low, high]` pairs emitted by the system, including feature-level weight
+  intervals and derived telemetry, because they inherit the same calibrated
+  meaning from the underlying predictors.
 
 ### 5. Implications for interval plugins
 
