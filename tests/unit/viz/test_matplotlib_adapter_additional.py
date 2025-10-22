@@ -67,6 +67,32 @@ def test_render_dict_global_handles_bad_values():
     assert any(p["id"] == "global.scatter.summary" for p in wrapper["primitives"])
 
 
+def test_render_saves_before_show(monkeypatch, tmp_path):
+    from matplotlib import pyplot as plt
+    from matplotlib.figure import Figure
+
+    order: list[str] = []
+
+    def fake_savefig(self, *args, **kwargs):
+        order.append("save")
+
+    def fake_show(*args, **kwargs):
+        order.append("show")
+
+    monkeypatch.setattr(Figure, "savefig", fake_savefig)
+    monkeypatch.setattr(plt, "show", fake_show)
+
+    header = IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8, dual=True)
+    body = BarHPanelSpec(bars=[BarItem(label="f0", value=0.3)])
+    render(
+        PlotSpec(title="ordered", header=header, body=body),
+        show=True,
+        save_path=str(tmp_path / "ordered.png"),
+    )
+
+    assert order[:2] == ["save", "show"]
+
+
 def test_render_body_only_height_handles_label_errors():
     class ExplodingLabel:
         def __init__(self) -> None:

@@ -139,12 +139,11 @@ def test_plots_module_defaults_save_extensions(monkeypatch, tmp_path):
 
     assert render_calls[0]["show"] is True
     saved_paths = [call["save_path"] for call in render_calls[1:]]
-    expected = {
+    assert saved_paths == [
         str(out_dir / "examplesvg"),
         str(out_dir / "examplepdf"),
         str(out_dir / "examplepng"),
-    }
-    assert set(saved_paths) == expected
+    ]
 
 
 def test_plots_module_defaults_save_ext_when_not_provided(monkeypatch):

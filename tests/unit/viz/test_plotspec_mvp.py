@@ -43,6 +43,90 @@ def test_plotspec_regression_render_smoke():
         assert os.path.exists(out)
 
 
+def test_plot_probabilistic_requires_idx_when_interval(monkeypatch):
+    """PlotSpec-backed probabilistic plots must enforce the interval guard."""
+
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+
+    explanation = types.SimpleNamespace(
+        y_minmax=(0.0, 1.0),
+        prediction={"classes": 1},
+        get_class_labels=lambda: ["neg", "pos"],
+        is_thresholded=lambda: False,
+        get_mode=lambda: "classification",
+        is_one_sided=lambda: False,
+    )
+    setattr(explanation, "_get_explainer", lambda: None)
+
+    with pytest.raises(AssertionError):
+        plotting._plot_probabilistic(
+            explanation,
+            instance=np.array([0.2, 0.4]),
+            predict={"predict": 0.6, "low": 0.2, "high": 0.8},
+            feature_weights={
+                "predict": np.array([0.1, -0.1]),
+                "low": np.array([0.0, 0.0]),
+                "high": np.array([0.2, 0.2]),
+            },
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="interval",
+            path="",
+            show=True,
+            interval=True,
+            idx=None,
+            save_ext=None,
+            use_legacy=False,
+        )
+
+
+def test_plot_regression_default_save_paths_include_title(monkeypatch, tmp_path):
+    """PlotSpec regression helper should concatenate path + title + ext when saving."""
+
+    render_calls: list[dict] = []
+
+    def fake_render(spec, **kwargs):  # pragma: no cover - spy helper
+        render_calls.append({"show": kwargs.get("show"), "save_path": kwargs.get("save_path")})
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        fake_render,
+    )
+
+    explanation = types.SimpleNamespace(y_minmax=(0.0, 1.0))
+    plotting._plot_regression(
+        explanation,
+        instance=np.array([0.3]),
+        predict={"predict": 0.5, "low": 0.2, "high": 0.8},
+        feature_weights=np.array([0.1]),
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="reg",
+        path=str(tmp_path) + "/",
+        show=True,
+        interval=False,
+        idx=None,
+        save_ext=None,
+        use_legacy=False,
+    )
+
+    assert render_calls[0] == {"show": True, "save_path": None}
+    saved_paths = [call["save_path"] for call in render_calls[1:]]
+    expected = [os.path.join(str(tmp_path), "reg" + ext) for ext in ("svg", "pdf", "png")]
+    assert saved_paths == expected
+
+
+def test_format_save_path_concatenates_title(tmp_path):
+    base = tmp_path / "plots"
+    base.mkdir()
+
+    assert plotting._format_save_path(base, "figurepng") == str(base / "figurepng")
+    assert plotting._format_save_path(str(base) + "/", "figurepdf") == str(base / "figurepdf")
+    assert plotting._format_save_path("", "figurepng") == "figurepng"
+
+
 def test_plotspec_sorting_abs_desc():
     nfeat = 6
     predict = {"predict": 0.4, "low": 0.1, "high": 0.7}
@@ -202,6 +286,156 @@ def test_plotspec_sorting_label_ascending():
     bars = spec.body.bars  # type: ignore[union-attr]
     labels_sorted = [b.label for b in bars]
     assert labels_sorted == sorted(labels_sorted)
+
+
+def test_plotspec_render_scales_height_with_bar_count(monkeypatch):
+    """Adapter-rendered figures should honour the num_to_show-derived height heuristic."""
+
+    nfeat = 8
+    predict = {"predict": 0.6, "low": 0.3, "high": 0.9}
+    vals = np.linspace(-0.4, 0.4, nfeat)
+    fw = {"predict": vals, "low": vals - 0.1, "high": vals + 0.1}
+    spec = build_regression_bars_spec(
+        title="height",
+        predict=predict,
+        feature_weights=fw,
+        features_to_plot=list(range(nfeat)),
+        column_names=[f"f{i}" for i in range(nfeat)],
+        instance=np.linspace(0.0, 1.0, nfeat),
+        y_minmax=(0.0, 1.0),
+        interval=True,
+    )
+
+    seen: list[tuple[float, float] | None] = []
+
+    import matplotlib.pyplot as plt
+
+    real_figure = plt.figure
+
+    def spy_figure(*args, **kwargs):
+        seen.append(kwargs.get("figsize"))
+        return real_figure(*args, **kwargs)
+
+    monkeypatch.setattr("matplotlib.pyplot.figure", spy_figure)
+
+    fig = matplotlib_adapter.render(spec, show=False, save_path=None, return_fig=True)
+
+    assert seen, "render should have created a matplotlib figure"
+    width, height = seen[0]
+    assert width == pytest.approx(10.0)
+    assert height == pytest.approx(1.0 + 0.35 * nfeat)
+
+    plt.close(fig)
+
+
+def test_plotspec_probabilistic_interval_requires_idx(monkeypatch):
+    explanation = types.SimpleNamespace(
+        y_minmax=(0.0, 1.0),
+        prediction={"classes": 1},
+        get_class_labels=lambda: ["neg", "pos"],
+        is_thresholded=lambda: False,
+        get_mode=lambda: "classification",
+        is_one_sided=lambda: False,
+    )
+    setattr(explanation, "_get_explainer", lambda: None)
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("render should not be reached")),
+    )
+
+    with pytest.raises(AssertionError):
+        plotting._plot_probabilistic(
+            explanation,
+            instance=np.array([0.1, 0.2]),
+            predict={"predict": 0.5, "low": 0.2, "high": 0.8},
+            feature_weights={
+                "predict": np.array([0.1, -0.1]),
+                "low": np.array([0.0, 0.0]),
+                "high": np.array([0.2, 0.2]),
+            },
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="interval",
+            path="/tmp/",
+            show=True,
+            interval=True,
+            idx=None,
+            save_ext=[],
+            use_legacy=False,
+        )
+
+
+def test_plotspec_probabilistic_default_save_ext(monkeypatch, tmp_path):
+    sentinel_spec = object()
+    builder_args: list[dict] = []
+
+    def _fake_builder(**kwargs):
+        builder_args.append(kwargs)
+        return sentinel_spec
+
+    render_calls: list[dict] = []
+
+    def _fake_render(spec, **kwargs):
+        render_calls.append({"spec": spec, **kwargs})
+
+    formatted: list[tuple[str, str]] = []
+
+    def _format(base, filename):
+        formatted.append((base, filename))
+        return f"{base}{filename}"
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
+        _fake_builder,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        _fake_render,
+    )
+    monkeypatch.setattr(plotting, "_format_save_path", _format)
+
+    explanation = types.SimpleNamespace(
+        y_minmax=(0.0, 1.0),
+        prediction={"classes": 1},
+        get_class_labels=lambda: ["neg", "pos"],
+        is_thresholded=lambda: False,
+        get_mode=lambda: "classification",
+        is_one_sided=lambda: False,
+    )
+    setattr(explanation, "_get_explainer", lambda: None)
+
+    base_path = str(tmp_path) + "/"
+    plotting._plot_probabilistic(
+        explanation,
+        instance=np.array([0.1, 0.2]),
+        predict={"predict": 0.6, "low": 0.2, "high": 0.8},
+        feature_weights=np.array([0.2, -0.1]),
+        features_to_plot=[0, 1],
+        num_to_show=2,
+        column_names=["f0", "f1"],
+        title="prob",
+        path=base_path,
+        show=False,
+        interval=False,
+        idx=None,
+        save_ext=None,
+        use_legacy=False,
+    )
+
+    assert builder_args, "Expected builder to be invoked"
+    assert [call["save_path"] for call in render_calls] == [
+        None,
+        f"{base_path}probsvg",
+        f"{base_path}probpdf",
+        f"{base_path}probpng",
+    ]
+    assert formatted == [
+        (base_path, "probsvg"),
+        (base_path, "probpdf"),
+        (base_path, "probpng"),
+    ]
 
 
 def test_regression_builder_includes_instance_values():

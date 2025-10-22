@@ -155,6 +155,67 @@ def test_render_noop_when_no_output_requested():
     assert ma.render(spec) is None
 
 
+def test_render_headless_skips_matplotlib(monkeypatch):
+    """When nothing is requested the adapter must not attempt to import matplotlib."""
+
+    spec = PlotSpec(title="skip")
+
+    def _boom():  # pragma: no cover - should not execute
+        raise AssertionError("_require_mpl should not be called")
+
+    monkeypatch.setattr(ma, "_require_mpl", _boom)
+    assert ma.render(spec) is None
+
+
+def test_render_short_circuits_before_import(monkeypatch):
+    """The adapter should not import matplotlib when nothing is rendered."""
+
+    calls: list[bool] = []
+
+    def marker():  # pragma: no cover - simple spy
+        calls.append(True)
+
+    monkeypatch.setattr(ma, "_require_mpl", marker)
+    spec = PlotSpec(title="unused")
+    assert ma.render(spec) is None
+    assert not calls
+
+
+def test_render_saves_before_show(monkeypatch):
+    """Saving to disk must occur before the adapter requests a GUI show."""
+
+    header = IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8, dual=False)
+    body = BarHPanelSpec(
+        bars=[BarItem(label="f0", value=0.3, instance_value=0.1)],
+        xlabel="Contribution",
+        ylabel="Features",
+    )
+    spec = PlotSpec(title="order", header=header, body=body)
+
+    events: list[str] = []
+
+    fake_pyplot = sys.modules["matplotlib.pyplot"]
+    original_show = fake_pyplot.show
+
+    def spy_show(*args, **kwargs):  # pragma: no cover - spy helper
+        events.append("show")
+        return original_show(*args, **kwargs)
+
+    original_savefig = _FakeFigure.savefig
+
+    def spy_savefig(self, *args, **kwargs):  # pragma: no cover - spy helper
+        events.append("save")
+        return original_savefig(self, *args, **kwargs)
+
+    monkeypatch.setattr(fake_pyplot, "show", spy_show)
+    monkeypatch.setattr(_FakeFigure, "savefig", spy_savefig)
+
+    ma.render(spec, show=True, save_path="out.png")
+
+    assert events[0] == "save"
+    assert events[1] == "show"
+
+
 def test_auto_height_falls_back_when_label_conversion_fails():
     header = IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8, dual=False)
     body = BarHPanelSpec(

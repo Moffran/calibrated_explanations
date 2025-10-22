@@ -167,6 +167,31 @@ def test_probabilistic_interval_branches(tmp_path, disable_show):
     assert len(saved) == 3
 
 
+def test_probabilistic_default_save_extensions_use_title(tmp_path):
+    explanation = DummyExplanation()
+    instance = [0.5, -0.1]
+    predict = {"predict": 0.55, "low": 0.2, "high": 0.8}
+
+    plotting._plot_probabilistic(
+        explanation,
+        instance,
+        predict,
+        feature_weights=[0.3, -0.2],
+        features_to_plot=[0, 1],
+        num_to_show=2,
+        column_names=["a", "b"],
+        title="auto",
+        path=str(tmp_path) + "/",
+        show=False,
+        save_ext=None,
+    )
+
+    saved = sorted(p.name for p in tmp_path.iterdir())
+    assert len(saved) == 3
+    for ext in ("svg", "pdf", "png"):
+        assert any(name.startswith(f"auto{ext}") for name in saved), saved
+
+
 def test_probabilistic_interval_requires_index():
     explanation = DummyExplanation(thresholded=True)
     feature_weights = {
@@ -364,6 +389,32 @@ def test_regression_interval_plot_saves_image(tmp_path):
     )
 
     assert (tmp_path / "regression.png").exists()
+
+
+def test_regression_interval_requires_index(tmp_path):
+    explanation = DummyExplanation(mode="regression")
+    feature_weights = {
+        "predict": np.array([0.5, -0.2]),
+        "low": np.array([0.3, -0.4]),
+        "high": np.array([0.7, -0.1]),
+    }
+
+    with pytest.raises(AssertionError):
+        plotting._plot_regression(
+            explanation,
+            instance=[1.0, -1.0],
+            predict={"predict": 0.2, "low": -0.1, "high": 0.5},
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="reg_idx",
+            path=str(tmp_path) + "/",
+            show=False,
+            interval=True,
+            idx=None,
+            save_ext=[".png"],
+        )
 
 
 def test_regression_non_interval_branches(tmp_path, disable_show):
@@ -633,6 +684,52 @@ def test_triangular_returns_without_output():
     )
 
 
+def test_probabilistic_figsize_scales_with_num_to_show(monkeypatch, tmp_path, disable_show):
+    recorded: list[tuple[float, float] | None] = []
+    real_figure = plotting.plt.figure
+
+    def record_figure(*args, **kwargs):
+        recorded.append(kwargs.get("figsize"))
+        return real_figure(*args, **kwargs)
+
+    monkeypatch.setattr(plotting.plt, "figure", record_figure)
+
+    plotting._plot_probabilistic(
+        DummyExplanation(),
+        instance=[0.3, -0.2, 0.1, 0.4],
+        predict={"predict": 0.6, "low": 0.4, "high": 0.8},
+        feature_weights=[0.2, -0.1, 0.05, -0.3],
+        features_to_plot=[0, 1, 2, 3],
+        num_to_show=4,
+        column_names=["f0", "f1", "f2", "f3"],
+        title="fig_prob",
+        path=str(tmp_path) + "/",
+        show=True,
+        interval=False,
+        idx=None,
+        save_ext=[],
+    )
+
+    plotting._plot_regression(
+        DummyExplanation(mode="regression"),
+        instance=[0.2, -0.5, 0.1, -0.3, 0.4, -0.2],
+        predict={"predict": 0.1, "low": -0.2, "high": 0.5},
+        feature_weights=[0.3, -0.1, 0.2, -0.4, 0.5, -0.2],
+        features_to_plot=[0, 1, 2, 3, 4, 5],
+        num_to_show=6,
+        column_names=[f"r{i}" for i in range(6)],
+        title="fig_reg",
+        path=str(tmp_path) + "/",
+        show=True,
+        interval=False,
+        idx=None,
+        save_ext=[],
+    )
+
+    assert recorded[0] == (10, pytest.approx(4.0))
+    assert recorded[1] == (10, pytest.approx(5.0))
+
+
 def test_plot_global_non_probabilistic(monkeypatch):
     class _Learner:
         pass
@@ -748,6 +845,18 @@ def test_plot_global_probabilistic_variants(monkeypatch):
     )
 
 
+def test_plot_global_headless_short_circuit(monkeypatch):
+    explainer = types.SimpleNamespace(learner=types.SimpleNamespace())
+
+    def fail():  # pragma: no cover - guard should prevent execution
+        raise AssertionError("__require_matplotlib should not be called")
+
+    monkeypatch.setattr(plotting, "plt", None)
+    monkeypatch.setattr(plotting, "__require_matplotlib", fail)
+
+    plotting._plot_global(explainer, x=np.zeros((1, 1)), show=False)
+
+
 def test_probabilistic_interval_requires_index():
     explanation = DummyExplanation()
     instance = [1.0, -1.0]
@@ -811,6 +920,39 @@ def test_plot_global_requires_scalar_threshold_for_predict_only(disable_show):
 
 def test_plot_proba_triangle_helper():
     plotting._plot_proba_triangle()
+
+
+def test_probabilistic_saves_before_show(monkeypatch, tmp_path):
+    order: list[str] = []
+
+    def fake_savefig(self, *args, **kwargs):
+        order.append("save")
+
+    def fake_show(self):
+        order.append("show")
+
+    from matplotlib.figure import Figure
+
+    monkeypatch.setattr(Figure, "savefig", fake_savefig)
+    monkeypatch.setattr(Figure, "show", fake_show)
+
+    plotting._plot_probabilistic(
+        DummyExplanation(),
+        instance=[0.2, 0.3],
+        predict={"predict": 0.6, "low": 0.4, "high": 0.8},
+        feature_weights=[0.1, -0.2],
+        features_to_plot=[0, 1],
+        num_to_show=2,
+        column_names=["f0", "f1"],
+        title="ordered",
+        path=str(tmp_path) + "/",
+        show=True,
+        interval=False,
+        idx=None,
+        save_ext=[".png"],
+    )
+
+    assert order[:2] == ["save", "show"]
 
 
 def test_require_matplotlib_raises(monkeypatch):

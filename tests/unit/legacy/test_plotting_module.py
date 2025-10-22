@@ -171,6 +171,234 @@ def test_plot_probabilistic_headless_short_circuit(monkeypatch):
     )
 
 
+def test_plot_probabilistic_defaults_save_extensions(monkeypatch, tmp_path):
+    """Default save extensions should be emitted in svg/pdf/png order with title concatenation."""
+
+    saved: list[str] = []
+
+    from matplotlib.figure import Figure as MplFigure
+
+    def _capture(self, filename, **kwargs):  # pragma: no cover - trivial hook
+        saved.append(filename)
+
+    monkeypatch.setattr(MplFigure, "savefig", _capture, raising=False)
+
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=np.array([]),
+        predict={"predict": 0.5, "low": 0.2, "high": 0.7},
+        feature_weights=np.array([]),
+        features_to_plot=[],
+        num_to_show=0,
+        column_names=None,
+        title="default",
+        path=_string_path(tmp_path),
+        show=False,
+        interval=False,
+        save_ext=None,
+    )
+
+    assert saved == [
+        str(tmp_path / "defaultsvg"),
+        str(tmp_path / "defaultpdf"),
+        str(tmp_path / "defaultpng"),
+    ]
+    legacy_plotting.plt.close("all")
+
+
+def test_plot_probabilistic_interval_requires_idx():
+    """Interval rendering without ``idx`` should raise to enforce ADR guardrails."""
+
+    with pytest.raises(AssertionError):
+        legacy_plotting._plot_probabilistic(
+            explanation=_FakeExplanation(),
+            instance=np.array([0.1]),
+            predict={"predict": 0.5, "low": 0.2, "high": 0.8},
+            feature_weights={
+                "predict": np.array([0.1]),
+                "low": np.array([0.0]),
+                "high": np.array([0.2]),
+            },
+            features_to_plot=[0],
+            num_to_show=1,
+            column_names=["feat"],
+            title="needs-idx",
+            path="",
+            show=True,
+            interval=True,
+            idx=None,
+            save_ext=[],
+        )
+
+
+def test_plot_probabilistic_figsize_scales_with_num_to_show(monkeypatch):
+    """Figure height should grow with the number of displayed features."""
+
+    recorded: list[tuple[float, float] | None] = []
+    original_figure = legacy_plotting.plt.figure
+
+    def _spy_figure(*args, **kwargs):
+        recorded.append(kwargs.get("figsize"))
+        return original_figure(*args, **kwargs)
+
+    monkeypatch.setattr(legacy_plotting.plt, "figure", _spy_figure)
+
+    from matplotlib.figure import Figure as MplFigure
+
+    monkeypatch.setattr(MplFigure, "savefig", lambda self, *a, **k: None, raising=False)
+
+    num_to_show = 4
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=np.arange(num_to_show),
+        predict={"predict": 0.6, "low": 0.2, "high": 0.9},
+        feature_weights=np.linspace(-0.2, 0.3, num_to_show),
+        features_to_plot=list(range(num_to_show)),
+        num_to_show=num_to_show,
+        column_names=[f"f{i}" for i in range(num_to_show)],
+        title="size",
+        path="",
+        show=False,
+        interval=False,
+        save_ext=[],
+    )
+
+    assert recorded and recorded[0] == (10, num_to_show * 0.5 + 2)
+    legacy_plotting.plt.close("all")
+
+
+def test_plot_probabilistic_defaults_save_extensions(monkeypatch, tmp_path):
+    """When save_ext is omitted the helpers must save svg/pdf/png using path+title+ext."""
+
+    calls: list[str] = []
+
+    def fake_savefig(self, filename, *args, **kwargs):  # pragma: no cover - spy helper
+        calls.append(filename)
+
+    monkeypatch.setattr(matplotlib.figure.Figure, "savefig", fake_savefig)
+
+    path = _string_path(tmp_path)
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=np.array([0.1]),
+        predict={"predict": 0.6, "low": 0.4, "high": 0.8},
+        feature_weights=np.array([0.2]),
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="defaults",
+        path=path,
+        show=False,
+        interval=False,
+        save_ext=None,
+    )
+
+    expected = [path + "defaults" + ext for ext in ("svg", "pdf", "png")]
+    assert calls == expected
+    legacy_plotting.plt.close("all")
+
+
+def test_plot_probabilistic_interval_requires_idx(monkeypatch):
+    """Interval rendering must enforce idx is provided."""
+
+    monkeypatch.setattr(legacy_plotting, "__require_matplotlib", lambda: None)
+
+    with pytest.raises(AssertionError):
+        legacy_plotting._plot_probabilistic(
+            explanation=_FakeExplanation(),
+            instance=np.array([0.2, 0.3]),
+            predict={"predict": 0.5, "low": 0.2, "high": 0.7},
+            feature_weights={
+                "predict": np.array([0.1, -0.1]),
+                "low": np.array([0.0, 0.0]),
+                "high": np.array([0.2, 0.2]),
+            },
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="interval",
+            path="",
+            show=True,
+            interval=True,
+            idx=None,
+            save_ext=[".png"],
+        )
+
+
+def test_plot_probabilistic_figsize_scales_with_num_to_show(monkeypatch):
+    """Figure height should scale with the requested number of features."""
+
+    num_to_show = 4
+    recorded: dict[str, tuple] = {}
+
+    real_figure = legacy_plotting.plt.figure
+
+    def spy_figure(*args, **kwargs):  # pragma: no cover - spy helper
+        recorded["args"] = args
+        recorded["kwargs"] = kwargs
+        return real_figure(*args, **kwargs)
+
+    monkeypatch.setattr(legacy_plotting.plt, "figure", spy_figure)
+    monkeypatch.setattr(matplotlib.figure.Figure, "savefig", lambda self, *a, **k: None)
+
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=np.array([0.1, 0.2, 0.3, 0.4]),
+        predict={"predict": 0.5, "low": 0.2, "high": 0.8},
+        feature_weights=np.array([0.4, -0.3, 0.2, -0.1]),
+        features_to_plot=[0, 1, 2, 3],
+        num_to_show=num_to_show,
+        column_names=["f0", "f1", "f2", "f3"],
+        title="sizing",
+        path="/tmp/",
+        show=False,
+        interval=False,
+        save_ext=[".png"],
+    )
+
+    assert recorded["kwargs"]["figsize"] == (10, num_to_show * 0.5 + 2)
+    legacy_plotting.plt.close("all")
+
+
+def test_plot_probabilistic_saves_before_show(monkeypatch, tmp_path):
+    """Legacy helpers must persist to disk before presenting the figure."""
+
+    events: list[tuple[str, str | None]] = []
+
+    real_savefig = matplotlib.figure.Figure.savefig
+
+    def spy_savefig(self, filename, *args, **kwargs):  # pragma: no cover - spy helper
+        events.append(("save", filename))
+        return real_savefig(self, filename, *args, **kwargs)
+
+    def spy_show(self, *args, **kwargs):  # pragma: no cover - spy helper
+        events.append(("show", None))
+        return None
+
+    monkeypatch.setattr(matplotlib.figure.Figure, "savefig", spy_savefig)
+    monkeypatch.setattr(matplotlib.figure.Figure, "show", spy_show)
+
+    path = _string_path(tmp_path)
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=np.array([0.1]),
+        predict={"predict": 0.6, "low": 0.4, "high": 0.8},
+        feature_weights=np.array([0.2]),
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="order",
+        path=path,
+        show=True,
+        interval=False,
+        save_ext=[".png"],
+    )
+
+    assert events[0][0] == "save"
+    assert any(evt[0] == "show" for evt in events[1:])
+    legacy_plotting.plt.close("all")
+
+
 def test_require_matplotlib_raises_when_import_failed(monkeypatch):
     """``__require_matplotlib`` should surface a readable error if ``plt`` is missing."""
 
@@ -296,6 +524,123 @@ def test_plot_probabilistic_covers_threshold_and_label_branches(tmp_path):
     legacy_plotting.plt.close("all")
 
 
+def test_plot_probabilistic_defaults_save_extensions(monkeypatch, tmp_path):
+    """Default save_ext loop should emit path + title + ext in documented order."""
+
+    instance = np.array([0.1])
+    feature_weights = np.array([0.2])
+    predict = {"predict": 0.5, "low": 0.3, "high": 0.7}
+
+    saved: list[str] = []
+
+    import matplotlib.figure
+
+    monkeypatch.setattr(
+        matplotlib.figure.Figure,
+        "savefig",
+        lambda self, path, **_: saved.append(path),
+        raising=False,
+    )
+
+    base = tmp_path / "joined_"
+
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=instance,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="default",
+        path=str(base),
+        show=False,
+        interval=False,
+        idx=None,
+        save_ext=None,
+    )
+
+    expected = [f"{base}default{ext}" for ext in ("svg", "pdf", "png")]
+    assert saved == expected
+
+
+def test_plot_probabilistic_saves_before_show(monkeypatch, tmp_path):
+    """``_plot_probabilistic`` must save files before displaying the figure."""
+
+    instance = np.array([0.1])
+    feature_weights = np.array([0.2])
+    predict = {"predict": 0.5, "low": 0.3, "high": 0.7}
+
+    calls: list[str] = []
+
+    import matplotlib.figure
+
+    def fake_savefig(self, path, **_):  # pragma: no cover - minimal spy
+        calls.append(f"save:{path}")
+
+    def fake_show(self):  # pragma: no cover - minimal spy
+        calls.append("show")
+
+    monkeypatch.setattr(matplotlib.figure.Figure, "savefig", fake_savefig, raising=False)
+    monkeypatch.setattr(matplotlib.figure.Figure, "show", fake_show, raising=False)
+
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=instance,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="order",
+        path=str(tmp_path / "order"),
+        show=True,
+        interval=False,
+        idx=None,
+        save_ext=[".png"],
+    )
+
+    assert calls[0].startswith("save:")
+    assert calls[-1] == "show"
+
+
+def test_plot_probabilistic_figsize_scales_with_num_to_show(monkeypatch, tmp_path):
+    """Figure height should grow with ``num_to_show`` as documented in ADR-025."""
+
+    seen: list[tuple[float, float] | None] = []
+
+    real_figure = legacy_plotting.plt.figure
+
+    def spy_figure(*args, **kwargs):
+        seen.append(kwargs.get("figsize"))
+        return real_figure(*args, **kwargs)
+
+    monkeypatch.setattr(legacy_plotting.plt, "figure", spy_figure)
+
+    instance = np.linspace(0.0, 1.0, 6)
+    feature_weights = np.linspace(0.2, -0.1, 6)
+    predict = {"predict": 0.4, "low": 0.3, "high": 0.5}
+
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=instance,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=list(range(6)),
+        num_to_show=6,
+        column_names=[f"f{i}" for i in range(6)],
+        title="figsize",
+        path=str(tmp_path / "figsize"),
+        show=False,
+        interval=False,
+        idx=None,
+        save_ext=[".png"],
+    )
+
+    assert seen and seen[0] == (10, 6 * 0.5 + 2)
+    legacy_plotting.plt.close("all")
+
+
 def test_plot_regression_interval_and_non_interval(tmp_path):
     path = tmp_path / "regression"
     path.mkdir()
@@ -344,6 +689,35 @@ def test_plot_regression_interval_and_non_interval(tmp_path):
     assert (path / "point.pdf").exists()
 
     legacy_plotting.plt.close("all")
+
+
+def test_plot_regression_interval_requires_index():
+    """Regression interval rendering must assert a provided index."""
+
+    instance = np.array([0.2, 0.3])
+    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    weights = {
+        "predict": np.array([0.1, -0.2]),
+        "low": np.array([0.05, -0.3]),
+        "high": np.array([0.2, -0.1]),
+    }
+
+    with pytest.raises(AssertionError):
+        legacy_plotting._plot_regression(
+            explanation=_FakeExplanation(mode="regression"),
+            instance=instance,
+            predict=predict,
+            feature_weights=weights,
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["a", "b"],
+            title="missing-idx",
+            path="/tmp/",  # any non-None path avoids the headless guard
+            show=False,
+            interval=True,
+            idx=None,
+            save_ext=[".png"],
+        )
 
 
 def test_plot_triangular_for_classification_and_regression(tmp_path):
@@ -515,6 +889,28 @@ def test_plot_probabilistic_headless_noop_without_save_metadata(monkeypatch):
     )
 
 
+def test_plot_global_headless_short_circuit(monkeypatch):
+    """The global helper should exit early when matplotlib is unavailable and show=False."""
+
+    def boom():  # pragma: no cover - should not be invoked under guard
+        raise AssertionError("matplotlib should not be required")
+
+    monkeypatch.setattr(legacy_plotting, "plt", None)
+    monkeypatch.setattr(legacy_plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("missing backend"))
+    monkeypatch.setattr(legacy_plotting, "__require_matplotlib", boom)
+
+    class _BareExplainer:
+        learner = object()
+
+    legacy_plotting._plot_global(
+        _BareExplainer(),
+        np.zeros((1, 1)),
+        y=None,
+        threshold=None,
+        show=False,
+    )
+
+
 def test_plot_global_for_probabilistic_and_non_probabilistic(tmp_path):
     x_values = np.zeros((5, 2))
 
@@ -542,6 +938,98 @@ def test_plot_global_for_probabilistic_and_non_probabilistic(tmp_path):
     legacy_plotting.plt.close("all")
 
 
+def test_plot_global_headless_noop(monkeypatch):
+    """When headless the global helper should not attempt to import matplotlib."""
+
+    monkeypatch.setattr(legacy_plotting, "plt", None)
+    monkeypatch.setattr(legacy_plotting, "__require_matplotlib", lambda: (_ for _ in ()).throw(RuntimeError("should not import")))
+
+    legacy_plotting._plot_global(_FakeNonProbExplainer(), np.zeros((2, 1)), show=False)
+
+
+def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
+    """Non-probabilistic explainers must receive a scalar threshold."""
+
+    class _ThresholdExplainer:
+        def __init__(self):
+            self.learner = object()
+            self.class_labels = None
+            self.y_cal = np.array([0.2, 0.6])
+
+        def predict(self, x, uq_interval=True, **kwargs):  # pragma: no cover - unused path
+            preds = np.linspace(0.3, 0.7, len(x))
+            low = preds - 0.1
+            high = preds + 0.1
+            return preds, (low, high)
+
+        def predict_proba(self, x, uq_interval=True, threshold=None, **kwargs):
+            preds = np.linspace(0.2, 0.8, len(x))
+            proba = np.column_stack([1 - preds, preds])
+            low = np.zeros_like(proba)
+            high = np.ones_like(proba)
+            return proba, (low, high)
+
+        def is_multiclass(self):  # pragma: no cover - deterministic helper
+            return False
+
+    explainer = _ThresholdExplainer()
+    x_vals = np.zeros((3, 1))
+    y_vals = np.array([0.1, 0.3, 0.5])
+
+    with pytest.warns(RuntimeWarning):
+        with pytest.raises(AssertionError):
+            legacy_plotting._plot_global(
+                explainer,
+                x_vals,
+                y=y_vals,
+                threshold=(0.2, 0.8),
+                show=True,
+            )
+
+    legacy_plotting.plt.close("all")
+
+
+def test_plot_global_headless_short_circuit(monkeypatch):
+    """Global helper should avoid importing matplotlib when nothing is rendered."""
+
+    monkeypatch.setattr(legacy_plotting, "plt", None)
+
+    def _fail():  # pragma: no cover - ensures guard triggers
+        raise AssertionError("matplotlib import guard should short-circuit")
+
+    monkeypatch.setattr(legacy_plotting, "__require_matplotlib", _fail)
+
+    explainer = _FakeProbExplainer()
+    legacy_plotting._plot_global(explainer, np.zeros((1, 1)), show=False)
+
+
+def test_plot_global_requires_scalar_threshold():
+    """Non-probabilistic explainers must provide a scalar threshold."""
+
+    class _GuardExplainer(_FakeNonProbExplainer):
+        def predict_proba(self, x, uq_interval=True, threshold=None, **kwargs):  # pragma: no cover - simple shim
+            preds, (low, high) = self.predict(x, uq_interval=uq_interval, **kwargs)
+            stacked = np.column_stack([preds, preds])
+            lower = np.column_stack([low, low])
+            upper = np.column_stack([high, high])
+            return stacked, (lower, upper)
+
+    explainer = _GuardExplainer()
+    x_values = np.zeros((3, 1))
+    y = np.array([0.1, 0.2, 0.3])
+
+    with pytest.warns(RuntimeWarning):
+        with pytest.raises(AssertionError):
+            legacy_plotting._plot_global(
+                explainer,
+                x_values,
+                y=y,
+                threshold=(0.2, 0.5),
+            )
+
+    legacy_plotting.plt.close("all")
+
+
 def test_plot_proba_triangle_returns_figure():
     legacy_plotting._plot_proba_triangle()
     assert legacy_plotting.plt.get_fignums(), "Expected matplotlib figure to be created"
@@ -554,9 +1042,23 @@ def test_color_brew_and_fill_color_behaviour():
     assert len(colors) == 3
     assert all(len(rgb) == 3 for rgb in colors)
 
+    palette = legacy_plotting.__color_brew(2)
+    high_color = palette[1]
+    alpha = 0.5  # reduction overrides computed alpha
+    expected_high = "#%02x%02x%02x" % tuple(
+        int(round(alpha * channel + (1 - alpha) * 255, 0)) for channel in high_color
+    )
     shade = legacy_plotting.__get_fill_color({"predict": 0.8}, reduction=0.5)
-    # The helper returns an HTML colour string.
-    assert shade.startswith("#") and len(shade) == 7
+    assert shade == expected_high
+
+    low_color = palette[0]
+    # when predict < 0.5 the helper mirrors the palette and keeps computed alpha
+    computed_alpha = ((1 - 0.2) - 0.5) / 0.5 * (1 - 0.25) + 0.25
+    expected_low = "#%02x%02x%02x" % tuple(
+        int(round(computed_alpha * channel + (1 - computed_alpha) * 255, 0))
+        for channel in low_color
+    )
+    assert legacy_plotting.__get_fill_color({"predict": 0.2}) == expected_low
 
 
 def test_plot_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
