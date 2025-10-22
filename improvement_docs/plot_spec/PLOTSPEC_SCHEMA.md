@@ -26,8 +26,8 @@ PlotSpec fields (required)
   - "global_probabilistic"
   - "global_regression"
 - mode: "classification" | "regression"
-- header: "dual" | "single" | "none"
-- body: "weight" | "predict" | "global"
+- header: object | null (interval metadata; supports keys like `pred`, `low`, `high`, `xlabel`, `ylabel`, `xlim`, `dual`)
+- body: object | null (body metadata; supports keys like `bars_count`, `xlabel`, `ylabel`)
 - style: "regular" | "triangular"
 - uncertainty: boolean
 - feature_order: array of feature indices in display order (empty for global/triangular)
@@ -62,8 +62,8 @@ Example minimal PlotSpec (factual_probabilistic)
   "plot_spec": {
     "kind": "factual_probabilistic",
     "mode": "classification",
-    "header": "dual",
-    "body": "weight",
+    "header": {"pred": 0.65, "low": 0.2, "high": 0.8, "dual": true},
+    "body": {"bars_count": 3},
     "style": "regular",
     "uncertainty": true,
     "feature_order": [2, 0, 1],

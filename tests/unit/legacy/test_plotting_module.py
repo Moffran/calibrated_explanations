@@ -124,6 +124,53 @@ def _string_path(path) -> str:
     return str(path) + "/"
 
 
+def test_plot_probabilistic_rejects_mismatched_lengths():
+    """Feature/instance size mismatches should be rejected to avoid mis-rendering."""
+
+    instance = np.array([0.1])
+    predict = {"predict": 0.5, "low": 0.2, "high": 0.7}
+    feature_weights = np.array([0.3, -0.2])
+
+    with pytest.raises(IndexError):
+        legacy_plotting._plot_probabilistic(
+            explanation=_FakeExplanation(),
+            instance=instance,
+            predict=predict,
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="mismatch",
+            path="",  # unused because an exception is expected
+            show=True,
+            interval=False,
+            save_ext=[".png"],
+        )
+
+
+def test_plot_probabilistic_headless_short_circuit(monkeypatch):
+    """Headless invocations without save metadata must return without importing mpl."""
+
+    monkeypatch.setattr(legacy_plotting, "plt", None)
+    monkeypatch.setattr(legacy_plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("backend missing"))
+    monkeypatch.setattr(legacy_plotting, "__require_matplotlib", lambda: (_ for _ in ()).throw(RuntimeError("should not import")))
+
+    legacy_plotting._plot_probabilistic(
+        explanation=_FakeExplanation(),
+        instance=np.array([]),
+        predict={"predict": 0.5, "low": 0.2, "high": 0.7},
+        feature_weights=np.array([]),
+        features_to_plot=[],
+        num_to_show=0,
+        column_names=None,
+        title=None,
+        path=None,
+        show=False,
+        interval=False,
+        save_ext=None,
+    )
+
+
 def test_require_matplotlib_raises_when_import_failed(monkeypatch):
     """``__require_matplotlib`` should surface a readable error if ``plt`` is missing."""
 
@@ -391,6 +438,83 @@ def test_plot_alternative_covers_probability_and_threshold(tmp_path):
     legacy_plotting.plt.close("all")
 
 
+def test_plot_probabilistic_errors_for_misaligned_instance():
+    """Ensure ``_plot_probabilistic`` rejects instances shorter than features."""
+
+    explanation = _FakeExplanation()
+    instance = np.array([0.1])
+    feature_weights = np.array([0.2, -0.1])
+
+    with pytest.raises(IndexError):
+        legacy_plotting._plot_probabilistic(
+            explanation=explanation,
+            instance=instance,
+            predict={"predict": 0.5, "low": 0.3, "high": 0.7},
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="misaligned_instance",
+            path="",
+            show=False,
+            interval=False,
+            save_ext=[".png"],
+        )
+
+
+def test_plot_probabilistic_errors_for_num_to_show_mismatch():
+    """``_plot_probabilistic`` should fail when ``num_to_show`` exceeds feature count."""
+
+    explanation = _FakeExplanation()
+    instance = np.array([0.1, 0.2])
+    feature_weights = np.array([0.2, -0.1])
+
+    with pytest.raises(ValueError) as excinfo:
+        legacy_plotting._plot_probabilistic(
+            explanation=explanation,
+            instance=instance,
+            predict={"predict": 0.5, "low": 0.3, "high": 0.7},
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=3,
+            column_names=["f0", "f1"],
+            title="num_to_show_mismatch",
+            path="",
+            show=False,
+            interval=False,
+            save_ext=[".png"],
+        )
+
+    assert "FixedLocator" in str(excinfo.value)
+
+
+def test_plot_probabilistic_headless_noop_without_save_metadata(monkeypatch):
+    """When show/save are disabled the helper should short-circuit without matplotlib."""
+
+    explanation = _FakeExplanation()
+
+    def _fail():  # pragma: no cover - only used when guard regresses
+        raise AssertionError("matplotlib should not be required for headless no-op")
+
+    monkeypatch.setattr(legacy_plotting, "plt", None)
+    monkeypatch.setattr(legacy_plotting, "__require_matplotlib", _fail)
+
+    legacy_plotting._plot_probabilistic(
+        explanation=explanation,
+        instance=np.array([0.1]),
+        predict={"predict": 0.5, "low": 0.3, "high": 0.7},
+        feature_weights=np.array([0.2]),
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title=None,
+        path=None,
+        show=False,
+        interval=False,
+        save_ext=None,
+    )
+
+
 def test_plot_global_for_probabilistic_and_non_probabilistic(tmp_path):
     x_values = np.zeros((5, 2))
 
@@ -433,4 +557,65 @@ def test_color_brew_and_fill_color_behaviour():
     shade = legacy_plotting.__get_fill_color({"predict": 0.8}, reduction=0.5)
     # The helper returns an HTML colour string.
     assert shade.startswith("#") and len(shade) == 7
+
+
+def test_plot_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
+    """Mismatched feature/index sizes should not silently succeed."""
+
+    explanation = _FakeExplanation()
+    instance = np.array([0.2, 0.4])
+    predict = {"predict": 0.6, "low": 0.2, "high": 0.8}
+    feature_weights = {
+        "predict": np.array([0.1, 0.2, 0.3]),
+        "low": np.array([0.0, 0.1, 0.2]),
+        "high": np.array([0.2, 0.3, 0.4]),
+    }
+
+    with pytest.raises(IndexError):
+        legacy_plotting._plot_probabilistic(
+            explanation=explanation,
+            instance=instance,
+            predict=predict,
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1, 2],
+            num_to_show=2,
+            column_names=["a", "b", "c"],
+            title="mismatch",
+            path=_string_path(tmp_path),
+            show=False,
+            interval=True,
+            idx=0,
+            save_ext=[".png"],
+        )
+
+
+def test_plot_probabilistic_short_circuits_without_show_or_save(monkeypatch):
+    """Headless mode should exit before importing matplotlib."""
+
+    explanation = _FakeExplanation()
+    instance = np.array([0.1])
+    predict = {"predict": 0.2, "low": 0.1, "high": 0.3}
+    feature_weights = np.array([0.05])
+
+    def boom():  # pragma: no cover - ensures the guard fires before import
+        raise AssertionError("matplotlib should not be required")
+
+    monkeypatch.setattr(legacy_plotting, "__require_matplotlib", boom)
+
+    # With no show/save metadata, the helper should be a no-op.
+    legacy_plotting._plot_probabilistic(
+        explanation=explanation,
+        instance=instance,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title=None,
+        path=None,
+        show=False,
+        interval=False,
+        idx=None,
+        save_ext=None,
+    )
 

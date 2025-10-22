@@ -657,6 +657,12 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
         #                                       cax=cax, label='Target Values')
     else:
         if "predict_proba" not in dir(explainer.learner):
+            if not np.isscalar(threshold):
+                warnings.warn(
+                    "plot_global requires a scalar threshold for non-probabilistic explainers.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
             assert np.isscalar(
                 threshold
             ), "The threshold parameter must be a single constant value for all instances when used in plot_global."  # pylint: disable=line-too-long

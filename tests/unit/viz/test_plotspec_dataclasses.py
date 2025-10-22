@@ -1,5 +1,7 @@
 import dataclasses
 
+import pytest
+
 from calibrated_explanations.viz.plotspec import (
     BarHPanelSpec,
     BarItem,
@@ -81,6 +83,17 @@ def test_plotspec_collects_header_and_body():
     assert spec == PlotSpec(title="Example", figure_size=(4.0, 3.0), header=header, body=body)
 
 
+def test_bar_structures_require_mandatory_fields():
+    with pytest.raises(TypeError):
+        BarItem()  # type: ignore[call-arg]
+
+    with pytest.raises(TypeError):
+        BarItem(label="missing-value")  # type: ignore[call-arg]
+
+    with pytest.raises(TypeError):
+        BarHPanelSpec()  # type: ignore[call-arg]
+
+
 def test_plotspec_module_exports_are_consistent():
     expected = {"PlotSpec", "IntervalHeaderSpec", "BarHPanelSpec", "BarItem"}
     assert set(plotspec_all) == expected
@@ -88,3 +101,22 @@ def test_plotspec_module_exports_are_consistent():
     module_attrs = {name: globals()[name] for name in plotspec_all}
     for name, value in module_attrs.items():
         assert value.__name__ == name
+
+
+def test_bar_item_requires_label_and_value():
+    with pytest.raises(TypeError):
+        BarItem()  # type: ignore[call-arg]
+
+    with pytest.raises(TypeError):
+        BarItem(label="x")  # type: ignore[call-arg]
+
+
+def test_dataclasses_reject_missing_required_fields():
+    with pytest.raises(TypeError):
+        IntervalHeaderSpec(pred=0.5, low=0.1)  # missing high
+
+    with pytest.raises(TypeError):
+        BarItem(value=0.2)  # missing label
+
+    with pytest.raises(TypeError):
+        BarHPanelSpec()

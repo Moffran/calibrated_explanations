@@ -11,7 +11,7 @@ import configparser
 import contextlib
 import os
 import warnings
-from pathlib import Path
+from pathlib import Path, PurePath
 from types import MappingProxyType
 from typing import Any, Dict, List, Mapping, Sequence
 
@@ -77,6 +77,21 @@ def _split_csv(value: Any) -> Sequence[str]:
     if isinstance(value, Sequence):
         return tuple(str(item).strip() for item in value if isinstance(item, str) and item.strip())
     return ()
+
+
+def _format_save_path(base_path: Any, filename: str) -> str:
+    """Return a string path while preserving caller formatting when possible."""
+    if isinstance(base_path, (Path, PurePath, os.PathLike)):
+        return str(Path(base_path) / filename)
+    if isinstance(base_path, str):
+        if base_path.strip() == "":
+            return filename
+        if base_path.endswith("/") and "\\" not in base_path[:-1]:
+            return f"{base_path}{filename}"
+        if base_path.endswith("\\") and "/" not in base_path[:-1]:
+            return f"{base_path}{filename}"
+        return str(Path(base_path) / filename)
+    return str(Path(str(base_path)) / filename)
 
 
 def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence[str]:
@@ -314,7 +329,7 @@ def _plot_probabilistic(
         legacy._plot_probabilistic(
             explanation,
             instance,
-            predict,
+            predict_payload,
             feature_weights,
             features_to_plot,
             num_to_show,
@@ -342,6 +357,33 @@ def _plot_probabilistic(
         save_ext = ["svg", "pdf", "png"]
     if interval is True:
         assert idx is not None
+    predict_payload = dict(predict or {})
+
+    def _finite_or(value: Any, fallback: float) -> float:
+        try:
+            val = float(value)
+        except Exception:
+            return fallback
+        if not np.isfinite(val):
+            return fallback
+        return val
+
+    y_minmax = getattr(explanation, "y_minmax", None)
+    base_pred = _finite_or(predict_payload.get("predict"), 0.0)
+    predict_payload["predict"] = base_pred
+
+    low_fallback = base_pred
+    high_fallback = base_pred
+    if isinstance(y_minmax, Sequence) and len(y_minmax) >= 2:
+        try:
+            low_fallback = float(y_minmax[0])
+            high_fallback = float(y_minmax[1])
+        except Exception:
+            low_fallback = base_pred
+            high_fallback = base_pred
+
+    predict_payload["low"] = _finite_or(predict_payload.get("low"), low_fallback)
+    predict_payload["high"] = _finite_or(predict_payload.get("high"), high_fallback)
     # Build a PlotSpec and render via matplotlib adapter to centralize logic
     # Build a PlotSpec and render via matplotlib adapter to centralize logic
     from .viz.builders import build_probabilistic_bars_spec
@@ -375,7 +417,7 @@ def _plot_probabilistic(
 
     spec = build_probabilistic_bars_spec(
         title=title,
-        predict=predict,
+        predict=predict_payload,
         feature_weights=feature_weights,
         features_to_plot=features_to_plot,
         column_names=column_names,
@@ -406,7 +448,7 @@ def _plot_probabilistic(
             from .viz.matplotlib_adapter import render as _render
 
             for ext in save_ext:
-                _render(spec, show=False, save_path=path + title + ext)
+                _render(spec, show=False, save_path=_format_save_path(path, title + ext))
     except Exception as exc:  # pragma: no cover - fallback path
         warnings.warn(
             f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
@@ -523,6 +565,8 @@ def _plot_regression(
         return
 
     # Build PlotSpec via builder and render via adapter
+    if save_ext is None:
+        save_ext = ["svg", "pdf", "png"]
     from .viz.builders import build_regression_bars_spec
     from .viz.matplotlib_adapter import render as render_plotspec
 
@@ -545,7 +589,9 @@ def _plot_regression(
         render_plotspec(spec, show=show, save_path=None)
         if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
             for ext in save_ext:
-                render_plotspec(spec, show=False, save_path=path + title + ext)
+                render_plotspec(
+                    spec, show=False, save_path=_format_save_path(path, title + ext)
+                )
     except Exception as exc:  # pragma: no cover - fallback path
         warnings.warn(
             f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
@@ -667,7 +713,7 @@ def _plot_triangular(
                     },
                 },
                 show=False,
-                save_path=path + title + ext,
+                save_path=_format_save_path(path, title + ext),
             )
     return
 
@@ -954,7 +1000,9 @@ def _plot_alternative(
             render_plotspec(spec, show=show, save_path=None)
             if save_ext and path is not None and title is not None:
                 for ext in save_ext:
-                    render_plotspec(spec, show=False, save_path=path + title + ext)
+                    render_plotspec(
+                        spec, show=False, save_path=_format_save_path(path, title + ext)
+                    )
         except Exception as exc:  # pragma: no cover - fallback path
             warnings.warn(
                 f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",

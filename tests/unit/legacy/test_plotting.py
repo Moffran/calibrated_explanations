@@ -1,5 +1,8 @@
+import types
+
 import numpy as np
 import pytest
+import types
 
 matplotlib = pytest.importorskip("matplotlib", reason="matplotlib is required for legacy plotting tests")
 
@@ -164,6 +167,32 @@ def test_probabilistic_interval_branches(tmp_path, disable_show):
     assert len(saved) == 3
 
 
+def test_probabilistic_interval_requires_index():
+    explanation = DummyExplanation(thresholded=True)
+    feature_weights = {
+        "predict": np.array([0.1, -0.2]),
+        "low": np.array([0.0, -0.3]),
+        "high": np.array([0.2, 0.4]),
+    }
+
+    with pytest.raises(AssertionError):
+        plotting._plot_probabilistic(
+            explanation,
+            instance=[0.5, 0.1],
+            predict={"predict": 0.6, "low": 0.4, "high": 0.8},
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="missing_idx",
+            path="",
+            show=False,
+            interval=True,
+            idx=None,
+            save_ext=[".png"],
+        )
+
+
 def test_probabilistic_threshold_and_label_variants(tmp_path):
     instance = [0.5, 0.9]
     features = [0, 1]
@@ -270,6 +299,42 @@ def test_probabilistic_returns_without_output():
         show=False,
     )
 
+
+def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
+    class _ThresholdWrapper:
+        def __init__(self):
+            self.learner = types.SimpleNamespace()
+            self.y_cal = np.array([0.1, 0.2, 0.3])
+
+        def predict(self, x, uq_interval=False, **kwargs):
+            preds = np.linspace(0.2, 0.6, len(x))
+            low = preds - 0.1
+            high = preds + 0.1
+            return preds, (low, high)
+
+        def predict_proba(self, x, uq_interval=False, threshold=None, **kwargs):
+            preds, (low, high) = self.predict(x, uq_interval=uq_interval)
+            proba = np.column_stack([1 - preds, preds])
+            return proba, (low, high)
+
+        def is_multiclass(self):  # pragma: no cover - deterministic helper
+            return False
+
+    explainer = _ThresholdWrapper()
+    x_vals = np.zeros((3, 1))
+    y_vals = np.array([0, 1, 0])
+
+    with pytest.warns(RuntimeWarning):
+        with pytest.raises(AssertionError):
+            plotting._plot_global(
+                explainer,
+                x_vals,
+                y=y_vals,
+                threshold=(0.2, 0.8),
+                show=False,
+            )
+
+
 def test_regression_interval_plot_saves_image(tmp_path):
     explanation = DummyExplanation(mode="regression", thresholded=False, y_minmax=(-2.0, 2.0))
     instance = [0.1, -1.5]
@@ -322,6 +387,82 @@ def test_regression_non_interval_branches(tmp_path, disable_show):
 
     saved = sorted(p.name for p in tmp_path.iterdir())
     assert len(saved) == 3
+
+
+def test_interval_requires_idx_and_two_sided(tmp_path):
+    instance = [1.0]
+    features = [0]
+    columns = ["f0"]
+    predict = {"predict": 0.3, "low": 0.2, "high": 0.4}
+    feature_weights = {"predict": np.array([0.1]), "low": np.array([0.0]), "high": np.array([0.2])}
+
+    explanation = DummyExplanation()
+    with pytest.raises(AssertionError):
+        plotting._plot_probabilistic(
+            explanation,
+            instance,
+            predict,
+            feature_weights,
+            features,
+            num_to_show=1,
+            column_names=columns,
+            title="missing_idx",
+            path=str(tmp_path) + "/",
+            show=False,
+            interval=True,
+            idx=None,
+            save_ext=[".png"],
+        )
+
+    one_sided = DummyExplanation(one_sided=True)
+    with pytest.raises(Warning):
+        plotting._plot_probabilistic(
+            one_sided,
+            instance,
+            predict,
+            feature_weights,
+            features,
+            num_to_show=1,
+            column_names=columns,
+            title="one_sided",
+            path=str(tmp_path) + "/",
+            show=False,
+            interval=True,
+            idx=0,
+            save_ext=[".png"],
+        )
+
+
+def test_plot_global_threshold_requires_scalar():
+    class _NonProbExplainer:
+        def __init__(self):
+            self.learner = object()
+
+        def predict(self, x, uq_interval=False, **kwargs):
+            preds = np.linspace(0.2, 0.4, len(x))
+            return preds, (preds - 0.05, preds + 0.05)
+
+        def predict_proba(self, x, uq_interval=False, threshold=None, **kwargs):
+            preds, (low, high) = self.predict(x, uq_interval=uq_interval, **kwargs)
+            # Mimic binary proba output for thresholded regression fallback path
+            stacked = np.vstack([preds, preds]).T
+            return stacked, (low, high)
+
+        def is_multiclass(self):
+            return False
+
+    explainer = _NonProbExplainer()
+    x = np.zeros((3, 1))
+    y = np.array([0.1, 0.2, 0.3])
+
+    with pytest.raises(AssertionError):
+        plotting._plot_global(
+            explainer,
+            x,
+            y=y,
+            threshold=(0.2, 0.5),
+            show=False,
+        )
 
 
 def test_regression_interval_one_sided_error(tmp_path):
@@ -605,6 +746,67 @@ def test_plot_global_probabilistic_variants(monkeypatch):
         y=np.array([0, 1]),
         show=True,
     )
+
+
+def test_probabilistic_interval_requires_index():
+    explanation = DummyExplanation()
+    instance = [1.0, -1.0]
+    predict = {"predict": 0.4, "low": 0.2, "high": 0.6}
+    feature_weights = {
+        "predict": np.array([0.1, -0.2]),
+        "low": np.array([0.0, 0.0]),
+        "high": np.array([0.0, 0.0]),
+    }
+
+    with pytest.raises(AssertionError):
+        plotting._plot_probabilistic(
+            explanation,
+            instance,
+            predict,
+            feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="needs_idx",
+            path="",
+            show=True,
+            interval=True,
+            idx=None,
+            save_ext=[".png"],
+        )
+
+
+def test_plot_global_requires_scalar_threshold_for_predict_only(disable_show):
+    class _PredictOnlyExplainer:
+        def __init__(self):
+            self.learner = types.SimpleNamespace()
+            self.y_cal = np.array([0.1, 0.2, 0.3])
+
+        def predict(self, x, uq_interval=False, **kwargs):
+            preds = np.linspace(0.2, 0.4, len(x))
+            return preds, (preds - 0.05, preds + 0.05)
+
+        def predict_proba(self, x, uq_interval=False, threshold=None, **kwargs):
+            preds = np.tile([0.6, 0.4], (len(x), 1))
+            lows = np.tile([0.5, 0.3], (len(x), 1))
+            highs = np.tile([0.7, 0.5], (len(x), 1))
+            return preds, (lows, highs)
+
+        def is_multiclass(self):
+            return False
+
+    explainer = _PredictOnlyExplainer()
+    x = np.zeros((3, 1))
+    y = np.array([0.1, 0.2, 0.3])
+
+    with pytest.raises(AssertionError):
+        plotting._plot_global(
+            explainer,
+            x,
+            y=y,
+            threshold=(0.2, 0.4),
+            show=False,
+        )
 
 
 def test_plot_proba_triangle_helper():

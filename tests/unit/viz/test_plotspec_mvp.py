@@ -1,9 +1,11 @@
 import os
 import tempfile
+import types
 
 import numpy as np
 import pytest
 
+from calibrated_explanations import plotting
 from calibrated_explanations.viz import build_regression_bars_spec, matplotlib_adapter
 
 
@@ -200,3 +202,249 @@ def test_plotspec_sorting_label_ascending():
     bars = spec.body.bars  # type: ignore[union-attr]
     labels_sorted = [b.label for b in bars]
     assert labels_sorted == sorted(labels_sorted)
+
+
+def test_regression_builder_includes_instance_values():
+    predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
+    fw = {"predict": [0.2, -0.3], "low": [0.1, -0.4], "high": [0.3, -0.2]}
+    feats = [0, 1]
+    columns = ["f0", "f1"]
+    instance = [1.5, -2.0]
+    spec = build_regression_bars_spec(
+        title=None,
+        predict=predict,
+        feature_weights=fw,
+        features_to_plot=feats,
+        column_names=columns,
+        instance=instance,
+        y_minmax=(0.0, 1.0),
+        interval=True,
+        sort_by=None,
+        ascending=False,
+    )
+
+    assert [bar.instance_value for bar in spec.body.bars] == instance  # type: ignore[union-attr]
+
+
+def test_regression_builder_rejects_short_instance_vector():
+    predict = {"predict": 0.5}
+    fw = [0.2, -0.1, 0.05]
+    feats = [0, 2]
+    with pytest.raises(ValueError):
+        build_regression_bars_spec(
+            title=None,
+            predict=predict,
+            feature_weights=fw,
+            features_to_plot=feats,
+            column_names=["a", "b", "c"],
+            instance=[1.0],
+            y_minmax=None,
+            interval=False,
+            sort_by=None,
+            ascending=False,
+        )
+
+
+def test_probabilistic_builder_clamps_infinite_bounds():
+    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+
+    predict = {"predict": 0.6, "low": -np.inf, "high": np.inf}
+    fw = {
+        "predict": np.array([0.1, -0.2]),
+        "low": np.array([0.0, -0.3]),
+        "high": np.array([0.2, -0.1]),
+    }
+    instance = np.array([2.5, -1.2])
+    spec = build_probabilistic_bars_spec(
+        title="prob",
+        predict=predict,
+        feature_weights=fw,
+        features_to_plot=[0, 1],
+        column_names=["f0", "f1"],
+        instance=instance,
+        y_minmax=(0.0, 1.0),
+        interval=True,
+    )
+
+    assert spec.header.low == pytest.approx(0.0)  # type: ignore[union-attr]
+    assert spec.header.high == pytest.approx(1.0)  # type: ignore[union-attr]
+    assert spec.header.xlim == (0.0, 1.0)  # type: ignore[union-attr]
+
+
+def test_probabilistic_builder_rejects_truncated_labels():
+    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+
+    predict = {"predict": 0.4}
+    with pytest.raises(ValueError):
+        build_probabilistic_bars_spec(
+            title=None,
+            predict=predict,
+            feature_weights=[0.1, -0.2],
+            features_to_plot=[0, 1],
+            column_names=["a"],
+            instance=[1.0, 2.0],
+            y_minmax=None,
+            interval=False,
+        )
+
+
+def test_build_regression_requires_instance_alignment():
+    predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
+    feature_weights = [0.3, -0.1]
+    feats = [0, 1]
+    cols = ["a", "b"]
+
+    with pytest.raises(IndexError):
+        build_regression_bars_spec(
+            title=None,
+            predict=predict,
+            feature_weights=feature_weights,
+            features_to_plot=feats,
+            column_names=cols,
+            instance=[0.5],
+            y_minmax=None,
+            interval=False,
+        )
+
+
+def test_matplotlib_adapter_auto_height_tracks_bars():
+    nfeat = 6
+    predict = {"predict": 0.4, "low": 0.1, "high": 0.7}
+    vals = np.linspace(-0.3, 0.4, nfeat)
+    spec = build_regression_bars_spec(
+        title=None,
+        predict=predict,
+        feature_weights={"predict": vals, "low": vals - 0.1, "high": vals + 0.1},
+        features_to_plot=list(range(nfeat)),
+        column_names=[f"f{i}" for i in range(nfeat)],
+        instance=list(np.linspace(0.0, 1.0, nfeat)),
+        y_minmax=(0.0, 1.0),
+        interval=True,
+    )
+    fig = matplotlib_adapter.render(spec, show=False, save_path=None, return_fig=True)
+    try:
+        height = fig.get_size_inches()[1]
+        expected = max(3.0, min(1.0 + 0.35 * max(1, nfeat), 22.0))
+        assert height == pytest.approx(expected, rel=0.05)
+    finally:
+        from matplotlib import pyplot as plt
+
+        plt.close(fig)
+
+
+def test_plot_probabilistic_clamps_infinite_bounds(monkeypatch, tmp_path):
+    sentinel_spec = object()
+    captured: dict[str, dict] = {}
+
+    def fake_builder(**kwargs):
+        captured["predict"] = dict(kwargs["predict"])
+        return sentinel_spec
+
+    def fake_render(spec, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_probabilistic_bars_spec", fake_builder
+    )
+    monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", fake_render)
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+
+    class _Explanation:
+        y_minmax = (0.0, 1.0)
+        prediction = {"classes": 1}
+
+        def get_class_labels(self):
+            return ["neg", "pos"]
+
+    plotting._plot_probabilistic(
+        _Explanation(),
+        instance=[0.2, 0.3],
+        predict={"predict": 0.6, "low": -np.inf, "high": np.inf},
+        feature_weights=[0.1, -0.2],
+        features_to_plot=[0, 1],
+        num_to_show=2,
+        column_names=["f0", "f1"],
+        title="clamp",
+        path=str(tmp_path) + "/",
+        show=False,
+        interval=False,
+        idx=None,
+        save_ext=[".png"],
+        use_legacy=False,
+    )
+
+    assert captured["predict"]["low"] == pytest.approx(0.0)
+    assert captured["predict"]["high"] == pytest.approx(1.0)
+
+
+def test_build_regression_spec_requires_instance_alignment():
+    predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
+    fw = {"predict": np.array([0.1, -0.2]), "low": np.array([0.0, -0.1]), "high": np.array([0.2, 0.1])}
+
+    with pytest.raises(IndexError):
+        build_regression_bars_spec(
+            title=None,
+            predict=predict,
+            feature_weights=fw,
+            features_to_plot=[0, 1],
+            column_names=["f0", "f1"],
+            instance=[0.1],
+            y_minmax=(0.0, 1.0),
+            interval=True,
+        )
+
+
+def test_plot_alternative_sanitises_non_finite_payloads(monkeypatch):
+    from calibrated_explanations import plotting
+
+    recorded: dict[str, dict] = {}
+    sentinel = object()
+
+    def fake_builder(**kwargs):
+        recorded.update(kwargs)
+        return sentinel
+
+    render_calls: list[dict] = []
+
+    def fake_render(spec, **kwargs):
+        render_calls.append({"spec": spec, **kwargs})
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_alternative_regression_spec", fake_builder
+    )
+    monkeypatch.setattr("calibrated_explanations.viz.matplotlib_adapter.render", fake_render)
+
+    explanation = types.SimpleNamespace(
+        y_minmax=(0.0, 1.0),
+        prediction={"classes": 1},
+        is_thresholded=lambda: False,
+        get_mode=lambda: "regression",
+        get_class_labels=lambda: ["neg", "pos"],
+    )
+    setattr(explanation, "_get_explainer", lambda: None)
+
+    plotting._plot_alternative(
+        explanation=explanation,
+        instance=np.array([0.1, 0.2, 0.3]),
+        predict={"predict": 0.5, "low": -np.inf, "high": np.inf},
+        feature_predict={
+            "predict": np.array([0.2, -0.1, 0.05]),
+            "low": np.array([-np.inf, -0.2, 0.0]),
+            "high": np.array([np.inf, 0.1, 0.3]),
+        },
+        features_to_plot=[0, "1", -5],
+        num_to_show=3,
+        column_names=["f0", "f1", "f2"],
+        title="alt",
+        path=None,
+        show=True,
+        save_ext=None,
+        use_legacy=False,
+    )
+
+    assert recorded["predict"]["low"] == 0.0
+    assert recorded["predict"]["high"] == 1.0
+    assert recorded["feature_weights"]["low"][0] == 0.0
+    assert recorded["feature_weights"]["high"][0] == 1.0
+    assert recorded["features_to_plot"] == [0, 1]
+    assert render_calls[0]["spec"] is sentinel

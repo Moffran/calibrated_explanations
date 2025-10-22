@@ -6,9 +6,52 @@ render via the PlotSpec + matplotlib adapter for selected plots.
 
 from __future__ import annotations
 
+import math
 from typing import Any, Sequence
 
 from .plotspec import BarHPanelSpec, BarItem, IntervalHeaderSpec, PlotSpec
+
+
+def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index: int) -> None:
+    """Ensure ``seq`` can satisfy ``max_index`` when provided.
+
+    The ADR contract requires that feature-oriented arrays (feature weights,
+    column names, rule labels, instance vectors) all cover the same indices
+    requested via ``features_to_plot``. Raise ``ValueError`` with a descriptive
+    message when a sequence is too short so tests can detect drift early.
+    """
+
+    if seq is None or max_index < 0:
+        return
+    try:
+        length = len(seq)
+    except TypeError:  # pragma: no cover - defensive: non-sized sequences
+        return
+    if length <= max_index:
+        raise ValueError(
+            f"{name} length {length} does not cover feature index {max_index}"
+        )
+
+
+def _normalize_interval_bounds(
+    low: float,
+    high: float,
+    *,
+    y_minmax: tuple[float, float] | None,
+) -> tuple[float, float, tuple[float, float] | None]:
+    """Clamp non-finite interval bounds to ``y_minmax`` when available."""
+
+    if y_minmax is None:
+        return low, high, None
+
+    floor = float(y_minmax[0])
+    ceil = float(y_minmax[1])
+    if not math.isfinite(low):
+        low = floor
+    if not math.isfinite(high):
+        high = ceil
+    xlim = (float(min(low, floor)), float(max(high, ceil)))
+    return low, high, xlim
 
 
 def build_regression_bars_spec(
@@ -45,13 +88,25 @@ def build_regression_bars_spec(
     ascending: bool
         Sort ascending (default False = descending)
     """
+    max_index = max(features_to_plot) if features_to_plot else -1
+    if isinstance(feature_weights, dict):
+        for key in ("predict", "low", "high"):
+            _ensure_indexable_length(
+                f"feature_weights['{key}']",
+                feature_weights.get(key),
+                max_index=max_index,
+            )
+    else:
+        _ensure_indexable_length("feature_weights", feature_weights, max_index=max_index)
+    _ensure_indexable_length("column_names", column_names, max_index=max_index)
+    _ensure_indexable_length("rule_labels", rule_labels, max_index=max_index)
+    _ensure_indexable_length("instance", instance, max_index=max_index)
+
     # Header (interval around prediction)
     pred = float(predict["predict"]) if "predict" in predict else 0.0
     low = float(predict.get("low", pred))
     high = float(predict.get("high", pred))
-    xlim = None
-    if y_minmax is not None:
-        xlim = (float(min(low, y_minmax[0])), float(max(high, y_minmax[1])))
+    low, high, xlim = _normalize_interval_bounds(low, high, y_minmax=y_minmax)
     header = IntervalHeaderSpec(
         pred=pred,
         low=low,
@@ -207,14 +262,26 @@ def build_probabilistic_bars_spec(
     and the body is a horizontal bar panel with rule labels on the left and
     instance values on the right.
     """
+    max_index = max(features_to_plot) if features_to_plot else -1
+    if isinstance(feature_weights, dict):
+        for key in ("predict", "low", "high"):
+            _ensure_indexable_length(
+                f"feature_weights['{key}']",
+                feature_weights.get(key),
+                max_index=max_index,
+            )
+    else:
+        _ensure_indexable_length("feature_weights", feature_weights, max_index=max_index)
+    _ensure_indexable_length("column_names", column_names, max_index=max_index)
+    _ensure_indexable_length("rule_labels", rule_labels, max_index=max_index)
+    _ensure_indexable_length("instance", instance, max_index=max_index)
+
     # Header: use prediction interval when available
     pred = float(predict.get("predict", 0.0))
     low = float(predict.get("low", pred))
     high = float(predict.get("high", pred))
-    xlim = None
-    # For probabilistic plots, default x-axis range is [0,1] unless caller supplies y_minmax
     if y_minmax is not None:
-        xlim = (float(min(low, y_minmax[0])), float(max(high, y_minmax[1])))
+        low, high, xlim = _normalize_interval_bounds(low, high, y_minmax=y_minmax)
     else:
         xlim = (0.0, 1.0)
     header = IntervalHeaderSpec(
