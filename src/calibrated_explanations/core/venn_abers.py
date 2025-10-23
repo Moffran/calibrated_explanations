@@ -17,7 +17,7 @@ from ..utils.helper import convert_targets_to_numeric
 
 class VennAbers:
     """Calibrate probabilistic predictions with the Venn-Abers method.
-    
+
     Parameters
     ----------
         x_cal : array-like
@@ -34,7 +34,7 @@ class VennAbers:
             Callable that scores sample difficulty.
         predict_function : callable, optional
             Custom probability function overriding `learner.predict_proba`.
-    
+
     Attributes
     ----------
         de : callable or None
@@ -64,7 +64,7 @@ class VennAbers:
         predict_function=None,
     ):
         """Initialize the VennAbers calibrator.
-        
+
         Parameters
         ----------
             x_cal : array-like

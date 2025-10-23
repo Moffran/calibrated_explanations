@@ -147,4 +147,3 @@ def test_register_explanation_plugin_warns_when_module_missing(tmp_path):
         registry.clear()
         registry.clear_explanation_plugins()
         sys.modules.pop(module_name, None)
-

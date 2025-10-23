@@ -395,9 +395,7 @@ class _MissingCapabilityPlugin(IntervalCalibratorPlugin):
 
 def test_interval_override_missing_capability(binary_dataset):
     ensure_builtin_plugins()
-    descriptor = register_interval_plugin(
-        "tests.interval.missing_cap", _MissingCapabilityPlugin()
-    )
+    descriptor = register_interval_plugin("tests.interval.missing_cap", _MissingCapabilityPlugin())
     try:
         with pytest.raises(ConfigurationError) as excinfo:
             _make_explainer(binary_dataset, interval_plugin=descriptor.identifier)
@@ -439,9 +437,7 @@ def test_fast_interval_override_metadata_reuse(binary_dataset):
     ensure_builtin_plugins()
     _FastRecordingPlugin.invocations.clear()
     _FastRecordingPlugin.returned.clear()
-    descriptor = register_interval_plugin(
-        "tests.interval.fast_override", _FastRecordingPlugin()
-    )
+    descriptor = register_interval_plugin("tests.interval.fast_override", _FastRecordingPlugin())
     try:
         explainer, _ = _make_explainer(
             binary_dataset,

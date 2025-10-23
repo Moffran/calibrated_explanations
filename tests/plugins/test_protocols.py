@@ -333,16 +333,20 @@ def test_plot_protocol_runtime_checks() -> None:
 
 def test_validate_explanation_batch_invalid_batch_type() -> None:
     from calibrated_explanations.plugins.explanations import validate_explanation_batch
-    
-    with pytest.raises(TypeError, match="explanation plugins must return an ExplanationBatch instance"):
+
+    with pytest.raises(
+        TypeError, match="explanation plugins must return an ExplanationBatch instance"
+    ):
         validate_explanation_batch("not a batch")
 
 
 def test_validate_explanation_batch_invalid_container_cls() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
-    from calibrated_explanations.explanations.explanations import CalibratedExplanations
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
-    
+
     batch = ExplanationBatch(
         container_cls="not a class",
         explanation_cls=CalibratedExplanation,
@@ -354,23 +358,31 @@ def test_validate_explanation_batch_invalid_container_cls() -> None:
 
 
 def test_validate_explanation_batch_invalid_container_inheritance() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
-    
+
     batch = ExplanationBatch(
         container_cls=object,  # doesn't inherit from CalibratedExplanations
         explanation_cls=CalibratedExplanation,
         instances=[],
         collection_metadata={},
     )
-    with pytest.raises(TypeError, match="batch.container_cls must inherit from CalibratedExplanations"):
+    with pytest.raises(
+        TypeError, match="batch.container_cls must inherit from CalibratedExplanations"
+    ):
         validate_explanation_batch(batch)
 
 
 def test_validate_explanation_batch_invalid_explanation_cls() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
-    
+
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
         explanation_cls="not a class",
@@ -382,10 +394,13 @@ def test_validate_explanation_batch_invalid_explanation_cls() -> None:
 
 
 def test_validate_explanation_batch_invalid_instances_type() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
-    
+
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
         explanation_cls=CalibratedExplanation,
@@ -397,25 +412,33 @@ def test_validate_explanation_batch_invalid_instances_type() -> None:
 
 
 def test_validate_explanation_batch_invalid_instance_mapping() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
-    
+
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
         explanation_cls=CalibratedExplanation,
         instances=["not a mapping"],
         collection_metadata={},
     )
-    with pytest.raises(TypeError, match="batch.instances\\[0\\] must be a mapping describing the instance"):
+    with pytest.raises(
+        TypeError, match="batch.instances\\[0\\] must be a mapping describing the instance"
+    ):
         validate_explanation_batch(batch)
 
 
 def test_validate_explanation_batch_invalid_metadata_type() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
-    
+
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
         explanation_cls=CalibratedExplanation,
@@ -427,45 +450,62 @@ def test_validate_explanation_batch_invalid_metadata_type() -> None:
 
 
 def test_validate_explanation_batch_mode_mismatch() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
-    
+
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
         explanation_cls=CalibratedExplanation,
         instances=[],
         collection_metadata={"mode": "alternative"},
     )
-    with pytest.raises(ValueError, match="ExplanationBatch metadata reports mode 'alternative' but runtime expected 'factual'"):
+    with pytest.raises(
+        ValueError,
+        match="ExplanationBatch metadata reports mode 'alternative' but runtime expected 'factual'",
+    ):
         validate_explanation_batch(batch, expected_mode="factual")
 
 
 def test_validate_explanation_batch_task_mismatch() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
-    
+
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
         explanation_cls=CalibratedExplanation,
         instances=[],
         collection_metadata={"task": "regression"},
     )
-    with pytest.raises(ValueError, match="ExplanationBatch metadata reports task 'regression' but runtime expected 'classification'"):
+    with pytest.raises(
+        ValueError,
+        match="ExplanationBatch metadata reports task 'regression' but runtime expected 'classification'",
+    ):
         validate_explanation_batch(batch, expected_task="classification")
 
 
 def test_validate_explanation_batch_invalid_container_instance() -> None:
-    from calibrated_explanations.plugins.explanations import ExplanationBatch, validate_explanation_batch
+    from calibrated_explanations.plugins.explanations import (
+        ExplanationBatch,
+        validate_explanation_batch,
+    )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
-    
+
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
         explanation_cls=CalibratedExplanation,
         instances=[],
         collection_metadata={"container": "not a CalibratedExplanations instance"},
     )
-    with pytest.raises(TypeError, match="ExplanationBatch metadata 'container' has unexpected type"):
+    with pytest.raises(
+        TypeError, match="ExplanationBatch metadata 'container' has unexpected type"
+    ):
         validate_explanation_batch(batch)

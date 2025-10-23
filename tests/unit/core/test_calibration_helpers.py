@@ -134,7 +134,5 @@ def test_update_interval_learner__should_insert_calibration_for_regression_inter
         bins={"count": 5},
     )
 
-    assert explainer.interval_learner.calls == [
-        ((1.0, 2.0, 3.0), (0.1, 0.2, 0.3), {"count": 5})
-    ]
+    assert explainer.interval_learner.calls == [((1.0, 2.0, 3.0), (0.1, 0.2, 0.3), {"count": 5})]
     assert explainer._CalibratedExplainer__initialized is True

@@ -83,9 +83,7 @@ class DummyVennAbers:
         }
 
     def predict_proba(self, x, *, output_interval=False, bins=None):  # pragma: no cover - trivial
-        DummyVennAbers.last_predict_bins = (
-            None if bins is None else np.array(bins, copy=True)
-        )
+        DummyVennAbers.last_predict_bins = None if bins is None else np.array(bins, copy=True)
         n = x.shape[0]
         proba = np.tile(np.array([[0.3, 0.7]]), (n, 1))
         interval_low = np.full((n, 1), 0.1)
@@ -173,6 +171,10 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.4, 0.6])
 
+    import builtins
+    import importlib
+
+    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
     import_attempts: list[tuple[str, int]] = []
 
     original_import = builtins.__import__
@@ -204,6 +206,47 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     assert extra is None
     assert calls == [1, 0, 0, 1, 0, 0]
 
+    regressor = _make_regressor(monkeypatch)
+    regressor.split["cps"].predict_queue = [0.2, 0.8]
+    x = np.array([[0.2, 0.1], [0.4, 0.3]])
+    thresholds = np.array([0.25, 0.35])
+
+    import builtins
+    import importlib
+
+    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
+    calls: list[tuple[np.ndarray, int | None]] = []
+
+    def fake_safe_first_element(values, col=None):
+        array = np.array(values)
+        calls.append((array, col))
+        if col is not None:
+            return array[0, col]
+        return array.flat[0]
+
+    monkeypatch.setattr(helper_module, "safe_first_element", fake_safe_first_element)
+
+    original_import = builtins.__import__
+
+    def failing_import(
+        name, globals=None, locals=None, fromlist=(), level=0
+    ):  # pragma: no cover - helper
+        if name.endswith("utils.helper") and level == 1:
+            raise ImportError("forced failure")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", failing_import)
+
+    proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
+
+    assert proba.shape == (2,)
+    assert low.shape == (2,)
+    assert high.shape == (2,)
+    assert extra is None
+    # Three invocations per instance: probability, low bound, high bound.
+    assert len(calls) == 6
+    assert calls[0][1] == 1  # first call extracts probability column
+
 
 def test_predict_probability_normalizes_scalar_and_column_bins(monkeypatch):
     calibration_bins = np.array([0, 1, 0, 1])
@@ -229,8 +272,8 @@ def test_predict_probability_normalizes_scalar_and_column_bins(monkeypatch):
     assert np.all(DummyVennAbers.last_predict_bins == expanded)
 
     expected_column = np.array([7, 7])
-    proba_expected_column, low_expected_column, high_expected_column, _ = regressor.predict_probability(
-        x, y_threshold=0.5, bins=expected_column
+    proba_expected_column, low_expected_column, high_expected_column, _ = (
+        regressor.predict_probability(x, y_threshold=0.5, bins=expected_column)
     )
     assert DummyVennAbers.last_predict_bins is not None
     assert DummyVennAbers.last_predict_bins.shape == (2,)
@@ -254,47 +297,6 @@ def test_predict_probability_requires_calibration_bins(monkeypatch):
 
     with pytest.raises(ValueError, match="Calibration bins must be assigned"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
-
-
-def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-    regressor.split["cps"].predict_queue = [0.2, 0.8]
-    x = np.array([[0.2, 0.1], [0.4, 0.3]])
-    thresholds = np.array([0.25, 0.35])
-
-    import builtins
-    import importlib
-
-    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
-    calls: list[tuple[np.ndarray, int | None]] = []
-
-    def fake_safe_first_element(values, col=None):
-        array = np.array(values)
-        calls.append((array, col))
-        if col is not None:
-            return array[0, col]
-        return array.flat[0]
-
-    monkeypatch.setattr(helper_module, "safe_first_element", fake_safe_first_element)
-
-    original_import = builtins.__import__
-
-    def failing_import(name, globals=None, locals=None, fromlist=(), level=0):  # pragma: no cover - helper
-        if name.endswith("utils.helper") and level == 1:
-            raise ImportError("forced failure")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", failing_import)
-
-    proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
-
-    assert proba.shape == (2,)
-    assert low.shape == (2,)
-    assert high.shape == (2,)
-    assert extra is None
-    # Three invocations per instance: probability, low bound, high bound.
-    assert len(calls) == 6
-    assert calls[0][1] == 1  # first call extracts probability column
 
 
 def test_predict_uncertainty_uses_interval_outputs(monkeypatch):
@@ -328,21 +330,11 @@ def test_insert_calibration_validates_bin_length(monkeypatch):
         regressor.insert_calibration(xs, ys, bins=np.array([0]))
 
 
-def test_predict_probability_requires_calibration_bins(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-    x = np.array([[0.1, 0.2]])
-
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
-        regressor.predict_probability(x, y_threshold=np.array([0.5]), bins=np.array([0]))
-
-
 def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
     regressor = _make_regressor(monkeypatch)
     regressor.split["cps"].predict_queue = [0.4, 0.6]
     x = np.array([[0.5, 0.1], [0.6, 0.2]])
     thresholds = np.array([0.3, 0.7])
-
-    from calibrated_explanations.utils import helper as helper_module
 
     calls: list[tuple[int | None, float]] = []
     original_safe_first = helper_module.safe_first_element

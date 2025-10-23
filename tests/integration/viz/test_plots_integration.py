@@ -105,9 +105,7 @@ def test_plot_global_non_probabilistic_runs_without_error():
     # small x_test
     x_test = np.zeros((3, 2))
     # should not raise
-    _plots._plot_global(
-        expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False
-    )
+    _plots._plot_global(expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False)
 
 
 def test_plot_proba_triangle_returns_figure():
@@ -175,9 +173,7 @@ def test_plot_global_probabilistic_branch_runs():
     expl = _FakeExplainerProba()
     x_test = np.zeros((3, 2))
     # should not raise
-    _plots._plot_global(
-        expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False
-    )
+    _plots._plot_global(expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False)
 
 
 def test_plot_alternative_early_noop_when_not_saving():

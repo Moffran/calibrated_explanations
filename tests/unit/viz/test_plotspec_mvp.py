@@ -613,7 +613,11 @@ def test_plot_probabilistic_clamps_infinite_bounds(monkeypatch, tmp_path):
 
 def test_build_regression_spec_requires_instance_alignment():
     predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
-    fw = {"predict": np.array([0.1, -0.2]), "low": np.array([0.0, -0.1]), "high": np.array([0.2, 0.1])}
+    fw = {
+        "predict": np.array([0.1, -0.2]),
+        "low": np.array([0.0, -0.1]),
+        "high": np.array([0.2, 0.1]),
+    }
 
     with pytest.raises(ValueError):
         build_regression_bars_spec(

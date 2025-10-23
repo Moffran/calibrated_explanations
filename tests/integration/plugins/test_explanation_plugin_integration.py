@@ -147,9 +147,7 @@ def test_factual_fallback_dependency_propagation(monkeypatch, binary_dataset):
 
 
 def test_missing_override_identifier_errors(binary_dataset):
-    explainer, x_test = _make_explainer(
-        binary_dataset, factual_plugin="tests.integration.missing"
-    )
+    explainer, x_test = _make_explainer(binary_dataset, factual_plugin="tests.integration.missing")
 
     with pytest.raises(ConfigurationError, match="missing: not registered"):
         explainer.explain_factual(x_test[:1])

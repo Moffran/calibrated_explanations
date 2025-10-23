@@ -745,7 +745,9 @@ def test_list_plot_descriptors_respect_trust(monkeypatch):
             registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
 
         builder_desc = registry.register_plot_builder("example.plot.untrusted", UntrustedBuilder())
-        renderer_desc = registry.register_plot_renderer("example.plot.untrusted", UntrustedRenderer())
+        renderer_desc = registry.register_plot_renderer(
+            "example.plot.untrusted", UntrustedRenderer()
+        )
         registry.register_plot_style(
             "example.plot.untrusted",
             metadata={
@@ -882,7 +884,9 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
             module = importlib.import_module(self.module)
             return getattr(module, self.attr)
 
-    failing = LoaderEntryPoint("failing", loader=lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    failing = LoaderEntryPoint(
+        "failing", loader=lambda: (_ for _ in ()).throw(RuntimeError("boom"))
+    )
     no_meta = LoaderEntryPoint("no_meta", loader=lambda: NoMetaPlugin())
     invalid = LoaderEntryPoint("invalid", loader=lambda: InvalidPlugin())
     untrusted = LoaderEntryPoint("untrusted", loader=lambda: UntrustedPlugin())

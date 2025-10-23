@@ -22,4 +22,3 @@ _canonical = importlib.import_module("calibrated_explanations.plotting")
 __all__ = tuple(name for name in dir(_canonical) if not name.startswith("__"))
 
 globals().update({name: getattr(_canonical, name) for name in __all__})
-

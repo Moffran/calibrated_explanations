@@ -1,9 +1,9 @@
 # ADR-023: Matplotlib Adapter Coverage Exemption
 
-**Status:** Accepted  
-**Date:** 2025-10-17  
-**Authors:** Core team  
-**Context:** v0.8.0 test infrastructure stabilization  
+**Status:** Accepted
+**Date:** 2025-10-17
+**Authors:** Core team
+**Context:** v0.8.0 test infrastructure stabilization
 
 ## Context
 
@@ -109,6 +109,6 @@ omit =
 
 ---
 
-**Supersedes:** None  
-**Superseded by:** None (active)  
+**Supersedes:** None
+**Superseded by:** None (active)
 **Related:** ADR-019 (Test Coverage Standard)

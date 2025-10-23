@@ -191,4 +191,6 @@ def test_plot_spec_builder_infers_missing_features_and_labels():
     # Expect three inferred bars with default numeric labels
     assert [bar.label for bar in spec.body.bars] == ["0", "1", "2"]
     # Ensure intervals are respected after normalisation
-    assert all(bar.interval_low is not None and bar.interval_high is not None for bar in spec.body.bars)
+    assert all(
+        bar.interval_low is not None and bar.interval_high is not None for bar in spec.body.bars
+    )

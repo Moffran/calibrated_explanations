@@ -3,4 +3,3 @@
 from __future__ import annotations
 
 from .legacy._venn_abers import *  # noqa: F401,F403
-

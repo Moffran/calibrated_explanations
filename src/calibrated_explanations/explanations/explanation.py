@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 # from dataclasses import dataclass
 from copy import deepcopy
 from types import MappingProxyType
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from pandas import Categorical
@@ -424,7 +424,7 @@ class CalibratedExplanation(ABC):
 
     @staticmethod
     def _compute_confidence_level(
-        percentiles: Optional[Tuple[Optional[float], Optional[float]]]
+        percentiles: Optional[Tuple[Optional[float], Optional[float]]],
     ) -> Optional[float]:
         """Compute confidence level from decimal percentiles."""
         if not percentiles:
@@ -612,7 +612,9 @@ class CalibratedExplanation(ABC):
                 low=rules["predict_low"][idx],
                 high=rules["predict_high"][idx],
                 representation=representation if not self.is_thresholded() else "threshold",
-                percentiles=percentiles if representation == "percentile" and not self.is_thresholded() else None,
+                percentiles=percentiles
+                if representation == "percentile" and not self.is_thresholded()
+                else None,
                 threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
                 include_percentiles=representation == "percentile" and not self.is_thresholded(),
             )
@@ -649,8 +651,10 @@ class CalibratedExplanation(ABC):
                 rules["feature_value"][idx],
                 rules["value"][idx],
             )
-            representation = "threshold" if self.is_thresholded() else (
-                "venn_abers" if self.is_probabilistic() else "percentile"
+            representation = (
+                "threshold"
+                if self.is_thresholded()
+                else ("venn_abers" if self.is_probabilistic() else "percentile")
             )
             prediction_uncertainty = self._build_uncertainty_payload(
                 value=rules["predict"][idx],

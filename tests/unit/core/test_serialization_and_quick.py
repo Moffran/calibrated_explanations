@@ -179,7 +179,10 @@ def test_validate_payload_delegates_to_jsonschema(monkeypatch):
 
     assert captured == [(payload, {"type": "object"})]
 
-@pytest.mark.skip(reason="The issue appears to be test isolation - the test fails only when run as part of the full test suite, suggesting that some other test is polluting the environment or modifying state that affects the resources.files() call in the _schema_json() function.")
+
+@pytest.mark.skip(
+    reason="The issue appears to be test isolation - the test fails only when run as part of the full test suite, suggesting that some other test is polluting the environment or modifying state that affects the resources.files() call in the _schema_json() function."
+)
 def test_schema_json_loads_schema_snapshot():
     schema = serialization._schema_json()
 
@@ -211,9 +214,7 @@ def test_quick_explain_smoke():
         data.data, data.target, test_size=0.2, random_state=0, stratify=data.target
     )
     model = RandomForestClassifier(n_estimators=10, random_state=0, max_depth=2)
-    exp = quick_explain(
-        model, x_train, y_train, x_cal, y_cal, x_cal[:5], task="classification"
-    )
+    exp = quick_explain(model, x_train, y_train, x_cal, y_cal, x_cal[:5], task="classification")
     # Basic shape checks
     assert hasattr(exp, "explanations")
     assert len(exp.explanations) == 5

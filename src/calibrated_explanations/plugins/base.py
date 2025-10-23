@@ -11,6 +11,7 @@ except ImportError:  # pragma: no cover - fallback when TypeAlias is unavailable
 
 PluginMeta: TypeAlias = Mapping[str, Any]
 
+
 class ExplainerPlugin(Protocol):
     """Protocol describing the minimal explainer plugin contract."""
 
@@ -23,6 +24,7 @@ class ExplainerPlugin(Protocol):
     def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:  # pragma: no cover - protocol
         """Produce an explanation for ``model`` and feature matrix ``x``."""
         ...
+
 
 def _ensure_sequence_of_strings(value: Any, *, key: str) -> Sequence[str]:
     """Return *value* as a sequence of strings or raise ``ValueError``."""
@@ -39,6 +41,7 @@ def _ensure_sequence_of_strings(value: Any, *, key: str) -> Sequence[str]:
     if not result:
         raise ValueError(f"plugin_meta[{key!r}] must not be empty")
     return tuple(result)
+
 
 def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     """Validate minimal plugin metadata required by ADR-006."""
@@ -81,5 +84,6 @@ def validate_plugin_meta(meta: Dict[str, Any]) -> None:
     else:
         # Default to False for clarity; registry callers can still override.
         meta["trusted"] = False
+
 
 __all__ = ["ExplainerPlugin", "validate_plugin_meta"]

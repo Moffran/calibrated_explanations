@@ -32,4 +32,3 @@ codebase with measurable coverage thresholds and automated enforcement.
 3. Review documentation debt quarterly; treat drops below 90% as release blockers.
 4. Encourage contributors to add usage examples; integrate with existing documentation CI
    (ADR-012) for end-to-end validation.
-

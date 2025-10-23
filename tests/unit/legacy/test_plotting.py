@@ -2,13 +2,14 @@ import types
 
 import numpy as np
 import pytest
-import types
-
-matplotlib = pytest.importorskip("matplotlib", reason="matplotlib is required for legacy plotting tests")
-
-matplotlib.use("Agg", force=True)
 
 from calibrated_explanations.legacy import plotting
+
+matplotlib = pytest.importorskip(
+    "matplotlib", reason="matplotlib is required for legacy plotting tests"
+)
+
+matplotlib.use("Agg", force=True)
 
 
 class _CalibratedStub:
@@ -297,7 +298,11 @@ def test_probabilistic_interval_one_sided_error(tmp_path):
             explanation,
             instance=[0.3],
             predict={"predict": 0.5, "low": 0.2, "high": 0.8},
-            feature_weights={"predict": np.array([0.1]), "low": np.array([0.0]), "high": np.array([0.2])},
+            feature_weights={
+                "predict": np.array([0.1]),
+                "low": np.array([0.0]),
+                "high": np.array([0.2]),
+            },
             features_to_plot=[0],
             num_to_show=1,
             column_names=["feat"],
@@ -349,15 +354,14 @@ def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
     x_vals = np.zeros((3, 1))
     y_vals = np.array([0, 1, 0])
 
-    with pytest.warns(RuntimeWarning):
-        with pytest.raises(AssertionError):
-            plotting._plot_global(
-                explainer,
-                x_vals,
-                y=y_vals,
-                threshold=(0.2, 0.8),
-                show=False,
-            )
+    with pytest.warns(RuntimeWarning), pytest.raises(AssertionError):
+        plotting._plot_global(
+            explainer,
+            x_vals,
+            y=y_vals,
+            threshold=(0.2, 0.8),
+            show=False,
+        )
 
 
 def test_regression_interval_plot_saves_image(tmp_path):
@@ -523,7 +527,11 @@ def test_regression_interval_one_sided_error(tmp_path):
             explanation,
             instance=[0.2],
             predict={"predict": 0.0, "low": -0.1, "high": 0.1},
-            feature_weights={"predict": np.array([0.1]), "low": np.array([-0.2]), "high": np.array([0.3])},
+            feature_weights={
+                "predict": np.array([0.1]),
+                "low": np.array([-0.2]),
+                "high": np.array([0.3]),
+            },
             features_to_plot=[0],
             num_to_show=1,
             column_names=["nr"],
@@ -855,34 +863,6 @@ def test_plot_global_headless_short_circuit(monkeypatch):
     monkeypatch.setattr(plotting, "__require_matplotlib", fail)
 
     plotting._plot_global(explainer, x=np.zeros((1, 1)), show=False)
-
-
-def test_probabilistic_interval_requires_index():
-    explanation = DummyExplanation()
-    instance = [1.0, -1.0]
-    predict = {"predict": 0.4, "low": 0.2, "high": 0.6}
-    feature_weights = {
-        "predict": np.array([0.1, -0.2]),
-        "low": np.array([0.0, 0.0]),
-        "high": np.array([0.0, 0.0]),
-    }
-
-    with pytest.raises(AssertionError):
-        plotting._plot_probabilistic(
-            explanation,
-            instance,
-            predict,
-            feature_weights,
-            features_to_plot=[0, 1],
-            num_to_show=2,
-            column_names=["f0", "f1"],
-            title="needs_idx",
-            path="",
-            show=True,
-            interval=True,
-            idx=None,
-            save_ext=[".png"],
-        )
 
 
 def test_plot_global_requires_scalar_threshold_for_predict_only(disable_show):

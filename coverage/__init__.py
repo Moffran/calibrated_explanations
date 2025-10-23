@@ -1,4 +1,5 @@
 """Lightweight coverage stub using Python's tracing hooks."""
+
 from __future__ import annotations
 
 import ast
@@ -61,9 +62,7 @@ def _statement_lines(path: str) -> Set[int]:
         return set()
 
     pragma_lines = {
-        idx + 1
-        for idx, line in enumerate(text.splitlines())
-        if "# pragma: no cover" in line
+        idx + 1 for idx, line in enumerate(text.splitlines()) if "# pragma: no cover" in line
     }
 
     lines: Set[int] = set()
@@ -174,8 +173,10 @@ class Coverage:  # pragma: no cover - integration harness
                 missing = ",".join(str(num) for num in sorted(stats.missing))
                 file.write(f"    Missing: {missing}\n")
 
-        file.write("\nTOTAL                                        "
-                   f"{total_lines:6d} {total_lines - total_hits:6d} {overall:5.1f}%\n")
+        file.write(
+            "\nTOTAL                                        "
+            f"{total_lines:6d} {total_lines - total_hits:6d} {overall:5.1f}%\n"
+        )
 
         if fail_under is not None and overall < fail_under:
             raise RuntimeError(

@@ -826,7 +826,7 @@ def test_var_normalized_probabilistic_regression_fast_ce(regression_dataset):
         feature_names,
         categorical_features,
         mode="regression",
-            difficulty_estimator=DifficultyEstimator().fit(X=x_prop_train, learner=model, scaler=True),
+        difficulty_estimator=DifficultyEstimator().fit(X=x_prop_train, learner=model, scaler=True),
         fast=True,
     )
 

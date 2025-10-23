@@ -56,9 +56,7 @@ def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index:
     except TypeError:  # pragma: no cover - defensive: non-sized sequences
         return
     if length <= max_index:
-        raise ValueError(
-            f"{name} length {length} does not cover feature index {max_index}"
-        )
+        raise ValueError(f"{name} length {length} does not cover feature index {max_index}")
 
 
 def _normalize_interval_bounds(
@@ -125,7 +123,11 @@ def _legacy_get_fill_color(probability: float, reduction: float = 1.0) -> str:
     alpha = float(alpha)
     blended = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
     hex_color = "#%02x%02x%02x" % tuple(blended)
-    if reduction == 1.0 and math.isfinite(probability) and math.isclose(probability, 1.0, rel_tol=1e-9, abs_tol=1e-12):
+    if (
+        reduction == 1.0
+        and math.isfinite(probability)
+        and math.isclose(probability, 1.0, rel_tol=1e-9, abs_tol=1e-12)
+    ):
         return "#ff0000"
     return hex_color
 
@@ -354,10 +356,16 @@ def build_alternative_probabilistic_spec(
 
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
-        _ensure_indexable_length("feature_weights['predict']", feature_weights.get("predict"), max_index=max_index)
+        _ensure_indexable_length(
+            "feature_weights['predict']", feature_weights.get("predict"), max_index=max_index
+        )
         if interval:
-            _ensure_indexable_length("feature_weights['low']", feature_weights.get("low"), max_index=max_index)
-            _ensure_indexable_length("feature_weights['high']", feature_weights.get("high"), max_index=max_index)
+            _ensure_indexable_length(
+                "feature_weights['low']", feature_weights.get("low"), max_index=max_index
+            )
+            _ensure_indexable_length(
+                "feature_weights['high']", feature_weights.get("high"), max_index=max_index
+            )
     else:
         _ensure_indexable_length("feature_weights", feature_weights, max_index=max_index)
     _ensure_indexable_length("column_names", column_names, max_index=max_index)
@@ -382,7 +390,9 @@ def build_alternative_probabilistic_spec(
     xlim = (float(xlim[0]), float(xlim[1])) if xlim is not None else default_xlim
 
     if xlabel is None:
-        body_xlabel = f"Probability for class '{pos_label}'" if pos_label is not None else "Probability"
+        body_xlabel = (
+            f"Probability for class '{pos_label}'" if pos_label is not None else "Probability"
+        )
     else:
         body_xlabel = xlabel
 
@@ -399,6 +409,7 @@ def build_alternative_probabilistic_spec(
     )
 
     bars: list[BarItem] = []
+
     def _label_for(index: int) -> str:
         if rule_labels is not None:
             return str(rule_labels[index])
@@ -534,10 +545,16 @@ def build_alternative_regression_spec(
 
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
-        _ensure_indexable_length("feature_weights['predict']", feature_weights.get("predict"), max_index=max_index)
+        _ensure_indexable_length(
+            "feature_weights['predict']", feature_weights.get("predict"), max_index=max_index
+        )
         if interval:
-            _ensure_indexable_length("feature_weights['low']", feature_weights.get("low"), max_index=max_index)
-            _ensure_indexable_length("feature_weights['high']", feature_weights.get("high"), max_index=max_index)
+            _ensure_indexable_length(
+                "feature_weights['low']", feature_weights.get("low"), max_index=max_index
+            )
+            _ensure_indexable_length(
+                "feature_weights['high']", feature_weights.get("high"), max_index=max_index
+            )
     else:
         _ensure_indexable_length("feature_weights", feature_weights, max_index=max_index)
     _ensure_indexable_length("column_names", column_names, max_index=max_index)
@@ -562,10 +579,7 @@ def build_alternative_regression_spec(
         xlim = default_xlim
     xlim = (float(xlim[0]), float(xlim[1])) if xlim is not None else default_xlim
 
-    if xlabel is None:
-        body_xlabel = "Prediction interval"
-    else:
-        body_xlabel = xlabel
+    body_xlabel = "Prediction interval" if xlabel is None else xlabel
 
     xtick_values = tuple(float(x) for x in xticks) if xticks is not None else None
 
@@ -598,7 +612,9 @@ def build_alternative_regression_spec(
             segments: tuple[IntervalSegment, ...] = ()
             if has_interval and not math.isclose(lo_draw, hi_draw, rel_tol=1e-9, abs_tol=1e-9):
                 segments = (
-                    IntervalSegment(low=lo_draw, high=hi_draw, color=REGRESSION_BAR_COLOR, alpha=0.4),
+                    IntervalSegment(
+                        low=lo_draw, high=hi_draw, color=REGRESSION_BAR_COLOR, alpha=0.4
+                    ),
                 )
             if not segments:
                 # Fall back to drawing contribution span between base prediction and rule value.
@@ -640,7 +656,9 @@ def build_alternative_regression_spec(
             if not math.isclose(val, base_pred, rel_tol=1e-9, abs_tol=1e-9):
                 lo_draw, hi_draw = (min(val, base_pred), max(val, base_pred))
                 item.segments = (
-                    IntervalSegment(low=lo_draw, high=hi_draw, color=REGRESSION_BAR_COLOR, alpha=0.4),
+                    IntervalSegment(
+                        low=lo_draw, high=hi_draw, color=REGRESSION_BAR_COLOR, alpha=0.4
+                    ),
                 )
             item.line = val
             item.line_color = REGRESSION_BAR_COLOR

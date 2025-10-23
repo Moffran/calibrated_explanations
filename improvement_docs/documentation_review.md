@@ -15,4 +15,3 @@ Remediating the high-traffic packages reduced the immediate documentation risk, 
 ## Supporting Data
 - Coverage snapshot produced by `scripts/check_docstring_coverage.py` (2025-10-10): overall 94.18% (modules 47/47, classes 67/68, functions 166/175, methods 319/346).
 - All modules sampled in ADR-018 batches C (`explanations/`, `perf/`) and D (`plugins/`) now report full compliance with numpydoc conventions.
-

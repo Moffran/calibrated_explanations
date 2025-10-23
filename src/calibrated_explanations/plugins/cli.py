@@ -1,4 +1,5 @@
 """Command-line helpers for inspecting and managing explainer plugins."""
+
 from __future__ import annotations
 
 import argparse
@@ -332,7 +333,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except SystemExit as exc:
         # argparse exits with sys.exit(2) on invalid args; catch and return code
         # but first print help if no command was provided
-        if not getattr(exc, 'code', None) or exc.code != 0:
+        if not getattr(exc, "code", None) or exc.code != 0:
             parser.print_help()
         return exc.code
     if not getattr(args, "command", None):

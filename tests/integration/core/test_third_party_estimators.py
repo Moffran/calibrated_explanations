@@ -51,7 +51,9 @@ def _tiny_binary_dataset(n_samples: int = 120, n_features: int = 8, random_state
         random_state=random_state,
     )
     # Split into proper-train, calibration, test
-    x_tmp, x_test, y_tmp, y_test = train_test_split(x_data, y, test_size=0.2, random_state=random_state)
+    x_tmp, x_test, y_tmp, y_test = train_test_split(
+        x_data, y, test_size=0.2, random_state=random_state
+    )
     x_train, x_cal, y_train, y_cal = train_test_split(
         x_tmp, y_tmp, test_size=0.25, random_state=random_state
     )  # 0.25 x 0.8 = 0.2

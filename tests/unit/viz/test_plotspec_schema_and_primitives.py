@@ -18,6 +18,7 @@ def test_plotspec_and_primitives_schemas_exist():
     assert os.path.exists(plotspec), "plotspec_schema.json must exist"
     assert os.path.exists(primitives), "primitives_schema.json must exist"
 
+
 def test_schema_declares_interval_and_save_requirements():
     plotspec = _load(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
     required = set(plotspec.get("required", ()))

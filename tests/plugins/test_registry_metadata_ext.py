@@ -230,7 +230,9 @@ def test_validate_plot_builder_and_renderer_metadata():
     registry.validate_plot_renderer_metadata(renderer_meta)
 
     with pytest.raises(ValueError):
-        registry.validate_plot_renderer_metadata({"capabilities": (), "dependencies": (), "output_formats": (), "trust": False})
+        registry.validate_plot_renderer_metadata(
+            {"capabilities": (), "dependencies": (), "output_formats": (), "trust": False}
+        )
 
 
 def test_ensure_string_and_bool_validation():
@@ -283,7 +285,8 @@ def test_list_plot_builder_descriptors_respects_trust(monkeypatch):
 
     all_ids = [descriptor.identifier for descriptor in registry.list_plot_builder_descriptors()]
     trusted_ids = [
-        descriptor.identifier for descriptor in registry.list_plot_builder_descriptors(trusted_only=True)
+        descriptor.identifier
+        for descriptor in registry.list_plot_builder_descriptors(trusted_only=True)
     ]
 
     assert all_ids == ["a", "b"]
@@ -342,16 +345,12 @@ def test_list_explanation_descriptors_filters_trusted(monkeypatch):
 
     all_ids = [descriptor.identifier for descriptor in registry.list_explanation_descriptors()]
     trusted_ids = [
-        descriptor.identifier for descriptor in registry.list_explanation_descriptors(trusted_only=True)
+        descriptor.identifier
+        for descriptor in registry.list_explanation_descriptors(trusted_only=True)
     ]
 
     assert all_ids == ["trusted", "untrusted"]
     assert trusted_ids == ["trusted"]
-
-
-
-
-
 
 
 def test_register_interval_plugin():

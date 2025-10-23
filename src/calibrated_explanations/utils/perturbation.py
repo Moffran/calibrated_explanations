@@ -179,10 +179,7 @@ def perturb_dataset(
     perturbed_x_cal = np.tile(x_cal.copy(), (scale_factor, 1))
     scaled_x_cal = perturbed_x_cal.copy()
     scaled_y_cal = np.tile(y_cal.copy(), scale_factor)
-    if categorical_features is None:
-        categorical_feature_set = set()
-    else:
-        categorical_feature_set = set(categorical_features)
+    categorical_feature_set = set() if categorical_features is None else set(categorical_features)
     if noise_type not in [
         "uniform",
         "gaussian",

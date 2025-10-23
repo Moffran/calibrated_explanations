@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 
 import numpy as np
+import contextlib
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 try:
@@ -461,9 +462,7 @@ class CalibratedExplainer:
     def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
         """Return the ordered interval plugin chain for the requested mode."""
         entries: List[str] = []
-        override = (
-            self._fast_interval_plugin_override if fast else self._interval_plugin_override
-        )
+        override = self._fast_interval_plugin_override if fast else self._interval_plugin_override
         preferred_identifier: str | None = None
         if isinstance(override, str) and override:
             entries.append(override)
@@ -1160,10 +1159,8 @@ class CalibratedExplainer:
             if instance_payload:
                 telemetry_payload.update(instance_payload)
                 self._last_telemetry.update(instance_payload)
-            try:
-                setattr(result, "telemetry", dict(telemetry_payload))
-            except Exception:  # pragma: no cover - defensive
-                pass
+            with contextlib.suppress(Exception):
+                result.telemetry = dict(telemetry_payload)
             self.latest_explanation = result
             self._last_explanation_mode = mode
             return result
@@ -1749,9 +1746,7 @@ class CalibratedExplainer:
             greater_values,
             covered_values,
             x_cal,
-        ) = self._explain_predict_step(
-            x, threshold, low_high_percentiles, bins, features_to_ignore
-        )
+        ) = self._explain_predict_step(x, threshold, low_high_percentiles, bins, features_to_ignore)
 
         # Step 2: Initialize data structures to store feature-level results
         # Dictionaries to store aggregated results across all instances
@@ -2098,17 +2093,13 @@ class CalibratedExplainer:
 
         return _vh(self, x)
 
-    def _initialize_explanation(
-        self, x, low_high_percentiles, threshold, bins, features_to_ignore
-    ):
+    def _initialize_explanation(self, x, low_high_percentiles, threshold, bins, features_to_ignore):
         """Delegate to extracted helper (Phase 1A)."""
         from .prediction_helpers import initialize_explanation as _ih
 
         return _ih(self, x, low_high_percentiles, threshold, bins, features_to_ignore)
 
-    def _explain_predict_step(
-        self, x, threshold, low_high_percentiles, bins, features_to_ignore
-    ):
+    def _explain_predict_step(self, x, threshold, low_high_percentiles, bins, features_to_ignore):
         # Phase 1A: delegate initial setup to prediction_helpers to lock behavior
         from .prediction_helpers import explain_predict_step as _eps
 
@@ -3448,6 +3439,3 @@ class CalibratedExplainer:
 
 
 __all__ = ["CalibratedExplainer"]
-
-
-

@@ -102,13 +102,21 @@ def test_alternative_regression_primitives():
     assert -1 in indices
     assert any(idx is not None and idx >= 0 for idx in indices)
     assert any(item.get("color") == REG_BASE_COLOR for item in overlays if item.get("index") == -1)
-    assert any(item.get("color") == REG_BAR_COLOR for item in overlays if item.get("index") is not None and item.get("index") >= 0)
+    assert any(
+        item.get("color") == REG_BAR_COLOR
+        for item in overlays
+        if item.get("index") is not None and item.get("index") >= 0
+    )
     lines = primitives.get("lines", [])
     assert isinstance(lines, list) and len(lines) >= 1
     line_indices = {item.get("index") for item in lines}
     assert -1 in line_indices
     assert any(idx is not None and idx >= 0 for idx in line_indices)
-    assert any(item.get("color") == REG_BAR_COLOR for item in lines if item.get("index") is not None and item.get("index") >= 0)
+    assert any(
+        item.get("color") == REG_BAR_COLOR
+        for item in lines
+        if item.get("index") is not None and item.get("index") >= 0
+    )
 
 
 def test_alternative_regression_point_primitives():
@@ -122,12 +130,20 @@ def test_alternative_regression_point_primitives():
     assert -1 in indices
     assert any(idx is not None and idx >= 0 for idx in indices)
     assert any(item.get("color") == REG_BASE_COLOR for item in overlays if item.get("index") == -1)
-    assert any(item.get("color") == REG_BAR_COLOR for item in overlays if item.get("index") is not None and item.get("index") >= 0)
+    assert any(
+        item.get("color") == REG_BAR_COLOR
+        for item in overlays
+        if item.get("index") is not None and item.get("index") >= 0
+    )
     lines = primitives.get("lines", [])
     assert isinstance(lines, list) and len(lines) >= 1
     line_indices = {item.get("index") for item in lines}
     assert any(idx is not None and idx >= 0 for idx in line_indices)
-    assert any(item.get("color") == REG_BAR_COLOR for item in lines if item.get("index") is not None and item.get("index") >= 0)
+    assert any(
+        item.get("color") == REG_BAR_COLOR
+        for item in lines
+        if item.get("index") is not None and item.get("index") >= 0
+    )
 
 
 def test_alternative_regression_probability_scale_primitives():

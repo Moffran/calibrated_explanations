@@ -90,4 +90,3 @@ def test_resolve_plot_style_chain_defaults_to_legacy(monkeypatch):
     chain = plotting._resolve_plot_style_chain(SimpleNamespace(), None)
 
     assert chain == ("plot_spec.default", "legacy")
-

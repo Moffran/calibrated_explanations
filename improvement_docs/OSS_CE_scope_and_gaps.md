@@ -60,4 +60,3 @@
 - First‑class convenience export on explanation objects
   - Today, schema v1 export requires adapters + serialization helpers; there’s no simple `exp.to_json()`/`collection.to_json()` convenience on public objects.
   - Suggest: add a thin convenience that wraps existing adapters/serialization for usability.
-

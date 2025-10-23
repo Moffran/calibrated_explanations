@@ -26,7 +26,9 @@ def _stub_explainer(mode: str = "classification") -> CalibratedExplainer:
     explainer._interval_preferred_identifier = {"default": None, "fast": None}
     explainer._telemetry_interval_sources = {"default": None, "fast": None}
     explainer._interval_context_metadata = {"default": {}, "fast": {}}
-    explainer._explanation_plugin_overrides = {mode: None for mode in ("factual", "alternative", "fast")}
+    explainer._explanation_plugin_overrides = {
+        mode: None for mode in ("factual", "alternative", "fast")
+    }
     explainer._pyproject_explanations = {}
     explainer._pyproject_plots = {}
     explainer._explanation_plugin_fallbacks = {}
@@ -145,20 +147,30 @@ def test_check_explanation_runtime_metadata_reports_errors():
     }
 
     wrong_schema = dict(base, schema_version=-1)
-    assert "unsupported" in explainer._check_explanation_runtime_metadata(wrong_schema, identifier="id", mode="factual")
+    assert "unsupported" in explainer._check_explanation_runtime_metadata(
+        wrong_schema, identifier="id", mode="factual"
+    )
 
     missing_tasks = dict(base, tasks=())
-    assert "missing tasks" in explainer._check_explanation_runtime_metadata(missing_tasks, identifier="id", mode="factual")
+    assert "missing tasks" in explainer._check_explanation_runtime_metadata(
+        missing_tasks, identifier="id", mode="factual"
+    )
 
     missing_mode = dict(base, modes=("alternative",))
-    assert "does not declare mode" in explainer._check_explanation_runtime_metadata(missing_mode, identifier="id", mode="factual")
+    assert "does not declare mode" in explainer._check_explanation_runtime_metadata(
+        missing_mode, identifier="id", mode="factual"
+    )
 
     missing_caps = dict(base, capabilities=("explain",))
-    message = explainer._check_explanation_runtime_metadata(missing_caps, identifier="id", mode="factual")
+    message = explainer._check_explanation_runtime_metadata(
+        missing_caps, identifier="id", mode="factual"
+    )
     assert "missing required capabilities" in message
 
     ok = dict(base)
-    assert explainer._check_explanation_runtime_metadata(ok, identifier="id", mode="factual") is None
+    assert (
+        explainer._check_explanation_runtime_metadata(ok, identifier="id", mode="factual") is None
+    )
 
 
 def test_check_interval_runtime_metadata_validates_requirements():
@@ -177,23 +189,35 @@ def test_check_interval_runtime_metadata_validates_requirements():
     }
 
     wrong_schema = dict(base, schema_version=5)
-    assert "unsupported interval schema_version" in explainer._check_interval_runtime_metadata(wrong_schema, identifier="id", fast=False)
+    assert "unsupported interval schema_version" in explainer._check_interval_runtime_metadata(
+        wrong_schema, identifier="id", fast=False
+    )
 
     missing_modes = dict(base)
     del missing_modes["modes"]
-    assert "missing modes declaration" in explainer._check_interval_runtime_metadata(missing_modes, identifier="id", fast=False)
+    assert "missing modes declaration" in explainer._check_interval_runtime_metadata(
+        missing_modes, identifier="id", fast=False
+    )
 
     wrong_mode = dict(base, modes=("classification",))
-    assert "does not support mode" in explainer._check_interval_runtime_metadata(wrong_mode, identifier="id", fast=False)
+    assert "does not support mode" in explainer._check_interval_runtime_metadata(
+        wrong_mode, identifier="id", fast=False
+    )
 
     missing_cap = dict(base, capabilities=("interval:classification",))
-    assert "missing capability" in explainer._check_interval_runtime_metadata(missing_cap, identifier="id", fast=False)
+    assert "missing capability" in explainer._check_interval_runtime_metadata(
+        missing_cap, identifier="id", fast=False
+    )
 
     not_fast = dict(base, fast_compatible=False)
-    assert "not marked fast_compatible" in explainer._check_interval_runtime_metadata(not_fast, identifier="id", fast=True)
+    assert "not marked fast_compatible" in explainer._check_interval_runtime_metadata(
+        not_fast, identifier="id", fast=True
+    )
 
     requires_bins = dict(base, requires_bins=True)
-    assert "requires bins" in explainer._check_interval_runtime_metadata(requires_bins, identifier="id", fast=False)
+    assert "requires bins" in explainer._check_interval_runtime_metadata(
+        requires_bins, identifier="id", fast=False
+    )
 
     explainer.bins = ("bin",)
     assert explainer._check_interval_runtime_metadata(base, identifier="id", fast=True) is None

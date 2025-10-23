@@ -38,9 +38,7 @@ class _StubLimeTabularExplainer:
         arr = np.asarray(instance, dtype=float)
         proba = np.asarray(predict_fn(arr.reshape(1, -1))).squeeze()
         scale = float(proba[-1]) if proba.size else 0.0
-        weights = [
-            (idx, scale * (idx + 1) / (num_features + 1)) for idx in range(num_features)
-        ]
+        weights = [(idx, scale * (idx + 1) / (num_features + 1)) for idx in range(num_features)]
         return _StubLimeExplanation(weights, proba)
 
 

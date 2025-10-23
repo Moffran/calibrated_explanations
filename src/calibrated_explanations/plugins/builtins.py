@@ -16,6 +16,7 @@ having to rehydrate individual explanations.
 from __future__ import annotations
 
 import contextlib
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
@@ -24,8 +25,7 @@ import numpy as np
 from .. import __version__ as package_version
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
-    from ..core.interval_regressor import IntervalRegressor
-    from ..core.venn_abers import VennAbers
+    pass
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
@@ -59,13 +59,16 @@ def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
     """Produce positive/negative labels for thresholded regression."""
 
     try:
-        if isinstance(threshold, Sequence) and not isinstance(threshold, (str, bytes)):
-            if len(threshold) >= 2:
-                lo = float(threshold[0])
-                hi = float(threshold[1])
-                return (f"{lo:.2f} ≤ Y < {hi:.2f}", "Outside interval")
-    except Exception:
-        pass
+        if (
+            isinstance(threshold, Sequence)
+            and not isinstance(threshold, (str, bytes))
+            and len(threshold) >= 2
+        ):
+            lo = float(threshold[0])
+            hi = float(threshold[1])
+            return (f"{lo:.2f} <= Y < {hi:.2f}", "Outside interval")
+    except Exception as exc:
+        logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", exc)
     try:
         value = float(threshold)
     except Exception:
@@ -119,11 +122,13 @@ class LegacyPredictBridge(PredictBridge):
         """Return calibrated probabilities for ``x`` when available."""
         return self._explainer.predict_proba(x, uq_interval=True, calibrated=True, bins=bins)
 
+
 def _supports_calibrated_explainer(model: Any) -> bool:
     """Return ``True`` when *model* is a ``CalibratedExplainer`` instance."""
     return safe_isinstance(
         model, "calibrated_explanations.core.calibrated_explainer.CalibratedExplainer"
     )
+
 
 def _collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch:
     """Convert a legacy explanation collection into an :class:`ExplanationBatch`."""
@@ -143,6 +148,7 @@ def _collection_to_batch(collection: CalibratedExplanations) -> ExplanationBatch
         instances=instances,
         collection_metadata=metadata,
     )
+
 
 class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     """Wrapper returning the already-initialised legacy calibrator."""
@@ -198,6 +204,7 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
             context.metadata.setdefault("calibrator", calibrator)
         return calibrator
 
+
 class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     """FAST adapter returning the precomputed list of interval learners."""
 
@@ -246,9 +253,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
             seed=noise_cfg.get("seed"),
             rng=noise_cfg.get("rng"),
         )
-        expanded_bins = (
-            np.tile(bins.copy(), scale_factor) if bins is not None else None
-        )
+        expanded_bins = np.tile(bins.copy(), scale_factor) if bins is not None else None
         original_bins = explainer.bins
         original_x_cal = explainer.x_cal
         original_y_cal = explainer.y_cal
@@ -272,7 +277,9 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                     )
                 )
         else:
-            from ..core.interval_regressor import IntervalRegressor  # local import to avoid circular dependency
+            from ..core.interval_regressor import (
+                IntervalRegressor,  # local import to avoid circular dependency
+            )
 
             for f in range(num_features):
                 fast_x_cal = explainer.scaled_x_cal.copy()
@@ -303,13 +310,16 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                 )
             )
         else:
-            from ..core.interval_regressor import IntervalRegressor  # local import to avoid circular dependency
+            from ..core.interval_regressor import (
+                IntervalRegressor,  # local import to avoid circular dependency
+            )
 
             calibrators.append(IntervalRegressor(explainer))
 
         if isinstance(metadata, dict):
             metadata.setdefault("fast_calibrators", tuple(calibrators))
         return calibrators
+
 
 @dataclass
 class _LegacyExplanationBase(ExplanationPlugin):
@@ -380,6 +390,7 @@ class _LegacyExplanationBase(ExplanationPlugin):
         collection: CalibratedExplanations = explanation_callable(x, **kwargs)
         return _collection_to_batch(collection)
 
+
 class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
     """Plugin wrapping ``CalibratedExplainer.explain_factual``."""
 
@@ -412,6 +423,7 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
             _expected_cls=FactualExplanation,
             plugin_meta=self.plugin_meta,
         )
+
 
 class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
     """Plugin wrapping ``CalibratedExplainer.explore_alternatives``."""
@@ -446,6 +458,7 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
             plugin_meta=self.plugin_meta,
         )
 
+
 class FastExplanationPlugin(_LegacyExplanationBase):
     """Plugin wrapping ``CalibratedExplainer.explain_fast``."""
 
@@ -474,6 +487,7 @@ class FastExplanationPlugin(_LegacyExplanationBase):
             plugin_meta=self.plugin_meta,
         )
 
+
 class LegacyPlotBuilder(PlotBuilder):
     """Minimal plot builder that keeps legacy behaviour."""
 
@@ -494,6 +508,7 @@ class LegacyPlotBuilder(PlotBuilder):
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
         """Return a legacy-compatible payload representing the plot request."""
         return {"context": context}
+
 
 class LegacyPlotRenderer(PlotRenderer):
     """Minimal renderer mirroring the legacy matplotlib pathway."""
@@ -516,6 +531,7 @@ class LegacyPlotRenderer(PlotRenderer):
     ) -> PlotRenderResult:
         """Render the placeholder legacy artefact and return an empty result."""
         return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
+
 
 class PlotSpecDefaultBuilder(PlotBuilder):
     """PlotSpec-first builder for global plots."""
@@ -542,7 +558,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             options = context.options if isinstance(context.options, Mapping) else {}
             payload = options.get("payload", {})
             if not isinstance(payload, Mapping):
-                raise RuntimeError("PlotSpec default builder expected payload mapping for global plot")
+                raise RuntimeError(
+                    "PlotSpec default builder expected payload mapping for global plot"
+                )
             payload_dict = dict(payload)
             payload_dict.pop("threshold", None)  # legacy-only field
             if "y" in payload_dict and "y_test" not in payload_dict:
@@ -653,7 +671,10 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 for idx in features_to_plot_raw:
                     try:
                         value = int(idx)
-                    except Exception:
+                    except Exception as exc:
+                        logging.getLogger(__name__).debug(
+                            "Failed to convert feature index to int: %s", exc
+                        )
                         continue
                     if 0 <= value < feature_count:
                         features_to_plot.append(value)
@@ -669,10 +690,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 column_names = [str(idx) for idx in range(feature_count)]
 
             rule_labels = payload.get("rule_labels")
-            if rule_labels is not None:
-                rule_labels = list(rule_labels)
-            else:
-                rule_labels = column_names
+            rule_labels = list(rule_labels) if rule_labels is not None else column_names
 
             instance_values = payload.get("instance")
             if instance_values is None:
@@ -751,7 +769,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 "legacy_solid_behavior": bool(legacy_behavior),
                 "uncertainty_color": uncertainty_color,
                 "uncertainty_alpha": uncertainty_alpha,
-                "threshold_value": getattr(context.explanation, "y_threshold", None) if is_thresholded else None,
+                "threshold_value": getattr(context.explanation, "y_threshold", None)
+                if is_thresholded
+                else None,
                 "is_thresholded": is_thresholded,
                 "threshold_label": threshold_label,
             }
@@ -789,6 +809,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             return build_alternative_probabilistic_spec(**builder_kwargs)
 
         raise RuntimeError("PlotSpec default builder currently supports only global plots")
+
 
 class PlotSpecDefaultRenderer(PlotRenderer):
     """Renderer delegating PlotSpec payloads to the matplotlib adapter."""
@@ -829,6 +850,7 @@ class PlotSpecDefaultRenderer(PlotRenderer):
         except Exception as exc:  # pragma: no cover - defensive fallback
             raise RuntimeError(f"PlotSpec renderer failed: {exc}") from exc
         return PlotRenderResult(artifact=artifact, figure=None, saved_paths=tuple(saved), extras={})
+
 
 def _register_builtins() -> None:
     """Register in-tree plugins with the shared registry."""
@@ -874,6 +896,7 @@ def _register_builtins() -> None:
             "default_for": ("global", "alternative"),
         },
     )
+
 
 _register_builtins()
 

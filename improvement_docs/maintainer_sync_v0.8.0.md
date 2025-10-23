@@ -1,7 +1,7 @@
 # Maintainer Sync Notes – v0.8.0 Plot Routing & Telemetry
 
-**Date:** 2025-10-11  
-**Audience:** Core maintainers, release managers  
+**Date:** 2025-10-11
+**Audience:** Core maintainers, release managers
 
 ## Highlights
 

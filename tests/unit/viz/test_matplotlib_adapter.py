@@ -268,7 +268,10 @@ def test_render_normalizes_dict_payloads():
         }
     }
     scalar_result = ma.render(scalar_payload, export_drawn_primitives=True)
-    assert [p["coords"]["x"] for p in scalar_result["primitives"] if p["type"] == "scatter"] == [0.2, 0.8]
+    assert [p["coords"]["x"] for p in scalar_result["primitives"] if p["type"] == "scatter"] == [
+        0.2,
+        0.8,
+    ]
 
     # Trigger the defensive fallback path when casting to float fails
     bad_global = {
@@ -604,7 +607,9 @@ def test_regression_interval_colors_match_legacy_palette():
 
 def test_export_guard_raises_on_probability_coordinate_mismatch():
     header = IntervalHeaderSpec(pred=1.3, low=1.1, high=1.4, dual=True)
-    body = BarHPanelSpec(bars=[BarItem(label="bad", value=1.2, interval_low=1.1, interval_high=1.3)])
+    body = BarHPanelSpec(
+        bars=[BarItem(label="bad", value=1.2, interval_low=1.1, interval_high=1.3)]
+    )
     spec = PlotSpec(title="assert", header=header, body=body)
 
     with pytest.raises(AssertionError):

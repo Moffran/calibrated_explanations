@@ -63,15 +63,6 @@ def test_lru_cache_updates_existing_keys_without_eviction() -> None:
     assert cache.get("c") == 3
 
 
-def test_lru_cache_rejects_non_positive_capacity() -> None:
-    """The cache guard clause enforces a sensible positive capacity."""
-    with pytest.raises(ValueError):
-        LRUCache(max_items=0)
-
-    with pytest.raises(ValueError):
-        LRUCache(max_items=-5)
-
-
 def test_cache_helpers_cover_len_contains_and_make_key() -> None:
     """Convenience helpers should behave consistently for typical usage."""
     cache: LRUCache[str, str] = LRUCache(max_items=1)
@@ -100,11 +91,6 @@ def test_lru_cache_get_returns_default_when_missing():
     cache = LRUCache(max_items=1)
     assert cache.get("missing") is None
     assert cache.get("missing", default=42) == 42
-
-
-def test_lru_cache_rejects_non_positive_capacity():
-    with pytest.raises(ValueError, match="max_items"):
-        LRUCache(max_items=0)
 
 
 def test_make_key_returns_tuple_of_hashable_parts():

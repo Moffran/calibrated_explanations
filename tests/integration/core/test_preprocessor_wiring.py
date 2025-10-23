@@ -151,12 +151,12 @@ def test_preprocessor_metadata_exposed_in_telemetry():
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
 
-    X, y = make_classification(n_samples=120, n_features=6, random_state=0)
-    X_train, X_temp, y_train, y_temp = train_test_split(
-        X, y, test_size=0.4, random_state=42, stratify=y
+    x, y = make_classification(n_samples=120, n_features=6, random_state=0)
+    x_train, x_temp, y_train, y_temp = train_test_split(
+        x, y, test_size=0.4, random_state=42, stratify=y
     )
-    X_cal, X_test, y_cal, _ = train_test_split(
-        X_temp, y_temp, test_size=0.5, random_state=24, stratify=y_temp
+    x_cal, x_test, y_cal, _ = train_test_split(
+        x_temp, y_temp, test_size=0.5, random_state=24, stratify=y_temp
     )
 
     pre = SnapshotPreprocessor(factor=1.3)
@@ -167,17 +167,15 @@ def test_preprocessor_metadata_exposed_in_telemetry():
         .build_config()
     )
     wrapper = we.WrapCalibratedExplainer._from_config(cfg)
-    wrapper.fit(X_train, y_train)
-    wrapper.calibrate(X_cal, y_cal)
+    wrapper.fit(x_train, y_train)
+    wrapper.calibrate(x_cal, y_cal)
 
-    batch = wrapper.explain_factual(X_test[:3])
+    batch = wrapper.explain_factual(x_test[:3])
     telemetry = getattr(batch, "telemetry", {})
     meta = telemetry.get("preprocessor")
     assert meta is not None
     assert meta.get("auto_encode") == "true"
-    expected_transformer = (
-        f"{pre.__class__.__module__}:{pre.__class__.__qualname__}"
-    )
+    expected_transformer = f"{pre.__class__.__module__}:{pre.__class__.__qualname__}"
     assert meta.get("transformer_id") == expected_transformer
     snapshot = meta.get("mapping_snapshot")
     assert snapshot is not None

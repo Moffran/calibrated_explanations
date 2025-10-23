@@ -112,9 +112,7 @@ def test_gaussian_perturbation_matches_expected_draws():
     column = np.array([0.0, 1.0, 2.0, 3.0])
     severity = 0.5
     expected_rng = np.random.default_rng(42)
-    expected_noise = expected_rng.normal(
-        loc=0, scale=column.std() * severity, size=len(column)
-    )
+    expected_noise = expected_rng.normal(loc=0, scale=column.std() * severity, size=len(column))
     expected = column.mean() + expected_noise
 
     actual_rng = np.random.default_rng(42)
@@ -165,9 +163,7 @@ def test_perturb_dataset_uniform_with_categorical_features_and_rng_stub():
     )
     assert set(perturbed_x[:, 0]) == {0.0, 1.0}
     # The numeric column should reflect the deterministic uniform draws.
-    np.testing.assert_allclose(
-        perturbed_x[:, 1] - scaled_x[:, 1], np.arange(6, dtype=float)
-    )
+    np.testing.assert_allclose(perturbed_x[:, 1] - scaled_x[:, 1], np.arange(6, dtype=float))
     low, high, size = rng.uniform_calls[0]
     assert size == 6
     assert pytest.approx(low) == -0.04

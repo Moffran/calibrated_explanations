@@ -17,7 +17,8 @@ def test_cli_list_trusted_only(capsys, monkeypatch):
     monkeypatch.setattr(
         cli_module,
         "list_explanation_descriptors",
-        lambda trusted_only=False: called.__setitem__("explanations", trusted_only) or (descriptor,),
+        lambda trusted_only=False: called.__setitem__("explanations", trusted_only)
+        or (descriptor,),
     )
     monkeypatch.setattr(
         cli_module,

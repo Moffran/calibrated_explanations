@@ -96,9 +96,7 @@ class IntervalRegressor:
             elif candidate.ndim > 1:
                 candidate = candidate.reshape(-1)
             if candidate.shape[0] != n_samples:
-                raise ValueError(
-                    "The length of test bins must match the number of test instances."
-                )
+                raise ValueError("The length of test bins must match the number of test instances.")
             normalized_bins = candidate.tolist()
 
         iter_bins = normalized_bins if normalized_bins is not None else [None] * n_samples
@@ -248,7 +246,7 @@ class IntervalRegressor:
     @singledispatchmethod
     def compute_proba_cal(self, y_threshold):
         """Validate threshold types before computing probability calibration.
-        
+
         Parameters
         ----------
             y_threshold : float or tuple
@@ -259,7 +257,7 @@ class IntervalRegressor:
     @compute_proba_cal.register(numbers.Real)
     def _(self, y_threshold: numbers.Real):
         """Compute the probability calibration for a scalar threshold.
-        
+
         Parameters
         ----------
             y_threshold : float
@@ -282,7 +280,7 @@ class IntervalRegressor:
     @compute_proba_cal.register(tuple)
     def _(self, y_threshold: tuple):
         """Compute the probability calibration for an interval threshold.
-        
+
         Parameters
         ----------
             y_threshold : tuple
@@ -310,7 +308,7 @@ class IntervalRegressor:
 
     def insert_calibration(self, xs, ys, bins=None):
         """Insert calibration instances while preserving the conformal splits.
-        
+
         Parameters
         ----------
             xs : ndarray

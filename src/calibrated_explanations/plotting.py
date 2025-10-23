@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import configparser
 import contextlib
+import logging
 import os
 import warnings
 from pathlib import Path, PurePath
@@ -26,18 +27,22 @@ def _derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
     """Return positive/negative labels summarising a regression threshold."""
 
     try:
-        if isinstance(threshold, Sequence) and not isinstance(threshold, (str, bytes)):
-            if len(threshold) >= 2:
-                lo = float(threshold[0])
-                hi = float(threshold[1])
-                return (f"{lo:.2f} ≤ Y < {hi:.2f}", "Outside interval")
-    except Exception:
-        pass
+        if (
+            isinstance(threshold, Sequence)
+            and not isinstance(threshold, (str, bytes))
+            and len(threshold) >= 2
+        ):
+            lo = float(threshold[0])
+            hi = float(threshold[1])
+            return (f"{lo:.2f} <= Y < {hi:.2f}", "Outside interval")
+    except Exception as exc:
+        logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", exc)
     try:
         value = float(threshold)
     except Exception:
         return ("Target within threshold", "Outside threshold")
-    return (f"Y < {value:.2f}", f"Y ≥ {value:.2f}")
+    return (f"Y < {value:.2f}", f"Y >= {value:.2f}")
+
 
 try:
     import tomllib as _plot_tomllib
@@ -48,18 +53,20 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
         _plot_tomllib = None  # type: ignore[assignment]
 
 try:
+    import matplotlib.artist  # noqa: F401
+    import matplotlib.axes  # noqa: F401
     import matplotlib.colors as mcolors
-    import matplotlib.pyplot as plt
+
     # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
     import matplotlib.image  # noqa: F401
-    import matplotlib.axes  # noqa: F401
-    import matplotlib.artist  # noqa: F401
+    import matplotlib.pyplot as plt
 except Exception as _e:  # pragma: no cover - optional dependency guard
     mcolors = None  # type: ignore[assignment]
     plt = None  # type: ignore[assignment]
     _MATPLOTLIB_IMPORT_ERROR = _e
 else:
     _MATPLOTLIB_IMPORT_ERROR = None
+
 
 def _read_plot_pyproject() -> Dict[str, Any]:
     """Return ``pyproject.toml`` plot configuration when available."""
@@ -607,9 +614,9 @@ def _plot_regression(
                 raise Warning("Interval plot is not supported for one-sided explanations.")
         except Warning:
             raise
-        except Exception:
+        except Exception as exc:
             # If the guard fails unexpectedly, defer to legacy parity by proceeding.
-            pass
+            logging.getLogger(__name__).debug("Guard check failed: %s", exc)
 
     explainer = None
     if use_legacy is None:
@@ -687,9 +694,7 @@ def _plot_regression(
         render_plotspec(spec, show=show, save_path=None)
         if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
             for ext in save_ext:
-                render_plotspec(
-                    spec, show=False, save_path=_format_save_path(path, title + ext)
-                )
+                render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
     except Exception as exc:  # pragma: no cover - fallback path
         warnings.warn(
             f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
@@ -977,8 +982,7 @@ def _plot_alternative(
                 seq = [values]
             fallback = fallback_map.get(key, base_pred)
             sanitised[key] = [
-                val if (val := _safe_float(item)) is not None else float(fallback)
-                for item in seq
+                val if (val := _safe_float(item)) is not None else float(fallback) for item in seq
             ]
         feature_payload = sanitised
     else:
@@ -1014,7 +1018,8 @@ def _plot_alternative(
     for idx in features_to_plot:
         try:
             value = int(idx)
-        except Exception:
+        except Exception as exc:
+            logging.getLogger(__name__).debug("Failed to convert feature index to int: %s", exc)
             continue
         if value < 0:
             continue
@@ -1222,20 +1227,24 @@ def _plot_alternative(
                 classification_kwargs["y_minmax"] = None
                 spec = build_alternative_probabilistic_spec(**classification_kwargs)
             else:
-                builder_kwargs.update({
+                builder_kwargs.update(
+                    {
+                        "xlabel": x_axis_label,
+                        "xlim": xlim_override,
+                        "xticks": xticks_override,
+                    }
+                )
+                spec = build_alternative_regression_spec(**builder_kwargs)
+        else:
+            builder_kwargs.update(
+                {
+                    "neg_label": neg_label,
+                    "pos_label": pos_label,
                     "xlabel": x_axis_label,
                     "xlim": xlim_override,
                     "xticks": xticks_override,
-                })
-                spec = build_alternative_regression_spec(**builder_kwargs)
-        else:
-            builder_kwargs.update({
-                "neg_label": neg_label,
-                "pos_label": pos_label,
-                "xlabel": x_axis_label,
-                "xlim": xlim_override,
-                "xticks": xticks_override,
-            })
+                }
+            )
             spec = build_alternative_probabilistic_spec(**builder_kwargs)
 
         try:

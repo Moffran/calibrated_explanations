@@ -251,10 +251,8 @@ class WrapCalibratedExplainer:
             )
         self.calibrated = True
         if preprocessor_metadata is not None and self.explainer is not None:
-            try:
+            with suppress(AttributeError):
                 self.explainer.set_preprocessor_metadata(preprocessor_metadata)
-            except AttributeError:  # pragma: no cover - defensive
-                pass
         return self
 
     def explain_factual(self, x: Any, **kwargs: Any) -> Any:
@@ -545,9 +543,7 @@ class WrapCalibratedExplainer:
         return self.explainer.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-    def plot(
-        self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any
-    ) -> None:
+    def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> None:
         """Generate plots for the test data.
 
         See Also
@@ -611,9 +607,7 @@ class WrapCalibratedExplainer:
         if value is None:
             return None
         if isinstance(value, dict):
-            return {
-                str(key): self._serialise_preprocessor_value(val) for key, val in value.items()
-            }
+            return {str(key): self._serialise_preprocessor_value(val) for key, val in value.items()}
         if isinstance(value, (list, tuple, set)):
             return [self._serialise_preprocessor_value(item) for item in value]
         if hasattr(value, "tolist"):
@@ -657,10 +651,8 @@ class WrapCalibratedExplainer:
             snapshot["transformers"] = serialised
         feature_names_out = getattr(preprocessor, "get_feature_names_out", None)
         if callable(feature_names_out):
-            try:
+            with suppress(Exception):
                 snapshot["feature_names_out"] = list(feature_names_out())
-            except Exception:  # pragma: no cover - defensive
-                pass
         mapping_attr = getattr(preprocessor, "mapping_", None)
         if mapping_attr is not None:
             snapshot["mapping"] = self._serialise_preprocessor_value(mapping_attr)
@@ -678,7 +670,11 @@ class WrapCalibratedExplainer:
             snapshot = self._extract_preprocessor_snapshot(preprocessor)
             if snapshot is not None:
                 metadata["mapping_snapshot"] = snapshot
-        if metadata.get("transformer_id") is None and len(metadata) == 1 and auto_encode_flag == "auto":
+        if (
+            metadata.get("transformer_id") is None
+            and len(metadata) == 1
+            and auto_encode_flag == "auto"
+        ):
             return None
         return metadata
 

@@ -19,9 +19,7 @@ import importlib
 
 import pytest
 
-matplotlib = pytest.importorskip(
-    "matplotlib", reason="matplotlib is required for viz unit tests"
-)
+matplotlib = pytest.importorskip("matplotlib", reason="matplotlib is required for viz unit tests")
 
 _missing_reasons: list[str] = []
 
@@ -40,8 +38,7 @@ else:
 
 if _missing_reasons:
     pytest.skip(
-        "matplotlib installation lacks required primitives: "
-        + ", ".join(_missing_reasons),
+        "matplotlib installation lacks required primitives: " + ", ".join(_missing_reasons),
         allow_module_level=True,
     )
 

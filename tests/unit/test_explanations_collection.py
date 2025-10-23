@@ -131,7 +131,9 @@ def calibrated_collection():
     bins = ["bin0", "bin1", "bin2"]
     collection = CalibratedExplanations(dummy_explainer, x, 0.5, bins)
     collection.explanations = [
-        DummyExplanation(i, x[i], predict=0.1 * (i + 1), interval=(i, i + 1), feature_weights=[i, i + 1, i + 2])
+        DummyExplanation(
+            i, x[i], predict=0.1 * (i + 1), interval=(i, i + 1), feature_weights=[i, i + 1, i + 2]
+        )
         for i in range(len(x))
     ]
     collection.low_high_percentiles = (10.0, 90.0)
@@ -390,7 +392,9 @@ def test_alternative_specific_filters(calibrated_collection):
     alt.counter_explanations(only_ensured=True, include_potential=False)
     alt.ensured_explanations()
     for exp in alt.explanations:
-        actions = [call[0] for call in exp.calls if call[0] in {"super", "semi", "counter", "ensured"}]
+        actions = [
+            call[0] for call in exp.calls if call[0] in {"super", "semi", "counter", "ensured"}
+        ]
         assert {"super", "semi", "counter", "ensured"}.issubset(set(actions))
 
 

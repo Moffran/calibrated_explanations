@@ -19,11 +19,13 @@ from .plotspec import BarHPanelSpec, PlotSpec
 
 # Preload matplotlib submodules to avoid lazy loading issues with coverage
 try:
-    import matplotlib.image  # noqa: F401
-    import matplotlib.axes  # noqa: F401
     import matplotlib.artist  # noqa: F401
-except Exception:  # pragma: no cover
-    pass  # matplotlib not installed or already loaded
+    import matplotlib.axes  # noqa: F401
+    import matplotlib.image  # noqa: F401
+except Exception as exc:  # pragma: no cover
+    logging.getLogger(__name__).debug(
+        "Failed to preload matplotlib submodules: %s", exc
+    )  # matplotlib not installed or already loaded
 
 
 def render(
@@ -133,17 +135,23 @@ def render(
     # Create axes using a GridSpec so the figure title can reserve space via tight_layout.
     axes = []
     if len(panels) == 3 and panels[0][0] == "header_negative" and panels[1][0] == "header_positive":
-        num_bars = len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
+        num_bars = (
+            len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
+        )
         gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[1, 1, num_bars + 2])
         axes.append(fig.add_subplot(gs[0]))
         axes.append(fig.add_subplot(gs[1]))
         axes.append(fig.add_subplot(gs[2]))
     elif len(panels) == 2 and panels[0][0].startswith("header") and panels[1][0] == "body":
-        num_bars = len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
+        num_bars = (
+            len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
+        )
         gs = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[1, num_bars + 2])
         axes.append(fig.add_subplot(gs[0]))
         axes.append(fig.add_subplot(gs[1]))
-    elif len(panels) == 2 and panels[0][0].startswith("header") and panels[1][0].startswith("header"):
+    elif (
+        len(panels) == 2 and panels[0][0].startswith("header") and panels[1][0].startswith("header")
+    ):
         gs = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[1, 1])
         axes.append(fig.add_subplot(gs[0]))
         axes.append(fig.add_subplot(gs[1]))
@@ -240,8 +248,12 @@ def render(
             ax.fill_betweenx(y_coords, comp_pred, comp_pred, color=base_color)
             ax.fill_betweenx(y_coords, 0.0, comp_low, color=base_color)
             if render_intervals:
-                ax.fill_betweenx(y_coords, comp_high, comp_low, color=overlay_color, alpha=alpha_val)
-            ax.plot([comp_pred, comp_pred], [y_coords[0], y_coords[1]], color=base_color, linewidth=2)
+                ax.fill_betweenx(
+                    y_coords, comp_high, comp_low, color=overlay_color, alpha=alpha_val
+                )
+            ax.plot(
+                [comp_pred, comp_pred], [y_coords[0], y_coords[1]], color=base_color, linewidth=2
+            )
             ax.set_xticks(np.linspace(x0f, x1f, 6))
             solid_range = (0.0, comp_low)
             overlay_range = (comp_high, comp_low)
@@ -338,7 +350,9 @@ def render(
             if base_segments:
                 for seg in base_segments:
                     try:
-                        alpha_seg = float(seg.alpha) if getattr(seg, "alpha", None) is not None else 1.0
+                        alpha_seg = (
+                            float(seg.alpha) if getattr(seg, "alpha", None) is not None else 1.0
+                        )
                         low = float(seg.low)
                         high = float(seg.high)
                         if low > high:
@@ -406,7 +420,9 @@ def render(
                 if segments:
                     for seg in segments:
                         try:
-                            alpha_seg = float(seg.alpha) if getattr(seg, "alpha", None) is not None else 1.0
+                            alpha_seg = (
+                                float(seg.alpha) if getattr(seg, "alpha", None) is not None else 1.0
+                            )
                             low = float(seg.low)
                             high = float(seg.high)
                             if low > high:
@@ -428,9 +444,19 @@ def render(
                             )
                 else:
                     try:
-                        lo = float(item.interval_low) if item.interval_low is not None else float(item.value)
-                        hi = float(item.interval_high) if item.interval_high is not None else float(item.value)
-                        color = getattr(item, "color_role", None) or config["colors"].get("positive", "r")
+                        lo = (
+                            float(item.interval_low)
+                            if item.interval_low is not None
+                            else float(item.value)
+                        )
+                        hi = (
+                            float(item.interval_high)
+                            if item.interval_high is not None
+                            else float(item.value)
+                        )
+                        color = getattr(item, "color_role", None) or config["colors"].get(
+                            "positive", "r"
+                        )
                         ax.fill_betweenx(y_j, lo, hi, color=color)
                         if export_drawn_primitives:
                             primitives.setdefault("overlays", []).append(
@@ -466,8 +492,7 @@ def render(
             ax.set_ylim([y_min, y_max])
 
             instance_vals = [
-                str(bar.instance_value) if bar.instance_value is not None else ""
-                for bar in bars
+                str(bar.instance_value) if bar.instance_value is not None else "" for bar in bars
             ]
             if any(val != "" for val in instance_vals):
                 ax_twin = ax.twinx()
@@ -478,9 +503,11 @@ def render(
 
             if getattr(body, "xticks", None):
                 try:
-                    ax.set_xticks(list(float(x) for x in body.xticks))
+                    ax.set_xticks([float(x) for x in body.xticks])
                 except Exception as exc:  # pragma: no cover
-                    logging.getLogger(__name__).debug("Failed to set xticks for alternative plot: %s", exc)
+                    logging.getLogger(__name__).debug(
+                        "Failed to set xticks for alternative plot: %s", exc
+                    )
             if getattr(body, "xlim", None):
                 try:
                     x0, x1 = body.xlim
@@ -492,7 +519,9 @@ def render(
                             x1f += eps
                         ax.set_xlim([x0f, x1f])
                 except Exception as exc:  # pragma: no cover - defensive logging
-                    logging.getLogger(__name__).debug("Failed to set xlim for alternative plot: %s", exc)
+                    logging.getLogger(__name__).debug(
+                        "Failed to set xlim for alternative plot: %s", exc
+                    )
             if body.xlabel:
                 ax.set_xlabel(body.xlabel)
             if body.ylabel:
@@ -533,9 +562,9 @@ def render(
                     gwl = header_pred - float(spec.header.low)
                     gwh = header_pred - float(spec.header.high)
                     gwh, gwl = (max(gwh, gwl), min(gwh, gwl))
-                    base_color = getattr(spec.header, "uncertainty_color", None) or config["colors"].get(
-                        "uncertainty", "k"
-                    )
+                    base_color = getattr(spec.header, "uncertainty_color", None) or config[
+                        "colors"
+                    ].get("uncertainty", "k")
                     y_span = [-0.5, (n - 1) + 0.5] if n > 0 else [-0.5, 0.5]
                     ax.fill_betweenx(y_span, gwl, gwh, color=base_color, alpha=alpha_val)
                     if export_drawn_primitives:
@@ -548,13 +577,17 @@ def render(
                     x_min = min(x_min, gwl, gwh)
                     x_max = max(x_max, gwl, gwh)
                 except Exception as exc:
-                    logging.getLogger(__name__).debug("Failed to draw header base interval: %s", exc)
+                    logging.getLogger(__name__).debug(
+                        "Failed to draw header base interval: %s", exc
+                    )
 
             if n > 0:
                 y_positions = np.linspace(0, n - 1, n)
                 ax.fill_betweenx(y_positions, 0.0, 0.0, color="k")
                 ax.fill_betweenx(np.linspace(-0.5, y_positions[0], 2), 0.0, 0.0, color="k")
-                ax.fill_betweenx(np.linspace(y_positions[-1], y_positions[-1] + 0.5, 2), 0.0, 0.0, color="k")
+                ax.fill_betweenx(
+                    np.linspace(y_positions[-1], y_positions[-1] + 0.5, 2), 0.0, 0.0, color="k"
+                )
             else:
                 ax.fill_betweenx(np.linspace(-0.5, 0.5, 2), 0.0, 0.0, color="k")
 
@@ -639,7 +672,9 @@ def render(
                     x_max += pad
                 ax.set_xlim([x_min, x_max])
             except Exception as exc:
-                logging.getLogger(__name__).debug("Failed to set xlim for probabilistic body: %s", exc)
+                logging.getLogger(__name__).debug(
+                    "Failed to set xlim for probabilistic body: %s", exc
+                )
 
             ax.set_yticks(range(n))
             labels = [b.label for b in body.bars]
@@ -702,9 +737,7 @@ def render(
                 width = float(item.value)
                 color = "b" if width > 0 else "r"
 
-                if (
-                    getattr(body, "solid_on_interval_crosses_zero", None) is not None
-                ):
+                if getattr(body, "solid_on_interval_crosses_zero", None) is not None:
                     suppress_solid_on_cross = bool(body.solid_on_interval_crosses_zero)
                 elif hasattr(item, "solid_on_interval_crosses_zero"):
                     suppress_solid_on_cross = bool(item.solid_on_interval_crosses_zero)
@@ -1094,7 +1127,8 @@ def render(
                     # If every body primitive falls in [0,1], it's suspicious for dual headers
                     # unless all coordinates are close to zero (valid for zero contributions)
                     coords_close_to_zero = all(
-                        abs(b.get("coords", {}).get("x0", 0.0)) < 1e-6 and abs(b.get("coords", {}).get("x1", 0.0)) < 1e-6
+                        abs(b.get("coords", {}).get("x0", 0.0)) < 1e-6
+                        and abs(b.get("coords", {}).get("x1", 0.0)) < 1e-6
                         for b in body_coords
                     )
                     if not coords_close_to_zero:

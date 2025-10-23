@@ -95,20 +95,22 @@ def test_rank_features_requires_input(simple_explanation):
 
 
 def test_percentile_helpers():
-    assert explanation_module.CalibratedExplanation._normalize_percentile_value(95) == pytest.approx(0.95)
+    assert explanation_module.CalibratedExplanation._normalize_percentile_value(
+        95
+    ) == pytest.approx(0.95)
     assert explanation_module.CalibratedExplanation._normalize_percentile_value(-np.inf) == -np.inf
     assert explanation_module.CalibratedExplanation._normalize_percentile_value("invalid") is None
 
     percentiles = (0.05, 0.95)
-    assert explanation_module.CalibratedExplanation._compute_confidence_level(percentiles) == pytest.approx(0.9)
-    assert (
-        explanation_module.CalibratedExplanation._compute_confidence_level((-np.inf, 0.9))
-        == pytest.approx(0.9)
-    )
-    assert (
-        explanation_module.CalibratedExplanation._compute_confidence_level((0.1, np.inf))
-        == pytest.approx(0.9)
-    )
+    assert explanation_module.CalibratedExplanation._compute_confidence_level(
+        percentiles
+    ) == pytest.approx(0.9)
+    assert explanation_module.CalibratedExplanation._compute_confidence_level(
+        (-np.inf, 0.9)
+    ) == pytest.approx(0.9)
+    assert explanation_module.CalibratedExplanation._compute_confidence_level(
+        (0.1, np.inf)
+    ) == pytest.approx(0.9)
 
 
 def test_get_percentiles_and_one_sided(simple_explanation):

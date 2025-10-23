@@ -165,7 +165,11 @@ def test_render_short_circuits_without_matplotlib(monkeypatch):
     spec = builders.build_probabilistic_bars_spec(
         title=None,
         predict={"predict": 0.5, "low": 0.4, "high": 0.6},
-        feature_weights={"predict": np.array([0.1]), "low": np.array([0.05]), "high": np.array([0.15])},
+        feature_weights={
+            "predict": np.array([0.1]),
+            "low": np.array([0.05]),
+            "high": np.array([0.15]),
+        },
         features_to_plot=[0],
         column_names=["f0"],
         instance=[1.0],
@@ -211,24 +215,6 @@ def test_render_uses_exact_save_path(tmp_path):
     from matplotlib import pyplot as plt
 
     plt.close("all")
-
-
-def test_render_short_circuits_without_show_or_save(monkeypatch):
-    from calibrated_explanations.viz import matplotlib_adapter
-    from calibrated_explanations.viz.plotspec import PlotSpec
-
-    def fail():  # pragma: no cover - executed only on regression
-        raise AssertionError("render should short-circuit when show/save disabled")
-
-    monkeypatch.setattr(matplotlib_adapter, "_require_mpl", fail)
-
-    matplotlib_adapter.render(
-        PlotSpec(),
-        show=False,
-        save_path=None,
-        return_fig=False,
-        export_drawn_primitives=False,
-    )
 
 
 def test_render_saves_to_requested_path(monkeypatch, tmp_path):

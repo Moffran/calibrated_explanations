@@ -229,9 +229,8 @@ def _summarise_legacy_records(
             continue
         if color_hex != bar_hex:
             continue
-        if (
-            math.isclose(alpha, 0.3, rel_tol=1e-6)
-            and math.isclose(x_min, x_max, rel_tol=1e-9, abs_tol=1e-9)
+        if math.isclose(alpha, 0.3, rel_tol=1e-6) and math.isclose(
+            x_min, x_max, rel_tol=1e-9, abs_tol=1e-9
         ):
             if base_line is None:
                 base_line = {"value": x_min, "alpha": alpha, "color": color_hex}
@@ -264,7 +263,12 @@ def _summarise_legacy_records(
         feature_summary[label] = {"interval": interval, "line": line}
 
     return {
-        "base_interval": {"low": base_low, "high": base_high, "alpha": base_alpha, "color": base_color},
+        "base_interval": {
+            "low": base_low,
+            "high": base_high,
+            "alpha": base_alpha,
+            "color": base_color,
+        },
         "base_line": base_line,
         "features": feature_summary,
     }
@@ -348,7 +352,9 @@ def _summarise_plotspec(spec) -> Dict[str, Dict[str, Dict[str, float | str]]]:
         line_summary = {
             "value": float(bar.line if bar.line is not None else bar.value),
             "alpha": float(bar.line_alpha) if bar.line_alpha is not None else 1.0,
-            "color": mcolors.to_hex(bar.line_color if bar.line_color is not None else REGRESSION_BAR_COLOR),
+            "color": mcolors.to_hex(
+                bar.line_color if bar.line_color is not None else REGRESSION_BAR_COLOR
+            ),
         }
         features[label] = {"interval": interval_summary, "line": line_summary}
 
@@ -394,17 +400,9 @@ def test_alternative_regression_plotspec_matches_legacy(case: RegressionParityCa
         assert spec_feature["interval"]["alpha"] == pytest.approx(
             legacy_feature["interval"]["alpha"]
         )
-        assert spec_feature["interval"]["low"] == pytest.approx(
-            legacy_feature["interval"]["low"]
-        )
-        assert spec_feature["interval"]["high"] == pytest.approx(
-            legacy_feature["interval"]["high"]
-        )
+        assert spec_feature["interval"]["low"] == pytest.approx(legacy_feature["interval"]["low"])
+        assert spec_feature["interval"]["high"] == pytest.approx(legacy_feature["interval"]["high"])
 
         assert spec_feature["line"]["color"] == legacy_feature["line"]["color"]
-        assert spec_feature["line"]["alpha"] == pytest.approx(
-            legacy_feature["line"]["alpha"]
-        )
-        assert spec_feature["line"]["value"] == pytest.approx(
-            legacy_feature["line"]["value"]
-        )
+        assert spec_feature["line"]["alpha"] == pytest.approx(legacy_feature["line"]["alpha"])
+        assert spec_feature["line"]["value"] == pytest.approx(legacy_feature["line"]["value"])

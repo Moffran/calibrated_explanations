@@ -17,34 +17,32 @@ from calibrated_explanations import WrapCalibratedExplainer
 
 def _train_regression_explainer():
     dataset = load_diabetes()
-    X, y = dataset.data, dataset.target
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=0
-    )
-    X_proper, X_cal, y_proper, y_cal = train_test_split(
-        X_train, y_train, test_size=0.25, random_state=0
+    x, y = dataset.data, dataset.target
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
+    x_proper, x_cal, y_proper, y_cal = train_test_split(
+        x_train, y_train, test_size=0.25, random_state=0
     )
 
     explainer = WrapCalibratedExplainer(RandomForestRegressor(random_state=0))
-    explainer.fit(X_proper, y_proper)
-    explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
-    return explainer, X_test
+    explainer.fit(x_proper, y_proper)
+    explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
+    return explainer, x_test
 
 
 def _train_classification_explainer():
     dataset = load_breast_cancer()
-    X, y = dataset.data, dataset.target
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, stratify=y, random_state=0
+    x, y = dataset.data, dataset.target
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y, test_size=0.2, stratify=y, random_state=0
     )
-    X_proper, X_cal, y_proper, y_cal = train_test_split(
-        X_train, y_train, test_size=0.25, stratify=y_train, random_state=0
+    x_proper, x_cal, y_proper, y_cal = train_test_split(
+        x_train, y_train, test_size=0.25, stratify=y_train, random_state=0
     )
 
     explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-    explainer.fit(X_proper, y_proper)
-    explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
-    return explainer, X_test
+    explainer.fit(x_proper, y_proper)
+    explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
+    return explainer, x_test
 
 
 def _extract_percentile_values(raw_percentiles):
@@ -134,8 +132,8 @@ def _assert_uncertainty_schema(
 def test_regression_batches_publish_full_uncertainty_schema():
     """Telemetry for regression explanations must follow ADR-022."""
 
-    explainer, X_test = _train_regression_explainer()
-    sample = X_test[:1]
+    explainer, x_test = _train_regression_explainer()
+    sample = x_test[:1]
 
     factual = explainer.explain_factual(sample)
     alternative = explainer.explore_alternatives(sample)
@@ -197,6 +195,4 @@ def test_build_rules_payload_covers_probabilistic_and_thresholded_alternatives()
     assert _extract_threshold_value(reg_rule.get("threshold")) == pytest.approx(2.5)
     reg_feature_rule = reg_rule["feature_rules"][0]
     # Feature-level weights retain probabilistic uncertainty blocks for thresholds.
-    _assert_uncertainty_schema(
-        reg_feature_rule["uncertainty"], "venn_abers", False, None
-    )
+    _assert_uncertainty_schema(reg_feature_rule["uncertainty"], "venn_abers", False, None)

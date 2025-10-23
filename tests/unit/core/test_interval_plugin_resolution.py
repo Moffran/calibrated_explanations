@@ -54,9 +54,7 @@ def test_resolve_interval_plugin_rejects_non_fast_metadata(monkeypatch):
     descriptor = types.SimpleNamespace(metadata=metadata, plugin=object(), trusted=True)
 
     monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
-    monkeypatch.setattr(
-        explainer_module, "find_interval_descriptor", lambda identifier: descriptor
-    )
+    monkeypatch.setattr(explainer_module, "find_interval_descriptor", lambda identifier: descriptor)
 
     with pytest.raises(ConfigurationError) as exc:
         explainer._resolve_interval_plugin(fast=True)

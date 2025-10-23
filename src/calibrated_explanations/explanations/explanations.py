@@ -29,9 +29,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     and accessing explanations for test instances.
     """
 
-    def __init__(
-        self, calibrated_explainer, x, y_threshold, bins, features_to_ignore=None
-    ) -> None:
+    def __init__(self, calibrated_explainer, x, y_threshold, bins, features_to_ignore=None) -> None:
         """Initialize the explanation collection for a calibrated explainer.
 
         Parameters

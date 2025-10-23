@@ -29,5 +29,4 @@ globals().update({name: getattr(_legacy, name) for name in __all__})
 # Attach the shim back to the parent package namespace for future imports
 parent = sys.modules.get("calibrated_explanations")
 if parent is not None:
-    setattr(parent, "_plots_legacy", sys.modules[__name__])
-
+    parent._plots_legacy = sys.modules[__name__]

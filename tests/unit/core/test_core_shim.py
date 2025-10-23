@@ -10,6 +10,7 @@ import pytest
 
 import calibrated_explanations
 
+
 def _load_core_shim(module_name: str):
     """Load ``core.py`` under a temporary module name and return the module."""
 
@@ -30,6 +31,8 @@ def test_core_shim_reexports_calibrated_explainer():
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
     assert module.CalibratedExplainer is CalibratedExplainer
+
+
 """Tests for the legacy ``calibrated_explanations.core`` shim module."""
 
 

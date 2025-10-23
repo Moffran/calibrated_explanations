@@ -12,12 +12,7 @@ def _load_core_shim():
     """Load the deprecated shim module and return it with captured warnings."""
 
     module_path = (
-        Path(__file__)
-        .resolve()
-        .parents[3]
-        / "src"
-        / "calibrated_explanations"
-        / "core.py"
+        Path(__file__).resolve().parents[3] / "src" / "calibrated_explanations" / "core.py"
     )
 
     spec = spec_from_file_location("_ce_core_shim_test", module_path)
@@ -36,9 +31,7 @@ def test_core_shim_emits_deprecation_warning():
     del module  # module used implicitly to ensure execution
 
     deprecation_messages = [
-        str(w.message)
-        for w in caught
-        if issubclass(w.category, DeprecationWarning)
+        str(w.message) for w in caught if issubclass(w.category, DeprecationWarning)
     ]
     assert deprecation_messages, "Expected DeprecationWarning from shim import"
     assert "legacy module 'calibrated_explanations.core' is deprecated" in deprecation_messages[0]
