@@ -29,7 +29,7 @@ class _DummyOriginalExplainer:
         self.num_features = len(self.feature_names)
         self.categorical_features: List[int] = []
         self.categorical_labels: dict[int, Sequence[str]] = {}
-        self.feature_values: List[Sequence[str]] = [tuple() for _ in self.feature_names]
+        self.feature_values: List[Sequence[str]] = [() for _ in self.feature_names]
         self.assign_threshold = 0.5
         self.sample_percentiles = (5.0, 95.0)
         self.is_multiclass = True
@@ -132,7 +132,9 @@ class _DummyExplanation:
 
 @pytest.fixture()
 def collection() -> CalibratedExplanations:
-    explainer = _DummyOriginalExplainer(feature_names=("f0", "f1"), class_labels={0: "no", 1: "yes"})
+    explainer = _DummyOriginalExplainer(
+        feature_names=("f0", "f1"), class_labels={0: "no", 1: "yes"}
+    )
     x = np.arange(6, dtype=float).reshape(3, 2)
     thresholds = [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7)]
     bins = ["bin0", "bin1", "bin2"]
@@ -216,15 +218,12 @@ def test_get_low_high_percentile_validation(collection: CalibratedExplanations) 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
     with pytest.warns(DeprecationWarning):
         assert collection.get_explanation(1) is collection.explanations[1]
-    with pytest.raises(TypeError):
-        with pytest.warns(DeprecationWarning):
-            collection.get_explanation("1")  # type: ignore[arg-type]
-    with pytest.raises(ValueError):
-        with pytest.warns(DeprecationWarning):
-            collection.get_explanation(-1)
-    with pytest.raises(ValueError):
-        with pytest.warns(DeprecationWarning):
-            collection.get_explanation(len(collection.x_test))
+    with pytest.raises(TypeError), pytest.warns(DeprecationWarning):
+        collection.get_explanation("1")  # type: ignore[arg-type]
+    with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
+        collection.get_explanation(-1)
+    with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
+        collection.get_explanation(len(collection.x_test))
 
 
 def test_plot_routes_calls(monkeypatch, tmp_path, collection: CalibratedExplanations) -> None:
@@ -248,7 +247,9 @@ def test_as_lime_and_as_shap_shapes(collection: CalibratedExplanations) -> None:
     shap_exp = collection.as_shap()
     assert shap_exp.base_values.shape == (len(collection),)
     assert shap_exp.values.shape == (len(collection), collection.x_test.shape[1])
-    np.testing.assert_allclose(shap_exp.values[0], -collection.explanations[0].feature_weights["predict"])
+    np.testing.assert_allclose(
+        shap_exp.values[0], -collection.explanations[0].feature_weights["predict"]
+    )
 
 
 def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> None:
@@ -284,4 +285,3 @@ def test_frozen_explainer_attribute_proxy(collection: CalibratedExplanations) ->
     assert frozen.difficulty_estimator == "dummy-difficulty"
     with pytest.raises(AttributeError):
         frozen.some_new_attribute = 123  # type: ignore[attr-defined]
-

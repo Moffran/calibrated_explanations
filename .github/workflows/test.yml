@@ -38,13 +38,7 @@ jobs:
 
       - name: Run tests with coverage
         id: run_tests
-        run: |
-          pytest \
-            --cov=src/calibrated_explanations \
-            --cov-config=.coveragerc \
-            --cov-report=term-missing \
-            --cov-report=xml \
-            --cov-fail-under=80
+        run: make test-cov
 
       - name: Run doctests
         run: python src/calibrated_explanations/utils/helper.py

@@ -78,9 +78,7 @@ def test_resolve_interval_plugin_fast_mode_enforces_metadata(monkeypatch):
         lambda identifier: descriptor if identifier == "fast-plugin" else None,
     )
     monkeypatch.setattr(explainer_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(
-        explainer_module, "find_interval_plugin_trusted", lambda identifier: None
-    )
+    monkeypatch.setattr(explainer_module, "find_interval_plugin_trusted", lambda identifier: None)
 
     with pytest.raises(ConfigurationError, match="not marked fast_compatible"):
         explainer._resolve_interval_plugin(fast=True)

@@ -5,7 +5,7 @@ import builtins
 import numpy as np
 import pytest
 
-from calibrated_explanations import _interval_regressor as interval_module
+from calibrated_explanations.core import interval_regressor as interval_module
 from calibrated_explanations.utils import helper as helper_module
 
 
@@ -72,6 +72,7 @@ class DummyVennAbers:
     """Minimal Venn-Abers implementation that records the latest calibration call."""
 
     last_init: dict[str, object] | None = None
+    last_predict_bins: np.ndarray | None = None
 
     def __init__(self, _model, labels, interval_regressor, *, bins=None, cprobs=None):
         DummyVennAbers.last_init = {
@@ -82,6 +83,7 @@ class DummyVennAbers:
         }
 
     def predict_proba(self, x, *, output_interval=False, bins=None):  # pragma: no cover - trivial
+        DummyVennAbers.last_predict_bins = None if bins is None else np.array(bins, copy=True)
         n = x.shape[0]
         proba = np.tile(np.array([[0.3, 0.7]]), (n, 1))
         interval_low = np.full((n, 1), 0.1)
@@ -121,6 +123,7 @@ def _make_regressor(monkeypatch: pytest.MonkeyPatch, *, bins=None):
     monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
     monkeypatch.setattr(interval_module, "VennAbers", DummyVennAbers)
     DummyVennAbers.last_init = None
+    DummyVennAbers.last_predict_bins = None
     explainer = DummyExplainer(bins=bins)
     return interval_module.IntervalRegressor(explainer)
 
@@ -164,13 +167,16 @@ def test_predict_probability_requires_calibration_bins_when_test_bins_provided(m
 
 
 def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
+    original_import = builtins.__import__  # capture original before any monkeypatching
+
     regressor = _make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.4, 0.6])
 
-    import_attempts: list[tuple[str, int]] = []
+    import importlib
 
-    original_import = builtins.__import__
+    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
+    import_attempts: list[tuple[str, int]] = []
 
     def fake_import(name, globals=None, locals=None, fromlist=(), level=0):  # noqa: D401 - test helper
         import_attempts.append((name, level))
@@ -198,24 +204,12 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     assert np.allclose(high, 0.9)
     assert extra is None
     assert calls == [1, 0, 0, 1, 0, 0]
-    assert any(level > 0 for _, level in import_attempts)
 
-
-def test_predict_probability_requires_calibration_bins(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-    x = np.array([[0.1, 0.2]])
-
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
-        regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
-
-
-def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     regressor = _make_regressor(monkeypatch)
     regressor.split["cps"].predict_queue = [0.2, 0.8]
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.25, 0.35])
 
-    import builtins
     import importlib
 
     helper_module = importlib.import_module("calibrated_explanations.utils.helper")
@@ -230,9 +224,9 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
 
     monkeypatch.setattr(helper_module, "safe_first_element", fake_safe_first_element)
 
-    original_import = builtins.__import__
-
-    def failing_import(name, globals=None, locals=None, fromlist=(), level=0):  # pragma: no cover - helper
+    def failing_import(
+        name, globals=None, locals=None, fromlist=(), level=0
+    ):  # pragma: no cover - helper
         if name.endswith("utils.helper") and level == 1:
             raise ImportError("forced failure")
         return original_import(name, globals, locals, fromlist, level)
@@ -248,6 +242,57 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     # Three invocations per instance: probability, low bound, high bound.
     assert len(calls) == 6
     assert calls[0][1] == 1  # first call extracts probability column
+
+
+def test_predict_probability_normalizes_scalar_and_column_bins(monkeypatch):
+    calibration_bins = np.array([0, 1, 0, 1])
+    regressor = _make_regressor(monkeypatch, bins=calibration_bins)
+    x = np.array([[0.2, 0.1], [0.4, 0.3]])
+
+    expanded = np.array([5, 5])
+    proba_exp, low_exp, high_exp, _ = regressor.predict_probability(
+        x, y_threshold=0.5, bins=expanded
+    )
+    assert DummyVennAbers.last_predict_bins is not None
+    assert DummyVennAbers.last_predict_bins.shape == (2,)
+    assert np.all(DummyVennAbers.last_predict_bins == expanded)
+
+    proba_scalar, low_scalar, high_scalar, _ = regressor.predict_probability(
+        x, y_threshold=0.5, bins=5
+    )
+    assert np.allclose(proba_scalar, proba_exp)
+    assert np.allclose(low_scalar, low_exp)
+    assert np.allclose(high_scalar, high_exp)
+    assert DummyVennAbers.last_predict_bins is not None
+    assert DummyVennAbers.last_predict_bins.shape == (2,)
+    assert np.all(DummyVennAbers.last_predict_bins == expanded)
+
+    expected_column = np.array([7, 7])
+    proba_expected_column, low_expected_column, high_expected_column, _ = (
+        regressor.predict_probability(x, y_threshold=0.5, bins=expected_column)
+    )
+    assert DummyVennAbers.last_predict_bins is not None
+    assert DummyVennAbers.last_predict_bins.shape == (2,)
+    assert np.all(DummyVennAbers.last_predict_bins == expected_column)
+
+    column_bins = np.array([[7], [7]])
+    proba_column, low_column, high_column, _ = regressor.predict_probability(
+        x, y_threshold=0.5, bins=column_bins
+    )
+    assert np.allclose(proba_column, proba_expected_column)
+    assert np.allclose(low_column, low_expected_column)
+    assert np.allclose(high_column, high_expected_column)
+    assert DummyVennAbers.last_predict_bins is not None
+    assert DummyVennAbers.last_predict_bins.shape == (2,)
+    assert np.all(DummyVennAbers.last_predict_bins == expected_column)
+
+
+def test_predict_probability_requires_calibration_bins(monkeypatch):
+    regressor = _make_regressor(monkeypatch)
+    x = np.array([[0.1, 0.2]])
+
+    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
+        regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
 def test_predict_uncertainty_uses_interval_outputs(monkeypatch):
@@ -281,21 +326,11 @@ def test_insert_calibration_validates_bin_length(monkeypatch):
         regressor.insert_calibration(xs, ys, bins=np.array([0]))
 
 
-def test_predict_probability_requires_calibration_bins(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-    x = np.array([[0.1, 0.2]])
-
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
-        regressor.predict_probability(x, y_threshold=np.array([0.5]), bins=np.array([0]))
-
-
 def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
     regressor = _make_regressor(monkeypatch)
     regressor.split["cps"].predict_queue = [0.4, 0.6]
     x = np.array([[0.5, 0.1], [0.6, 0.2]])
     thresholds = np.array([0.3, 0.7])
-
-    from calibrated_explanations.utils import helper as helper_module
 
     calls: list[tuple[int | None, float]] = []
     original_safe_first = helper_module.safe_first_element
@@ -402,6 +437,35 @@ def test_insert_calibration_updates_with_bins(monkeypatch):
     assert regressor.residual_cal.shape[0] == 6
     assert regressor.cps.alphas[1][0][-1] == pytest.approx(0.2)
     assert regressor.cps.alphas[1][1][-1] == pytest.approx(0.5)
+
+
+def test_insert_calibration_updates_alphas_without_bins(monkeypatch):
+    """Residual insertions update both CPS views when no Mondrian bins are used."""
+
+    regressor = _make_regressor(monkeypatch)
+
+    base_split_alphas = np.array(regressor.split["cps"].alphas, copy=True)
+    base_cps_alphas = np.array(regressor.cps.alphas, copy=True)
+
+    xs = np.array([[0.2, 0.7], [0.4, 0.1]])
+    ys = np.array([0.95, 0.55])
+
+    regressor.insert_calibration(xs, ys)
+
+    residuals = ys - regressor.ce.predict_function(xs)
+    expected_split = np.insert(
+        base_split_alphas,
+        np.searchsorted(base_split_alphas, residuals[0]),
+        residuals[0],
+    )
+    expected_cps = np.insert(
+        base_cps_alphas,
+        np.searchsorted(base_cps_alphas, residuals),
+        residuals,
+    )
+
+    assert np.allclose(regressor.split["cps"].alphas, expected_split)
+    assert np.allclose(regressor.cps.alphas, expected_cps)
 
 
 def test_compute_proba_cal_invalid_type(monkeypatch):

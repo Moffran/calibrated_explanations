@@ -1,3 +1,5 @@
+"""Lightweight LRU cache utilities used by optional performance scaffolding."""
+
 from __future__ import annotations
 
 from collections import OrderedDict
@@ -18,17 +20,20 @@ class LRUCache(Generic[K, V]):
     max_items: int = 128
 
     def __post_init__(self) -> None:
+        """Validate configuration and prime the ordered store."""
         if self.max_items <= 0:
             raise ValueError("max_items must be positive")
         self._store: OrderedDict[K, V] = OrderedDict()
 
     def get(self, key: K, default: V | None = None) -> V | None:
+        """Return cached value for *key* or *default* when missing."""
         if key in self._store:
             self._store.move_to_end(key, last=True)
             return self._store[key]
         return default
 
     def set(self, key: K, value: V) -> None:
+        """Insert *value* for *key* and evict the least-recently used entry."""
         if key in self._store:
             self._store.move_to_end(key, last=True)
         self._store[key] = value
@@ -36,9 +41,11 @@ class LRUCache(Generic[K, V]):
             self._store.popitem(last=False)
 
     def __contains__(self, key: K) -> bool:  # pragma: no cover - convenience
+        """Return ``True`` when *key* exists in the cache."""
         return key in self._store
 
     def __len__(self) -> int:  # pragma: no cover - trivial
+        """Return the number of cached entries."""
         return len(self._store)
 
 
@@ -47,5 +54,4 @@ def make_key(parts: Iterable[Hashable]) -> Tuple[Hashable, ...]:
 
     Consumers are responsible for pre-hashing large arrays/bytes to a hashable.
     """
-
     return tuple(parts)

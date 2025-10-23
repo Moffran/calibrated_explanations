@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 
 import numpy as np
+import contextlib
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 try:
@@ -32,8 +33,8 @@ from crepes import ConformalClassifier
 from crepes.extras import hinge
 from sklearn.metrics import confusion_matrix
 
-from .._plots import _plot_global
-from .._venn_abers import VennAbers
+from ..plotting import _plot_global
+from .venn_abers import VennAbers
 from ..explanations import AlternativeExplanations, CalibratedExplanations
 from ..utils.discretizers import (
     BinaryEntropyDiscretizer,
@@ -243,6 +244,11 @@ class CalibratedExplainer:
         """
         init_time = time()
         self.__initialized = False
+        preprocessor_metadata = kwargs.pop("preprocessor_metadata", None)
+        if isinstance(preprocessor_metadata, Mapping):
+            self._preprocessor_metadata: Dict[str, Any] | None = dict(preprocessor_metadata)
+        else:
+            self._preprocessor_metadata = None
         check_is_fitted(learner)
         self.learner = learner
         self.predict_function = kwargs.get("predict_function")
@@ -456,9 +462,7 @@ class CalibratedExplainer:
     def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
         """Return the ordered interval plugin chain for the requested mode."""
         entries: List[str] = []
-        override = (
-            self._fast_interval_plugin_override if fast else self._interval_plugin_override
-        )
+        override = self._fast_interval_plugin_override if fast else self._interval_plugin_override
         preferred_identifier: str | None = None
         if isinstance(override, str) and override:
             entries.append(override)
@@ -514,7 +518,6 @@ class CalibratedExplainer:
         if isinstance(py_value, str) and py_value:
             entries.append(py_value)
         entries.extend(_coerce_string_tuple(py_settings.get("style_fallbacks")))
-
         entries.append("legacy")
         seen: set[str] = set()
         ordered: List[str] = []
@@ -522,6 +525,14 @@ class CalibratedExplainer:
             if identifier and identifier not in seen:
                 ordered.append(identifier)
                 seen.add(identifier)
+        if "plot_spec.default" not in seen:
+            if "legacy" in ordered:
+                legacy_index = ordered.index("legacy")
+                ordered.insert(legacy_index, "plot_spec.default")
+            else:
+                ordered.append("plot_spec.default")
+        if "legacy" not in ordered:
+            ordered.append("legacy")
         return tuple(ordered)
 
     def _ensure_interval_runtime_state(self) -> None:
@@ -1047,6 +1058,19 @@ class CalibratedExplainer:
                 seen.add(item)
         return tuple(ordered)
 
+    def _build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
+        """Extract telemetry details from the first explanation instance, if present."""
+        try:
+            first_explanation = explanations[0]  # type: ignore[index]
+        except Exception:  # pragma: no cover - defensive: empty or non-indexable containers
+            return {}
+        builder = getattr(first_explanation, "to_telemetry", None)
+        if callable(builder):
+            payload = builder()
+            if isinstance(payload, dict):
+                return payload
+        return {}
+
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode based on the active discretizer."""
         if isinstance(self.discretizer, (EntropyDiscretizer, RegressorDiscretizer)):
@@ -1104,17 +1128,24 @@ class CalibratedExplainer:
             "interval_dependencies",
             tuple(self._interval_plugin_hints.get(mode, ())),
         )
+        preprocessor_meta = self.preprocessor_metadata
+        if preprocessor_meta:
+            metadata.setdefault("preprocessor", preprocessor_meta)
         plot_chain = self._plot_plugin_fallbacks.get(mode)
         if plot_chain:
             metadata.setdefault("plot_fallbacks", tuple(plot_chain))
+            metadata.setdefault("plot_source", plot_chain[0])
         telemetry_payload = {
             "mode": mode,
             "task": self.mode,
             "interval_source": interval_source,
             "proba_source": metadata.get("proba_source"),
+            "plot_source": metadata.get("plot_source"),
             "plot_fallbacks": tuple(plot_chain or ()),
         }
-        self._last_telemetry = telemetry_payload
+        if preprocessor_meta:
+            telemetry_payload["preprocessor"] = preprocessor_meta
+        self._last_telemetry = dict(telemetry_payload)
         if monitor is not None and not monitor.used:
             raise ConfigurationError(
                 "Explanation plugin for mode '"
@@ -1124,10 +1155,12 @@ class CalibratedExplainer:
         container_cls = batch.container_cls
         if hasattr(container_cls, "from_batch"):
             result = container_cls.from_batch(batch)
-            try:
-                setattr(result, "telemetry", dict(telemetry_payload))
-            except Exception:  # pragma: no cover - defensive
-                pass
+            instance_payload = self._build_instance_telemetry_payload(result)
+            if instance_payload:
+                telemetry_payload.update(instance_payload)
+                self._last_telemetry.update(instance_payload)
+            with contextlib.suppress(Exception):
+                result.telemetry = dict(telemetry_payload)
             self.latest_explanation = result
             self._last_explanation_mode = mode
             return result
@@ -1137,6 +1170,20 @@ class CalibratedExplainer:
     def runtime_telemetry(self) -> Mapping[str, Any]:
         """Return the most recent telemetry payload reported by the explainer."""
         return dict(self._last_telemetry)
+
+    @property
+    def preprocessor_metadata(self) -> Dict[str, Any] | None:
+        """Return the telemetry-safe preprocessing snapshot if available."""
+        if self._preprocessor_metadata is None:
+            return None
+        return dict(self._preprocessor_metadata)
+
+    def set_preprocessor_metadata(self, metadata: Mapping[str, Any] | None) -> None:
+        """Update the stored preprocessing metadata snapshot."""
+        if metadata is None:
+            self._preprocessor_metadata = None
+        else:
+            self._preprocessor_metadata = dict(metadata)
 
     @property
     def x_cal(self):
@@ -1699,9 +1746,7 @@ class CalibratedExplainer:
             greater_values,
             covered_values,
             x_cal,
-        ) = self._explain_predict_step(
-            x, threshold, low_high_percentiles, bins, features_to_ignore
-        )
+        ) = self._explain_predict_step(x, threshold, low_high_percentiles, bins, features_to_ignore)
 
         # Step 2: Initialize data structures to store feature-level results
         # Dictionaries to store aggregated results across all instances
@@ -2048,17 +2093,13 @@ class CalibratedExplainer:
 
         return _vh(self, x)
 
-    def _initialize_explanation(
-        self, x, low_high_percentiles, threshold, bins, features_to_ignore
-    ):
+    def _initialize_explanation(self, x, low_high_percentiles, threshold, bins, features_to_ignore):
         """Delegate to extracted helper (Phase 1A)."""
         from .prediction_helpers import initialize_explanation as _ih
 
         return _ih(self, x, low_high_percentiles, threshold, bins, features_to_ignore)
 
-    def _explain_predict_step(
-        self, x, threshold, low_high_percentiles, bins, features_to_ignore
-    ):
+    def _explain_predict_step(self, x, threshold, low_high_percentiles, bins, features_to_ignore):
         # Phase 1A: delegate initial setup to prediction_helpers to lock behavior
         from .prediction_helpers import explain_predict_step as _eps
 
@@ -3072,7 +3113,7 @@ class CalibratedExplainer:
             Additional parameters to customize the explanation process. Supported parameters include:
 
             - threshold : float, int, or array-like of shape (n_samples,), optional, default=None
-                Specifies the threshold(s) to get a thresholded prediction for regression tasks (prediction labels: `y_hat<=threshold-value` | `y_hat>threshold-value`). This parameter is ignored for classification tasks.
+                Specifies the threshold(s) to get a thresholded prediction for regression tasks (prediction labels such as ``y_hat <= threshold`` or ``y_hat > threshold``). This parameter is ignored for classification tasks.
 
             - low_high_percentiles : tuple of two floats, optional, default=(5, 95)
                 The lower and upper percentiles used to calculate the prediction interval for regression tasks. Determines the breadth of the interval based on the distribution of the predictions. This parameter is ignored for classification tasks.
@@ -3088,9 +3129,9 @@ class CalibratedExplainer:
         Returns
         -------
         calibrated_prediction : float or array-like, or str
-            The calibrated prediction. For regression tasks, this is the median of the conformal predictive system or a thresholded prediction if `threshold`is set. For classification tasks, it is the class label with the highest calibrated probability.
+            The calibrated prediction. For regression tasks, this is the median of the conformal predictive system or a thresholded prediction if ``threshold`` is set. For classification tasks, it is the class label with the highest calibrated probability.
         interval : tuple of floats, optional
-            A tuple (low, high) representing the lower and upper bounds of the uncertainty interval. This is returned only if `uq_interval=True`.
+            A tuple (low, high) representing the lower and upper bounds of the uncertainty interval. This is returned only if ``uq_interval=True``.
 
         Examples
         --------

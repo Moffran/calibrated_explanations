@@ -14,8 +14,8 @@ continuous integration enforce minimum coverage. `pytest.ini` runs tests quietly
 loading `pytest-cov`, while the CI workflow executes `pytest --cov=src/calibrated_explanations`
 without a `--cov-fail-under` threshold. Contributors are asked to target roughly 90% coverage,
 with reports uploaded to Codecov, but there is no guardrail preventing significant regressions.
-Legacy runtime modules (for example `_interval_regressor`) remain effectively untested, so
-confidence in calibration guarantees erodes as the code evolves.【F:pytest.ini†L1-L17】【F:.github/workflows/test.yml†L33-L49】【F:CONTRIBUTING.md†L49-L58】【F:src/calibrated_explanations/_interval_regressor.py†L1-L120】
+Legacy runtime modules (for example `core.interval_regressor`) remain effectively untested, so
+confidence in calibration guarantees erodes as the code evolves.【F:pytest.ini†L1-L17】【F:.github/workflows/test.yml†L33-L49】【F:CONTRIBUTING.md†L49-L58】【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】
 
 ## Decision
 
@@ -32,6 +32,11 @@ Adopt a layered coverage policy that couples numeric thresholds with risk-based 
 - **Documented exemptions:** Generated code, visualization golden files, and deprecated
   shims can be excluded via `.coveragerc` with explicit comments that describe the rationale
   and expiry date.
+- **Public API guardrails:** Coverage thresholds MUST continue to exercise the
+  WrapCalibratedExplainer contract (fit/calibrate/explain/predict flows,
+  plotting helpers, uncertainty/threshold options). No part of the published
+  API may be marked as deprecated or excluded from coverage unless a future ADR
+  redefines the contract.
 
 ## Alternatives Considered
 
@@ -74,4 +79,24 @@ Negative/Risks:
 
 ## Implementation Status
 
-- 2025-10-06 – ADR accepted alongside the coverage remediation plan.
+- 2025-10-06 – ADR accepted alongside the coverage remediation plan and
+  baseline assessment.
+- v0.6.x – `.coveragerc` drafted with provisional exemptions and
+  baseline metrics recorded to shape the remediation backlog while CI
+  continues to run without fail-under gates.
+- v0.7.0 – CI introduces `--cov-fail-under=80` with exit-zero preview
+  reports, coverage dashboards are published, and contributor templates
+  document the waiver workflow.
+- v0.8.0 – Critical-path modules (`core`, calibration, serialization,
+  registry) are raised to ≥95% coverage, Codecov patch gating at ≥85%
+  becomes mandatory, and local tooling (`make test-cov`) mirrors the CI
+  workflow.
+- v0.9.0 – Package-wide floor raised to ≥88%, waiver inventory trimmed,
+  and coverage enforcement is fully blocking on the release branch per
+  the milestone gate.
+- v1.0.0-rc – CI enforces the final ≥90% package floor, coverage
+  dashboards become part of the release checklist, and branch protection
+  rules require green coverage jobs before freeze.
+- v1.0.0 – Stable release maintains ≥90% gating with scheduled audits of
+  exemptions and telemetry-driven monitoring to detect regressions ahead
+  of v1.0.x maintenance updates.

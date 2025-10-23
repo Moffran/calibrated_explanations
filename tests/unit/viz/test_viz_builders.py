@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from calibrated_explanations.viz.builders import (
     build_regression_bars_spec,
@@ -135,3 +136,22 @@ def test_probabilistic_builder_color_role_and_dual_header():
     # color role should be 'positive' for positive values and 'negative' otherwise
     roles = [b.color_role for b in spec.body.bars]
     assert all(r in ("positive", "negative") for r in roles)
+
+
+def test_probabilistic_builder_unit_interval_with_custom_minmax():
+    fw = make_fw(2)
+    spec = build_probabilistic_bars_spec(
+        title="prob",
+        predict={"predict": 0.6, "low": 0.45, "high": 0.7},
+        feature_weights=fw,
+        features_to_plot=[0, 1],
+        column_names=["a", "b"],
+        instance=[1, 2],
+        y_minmax=(10.0, 25.0),
+        interval=True,
+    )
+    assert spec.header is not None
+    assert spec.header.xlim == (0.0, 1.0)
+    assert spec.header.low == pytest.approx(0.45)
+    assert spec.header.high == pytest.approx(0.7)
+    assert spec.header.pred == pytest.approx(0.6)

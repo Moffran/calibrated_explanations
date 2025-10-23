@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from calibrated_explanations._venn_abers import VennAbers
+from calibrated_explanations.core.venn_abers import VennAbers
 from calibrated_explanations.core import calibration_helpers as ch
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
@@ -395,9 +395,7 @@ class _MissingCapabilityPlugin(IntervalCalibratorPlugin):
 
 def test_interval_override_missing_capability(binary_dataset):
     ensure_builtin_plugins()
-    descriptor = register_interval_plugin(
-        "tests.interval.missing_cap", _MissingCapabilityPlugin()
-    )
+    descriptor = register_interval_plugin("tests.interval.missing_cap", _MissingCapabilityPlugin())
     try:
         with pytest.raises(ConfigurationError) as excinfo:
             _make_explainer(binary_dataset, interval_plugin=descriptor.identifier)
@@ -439,9 +437,7 @@ def test_fast_interval_override_metadata_reuse(binary_dataset):
     ensure_builtin_plugins()
     _FastRecordingPlugin.invocations.clear()
     _FastRecordingPlugin.returned.clear()
-    descriptor = register_interval_plugin(
-        "tests.interval.fast_override", _FastRecordingPlugin()
-    )
+    descriptor = register_interval_plugin("tests.interval.fast_override", _FastRecordingPlugin())
     try:
         explainer, _ = _make_explainer(
             binary_dataset,

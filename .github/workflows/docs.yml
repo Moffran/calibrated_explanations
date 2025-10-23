@@ -26,12 +26,15 @@ jobs:
       - name: Build documentation (HTML)
         run: |
           cd docs
-          sphinx-build -b html . _build/html
+          sphinx-build -b html -W . _build/html
 
       - name: Build documentation (linkcheck)
         run: |
           cd docs
           sphinx-build -b linkcheck . _build/linkcheck
+
+      - name: Run documentation navigation tests
+        run: pytest tests/docs
 
       - name: Upload documentation artifacts
         uses: actions/upload-artifact@v4

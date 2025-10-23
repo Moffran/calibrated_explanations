@@ -308,6 +308,7 @@ def conditional_test(cal_exp, x_prop_train, y_prop_train, x, y):
         assert low[i] <= y_test_hat2[i, 1] <= high[i]
 
 
+@pytest.mark.viz
 def test_wrap_regression_accepts_int_threshold(regression_dataset):
     """WrapCalibratedExplainer should accept integer thresholds without errors."""
     x_prop_train, y_prop_train, x_cal, y_cal, x_test, _y_test, _, _, feature_names = (

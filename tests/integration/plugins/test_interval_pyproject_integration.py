@@ -87,9 +87,9 @@ def test_pyproject_interval_override_resolves_plugin(tmp_path, monkeypatch):
         assert explainer._interval_plugin_identifiers["default"] == descriptor.identifier
         assert explainer._interval_plugin_fallbacks["default"][0] == descriptor.identifier
         assert descriptor.identifier in explainer._interval_plugin_fallbacks["default"]
-        assert PyprojectRecordingIntervalPlugin.invocations, (
-            "pyproject override should invoke the registered plugin"
-        )
+        assert (
+            PyprojectRecordingIntervalPlugin.invocations
+        ), "pyproject override should invoke the registered plugin"
 
         fast_flag, context = PyprojectRecordingIntervalPlugin.invocations[-1]
         assert fast_flag is False

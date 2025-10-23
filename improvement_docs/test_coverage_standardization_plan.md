@@ -13,7 +13,7 @@ backlog associated with the current coverage report.
 
 ## Phase 1 – Debt burn-down (Weeks 2-4)
 1. Author focused unit tests for the currently unreferenced runtime modules, prioritising:
-   - `_interval_regressor` happy-path predictions and error handling.【F:src/calibrated_explanations/_interval_regressor.py†L1-L120】
+   - `core.interval_regressor` happy-path predictions and error handling.【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】
    - Plugin CLI command smoke tests ensuring registry resolution works.
    - Discretizer utilities to cover edge cases around binning strategies.
 2. Capture baseline coverage numbers and iterate until package-wide coverage stabilises above 90%.

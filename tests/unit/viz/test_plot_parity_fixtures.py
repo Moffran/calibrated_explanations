@@ -3,6 +3,7 @@ from calibrated_explanations.viz.builders import (
     build_probabilistic_bars_spec,
     build_regression_bars_spec,
     build_alternative_probabilistic_spec,
+    build_alternative_regression_spec,
     build_triangular_plotspec_dict,
     build_global_plotspec_dict,
 )
@@ -77,6 +78,68 @@ def alternative_probabilistic_cross_05():
         instance=[0.1, 0.2],
         y_minmax=[0.0, 1.0],
         interval=True,
+    )
+    return spec
+
+
+def alternative_regression_interval():
+    predict = {"predict": 1.2, "low": 0.5, "high": 2.0}
+    feature_predict = {
+        "predict": [0.9, -0.2],
+        "low": [0.8, -0.4],
+        "high": [1.0, 0.1],
+    }
+    spec = build_alternative_regression_spec(
+        title="alt_reg",
+        predict=predict,
+        feature_weights=feature_predict,
+        features_to_plot=[0, 1],
+        column_names=["r0", "r1"],
+        instance=[0.5, -1.2],
+        y_minmax=[-1.0, 2.5],
+        interval=True,
+    )
+    return spec
+
+
+def alternative_regression_point():
+    predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
+    feature_predict = [1.1, -0.4]
+    spec = build_alternative_regression_spec(
+        title="alt_reg_point",
+        predict=predict,
+        feature_weights=feature_predict,
+        features_to_plot=[0, 1],
+        column_names=["r0", "r1"],
+        instance=[0.05, -0.12],
+        y_minmax=[-1.0, 2.0],
+        interval=False,
+    )
+    return spec
+
+
+def alternative_regression_probability_scale():
+    predict = {"predict": 0.22, "low": 0.18, "high": 0.24}
+    feature_predict = {
+        "predict": [0.01, 0.3],
+        "low": [0.0, 0.28],
+        "high": [0.02, 0.32],
+    }
+    xticks = [float(x) for x in np.linspace(0.0, 1.0, 11)]
+    spec = build_alternative_probabilistic_spec(
+        title="alt_reg_prob",
+        predict=predict,
+        feature_weights=feature_predict,
+        features_to_plot=[0, 1],
+        column_names=["r0", "r1"],
+        instance=[0.05, -0.12],
+        y_minmax=None,
+        interval=True,
+        neg_label="Y ≥ 180000.00",
+        pos_label="Y < 180000.00",
+        xlabel="Probability of target being below 180000.00",
+        xlim=(0.0, 1.0),
+        xticks=xticks,
     )
     return spec
 

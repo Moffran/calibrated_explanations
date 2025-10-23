@@ -29,7 +29,7 @@ Functions:
 import numpy as np
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import NotFittedError
+from calibrated_explanations.core.exceptions import NotFittedError, ValidationError
 from crepes.extras import DifficultyEstimator
 
 from tests._helpers import get_regression_model, initiate_explainer
@@ -70,6 +70,21 @@ def safe_fit_difficulty(x, y, scaler=True):
         return _StubDifficulty().fit()
 
 
+def test_safe_fit_difficulty_fallback(monkeypatch):
+    """Ensure the helper returns a stub difficulty estimator when fitting fails."""
+
+    def _failing_fit(self, *args, **kwargs):  # noqa: D401  - short helper, no doc needed
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(DifficultyEstimator, "fit", _failing_fit, raising=True)
+
+    stub = safe_fit_difficulty(np.zeros((3, 2)), np.zeros(3), scaler=False)
+
+    assert getattr(stub, "fitted", False) is True
+    assert np.allclose(stub.predict(np.ones((2, 2))), 0.0)
+    assert np.allclose(stub.apply(np.ones((2, 2))), 0.0)
+
+
 def test_failure_regression(regression_dataset):
     """
     Tests failure cases for the CalibratedExplainer.
@@ -89,6 +104,7 @@ def test_failure_regression(regression_dataset):
         cal_exp.set_difficulty_estimator(DifficultyEstimator)
 
 
+@pytest.mark.viz
 def test_regression_ce(regression_dataset):
     """
     Tests the CalibratedExplainer for regression models.
@@ -135,6 +151,66 @@ def test_regression_ce(regression_dataset):
     alternative_explanation.counter_explanations()
 
 
+def test_regression_predict_reject_requires_threshold(regression_dataset):
+    """Regression reject predictions should fail when the threshold is missing."""
+
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
+
+    cal_exp.initialize_reject_learner(threshold=0.5)
+    cal_exp.reject_threshold = None
+
+    with pytest.raises(ValidationError):
+        cal_exp.predict_reject(x_test)
+
+
+def test_regression_reject_learner_custom_calibration(regression_dataset):
+    """Explicit calibration sets should be accepted when initializing the reject learner."""
+
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        _y_test,
+        _,
+        categorical_features,
+        feature_names,
+    ) = regression_dataset
+    model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+    cal_exp = initiate_explainer(
+        model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
+    )
+
+    # Use a list to exercise the fallback calibration_set path inside initialize_reject_learner
+    calibration_subset = [x_cal[:25], y_cal[:25]]
+    learner = cal_exp.initialize_reject_learner(calibration_set=calibration_subset, threshold=0.6)
+
+    assert learner is cal_exp.reject_learner
+    assert cal_exp.reject_threshold == 0.6
+
+    rejected, error_rate, reject_rate = cal_exp.predict_reject(x_test, confidence=0.9)
+
+    assert rejected.shape == (len(x_test),)
+    assert not np.isnan(error_rate)
+    assert not np.isnan(reject_rate)
+
+
+@pytest.mark.viz
 def test_probabilistic_regression_ce(regression_dataset):
     """
     Tests probabilistic explanations for regression models.
@@ -178,6 +254,7 @@ def test_probabilistic_regression_ce(regression_dataset):
     alternative_explanation.counter_explanations()
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_int_threshold_ce(regression_dataset):
     """Ensure integer thresholds are accepted for probabilistic regression paths."""
     (
@@ -210,6 +287,7 @@ def test_probabilistic_regression_int_threshold_ce(regression_dataset):
     alternative_explanation.plot(show=False)
 
 
+@pytest.mark.viz
 def test_regression_as_classification_ce(regression_dataset):
     """
     Tests probabilistic explanations for regression models.
@@ -244,6 +322,7 @@ def test_regression_as_classification_ce(regression_dataset):
     alternative_explanation.plot(show=False)
 
 
+@pytest.mark.viz
 def test_regression_conditional_ce(regression_dataset):
     """
     Tests conditional explanations for regression models.
@@ -300,6 +379,7 @@ def test_regression_conditional_ce(regression_dataset):
     repr(alternative_explanation)
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_conditional_ce(regression_dataset):
     """
     Tests probabilistic conditional explanations for regression models.
@@ -487,6 +567,7 @@ def test_var_normalized_probabilistic_regression_ce(regression_dataset):
     cal_exp.explore_alternatives(x_test, y_test[0])
 
 
+@pytest.mark.viz
 def test_regression_fast_ce(regression_dataset):
     """
     Tests fast explanations for regression models.
@@ -518,6 +599,7 @@ def test_regression_fast_ce(regression_dataset):
         fast_explanation.plot(show=False, uncertainty=True)
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_fast_ce(regression_dataset):
     """
     Tests fast probabilistic explanations for regression models.
@@ -551,6 +633,7 @@ def test_probabilistic_regression_fast_ce(regression_dataset):
     fast_explanation.plot(show=False, uncertainty=True)
 
 
+@pytest.mark.viz
 def test_regression_conditional_fast_ce(regression_dataset):
     """
     Tests conditional perturbed explanations for regression models.
@@ -585,6 +668,7 @@ def test_regression_conditional_fast_ce(regression_dataset):
     )
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_conditional_fast_ce(regression_dataset):
     """
     Tests probabilistic conditional perturbed explanations for regression models.
@@ -742,7 +826,7 @@ def test_var_normalized_probabilistic_regression_fast_ce(regression_dataset):
         feature_names,
         categorical_features,
         mode="regression",
-            difficulty_estimator=DifficultyEstimator().fit(X=x_prop_train, learner=model, scaler=True),
+        difficulty_estimator=DifficultyEstimator().fit(X=x_prop_train, learner=model, scaler=True),
         fast=True,
     )
 

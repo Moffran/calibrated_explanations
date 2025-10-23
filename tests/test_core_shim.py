@@ -14,7 +14,9 @@ def test_core_module_issues_deprecation_warning():
     # Ensure we execute the module body within the test to record coverage.
     sys.modules.pop(module_name, None)
 
-    module_path = Path(__file__).resolve().parents[1] / "src" / "calibrated_explanations" / "core.py"
+    module_path = (
+        Path(__file__).resolve().parents[1] / "src" / "calibrated_explanations" / "core.py"
+    )
     spec = importlib.util.spec_from_file_location("tests.core_legacy_shim", module_path)
     module = importlib.util.module_from_spec(spec)
 

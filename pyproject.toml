@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0,<75", "wheel"]
+requires = ["setuptools>=61.0,<81", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrated_explanations"
-version = "0.7.0"
+version = "0.8.0"
 authors = [
   { name="Helena Löfström", email="helena.lofstrom@ju.se" },
   { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },

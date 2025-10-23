@@ -41,19 +41,16 @@ _ENTRYPOINT_GROUP = "calibrated_explanations.plugins"
 _ENV_TRUST_CACHE: set[str] | None = None
 _WARNED_UNTRUSTED: set[str] = set()
 
-
 _LOGGER = logging.getLogger(__name__)
 
 
 def _freeze_meta(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Return an immutable copy of plugin metadata."""
-
     return MappingProxyType(dict(meta))
 
 
 def _normalise_trust(meta: Mapping[str, Any]) -> bool:
     """Extract the trusted-by-default flag from metadata."""
-
     if "trusted" in meta:
         return bool(meta["trusted"])
 
@@ -69,7 +66,6 @@ def _normalise_trust(meta: Mapping[str, Any]) -> bool:
 
 def _env_trusted_names() -> set[str]:
     """Return plugin names trusted via ``CE_TRUST_PLUGIN``."""
-
     global _ENV_TRUST_CACHE
     if _ENV_TRUST_CACHE is not None:
         return set(_ENV_TRUST_CACHE)
@@ -86,7 +82,6 @@ def _env_trusted_names() -> set[str]:
 
 def _should_trust(meta: Mapping[str, Any]) -> bool:
     """Return whether metadata demands trust by default."""
-
     declared = _normalise_trust(meta)
     if declared:
         return True
@@ -96,7 +91,6 @@ def _should_trust(meta: Mapping[str, Any]) -> bool:
 
 def _update_trust_keys(meta: Dict[str, Any], trusted: bool) -> None:
     """Ensure ``trusted``/``trust`` keys reflect *trusted*."""
-
     meta["trusted"] = bool(trusted)
     if "trust" in meta and isinstance(meta["trust"], Mapping):
         updated = dict(meta["trust"])
@@ -106,9 +100,38 @@ def _update_trust_keys(meta: Dict[str, Any], trusted: bool) -> None:
         meta["trust"] = bool(trusted)
 
 
+def _propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
+    """Best-effort propagation of trust metadata back onto *plugin*."""
+
+    raw_meta = getattr(plugin, "plugin_meta", None)
+    if raw_meta is None:
+        return
+
+    trusted_value = meta.get("trusted", bool(meta))
+    trust_value = meta.get("trust", trusted_value)
+
+    if isinstance(raw_meta, dict):
+        raw_meta["trusted"] = trusted_value
+        raw_meta["trust"] = trust_value
+        return
+
+    setter = getattr(raw_meta, "__setitem__", None)
+    if setter is None:
+        return
+
+    try:
+        raw_meta["trusted"] = trusted_value
+        raw_meta["trust"] = trust_value
+    except Exception:  # pragma: no cover - defensive
+        _LOGGER.debug(
+            "Failed to propagate trust metadata for plugin %r",
+            plugin,
+            exc_info=True,
+        )
+
+
 def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
     """Emit a warning about an untrusted plugin once."""
-
     name = meta.get("name", "<unknown>")
     if name in _WARNED_UNTRUSTED:
         return
@@ -125,7 +148,6 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
 
 def _resolve_plugin_module_file(plugin: ExplainerPlugin) -> Path | None:
     """Attempt to resolve the module file for checksum verification."""
-
     module_name: str | None
     if inspect.ismodule(plugin):  # pragma: no cover - defensive
         module_name = getattr(plugin, "__name__", None)
@@ -147,7 +169,6 @@ def _resolve_plugin_module_file(plugin: ExplainerPlugin) -> Path | None:
 
 def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) -> None:
     """Best-effort checksum verification for plugins."""
-
     checksum = meta.get("checksum")
     if not checksum:
         return
@@ -204,7 +225,6 @@ def _ensure_sequence(
     allow_empty: bool = False,
 ) -> Tuple[str, ...]:
     """Validate a metadata field is a sequence of strings."""
-
     if key not in meta:
         raise ValueError(f"plugin_meta missing required key: {key}")
     value = meta[key]
@@ -231,7 +251,6 @@ def _ensure_sequence(
 
 def _validate_dependencies(meta: Mapping[str, Any]) -> Tuple[str, ...]:
     """Validate dependency metadata as a sequence of identifiers."""
-
     return _ensure_sequence(meta, "dependencies", allow_empty=True)
 
 
@@ -242,7 +261,6 @@ def _coerce_string_collection(
     allow_empty: bool = False,
 ) -> Tuple[str, ...]:
     """Coerce *value* to a tuple of strings."""
-
     if isinstance(value, str):
         result = (value,)
     elif isinstance(value, Iterable):
@@ -268,7 +286,6 @@ def _normalise_dependency_field(
     allow_empty: bool = False,
 ) -> Tuple[str, ...] | None:
     """Validate dependency style metadata fields."""
-
     if key not in meta:
         if optional:
             return None
@@ -282,7 +299,6 @@ def _normalise_dependency_field(
 
 def _normalise_tasks(meta: Dict[str, Any]) -> Tuple[str, ...]:
     """Validate the tasks field for explanation plugins."""
-
     allowed_tasks = {"classification", "regression", "both"}
     if "tasks" not in meta:
         raise ValueError("plugin_meta missing required key: tasks")
@@ -297,7 +313,6 @@ def _normalise_tasks(meta: Dict[str, Any]) -> Tuple[str, ...]:
 
 def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
     """Validate ADR-015 metadata requirements for explanation plugins."""
-
     if not isinstance(meta, dict):
         meta = dict(meta)
     schema_version = meta.get("schema_version")
@@ -345,7 +360,6 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
 
 def _ensure_bool(meta: Mapping[str, Any], key: str) -> bool:
     """Return *key* from *meta* ensuring it is a boolean."""
-
     if key not in meta:
         raise ValueError(f"plugin_meta missing required key: {key}")
     value = meta[key]
@@ -356,7 +370,6 @@ def _ensure_bool(meta: Mapping[str, Any], key: str) -> bool:
 
 def _ensure_string(meta: Mapping[str, Any], key: str) -> str:
     """Return *key* from *meta* ensuring it is a string."""
-
     if key not in meta:
         raise ValueError(f"plugin_meta missing required key: {key}")
     value = meta[key]
@@ -367,7 +380,6 @@ def _ensure_string(meta: Mapping[str, Any], key: str) -> str:
 
 def validate_interval_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate ADR-013 metadata requirements for interval plugins."""
-
     modes = _ensure_sequence(
         meta,
         "modes",
@@ -383,48 +395,53 @@ def validate_interval_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     _ensure_string(meta, "confidence_source")
     if "legacy_compatible" in meta:
         _ensure_bool(meta, "legacy_compatible")
+    # Trust must be explicitly present; interval metadata should not infer it
+    # solely from 'trusted' when the 'trust' key is missing.
     if "trust" not in meta:
-        if "trusted" in meta:
-            meta["trust"] = meta["trusted"]
-        else:
-            raise ValueError("plugin_meta missing required key: trust")
-    return meta
+        raise ValueError("plugin_meta missing required key: trust")
+    # Reconcile trust/trusted to be consistent, mutating in place when possible
+    declared_trust = _normalise_trust(meta)
+    if isinstance(meta, dict):
+        _update_trust_keys(meta, declared_trust)  # type: ignore[arg-type]
+        return meta
+    meta_copy: Dict[str, Any] = dict(meta)
+    _update_trust_keys(meta_copy, declared_trust)
+    return meta_copy
 
 
 def validate_plot_builder_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate ADR-014 metadata requirements for plot builders."""
-
     _ensure_string(meta, "style")
     _ensure_sequence(meta, "capabilities", allow_empty=False)
     _validate_dependencies(meta)
     _ensure_bool(meta, "legacy_compatible")
     _ensure_sequence(meta, "output_formats", allow_empty=False)
-    if "trust" not in meta:
-        if "trusted" in meta:
-            meta["trust"] = meta["trusted"]
-        else:
-            raise ValueError("plugin_meta missing required key: trust")
-    return meta
+    declared_trust = _normalise_trust(meta)
+    if isinstance(meta, dict):
+        _update_trust_keys(meta, declared_trust)  # type: ignore[arg-type]
+        return meta
+    meta_copy: Dict[str, Any] = dict(meta)
+    _update_trust_keys(meta_copy, declared_trust)
+    return meta_copy
 
 
 def validate_plot_renderer_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate ADR-014 metadata requirements for plot renderers."""
-
     _ensure_sequence(meta, "capabilities", allow_empty=False)
     _validate_dependencies(meta)
     _ensure_sequence(meta, "output_formats", allow_empty=False)
     _ensure_bool(meta, "supports_interactive")
-    if "trust" not in meta:
-        if "trusted" in meta:
-            meta["trust"] = meta["trusted"]
-        else:
-            raise ValueError("plugin_meta missing required key: trust")
-    return meta
+    declared_trust = _normalise_trust(meta)
+    if isinstance(meta, dict):
+        _update_trust_keys(meta, declared_trust)  # type: ignore[arg-type]
+        return meta
+    meta_copy: Dict[str, Any] = dict(meta)
+    _update_trust_keys(meta_copy, declared_trust)
+    return meta_copy
 
 
 def validate_plot_style_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate metadata for plot style registrations."""
-
     _ensure_string(meta, "style")
     builder = _ensure_string(meta, "builder_id")
     renderer = _ensure_string(meta, "renderer_id")
@@ -448,6 +465,19 @@ def validate_plot_style_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
         fallbacks = ()
     meta = dict(meta)
     meta["fallbacks"] = fallbacks
+    if "is_default" in meta:
+        meta["is_default"] = _ensure_bool(meta, "is_default")
+    else:
+        meta["is_default"] = False
+    if "legacy_compatible" in meta:
+        meta["legacy_compatible"] = _ensure_bool(meta, "legacy_compatible")
+    default_for = meta.get("default_for")
+    if default_for is not None:
+        meta["default_for"] = _coerce_string_collection(
+            default_for, key="default_for", allow_empty=True
+        )
+    else:
+        meta["default_for"] = ()
     return meta
 
 
@@ -461,6 +491,7 @@ class ExplanationPluginDescriptor:
     trusted: bool = False
 
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
+        """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
 
 
@@ -474,6 +505,7 @@ class IntervalPluginDescriptor:
     trusted: bool = False
 
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
+        """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
 
 
@@ -494,6 +526,7 @@ class PlotBuilderDescriptor:
     trusted: bool = False
 
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
+        """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
 
 
@@ -507,6 +540,7 @@ class PlotRendererDescriptor:
     trusted: bool = False
 
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
+        """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
 
 
@@ -518,6 +552,7 @@ class PlotStyleDescriptor:
     metadata: Mapping[str, Any] = field(repr=False)
 
     def __post_init__(self) -> None:  # pragma: no cover - dataclass hook
+        """Freeze the metadata mapping for immutability."""
         object.__setattr__(self, "metadata", _freeze_meta(self.metadata))
 
 
@@ -532,21 +567,18 @@ _PLOT_STYLES: Dict[str, PlotStyleDescriptor] = {}
 
 def clear_explanation_plugins() -> None:
     """Clear explanation plugin descriptors (testing helper)."""
-
     _EXPLANATION_PLUGINS.clear()
     _TRUSTED_EXPLANATIONS.clear()
 
 
 def clear_interval_plugins() -> None:
     """Clear interval plugin descriptors (testing helper)."""
-
     _INTERVAL_PLUGINS.clear()
     _TRUSTED_INTERVALS.clear()
 
 
 def clear_plot_plugins() -> None:
     """Clear plot plugin descriptors (testing helper)."""
-
     _PLOT_BUILDERS.clear()
     _TRUSTED_PLOT_BUILDERS.clear()
     _PLOT_RENDERERS.clear()
@@ -556,16 +588,15 @@ def clear_plot_plugins() -> None:
 
 def ensure_builtin_plugins() -> None:
     """Re-register in-tree plugins when registries have been cleared."""
-
     expected_explanations = {
         "core.explanation.factual",
         "core.explanation.alternative",
         "core.explanation.fast",
     }
     expected_intervals = {"core.interval.legacy", "core.interval.fast"}
-    expected_plot_builders = {"core.plot.legacy"}
-    expected_plot_renderers = {"core.plot.legacy"}
-    expected_plot_styles = {"legacy"}
+    expected_plot_builders = {"core.plot.legacy", "core.plot.plot_spec.default"}
+    expected_plot_renderers = {"core.plot.legacy", "core.plot.plot_spec.default"}
+    expected_plot_styles = {"legacy", "plot_spec.default"}
 
     missing = any(identifier not in _EXPLANATION_PLUGINS for identifier in expected_explanations)
     missing = missing or any(
@@ -594,7 +625,6 @@ def register_explanation_plugin(
     metadata: Mapping[str, Any] | None = None,
 ) -> ExplanationPluginDescriptor:
     """Register an explanation plugin under the given identifier."""
-
     if not isinstance(identifier, str) or not identifier:
         raise ValueError("identifier must be a non-empty string")
     raw_meta = metadata or getattr(plugin, "plugin_meta", None)
@@ -632,20 +662,17 @@ def register_explanation_plugin(
 
 def find_explanation_descriptor(identifier: str) -> ExplanationPluginDescriptor | None:
     """Return the explanation plugin descriptor for *identifier* if present."""
-
     return _EXPLANATION_PLUGINS.get(identifier)
 
 
 def find_explanation_plugin(identifier: str) -> ExplainerPlugin | None:
     """Return the explanation plugin instance for *identifier* if present."""
-
     descriptor = find_explanation_descriptor(identifier)
     return descriptor.plugin if descriptor else None
 
 
 def find_explanation_plugin_trusted(identifier: str) -> ExplainerPlugin | None:
     """Return the trusted explanation plugin instance for *identifier* if any."""
-
     descriptor = find_explanation_descriptor(identifier)
     if descriptor and descriptor.trusted:
         return descriptor.plugin
@@ -659,7 +686,6 @@ def register_interval_plugin(
     metadata: Mapping[str, Any] | None = None,
 ) -> IntervalPluginDescriptor:
     """Register an interval plugin descriptor."""
-
     if not isinstance(identifier, str) or not identifier:
         raise ValueError("identifier must be a non-empty string")
     raw_meta = metadata or getattr(plugin, "plugin_meta", None)
@@ -691,20 +717,17 @@ def register_interval_plugin(
 
 def find_interval_descriptor(identifier: str) -> IntervalPluginDescriptor | None:
     """Return the descriptor for an interval plugin by identifier."""
-
     return _INTERVAL_PLUGINS.get(identifier)
 
 
 def find_interval_plugin(identifier: str) -> Any | None:
     """Return the interval plugin instance for *identifier* if registered."""
-
     descriptor = find_interval_descriptor(identifier)
     return descriptor.plugin if descriptor else None
 
 
 def find_interval_plugin_trusted(identifier: str) -> Any | None:
     """Return the trusted interval plugin instance when available."""
-
     descriptor = find_interval_descriptor(identifier)
     if descriptor and descriptor.trusted:
         return descriptor.plugin
@@ -718,7 +741,6 @@ def register_plot_builder(
     metadata: Mapping[str, Any] | None = None,
 ) -> PlotBuilderDescriptor:
     """Register a plot builder under *identifier*."""
-
     if not isinstance(identifier, str) or not identifier:
         raise ValueError("identifier must be a non-empty string")
     raw_meta = metadata or getattr(builder, "plugin_meta", None)
@@ -755,7 +777,6 @@ def register_plot_renderer(
     metadata: Mapping[str, Any] | None = None,
 ) -> PlotRendererDescriptor:
     """Register a plot renderer under *identifier*."""
-
     if not isinstance(identifier, str) or not identifier:
         raise ValueError("identifier must be a non-empty string")
     raw_meta = metadata or getattr(renderer, "plugin_meta", None)
@@ -791,7 +812,6 @@ def register_plot_style(
     metadata: Mapping[str, Any],
 ) -> PlotStyleDescriptor:
     """Register a style entry that maps to builder and renderer identifiers."""
-
     if not isinstance(identifier, str) or not identifier:
         raise ValueError("identifier must be a non-empty string")
     if metadata is None:
@@ -809,13 +829,11 @@ def find_plot_builder_descriptor(
     identifier: str,
 ) -> PlotBuilderDescriptor | None:
     """Return the builder descriptor for *identifier* if present."""
-
     return _PLOT_BUILDERS.get(identifier)
 
 
 def find_plot_builder(identifier: str) -> Any | None:
     """Return the registered plot builder for *identifier* if any."""
-
     descriptor = find_plot_builder_descriptor(identifier)
     return descriptor.builder if descriptor else None
 
@@ -824,26 +842,22 @@ def find_plot_renderer_descriptor(
     identifier: str,
 ) -> PlotRendererDescriptor | None:
     """Return the renderer descriptor for *identifier* if present."""
-
     return _PLOT_RENDERERS.get(identifier)
 
 
 def find_plot_renderer(identifier: str) -> Any | None:
     """Return the registered plot renderer for *identifier* if any."""
-
     descriptor = find_plot_renderer_descriptor(identifier)
     return descriptor.renderer if descriptor else None
 
 
 def find_plot_style_descriptor(identifier: str) -> PlotStyleDescriptor | None:
     """Return the style descriptor for *identifier* if present."""
-
     return _PLOT_STYLES.get(identifier)
 
 
 def find_plot_plugin(identifier: str) -> Any | None:
     """Return a combined plot plugin for the given style identifier."""
-
     style_descriptor = find_plot_style_descriptor(identifier)
     if style_descriptor is None:
         return None
@@ -878,7 +892,6 @@ def find_plot_plugin(identifier: str) -> Any | None:
 
 def find_plot_plugin_trusted(identifier: str) -> Any | None:
     """Return a trusted combined plot plugin for the given style identifier."""
-
     style_descriptor = find_plot_style_descriptor(identifier)
     if style_descriptor is None:
         return None
@@ -924,7 +937,6 @@ def list_plot_builder_descriptors(
     *, trusted_only: bool = False
 ) -> Tuple[PlotBuilderDescriptor, ...]:
     """Return registered plot builder descriptors."""
-
     ensure_builtin_plugins()
     return _list_descriptors(
         _PLOT_BUILDERS,
@@ -937,7 +949,6 @@ def list_plot_renderer_descriptors(
     *, trusted_only: bool = False
 ) -> Tuple[PlotRendererDescriptor, ...]:
     """Return registered plot renderer descriptors."""
-
     ensure_builtin_plugins()
     return _list_descriptors(
         _PLOT_RENDERERS,
@@ -948,7 +959,6 @@ def list_plot_renderer_descriptors(
 
 def list_plot_style_descriptors() -> Tuple[PlotStyleDescriptor, ...]:
     """Return registered plot style descriptors."""
-
     ensure_builtin_plugins()
     identifiers = sorted(_PLOT_STYLES.keys())
     return tuple(_PLOT_STYLES[identifier] for identifier in identifiers)
@@ -956,7 +966,6 @@ def list_plot_style_descriptors() -> Tuple[PlotStyleDescriptor, ...]:
 
 def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[ExplainerPlugin, ...]:
     """Discover plugins advertised via entry points."""
-
     loaded: list[ExplainerPlugin] = []
     try:
         entry_points = importlib_metadata.entry_points()
@@ -1032,7 +1041,6 @@ def register_plot_plugin(
     metadata: Mapping[str, Any] | None = None,
 ) -> PlotBuilderDescriptor:
     """Compatibility shim registering *plugin* as both builder and renderer."""
-
     warnings.warn(
         "register_plot_plugin is deprecated; use register_plot_builder/register_plot_renderer",
         DeprecationWarning,
@@ -1058,7 +1066,6 @@ def _list_descriptors(
     trusted_set: set[str],
 ) -> Tuple[Any, ...]:
     """Return descriptors from *store* with optional trust filtering."""
-
     if trusted_only:
         identifiers = sorted(identifier for identifier in trusted_set if identifier in store)
     else:
@@ -1070,7 +1077,6 @@ def list_explanation_descriptors(
     *, trusted_only: bool = False
 ) -> Tuple[ExplanationPluginDescriptor, ...]:
     """Return registered explanation plugin descriptors."""
-
     ensure_builtin_plugins()
     return _list_descriptors(
         _EXPLANATION_PLUGINS,
@@ -1083,14 +1089,12 @@ def list_interval_descriptors(
     *, trusted_only: bool = False
 ) -> Tuple[IntervalPluginDescriptor, ...]:
     """Return registered interval plugin descriptors."""
-
     ensure_builtin_plugins()
     return _list_descriptors(_INTERVAL_PLUGINS, trusted_only, _TRUSTED_INTERVALS)
 
 
 def _refresh_descriptor_trust(identifier: str, *, trusted: bool) -> ExplanationPluginDescriptor:
     """Return descriptor with updated trust metadata stored in registries."""
-
     descriptor = find_explanation_descriptor(identifier)
     if descriptor is None:
         raise KeyError(f"Explanation plugin '{identifier}' is not registered")
@@ -1112,7 +1116,6 @@ def _refresh_descriptor_trust(identifier: str, *, trusted: bool) -> ExplanationP
 
 def mark_explanation_trusted(identifier: str) -> ExplanationPluginDescriptor:
     """Mark the explanation plugin *identifier* as trusted."""
-
     descriptor = _refresh_descriptor_trust(identifier, trusted=True)
     trust_plugin(descriptor.plugin)
     return descriptor
@@ -1120,10 +1123,128 @@ def mark_explanation_trusted(identifier: str) -> ExplanationPluginDescriptor:
 
 def mark_explanation_untrusted(identifier: str) -> ExplanationPluginDescriptor:
     """Remove the explanation plugin *identifier* from the trusted set."""
-
     descriptor = _refresh_descriptor_trust(identifier, trusted=False)
     untrust_plugin(descriptor.plugin)
     return descriptor
+
+
+def _refresh_interval_descriptor_trust(
+    identifier: str, *, trusted: bool
+) -> IntervalPluginDescriptor:
+    """Return interval descriptor with updated trust state."""
+
+    descriptor = find_interval_descriptor(identifier)
+    if descriptor is None:
+        raise KeyError(f"Interval plugin '{identifier}' is not registered")
+
+    updated_meta = dict(descriptor.metadata)
+    _update_trust_keys(updated_meta, trusted)
+
+    updated = IntervalPluginDescriptor(
+        identifier=descriptor.identifier,
+        plugin=descriptor.plugin,
+        metadata=updated_meta,
+        trusted=trusted,
+    )
+
+    _INTERVAL_PLUGINS[identifier] = updated
+    if trusted:
+        _TRUSTED_INTERVALS.add(identifier)
+    else:
+        _TRUSTED_INTERVALS.discard(identifier)
+
+    _propagate_trust_metadata(descriptor.plugin, updated_meta)
+    return updated
+
+
+def mark_interval_trusted(identifier: str) -> IntervalPluginDescriptor:
+    """Mark the interval plugin *identifier* as trusted."""
+
+    return _refresh_interval_descriptor_trust(identifier, trusted=True)
+
+
+def mark_interval_untrusted(identifier: str) -> IntervalPluginDescriptor:
+    """Remove the interval plugin *identifier* from the trusted set."""
+
+    return _refresh_interval_descriptor_trust(identifier, trusted=False)
+
+
+def _refresh_plot_builder_trust(identifier: str, *, trusted: bool) -> PlotBuilderDescriptor:
+    """Return builder descriptor with updated trust metadata."""
+
+    descriptor = find_plot_builder_descriptor(identifier)
+    if descriptor is None:
+        raise KeyError(f"Plot builder '{identifier}' is not registered")
+
+    updated_meta = dict(descriptor.metadata)
+    _update_trust_keys(updated_meta, trusted)
+
+    updated = PlotBuilderDescriptor(
+        identifier=descriptor.identifier,
+        builder=descriptor.builder,
+        metadata=updated_meta,
+        trusted=trusted,
+    )
+
+    _PLOT_BUILDERS[identifier] = updated
+    if trusted:
+        _TRUSTED_PLOT_BUILDERS.add(identifier)
+    else:
+        _TRUSTED_PLOT_BUILDERS.discard(identifier)
+
+    _propagate_trust_metadata(descriptor.builder, updated_meta)
+    return updated
+
+
+def mark_plot_builder_trusted(identifier: str) -> PlotBuilderDescriptor:
+    """Mark the plot builder *identifier* as trusted."""
+
+    return _refresh_plot_builder_trust(identifier, trusted=True)
+
+
+def mark_plot_builder_untrusted(identifier: str) -> PlotBuilderDescriptor:
+    """Remove the plot builder *identifier* from the trusted set."""
+
+    return _refresh_plot_builder_trust(identifier, trusted=False)
+
+
+def _refresh_plot_renderer_trust(identifier: str, *, trusted: bool) -> PlotRendererDescriptor:
+    """Return renderer descriptor with updated trust metadata."""
+
+    descriptor = find_plot_renderer_descriptor(identifier)
+    if descriptor is None:
+        raise KeyError(f"Plot renderer '{identifier}' is not registered")
+
+    updated_meta = dict(descriptor.metadata)
+    _update_trust_keys(updated_meta, trusted)
+
+    updated = PlotRendererDescriptor(
+        identifier=descriptor.identifier,
+        renderer=descriptor.renderer,
+        metadata=updated_meta,
+        trusted=trusted,
+    )
+
+    _PLOT_RENDERERS[identifier] = updated
+    if trusted:
+        _TRUSTED_PLOT_RENDERERS.add(identifier)
+    else:
+        _TRUSTED_PLOT_RENDERERS.discard(identifier)
+
+    _propagate_trust_metadata(descriptor.renderer, updated_meta)
+    return updated
+
+
+def mark_plot_renderer_trusted(identifier: str) -> PlotRendererDescriptor:
+    """Mark the plot renderer *identifier* as trusted."""
+
+    return _refresh_plot_renderer_trust(identifier, trusted=True)
+
+
+def mark_plot_renderer_untrusted(identifier: str) -> PlotRendererDescriptor:
+    """Remove the plot renderer *identifier* from the trusted set."""
+
+    return _refresh_plot_renderer_trust(identifier, trusted=False)
 
 
 def register(plugin: ExplainerPlugin) -> None:
@@ -1132,7 +1253,6 @@ def register(plugin: ExplainerPlugin) -> None:
     Notes: Registering a plugin executes third-party code at import-time.
     Only register trusted plugins.
     """
-
     raw_meta = getattr(plugin, "plugin_meta", None)
     if raw_meta is None:
         raise ValueError("plugin must expose plugin_meta metadata")
@@ -1167,7 +1287,6 @@ def register(plugin: ExplainerPlugin) -> None:
 
 def unregister(plugin: ExplainerPlugin) -> None:
     """Remove a plugin if present."""
-
     with contextlib.suppress(ValueError):
         _REGISTRY.remove(plugin)
     with contextlib.suppress(ValueError):
@@ -1176,14 +1295,12 @@ def unregister(plugin: ExplainerPlugin) -> None:
 
 def clear() -> None:
     """Clear all registered plugins (testing convenience)."""
-
     _REGISTRY.clear()
     _TRUSTED.clear()
 
 
 def list_plugins(*, include_untrusted: bool = True) -> Tuple[ExplainerPlugin, ...]:
     """Return a snapshot of registered plugins."""
-
     if include_untrusted:
         return tuple(_REGISTRY)
     trusted_set = set(_TRUSTED)
@@ -1191,6 +1308,7 @@ def list_plugins(*, include_untrusted: bool = True) -> Tuple[ExplainerPlugin, ..
 
 
 def _resolve_plugin_from_name(name: str) -> ExplainerPlugin:
+    """Resolve a registered plugin or descriptor by its human-readable name."""
     for plugin in _REGISTRY:
         meta = getattr(plugin, "plugin_meta", {})
         getter = getattr(meta, "get", None)
@@ -1250,17 +1368,16 @@ def untrust_plugin(plugin: ExplainerPlugin | str) -> None:
 
 def find_for(model: Any) -> Tuple[ExplainerPlugin, ...]:
     """Find plugins that declare support for the given model."""
-
     return tuple(p for p in _REGISTRY if _safe_supports(p, model))
 
 
 def find_for_trusted(model: Any) -> Tuple[ExplainerPlugin, ...]:
     """Find trusted plugins that declare support for the given model."""
-
     return tuple(p for p in _TRUSTED if _safe_supports(p, model))
 
 
 def _safe_supports(plugin: ExplainerPlugin, model: Any) -> bool:
+    """Return True when a plugin reports support for *model* without raising."""
     try:
         return bool(plugin.supports(model))
     except Exception:
@@ -1308,6 +1425,12 @@ __all__ = [
     "load_entrypoint_plugins",
     "mark_explanation_trusted",
     "mark_explanation_untrusted",
+    "mark_interval_trusted",
+    "mark_interval_untrusted",
+    "mark_plot_builder_trusted",
+    "mark_plot_builder_untrusted",
+    "mark_plot_renderer_trusted",
+    "mark_plot_renderer_untrusted",
     "register",
     "unregister",
     "clear",

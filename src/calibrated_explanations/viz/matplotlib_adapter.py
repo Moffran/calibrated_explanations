@@ -12,11 +12,20 @@ import math
 
 import numpy as np
 
-from .._plots import _MATPLOTLIB_IMPORT_ERROR  # noqa: F401  (exported indirectly)
-from .._plots import __require_matplotlib as _require_mpl  # reuse lazy guard
-from .._plots import __setup_plot_style as _setup_style
-from .coloring import get_fill_color
+from ..plotting import _MATPLOTLIB_IMPORT_ERROR  # noqa: F401  (exported indirectly)
+from ..plotting import __require_matplotlib as _require_mpl  # reuse lazy guard
+from ..plotting import __setup_plot_style as _setup_style
 from .plotspec import BarHPanelSpec, PlotSpec
+
+# Preload matplotlib submodules to avoid lazy loading issues with coverage
+try:
+    import matplotlib.artist  # noqa: F401
+    import matplotlib.axes  # noqa: F401
+    import matplotlib.image  # noqa: F401
+except Exception as exc:  # pragma: no cover
+    logging.getLogger(__name__).debug(
+        "Failed to preload matplotlib submodules: %s", exc
+    )  # matplotlib not installed or already loaded
 
 
 def render(
@@ -98,182 +107,433 @@ def render(
     config = _setup_style(None)
     # Figure sizing: use provided or fall back to width from config and body size heuristic
     width = float(config["figure"].get("width", 10))
-    # Auto-adjust height when not explicitly provided: base + per-bar + multiline adjustment
     if spec.figure_size and spec.figure_size[1]:
-        height = spec.figure_size[1]
+        height = float(spec.figure_size[1])
     else:
-        # estimate number of bars (body may be None)
         num_bars = 0
-        max_label_lines = 1
         if spec.body is not None and getattr(spec.body, "bars", None) is not None:
-            bars = spec.body.bars
-            num_bars = len(bars)
-            # compute maximum number of wrapped lines across labels (labels may include newlines)
-            try:
-                max_label_lines = max((str(b.label).count("\n") + 1) for b in bars) if bars else 1
-            except Exception as exc:
-                logging.getLogger(__name__).debug("Failed to compute max_label_lines: %s", exc)
-                max_label_lines = 1
-        # heuristics (tunable): base height for header + body; give extra per bar and per extra label line
-        base = 1.0
-        per_bar = 0.35
-        per_extra_line = 0.1
-        height = base + per_bar * max(1, num_bars) + per_extra_line * max(0, (max_label_lines - 1))
-        # clamp to sensible range
-        height = float(max(3.0, min(height, 22.0)))
+            num_bars = len(spec.body.bars)
+        height = float(num_bars * 0.5 + 2.0)
+        if height <= 0:
+            height = 2.0
     fig = plt.figure(figsize=(width, height))
     # collector for test/export mode: records primitives drawn (solids/overlays/header)
     primitives: dict = {}
 
     panels = []
-    if spec.header is not None:
-        panels.append(("header", spec.header))
-    if spec.body is not None:
-        panels.append(("body", spec.body))
+    header = spec.header
+    body_spec = spec.body
+    if header is not None:
+        if getattr(header, "dual", False):
+            panels.append(("header_negative", header))
+            panels.append(("header_positive", header))
+        else:
+            panels.append(("header", header))
+    if body_spec is not None:
+        panels.append(("body", body_spec))
 
     # Create axes using a GridSpec so the figure title can reserve space via tight_layout.
     axes = []
-    if len(panels) == 2 and panels[0][0] == "header" and panels[1][0] == "body":
-        body_spec = panels[1][1]
-        num_bars = len(body_spec.bars) if hasattr(body_spec, "bars") else 5
+    if len(panels) == 3 and panels[0][0] == "header_negative" and panels[1][0] == "header_positive":
+        num_bars = (
+            len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
+        )
+        gs = fig.add_gridspec(nrows=3, ncols=1, height_ratios=[1, 1, num_bars + 2])
+        axes.append(fig.add_subplot(gs[0]))
+        axes.append(fig.add_subplot(gs[1]))
+        axes.append(fig.add_subplot(gs[2]))
+    elif len(panels) == 2 and panels[0][0].startswith("header") and panels[1][0] == "body":
+        num_bars = (
+            len(body_spec.bars) if (body_spec is not None and hasattr(body_spec, "bars")) else 5
+        )
         gs = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[1, num_bars + 2])
+        axes.append(fig.add_subplot(gs[0]))
+        axes.append(fig.add_subplot(gs[1]))
+    elif (
+        len(panels) == 2 and panels[0][0].startswith("header") and panels[1][0].startswith("header")
+    ):
+        gs = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[1, 1])
         axes.append(fig.add_subplot(gs[0]))
         axes.append(fig.add_subplot(gs[1]))
     elif len(panels) == 1:
         axes.append(fig.add_subplot(111))
-    elif len(panels) > 1:
-        gs = fig.add_gridspec(nrows=len(panels), ncols=1)
-        for i in range(len(panels)):
-            axes.append(fig.add_subplot(gs[i]))
+    elif len(panels) > 1:  # pragma: no cover - additional panel types unused in tests
+        gs = fig.add_gridspec(nrows=len(panels), ncols=1)  # pragma: no cover
+        for i in range(len(panels)):  # pragma: no cover
+            axes.append(fig.add_subplot(gs[i]))  # pragma: no cover
     if spec.title:
         fig.suptitle(spec.title, y=0.98)
 
-    def _render_header(ax, header):
-        pred, low, high = header.pred, header.low, header.high
-        # layout: explicit band centers for top (negative) and bottom (positive)
-        alpha_val = float(config["colors"]["alpha"])
-        # tune these values to adjust vertical spacing/height of bands
-        top_center = 0.75
-        bot_center = 0.25
-        band_thickness = 0.18
-        y_top = np.linspace(top_center - band_thickness / 2.0, top_center + band_thickness / 2.0, 2)
-        y_bot = np.linspace(bot_center - band_thickness / 2.0, bot_center + band_thickness / 2.0, 2)
-        # small fallback x sample used for single-band header
-        x = np.linspace(0, 1, 2)
-        xj = np.linspace(x[0] - 0.2, x[0] + 0.2, 2)
-        # Dual-mode: render two stacked bands (negative top, positive bottom) to mimic legacy probabilistic plot
-        if getattr(header, "dual", False):
-            # Map colors: for dual headers swap so that the positive band
-            # visually matches the body positive color (blue) and negative
-            # band matches the body negative color (red).
-            if getattr(header, "dual", False):
-                pos_color = config["colors"]["negative"]
-                neg_color = config["colors"]["positive"]
-            else:
-                pos_color = config["colors"]["positive"]
-                neg_color = config["colors"]["negative"]
-            # Negative band (top) - complement endpoints and conservative solid area
-            comp_lo = 1.0 - high
-            comp_hi = 1.0 - low
-            solid_end = min(comp_lo, comp_hi)
-            # solid area (conservative)
-            ax.fill_betweenx(y_top, 0.0, solid_end, color=neg_color)
-            # translucent uncertainty overlay (optional)
-            if draw_intervals:
-                ax.fill_betweenx(y_top, comp_lo, comp_hi, color=neg_color, alpha=alpha_val)
-            # Export header primitives; include overlay only when intervals are drawn
-            if export_drawn_primitives:
-                primitives.setdefault("header", {})["negative"] = {
-                    "solid": (0.0, float(solid_end)),
-                    "color": neg_color,
-                    "alpha": float(alpha_val),
-                }
-                if draw_intervals:
-                    primitives.setdefault("header", {})["negative"]["overlay"] = (
-                        float(comp_lo),
-                        float(comp_hi),
-                    )
-            # Negative pred marker line (drawn across band center)
-            ax.plot([1.0 - pred, 1.0 - pred], [y_top[0], y_top[1]], color=neg_color, linewidth=2)
-            # Positive band (bottom): solid area to low and translucent overlay low->high
-            ax.fill_betweenx(y_bot, 0.0, low, color=pos_color)
-            if draw_intervals:
-                ax.fill_betweenx(y_bot, low, high, color=pos_color, alpha=alpha_val)
-            if export_drawn_primitives:
-                primitives.setdefault("header", {})["positive"] = {
-                    "solid": (0.0, float(low)),
-                    "color": pos_color,
-                    "alpha": float(alpha_val),
-                }
-                if draw_intervals:
-                    primitives.setdefault("header", {})["positive"]["overlay"] = (
-                        float(low),
-                        float(high),
-                    )
-            ax.plot([pred, pred], [y_bot[0], y_bot[1]], color=pos_color, linewidth=2)
-            # set sensible xlim/labels
-            if header.xlim:
-                try:
-                    x0, x1 = header.xlim[0], header.xlim[1]
-                    x0f, x1f = float(x0), float(x1)
-                    if math.isfinite(x0f) and math.isfinite(x1f):
-                        # avoid identical limits which matplotlib dislikes
-                        if x0f == x1f:
-                            eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
-                            x0f -= eps
-                            x1f += eps
-                        ax.set_xlim([x0f, x1f])
-                except Exception as exc:
-                    # defensive: skip setting xlim on invalid input but log the error
-                    logging.getLogger(__name__).debug("Header xlim parse failed: %s", exc)
-            if header.xlabel:
-                ax.set_xlabel(header.xlabel)
-            # Two y tick positions for top (neg) and bottom (pos) bands (match band centers)
-            ax.set_yticks([top_center, bot_center])
-            neg_lab = getattr(header, "neg_label", None)
-            pos_lab = getattr(header, "pos_label", None)
-            if neg_lab or pos_lab:
-                lab_top = f"P(y={neg_lab})" if neg_lab else ""
-                lab_bot = f"P(y={pos_lab})" if pos_lab else ""
-                ax.set_yticklabels([lab_top, lab_bot])
-            else:
-                if header.ylabel:
-                    ax.set_yticklabels([header.ylabel, ""])  # fallback
+    def _regression_sign_colors(colors_cfg):
+        """Return colors for positive/negative regression contributions.
+
+        Legacy regression plots draw positive contributions using the style
+        configuration's "negative" color (historically blue) and negative
+        contributions using the "positive" color (historically red). This
+        helper centralizes that mapping so both the factual and alternative
+        regression paths stay in sync with the legacy implementation.
+        """
+
+        pos_color = colors_cfg.get("negative")
+        neg_color = colors_cfg.get("positive")
+        # Fall back to the opposite entry when a color is missing so we always
+        # return something sensible even if the style configuration is
+        # partially specified.
+        if pos_color is None:
+            pos_color = colors_cfg.get("positive")
+        if neg_color is None:
+            neg_color = colors_cfg.get("negative")
+        return pos_color, neg_color
+
+    def _header_caption(header, band: str) -> str:
+        attr = "neg_caption" if band == "negative" else "pos_caption"
+        label_attr = "neg_label" if band == "negative" else "pos_label"
+        caption = getattr(header, attr, None)
+        if caption:
+            return str(caption)
+        label_val = getattr(header, label_attr, None)
+        if label_val is not None:
+            return f"P(y={label_val})"
+        if header.ylabel:
+            return str(header.ylabel)
+        return ""
+
+    def _render_dual_header_band(ax, header, *, band: str) -> None:
+        try:
+            pred = float(header.pred)
+            low = float(header.low)
+            high = float(header.high)
+        except Exception:
+            pred = float(getattr(header, "pred", 0.0))
+            low = float(getattr(header, "low", 0.0))
+            high = float(getattr(header, "high", 0.0))
+        if high < low:
+            low, high = high, low
+        alpha_val = (
+            float(header.uncertainty_alpha)
+            if getattr(header, "uncertainty_alpha", None) is not None
+            else float(config["colors"]["alpha"])
+        )
+        base_color = config["colors"].get(
+            "negative" if band == "negative" else "positive",
+            "b" if band == "negative" else "r",
+        )
+        overlay_color = getattr(header, "uncertainty_color", None) or base_color
+        y_coords = np.linspace(-0.2, 0.2, 2)
+
+        xlim = header.xlim if getattr(header, "xlim", None) else (0.0, 1.0)
+        try:
+            x0f, x1f = float(xlim[0]), float(xlim[1])
+            if not math.isfinite(x0f) or not math.isfinite(x1f):
+                raise ValueError
+            if math.isclose(x0f, x1f, rel_tol=1e-12, abs_tol=1e-12):
+                eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
+                x0f -= eps
+                x1f += eps
+        except Exception:
+            x0f, x1f = 0.0, 1.0
+        ax.set_xlim([x0f, x1f])
+
+        render_intervals = bool(getattr(header, "show_intervals", False)) and not math.isclose(
+            low,
+            high,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        )
+
+        if band == "negative":
+            comp_pred = 1.0 - pred
+            comp_low = 1.0 - high
+            comp_high = 1.0 - low
+            ax.fill_betweenx(y_coords, comp_pred, comp_pred, color=base_color)
+            ax.fill_betweenx(y_coords, 0.0, comp_low, color=base_color)
+            if render_intervals:
+                ax.fill_betweenx(
+                    y_coords, comp_high, comp_low, color=overlay_color, alpha=alpha_val
+                )
+            ax.plot(
+                [comp_pred, comp_pred], [y_coords[0], y_coords[1]], color=base_color, linewidth=2
+            )
+            ax.set_xticks(np.linspace(x0f, x1f, 6))
+            solid_range = (0.0, comp_low)
+            overlay_range = (comp_high, comp_low)
         else:
-            # Single-band header (regression-like)
-            color = config["colors"]["regression"]
-            # Draw uncertainty band around the median prediction once
-            ax.fill_betweenx(xj, low, high, color=color, alpha=alpha_val)
-            # Draw a single line for the median prediction
-            ax.plot([pred, pred], [xj[0], xj[1]], color=color, linewidth=2)
-            if header.xlim:
-                try:
-                    x0, x1 = header.xlim[0], header.xlim[1]
-                    x0f, x1f = float(x0), float(x1)
-                    if math.isfinite(x0f) and math.isfinite(x1f):
-                        if x0f == x1f:
-                            eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
-                            x0f -= eps
-                            x1f += eps
-                        ax.set_xlim([x0f, x1f])
-                except Exception as exc:
-                    # defensive: skip setting xlim on invalid input but log the error
-                    logging.getLogger(__name__).debug("Header xlim parse failed: %s", exc)
+            ax.fill_betweenx(y_coords, pred, pred, color=base_color)
+            ax.fill_betweenx(y_coords, 0.0, low, color=base_color)
+            if render_intervals:
+                ax.fill_betweenx(y_coords, low, high, color=overlay_color, alpha=alpha_val)
+            ax.plot([pred, pred], [y_coords[0], y_coords[1]], color=base_color, linewidth=2)
+            ax.set_xticks([])
             if header.xlabel:
                 ax.set_xlabel(header.xlabel)
-            ax.set_yticks(range(1))
-            if header.ylabel:
-                ax.set_yticklabels([header.ylabel])
+            solid_range = (0.0, low)
+            overlay_range = (low, high)
+
+        caption = _header_caption(header, band)
+        ax.set_yticks([0])
+        ax.set_yticklabels([caption])
+
+        if export_drawn_primitives:
+            band_entry = primitives.setdefault("header", {}).setdefault(band, {})
+            band_entry.update(
+                {
+                    "solid": (float(solid_range[0]), float(solid_range[1])),
+                    "color": base_color,
+                    "alpha": float(alpha_val),
+                }
+            )
+            if render_intervals:
+                band_entry["overlay"] = (
+                    float(overlay_range[0]),
+                    float(overlay_range[1]),
+                )
+
+    def _render_single_header(ax, header):
+        try:
+            pred = float(header.pred)
+            low = float(header.low)
+            high = float(header.high)
+        except Exception:
+            pred = float(getattr(header, "pred", 0.0))
+            low = float(getattr(header, "low", 0.0))
+            high = float(getattr(header, "high", 0.0))
+        if high < low:
+            low, high = high, low
+        alpha_val = (
+            float(header.uncertainty_alpha)
+            if getattr(header, "uncertainty_alpha", None) is not None
+            else float(config["colors"]["alpha"])
+        )
+        color = config["colors"].get("regression", "r")
+        overlay_color = getattr(header, "uncertainty_color", None) or color
+        y_coords = np.linspace(-0.2, 0.2, 2)
+        render_intervals = bool(getattr(header, "show_intervals", False)) and not math.isclose(
+            low,
+            high,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        )
+        if render_intervals:
+            ax.fill_betweenx(y_coords, low, high, color=overlay_color, alpha=alpha_val)
+        ax.fill_betweenx(y_coords, pred, pred, color=color)
+        ax.plot([pred, pred], [y_coords[0], y_coords[1]], color=color, linewidth=2)
+        if header.xlim:
+            try:
+                x0, x1 = header.xlim[0], header.xlim[1]
+                x0f, x1f = float(x0), float(x1)
+                if math.isfinite(x0f) and math.isfinite(x1f):
+                    if math.isclose(x0f, x1f, rel_tol=1e-12, abs_tol=1e-12):
+                        eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
+                        x0f -= eps
+                        x1f += eps
+                    ax.set_xlim([x0f, x1f])
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logging.getLogger(__name__).debug("Header xlim parse failed: %s", exc)
+        if header.xlabel:
+            ax.set_xlabel(header.xlabel)
+        ax.set_yticks(range(1))
+        if header.ylabel:
+            ax.set_yticklabels([header.ylabel])
 
     def _render_body(ax, body: BarHPanelSpec):
+        if getattr(body, "is_alternative", False):
+            bars = list(body.bars)
+            n = len(bars)
+            if n == 0:
+                return
+            y_min = -0.5
+            y_max = (n - 1) + 0.5
+            y_base = np.array([y_min, y_max])
+            bar_span = float(getattr(body, "bar_span", 0.2))
+
+            base_segments = getattr(body, "base_segments", None)
+            if base_segments:
+                for seg in base_segments:
+                    try:
+                        alpha_seg = (
+                            float(seg.alpha) if getattr(seg, "alpha", None) is not None else 1.0
+                        )
+                        low = float(seg.low)
+                        high = float(seg.high)
+                        if low > high:
+                            low, high = high, low
+                        ax.fill_betweenx(y_base, low, high, color=seg.color, alpha=alpha_seg)
+                        if export_drawn_primitives:
+                            primitives.setdefault("overlays", []).append(
+                                {
+                                    "index": -1,
+                                    "x0": low,
+                                    "x1": high,
+                                    "color": seg.color,
+                                    "alpha": alpha_seg,
+                                }
+                            )
+                    except Exception as exc:  # pragma: no cover - defensive drawing
+                        logging.getLogger(__name__).debug(
+                            "Failed to draw alternative base segment: %s", exc
+                        )
+                if export_drawn_primitives:
+                    try:
+                        min_low = min(float(seg.low) for seg in base_segments)
+                        max_high = max(float(seg.high) for seg in base_segments)
+                        first_seg = base_segments[0]
+                        primitives.setdefault("base_interval", {})["body"] = {
+                            "x0": float(min_low),
+                            "x1": float(max_high),
+                            "color": getattr(first_seg, "color", "r"),
+                            "alpha": float(
+                                getattr(first_seg, "alpha", 1.0)
+                                if getattr(first_seg, "alpha", None) is not None
+                                else 1.0
+                            ),
+                        }
+                    except Exception as exc:  # pragma: no cover - defensive logging
+                        logging.getLogger(__name__).debug(
+                            "Failed to record base_interval for alternative plot: %s", exc
+                        )
+
+            base_lines = getattr(body, "base_lines", None)
+            if base_lines:
+                for line_entry in base_lines:
+                    try:
+                        x_val, color, alpha_val = line_entry
+                        alpha_line = float(alpha_val) if alpha_val is not None else 1.0
+                        xv = float(x_val)
+                        ax.plot([xv, xv], y_base, color=color, alpha=alpha_line, linewidth=2)
+                        if export_drawn_primitives:
+                            primitives.setdefault("lines", []).append(
+                                {
+                                    "index": -1,
+                                    "x": xv,
+                                    "color": color,
+                                    "alpha": alpha_line,
+                                }
+                            )
+                    except Exception as exc:  # pragma: no cover - defensive drawing
+                        logging.getLogger(__name__).debug(
+                            "Failed to draw alternative base line: %s", exc
+                        )
+
+            for idx, item in enumerate(bars):
+                y_j = np.array([idx - bar_span, idx + bar_span])
+                segments = getattr(item, "segments", None)
+                if segments:
+                    for seg in segments:
+                        try:
+                            alpha_seg = (
+                                float(seg.alpha) if getattr(seg, "alpha", None) is not None else 1.0
+                            )
+                            low = float(seg.low)
+                            high = float(seg.high)
+                            if low > high:
+                                low, high = high, low
+                            ax.fill_betweenx(y_j, low, high, color=seg.color, alpha=alpha_seg)
+                            if export_drawn_primitives:
+                                primitives.setdefault("overlays", []).append(
+                                    {
+                                        "index": idx,
+                                        "x0": low,
+                                        "x1": high,
+                                        "color": seg.color,
+                                        "alpha": alpha_seg,
+                                    }
+                                )
+                        except Exception as exc:  # pragma: no cover - defensive drawing
+                            logging.getLogger(__name__).debug(
+                                "Failed to draw alternative segment: %s", exc
+                            )
+                else:
+                    try:
+                        lo = (
+                            float(item.interval_low)
+                            if item.interval_low is not None
+                            else float(item.value)
+                        )
+                        hi = (
+                            float(item.interval_high)
+                            if item.interval_high is not None
+                            else float(item.value)
+                        )
+                        color = getattr(item, "color_role", None) or config["colors"].get(
+                            "positive", "r"
+                        )
+                        ax.fill_betweenx(y_j, lo, hi, color=color)
+                        if export_drawn_primitives:
+                            primitives.setdefault("overlays", []).append(
+                                {"index": idx, "x0": lo, "x1": hi, "color": color, "alpha": 1.0}
+                            )
+                    except Exception as exc:  # pragma: no cover - defensive drawing
+                        logging.getLogger(__name__).debug(
+                            "Failed to draw fallback alternative bar: %s", exc
+                        )
+
+                if getattr(item, "line", None) is not None:
+                    try:
+                        x_val = float(item.line)
+                        color = item.line_color or "r"
+                        alpha_line = float(item.line_alpha) if item.line_alpha is not None else 1.0
+                        ax.plot([x_val, x_val], y_j, color=color, alpha=alpha_line, linewidth=2)
+                        if export_drawn_primitives:
+                            primitives.setdefault("lines", []).append(
+                                {
+                                    "index": idx,
+                                    "x": x_val,
+                                    "color": color,
+                                    "alpha": alpha_line,
+                                }
+                            )
+                    except Exception as exc:  # pragma: no cover - defensive drawing
+                        logging.getLogger(__name__).debug(
+                            "Failed to draw alternative marker line: %s", exc
+                        )
+
+            ax.set_yticks(range(n))
+            ax.set_yticklabels([bar.label for bar in bars])
+            ax.set_ylim([y_min, y_max])
+
+            instance_vals = [
+                str(bar.instance_value) if bar.instance_value is not None else "" for bar in bars
+            ]
+            if any(val != "" for val in instance_vals):
+                ax_twin = ax.twinx()
+                ax_twin.set_yticks(range(n))
+                ax_twin.set_yticklabels(instance_vals)
+                ax_twin.set_ylim([y_min, y_max])
+                ax_twin.set_ylabel("Instance values")
+
+            if getattr(body, "xticks", None):
+                try:
+                    ax.set_xticks([float(x) for x in body.xticks])
+                except Exception as exc:  # pragma: no cover
+                    logging.getLogger(__name__).debug(
+                        "Failed to set xticks for alternative plot: %s", exc
+                    )
+            if getattr(body, "xlim", None):
+                try:
+                    x0, x1 = body.xlim
+                    x0f, x1f = float(x0), float(x1)
+                    if math.isfinite(x0f) and math.isfinite(x1f):
+                        if x0f == x1f:
+                            eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
+                            x0f -= eps
+                            x1f += eps
+                        ax.set_xlim([x0f, x1f])
+                except Exception as exc:  # pragma: no cover - defensive logging
+                    logging.getLogger(__name__).debug(
+                        "Failed to set xlim for alternative plot: %s", exc
+                    )
+            if body.xlabel:
+                ax.set_xlabel(body.xlabel)
+            if body.ylabel:
+                ax.set_ylabel(body.ylabel)
+            return
+
         n = len(body.bars)
         xs = np.linspace(0, n - 1, n)
         alpha_val = float(config["colors"]["alpha"])
-        header_pred_f = (
-            float(spec.header.pred)
-            if spec.header is not None and getattr(spec.header, "pred", None) is not None
-            else 0.0
-        )
+        is_dual_header = bool(spec.header is not None and getattr(spec.header, "dual", False))
+        pos_contrib_color, neg_contrib_color = _regression_sign_colors(config["colors"])
+
         # If header is dual/probabilistic, we still render the body in the
         # contribution coordinate system (centered at zero). Legacy v0.5.1
         # showed solids anchored at zero with translucent interval overlays on
@@ -281,191 +541,148 @@ def render(
         # overlays were drawn split by sign for probabilistic/classification
         # plots. Implement that behaviour here so PlotSpec->adapter parity is
         # exact.
-        if spec.header is not None and getattr(spec.header, "dual", False):
-            # choose visual colors to match legacy: positive contributions
-            # are drawn with the 'positive' config color but historically the
-            # plot used a swapped mapping (blue for positive). Keep the swap
-            # so visuals match legacy imagery.
-            pos_color = config["colors"]["negative"]
-            neg_color = config["colors"]["positive"]
+        if is_dual_header:
+            pos_color = pos_contrib_color
+            neg_color = neg_contrib_color
             alpha_val = float(config["colors"]["alpha"])
 
-            # draw base prediction uncertainty band across the whole body
-            # mapped to contribution coordinates (header.low/header.high
-            # subtracted by header.pred) so the shaded grey region is visible
-            # even when draw_intervals is False — this matches v0.5.1.
-            try:
-                header_pred = float(spec.header.pred)
-                gwl = float(spec.header.low) - header_pred
-                gwh = float(spec.header.high) - header_pred
-                gwh, gwl = (max(gwh, gwl), min(gwh, gwl))
-                ax.fill_betweenx([-0.5, n - 0.5], gwl, gwh, color="k", alpha=alpha_val)
-                if export_drawn_primitives:
-                    primitives.setdefault("base_interval", {})["body"] = {
-                        "x0": float(gwl),
-                        "x1": float(gwh),
-                        "color": "k",
-                        "alpha": float(alpha_val),
-                    }
-            except Exception as exc:
-                logging.getLogger(__name__).debug("Failed to draw header base interval: %s", exc)
+            has_any_interval = any(
+                getattr(item, "interval_low", None) is not None
+                and getattr(item, "interval_high", None) is not None
+                for item in body.bars
+            )
 
-            # iterate bars using contribution coordinates (no header-centering)
+            x_min, x_max = 0.0, 0.0
+
+            is_dual_header = spec.header is not None and getattr(spec.header, "dual", False)
+            show_base = getattr(body, "show_base_interval", is_dual_header)
+            if (show_base or is_dual_header) and has_any_interval and spec.header is not None:
+                try:
+                    header_pred = float(spec.header.pred)
+                    gwl = header_pred - float(spec.header.low)
+                    gwh = header_pred - float(spec.header.high)
+                    gwh, gwl = (max(gwh, gwl), min(gwh, gwl))
+                    base_color = getattr(spec.header, "uncertainty_color", None) or config[
+                        "colors"
+                    ].get("uncertainty", "k")
+                    y_span = [-0.5, (n - 1) + 0.5] if n > 0 else [-0.5, 0.5]
+                    ax.fill_betweenx(y_span, gwl, gwh, color=base_color, alpha=alpha_val)
+                    if export_drawn_primitives:
+                        primitives.setdefault("base_interval", {})["body"] = {
+                            "x0": float(gwl),
+                            "x1": float(gwh),
+                            "color": base_color,
+                            "alpha": float(alpha_val),
+                        }
+                    x_min = min(x_min, gwl, gwh)
+                    x_max = max(x_max, gwl, gwh)
+                except Exception as exc:
+                    logging.getLogger(__name__).debug(
+                        "Failed to draw header base interval: %s", exc
+                    )
+
+            if n > 0:
+                y_positions = np.linspace(0, n - 1, n)
+                ax.fill_betweenx(y_positions, 0.0, 0.0, color="k")
+                ax.fill_betweenx(np.linspace(-0.5, y_positions[0], 2), 0.0, 0.0, color="k")
+                ax.fill_betweenx(
+                    np.linspace(y_positions[-1], y_positions[-1] + 0.5, 2), 0.0, 0.0, color="k"
+                )
+            else:
+                ax.fill_betweenx(np.linspace(-0.5, 0.5, 2), 0.0, 0.0, color="k")
+
             for j, item in enumerate(body.bars):
                 xj = np.linspace(xs[j] - 0.2, xs[j] + 0.2, 2)
-                val = float(item.value)
-                color = pos_color if val > 0 else neg_color
+                width = float(item.value)
+                color = pos_color if width > 0 else neg_color
 
-                # interval-aware drawing following legacy `_plot_probabilistic`:
-                if item.interval_low is not None and item.interval_high is not None:
+                has_interval = (
+                    getattr(item, "interval_low", None) is not None
+                    and getattr(item, "interval_high", None) is not None
+                )
+                if hasattr(body, "solid_on_interval_crosses_zero"):
+                    suppress_solid_on_cross = bool(body.solid_on_interval_crosses_zero)
+                elif hasattr(item, "solid_on_interval_crosses_zero"):
+                    suppress_solid_on_cross = bool(item.solid_on_interval_crosses_zero)
+                else:
+                    suppress_solid_on_cross = True
+
+                if has_interval:
                     wl = float(item.interval_low)
                     wh = float(item.interval_high)
-                    # normalize ordering
-                    wh, wl = (max(wh, wl), min(wh, wl))
-                    # Map interval and value into contribution/body coordinates
-                    # by subtracting the header prediction so that intervals that
-                    # cross the prediction become centered around zero and are
-                    # handled like the non-dual (regression) branch.
-                    try:
-                        header_pred = float(spec.header.pred)
-                    except Exception:
-                        header_pred = 0.0
-                    val_body = float(val) - header_pred
-                    wl_body = wl - header_pred
-                    wh_body = wh - header_pred
-
-                    # compute solid endpoints consistently: draw solids from
-                    # contribution-space zero to the bar value (val_body).
-                    pivot = 0.0
-
-                    # Determine suppression behavior: default to True unless explicitly set
-                    if hasattr(body, "solid_on_interval_crosses_zero"):
-                        suppress_solid_on_cross = bool(body.solid_on_interval_crosses_zero)
-                    elif hasattr(item, "solid_on_interval_crosses_zero"):
-                        suppress_solid_on_cross = bool(item.solid_on_interval_crosses_zero)
+                    if wh < wl:
+                        wl, wh = wh, wl
+                    crosses_zero = wl < 0.0 < wh
+                    if width > 0:
+                        min_val = wl
+                        max_val = 0.0
                     else:
-                        suppress_solid_on_cross = True
-
-                    # Solid endpoints are always from zero to the value (in body coords)
-                    min_val = min(val_body, pivot)
-                    max_val = max(val_body, pivot)
-
-                    # If interval covers the pivot and legacy suppression is enabled,
-                    # degenerate the solid to the pivot (suppressed).
-                    if wl_body < pivot < wh_body and suppress_solid_on_cross:
-                        min_val = pivot
-                        max_val = pivot
-
-                    # draw the solid band (may be degenerate if suppressed)
+                        min_val = 0.0
+                        max_val = wh
+                    if crosses_zero and suppress_solid_on_cross:
+                        min_val = 0.0
+                        max_val = 0.0
                     ax.fill_betweenx(xj, min_val, max_val, color=color)
-                    # only export solids when non-degenerate
-                    try:
-                        if (
-                            not math.isclose(float(min_val), float(max_val), rel_tol=1e-12)
-                            and export_drawn_primitives
-                        ):
-                            primitives.setdefault("solids", []).append(
-                                {
-                                    "index": j,
-                                    "x0": float(min_val),
-                                    "x1": float(max_val),
-                                    "color": color,
-                                }
-                            )
-                    except Exception as exc:
-                        logging.getLogger(__name__).debug(
-                            "Failed to export solid primitive: %s", exc
-                        )
-
-                    # draw translucent overlay: if the interval crosses the pivot
-                    # split it on either side using the sign colors; else draw
-                    # the interval wl_body..wh_body tinted via chosen color.
-                    if draw_intervals:
-                        if wl_body < pivot < wh_body:
-                            # negative side: wl_body .. pivot
-                            ax.fill_betweenx(xj, wl_body, pivot, color=neg_color, alpha=alpha_val)
-                            # positive side: pivot .. wh_body
-                            ax.fill_betweenx(xj, pivot, wh_body, color=pos_color, alpha=alpha_val)
-                            if export_drawn_primitives:
-                                primitives.setdefault("overlays", []).append(
-                                    {
-                                        "index": j,
-                                        "x0": float(wl_body),
-                                        "x1": float(pivot),
-                                        "color": neg_color,
-                                        "alpha": float(alpha_val),
-                                    }
-                                )
-                                primitives.setdefault("overlays", []).append(
-                                    {
-                                        "index": j,
-                                        "x0": float(pivot),
-                                        "x1": float(wh_body),
-                                        "color": pos_color,
-                                        "alpha": float(alpha_val),
-                                    }
-                                )
-                        else:
-                            ax.fill_betweenx(xj, wl_body, wh_body, color=color, alpha=alpha_val)
-                            if export_drawn_primitives:
-                                primitives.setdefault("overlays", []).append(
-                                    {
-                                        "index": j,
-                                        "x0": float(wl_body),
-                                        "x1": float(wh_body),
-                                        "color": color,
-                                        "alpha": float(alpha_val),
-                                    }
-                                )
-                else:
-                    # no interval: draw a degenerate solid line at the value
-                    ax.fill_betweenx(xj, 0, val, color=color)
-                    if export_drawn_primitives:
-                        primitives.setdefault("solids", []).append(
-                            {"index": j, "x0": float(val), "x1": float(val), "color": color}
-                        )
-
-            # Compute symmetric x-limits around zero with padding to match
-            # legacy behaviour (ensure zero centered and modest padding).
-            try:
-                max_extent = 0.0
-                for b in body.bars:
-                    try:
-                        v = float(b.value)
-                        max_extent = max(max_extent, abs(v))
-                    except Exception as exc:
-                        logging.getLogger(__name__).debug(
-                            "Failed to parse bar.value for extent: %s", exc
-                        )
-                    if (
-                        getattr(b, "interval_low", None) is not None
-                        and getattr(b, "interval_high", None) is not None
+                    if export_drawn_primitives and not math.isclose(
+                        float(min_val), float(max_val), rel_tol=1e-12, abs_tol=1e-12
                     ):
-                        try:
-                            wl = float(b.interval_low)
-                            wh = float(b.interval_high)
-                            max_extent = max(max_extent, abs(wl), abs(wh))
-                        except Exception as exc:
-                            logging.getLogger(__name__).debug(
-                                "Failed to parse bar.interval for extent: %s", exc
-                            )
-                # fallback when all extents tiny/zero
-                if math.isclose(max_extent, 0.0, rel_tol=1e-12):
-                    max_extent = 0.1
-                pad = max_extent * 0.06
-                ax.set_xlim([-max_extent - pad, max_extent + pad])
-            except Exception as exc:
-                # Let autoscale handle it if anything fails, but log for debug
-                logging.getLogger(__name__).debug("Failed to compute/set xlim for body: %s", exc)
+                        primitives.setdefault("solids", []).append(
+                            {
+                                "index": j,
+                                "x0": float(min_val),
+                                "x1": float(max_val),
+                                "color": color,
+                            }
+                        )
+                    ax.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
+                    if export_drawn_primitives:
+                        primitives.setdefault("overlays", []).append(
+                            {
+                                "index": j,
+                                "x0": float(wl),
+                                "x1": float(wh),
+                                "color": color,
+                                "alpha": float(alpha_val),
+                            }
+                        )
+                    x_min = min(x_min, min_val, max_val, wl, wh)
+                    x_max = max(x_max, min_val, max_val, wl, wh)
+                else:
+                    min_val = min(width, 0.0)
+                    max_val = max(width, 0.0)
+                    ax.fill_betweenx(xj, min_val, max_val, color=color)
+                    if export_drawn_primitives and not math.isclose(
+                        float(min_val), float(max_val), rel_tol=1e-12, abs_tol=1e-12
+                    ):
+                        primitives.setdefault("solids", []).append(
+                            {
+                                "index": j,
+                                "x0": float(min_val),
+                                "x1": float(max_val),
+                                "color": color,
+                            }
+                        )
+                    x_min = min(x_min, min_val, max_val)
+                    x_max = max(x_max, min_val, max_val)
 
-            # Y labels and twin axis as legacy
+            try:
+                if math.isclose(x_min, x_max, rel_tol=1e-12, abs_tol=1e-12):
+                    pad = abs(x_min) * 0.1 if x_min != 0 else 0.1
+                    x_min -= pad
+                    x_max += pad
+                ax.set_xlim([x_min, x_max])
+            except Exception as exc:
+                logging.getLogger(__name__).debug(
+                    "Failed to set xlim for probabilistic body: %s", exc
+                )
+
             ax.set_yticks(range(n))
             labels = [b.label for b in body.bars]
             ax.set_yticklabels(labels)
             instance_vals = [
                 str(b.instance_value) if b.instance_value is not None else "" for b in body.bars
             ]
-            if any(v != "" for v in instance_vals):
+            if any(val != "" for val in instance_vals):
                 ax_twin = ax.twinx()
                 ax_twin.set_yticks(range(n))
                 ax_twin.set_yticklabels(instance_vals)
@@ -473,7 +690,7 @@ def render(
                     ylim = ax.get_ylim()
                     y0f, y1f = float(ylim[0]), float(ylim[1])
                     if math.isfinite(y0f) and math.isfinite(y1f):
-                        if y0f == y1f:
+                        if math.isclose(y0f, y1f, rel_tol=1e-12, abs_tol=1e-12):
                             eps = abs(y0f) * 1e-3 if y0f != 0 else 1e-3
                             y0f -= eps
                             y1f += eps
@@ -486,297 +703,122 @@ def render(
             if body.ylabel:
                 ax.set_ylabel(body.ylabel)
         else:
-            # For non-dual (regression-like) bodies: add base interval mapping so
-            # a grey underlay around zero (prediction uncertainty) is exported
-            # and drawn like legacy v0.5.1.
-            try:
-                if spec.header is not None:
+            if n > 0:
+                base_y = np.linspace(0, n - 1, n)
+                ax.fill_betweenx(base_y, 0.0, 0.0, color="k")
+                ax.fill_betweenx(np.linspace(-0.5, base_y[0], 2), 0.0, 0.0, color="k")
+                ax.fill_betweenx(np.linspace(base_y[-1], base_y[-1] + 0.5, 2), 0.0, 0.0, color="k")
+            else:
+                ax.fill_betweenx(np.linspace(-0.5, 0.5, 2), 0.0, 0.0, color="k")
+
+            has_intervals = any(
+                getattr(item, "interval_low", None) is not None
+                and getattr(item, "interval_high", None) is not None
+                for item in body.bars
+            )
+
+            x_min = 0.0
+            x_max = 0.0
+            if has_intervals and spec.header is not None:
+                try:
                     header_pred = float(spec.header.pred)
-                    # legacy regression mapping: gwl = p - low, gwh = p - high
                     gwl = header_pred - float(spec.header.low)
                     gwh = header_pred - float(spec.header.high)
                     gwh, gwl = (max(gwh, gwl), min(gwh, gwl))
-                    ax.fill_betweenx([-0.5, n - 0.5], gwl, gwh, color="k", alpha=alpha_val)
-                    if export_drawn_primitives:
-                        primitives.setdefault("base_interval", {})["body"] = {
-                            "x0": float(gwl),
-                            "x1": float(gwh),
-                            "color": "k",
-                            "alpha": float(alpha_val),
-                        }
-            except Exception as exc:
-                logging.getLogger(__name__).debug(
-                    "Failed to draw regression base interval: %s", exc
-                )
+                    x_min = min(x_min, gwl)
+                    x_max = max(x_max, gwh)
+                except Exception as exc:
+                    logging.getLogger(__name__).debug(
+                        "Failed to derive regression header limits: %s", exc
+                    )
 
             for j, item in enumerate(body.bars):
                 xj = np.linspace(xs[j] - 0.2, xs[j] + 0.2, 2)
-                val = float(item.value)
-                # Determine solid bar colors: for dual/probabilistic headers we want
-                # positive contributions drawn with the 'blue' style and negative
-                # with 'red' (legacy visual). The config historically labels
-                # these as 'positive'/'negative'; to avoid depending on their
-                # exact values we swap them for dual headers so positive uses
-                # the 'negative' config color and vice versa (this matches
-                # legacy imagery where blue==positive).
-                if spec.header is not None and getattr(spec.header, "dual", False):
-                    pos = config["colors"]["negative"]
-                    neg = config["colors"]["positive"]
+                width = float(item.value)
+                color = "b" if width > 0 else "r"
+
+                if getattr(body, "solid_on_interval_crosses_zero", None) is not None:
+                    suppress_solid_on_cross = bool(body.solid_on_interval_crosses_zero)
+                elif hasattr(item, "solid_on_interval_crosses_zero"):
+                    suppress_solid_on_cross = bool(item.solid_on_interval_crosses_zero)
                 else:
-                    pos = config["colors"]["positive"]
-                    neg = config["colors"]["negative"]
-                color = pos if val > 0 else neg
-                # Determine an overlay color for the translucent interval overlay.
-                # Choose the overlay color based on the sign of the mapped interval
-                # center so that 'negative' (red) overlays do not point leftwards
-                # incorrectly. For dual headers we keep the legacy swap for the
-                # solid colors but still pick overlay_color by interval sign.
-                overlay_color = None
-                try:
-                    # compute mapped interval center (in header-relative body coords)
-                    if item.interval_low is not None and item.interval_high is not None:
-                        # map into body coordinates relative to header pred
-                        wl_f = float(item.interval_low)
-                        wh_f = float(item.interval_high)
-                        center = ((wl_f + wh_f) / 2.0) - header_pred_f
-                        # decide which color to use for overlay based on center sign
-                        # positive center -> positive overlay color; negative -> negative color
-                        if getattr(spec.header, "dual", False):
-                            pos_col = config["colors"]["negative"]
-                            neg_col = config["colors"]["positive"]
-                        else:
-                            pos_col = config["colors"]["positive"]
-                            neg_col = config["colors"]["negative"]
-                        overlay_color = pos_col if center >= 0.0 else neg_col
-                        # If VennAbers coloring is available, use it but only to tint
-                        # the chosen overlay color (keep sign correctness).
-                        try:
-                            if getattr(spec.header, "dual", False):
-                                venn_abers = {
-                                    "predict": val,
-                                    "low_high": [item.interval_low, item.interval_high],
-                                }
-                                va_col = get_fill_color(venn_abers, reduction=0.99)
-                                if va_col:
-                                    overlay_color = va_col
-                        except Exception as exc:
-                            logging.getLogger(__name__).debug(
-                                "Failed to compute venn abers color: %s", exc
-                            )
-                except Exception as exc:
-                    logging.getLogger(__name__).debug(
-                        "Failed to compute overlay color center mapping: %s", exc
-                    )
-                    overlay_color = None
+                    suppress_solid_on_cross = True
+
                 if item.interval_low is not None and item.interval_high is not None:
-                    wl, wh = float(item.interval_low), float(item.interval_high)
-                    # Skip rules that exactly match the header prediction interval
-                    try:
-                        if (
-                            spec.header is not None
-                            and math.isclose(wl, float(spec.header.low))
-                            and math.isclose(wh, float(spec.header.high))
-                        ):
-                            # skip drawing this rule (matches header interval)
-                            continue
-                    except Exception as exc:
-                        logging.getLogger(__name__).debug(
-                            "Failed to compare item interval to header interval: %s", exc
-                        )
-                    # Map interval into body coordinates (zero-centred) by subtracting header prediction
-                    try:
-                        ilo = wl - header_pred_f
-                        ihi = wh - header_pred_f
-                    except Exception as exc:
-                        logging.getLogger(__name__).debug(
-                            "Failed to map interval into body coords: %s", exc
-                        )
-                        ilo, ihi = wl, wh
-                    ilo, ihi = (ilo, ihi) if ilo <= ihi else (ihi, ilo)
-                    # Map value into body coords as well
-                    val_body = val - header_pred_f
-                    # Determine legacy compatibility: default to suppressing
-                    # solids when interval crosses zero (legacy behaviour),
-                    # but respect explicit flags provided by builder/body or
-                    # the individual item.
-                    if hasattr(body, "solid_on_interval_crosses_zero"):
-                        suppress_solid_on_cross = bool(body.solid_on_interval_crosses_zero)
-                    elif hasattr(item, "solid_on_interval_crosses_zero"):
-                        suppress_solid_on_cross = bool(item.solid_on_interval_crosses_zero)
+                    wl = float(item.interval_low)
+                    wh = float(item.interval_high)
+                    if wh < wl:
+                        wl, wh = wh, wl
+                    min_val = 0.0
+                    max_val = 0.0
+                    if width > 0:
+                        min_val = wl
                     else:
-                        suppress_solid_on_cross = True
-                    min_val_body, max_val_body = (min(val_body, 0.0), max(val_body, 0.0))
-                    # If legacy compatibility requested and interval spans zero, hide solid
-                    # and draw split overlays so that positive/negative sides keep sign colors.
-                    if suppress_solid_on_cross and (ilo < 0.0 < ihi):
-                        if draw_intervals:
-                            # draw negative side overlay (ilo .. 0)
-                            ax.fill_betweenx(
-                                xj,
-                                ilo,
-                                0.0,
-                                color=(
-                                    neg_col if "neg_col" in locals() else (overlay_color or color)
-                                ),
-                                alpha=alpha_val,
-                            )
-                            # draw positive side overlay (0 .. ihi)
-                            ax.fill_betweenx(
-                                xj,
-                                0.0,
-                                ihi,
-                                color=(
-                                    pos_col if "pos_col" in locals() else (overlay_color or color)
-                                ),
-                                alpha=alpha_val,
-                            )
-                            if export_drawn_primitives:
-                                primitives.setdefault("overlays", []).append(
-                                    {
-                                        "index": j,
-                                        "x0": float(ilo),
-                                        "x1": 0.0,
-                                        "color": (
-                                            neg_col
-                                            if "neg_col" in locals()
-                                            else (overlay_color or color)
-                                        ),
-                                        "alpha": float(alpha_val),
-                                    }
-                                )
-                                primitives.setdefault("overlays", []).append(
-                                    {
-                                        "index": j,
-                                        "x0": 0.0,
-                                        "x1": float(ihi),
-                                        "color": (
-                                            pos_col
-                                            if "pos_col" in locals()
-                                            else (overlay_color or color)
-                                        ),
-                                        "alpha": float(alpha_val),
-                                    }
-                                )
-                    else:
-                        # Solid contribution drawn from 0 to value_body
-                        ax.fill_betweenx(xj, min_val_body, max_val_body, color=color)
-                        if export_drawn_primitives:
-                            primitives.setdefault("solids", []).append(
-                                {
-                                    "index": j,
-                                    "x0": float(min_val_body),
-                                    "x1": float(max_val_body),
-                                    "color": color,
-                                }
-                            )
-                        # Transparent interval overlay on top (absolute body coords)
-                        if draw_intervals:
-                            # If the interval crosses zero, split overlay so it doesn't
-                            # paint over the solid area and keeps sign-appropriate colors.
-                            if ilo < 0.0 < ihi:
-                                # negative side (ilo .. 0)
-                                ax.fill_betweenx(
-                                    xj,
-                                    ilo,
-                                    0.0,
-                                    color=(
-                                        neg_col
-                                        if "neg_col" in locals()
-                                        else (overlay_color or color)
-                                    ),
-                                    alpha=alpha_val,
-                                )
-                                # positive side (0 .. ihi)
-                                ax.fill_betweenx(
-                                    xj,
-                                    0.0,
-                                    ihi,
-                                    color=(
-                                        pos_col
-                                        if "pos_col" in locals()
-                                        else (overlay_color or color)
-                                    ),
-                                    alpha=alpha_val,
-                                )
-                                if export_drawn_primitives:
-                                    primitives.setdefault("overlays", []).append(
-                                        {
-                                            "index": j,
-                                            "x0": float(ilo),
-                                            "x1": 0.0,
-                                            "color": (
-                                                neg_col
-                                                if "neg_col" in locals()
-                                                else (overlay_color or color)
-                                            ),
-                                            "alpha": float(alpha_val),
-                                        }
-                                    )
-                                    primitives.setdefault("overlays", []).append(
-                                        {
-                                            "index": j,
-                                            "x0": 0.0,
-                                            "x1": float(ihi),
-                                            "color": (
-                                                pos_col
-                                                if "pos_col" in locals()
-                                                else (overlay_color or color)
-                                            ),
-                                            "alpha": float(alpha_val),
-                                        }
-                                    )
-                            else:
-                                ax.fill_betweenx(
-                                    xj, ilo, ihi, color=(overlay_color or color), alpha=alpha_val
-                                )
-                                if export_drawn_primitives:
-                                    primitives.setdefault("overlays", []).append(
-                                        {
-                                            "index": j,
-                                            "x0": float(ilo),
-                                            "x1": float(ihi),
-                                            "color": (overlay_color or color),
-                                            "alpha": float(alpha_val),
-                                        }
-                                    )
-                else:
-                    # Simple bar without interval
-                    min_val, max_val = (min(val, 0.0), max(val, 0.0))
+                        max_val = wh
+                    if suppress_solid_on_cross and (wl < 0.0 < wh):
+                        min_val = 0.0
+                        max_val = 0.0
                     ax.fill_betweenx(xj, min_val, max_val, color=color)
-                    try:
-                        if (
-                            not math.isclose(float(min_val), float(max_val), rel_tol=1e-12)
-                            and export_drawn_primitives
-                        ):
-                            primitives.setdefault("solids", []).append(
-                                {
-                                    "index": j,
-                                    "x0": float(min_val),
-                                    "x1": float(max_val),
-                                    "color": color,
-                                }
-                            )
-                    except Exception as exc:
-                        logging.getLogger(__name__).debug(
-                            "Failed to export simple bar solid: %s", exc
+                    if export_drawn_primitives and not math.isclose(
+                        float(min_val), float(max_val), rel_tol=1e-12, abs_tol=1e-12
+                    ):
+                        primitives.setdefault("solids", []).append(
+                            {
+                                "index": j,
+                                "x0": float(min_val),
+                                "x1": float(max_val),
+                                "color": color,
+                            }
                         )
+                    if draw_intervals:
+                        ax.fill_betweenx(xj, wl, wh, color=color, alpha=alpha_val)
                         if export_drawn_primitives:
-                            primitives.setdefault("solids", []).append(
+                            primitives.setdefault("overlays", []).append(
                                 {
                                     "index": j,
-                                    "x0": float(min_val),
-                                    "x1": float(max_val),
+                                    "x0": float(wl),
+                                    "x1": float(wh),
                                     "color": color,
+                                    "alpha": float(alpha_val),
                                 }
                             )
+                    x_min = min(x_min, min_val, max_val, wl, wh)
+                    x_max = max(x_max, min_val, max_val, wl, wh)
+                else:
+                    min_val, max_val = (min(width, 0.0), max(width, 0.0))
+                    ax.fill_betweenx(xj, min_val, max_val, color=color)
+                    if export_drawn_primitives and not math.isclose(
+                        float(min_val), float(max_val), rel_tol=1e-12, abs_tol=1e-12
+                    ):
+                        primitives.setdefault("solids", []).append(
+                            {
+                                "index": j,
+                                "x0": float(min_val),
+                                "x1": float(max_val),
+                                "color": color,
+                            }
+                        )
+                    x_min = min(x_min, min_val, max_val)
+                    x_max = max(x_max, min_val, max_val)
+
+            try:
+                ax.set_xlim([x_min, x_max])
+            except Exception as exc:
+                logging.getLogger(__name__).debug("Failed to set regression xlim: %s", exc)
+        if not is_dual_header:
+            try:
+                upper = (xs[-1] + 0.5) if n > 0 else 0.5
+                ax.set_ylim([-0.5, upper])
+            except Exception as exc:
+                logging.getLogger(__name__).debug("Failed to set regression ylim: %s", exc)
+
         ax.set_yticks(range(n))
         labels = [b.label for b in body.bars]
         ax.set_yticklabels(labels)
-        # Add right-side twin axis with instance values if present on BarItem
         instance_vals = [
             str(b.instance_value) if b.instance_value is not None else "" for b in body.bars
         ]
-        if any(v != "" for v in instance_vals):
+        if (not is_dual_header) or any(v != "" for v in instance_vals):
             ax_twin = ax.twinx()
             ax_twin.set_yticks(range(n))
             ax_twin.set_yticklabels(instance_vals)
@@ -784,14 +826,12 @@ def render(
                 ylim = ax.get_ylim()
                 y0f, y1f = float(ylim[0]), float(ylim[1])
                 if math.isfinite(y0f) and math.isfinite(y1f):
-                    # avoid identical limits
                     if y0f == y1f:
                         eps = abs(y0f) * 1e-3 if y0f != 0 else 1e-3
                         y0f -= eps
                         y1f += eps
                     ax_twin.set_ylim([y0f, y1f])
             except Exception as exc:
-                # if ylim is invalid, skip setting twin ylim but log the error
                 logging.getLogger(__name__).debug("Failed to set twin ylim: %s", exc)
             ax_twin.set_ylabel("Instance values")
         if body.xlabel:
@@ -802,7 +842,11 @@ def render(
     for i, (kind, panel) in enumerate(panels):
         ax = axes[i]
         if kind == "header":
-            _render_header(ax, panel)
+            _render_single_header(ax, panel)
+        elif kind == "header_negative":
+            _render_dual_header_band(ax, panel, band="negative")
+        elif kind == "header_positive":
+            _render_dual_header_band(ax, panel, band="positive")
         elif kind == "body":
             _render_body(ax, panel)
         # Tidy up
@@ -905,6 +949,28 @@ def render(
                     "semantic": "uncertainty_area",
                 }
             )
+        for line_entry in primitives.get("lines", []) if isinstance(primitives, dict) else []:
+            try:
+                idx = int(line_entry.get("index", 0))
+            except Exception:
+                idx = 0
+            try:
+                x_val = float(line_entry.get("x", 0.0))
+            except Exception:
+                x_val = 0.0
+            normalized.append(
+                {
+                    "id": f"line.{idx}.{len(normalized)}",
+                    "axis_id": "body",
+                    "type": "line",
+                    "coords": {"index": idx, "x": x_val},
+                    "style": {
+                        "color": line_entry.get("color"),
+                        "alpha": float(line_entry.get("alpha", 1.0)),
+                    },
+                    "semantic": "marker_line",
+                }
+            )
         # base_interval
         base = primitives.get("base_interval") if isinstance(primitives, dict) else None
         if isinstance(base, dict):
@@ -987,6 +1053,16 @@ def render(
                     hitem.setdefault("overlay", (coords.get("x0"), coords.get("x1")))
                     hitem.setdefault("color", item.get("style", {}).get("color"))
                     hitem.setdefault("alpha", float(item.get("style", {}).get("alpha", 0.2)))
+            elif sem == "marker_line":
+                coords = item.get("coords", {})
+                out.setdefault("lines", []).append(
+                    {
+                        "index": int(coords.get("index", 0)),
+                        "x": float(coords.get("x", 0.0)),
+                        "color": item.get("style", {}).get("color"),
+                        "alpha": float(item.get("style", {}).get("alpha", 1.0)),
+                    }
+                )
 
         # Return the normalized wrapper (plot_spec + primitives) as before so
         # adapter callers receive a stable shape.
@@ -1049,10 +1125,17 @@ def render(
                                 all_body_in_0_1 = False
                                 break
                     # If every body primitive falls in [0,1], it's suspicious for dual headers
-                    assert not all_body_in_0_1, (
-                        "Body primitives are all in [0,1] probability-range; expected contribution-space coordinates around 0.0",
-                        body_coords,
+                    # unless all coordinates are close to zero (valid for zero contributions)
+                    coords_close_to_zero = all(
+                        abs(b.get("coords", {}).get("x0", 0.0)) < 1e-6
+                        and abs(b.get("coords", {}).get("x1", 0.0)) < 1e-6
+                        for b in body_coords
                     )
+                    if not coords_close_to_zero:
+                        assert not all_body_in_0_1, (
+                            "Body primitives are all in [0,1] probability-range; expected contribution-space coordinates around 0.0",
+                            body_coords,
+                        )
         except AssertionError:
             # Re-raise to make failures visible during tests
             raise

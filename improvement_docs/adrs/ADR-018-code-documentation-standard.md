@@ -26,6 +26,11 @@ extensions:
   (prefixed `_`) require at least a one-line summary.
 - **Deprecation notices**: Use `.. deprecated::` directives (rendered by Sphinx) or explicit
   `Warnings` sections to clarify timelines and alternatives.
+- **Public API guardrails**: WrapCalibratedExplainer contract members
+  (fit/calibrate/explain/predict flows, plotting helpers, uncertainty/threshold
+  options) MUST NOT acquire deprecation directives or altered signatures under
+  this ADR; documentation should reinforce their stability and reference the
+  release plan if evolution is ever proposed.
 - **Type information**: Document accepted value ranges and shapes even when type hints exist,
   ensuring parity with runtime expectations.
 - **Cross-references**: Prefer ``:mod:`package.module``` or ``:class:`ClassName``` references
@@ -69,13 +74,20 @@ Negative/Risks:
 
 ## Implementation status
 
-- 2025-10-06 – ADR accepted with agreement to stage enforcement alongside the v0.7.0
-  release cycle.
-- Upcoming – Contributor documentation excerpts and initial tooling (pydocstyle
-  configuration, docstring coverage reporting) to be added so contributors receive
-  actionable feedback prior to strict CI enforcement.
-- Acceptance notes: numpydoc quick reference shipped in
-  `CONTRIBUTING.md`, docstring coverage script added under `scripts/`, and CI
-  emits pydocstyle warnings in exit-zero mode to baseline coverage ahead of full
-  enforcement.
-
+- 2025-10-06 – ADR accepted with agreement to stage enforcement alongside the
+  v0.7.0 release cycle and seed contributor enablement material.
+- v0.7.0 – CONTRIBUTING.md includes the numpydoc quick reference, CI runs
+  pydocstyle in warning-only mode, and documentation debt trackers for
+  batches A/B are published to guide cleanup work.
+- v0.8.0 – Batches C (`explanations/`, `perf/`) and D (`plugins/`) reach
+  compliance, CI starts reporting docstring coverage per module, and the
+  documentation standardisation plan is updated with progress dashboards.
+- v0.9.0 – Batches E (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) and F
+  (`serialization.py`, `core.py`) are completed, docstring linting flips
+  to blocking in CI, and badges/reporting integrate with the docs build
+  workflow per the release gate.
+- v1.0.0-rc – Docstring coverage maintained at ≥90%, RC checklist calls
+  out ongoing maintenance cadences, and regression alerts are wired into
+  the release branch policies.
+- v1.0.0 – Post-release audits ensure coverage remains above the gate and
+  enumerate any deferred modules for the v1.0.x maintenance stream.
