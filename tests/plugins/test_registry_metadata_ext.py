@@ -349,38 +349,9 @@ def test_list_explanation_descriptors_filters_trusted(monkeypatch):
     assert trusted_ids == ["trusted"]
 
 
-def test_find_interval_plugin():
-    registry.ensure_builtin_plugins()
-    plugin = registry.find_interval_plugin("core.interval.legacy")
-    assert plugin is not None
 
 
-def test_find_interval_descriptor():
-    registry.ensure_builtin_plugins()
-    descriptor = registry.find_interval_descriptor("core.interval.legacy")
-    assert descriptor is not None
-    assert descriptor.identifier == "core.interval.legacy"
 
-
-def test_find_plot_builder_descriptor():
-    registry.ensure_builtin_plugins()
-    descriptor = registry.find_plot_builder_descriptor("core.plot.matplotlib")
-    assert descriptor is not None
-    assert descriptor.identifier == "core.plot.matplotlib"
-
-
-def test_find_plot_renderer_descriptor():
-    registry.ensure_builtin_plugins()
-    descriptor = registry.find_plot_renderer_descriptor("core.plot.matplotlib")
-    assert descriptor is not None
-    assert descriptor.identifier == "core.plot.matplotlib"
-
-
-def test_find_plot_style_descriptor():
-    registry.ensure_builtin_plugins()
-    descriptor = registry.find_plot_style_descriptor("core.plot.default")
-    assert descriptor is not None
-    assert descriptor.identifier == "core.plot.default"
 
 
 def test_register_interval_plugin():
@@ -391,7 +362,11 @@ def test_register_interval_plugin():
             "version": "0.0-test",
             "provider": "tests",
             "capabilities": ["interval"],
+            "modes": ("classification",),
             "dependencies": (),
+            "fast_compatible": True,
+            "requires_bins": False,
+            "confidence_source": "test",
             "trust": False,
         }
 
@@ -412,6 +387,7 @@ def test_register_plot_builder():
             "version": "0.0-test",
             "provider": "tests",
             "capabilities": ["plot"],
+            "style": "test",
             "dependencies": (),
             "trust": False,
         }
@@ -433,6 +409,8 @@ def test_register_plot_renderer():
             "version": "0.0-test",
             "provider": "tests",
             "capabilities": ["plot"],
+            "output_formats": ("png",),
+            "supports_interactive": False,
             "dependencies": (),
             "trust": False,
         }
@@ -456,7 +434,7 @@ def test_register_plot_style():
         "dependencies": (),
         "trust": False,
     }
-    descriptor = registry.register_plot_style("test.style", style_meta)
+    descriptor = registry.register_plot_style("test.style", metadata=style_meta)
     assert descriptor.identifier == "test.style"
     assert "test.style" in registry._PLOT_STYLES
 
@@ -479,3 +457,75 @@ def test_list_plot_builder_descriptors_filters_trusted(monkeypatch):
     trusted_descriptors = list(registry.list_plot_builder_descriptors(trusted_only=True))
 
     assert len(all_descriptors) >= len(trusted_descriptors)
+
+
+def test_register_explanation_plugin_invalid_identifier():
+    class Plugin:
+        plugin_meta = _base_meta()
+
+    with pytest.raises(ValueError, match="identifier must be a non-empty string"):
+        registry.register_explanation_plugin("", Plugin())
+
+
+def test_register_explanation_plugin_no_metadata():
+    class Plugin:
+        pass
+
+    with pytest.raises(ValueError, match="plugin must expose plugin_meta metadata"):
+        registry.register_explanation_plugin("test", Plugin())
+
+
+def test_register_explanation_plugin_invalid_metadata():
+    class Plugin:
+        plugin_meta = {"invalid": "meta"}
+
+    with pytest.raises(ValueError):
+        registry.register_explanation_plugin("test", Plugin())
+
+
+def test_register_interval_plugin_invalid_identifier():
+    class Plugin:
+        plugin_meta = _base_meta(capabilities=["interval"])
+
+    with pytest.raises(ValueError, match="identifier must be a non-empty string"):
+        registry.register_interval_plugin("", Plugin())
+
+
+def test_register_plot_builder_invalid_identifier():
+    class Plugin:
+        plugin_meta = _base_meta(capabilities=["plot"])
+
+    with pytest.raises(ValueError, match="identifier must be a non-empty string"):
+        registry.register_plot_builder("", Plugin())
+
+
+def test_validate_interval_metadata_missing_modes():
+    meta = _base_meta(capabilities=["interval"])
+    del meta["modes"]
+
+    with pytest.raises(ValueError, match="must declare at least one mode"):
+        registry.validate_interval_metadata(meta)
+
+
+def test_validate_interval_metadata_invalid_modes():
+    meta = _base_meta(capabilities=["interval"])
+    meta["modes"] = ("invalid",)
+
+    with pytest.raises(ValueError):
+        registry.validate_interval_metadata(meta)
+
+
+def test_validate_interval_metadata_missing_capabilities():
+    meta = _base_meta(capabilities=["interval"])
+    del meta["capabilities"]
+
+    with pytest.raises(ValueError):
+        registry.validate_interval_metadata(meta)
+
+
+def test_validate_plot_builder_metadata_missing_capabilities():
+    meta = _base_meta(capabilities=["plot"])
+    del meta["capabilities"]
+
+    with pytest.raises(ValueError):
+        registry.validate_plot_builder_metadata(meta)

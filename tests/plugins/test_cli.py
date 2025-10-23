@@ -97,18 +97,18 @@ def test_cli_trust_interval(capsys):
 
 def test_cli_trust_plot_builder(capsys):
     ensure_builtin_plugins()
-    exit_code = cli.main(["untrust", "core.plot.matplotlib", "--kind", "plot-builders"])
+    exit_code = cli.main(["untrust", "core.plot.legacy", "--kind", "plot-builders"])
     assert exit_code == 0
     out = capsys.readouterr().out
-    assert "Marked 'core.plot.matplotlib' as untrusted" in out
+    assert "Marked 'core.plot.legacy' as untrusted" in out
 
     try:
-        exit_code = cli.main(["trust", "core.plot.matplotlib", "--kind", "plot-builders"])
+        exit_code = cli.main(["trust", "core.plot.legacy", "--kind", "plot-builders"])
         assert exit_code == 0
         restore = capsys.readouterr().out
-        assert "Marked 'core.plot.matplotlib' as trusted" in restore
+        assert "Marked 'core.plot.legacy' as trusted" in restore
     finally:
-        cli.main(["trust", "core.plot.matplotlib", "--kind", "plot-builders"])
+        cli.main(["trust", "core.plot.legacy", "--kind", "plot-builders"])
         capsys.readouterr()
 
 
@@ -124,15 +124,37 @@ def test_cli_list_all(capsys):
 
 def test_cli_show_plot_builder(capsys):
     ensure_builtin_plugins()
-    exit_code = cli.main(["show", "core.plot.matplotlib", "--kind", "plot-builders"])
+    exit_code = cli.main(["show", "core.plot.legacy", "--kind", "plot-builders"])
     assert exit_code == 0
     out = capsys.readouterr().out
-    assert "Identifier : core.plot.matplotlib" in out
+    assert "Identifier : core.plot.legacy" in out
 
 
 def test_cli_show_plot_renderer(capsys):
     ensure_builtin_plugins()
-    exit_code = cli.main(["show", "core.plot.matplotlib", "--kind", "plot-renderers"])
+    exit_code = cli.main(["show", "core.plot.legacy", "--kind", "plot-renderers"])
     assert exit_code == 0
     out = capsys.readouterr().out
-    assert "Identifier : core.plot.matplotlib" in out
+    assert "Identifier : core.plot.legacy" in out
+
+
+def test_cli_invalid_command(capsys):
+    exit_code = cli.main(["invalid"])
+    assert exit_code != 0
+    out = capsys.readouterr().out
+    assert "usage:" in out
+
+
+def test_cli_show_unknown_plugin(capsys):
+    ensure_builtin_plugins()
+    exit_code = cli.main(["show", "unknown"])
+    assert exit_code != 0
+    out = capsys.readouterr().out
+    assert "not found" in out.lower() or "error" in out.lower()
+
+
+def test_cli_trust_unknown_plugin(capsys):
+    exit_code = cli.main(["trust", "unknown"])
+    assert exit_code != 0
+    out = capsys.readouterr().out
+    assert "not found" in out.lower() or "error" in out.lower()

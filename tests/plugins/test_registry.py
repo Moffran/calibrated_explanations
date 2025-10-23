@@ -99,3 +99,27 @@ def test_list_descriptors_respects_trust_state() -> None:
         assert all(d.identifier != "core.explanation.factual" for d in trusted_only)
     finally:
         mark_explanation_trusted("core.explanation.factual")
+
+
+def test_validate_explanation_metadata_invalid_modes():
+    meta = _base_metadata()
+    meta["modes"] = ("invalid_mode",)
+
+    with pytest.raises(ValueError, match="unsupported values"):
+        validate_explanation_metadata(meta)
+
+
+def test_validate_explanation_metadata_no_modes():
+    meta = _base_metadata()
+    del meta["modes"]
+
+    with pytest.raises(ValueError, match="must declare at least one mode"):
+        validate_explanation_metadata(meta)
+
+
+def test_validate_explanation_metadata_missing_trust():
+    meta = _base_metadata()
+    del meta["trust"]
+
+    with pytest.raises(ValueError, match="missing required key: trust"):
+        validate_explanation_metadata(meta)
