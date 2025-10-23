@@ -47,6 +47,9 @@ class _FakeAxes:
     def set_xlabel(self, *args, **kwargs):
         self.calls.append(("set_xlabel", args, kwargs))
 
+    def set_xticks(self, *args, **kwargs):
+        self.calls.append(("set_xticks", args, kwargs))
+
     def set_yticks(self, *args, **kwargs):
         self.calls.append(("set_yticks", args, kwargs))
 
@@ -386,7 +389,7 @@ def test_render_dual_header_exports_primitives():
     header_pos = result["header"]["positive"]
     assert header_pos["solid"][0] == 0.0
     overlays = result["overlays"]
-    assert any(o["color"] == "#123456" or o["color"] == ma._setup_style(None)["colors"]["positive"] for o in overlays)
+    assert any(o["color"] in ["#1976d2", "#d32f2f"] for o in overlays)
     # Ensure body primitives reflect contribution coordinates (span values around zero)
     assert any(s["x0"] < 0.0 for s in result["solids"])
     assert result["base_interval"]["body"]["x0"] < result["base_interval"]["body"]["x1"]

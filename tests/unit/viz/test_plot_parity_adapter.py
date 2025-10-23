@@ -1,3 +1,5 @@
+import pytest
+
 from calibrated_explanations.viz import matplotlib_adapter as mpl_adapter
 from calibrated_explanations.viz.builders import (
     REGRESSION_BAR_COLOR,
@@ -35,6 +37,18 @@ def test_factual_probabilistic_no_uncertainty_primitives():
     # main solids present
     solids = primitives.get("solids", [])
     assert len(solids) >= 1
+
+
+def test_header_overlay_present_without_interval_flag():
+    spec = factual_probabilistic_no_uncertainty()
+    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
+    header = primitives.get("header", {})
+    pos = header.get("positive")
+    neg = header.get("negative")
+    assert pos is not None and pos.get("overlay") is not None
+    assert neg is not None and neg.get("overlay") is not None
+    assert pos["overlay"] == pytest.approx((0.8, 0.86))
+    assert sorted(neg["overlay"]) == pytest.approx([0.14, 0.2])
 
 
 def test_factual_probabilistic_zero_crossing_behavior():

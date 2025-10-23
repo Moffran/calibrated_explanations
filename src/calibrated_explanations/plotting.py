@@ -343,6 +343,8 @@ def _plot_probabilistic(
     else:
         selected_style = None
 
+    predict_payload = dict(predict or {})
+
     if use_legacy:
         legacy._plot_probabilistic(
             explanation,
@@ -362,20 +364,16 @@ def _plot_probabilistic(
         return
 
     # If matplotlib is unavailable and we're not showing, perform a no-op to avoid failing
+    __require_matplotlib()
+    if save_ext is None:
+        save_ext = ["svg", "pdf", "png"]
     if not show and plt is None:  # lightweight path for tests/CI without viz extra
         return
     # If we're not showing and not saving, perform a no-op to avoid requiring matplotlib
     if not show and (save_ext is None or len(save_ext) == 0):
         return
-
-    __require_matplotlib()
-    # config = __setup_plot_style(style_override) # Local variable `config` is assigned to but never used
-
-    if save_ext is None:
-        save_ext = ["svg", "pdf", "png"]
     if interval is True:
         assert idx is not None
-    predict_payload = dict(predict or {})
 
     def _finite_or(value: Any, fallback: float) -> float:
         try:
@@ -407,31 +405,92 @@ def _plot_probabilistic(
     from .viz.builders import build_probabilistic_bars_spec
     from .viz.matplotlib_adapter import render as render_plotspec
 
-    # Attempt to extract class labels for header annotation (neg/pos)
+    # Attempt to extract class labels for header annotation and captioning
     class_labels = None
     try:
         class_labels = explanation.get_class_labels()
     except Exception:
         class_labels = None
 
+    neg_caption: str | None = None
+    pos_caption: str | None = None
     neg_label = None
     pos_label = None
-    if class_labels is not None and len(class_labels) >= 2:
-        # class_labels is indexed by class index; positive class corresponds to prediction["classes"]
-        pos_idx = (
-            int(explanation.prediction.get("classes", 1))
-            if explanation.prediction is not None
-            else 1
-        )
-        # fallback ordering: [neg, pos]
-        # try to derive neg/pos by index
+
+    prediction_classes = None
+    if getattr(explanation, "prediction", None) is not None:
+        prediction_classes = explanation.prediction.get("classes")
+
+    def _format_class(value: Any) -> str:
         try:
-            pos_label = class_labels[pos_idx]
-            # pick the other label as neg
-            neg_idx = 0 if pos_idx != 0 else 1
-            neg_label = class_labels[neg_idx]
+            return str(value)
         except Exception:
-            neg_label, pos_label = None, None
+            return ""
+
+    is_thresholded = False
+    try:
+        is_thresholded = explanation.is_thresholded()
+    except Exception:
+        is_thresholded = False
+
+    if is_thresholded:
+        threshold = getattr(explanation, "y_threshold", None)
+        try:
+            if np.isscalar(threshold):  # type: ignore[arg-type]
+                thr_val = float(threshold)  # type: ignore[arg-type]
+                neg_caption = f"P(y>{thr_val:.2f})"
+                pos_caption = f"P(y<={thr_val:.2f})"
+            elif isinstance(threshold, Sequence) and len(threshold) >= 2:
+                lo = float(threshold[0])
+                hi = float(threshold[1])
+                neg_caption = f"y_hat <= {lo:.3f} || y_hat > {hi:.3f}"
+                pos_caption = f"{lo:.3f} < y_hat <= {hi:.3f}"
+            else:
+                neg_caption = "P(y>threshold)"
+                pos_caption = "P(y<=threshold)"
+        except Exception:
+            neg_caption = "P(y>threshold)"
+            pos_caption = "P(y<=threshold)"
+    else:
+        is_multiclass = False
+        try:
+            is_multiclass = explanation._get_explainer().is_multiclass()  # type: ignore[attr-defined]
+        except Exception:
+            is_multiclass = bool(getattr(explanation, "is_multiclass", False))
+
+        if class_labels is None:
+            if is_multiclass:
+                label_val = _format_class(prediction_classes)
+                neg_caption = f"P(y!={label_val})"
+                pos_caption = f"P(y={label_val})"
+            else:
+                neg_caption = "P(y=0)"
+                pos_caption = "P(y=1)"
+        elif bool(getattr(explanation, "is_multiclass", False)) or is_multiclass:
+            pred_idx = 0
+            if prediction_classes is not None:
+                try:
+                    pred_idx = int(prediction_classes)
+                except Exception:
+                    pred_idx = 0
+            try:
+                label_val = class_labels[pred_idx]
+            except Exception:
+                label_val = prediction_classes
+            label_str = _format_class(label_val)
+            neg_caption = f"P(y!={label_str})"
+            pos_caption = f"P(y={label_str})"
+        else:
+            try:
+                neg_label = class_labels[0]
+                pos_label = class_labels[1]
+            except Exception:
+                neg_label = class_labels[0] if class_labels else None
+                pos_label = class_labels[1] if class_labels and len(class_labels) > 1 else None
+            if neg_label is not None:
+                neg_caption = f"P(y={_format_class(neg_label)})"
+            if pos_label is not None:
+                pos_caption = f"P(y={_format_class(pos_label)})"
 
     spec = build_probabilistic_bars_spec(
         title=title,
@@ -447,6 +506,8 @@ def _plot_probabilistic(
         ascending=False,
         neg_label=neg_label,
         pos_label=pos_label,
+        neg_caption=neg_caption,
+        pos_caption=pos_caption,
     )
 
     # Use the adapter's render function. For save behavior, construct a temporary

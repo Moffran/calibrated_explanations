@@ -19,6 +19,26 @@ from .plotspec import (
     PlotSpec,
 )
 
+_PROBABILITY_TOL = 1e-9
+
+
+def _looks_like_probability_values(*values: float) -> bool:
+    """Return True when all provided values lie within [0, 1] (with tolerance)."""
+
+    finite: list[float] = []
+    for value in values:
+        try:
+            numeric = float(value)
+        except Exception:
+            return False
+        if not math.isfinite(numeric):
+            return False
+        finite.append(numeric)
+    if not finite:
+        return False
+    tol = _PROBABILITY_TOL
+    return all(-tol <= v <= 1.0 + tol for v in finite)
+
 
 def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index: int) -> None:
     """Ensure ``seq`` can satisfy ``max_index`` when provided.
@@ -191,6 +211,7 @@ def build_regression_bars_spec(
     low = float(predict.get("low", pred))
     high = float(predict.get("high", pred))
     low, high, xlim = _normalize_interval_bounds(low, high, y_minmax=y_minmax)
+    has_interval = not math.isclose(low, high, rel_tol=1e-12, abs_tol=1e-12)
     header = IntervalHeaderSpec(
         pred=pred,
         low=low,
@@ -203,6 +224,7 @@ def build_regression_bars_spec(
         ),
         ylabel="Median prediction",
         dual=False,
+        show_intervals=has_interval,
         uncertainty_color=uncertainty_color,
         uncertainty_alpha=uncertainty_alpha,
     )
@@ -682,6 +704,11 @@ def build_probabilistic_bars_spec(
     pos_label: str | None = None,
     uncertainty_color: str | None = None,
     uncertainty_alpha: float | None = None,
+    neg_caption: str | None = None,
+    pos_caption: str | None = None,
+    header_xlabel: str | None = None,
+    header_ylabel: str | None = None,
+    body_ylabel: str | None = None,
 ) -> PlotSpec:
     """Create a PlotSpec for the probabilistic bar plot variant.
 
@@ -712,16 +739,29 @@ def build_probabilistic_bars_spec(
         low, high, xlim = _normalize_interval_bounds(low, high, y_minmax=y_minmax)
     else:
         xlim = (0.0, 1.0)
+    if _looks_like_probability_values(pred, low, high):
+        pred = float(min(max(pred, 0.0), 1.0))
+        low = float(min(max(low, 0.0), 1.0))
+        high = float(min(max(high, 0.0), 1.0))
+        xlim = (0.0, 1.0)
+    has_interval = not math.isclose(low, high, rel_tol=1e-12, abs_tol=1e-12)
     header = IntervalHeaderSpec(
         pred=pred,
         low=low,
         high=high,
         xlim=xlim,
-        xlabel=("Probability" if y_minmax is None else "Probability"),
-        ylabel=("Median prediction" if y_minmax is not None else "Probability"),
+        xlabel=(header_xlabel if header_xlabel is not None else "Probability"),
+        ylabel=(
+            header_ylabel
+            if header_ylabel is not None
+            else ("Median prediction" if y_minmax is not None else "Probability")
+        ),
         dual=True,
         neg_label=neg_label,
         pos_label=pos_label,
+        neg_caption=neg_caption,
+        pos_caption=pos_caption,
+        show_intervals=has_interval,
         uncertainty_color=uncertainty_color,
         uncertainty_alpha=uncertainty_alpha,
     )
@@ -791,8 +831,9 @@ def build_probabilistic_bars_spec(
     body = BarHPanelSpec(
         bars=bars,
         xlabel="Feature weights",
-        ylabel="Rules",
+        ylabel=(body_ylabel if body_ylabel is not None else "Rules"),
         solid_on_interval_crosses_zero=legacy_solid_behavior,
+        show_base_interval=interval,
     )
     return PlotSpec(title=title, header=header, body=body)
 

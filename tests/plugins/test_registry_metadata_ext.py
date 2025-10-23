@@ -347,3 +347,135 @@ def test_list_explanation_descriptors_filters_trusted(monkeypatch):
 
     assert all_ids == ["trusted", "untrusted"]
     assert trusted_ids == ["trusted"]
+
+
+def test_find_interval_plugin():
+    registry.ensure_builtin_plugins()
+    plugin = registry.find_interval_plugin("core.interval.legacy")
+    assert plugin is not None
+
+
+def test_find_interval_descriptor():
+    registry.ensure_builtin_plugins()
+    descriptor = registry.find_interval_descriptor("core.interval.legacy")
+    assert descriptor is not None
+    assert descriptor.identifier == "core.interval.legacy"
+
+
+def test_find_plot_builder_descriptor():
+    registry.ensure_builtin_plugins()
+    descriptor = registry.find_plot_builder_descriptor("core.plot.matplotlib")
+    assert descriptor is not None
+    assert descriptor.identifier == "core.plot.matplotlib"
+
+
+def test_find_plot_renderer_descriptor():
+    registry.ensure_builtin_plugins()
+    descriptor = registry.find_plot_renderer_descriptor("core.plot.matplotlib")
+    assert descriptor is not None
+    assert descriptor.identifier == "core.plot.matplotlib"
+
+
+def test_find_plot_style_descriptor():
+    registry.ensure_builtin_plugins()
+    descriptor = registry.find_plot_style_descriptor("core.plot.default")
+    assert descriptor is not None
+    assert descriptor.identifier == "core.plot.default"
+
+
+def test_register_interval_plugin():
+    class IntervalPlugin:
+        plugin_meta = {
+            "schema_version": 1,
+            "name": "tests.interval",
+            "version": "0.0-test",
+            "provider": "tests",
+            "capabilities": ["interval"],
+            "dependencies": (),
+            "trust": False,
+        }
+
+        def calibrate(self, *args, **kwargs):  # pragma: no cover
+            return {"calibrated": True}
+
+    plugin = IntervalPlugin()
+    descriptor = registry.register_interval_plugin("test.interval", plugin)
+    assert descriptor.identifier == "test.interval"
+    assert "test.interval" in registry._INTERVAL_PLUGINS
+
+
+def test_register_plot_builder():
+    class PlotBuilder:
+        plugin_meta = {
+            "schema_version": 1,
+            "name": "tests.builder",
+            "version": "0.0-test",
+            "provider": "tests",
+            "capabilities": ["plot"],
+            "dependencies": (),
+            "trust": False,
+        }
+
+        def build(self, *args, **kwargs):  # pragma: no cover
+            return {"built": True}
+
+    plugin = PlotBuilder()
+    descriptor = registry.register_plot_builder("test.builder", plugin)
+    assert descriptor.identifier == "test.builder"
+    assert "test.builder" in registry._PLOT_BUILDERS
+
+
+def test_register_plot_renderer():
+    class PlotRenderer:
+        plugin_meta = {
+            "schema_version": 1,
+            "name": "tests.renderer",
+            "version": "0.0-test",
+            "provider": "tests",
+            "capabilities": ["plot"],
+            "dependencies": (),
+            "trust": False,
+        }
+
+        def render(self, *args, **kwargs):  # pragma: no cover
+            return {"rendered": True}
+
+    plugin = PlotRenderer()
+    descriptor = registry.register_plot_renderer("test.renderer", plugin)
+    assert descriptor.identifier == "test.renderer"
+    assert "test.renderer" in registry._PLOT_RENDERERS
+
+
+def test_register_plot_style():
+    style_meta = {
+        "schema_version": 1,
+        "name": "tests.style",
+        "version": "0.0-test",
+        "provider": "tests",
+        "capabilities": ["plot"],
+        "dependencies": (),
+        "trust": False,
+    }
+    descriptor = registry.register_plot_style("test.style", style_meta)
+    assert descriptor.identifier == "test.style"
+    assert "test.style" in registry._PLOT_STYLES
+
+
+def test_list_interval_descriptors_filters_trusted(monkeypatch):
+    registry.ensure_builtin_plugins()
+    monkeypatch.setattr(registry, "_TRUSTED_INTERVALS", set())
+
+    all_descriptors = list(registry.list_interval_descriptors())
+    trusted_descriptors = list(registry.list_interval_descriptors(trusted_only=True))
+
+    assert len(all_descriptors) >= len(trusted_descriptors)
+
+
+def test_list_plot_builder_descriptors_filters_trusted(monkeypatch):
+    registry.ensure_builtin_plugins()
+    monkeypatch.setattr(registry, "_TRUSTED_PLOT_BUILDERS", set())
+
+    all_descriptors = list(registry.list_plot_builder_descriptors())
+    trusted_descriptors = list(registry.list_plot_builder_descriptors(trusted_only=True))
+
+    assert len(all_descriptors) >= len(trusted_descriptors)

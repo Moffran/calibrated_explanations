@@ -323,7 +323,7 @@ def test_plotspec_render_scales_height_with_bar_count(monkeypatch):
     assert seen, "render should have created a matplotlib figure"
     width, height = seen[0]
     assert width == pytest.approx(10.0)
-    assert height == pytest.approx(1.0 + 0.35 * nfeat)
+    assert height == pytest.approx(0.5 * max(1, nfeat) + 2.0)
 
     plt.close(fig)
 
@@ -528,7 +528,7 @@ def test_build_regression_requires_instance_alignment():
     feats = [0, 1]
     cols = ["a", "b"]
 
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError):
         build_regression_bars_spec(
             title=None,
             predict=predict,
@@ -558,7 +558,7 @@ def test_matplotlib_adapter_auto_height_tracks_bars():
     fig = matplotlib_adapter.render(spec, show=False, save_path=None, return_fig=True)
     try:
         height = fig.get_size_inches()[1]
-        expected = max(3.0, min(1.0 + 0.35 * max(1, nfeat), 22.0))
+        expected = 0.5 * max(1, nfeat) + 2.0
         assert height == pytest.approx(expected, rel=0.05)
     finally:
         from matplotlib import pyplot as plt
@@ -615,7 +615,7 @@ def test_build_regression_spec_requires_instance_alignment():
     predict = {"predict": 0.5, "low": 0.2, "high": 0.8}
     fw = {"predict": np.array([0.1, -0.2]), "low": np.array([0.0, -0.1]), "high": np.array([0.2, 0.1])}
 
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError):
         build_regression_bars_spec(
             title=None,
             predict=predict,

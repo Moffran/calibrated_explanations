@@ -19,6 +19,39 @@ def _render_spec_and_get_axes(spec):
     return fig, axs
 
 
+def test_probabilistic_header_axes_unit_interval_with_custom_minmax():
+    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+
+    predict = {"predict": 0.62, "low": 0.5, "high": 0.75}
+    fw = {
+        "predict": np.array([0.2, 0.4]),
+        "low": np.array([0.15, 0.35]),
+        "high": np.array([0.25, 0.45]),
+    }
+    spec = build_probabilistic_bars_spec(
+        title="prob",
+        predict=predict,
+        feature_weights=fw,
+        features_to_plot=[0, 1],
+        column_names=["f0", "f1"],
+        instance=[1, 2],
+        y_minmax=(5.0, 10.0),
+        interval=True,
+    )
+    fig, axes = _render_spec_and_get_axes(spec)
+    try:
+        neg_xlim = axes[0].get_xlim()
+        pos_xlim = axes[1].get_xlim()
+        assert neg_xlim[0] == pytest.approx(0.0)
+        assert neg_xlim[1] == pytest.approx(1.0)
+        assert pos_xlim[0] == pytest.approx(0.0)
+        assert pos_xlim[1] == pytest.approx(1.0)
+    finally:
+        import matplotlib
+
+        matplotlib.pyplot.close(fig)
+
+
 def test_body_xlim_contains_zero_and_padding():
     # Build a simple spec with known values
     predict = {"predict": 0.4, "low": 0.35, "high": 0.45}

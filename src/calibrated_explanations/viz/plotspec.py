@@ -26,6 +26,14 @@ class IntervalHeaderSpec:
     # Optional explicit class labels for dual probabilistic header (neg_label, pos_label)
     neg_label: str | None = None
     pos_label: str | None = None
+    # Optional fully resolved captions for the dual header bands. When provided these
+    # strings are rendered verbatim instead of applying ``P(y=...)`` formatting.
+    neg_caption: str | None = None
+    pos_caption: str | None = None
+    # Flag indicating whether uncertainty/interval shading should be rendered. Legacy
+    # probabilistic plots always drew the translucent bands when an interval was
+    # requested; setting this flag lets the adapter mirror that behaviour precisely.
+    show_intervals: bool = False
     # Optional override for the grey uncertainty overlay color and alpha (per-PlotSpec)
     uncertainty_color: str | None = None
     uncertainty_alpha: float | None = None
@@ -62,6 +70,10 @@ class BarHPanelSpec:
     xlim: Tuple[float, float] | None = None
     xticks: Sequence[float] | None = None
     bar_span: float = 0.2
+    # Legacy probabilistic plots only shaded the prediction interval backdrop when
+    # uncertainty information was provided. This flag lets the adapter decide whether
+    # to draw that grey band.
+    show_base_interval: bool = False
 
 
 @dataclass
