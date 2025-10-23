@@ -167,17 +167,16 @@ def test_predict_probability_requires_calibration_bins_when_test_bins_provided(m
 
 
 def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
+    original_import = builtins.__import__  # capture original before any monkeypatching
+
     regressor = _make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.4, 0.6])
 
-    import builtins
     import importlib
 
     helper_module = importlib.import_module("calibrated_explanations.utils.helper")
     import_attempts: list[tuple[str, int]] = []
-
-    original_import = builtins.__import__
 
     def fake_import(name, globals=None, locals=None, fromlist=(), level=0):  # noqa: D401 - test helper
         import_attempts.append((name, level))
@@ -211,7 +210,6 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.25, 0.35])
 
-    import builtins
     import importlib
 
     helper_module = importlib.import_module("calibrated_explanations.utils.helper")
@@ -225,8 +223,6 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
         return array.flat[0]
 
     monkeypatch.setattr(helper_module, "safe_first_element", fake_safe_first_element)
-
-    original_import = builtins.__import__
 
     def failing_import(
         name, globals=None, locals=None, fromlist=(), level=0
