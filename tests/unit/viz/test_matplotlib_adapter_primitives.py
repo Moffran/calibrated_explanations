@@ -1,3 +1,4 @@
+import pytest
 from calibrated_explanations.viz.builders import (
     build_probabilistic_bars_spec,
 )
@@ -7,15 +8,16 @@ from calibrated_explanations.viz.matplotlib_adapter import render
 def _make_interval_weights():
     # Create a simple predict dict and feature_weights with one rule crossing zero
     predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
-    # One rule that maps to an interval crossing the header prediction
+    # One rule that maps to an interval crossing zero in the legacy coordinate system
     feature_weights = {
-        "predict": [0.6],
-        "low": [0.45],
-        "high": [0.55],
+        "predict": [0.05],
+        "low": [-0.05],
+        "high": [0.15],
     }
     return predict, feature_weights
 
 
+@pytest.mark.viz_render
 def test_default_suppresses_solid_for_crossing_interval():
     predict, feature_weights = _make_interval_weights()
     spec = build_probabilistic_bars_spec(
@@ -35,11 +37,21 @@ def test_default_suppresses_solid_for_crossing_interval():
     solids = primitives.get("solids", [])
     overlays = primitives.get("overlays", [])
     assert any(
-        o.get("index", -1) == 0 for o in overlays
-    ), f"Expected overlay for index 0, got overlays={overlays}"
+        o.get("index", -1) == 0
+        and o.get("x0") == pytest.approx(-0.05)
+        and o.get("x1") == pytest.approx(0.0)
+        for o in overlays
+    ), f"Expected negative overlay for index 0, got overlays={overlays}"
+    assert any(
+        o.get("index", -1) == 0
+        and o.get("x0") == pytest.approx(0.0)
+        and o.get("x1") == pytest.approx(0.15)
+        for o in overlays
+    ), f"Expected positive overlay for index 0, got overlays={overlays}"
     assert all(s.get("index", -1) != 0 for s in solids), f"Unexpected solid for index 0: {solids}"
 
 
+@pytest.mark.viz_render
 def test_parity_shows_solid_when_flag_false():
     predict, feature_weights = _make_interval_weights()
     spec = build_probabilistic_bars_spec(

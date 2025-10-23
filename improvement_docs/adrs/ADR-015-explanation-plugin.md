@@ -132,7 +132,15 @@ ADR-013. Plugins must treat the context as read-only.
   payloads, and can emit collection-level metadata (timings, provenance, raw
   perturbed predictions, plugin-defined artefacts).
 - Plugins never call the learner directly; all predictions flow through the
-  `PredictBridge`, ensuring interval guarantees are respected (ADR-013).
+  `PredictBridge`, ensuring interval guarantees are respected (ADR-013). The
+  bridge enforces the invariant that every prediction triple obeys
+  `low <= predict <= high`. Any plugin, bridge implementation, or downstream
+  consumer that observes a `predict` value outside the inclusive
+  `[low, high]` interval **must** raise a failure; silently accepting such a
+  payload violates the fundamental semantics of calibrated explanations. This
+  rule applies uniformly anywhere the runtime exposes paired `[low, high]`
+  bounds (for example, feature weight intervals surfaced by explanation
+  plugins).
 - The batch contract materialises instance payloads today, but the signature
   is intentionally compatible with a future streaming or generator-based
   `instances` provider so that extremely large datasets can opt into lazy

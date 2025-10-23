@@ -37,3 +37,38 @@ def test_validate_plotspec_missing_body_raises():
     bad = {"plotspec_version": "1.0.0", "title": "no body"}
     with pytest.raises(ValueError):
         validate_plotspec(bad)
+
+
+def test_validate_plotspec_requires_version():
+    bad = {"title": "missing version", "body": {"bars": []}}
+    with pytest.raises(ValueError):
+        validate_plotspec(bad)
+
+
+def test_validate_plotspec_rejects_bar_without_value():
+    bad = {
+        "plotspec_version": "1.0.0",
+        "body": {"bars": [{"label": "f0"}]},
+    }
+    with pytest.raises(ValueError):
+        validate_plotspec(bad)
+
+
+def test_validate_plotspec_rejects_incomplete_bars():
+    missing_value = {"plotspec_version": "1.0.0", "body": {"bars": [{"label": "a"}]}}
+    with pytest.raises(ValueError):
+        validate_plotspec(missing_value)
+
+    missing_label = {"plotspec_version": "1.0.0", "body": {"bars": [{"value": 0.2}]}}
+    with pytest.raises(ValueError):
+        validate_plotspec(missing_label)
+
+
+def test_validate_plotspec_requires_bar_label_and_value():
+    bad = {
+        "plotspec_version": "1.0.0",
+        "body": {"bars": [{"label": "f0"}]},
+    }
+
+    with pytest.raises(ValueError):
+        validate_plotspec(bad)

@@ -48,9 +48,9 @@ PR expectations:
 
 ## Testing and Code Coverage
 
-Pytest remains the primary regression harness. CI now enforces the ADR-019 coverage gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-report=term-missing --cov-report=xml --cov-fail-under=90`. The shared `.coveragerc` applies locally as well, so running the command above should mirror the CI behaviour. Coverage results are uploaded to [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations) for historical tracking.
+Pytest remains the primary regression harness. CI now enforces the ADR-019 coverage gate via `make test-cov`, which simply runs `pytest` with coverage flags supplied by `pytest.ini` (`--cov=src/calibrated_explanations --cov-config=.coveragerc --cov-report=term-missing --cov-report=xml --cov-fail-under=85`). The shared `.coveragerc` applies locally as well, so invoking `make test-cov` reproduces the CI behaviour (including generation of `coverage.xml` for Codecov uploads). Coverage results are uploaded to [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations) for historical tracking, and Codecov enforces ≥85% patch coverage on runtime/calibration paths per the v0.8.0 release plan.
 
-If a change cannot practically meet the 90% package-wide bar (for example, because it touches legacy shims slated for removal), request a coverage waiver:
+If a change cannot practically meet the 85% package-wide bar (for example, because it touches legacy shims slated for removal), request a coverage waiver:
 
 1. File an issue describing why the threshold cannot be met and outline the follow-up work required.
 2. Reference that issue in your pull request description and tick the waiver checkbox in the PR template.

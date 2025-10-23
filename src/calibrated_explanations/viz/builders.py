@@ -6,9 +6,158 @@ render via the PlotSpec + matplotlib adapter for selected plots.
 
 from __future__ import annotations
 
+import math
 from typing import Any, Sequence
 
-from .plotspec import BarHPanelSpec, BarItem, IntervalHeaderSpec, PlotSpec
+import numpy as np
+
+from .plotspec import (
+    BarHPanelSpec,
+    BarItem,
+    IntervalHeaderSpec,
+    IntervalSegment,
+    PlotSpec,
+)
+
+_PROBABILITY_TOL = 1e-9
+
+
+def _looks_like_probability_values(*values: float) -> bool:
+    """Return True when all provided values lie within [0, 1] (with tolerance)."""
+
+    finite: list[float] = []
+    for value in values:
+        try:
+            numeric = float(value)
+        except Exception:
+            return False
+        if not math.isfinite(numeric):
+            return False
+        finite.append(numeric)
+    if not finite:
+        return False
+    tol = _PROBABILITY_TOL
+    return all(-tol <= v <= 1.0 + tol for v in finite)
+
+
+def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index: int) -> None:
+    """Ensure ``seq`` can satisfy ``max_index`` when provided.
+
+    The ADR contract requires that feature-oriented arrays (feature weights,
+    column names, rule labels, instance vectors) all cover the same indices
+    requested via ``features_to_plot``. Raise ``ValueError`` with a descriptive
+    message when a sequence is too short so tests can detect drift early.
+    """
+
+    if seq is None or max_index < 0:
+        return
+    try:
+        length = len(seq)
+    except TypeError:  # pragma: no cover - defensive: non-sized sequences
+        return
+    if length <= max_index:
+        raise ValueError(f"{name} length {length} does not cover feature index {max_index}")
+
+
+def _normalize_interval_bounds(
+    low: float,
+    high: float,
+    *,
+    y_minmax: tuple[float, float] | None,
+) -> tuple[float, float, tuple[float, float] | None]:
+    """Clamp non-finite interval bounds to ``y_minmax`` when available."""
+
+    if y_minmax is None:
+        return low, high, None
+
+    floor = float(y_minmax[0])
+    ceil = float(y_minmax[1])
+    if not math.isfinite(low):
+        low = floor
+    if not math.isfinite(high):
+        high = ceil
+    xlim = (float(min(low, floor)), float(max(high, ceil)))
+    return low, high, xlim
+
+
+def _legacy_color_brew(n: int) -> list[tuple[int, int, int]]:
+    """Reproduce the legacy colour palette for probability fills."""
+
+    color_list: list[tuple[int, int, int]] = []
+    s, v = 0.75, 0.9
+    c = s * v
+    m = v - c
+    for h in np.arange(5, 385, 490.0 / n).astype(int):
+        h_bar = h / 60.0
+        x = c * (1 - abs((h_bar % 2) - 1))
+        rgb = [
+            (c, x, 0),
+            (x, c, 0),
+            (0, c, x),
+            (0, x, c),
+            (x, 0, c),
+            (c, 0, x),
+            (c, x, 0),
+        ]
+        r, g, b = rgb[int(h_bar)]
+        rgb = (
+            int(255 * (r + m)),
+            int(255 * (g + m)),
+            int(255 * (b + m)),
+        )
+        color_list.append(rgb)
+    color_list.reverse()
+    return color_list
+
+
+def _legacy_get_fill_color(probability: float, reduction: float = 1.0) -> str:
+    """Mirror legacy ``__get_fill_color`` for probability intensities."""
+
+    colors = _legacy_color_brew(2)
+    winner_class = int(probability >= 0.5)
+    color = colors[winner_class]
+    alpha = probability if winner_class == 1 else 1 - probability
+    alpha = ((alpha - 0.5) / (1 - 0.5)) * (1 - 0.25) + 0.25
+    if reduction != 1:
+        alpha = reduction
+    alpha = float(alpha)
+    blended = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
+    hex_color = "#%02x%02x%02x" % tuple(blended)
+    if (
+        reduction == 1.0
+        and math.isfinite(probability)
+        and math.isclose(probability, 1.0, rel_tol=1e-9, abs_tol=1e-12)
+    ):
+        return "#ff0000"
+    return hex_color
+
+
+REGRESSION_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
+REGRESSION_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)
+
+
+def _build_probability_segments(
+    *,
+    low: float,
+    high: float,
+    center: float,
+    reduction: float,
+    pivot: float | None,
+) -> tuple[IntervalSegment, ...]:
+    """Construct coloured segments for a probability interval."""
+
+    lo = float(low)
+    hi = float(high)
+    if lo > hi:
+        lo, hi = hi, lo
+    if pivot is not None and lo < pivot < hi:
+        left_color = _legacy_get_fill_color(lo, reduction)
+        right_color = _legacy_get_fill_color(hi, reduction)
+        return (
+            IntervalSegment(low=lo, high=pivot, color=left_color),
+            IntervalSegment(low=pivot, high=hi, color=right_color),
+        )
+    return (IntervalSegment(low=lo, high=hi, color=_legacy_get_fill_color(center, reduction)),)
 
 
 def build_regression_bars_spec(
@@ -22,6 +171,7 @@ def build_regression_bars_spec(
     instance: Sequence[Any] | None,
     y_minmax: tuple[float, float] | None,
     interval: bool,
+    confidence: float | None = None,
     uncertainty_color: str | None = None,
     uncertainty_alpha: float | None = None,
     sort_by: str | None = None,
@@ -45,25 +195,47 @@ def build_regression_bars_spec(
     ascending: bool
         Sort ascending (default False = descending)
     """
+    max_index = max(features_to_plot) if features_to_plot else -1
+    if isinstance(feature_weights, dict):
+        for key in ("predict", "low", "high"):
+            _ensure_indexable_length(
+                f"feature_weights['{key}']",
+                feature_weights.get(key),
+                max_index=max_index,
+            )
+    else:
+        _ensure_indexable_length("feature_weights", feature_weights, max_index=max_index)
+    _ensure_indexable_length("column_names", column_names, max_index=max_index)
+    _ensure_indexable_length("rule_labels", rule_labels, max_index=max_index)
+    _ensure_indexable_length("instance", instance, max_index=max_index)
+
     # Header (interval around prediction)
     pred = float(predict["predict"]) if "predict" in predict else 0.0
     low = float(predict.get("low", pred))
     high = float(predict.get("high", pred))
-    xlim = None
-    if y_minmax is not None:
-        xlim = (float(min(low, y_minmax[0])), float(max(high, y_minmax[1])))
+    low, high, xlim = _normalize_interval_bounds(low, high, y_minmax=y_minmax)
+    has_interval = not math.isclose(low, high, rel_tol=1e-12, abs_tol=1e-12)
+    if confidence is not None:
+        try:
+            confidence_label = f"Prediction interval with {confidence}% confidence"
+        except Exception:
+            confidence_label = "Prediction interval"
+    else:
+        confidence_label = (
+            "Prediction interval with unknown confidence"
+            if y_minmax is None
+            else "Prediction interval"
+        )
+
     header = IntervalHeaderSpec(
         pred=pred,
         low=low,
         high=high,
         xlim=xlim,
-        xlabel=(
-            "Prediction interval with unknown confidence"
-            if y_minmax is None
-            else "Prediction interval"
-        ),
+        xlabel=confidence_label,
         ylabel="Median prediction",
         dual=False,
+        show_intervals=has_interval,
         uncertainty_color=uncertainty_color,
         uncertainty_alpha=uncertainty_alpha,
     )
@@ -144,9 +316,6 @@ def build_regression_bars_spec(
     return PlotSpec(title=title, header=header, body=body)
 
 
-__all__ = ["build_regression_bars_spec"]
-
-
 def build_factual_probabilistic_spec(**kwargs) -> PlotSpec:
     """Wrapper for factual probabilistic plot kind (ADR-016).
 
@@ -156,19 +325,382 @@ def build_factual_probabilistic_spec(**kwargs) -> PlotSpec:
     return build_probabilistic_bars_spec(**kwargs)
 
 
-def build_alternative_probabilistic_spec(**kwargs) -> PlotSpec:
-    """Wrapper for alternative probabilistic plot kind (ADR-016)."""
-    return build_probabilistic_bars_spec(**kwargs)
-
-
 def build_factual_regression_spec(**kwargs) -> PlotSpec:
     """Wrapper for factual regression plot kind (ADR-016)."""
     return build_regression_bars_spec(**kwargs)
 
 
-def build_alternative_regression_spec(**kwargs) -> PlotSpec:
-    """Wrapper for alternative regression plot kind (ADR-016)."""
-    return build_regression_bars_spec(**kwargs)
+def build_alternative_probabilistic_spec(
+    *,
+    title: str | None,
+    predict: dict[str, float],
+    feature_weights: dict[str, Sequence[float]] | Sequence[float],
+    features_to_plot: Sequence[int],
+    column_names: Sequence[str] | None,
+    rule_labels: Sequence[str] | None = None,
+    instance: Sequence[Any] | None,
+    y_minmax: tuple[float, float] | None,
+    interval: bool,
+    sort_by: str | None = None,
+    ascending: bool = False,
+    legacy_solid_behavior: bool = True,
+    neg_label: str | None = None,
+    pos_label: str | None = None,
+    uncertainty_color: str | None = None,
+    uncertainty_alpha: float | None = None,
+    xlabel: str | None = None,
+    xlim: tuple[float, float] | None = None,
+    xticks: Sequence[float] | None = None,
+) -> PlotSpec:
+    """Build an alternative probabilistic PlotSpec mirroring legacy visuals."""
+
+    max_index = max(features_to_plot) if features_to_plot else -1
+    if isinstance(feature_weights, dict):
+        _ensure_indexable_length(
+            "feature_weights['predict']", feature_weights.get("predict"), max_index=max_index
+        )
+        if interval:
+            _ensure_indexable_length(
+                "feature_weights['low']", feature_weights.get("low"), max_index=max_index
+            )
+            _ensure_indexable_length(
+                "feature_weights['high']", feature_weights.get("high"), max_index=max_index
+            )
+    else:
+        _ensure_indexable_length("feature_weights", feature_weights, max_index=max_index)
+    _ensure_indexable_length("column_names", column_names, max_index=max_index)
+    _ensure_indexable_length("rule_labels", rule_labels, max_index=max_index)
+    _ensure_indexable_length("instance", instance, max_index=max_index)
+
+    base_pred = float(predict.get("predict", 0.0))
+    base_low = float(predict.get("low", base_pred))
+    base_high = float(predict.get("high", base_pred))
+
+    if y_minmax is not None:
+        floor = float(y_minmax[0])
+        ceil = float(y_minmax[1])
+        base_low = float(min(max(base_low, floor), ceil))
+        base_high = float(min(max(base_high, floor), ceil))
+        default_xlim = (floor, ceil)
+    else:
+        default_xlim = (0.0, 1.0)
+
+    if xlim is None:
+        xlim = default_xlim
+    xlim = (float(xlim[0]), float(xlim[1])) if xlim is not None else default_xlim
+
+    if xlabel is None:
+        body_xlabel = (
+            f"Probability for class '{pos_label}'" if pos_label is not None else "Probability"
+        )
+    else:
+        body_xlabel = xlabel
+
+    if xticks is None and xlim == (0.0, 1.0):
+        xticks = [float(x) for x in np.linspace(0.0, 1.0, 11)]
+
+    pivot = 0.5 if xlim[0] <= 0.5 <= xlim[1] else None
+    base_segments = _build_probability_segments(
+        low=base_low,
+        high=base_high,
+        center=base_pred,
+        reduction=0.15,
+        pivot=pivot,
+    )
+
+    bars: list[BarItem] = []
+
+    def _label_for(index: int) -> str:
+        if rule_labels is not None:
+            return str(rule_labels[index])
+        if column_names is not None:
+            return str(column_names[index])
+        return str(index)
+
+    if isinstance(feature_weights, dict):
+        preds = feature_weights.get("predict", ())
+        lows = feature_weights.get("low", ()) if interval else None
+        highs = feature_weights.get("high", ()) if interval else None
+        for j in features_to_plot:
+            val = float(preds[j])
+            color_role = (
+                "positive"
+                if (pivot is not None and val >= pivot)
+                else ("positive" if pivot is None and val >= base_pred else "negative")
+            )
+            if interval and lows is not None and highs is not None:
+                lo = float(lows[j])
+                hi = float(highs[j])
+            else:
+                lo = hi = val
+            segments = _build_probability_segments(
+                low=lo,
+                high=hi,
+                center=val,
+                reduction=0.99,
+                pivot=pivot,
+            )
+            item = BarItem(
+                label=_label_for(j),
+                value=val,
+                interval_low=lo,
+                interval_high=hi,
+                instance_value=(instance[j] if instance is not None else None),
+                solid_on_interval_crosses_zero=legacy_solid_behavior,
+                color_role=color_role,
+            )
+            item.segments = segments
+            bars.append(item)
+    else:
+        arr = feature_weights
+        for j in features_to_plot:
+            val = float(arr[j])  # type: ignore[index]
+            color_role = (
+                "positive"
+                if (pivot is not None and val >= pivot)
+                else ("positive" if pivot is None and val >= base_pred else "negative")
+            )
+            segments = _build_probability_segments(
+                low=val,
+                high=val,
+                center=val,
+                reduction=0.99,
+                pivot=pivot,
+            )
+            item = BarItem(
+                label=_label_for(j),
+                value=val,
+                interval_low=val,
+                interval_high=val,
+                instance_value=(instance[j] if instance is not None else None),
+                solid_on_interval_crosses_zero=legacy_solid_behavior,
+                color_role=color_role,
+            )
+            item.segments = segments
+            bars.append(item)
+
+    def _key(item: BarItem):
+        s = (sort_by or "none").lower()
+        if s in ("none", ""):
+            return 0.0
+        if s == "value":
+            return item.value
+        if s == "abs":
+            return abs(item.value)
+        if s in ("interval", "width"):
+            if item.interval_low is not None and item.interval_high is not None:
+                w = abs(float(item.interval_high) - float(item.interval_low))
+                return (w, abs(item.value))
+            return 0.0
+        if s == "label":
+            return item.label
+        return 0.0
+
+    if sort_by and sort_by.lower() not in ("none", ""):
+        bars = sorted(bars, key=_key, reverse=not ascending)
+
+    xtick_values = tuple(float(x) for x in xticks) if xticks is not None else None
+
+    body = BarHPanelSpec(
+        bars=bars,
+        xlabel=body_xlabel,
+        ylabel="Alternative rules",
+        solid_on_interval_crosses_zero=legacy_solid_behavior,
+        is_alternative=True,
+        base_segments=base_segments,
+        base_lines=None,
+        pivot=pivot,
+        xlim=xlim,
+        xticks=xtick_values,
+        bar_span=0.2,
+    )
+
+    height = max(len(bars), 1) * 0.5
+    return PlotSpec(title=title, figure_size=(10.0, height), header=None, body=body)
+
+
+def build_alternative_regression_spec(
+    *,
+    title: str | None,
+    predict: dict[str, float],
+    feature_weights: dict[str, Sequence[float]] | Sequence[float],
+    features_to_plot: Sequence[int],
+    column_names: Sequence[str] | None,
+    rule_labels: Sequence[str] | None = None,
+    instance: Sequence[Any] | None,
+    y_minmax: tuple[float, float] | None,
+    interval: bool,
+    sort_by: str | None = None,
+    ascending: bool = False,
+    legacy_solid_behavior: bool = True,
+    neg_label: str | None = None,
+    pos_label: str | None = None,
+    uncertainty_color: str | None = None,
+    uncertainty_alpha: float | None = None,
+    xlabel: str | None = None,
+    xlim: tuple[float, float] | None = None,
+    xticks: Sequence[float] | None = None,
+) -> PlotSpec:
+    """Build an alternative regression PlotSpec mirroring legacy visuals."""
+
+    max_index = max(features_to_plot) if features_to_plot else -1
+    if isinstance(feature_weights, dict):
+        _ensure_indexable_length(
+            "feature_weights['predict']", feature_weights.get("predict"), max_index=max_index
+        )
+        if interval:
+            _ensure_indexable_length(
+                "feature_weights['low']", feature_weights.get("low"), max_index=max_index
+            )
+            _ensure_indexable_length(
+                "feature_weights['high']", feature_weights.get("high"), max_index=max_index
+            )
+    else:
+        _ensure_indexable_length("feature_weights", feature_weights, max_index=max_index)
+    _ensure_indexable_length("column_names", column_names, max_index=max_index)
+    _ensure_indexable_length("rule_labels", rule_labels, max_index=max_index)
+    _ensure_indexable_length("instance", instance, max_index=max_index)
+
+    base_pred = float(predict.get("predict", 0.0))
+    base_low = float(predict.get("low", base_pred))
+    base_high = float(predict.get("high", base_pred))
+
+    if y_minmax is not None:
+        floor = float(y_minmax[0])
+        ceil = float(y_minmax[1])
+        base_low = float(min(max(base_low, floor), ceil))
+        base_high = float(min(max(base_high, floor), ceil))
+        default_xlim = (floor, ceil)
+    else:
+        lo, hi = (min(base_low, base_high), max(base_low, base_high))
+        default_xlim = (lo, hi if not math.isclose(lo, hi, rel_tol=1e-9) else lo + 1.0)
+
+    if xlim is None:
+        xlim = default_xlim
+    xlim = (float(xlim[0]), float(xlim[1])) if xlim is not None else default_xlim
+
+    body_xlabel = "Prediction interval" if xlabel is None else xlabel
+
+    xtick_values = tuple(float(x) for x in xticks) if xticks is not None else None
+
+    lo, hi = (min(base_low, base_high), max(base_low, base_high))
+    base_segments = (IntervalSegment(low=lo, high=hi, color=REGRESSION_BASE_COLOR),)
+    base_lines = ((base_pred, REGRESSION_BAR_COLOR, 0.3),)
+
+    bars: list[BarItem] = []
+
+    def _label_for(index: int) -> str:
+        if rule_labels is not None:
+            return str(rule_labels[index])
+        if column_names is not None:
+            return str(column_names[index])
+        return str(index)
+
+    if isinstance(feature_weights, dict):
+        preds = feature_weights.get("predict", ())
+        lows = feature_weights.get("low", ()) if interval else None
+        highs = feature_weights.get("high", ()) if interval else None
+        for j in features_to_plot:
+            val = float(preds[j])
+            has_interval = interval and lows is not None and highs is not None
+            if has_interval:
+                lo = float(lows[j])
+                hi = float(highs[j])
+            else:
+                lo = hi = val
+            lo_draw, hi_draw = (min(lo, hi), max(lo, hi))
+            segments: tuple[IntervalSegment, ...] = ()
+            if has_interval and not math.isclose(lo_draw, hi_draw, rel_tol=1e-9, abs_tol=1e-9):
+                segments = (
+                    IntervalSegment(
+                        low=lo_draw, high=hi_draw, color=REGRESSION_BAR_COLOR, alpha=0.4
+                    ),
+                )
+            if not segments:
+                # Fall back to drawing contribution span between base prediction and rule value.
+                base_span_low, base_span_high = (min(val, base_pred), max(val, base_pred))
+                lo_draw, hi_draw = base_span_low, base_span_high
+            interval_low = lo_draw
+            interval_high = hi_draw
+            item = BarItem(
+                label=_label_for(j),
+                value=val,
+                interval_low=interval_low,
+                interval_high=interval_high,
+                instance_value=(instance[j] if instance is not None else None),
+                solid_on_interval_crosses_zero=legacy_solid_behavior,
+                color_role=REGRESSION_BAR_COLOR,
+            )
+            if segments:
+                item.segments = segments
+            item.line = val
+            item.line_color = REGRESSION_BAR_COLOR
+            item.line_alpha = 1.0
+            bars.append(item)
+    else:
+        arr = feature_weights
+        for j in features_to_plot:
+            val = float(arr[j])  # type: ignore[index]
+            segments: tuple[IntervalSegment, ...] = ()
+            interval_low = min(val, base_pred)
+            interval_high = max(val, base_pred)
+            item = BarItem(
+                label=_label_for(j),
+                value=val,
+                interval_low=interval_low,
+                interval_high=interval_high,
+                instance_value=(instance[j] if instance is not None else None),
+                solid_on_interval_crosses_zero=legacy_solid_behavior,
+                color_role=REGRESSION_BAR_COLOR,
+            )
+            if not math.isclose(val, base_pred, rel_tol=1e-9, abs_tol=1e-9):
+                lo_draw, hi_draw = (min(val, base_pred), max(val, base_pred))
+                item.segments = (
+                    IntervalSegment(
+                        low=lo_draw, high=hi_draw, color=REGRESSION_BAR_COLOR, alpha=0.4
+                    ),
+                )
+            item.line = val
+            item.line_color = REGRESSION_BAR_COLOR
+            item.line_alpha = 1.0
+            bars.append(item)
+
+    def _key(item: BarItem):
+        s = (sort_by or "none").lower()
+        if s in ("none", ""):
+            return 0.0
+        if s == "value":
+            return item.value
+        if s == "abs":
+            return abs(item.value)
+        if s in ("interval", "width"):
+            if item.interval_low is not None and item.interval_high is not None:
+                w = abs(float(item.interval_high) - float(item.interval_low))
+                return (w, abs(item.value))
+            return 0.0
+        if s == "label":
+            return item.label
+        return 0.0
+
+    if sort_by and sort_by.lower() not in ("none", ""):
+        bars = sorted(bars, key=_key, reverse=not ascending)
+
+    body = BarHPanelSpec(
+        bars=bars,
+        xlabel=body_xlabel,
+        ylabel="Alternative rules",
+        solid_on_interval_crosses_zero=legacy_solid_behavior,
+        is_alternative=True,
+        base_segments=base_segments,
+        base_lines=base_lines,
+        pivot=None,
+        xlim=xlim,
+        xticks=xtick_values,
+        bar_span=0.2,
+    )
+
+    height = max(len(bars), 1) * 0.5
+    return PlotSpec(title=title, figure_size=(10.0, height), header=None, body=body)
 
 
 __all__ = [
@@ -199,6 +731,11 @@ def build_probabilistic_bars_spec(
     pos_label: str | None = None,
     uncertainty_color: str | None = None,
     uncertainty_alpha: float | None = None,
+    neg_caption: str | None = None,
+    pos_caption: str | None = None,
+    header_xlabel: str | None = None,
+    header_ylabel: str | None = None,
+    body_ylabel: str | None = None,
 ) -> PlotSpec:
     """Create a PlotSpec for the probabilistic bar plot variant.
 
@@ -207,26 +744,51 @@ def build_probabilistic_bars_spec(
     and the body is a horizontal bar panel with rule labels on the left and
     instance values on the right.
     """
+    max_index = max(features_to_plot) if features_to_plot else -1
+    if isinstance(feature_weights, dict):
+        for key in ("predict", "low", "high"):
+            _ensure_indexable_length(
+                f"feature_weights['{key}']",
+                feature_weights.get(key),
+                max_index=max_index,
+            )
+    else:
+        _ensure_indexable_length("feature_weights", feature_weights, max_index=max_index)
+    _ensure_indexable_length("column_names", column_names, max_index=max_index)
+    _ensure_indexable_length("rule_labels", rule_labels, max_index=max_index)
+    _ensure_indexable_length("instance", instance, max_index=max_index)
+
     # Header: use prediction interval when available
     pred = float(predict.get("predict", 0.0))
     low = float(predict.get("low", pred))
     high = float(predict.get("high", pred))
-    xlim = None
-    # For probabilistic plots, default x-axis range is [0,1] unless caller supplies y_minmax
     if y_minmax is not None:
-        xlim = (float(min(low, y_minmax[0])), float(max(high, y_minmax[1])))
+        low, high, xlim = _normalize_interval_bounds(low, high, y_minmax=y_minmax)
     else:
         xlim = (0.0, 1.0)
+    if _looks_like_probability_values(pred, low, high):
+        pred = float(min(max(pred, 0.0), 1.0))
+        low = float(min(max(low, 0.0), 1.0))
+        high = float(min(max(high, 0.0), 1.0))
+        xlim = (0.0, 1.0)
+    has_interval = not math.isclose(low, high, rel_tol=1e-12, abs_tol=1e-12)
     header = IntervalHeaderSpec(
         pred=pred,
         low=low,
         high=high,
         xlim=xlim,
-        xlabel=("Probability" if y_minmax is None else "Probability"),
-        ylabel=("Median prediction" if y_minmax is not None else "Probability"),
+        xlabel=(header_xlabel if header_xlabel is not None else "Probability"),
+        ylabel=(
+            header_ylabel
+            if header_ylabel is not None
+            else ("Median prediction" if y_minmax is not None else "Probability")
+        ),
         dual=True,
         neg_label=neg_label,
         pos_label=pos_label,
+        neg_caption=neg_caption,
+        pos_caption=pos_caption,
+        show_intervals=has_interval,
         uncertainty_color=uncertainty_color,
         uncertainty_alpha=uncertainty_alpha,
     )
@@ -296,13 +858,11 @@ def build_probabilistic_bars_spec(
     body = BarHPanelSpec(
         bars=bars,
         xlabel="Feature weights",
-        ylabel="Rules",
+        ylabel=(body_ylabel if body_ylabel is not None else "Rules"),
         solid_on_interval_crosses_zero=legacy_solid_behavior,
+        show_base_interval=interval,
     )
     return PlotSpec(title=title, header=header, body=body)
-
-
-__all__ = ["build_regression_bars_spec", "build_probabilistic_bars_spec"]
 
 
 # --- Triangular and global builders (return JSON-serializable dicts) ---

@@ -55,6 +55,7 @@ def initialize_interval_learner(explainer) -> None:
         explainer.interval_learner = interval
     explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
 
+
 def initialize_interval_learner_for_fast_explainer(explainer) -> None:
     """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner_for_fast_explainer``."""
     ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
@@ -66,6 +67,7 @@ def initialize_interval_learner_for_fast_explainer(explainer) -> None:
         metadata={"operation": "initialize_fast"},
     )
     explainer.interval_learner = interval
+
 
 __all__ = [
     "assign_threshold",

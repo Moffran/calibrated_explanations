@@ -24,10 +24,10 @@ copyright = "2023, Helena Löfström, Tuwe Löfström"
 author = "Helena Löfström, Tuwe Löfström"
 
 # The short X.Y version
-version = "0.5.1"
+version = "0.8.0"
 
 # The full version, including alpha/beta/rc tags
-release = "0.5.1"
+release = "0.8.0"
 
 # -- General configuration ---------------------------------------------------
 
@@ -45,11 +45,20 @@ extensions = [
     "numpydoc",
     "nbsphinx",
     "myst_parser",
+    "sphinxcontrib.mermaid",
 ]
 
-# Avoid importing LaTeX builder on environments missing optional deps
-latex_engine = None
+# Use the default LaTeX engine to keep Sphinx config validation happy even when we only build HTML
+latex_engine = "pdflatex"
 latex_elements = {}
+
+# Treat custom section headers used in legacy docstrings as recognised by numpydoc
+numpydoc_custom_sections = [
+    ("Rules", "Parameters"),
+    ("Warning", "Warnings"),
+]
+# Avoid generating autosummary stubs for every class member; keeps Sphinx -W builds clean
+numpydoc_class_members_toctree = False
 
 # The master toctree document
 master_doc = "index"
@@ -71,27 +80,27 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # Pygments style for syntax highlighting
 pygments_style = "sphinx"
 
+# Enable extended MyST features for directive fences (e.g. mermaid diagrams)
+myst_enable_extensions = [
+    "colon_fence",
+    "linkify",
+]
+
 # -- Options for HTML output -------------------------------------------------
 
 # HTML theme
-html_theme = "pydata_sphinx_theme"
+html_theme = "furo"
 
 # HTML theme options
 html_theme_options = {
-    "navbar_end": ["navbar-icon-links"],
-    "sidebarwidth": 270,
-    "collapse_navigation": False,
-    "navigation_depth": 4,
-    "show_toc_level": 2,
-    "github_url": "https://github.com/Moffran/calibrated_explanations",
-}
-
-# HTML sidebars
-html_sidebars = {}
-
-# HTML context
-html_context = {
-    "default_mode": "light",
+    "sidebar_hide_name": False,
+    "footer_icons": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/Moffran/calibrated_explanations",
+            "html": "<svg stroke='currentColor' fill='currentColor' stroke-width='0' viewBox='0 0 16 16' height='1.4em' width='1.4em' xmlns='http://www.w3.org/2000/svg'><path fill-rule='evenodd' d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z'></path></svg>",
+        }
+    ],
 }
 
 # HTML title

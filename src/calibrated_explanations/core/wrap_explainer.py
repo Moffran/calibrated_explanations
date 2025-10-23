@@ -220,6 +220,7 @@ class WrapCalibratedExplainer:
         validate_param_combination(kwargs)
         # Lightweight validation (does not alter behavior)
         validate_model(self.learner)
+        preprocessor_metadata = self._build_preprocessor_metadata()
         # Optional preprocessing: ensure preprocessor is fitted (fit here if needed), then transform
         x_cal_local = x_calibration
         if self._preprocessor is not None:
@@ -234,6 +235,8 @@ class WrapCalibratedExplainer:
                 _ = self._pre_transform(x_calibration, stage="calibrate_check")
         validate_inputs_matrix(x_cal_local, y_calibration, require_y=True, allow_nan=False)
         kwargs["bins"] = self._get_bins(x_cal_local, **kwargs)
+        if preprocessor_metadata is not None:
+            kwargs.setdefault("preprocessor_metadata", preprocessor_metadata)
         self._logger.info("Calibrating with %s samples", getattr(x_calibration, "shape", ["?"])[0])
 
         if "mode" in kwargs:
@@ -247,6 +250,9 @@ class WrapCalibratedExplainer:
                 self.learner, x_cal_local, y_calibration, mode="regression", **kwargs
             )
         self.calibrated = True
+        if preprocessor_metadata is not None and self.explainer is not None:
+            with suppress(AttributeError):
+                self.explainer.set_preprocessor_metadata(preprocessor_metadata)
         return self
 
     def explain_factual(self, x: Any, **kwargs: Any) -> Any:
@@ -537,9 +543,7 @@ class WrapCalibratedExplainer:
         return self.explainer.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-    def plot(
-        self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any
-    ) -> None:
+    def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> None:
         """Generate plots for the test data.
 
         See Also
@@ -587,6 +591,92 @@ class WrapCalibratedExplainer:
         if allowed is None:
             return base
         return {k: v for k, v in base.items() if k in allowed}
+
+    def _normalize_auto_encode_flag(self) -> str:
+        """Return the auto_encode configuration as a telemetry-friendly literal."""
+        flag = getattr(self, "_auto_encode", "auto")
+        if isinstance(flag, bool):
+            return "true" if flag else "false"
+        flag_str = str(flag).lower()
+        if flag_str in {"true", "false", "auto"}:
+            return flag_str
+        return "auto"
+
+    def _serialise_preprocessor_value(self, value: Any) -> Any:
+        """Convert preprocessing metadata values into JSON-friendly structures."""
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return {str(key): self._serialise_preprocessor_value(val) for key, val in value.items()}
+        if isinstance(value, (list, tuple, set)):
+            return [self._serialise_preprocessor_value(item) for item in value]
+        if hasattr(value, "tolist"):
+            try:
+                return value.tolist()  # numpy/pandas friendly
+            except Exception:  # pragma: no cover - defensive
+                return str(value)
+        if isinstance(value, (str, int, float, bool)):
+            return value
+        return str(value)
+
+    def _extract_preprocessor_snapshot(self, preprocessor: Any) -> dict[str, Any] | None:
+        """Build a lightweight snapshot describing the configured preprocessor."""
+        snapshot: dict[str, Any] = {}
+        getter = getattr(preprocessor, "get_mapping_snapshot", None)
+        if callable(getter):
+            try:
+                custom_snapshot = getter()
+            except Exception:  # pragma: no cover - defensive
+                custom_snapshot = None
+            if custom_snapshot is not None:
+                snapshot["custom"] = self._serialise_preprocessor_value(custom_snapshot)
+        categories = getattr(preprocessor, "categories_", None)
+        if categories is not None:
+            snapshot["categories"] = self._serialise_preprocessor_value(categories)
+        transformers = getattr(preprocessor, "transformers_", None)
+        if transformers is not None:
+            serialised = []
+            for name, transformer, columns in transformers:
+                serialised.append(
+                    {
+                        "name": name,
+                        "columns": self._serialise_preprocessor_value(columns),
+                        "transformer": (
+                            f"{transformer.__class__.__module__}:{transformer.__class__.__qualname__}"
+                            if transformer is not None
+                            else None
+                        ),
+                    }
+                )
+            snapshot["transformers"] = serialised
+        feature_names_out = getattr(preprocessor, "get_feature_names_out", None)
+        if callable(feature_names_out):
+            with suppress(Exception):
+                snapshot["feature_names_out"] = list(feature_names_out())
+        mapping_attr = getattr(preprocessor, "mapping_", None)
+        if mapping_attr is not None:
+            snapshot["mapping"] = self._serialise_preprocessor_value(mapping_attr)
+        return snapshot or None
+
+    def _build_preprocessor_metadata(self) -> dict[str, Any] | None:
+        """Return ADR-009 telemetry metadata for the active preprocessor."""
+        auto_encode_flag = self._normalize_auto_encode_flag()
+        preprocessor = getattr(self, "_preprocessor", None)
+        metadata: dict[str, Any] = {"auto_encode": auto_encode_flag}
+        if preprocessor is not None:
+            metadata["transformer_id"] = (
+                f"{preprocessor.__class__.__module__}:{preprocessor.__class__.__qualname__}"
+            )
+            snapshot = self._extract_preprocessor_snapshot(preprocessor)
+            if snapshot is not None:
+                metadata["mapping_snapshot"] = snapshot
+        if (
+            metadata.get("transformer_id") is None
+            and len(metadata) == 1
+            and auto_encode_flag == "auto"
+        ):
+            return None
+        return metadata
 
     def _pre_fit_preprocess(self, x: Any) -> Any:
         """Fit the configured preprocessor and return transformed x.

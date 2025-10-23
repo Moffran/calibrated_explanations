@@ -1,4 +1,4 @@
-"""Tests for lightweight utilities in :mod:`calibrated_explanations._plots`."""
+"""Tests for lightweight utilities in :mod:`calibrated_explanations.plotting`."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from calibrated_explanations import _plots
+from calibrated_explanations.viz import plots as plotting
 
 
 def test_read_plot_pyproject_handles_missing_file(tmp_path, monkeypatch):
@@ -14,7 +14,7 @@ def test_read_plot_pyproject_handles_missing_file(tmp_path, monkeypatch):
 
     monkeypatch.chdir(tmp_path)
 
-    assert _plots._read_plot_pyproject() == {}
+    assert plotting._read_plot_pyproject() == {}
 
 
 def test_read_plot_pyproject_extracts_nested_plot_settings(tmp_path, monkeypatch):
@@ -32,7 +32,7 @@ def test_read_plot_pyproject_extracts_nested_plot_settings(tmp_path, monkeypatch
         encoding="utf-8",
     )
 
-    assert _plots._read_plot_pyproject() == {"style": "toml-style", "fallbacks": ["a", "b"]}
+    assert plotting._read_plot_pyproject() == {"style": "toml-style", "fallbacks": ["a", "b"]}
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ def test_read_plot_pyproject_extracts_nested_plot_settings(tmp_path, monkeypatch
 def test_split_csv_normalises_and_filters_values(value, expected):
     """``_split_csv`` should normalise whitespace and ignore non-string values."""
 
-    assert _plots._split_csv(value) == expected
+    assert plotting._split_csv(value) == expected
 
 
 def test_resolve_plot_style_chain_prioritises_unique_sources(monkeypatch):
@@ -60,12 +60,12 @@ def test_resolve_plot_style_chain_prioritises_unique_sources(monkeypatch):
     monkeypatch.setenv("CE_PLOT_STYLE", "env-style")
     monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "fallback-one, fallback-two")
     monkeypatch.setattr(
-        _plots,
+        plotting,
         "_read_plot_pyproject",
         lambda: {"style": "toml-style", "fallbacks": ["fallback-two", "toml-extra"]},
     )
 
-    chain = _plots._resolve_plot_style_chain(dummy_explainer, "explicit-style")
+    chain = plotting._resolve_plot_style_chain(dummy_explainer, "explicit-style")
 
     assert chain == (
         "explicit-style",
@@ -75,6 +75,7 @@ def test_resolve_plot_style_chain_prioritises_unique_sources(monkeypatch):
         "toml-style",
         "toml-extra",
         "plugin-style",
+        "plot_spec.default",
         "legacy",
     )
 
@@ -84,9 +85,8 @@ def test_resolve_plot_style_chain_defaults_to_legacy(monkeypatch):
 
     monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
     monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
-    monkeypatch.setattr(_plots, "_read_plot_pyproject", lambda: {})
+    monkeypatch.setattr(plotting, "_read_plot_pyproject", lambda: {})
 
-    chain = _plots._resolve_plot_style_chain(SimpleNamespace(), None)
+    chain = plotting._resolve_plot_style_chain(SimpleNamespace(), None)
 
-    assert chain == ("legacy",)
-
+    assert chain == ("plot_spec.default", "legacy")

@@ -17,7 +17,12 @@ import numpy as np
 
 @dataclass
 class FeatureRule:
-    # feature may be a single int (simple rule) or a sequence of ints (conjunctive rule)
+    """Container describing a single feature rule within an explanation.
+
+    The ``feature`` field captures either a single feature index or a sequence of
+    indices to represent conjunctive rules emitted by legacy explainers.
+    """
+
     feature: Any
     rule: str
     weight: Mapping[str, Any]
@@ -31,6 +36,8 @@ class FeatureRule:
 
 @dataclass
 class Explanation:
+    """Domain-model representation of a calibrated explanation instance."""
+
     task: str
     index: int
     prediction: Mapping[str, Any]

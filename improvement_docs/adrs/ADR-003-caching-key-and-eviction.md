@@ -1,6 +1,6 @@
 # ADR-003: Caching Key & Eviction Strategy
 
-Status: Deferred (post-1.0 evaluation)
+Status: Proposed (targeting v0.9.0 opt-in release)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -24,6 +24,25 @@ Introduce a unified in-process cache layer with:
 - Instrumentation: per-namespace hit/miss counters exposed via a lightweight metrics API (python dict or optional `prometheus_client`).
 - Config surface: environment variables + programmatic (`CacheConfig`) for max_items, max_mem_mb, enable/disable namespaces.
 - Invalidation triggers: bump version_tag automatically when: library minor version increments; strategy implementation changes recorded via a STRATEGY_REV registry; user explicit flush call.
+
+### Operational clarifications
+
+- **Default posture:** cache stays disabled unless users explicitly opt-in via `CacheConfig(enable=True)` or `CE_CACHE=on`. Shipping in v0.9.0 requires documentation to highlight the opt-in behaviour and explain rollback instructions.
+- **API contract preservation:** the cache layer MUST NOT deprecate or require callers to
+  change any `WrapCalibratedExplainer` public methods (`fit`, `calibrate`,
+  `explain_factual`, `explore_alternatives`, `predict`, `predict_proba`,
+  plotting helpers, or uncertainty/threshold options). Behaviour stays
+  additive and transparent to the published contract.
+- **Thread/process safety:** in-process cache must be guarded by a `threading.RLock` and expose a `forksafe_reset()` hook so the parallel executor (ADR-004) can clear per-process state after `fork`/`spawn`.
+- **Failure modes:** cache lookup failures should fall back to recomputation with a warning, never crash the explain path. Size/memory limit breaches surface as debug logs with aggregate counters for eviction.
+- **Telemetry contract:** emit structured metrics (`cache_hits`, `cache_misses`, `cache_evictions`, `cache_errors`) via the existing telemetry hook so the release plan's staging validation can track effectiveness. Metrics collection must be no-op when telemetry is disabled.
+- **Testing expectations:** add regression tests covering deterministic keys, eviction thresholds, telemetry emission, and opt-in/opt-out toggles. Include a performance smoke benchmark demonstrating that cache hits improve explain latency without regressing cache-disabled behaviour.
+
+### Documentation & rollout requirements
+
+- Update README, docs/plugins.md, and release notes with configuration tables, tuning guidance, and the support policy for the cache namespace taxonomy.
+- Record STRATEGY_REV identifiers in the ADR appendix and reference them from the release checklist to ensure invalidation discipline.
+- Provide migration guidance for enterprise deployments describing how cache directories/logs interact with existing observability tooling.
 
 ## Alternatives Considered
 
@@ -49,7 +68,7 @@ Negative / Risks:
 
 ## Implementation status (2025-10-07)
 
-- No cache layer has been introduced in v0.6.0; performance hooks remain stubbed
-  behind configuration flags.【F:src/calibrated_explanations/api/config.py†L33-L52】
-- Release plan defers any caching work until after interval/plot plugin
-  integration and documentation milestones land for v1.0.0.【F:improvement_docs/RELEASE_PLAN_v1.md†L47-L98】
+- Prototype cache scaffolding must land by v0.9.0 with unit/integration tests and
+  documentation updates per the release plan.【F:improvement_docs/RELEASE_PLAN_v1.md†L120-L176】
+- No cache layer has been introduced in v0.6.0 yet; the implementation work
+  tracks the v0.9.0 milestone and remains outstanding.【F:src/calibrated_explanations/api/config.py†L33-L52】

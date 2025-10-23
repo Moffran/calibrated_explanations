@@ -22,13 +22,17 @@ resolution paths can therefore exclude unreviewed plugins, and the CLI helpers
 expose round-trip commands (`trust` / `untrust`) to toggle that bit without
 restarting the process.【F:src/calibrated_explanations/plugins/registry.py†L243-L333】【F:src/calibrated_explanations/plugins/cli.py†L75-L145】
 
-## Explanation plugin workflow (ADR-015)
+## Explanation plugin workflow (ADR-015 & ADR-026)
 
 Explanation plugins receive two frozen dataclasses from the core explainer:
 `ExplanationContext` (static model metadata and dependency hints) and
-`ExplanationRequest` (per-batch parameters). Plugins must call the provided
-predict bridge to obtain calibrated predictions/intervals and return an
-`ExplanationBatch` describing the explanation collection they produced.【F:src/calibrated_explanations/plugins/explanations.py†L23-L74】【F:src/calibrated_explanations/core/calibrated_explainer.py†L525-L608】
+`ExplanationRequest` (per-batch parameters). ADR-026 documents the runtime
+semantics expected from explanation plugins—when metadata is injected, how the
+bridge monitor is enforced, and which collection hooks must be preserved—so new
+implementations can reason about behaviour without cloning the legacy code. In
+practice, plugins must call the provided predict bridge to obtain calibrated
+predictions/intervals and return an `ExplanationBatch` describing the
+explanation collection they produced.【F:src/calibrated_explanations/plugins/explanations.py†L23-L74】【F:src/calibrated_explanations/core/calibrated_explainer.py†L525-L608】【F:improvement_docs/adrs/ADR-026-explanation-plugin-semantics.md†L1-L153】
 
 At runtime the explainer enforces ADR constraints:
 
@@ -75,6 +79,31 @@ can align calibrators (`interval_dependency`) and preferred renderers
 `CalibratedExplainer.runtime_telemetry` and attaches the same payload to
 returned `CalibratedExplanations` collections for downstream telemetry.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1006-L1099】
 
+### Telemetry payloads
+
+Every call to `explain_*`, `predict`, or `predict_proba` refreshes the telemetry
+dictionary returned by `CalibratedExplainer.runtime_telemetry` and attached to
+the explanation collection. The payload mirrors the v0.8.0 data model:
+
+| Key                | Description                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| `mode` / `task`    | Explanation mode (`factual`, `alternative`, `fast`) and learner task (`classification`/`regression`). |
+| `interval_source`  | The identifier of the interval calibrator that produced the uncertainty bounds.            |
+| `proba_source`     | Source identifier for calibrated probabilities (often the same as `interval_source`).      |
+| `plot_source`      | The plot style that rendered the figure (defaults to `plot_spec.default.*`).                |
+| `plot_fallbacks`   | Ordered tuple of plot style fallbacks (e.g. `("plot_spec.default.factual", "legacy")`).     |
+| `interval_dependencies` | Tuple of interval plugin hints propagated from explanation metadata.                  |
+| `uncertainty`      | Structured CE interval object containing calibrated value, bounds, percentiles, threshold metadata, and the backward-compatible `legacy_interval`. |
+| `rules`            | Per-feature rule telemetry (factual and alternative) including feature-level uncertainty.  |
+| `preprocessor`     | ADR-009 snapshot describing preprocessing (auto-encode policy, transformer id, optional mapping snapshot). |
+
+Downstream services can therefore audit which plugin branches executed, confirm
+PlotSpec routing versus legacy fallbacks, and capture preprocessing provenance
+without probing runtime internals.【F:docs/concepts/telemetry.md†L1-L25】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1098-L1138】
+See also {doc}`concepts/telemetry` for schema details, and point practitioners to
+{doc}`how-to/interpret_explanations` so they understand how the telemetry fields
+translate into actionable insights.
+
 ### CLI helpers
 
 The registry ships with a small CLI that surfaces this metadata:
@@ -89,7 +118,10 @@ ce.plugins untrust <id>        # revoke trust for an explanation plugin
 `list` accepts an optional category (`explanations`, `intervals`, `plots`, or
 `all`) and a `--trusted-only` flag to focus on pre-authorised plugins. Output
 includes dependency fields so operators can spot missing interval or plot
-adapters before running large jobs.【F:src/calibrated_explanations/plugins/cli.py†L15-L145】
+adapters before running large jobs. Plot listings now surface
+`is_default`, `legacy_compatible`, and `default_for` metadata so the active
+PlotSpec default is discoverable at the CLI (JSON output includes the same
+fields for automation-friendly consumption).【F:src/calibrated_explanations/plugins/cli.py†L15-L145】
 
 ## Runtime validation & compatibility
 
@@ -151,7 +183,7 @@ now emit deprecation warnings and are normalised to canonical mode names. During
 migration, explanation and plotting APIs retain a `use_legacy=True` escape hatch
 that forces the original renderers; plugin metadata can also specify fallbacks to
 `legacy` builders to replicate prior behaviour until custom adapters are
-available.【F:src/calibrated_explanations/plugins/registry.py†L41-L170】【F:src/calibrated_explanations/_plots.py†L278-L559】
+available.【F:src/calibrated_explanations/plugins/registry.py†L41-L170】【F:src/calibrated_explanations/plotting.py†L278-L559】
 
 The default in-tree plugins (`core.explanation.factual`, `core.explanation.fast`,
 `core.interval.fast`, etc.) remain trusted and provide parity with historical

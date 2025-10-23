@@ -163,3 +163,55 @@ def test_resolve_interval_plugin_fast_mode_requires_flag(monkeypatch):
 
     assert identifier == "fast-backup"
     assert plugin is fast_backup_plugin_type
+
+
+def test_resolve_interval_plugin_override_string_failure(monkeypatch):
+    monkeypatch.setattr(ce_module, "ensure_builtin_plugins", lambda: None)
+    explainer = _make_explainer()
+    explainer._interval_plugin_override = "preferred.interval"
+    explainer._interval_plugin_fallbacks["default"] = ("preferred.interval",)
+
+    monkeypatch.setattr(ce_module, "find_interval_descriptor", lambda identifier: None)
+    monkeypatch.setattr(ce_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(ce_module, "find_interval_plugin_trusted", lambda identifier: None)
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        explainer._resolve_interval_plugin(fast=False)
+
+    assert "Interval plugin override failed" in str(excinfo.value)
+    assert "preferred.interval: not registered" in str(excinfo.value)
+
+
+def test_resolve_interval_plugin_aggregates_metadata_errors(monkeypatch):
+    monkeypatch.setattr(ce_module, "ensure_builtin_plugins", lambda: None)
+    explainer = _make_explainer()
+    explainer._interval_plugin_fallbacks["default"] = ("needs-bins", "missing")
+
+    class NeedsBins:
+        plugin_meta = {"name": "needs-bins"}
+
+    descriptor = DummyDescriptor(
+        plugin=NeedsBins,
+        metadata={
+            "schema_version": 1,
+            "modes": ("regression",),
+            "capabilities": ("interval:regression",),
+            "requires_bins": True,
+        },
+        trusted=True,
+    )
+
+    monkeypatch.setattr(
+        ce_module,
+        "find_interval_descriptor",
+        lambda identifier: descriptor if identifier == "needs-bins" else None,
+    )
+    monkeypatch.setattr(ce_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(ce_module, "find_interval_plugin_trusted", lambda identifier: None)
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        explainer._resolve_interval_plugin(fast=False)
+
+    message = str(excinfo.value)
+    assert "needs-bins: requires bins but explainer has none configured" in message
+    assert "missing: not registered" in message

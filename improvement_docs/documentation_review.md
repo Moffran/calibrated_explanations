@@ -1,18 +1,17 @@
 # Code Documentation Review
 
 ## Summary of Findings
-- **Coverage gaps**: Automated inspection shows 131 of 513 functions (25.5%) lack docstrings, indicating incomplete inline documentation for a quarter of callable surfaces.
-- **Module-level inconsistency**: Several modules (for example `perf.parallel`, `perf.cache`, and `utils.__init__`) export public helpers without any module docstring, leading to a mix of documented and undocumented entry points.
-- **Style drift**: Existing docstrings mix NumPy-style sections with informal paragraphs, complicating automated tooling and reader expectations.
-- **Legacy shims**: Deprecated shims such as `core.py` hold short warnings but no context about remaining lifetime or migration guidance beyond imports.
-- **API surface risk**: Utility modules like `utils.helper` consolidate many user-facing helpers but only provide high-level module docs; several individual functions omit argument/return documentation.
+- **Coverage status** (2025-10-10): Automated inspection now reports overall docstring coverage of **94.18%** across `src/calibrated_explanations` (modules 47/47, classes 67/68, functions 166/175, methods 319/346). The previously undocumented `explanations/`, `perf/`, and `plugins/` packages now sit at **100% coverage** following ADR-018 batch remediation.
+- **Residual gaps**: The remaining undocumented surfaces cluster in legacy shims and low-level utilities outside the v0.8.0 scope (e.g., `utils/` helpers and historical adapters). These items are tracked for follow-up in Phase 3 of the documentation standardization plan.
+- **Style drift**: While the remediated packages align with numpydoc sections, several older modules still mix informal prose with the new template, warranting incremental clean-up.
+- **Legacy shims**: Deprecated entry points such as `core.py` still expose only warning strings. Future work should embed migration guidance or fold them into the `legacy/` namespace.
+- **API surface risk**: Utility aggregators like `utils.helper` aggregate many user-facing helpers; targeted docstrings for arguments/returns remain a priority to close the last few percentage points.
 
 ## Severity Assessment
-**Overall severity: High.**
+**Overall severity: Moderate.**
 
-The proportion of undocumented functions plus inconsistent formatting across subpackages creates a fragmented contributor experience and hampers discoverability for downstream users. Many utilities double as semi-public APIs for notebooks/tests, so missing docstrings materially increase the learning curve.
+Remediating the high-traffic packages reduced the immediate documentation risk, but sustaining ≥95% coverage and harmonising legacy utilities remains important for long-term contributor experience.
 
 ## Supporting Data
-- Function docstring coverage snapshot: 131 / 513 functions missing documentation (25.5%).
-- Modules without top-level documentation include `src/calibrated_explanations/perf/parallel.py`, `src/calibrated_explanations/perf/cache.py`, and `src/calibrated_explanations/utils/__init__.py`.
-
+- Coverage snapshot produced by `scripts/check_docstring_coverage.py` (2025-10-10): overall 94.18% (modules 47/47, classes 67/68, functions 166/175, methods 319/346).
+- All modules sampled in ADR-018 batches C (`explanations/`, `perf/`) and D (`plugins/`) now report full compliance with numpydoc conventions.

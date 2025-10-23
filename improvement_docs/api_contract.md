@@ -1,6 +1,6 @@
 # API Contract
 
-This define the minimum api contract for WrapCalibratedExplainer that may only be extended, not removed. 
+This define the minimum api contract for WrapCalibratedExplainer that may only be extended, not removed.
 
 ```python
    from calibrated_explanations import WrapCalibratedExplainer

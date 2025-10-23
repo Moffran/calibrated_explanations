@@ -1,0 +1,424 @@
+import sys
+import time
+import types
+
+import numpy as np
+import pytest
+
+from calibrated_explanations.explanations import explanations as explanations_mod
+from calibrated_explanations.explanations.explanations import (
+    AlternativeExplanations,
+    CalibratedExplanations,
+    FrozenCalibratedExplainer,
+)
+
+
+class DummyDomainMapper:
+    def __init__(self):
+        self.discretized_feature_names = []
+        self.feature_values = None
+
+
+class DummyLimeExplanation:
+    def __init__(self, num_features):
+        self.intercept = {1: None}
+        self.local_pred = None
+        self.predict_proba = [0.0, 0.0]
+        self.local_exp = {1: [(None, None) for _ in range(num_features)]}
+        self.domain_mapper = DummyDomainMapper()
+
+
+class DummyShapExplanation:
+    def __init__(self, num_features):
+        self.base_values = np.zeros(1)
+        self.values = np.zeros((1, num_features))
+        self.data = None
+
+
+class DummyCalibratedExplainer:
+    def __init__(self, num_features=3):
+        self.feature_names = [f"feature_{i}" for i in range(num_features)]
+        self.class_labels = {1: "class_one", 0: "class_zero"}
+        self.num_features = num_features
+        self.mode = "classification"
+        self.y_cal = np.array([0.0, 1.0])
+        self.x_cal = np.zeros((2, num_features))
+        self.categorical_features = []
+        self.categorical_labels = []
+        self.feature_values = []
+        self.assign_threshold = 0.5
+        self.is_multiclass = False
+        self.discretizer = object()
+        self.rule_boundaries = []
+        self.learner = "dummy"
+        self.difficulty_estimator = "difficulty"
+
+    def _preload_lime(self):
+        return None, DummyLimeExplanation(self.num_features)
+
+    def _preload_shap(self):
+        return None, DummyShapExplanation(self.num_features)
+
+
+class DummyExplanation:
+    def __init__(self, index, x_row, predict, interval, feature_weights):
+        self.index = index
+        self.x_test = x_row
+        self.predict = predict
+        self.prediction_interval = interval
+        self.prediction_probabilities = None
+        self.prediction = {"predict": predict}
+        self.feature_weights = {"predict": np.array(feature_weights, dtype=float)}
+        self.calls = []
+
+    def __str__(self):
+        return f"dummy-{self.index}"
+
+    def plot(self, **kwargs):
+        self.calls.append(("plot", kwargs))
+
+    def remove_conjunctions(self):
+        self.calls.append(("remove", None))
+
+    def add_conjunctions(self, n_top_features, max_rule_size):
+        self.calls.append(("add", (n_top_features, max_rule_size)))
+
+    def reset(self):
+        self.calls.append(("reset", None))
+
+    def super_explanations(self, **kwargs):
+        self.calls.append(("super", kwargs))
+
+    def semi_explanations(self, **kwargs):
+        self.calls.append(("semi", kwargs))
+
+    def counter_explanations(self, **kwargs):
+        self.calls.append(("counter", kwargs))
+
+    def ensured_explanations(self):
+        self.calls.append(("ensured", None))
+
+    def _rank_features(self, feature_weights, num_to_show=None):
+        order = list(range(len(feature_weights)))
+        return order[: num_to_show if num_to_show is not None else len(order)]
+
+    def _define_conditions(self):
+        return [f"rule_{i}" for i in range(len(self.feature_weights["predict"]))]
+
+    def _get_rules(self):
+        return {
+            "rule": [f"rule_{self.index}"],
+            "base_predict": [0.1],
+            "base_predict_low": [0.0],
+            "base_predict_high": [0.2],
+            "weight": [0.3],
+            "weight_low": [0.1],
+            "weight_high": [0.5],
+            "value": [f"value_{self.index}"],
+        }
+
+
+@pytest.fixture
+def calibrated_collection():
+    dummy_explainer = DummyCalibratedExplainer(num_features=3)
+    x = np.array(
+        [
+            [0.1, 0.2, 0.3],
+            [0.4, 0.5, 0.6],
+            [0.7, 0.8, 0.9],
+        ]
+    )
+    bins = ["bin0", "bin1", "bin2"]
+    collection = CalibratedExplanations(dummy_explainer, x, 0.5, bins)
+    collection.explanations = [
+        DummyExplanation(
+            i, x[i], predict=0.1 * (i + 1), interval=(i, i + 1), feature_weights=[i, i + 1, i + 2]
+        )
+        for i in range(len(x))
+    ]
+    collection.low_high_percentiles = (10.0, 90.0)
+    return collection
+
+
+def test_iteration_and_indexing_behaviours(calibrated_collection):
+    collection = calibrated_collection
+    assert len(collection) == 3
+    first = collection[0]
+    assert isinstance(first, DummyExplanation)
+    subset = collection[1:3]
+    assert isinstance(subset, CalibratedExplanations)
+    assert [exp.index for exp in subset] == [0, 1]
+    bool_subset = collection[[True, False, True]]
+    assert isinstance(bool_subset, CalibratedExplanations)
+    assert [exp.index for exp in bool_subset] == [0, 1]
+    single = collection[[2]]
+    assert isinstance(single, DummyExplanation)
+    assert "CalibratedExplanations" in repr(collection)
+    with pytest.raises(TypeError):
+        _ = collection["invalid"]
+
+
+def test_prediction_related_properties(calibrated_collection):
+    collection = calibrated_collection
+    assert collection.predict == [exp.predict for exp in collection.explanations]
+    preds_first = collection.predictions
+    assert np.allclose(preds_first, [0.1, 0.2, 0.3])
+    collection.explanations[0].predict = 999
+    preds_second = collection.predictions
+    assert np.allclose(preds_second, preds_first)
+
+    matrices = [
+        np.array([[0.1, 0.9], [0.2, 0.8], [0.3, 0.7]]),
+        np.array([[0.1, 0.9], [0.2, 0.8], [0.3, 0.7]]),
+        np.array([[0.1, 0.9], [0.2, 0.8], [0.3, 0.7]]),
+    ]
+    for exp, value in zip(collection.explanations, matrices):
+        exp.prediction_probabilities = value
+    prob_matrix = collection.probabilities
+    assert prob_matrix.shape == (3, 2)
+    assert np.allclose(collection.lower, [0.0, 1.0, 2.0])
+    assert np.allclose(collection.upper, [1.0, 2.0, 3.0])
+    assert collection.prediction_interval == [(0, 1), (1, 2), (2, 3)]
+
+
+def test_probabilities_stack_vectors():
+    dummy_explainer = DummyCalibratedExplainer(num_features=2)
+    x = np.array([[0.0, 0.1], [0.2, 0.3]])
+    collection = CalibratedExplanations(dummy_explainer, x, None, bins=None)
+    collection.explanations = [
+        DummyExplanation(0, x[0], 0.4, (0.0, 1.0), [1.0, 2.0]),
+        DummyExplanation(1, x[1], 0.6, (1.0, 2.0), [2.0, 3.0]),
+    ]
+    collection.explanations[0].prediction_probabilities = np.array([0.4, 0.6])
+    collection.explanations[1].prediction_probabilities = np.array([0.3, 0.7])
+    stacked = collection.probabilities
+    assert stacked.shape == (2, 2)
+    assert np.allclose(stacked[0], [0.4, 0.6])
+
+
+def test_threshold_and_confidence_helpers(calibrated_collection):
+    collection = calibrated_collection
+    assert collection._is_thresholded()
+    collection.low_high_percentiles = (np.inf, 95.0)
+    assert collection._is_one_sided()
+    assert collection.get_confidence() == 95.0
+    collection.low_high_percentiles = (5.0, np.inf)
+    assert collection.get_confidence() == 95.0
+    collection.low_high_percentiles = (5.0, 95.0)
+    assert collection.get_confidence() == 90.0
+    assert collection.get_low_percentile() == 5.0
+    assert collection.get_high_percentile() == 95.0
+
+
+class FakeFactual(DummyExplanation):
+    def __init__(
+        self,
+        calibrated_explanations,
+        index,
+        instance,
+        binned,
+        feature_weights,
+        feature_predict,
+        prediction,
+        y_threshold,
+        instance_bin=None,
+    ):
+        super().__init__(
+            index,
+            instance,
+            predict=prediction["predict"],
+            interval=(0.0, 1.0),
+            feature_weights=[0.0, 1.0, 2.0],
+        )
+        self.metadata = {
+            "parent": calibrated_explanations,
+            "binned": binned,
+            "feature_weights": feature_weights,
+            "feature_predict": feature_predict,
+            "threshold": y_threshold,
+            "instance_bin": instance_bin,
+        }
+
+
+class FakeAlternative(FakeFactual):
+    pass
+
+
+class FakeFast(DummyExplanation):
+    def __init__(
+        self,
+        calibrated_explanations,
+        index,
+        instance,
+        feature_weights,
+        feature_predict,
+        prediction,
+        y_threshold,
+        instance_bin=None,
+    ):
+        super().__init__(
+            index,
+            instance,
+            predict=prediction["predict"],
+            interval=(0.0, 1.0),
+            feature_weights=[0.0, 1.0, 2.0],
+        )
+        self.metadata = {
+            "parent": calibrated_explanations,
+            "feature_weights": feature_weights,
+            "feature_predict": feature_predict,
+            "threshold": y_threshold,
+            "instance_bin": instance_bin,
+        }
+
+
+def test_finalize_variants(calibrated_collection, monkeypatch):
+    monkeypatch.setattr(explanations_mod, "FactualExplanation", FakeFactual)
+    start = time.time()
+    result = calibrated_collection.finalize(
+        binned={},
+        feature_weights={},
+        feature_predict={},
+        prediction={"predict": 0.5},
+        instance_time=[0.1, 0.2, 0.3],
+        total_time=start,
+    )
+    assert result is calibrated_collection
+    assert len(calibrated_collection.explanations) == 6
+    assert calibrated_collection.total_explain_time is not None
+
+    new_collection = CalibratedExplanations(
+        DummyCalibratedExplainer(), calibrated_collection.x_test, 0.5, calibrated_collection.bins
+    )
+    monkeypatch.setattr(explanations_mod, "AlternativeExplanation", FakeAlternative)
+    monkeypatch.setattr(CalibratedExplanations, "_is_alternative", lambda self: True)
+    alt_result = new_collection.finalize({}, {}, {}, {"predict": 0.2})
+    assert isinstance(alt_result, AlternativeExplanations)
+
+    monkeypatch.setattr(explanations_mod, "FastExplanation", FakeFast)
+    fast_collection = CalibratedExplanations(
+        DummyCalibratedExplainer(), calibrated_collection.x_test, 0.5, calibrated_collection.bins
+    )
+    fast_collection.finalize_fast(
+        {},
+        {"predict": 0.1},
+        {"predict": 0.2},
+        instance_time=[0.1, 0.2, 0.3],
+        total_time=start,
+    )
+    assert len(fast_collection.explanations) == 3
+
+
+def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
+    called = {}
+
+    def fake_collection_to_batch(collection):
+        called["collection"] = collection
+        return {"batch": "ok"}
+
+    fake_module = types.ModuleType("calibrated_explanations.plugins.builtins")
+    fake_module._collection_to_batch = fake_collection_to_batch
+    monkeypatch.setitem(sys.modules, "calibrated_explanations.plugins.builtins", fake_module)
+    batch = calibrated_collection.to_batch()
+    assert batch == {"batch": "ok"}
+    assert called["collection"] is calibrated_collection
+
+    class DummyBatch:
+        def __init__(self, container):
+            self.collection_metadata = {"container": container}
+
+    restored = CalibratedExplanations.from_batch(DummyBatch(calibrated_collection))
+    assert restored is calibrated_collection
+
+    with pytest.raises(ValueError):
+        CalibratedExplanations.from_batch(DummyBatch(None))
+
+    with pytest.raises(TypeError):
+        CalibratedExplanations.from_batch(DummyBatch(object()))
+
+
+def test_plot_routing(monkeypatch, calibrated_collection):
+    saved = {}
+
+    def fake_prepare(filename):
+        saved["filename"] = filename
+        return ("/tmp/", "file", "title", ".png")
+
+    monkeypatch.setattr(explanations_mod, "prepare_for_saving", fake_prepare)
+    calibrated_collection.plot(index=1, filename="plot.png", show=False)
+    expected_kwargs = {
+        "filter_top": 10,
+        "show": False,
+        "filename": "/tmp/title1.png",
+        "uncertainty": False,
+        "style": "regular",
+        "rnk_metric": None,
+        "rnk_weight": 0.5,
+        "style_override": None,
+    }
+    assert saved["filename"] == "plot.png"
+    assert ("plot", expected_kwargs) in calibrated_collection.explanations[1].calls
+
+    calibrated_collection.plot(filename="plot_all.png", show=True)
+    for exp in calibrated_collection.explanations:
+        assert any(call[0] == "plot" for call in exp.calls)
+
+
+# def test_get_explanation_validations(calibrated_collection):
+#     with pytest.warns(DeprecationWarning):
+#         assert calibrated_collection.get_explanation(0) is calibrated_collection.explanations[0]
+#     with pytest.raises(TypeError):
+#         calibrated_collection.get_explanation("one")
+#     with pytest.raises(ValueError):
+#         calibrated_collection.get_explanation(-1)
+#     with pytest.raises(ValueError):
+#         calibrated_collection.get_explanation(100)
+
+
+def test_conjunction_management(calibrated_collection):
+    calibrated_collection.add_conjunctions(n_top_features=2, max_rule_size=3)
+    calibrated_collection.reset()
+    calibrated_collection.remove_conjunctions()
+    for exp in calibrated_collection.explanations:
+        actions = [call[0] for call in exp.calls]
+        assert {"remove", "add", "reset"}.issubset(actions)
+
+
+def test_alternative_specific_filters(calibrated_collection):
+    alt = AlternativeExplanations.__new__(AlternativeExplanations)
+    alt.__dict__ = calibrated_collection.__dict__.copy()
+    alt.super_explanations(only_ensured=True, include_potential=False)
+    alt.semi_explanations(only_ensured=True, include_potential=False)
+    alt.counter_explanations(only_ensured=True, include_potential=False)
+    alt.ensured_explanations()
+    for exp in alt.explanations:
+        actions = [
+            call[0] for call in exp.calls if call[0] in {"super", "semi", "counter", "ensured"}
+        ]
+        assert {"super", "semi", "counter", "ensured"}.issubset(set(actions))
+
+
+def test_frozen_explainer_read_only():
+    dummy = DummyCalibratedExplainer()
+    frozen = FrozenCalibratedExplainer(dummy)
+    assert np.array_equal(frozen.x_cal, dummy.x_cal)
+    with pytest.raises(AttributeError):
+        frozen.some_attribute = 5
+
+
+def test_as_lime_and_shap_transformations(calibrated_collection):
+    lime_explanations = calibrated_collection.as_lime(num_features_to_show=2)
+    assert len(lime_explanations) == len(calibrated_collection)
+    for lime in lime_explanations:
+        assert lime.local_pred is not None
+        assert len(lime.local_exp[1]) == 2
+
+    shap_exp = calibrated_collection.as_shap()
+    assert shap_exp.values.shape[0] == len(calibrated_collection)
+    assert shap_exp.data is calibrated_collection.x_test
+
+
+def test_class_labels_and_feature_names_cache(calibrated_collection):
+    labels = calibrated_collection.class_labels
+    assert labels == ["class_zero", "class_one"]
+    assert calibrated_collection.feature_names == ["feature_0", "feature_1", "feature_2"]

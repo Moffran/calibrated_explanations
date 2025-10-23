@@ -5,6 +5,7 @@ registered in ``pyproject.toml`` and ensure trust toggles round-trip through the
 registry at runtime. They intentionally avoid spawning a new interpreter so the
 output remains deterministic and fast during CI runs.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -47,6 +47,9 @@
 
 ## Introduction
 
+> 🧭 **Need help interpreting results?** Read the [Interpret Calibrated Explanations](docs/how-to/interpret_explanations.md) guide for a deep dive into factual and alternative explanations, rule tables, PlotSpec visuals, and telemetry provenance.
+
+
 **Calibrated Explanations** is an explanation method for machine learning designed to enhance both the interpretability of model predictions and the quantification of uncertainty. In many real-world applications, understanding how confident a model is about its predictions is just as important as the predictions themselves. This framework provides calibrated explanations for both predictions and feature importance by minimizing **aleatoric** and quantifying **epistemic uncertainty** — two types of uncertainty that offer critical insights into both data and model reliability.
 
 - **Aleatoric uncertainty** represents the noise inherent in the data. It affects the spread of probability distributions (for probabilistic outcomes) and predictions (for regression). This uncertainty is **irreducible** because it reflects limitations in the data generation process itself. Incorporating calibration ensures accurate decision support. The difference between the calibrated and the uncalibrated predictions is a measure of the aleatoric uncertainty.
@@ -112,92 +115,73 @@ The darker red bars for each rule (left) show the probability intervals provided
 [Table of Content](#table-of-contents)
 
 ## Quick Start
-Here is a very condensed example to get you started:
+The snippet below mirrors the workflow used in the notebooks and CLI. Prepare
+your own train / calibration / test splits, then:
+
+> 📘 **Interpret the outputs:** After running the snippet, review the new [Interpret Calibrated Explanations](docs/how-to/interpret_explanations.md) guide. It explains how to read calibrated predictions, interval semantics, counterfactual rules, and telemetry provenance so you can act on the results safely.
 
 ```python
-   from calibrated_explanations import WrapCalibratedExplainer
-   # Load and pre-process your data
-   # Divide it into proper training, calibration, and test sets
+from calibrated_explanations import WrapCalibratedExplainer
+from sklearn.ensemble import RandomForestClassifier
 
-   # Initialize the WrapCalibratedExplainer with your model
-   classifier = WrapCalibratedExplainer(ClassifierOfYourChoice())
-   regressor = WrapCalibratedExplainer(RegressorOfYourChoice())
+# 1. Fit your base learner and wrap it
+clf = RandomForestClassifier(random_state=0).fit(X_train, y_train)
+explainer = WrapCalibratedExplainer(clf)
+explainer.calibrate(X_cal, y_cal)
 
-   # Train your model using the proper training set
-   classifier.fit(X_proper_training_cls, y_proper_training_cls)
-   regressor.fit(X_proper_training_reg, y_proper_training_reg)
+# 2. Generate calibrated explanations
+factual = explainer.explain_factual(X_test[:5])
+alternatives = explainer.explore_alternatives(X_test[:5])
 
-   # Initialize the CalibratedExplainer
-   classifier.calibrate(X_calibration_cls, y_calibration_cls)
-   regressor.calibrate(X_calibration_reg, y_calibration_reg)
+# 3. Retrieve calibrated predictions with uncertainty
+prediction, (low, high) = explainer.predict(X_test[:1], uq_interval=True, threshold=0.5)
+print(f"Calibrated probability: {prediction[0]:.3f}, interval={low[0]:.3f}-{high[0]:.3f}")
 
-   # Factual Explanations
-   # Create factual explanations for classification
-   factual_explanations = classifier.explain_factual(X_test_cls)
-   # Create factual standard explanations for regression with default 90 % uncertainty interval
-   factual_explanations = regressor.explain_factual(X_test_reg) # low_high_percentiles=(5,95)
-   # Create factual standard explanations for regression with user assigned uncertainty interval
-   factual_explanations = regressor.explain_factual(X_test_reg, low_high_percentiles=(10,90))
-   # Create factual probabilistic explanations for regression with user assigned threshold
-   your_threshold = 1000
-   factual_explanations = regressor.explain_factual(X_test_reg, threshold=your_threshold)
+# 4. Inspect telemetry (mode, interval/plot sources, preprocessor snapshot, …)
+print(f"Plot source -> {factual.telemetry['plot_source']}")
+print(f"Telemetry keys -> {sorted(factual.telemetry.keys())}")
+print(f"Runtime telemetry -> {explainer.runtime_telemetry}")
 
-   # Alternative Explanations
-   # Create alternative explanations for classification
-   alternative_explanations = classifier.explore_alternatives(X_test_cls)
-   # Create alternative standard explanations for regression with default 90 % uncertainty interval
-   alternative_explanations = regressor.explore_alternatives(X_test_reg) # low_high_percentiles=(5,95)
-   # Create alternative standard explanations for regression with user assigned uncertainty interval
-   alternative_explanations = regressor.explore_alternatives(X_test_reg, low_high_percentiles=(10,90))
-   # Create alternative probabilistic explanations for regression with user assigned threshold
-   alternative_explanations = regressor.explore_alternatives(X_test_reg, threshold=your_threshold)
-
-   # Plot the explanations, works the same for classification and regression
-   factual_explanations.plot()
-   factual_explanations.plot(uncertainty=True)
-   alternative_explanations.plot()
-
-   # Add conjunctions to the explanations, works the same for classification and regression
-   factual_conjunctions.add_conjunctions()
-   alternative_conjunctions.add_conjunctions()
-
-   # One-sided and asymmetric explanations for regression are easily created
-   factual_upper_bounded = regressor.explain_factual(X_test_reg, low_high_percentiles=(-np.inf,90))
-   alternative_lower_bounded = regressor.explore_alternatives(X_test_reg, low_high_percentiles=(10,np.inf))
-   alternative_asymmetric = regressor.explore_alternatives(X_test_reg, low_high_percentiles=(10,70))
+# 5. Plotting now routes through PlotSpec builders by default
+factual.plot(uncertainty=True)        # uses plot_spec.default.*
+alternatives.plot(uncertainty=True)
 ```
-It is easy to access the predictions and probabilities from the calibrator and model.
 
-```python
-   # Train your model using the proper training set
-   classifier.fit(X_proper_training_cls, y_proper_training_cls)
-   regressor.fit(X_proper_training_reg, y_proper_training_reg)
+Telemetry captures the active interval/plot plugins, uncertainty payload, and,
+when a preprocessor is configured, the ADR-009 snapshot. Example payload:
 
-   # Output the model predictions and probabilities (without calibration)
-   uncal_proba_cls = classifier.predict_proba(X_test_cls)
-   uncal_y_hat_cls = classifier.predict(X_test_cls)
-   uncal_y_hat_reg = regressor.predict(X_test_reg)
+```json
+{
+  "mode": "factual",
+  "interval_source": "core.interval.legacy",
+  "proba_source": "core.interval.legacy",
+  "plot_source": "plot_spec.default.factual",
+  "plot_fallbacks": ["plot_spec.default.factual", "legacy"],
+  "uncertainty": {
+    "representation": "percentile",
+    "calibrated_value": 0.42,
+    "lower_bound": 0.32,
+    "upper_bound": 0.58,
+    "legacy_interval": [0.32, 0.58]
+  },
+  "preprocessor": {
+    "auto_encode": "true",
+    "transformer_id": "sklearn.compose:ColumnTransformer"
+  }
+}
+```
 
-   # Initialize the CalibratedExplainer
-   classifier.calibrate(X_calibration_cls, y_calibration_cls)
-   regressor.calibrate(X_calibration_reg, y_calibration_reg)
+To review the registered plugins and defaults from the command line:
 
-   # Output the model predictions and probabilities (without calibration).
-   uncal_proba_cls = classifier.predict_proba(X_test_cls, calibrated=False)
-   uncal_y_hat_cls = classifier.predict(X_test_cls, calibrated=False)
-   uncal_y_hat_reg = regressor.predict(X_test_reg, calibrated=False)
+```bash
+python -m calibrated_explanations.plugins list plots
+python -m calibrated_explanations.plugins show plot_spec.default
+```
 
-   # Output the calibrated predictions and probabilities
-   calib_proba_cls = classifier.predict_proba(X_test_cls)
-   calib_y_hat_cls = classifier.predict(X_test_cls)
-   calib_y_hat_reg = regressor.predict(X_test_reg)
-   # Get thresholded regression predictions and probabilities for labels 'y_hat > threshold' and 'y_hat <= threshold'
-   your_threshold = 1000
-   thrld_y_hat_reg = regressor.predict(X_test_reg, threshold=your_threshold)
-   thrld_proba_reg = regressor.predict_proba(X_test_reg, threshold=your_threshold)
-
-   # Include uncertainty interval, outputted as a tuple (low, high)
-   calib_proba_cls, low_high = classifier.predict_proba(X_test_cls, uq_interval=True)
+Passing `CE_PLOT_STYLE=legacy` (or configuring `[tool.calibrated_explanations.plots]`
+in `pyproject.toml`) forces the historical Matplotlib renderer. The fallback
+chain is recorded in telemetry so downstream services can detect which path was
+used.
 
 ## Performance scaffolding (experimental)
 

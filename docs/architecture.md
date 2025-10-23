@@ -4,7 +4,7 @@ This page summarizes the high-level component and data flow for the library. See
 
 ## Explain Flow
 
-```mermaid
+```{mermaid}
 flowchart LR
     subgraph EXT[External]
         D[Training Data]
@@ -45,7 +45,7 @@ flowchart LR
 
 ## Layers
 
-```mermaid
+```{mermaid}
 flowchart TB
     UI[Public API]
     ORCH[Orchestrators]

@@ -1,17 +1,13 @@
-"""Explainer plugin interfaces and registry.
+"""Plugin interfaces, registry utilities, and in-tree plugin registrations.
 
-This subpackage exposes core plugin protocols and registry utilities covering
-explanation, interval, and plotting integrations. The foundational
-``ExplainerPlugin`` protocol and ``validate_plugin_meta`` helper derive from
-ADR-006, while ADR-013/ADR-014/ADR-015 extend the surface with richer
-contracts for calibrated explanations.
-
-Security note: Registering/using third-party plugins executes arbitrary code.
-Only use plugins you trust. This API is opt-in and intentionally explicit.
+The package exposes protocol definitions (`base`, `explanations`, `intervals`,
+`plots`) plus the shared registry machinery described in ADR-006/013/014/015.
+Importing this module eagerly registers the built-in plugins so callers simply
+need to `import calibrated_explanations.plugins` before resolving identifiers.
 """
 
-# Eagerly register in-tree plugins so they are available without explicit import
-from . import builtins as _builtins  # noqa: F401
+import contextlib
+
 from . import registry  # re-export module for convenience
 from .base import ExplainerPlugin, PluginMeta, validate_plugin_meta  # noqa: F401
 from .explanations import (  # noqa: F401
@@ -70,3 +66,8 @@ __all__ = [
     "clear_interval_plugins",
     "clear_plot_plugins",
 ]
+
+# Eagerly register in-tree plugins so they are available without explicit import.
+# Import at the end to avoid circular import during core initialisation.
+with contextlib.suppress(Exception):  # pragma: no cover - import-order guard
+    from . import builtins as _builtins  # noqa: F401

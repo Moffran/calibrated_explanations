@@ -1,6 +1,6 @@
 # ADR-004: Parallel Backend Abstraction
 
-Status: Deferred (post-1.0 evaluation)
+Status: Proposed (targeting v0.9.0 opt-in release)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -35,6 +35,26 @@ Configuration surface via `ParallelConfig` (max_workers, preferred, task_size_hi
 
 Instrumentation: timing per task, queue wait time, worker utilization (approx), exported via metrics hooks.
 
+### Operational clarifications
+
+- **Opt-in default:** parallel execution stays disabled unless `ParallelConfig(enable=True)` is supplied or `CE_PARALLEL` is set to a non-`off` value. Document per-release guidance highlighting when to keep serial mode.
+- **API contract preservation:** strategy selection and configuration MUST remain optional
+  enhancements. `WrapCalibratedExplainer` public entry points (`fit`,
+  `calibrate`, `explain_factual`, `explore_alternatives`, `predict`,
+  `predict_proba`, and plotting/uncertainty helpers) keep their existing
+  signatures without deprecation warnings or behavioural breaking changes.
+- **Graceful degradation:** if a strategy raises during executor creation or task execution, automatically fall back to `SerialStrategy` and emit a structured warning; failures must not abort explanation flows.
+- **Compatibility with caching:** after `fork`/`spawn`, call the `forksafe_reset()` cache hook defined in ADR-003 so per-process caches do not leak stale references.
+- **Resource limits:** honour `max_workers` caps and expose heuristics for CPU count detection, respecting container cgroup quotas. Provide guardrails to avoid oversubscription in CI (detect via env flags, default to serial).
+- **Telemetry contract:** record aggregated metrics (`tasks_submitted`, `tasks_completed`, `worker_utilisation_pct`, `fallbacks_to_serial`) and ensure they flow through the same telemetry API used for caching metrics. Logging must be suppressible in production by honoring existing verbosity settings.
+- **Testing requirements:** add unit tests for each strategy path, fork/spawn lifecycle, telemetry emission, and failure fallback. Provide an integration benchmark demonstrating improved throughput on the Python fallback explain path.
+
+### Documentation & rollout requirements
+
+- Extend configuration docs and release notes with parallel strategy descriptions, environment variable matrix, and troubleshooting tips for common platforms (macOS spawn, Windows spawn).
+- Ship an upgrade guide snippet covering interaction with plugin-provided executors and guidance for opting out when running within user-managed pools.
+- Capture heuristics and defaults in an appendix so future contributors can tune thresholds without re-auditing the ADR history.
+
 ## Alternatives Considered
 
 1. Hard-code joblib everywhere (adds dependency, hides heuristics, less explicit control).
@@ -58,7 +78,8 @@ Negative / Risks:
 
 ## Implementation status (2025-10-07)
 
-- No parallel executor abstraction has been merged; related configuration flags
-  remain inert placeholders on `ExplainerConfig`.
-- Release plan schedules any parallel backend work after the v0.9.0 documentation
-  and packaging milestone, keeping it out of the v1.0.0 critical path.【F:improvement_docs/RELEASE_PLAN_v1.md†L84-L114】
+- Parallel executor abstraction is scheduled for v0.9.0 delivery alongside the
+  caching controls, but no code has landed yet; configuration flags remain
+  placeholders pending implementation.【F:improvement_docs/RELEASE_PLAN_v1.md†L120-L176】
+- Telemetry and fallback wiring must be verified during the v1.0.0-rc staging
+  window before enabling broader defaults.【F:improvement_docs/RELEASE_PLAN_v1.md†L178-L197】

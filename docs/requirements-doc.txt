@@ -6,7 +6,11 @@ myst_parser
 nbsphinx
 numpy >= 1.20
 numpydoc
+pytest
 pydata_sphinx_theme
+furo
+sphinxcontrib-mermaid
+linkify-it-py
 sphinx>=8.1.3
 docutils>=0.20
 sphinx_rtd_theme

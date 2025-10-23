@@ -12,8 +12,9 @@ When no preprocessor is provided, behavior is unchanged (covered by existing tes
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from calibrated_explanations.api.config import ExplainerConfig
+from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig
 from calibrated_explanations.core import wrap_explainer as we
 
 
@@ -29,6 +30,15 @@ class DummyPreprocessor:
     def transform(self, x):
         assert self.fitted
         return np.asarray(x) * self.factor
+
+
+class SnapshotPreprocessor(DummyPreprocessor):
+    def __init__(self, factor: float = 2.0, snapshot: dict[str, float] | None = None) -> None:
+        super().__init__(factor)
+        self._snapshot = snapshot or {"factor": factor}
+
+    def get_mapping_snapshot(self):
+        return self._snapshot
 
 
 class StubModel:
@@ -133,3 +143,43 @@ def test_preprocessor_is_persistent_and_deterministic(monkeypatch):
     # Should have used transform only (no new fit)
     assert pre.fit_calls == 1
     assert pre.transform_calls >= 2  # calibrate + inference paths
+
+
+def test_preprocessor_metadata_exposed_in_telemetry():
+    pytest.importorskip("sklearn")
+    from sklearn.datasets import make_classification
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.model_selection import train_test_split
+
+    x, y = make_classification(n_samples=120, n_features=6, random_state=0)
+    x_train, x_temp, y_train, y_temp = train_test_split(
+        x, y, test_size=0.4, random_state=42, stratify=y
+    )
+    x_cal, x_test, y_cal, _ = train_test_split(
+        x_temp, y_temp, test_size=0.5, random_state=24, stratify=y_temp
+    )
+
+    pre = SnapshotPreprocessor(factor=1.3)
+    cfg = (
+        ExplainerBuilder(RandomForestClassifier(n_estimators=10, random_state=0))
+        .preprocessor(pre)
+        .auto_encode(True)
+        .build_config()
+    )
+    wrapper = we.WrapCalibratedExplainer._from_config(cfg)
+    wrapper.fit(x_train, y_train)
+    wrapper.calibrate(x_cal, y_cal)
+
+    batch = wrapper.explain_factual(x_test[:3])
+    telemetry = getattr(batch, "telemetry", {})
+    meta = telemetry.get("preprocessor")
+    assert meta is not None
+    assert meta.get("auto_encode") == "true"
+    expected_transformer = f"{pre.__class__.__module__}:{pre.__class__.__qualname__}"
+    assert meta.get("transformer_id") == expected_transformer
+    snapshot = meta.get("mapping_snapshot")
+    assert snapshot is not None
+    assert snapshot.get("custom", {}).get("factor") == pre.factor
+    assert wrapper.explainer is not None
+    runtime_meta = wrapper.explainer.runtime_telemetry.get("preprocessor")
+    assert runtime_meta == meta
