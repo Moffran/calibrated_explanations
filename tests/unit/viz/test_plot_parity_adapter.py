@@ -1,5 +1,9 @@
 from calibrated_explanations.viz import matplotlib_adapter as mpl_adapter
-from calibrated_explanations.viz.builders import _legacy_get_fill_color
+from calibrated_explanations.viz.builders import (
+    REGRESSION_BAR_COLOR,
+    REGRESSION_BASE_COLOR,
+)
+
 from tests.unit.viz.test_plot_parity_fixtures import (
     factual_probabilistic_no_uncertainty,
     factual_probabilistic_zero_crossing,
@@ -18,8 +22,8 @@ def _role_alpha(pr):
     return v.get("color_role"), v.get("alpha")
 
 
-REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
-REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)
+REG_BAR_COLOR = REGRESSION_BAR_COLOR
+REG_BASE_COLOR = REGRESSION_BASE_COLOR
 
 
 def test_factual_probabilistic_no_uncertainty_primitives():

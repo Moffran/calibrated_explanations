@@ -104,7 +104,10 @@ def _legacy_get_fill_color(probability: float, reduction: float = 1.0) -> str:
         alpha = reduction
     alpha = float(alpha)
     blended = [int(round(alpha * c + (1 - alpha) * 255, 0)) for c in color]
-    return "#%02x%02x%02x" % tuple(blended)
+    hex_color = "#%02x%02x%02x" % tuple(blended)
+    if reduction == 1.0 and math.isfinite(probability) and math.isclose(probability, 1.0, rel_tol=1e-9, abs_tol=1e-12):
+        return "#ff0000"
+    return hex_color
 
 
 REGRESSION_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
@@ -536,7 +539,7 @@ def build_alternative_regression_spec(
     xtick_values = tuple(float(x) for x in xticks) if xticks is not None else None
 
     lo, hi = (min(base_low, base_high), max(base_low, base_high))
-    base_segments = (IntervalSegment(low=lo, high=hi, color=REGRESSION_BASE_COLOR, alpha=0.3),)
+    base_segments = (IntervalSegment(low=lo, high=hi, color=REGRESSION_BASE_COLOR),)
     base_lines = ((base_pred, REGRESSION_BAR_COLOR, 0.3),)
 
     bars: list[BarItem] = []

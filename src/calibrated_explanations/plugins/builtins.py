@@ -17,13 +17,15 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 import numpy as np
 
 from .. import __version__ as package_version
-from ..core.venn_abers import VennAbers
-from ..core.interval_regressor import IntervalRegressor
+
+if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
+    from ..core.interval_regressor import IntervalRegressor
+    from ..core.venn_abers import VennAbers
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
@@ -169,11 +171,15 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         difficulty = context.difficulty.get("estimator")
         x_cal, y_cal = context.calibration_splits[0]
         if "regression" in task:
+            from ..core.interval_regressor import IntervalRegressor
+
             explainer = context.metadata.get("explainer")
             if explainer is None:
                 raise RuntimeError("Legacy interval context missing 'explainer' handle")
             calibrator = IntervalRegressor(explainer)
         else:
+            from ..core.venn_abers import VennAbers
+
             predict_function = context.metadata.get("predict_function")
             if predict_function is None:
                 explainer = context.metadata.get("explainer")
@@ -251,6 +257,8 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         calibrators: list[Any] = []
         num_features = int(metadata.get("num_features", 0) or 0)
         if "classification" in task:
+            from ..core.venn_abers import VennAbers  # local import to avoid circular dependency
+
             for f in range(num_features):
                 fast_x_cal = explainer.scaled_x_cal.copy()
                 fast_x_cal[:, f] = explainer.fast_x_cal[:, f]
@@ -264,6 +272,8 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                     )
                 )
         else:
+            from ..core.interval_regressor import IntervalRegressor  # local import to avoid circular dependency
+
             for f in range(num_features):
                 fast_x_cal = explainer.scaled_x_cal.copy()
                 fast_x_cal[:, f] = explainer.fast_x_cal[:, f]
@@ -276,6 +286,8 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         explainer.bins = original_bins
 
         if "classification" in task:
+            from ..core.venn_abers import VennAbers  # local import to avoid circular dependency
+
             calibrators.append(
                 VennAbers(
                     x_cal,
@@ -291,6 +303,8 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                 )
             )
         else:
+            from ..core.interval_regressor import IntervalRegressor  # local import to avoid circular dependency
+
             calibrators.append(IntervalRegressor(explainer))
 
         if isinstance(metadata, dict):
@@ -769,6 +783,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                     "pos_label": payload.get("pos_label"),
                 }
             )
+            builder_kwargs.pop("threshold_value", None)
+            builder_kwargs.pop("is_thresholded", None)
+            builder_kwargs.pop("threshold_label", None)
             return build_alternative_probabilistic_spec(**builder_kwargs)
 
         raise RuntimeError("PlotSpec default builder currently supports only global plots")
