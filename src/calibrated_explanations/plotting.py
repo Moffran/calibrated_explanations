@@ -21,6 +21,24 @@ import numpy as np
 # while development of plotspec, adapters, and builders are unfinished.
 from .legacy import plotting as legacy
 
+
+def _derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
+    """Return positive/negative labels summarising a regression threshold."""
+
+    try:
+        if isinstance(threshold, Sequence) and not isinstance(threshold, (str, bytes)):
+            if len(threshold) >= 2:
+                lo = float(threshold[0])
+                hi = float(threshold[1])
+                return (f"{lo:.2f} ≤ Y < {hi:.2f}", "Outside interval")
+    except Exception:
+        pass
+    try:
+        value = float(threshold)
+    except Exception:
+        return ("Target within threshold", "Outside threshold")
+    return (f"Y < {value:.2f}", f"Y ≥ {value:.2f}")
+
 try:
     import tomllib as _plot_tomllib
 except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
@@ -951,6 +969,7 @@ def _plot_alternative(
         x_axis_label = None
         xlim_override: tuple[float, float] | None = None
         xticks_override: Sequence[float] | None = None
+        is_thresholded = False
         if not is_regression:
             class_labels = None
             try:
@@ -972,7 +991,6 @@ def _plot_alternative(
             # Legacy plots fixed the probability axis to [0,1] with evenly spaced ticks
             xlim_override = (0.0, 1.0)
             xticks_override = [float(x) for x in np.linspace(0.0, 1.0, 11)]
-            is_thresholded = False
             try:
                 is_thresholded = bool(explanation.is_thresholded())
             except Exception:
@@ -1032,6 +1050,10 @@ def _plot_alternative(
                 if x_axis_label is None:
                     x_axis_label = "Probability"
         else:
+            try:
+                is_thresholded = bool(explanation.is_thresholded())
+            except Exception:
+                is_thresholded = False
             if normalised_y_minmax is not None:
                 try:
                     xlim_override = (
@@ -1055,10 +1077,37 @@ def _plot_alternative(
                     confidence = calibrated.get_confidence()
             except Exception:
                 confidence = None
-            if confidence is not None:
-                x_axis_label = f"Prediction interval with {confidence}% confidence"
+            if is_thresholded:
+                xlim_override = (0.0, 1.0)
+                xticks_override = [float(x) for x in np.linspace(0.0, 1.0, 11)]
+                threshold_value = getattr(explanation, "y_threshold", None)
+                if np.isscalar(threshold_value):
+                    try:
+                        x_axis_label = (
+                            f"Probability of target being below {float(threshold_value):.2f}"
+                        )
+                    except Exception:
+                        x_axis_label = "Probability"
+                elif isinstance(threshold_value, tuple) and len(threshold_value) >= 2:
+                    try:
+                        x_axis_label = (
+                            "Probability of target being between "
+                            f"{float(threshold_value[0]):.3f} and {float(threshold_value[1]):.3f}"
+                        )
+                    except Exception:
+                        x_axis_label = "Probability"
+                else:
+                    try:
+                        x_axis_label = (
+                            f"Probability of target being below {float(threshold_value):.2f}"
+                        )
+                    except Exception:
+                        x_axis_label = "Probability"
             else:
-                x_axis_label = "Prediction interval"
+                if confidence is not None:
+                    x_axis_label = f"Prediction interval with {confidence}% confidence"
+                else:
+                    x_axis_label = "Prediction interval"
 
         from .viz.builders import (
             build_alternative_probabilistic_spec,
@@ -1081,12 +1130,24 @@ def _plot_alternative(
             "legacy_solid_behavior": True,
         }
         if is_regression:
-            builder_kwargs.update({
-                "xlabel": x_axis_label,
-                "xlim": xlim_override,
-                "xticks": xticks_override,
-            })
-            spec = build_alternative_regression_spec(**builder_kwargs)
+            if is_thresholded:
+                threshold_value = getattr(explanation, "y_threshold", None)
+                pos_label, neg_label = _derive_threshold_labels(threshold_value)
+                classification_kwargs = builder_kwargs.copy()
+                classification_kwargs["neg_label"] = neg_label
+                classification_kwargs["pos_label"] = pos_label
+                classification_kwargs["xlabel"] = x_axis_label or "Probability"
+                classification_kwargs["xlim"] = (0.0, 1.0)
+                classification_kwargs["xticks"] = [float(x) for x in np.linspace(0.0, 1.0, 11)]
+                classification_kwargs["y_minmax"] = None
+                spec = build_alternative_probabilistic_spec(**classification_kwargs)
+            else:
+                builder_kwargs.update({
+                    "xlabel": x_axis_label,
+                    "xlim": xlim_override,
+                    "xticks": xticks_override,
+                })
+                spec = build_alternative_regression_spec(**builder_kwargs)
         else:
             builder_kwargs.update({
                 "neg_label": neg_label,

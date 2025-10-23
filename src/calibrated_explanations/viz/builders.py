@@ -514,17 +514,7 @@ def build_alternative_regression_spec(
     base_low = float(predict.get("low", base_pred))
     base_high = float(predict.get("high", base_pred))
 
-    is_probability_mode = (
-        0.0 <= base_pred <= 1.0
-        and 0.0 <= base_low <= 1.0
-        and 0.0 <= base_high <= 1.0
-        and y_minmax is not None
-        and abs(float(y_minmax[1]) - float(y_minmax[0])) > 1.0
-    )
-
-    if is_probability_mode:
-        default_xlim = (0.0, 1.0)
-    elif y_minmax is not None:
+    if y_minmax is not None:
         floor = float(y_minmax[0])
         ceil = float(y_minmax[1])
         base_low = float(min(max(base_low, floor), ceil))
@@ -534,24 +524,16 @@ def build_alternative_regression_spec(
         lo, hi = (min(base_low, base_high), max(base_low, base_high))
         default_xlim = (lo, hi if not math.isclose(lo, hi, rel_tol=1e-9) else lo + 1.0)
 
-    if is_probability_mode:
-        xlim = (0.0, 1.0)
-    else:
-        if xlim is None:
-            xlim = default_xlim
-        xlim = (float(xlim[0]), float(xlim[1])) if xlim is not None else default_xlim
+    if xlim is None:
+        xlim = default_xlim
+    xlim = (float(xlim[0]), float(xlim[1])) if xlim is not None else default_xlim
 
-    if is_probability_mode:
-        body_xlabel = "Probability"
-    elif xlabel is None:
+    if xlabel is None:
         body_xlabel = "Prediction interval"
     else:
         body_xlabel = xlabel
 
-    if is_probability_mode:
-        xtick_values = tuple(float(x) for x in np.linspace(0.0, 1.0, 11))
-    else:
-        xtick_values = tuple(float(x) for x in xticks) if xticks is not None else None
+    xtick_values = tuple(float(x) for x in xticks) if xticks is not None else None
 
     lo, hi = (min(base_low, base_high), max(base_low, base_high))
     base_segments = (IntervalSegment(low=lo, high=hi, color=REGRESSION_BASE_COLOR, alpha=0.3),)

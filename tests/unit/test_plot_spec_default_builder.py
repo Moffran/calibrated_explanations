@@ -7,6 +7,9 @@ from calibrated_explanations.plugins.builtins import PlotSpecDefaultBuilder
 from calibrated_explanations.viz.builders import _legacy_get_fill_color
 from calibrated_explanations.viz.plotspec import PlotSpec
 
+REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
+REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)
+
 
 def _make_context(intent, payload, explanation=None):
     return PlotRenderContext(
@@ -122,7 +125,12 @@ def test_plot_spec_builder_handles_alternative_regression_without_intervals():
 
 def test_plot_spec_builder_normalizes_probability_regression_scale():
     builder = PlotSpecDefaultBuilder()
-    explanation = SimpleNamespace(get_mode=lambda: "regression", y_minmax=(22500.0, 500001.0))
+    explanation = SimpleNamespace(
+        get_mode=lambda: "regression",
+        y_minmax=(22500.0, 500001.0),
+        is_thresholded=lambda: True,
+        y_threshold=180000,
+    )
     payload = {
         "predict": {"predict": 0.22, "low": 0.18, "high": 0.24},
         "feature_predict": {
@@ -143,14 +151,11 @@ def test_plot_spec_builder_normalizes_probability_regression_scale():
     spec = builder.build(context)
 
     assert isinstance(spec, PlotSpec)
+    assert spec.header is None
     assert spec.body is not None
     assert spec.body.xlim == (0.0, 1.0)
-    assert spec.body.xlabel == "Probability"
-    base_segments = getattr(spec.body, "base_segments", ())
-    assert base_segments
-    assert base_segments[0].low == 0.18 and base_segments[0].high == 0.24
-    overlays = [getattr(bar, "segments", ()) for bar in spec.body.bars]
-    assert overlays and all(seg[0].low >= 0.0 and seg[0].high <= 1.0 for seg in overlays if seg)
+    assert spec.body.xlabel == "Probability of target being below 180000.00"
+    assert {bar.color_role for bar in spec.body.bars} <= {"positive", "negative"}
 
 
 def test_plot_spec_builder_infers_missing_features_and_labels():
@@ -187,5 +192,3 @@ def test_plot_spec_builder_infers_missing_features_and_labels():
     assert [bar.label for bar in spec.body.bars] == ["0", "1", "2"]
     # Ensure intervals are respected after normalisation
     assert all(bar.interval_low is not None and bar.interval_high is not None for bar in spec.body.bars)
-REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
-REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)

@@ -125,15 +125,21 @@ def alternative_regression_probability_scale():
         "low": [0.0, 0.28],
         "high": [0.02, 0.32],
     }
-    spec = build_alternative_regression_spec(
+    xticks = [float(x) for x in np.linspace(0.0, 1.0, 11)]
+    spec = build_alternative_probabilistic_spec(
         title="alt_reg_prob",
         predict=predict,
         feature_weights=feature_predict,
         features_to_plot=[0, 1],
         column_names=["r0", "r1"],
         instance=[0.05, -0.12],
-        y_minmax=[22500.0, 500001.0],
+        y_minmax=None,
         interval=True,
+        neg_label="Y ≥ 180000.00",
+        pos_label="Y < 180000.00",
+        xlabel="Probability of target being below 180000.00",
+        xlim=(0.0, 1.0),
+        xticks=xticks,
     )
     return spec
 

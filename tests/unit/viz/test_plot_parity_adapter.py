@@ -114,17 +114,17 @@ def test_alternative_regression_point_primitives():
 
 def test_alternative_regression_probability_scale_primitives():
     spec = alternative_regression_probability_scale()
-    assert spec.header is None
+    assert spec.header is not None and getattr(spec.header, "dual", False)
     primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    assert not primitives.get("header")
     overlays = primitives.get("overlays", [])
     assert isinstance(overlays, list) and len(overlays) >= 1
-    assert any(item.get("color") == REG_BASE_COLOR for item in overlays if item.get("index") == -1)
-    assert any(item.get("color") == REG_BAR_COLOR for item in overlays if item.get("index") is not None and item.get("index") >= 0)
+    colors = {item.get("color") for item in overlays}
+    assert len(colors) >= 2
+    assert any(item.get("index") == -1 for item in overlays)
     lines = primitives.get("lines", [])
     assert isinstance(lines, list) and len(lines) >= 1
-    assert any(item.get("color") == REG_BAR_COLOR for item in lines if item.get("index") is not None and item.get("index") >= 0)
     assert spec.body is not None and spec.body.xlim == (0.0, 1.0)
+    assert spec.body.xlabel.startswith("Probability")
 
 
 def test_triangular_primitives():

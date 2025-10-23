@@ -52,6 +52,25 @@ from .registry import (
     register_plot_style,
 )
 
+
+def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
+    """Produce positive/negative labels for thresholded regression."""
+
+    try:
+        if isinstance(threshold, Sequence) and not isinstance(threshold, (str, bytes)):
+            if len(threshold) >= 2:
+                lo = float(threshold[0])
+                hi = float(threshold[1])
+                return (f"{lo:.2f} ≤ Y < {hi:.2f}", "Outside interval")
+    except Exception:
+        pass
+    try:
+        value = float(threshold)
+    except Exception:
+        return ("Target within threshold", "Outside threshold")
+    return (f"Y < {value:.2f}", f"Y ≥ {value:.2f}")
+
+
 class LegacyPredictBridge(PredictBridge):
     """Predict bridge delegating to :class:`CalibratedExplainer` methods."""
 
@@ -658,6 +677,30 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             legacy_behavior = payload.get("legacy_solid_behavior", True)
             uncertainty_color = payload.get("uncertainty_color")
             uncertainty_alpha = payload.get("uncertainty_alpha")
+            is_thresholded = False
+            threshold_label: str | None = None
+            if context.explanation is not None:
+                with contextlib.suppress(Exception):
+                    is_thresholded = bool(context.explanation.is_thresholded())
+                if is_thresholded:
+                    y_threshold = getattr(context.explanation, "y_threshold", None)
+                    if isinstance(y_threshold, tuple) and len(y_threshold) >= 2:
+                        try:
+                            lo_val = float(y_threshold[0])
+                            hi_val = float(y_threshold[1])
+                        except Exception:
+                            threshold_label = None
+                        else:
+                            threshold_label = (
+                                f"Probability of target being between {lo_val:.3f} and {hi_val:.3f}"
+                            )
+                    elif y_threshold is not None:
+                        try:
+                            thr = float(y_threshold)
+                        except Exception:
+                            threshold_label = None
+                        else:
+                            threshold_label = f"Probability of target being below {thr:.2f}"
 
             variant_hint = str(
                 intent.get("mode")
@@ -694,10 +737,31 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 "legacy_solid_behavior": bool(legacy_behavior),
                 "uncertainty_color": uncertainty_color,
                 "uncertainty_alpha": uncertainty_alpha,
+                "threshold_value": getattr(context.explanation, "y_threshold", None) if is_thresholded else None,
+                "is_thresholded": is_thresholded,
+                "threshold_label": threshold_label,
             }
 
             if "regression" in variant_hint:
-                return build_alternative_regression_spec(**builder_kwargs)
+                thresholded = builder_kwargs.pop("is_thresholded")
+                threshold_label_text = builder_kwargs.pop("threshold_label")
+                threshold_value = builder_kwargs.pop("threshold_value")
+                if thresholded:
+                    pos_label, neg_label = _derive_threshold_labels(threshold_value)
+                    classification_kwargs = builder_kwargs.copy()
+                    classification_kwargs.pop("xlabel", None)
+                    classification_kwargs.pop("xlim", None)
+                    classification_kwargs.pop("xticks", None)
+                    classification_kwargs["neg_label"] = neg_label
+                    classification_kwargs["pos_label"] = pos_label
+                    classification_kwargs["xlabel"] = threshold_label_text or "Probability"
+                    classification_kwargs["xlim"] = (0.0, 1.0)
+                    classification_kwargs["xticks"] = [float(x) for x in np.linspace(0.0, 1.0, 11)]
+                    classification_kwargs["y_minmax"] = None
+                    return build_alternative_probabilistic_spec(**classification_kwargs)
+                else:
+                    builder_kwargs.pop("threshold_value", None)
+                    return build_alternative_regression_spec(**builder_kwargs)
 
             builder_kwargs.update(
                 {
