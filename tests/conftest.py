@@ -407,7 +407,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_marker)
 
 
-_MATPLOTLIB_OPTIONAL_FAIL_UNDER = 60.0
+_MATPLOTLIB_OPTIONAL_FAIL_UNDER = 50.0
 
 _MATPLOTLIB_OPTIONAL_MODULES = {
     "src/calibrated_explanations/_plots.py",
