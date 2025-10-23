@@ -252,6 +252,7 @@ def test_probabilistic_regression_ce(regression_dataset):
     alternative_explanation.counter_explanations()
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_int_threshold_ce(regression_dataset):
     """Ensure integer thresholds are accepted for probabilistic regression paths."""
     (
@@ -284,6 +285,7 @@ def test_probabilistic_regression_int_threshold_ce(regression_dataset):
     alternative_explanation.plot(show=False)
 
 
+@pytest.mark.viz
 def test_regression_as_classification_ce(regression_dataset):
     """
     Tests probabilistic explanations for regression models.
@@ -592,6 +594,7 @@ def test_regression_fast_ce(regression_dataset):
         fast_explanation.plot(show=False, uncertainty=True)
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_fast_ce(regression_dataset):
     """
     Tests fast probabilistic explanations for regression models.

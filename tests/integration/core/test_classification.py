@@ -20,6 +20,7 @@ import pytest
 from tests._helpers import get_classification_model, initiate_explainer
 
 
+@pytest.mark.viz
 def test_binary_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset.
@@ -65,6 +66,7 @@ def test_binary_ce(binary_dataset):
     alternative_explanation.add_conjunctions(max_rule_size=3)
 
 
+@pytest.mark.viz
 def test_multiclass_ce_str_target(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset.
@@ -121,6 +123,7 @@ def test_multiclass_ce_str_target(multiclass_dataset):
     alternative_explanation.counter_explanations(only_ensured=True)
 
 
+@pytest.mark.viz
 def test_binary_ce_str_target(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset.
@@ -168,6 +171,7 @@ def test_binary_ce_str_target(binary_dataset):
     alternative_explanation.add_conjunctions(max_rule_size=3)
 
 
+@pytest.mark.viz
 def test_multiclass_ce(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset.
@@ -225,6 +229,7 @@ def test_multiclass_ce(multiclass_dataset):
     alternative_explanation.counter_explanations(only_ensured=True)
 
 
+@pytest.mark.viz
 def test_binary_conditional_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset and conditional bins.
@@ -270,6 +275,7 @@ def test_binary_conditional_ce(binary_dataset):
 
 
 @pytest.mark.slow
+@pytest.mark.viz
 def test_multiclass_conditional_ce(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset and conditional bins.
@@ -311,6 +317,7 @@ def test_multiclass_conditional_ce(multiclass_dataset):
     alternative_explanation.plot(show=False)
 
 
+@pytest.mark.viz
 def test_binary_fast_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset and perturbation.
@@ -344,6 +351,7 @@ def test_binary_fast_ce(binary_dataset):
         fast_explanation.add_conjunctions(max_rule_size=3)
 
 
+@pytest.mark.viz
 def test_multiclass_fast_ce(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset and perturbation.
@@ -387,6 +395,7 @@ def test_multiclass_fast_ce(multiclass_dataset):
         fast_explanation.add_conjunctions(max_rule_size=3)
 
 
+@pytest.mark.viz
 def test_binary_conditional_fast_ce(binary_dataset):
     """
     Tests the CalibratedExplainer with a binary classification dataset, conditional bins, and perturbation.
@@ -426,6 +435,7 @@ def test_binary_conditional_fast_ce(binary_dataset):
     fast_explanation[0].plot(show=False, uncertainty=True)
 
 
+@pytest.mark.viz
 def test_multiclass_fast_conditional_ce(multiclass_dataset):
     """
     Tests the CalibratedExplainer with a multiclass classification dataset, conditional bins, and perturbation.
