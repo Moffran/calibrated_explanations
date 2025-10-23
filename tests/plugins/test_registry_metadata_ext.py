@@ -390,6 +390,8 @@ def test_register_plot_builder():
             "style": "test",
             "dependencies": (),
             "trust": False,
+            "legacy_compatible": True,
+            "output_formats": ("png",),
         }
 
         def build(self, *args, **kwargs):  # pragma: no cover
@@ -433,6 +435,9 @@ def test_register_plot_style():
         "capabilities": ["plot"],
         "dependencies": (),
         "trust": False,
+        "style": "test_style",
+        "builder_id": "test.builder",
+        "renderer_id": "test.renderer",
     }
     descriptor = registry.register_plot_style("test.style", metadata=style_meta)
     assert descriptor.identifier == "test.style"
@@ -501,9 +506,8 @@ def test_register_plot_builder_invalid_identifier():
 
 def test_validate_interval_metadata_missing_modes():
     meta = _base_meta(capabilities=["interval"])
-    del meta["modes"]
 
-    with pytest.raises(ValueError, match="must declare at least one mode"):
+    with pytest.raises(ValueError, match="plugin_meta missing required key: modes"):
         registry.validate_interval_metadata(meta)
 
 

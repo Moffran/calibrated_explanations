@@ -113,7 +113,7 @@ def test_validate_explanation_metadata_no_modes():
     meta = _base_metadata()
     del meta["modes"]
 
-    with pytest.raises(ValueError, match="must declare at least one mode"):
+    with pytest.raises(ValueError, match="plugin_meta missing required key: modes"):
         validate_explanation_metadata(meta)
 
 

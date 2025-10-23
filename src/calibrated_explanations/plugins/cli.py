@@ -327,7 +327,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     untrust_parser.set_defaults(func=_cmd_trust, action="untrust")
 
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit as exc:
+        # argparse exits with sys.exit(2) on invalid args; catch and return code
+        # but first print help if no command was provided
+        if not getattr(exc, 'code', None) or exc.code != 0:
+            parser.print_help()
+        return exc.code
     if not getattr(args, "command", None):
         parser.print_help()
         return 0

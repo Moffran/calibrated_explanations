@@ -141,7 +141,8 @@ def test_cli_show_plot_renderer(capsys):
 def test_cli_invalid_command(capsys):
     exit_code = cli.main(["invalid"])
     assert exit_code != 0
-    out = capsys.readouterr().out
+    captured = capsys.readouterr()
+    out = captured.out + captured.err
     assert "usage:" in out
 
 
@@ -150,11 +151,11 @@ def test_cli_show_unknown_plugin(capsys):
     exit_code = cli.main(["show", "unknown"])
     assert exit_code != 0
     out = capsys.readouterr().out
-    assert "not found" in out.lower() or "error" in out.lower()
+    assert "not registered" in out.lower()
 
 
 def test_cli_trust_unknown_plugin(capsys):
     exit_code = cli.main(["trust", "unknown"])
     assert exit_code != 0
     out = capsys.readouterr().out
-    assert "not found" in out.lower() or "error" in out.lower()
+    assert "not registered" in out.lower()
