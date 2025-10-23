@@ -191,7 +191,7 @@ def test_render_regression_body_interval_behaviour(tmp_path):
             interval_high=0.8,
             instance_value="1.0",
         ),
-        # Interval matches header range and should be skipped.
+        # Interval matches header range and should still be rendered.
         BarItem(
             label="match_header",
             value=0.4,
@@ -224,9 +224,13 @@ def test_render_regression_body_interval_behaviour(tmp_path):
     )
 
     assert out_path.exists()
-    assert any(solid["index"] == 0 for solid in wrapper.get("solids", []))
-    assert any(overlay["index"] == 2 for overlay in wrapper.get("overlays", []))
-    assert "base_interval" in wrapper and "body" in wrapper["base_interval"]
+    solids = wrapper.get("solids", [])
+    overlays = wrapper.get("overlays", [])
+    assert any(solid["index"] == 0 for solid in solids)
+    # Header-matching intervals are now rendered; ensure index 1 overlay exists
+    assert any(overlay["index"] == 1 for overlay in overlays)
+    assert any(overlay["index"] == 2 for overlay in overlays)
+    assert wrapper.get("base_interval", {}).get("body") is None
 
 
 def test_render_respects_figsize_and_show(monkeypatch):

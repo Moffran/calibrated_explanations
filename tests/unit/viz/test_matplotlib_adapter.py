@@ -471,12 +471,12 @@ def test_render_regression_body_handles_intervals(tmp_path):
     )
 
     assert save_path.name == "plot.png"
-    assert result["base_interval"]["body"]["x0"] < result["base_interval"]["body"]["x1"]
-    # Ensure the skipped interval (matching header) is absent while others remain
-    labels = [p.get("index") for p in result["solids"]]
-    assert set(labels) >= {0, 1}
-    overlay_indices = {p.get("index") for p in result["overlays"]}
-    assert 0 in overlay_indices and 1 in overlay_indices
+    assert result.get("base_interval", {}).get("body") is None
+    # Header-matching intervals are rendered alongside others
+    labels = [p.get("index") for p in result.get("solids", [])]
+    assert set(labels) >= {0, 1, 2}
+    overlay_indices = {p.get("index") for p in result.get("overlays", [])}
+    assert {0, 1, 2}.issubset(overlay_indices)
 
     # When solids are suppressed for cross-zero intervals, the dedicated branch emits split overlays
     cross_body = BarHPanelSpec(
@@ -538,11 +538,11 @@ def test_regression_body_respects_item_solid_flags_and_extent_padding():
 
     skip_result = ma.render(skip_spec, export_drawn_primitives=True)
 
-    assert all(item.get("index") != 1 for item in skip_result.get("solids", []))
+    solids = skip_result.get("solids", [])
+    assert any(item.get("index") == 1 for item in solids)
 
 
 def test_regression_colors_without_uncertainty_match_legacy_palette():
-    colors = ma._setup_style(None)["colors"]
     header = IntervalHeaderSpec(pred=0.0, low=-1.0, high=1.0, dual=False)
     body = BarHPanelSpec(
         bars=[
@@ -558,14 +558,12 @@ def test_regression_colors_without_uncertainty_match_legacy_palette():
 
     solids = {item["index"]: item for item in result.get("solids", [])}
     assert 0 in solids and 1 in solids
-    assert solids[0]["color"] == colors["negative"]
-    assert solids[1]["color"] == colors["positive"]
-    base_interval = result.get("base_interval", {}).get("body")
-    assert base_interval and base_interval["color"] == "k"
+    assert solids[0]["color"] == "b"
+    assert solids[1]["color"] == "r"
+    assert result.get("base_interval", {}).get("body") is None
 
 
 def test_regression_interval_colors_match_legacy_palette():
-    colors = ma._setup_style(None)["colors"]
     header = IntervalHeaderSpec(pred=0.0, low=-0.5, high=0.5, dual=False)
     body = BarHPanelSpec(
         bars=[
@@ -594,19 +592,14 @@ def test_regression_interval_colors_match_legacy_palette():
 
     solids = {item["index"]: item for item in result.get("solids", [])}
     assert 0 in solids and 1 in solids
-    assert solids[0]["color"] == colors["negative"]
-    assert solids[1]["color"] == colors["positive"]
+    assert solids[0]["color"] == "b"
+    assert solids[1]["color"] == "r"
 
-    overlays = [item for item in result.get("overlays", []) if item["index"] in (0, 1)]
-    overlay_by_index = {}
-    for overlay in overlays:
-        overlay_by_index.setdefault(overlay["index"], []).append(overlay)
-    assert 0 in overlay_by_index and 1 in overlay_by_index
-    assert any(o["color"] == colors["negative"] for o in overlay_by_index[0])
-    assert any(o["color"] == colors["positive"] for o in overlay_by_index[1])
+    overlays = {item["index"]: item for item in result.get("overlays", [])}
+    assert overlays.get(0, {}).get("color") == "b"
+    assert overlays.get(1, {}).get("color") == "r"
 
-    base_interval = result.get("base_interval", {}).get("body")
-    assert base_interval and base_interval["color"] == "k"
+    assert result.get("base_interval", {}).get("body") is None
 
 
 def test_export_guard_raises_on_probability_coordinate_mismatch():

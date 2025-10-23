@@ -29,18 +29,15 @@ def test_regression_exports_base_interval_and_suppresses_solid_by_default():
         interval=True,
     )
     primitives = render(spec, export_drawn_primitives=True)
-    # Base interval should be present in primitives under 'base_interval' -> 'body'
+    # Regression body should not emit a global base interval primitive (legacy parity)
     base = primitives.get("base_interval", {}).get("body")
-    assert base is not None, f"Expected base interval primitive, got: {primitives}"
-    # By default (legacy), the solid for the bar should be suppressed when interval crosses zero
+    assert base is None, f"Did not expect base interval primitive, got: {primitives}"
     solids = primitives.get("solids", [])
     overlays = primitives.get("overlays", [])
-    # Accept either a suppressed solid (no solid) or overlays for index 0 depending
-    # on whether the adapter emitted solids or only overlays after mapping into
-    # contribution space.
-    assert any(s.get("index", -1) == 0 for s in solids) or any(
-        o.get("index", -1) == 0 for o in overlays
-    ), f"Expected a solid or overlay for index 0, got solids={solids} overlays={overlays}"
+    # Positive contribution keeps a solid spanning the closest bound to zero
+    assert any(s.get("index", -1) == 0 for s in solids), f"Expected solid for index 0: {solids}"
+    # Interval overlay should also be recorded for the feature
+    assert any(o.get("index", -1) == 0 for o in overlays), f"Expected overlay for index 0: {overlays}"
 
 
 def test_regression_parity_draws_solid_when_flag_false():

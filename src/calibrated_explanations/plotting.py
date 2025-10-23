@@ -601,6 +601,16 @@ def _plot_regression(
     save_ext : list, optional
         The list of file extensions to save the plot.
     """
+    if interval and hasattr(explanation, "is_one_sided"):
+        try:
+            if explanation.is_one_sided():
+                raise Warning("Interval plot is not supported for one-sided explanations.")
+        except Warning:
+            raise
+        except Exception:
+            # If the guard fails unexpectedly, defer to legacy parity by proceeding.
+            pass
+
     explainer = None
     if use_legacy is None:
         try:
@@ -649,6 +659,14 @@ def _plot_regression(
     from .viz.builders import build_regression_bars_spec
     from .viz.matplotlib_adapter import render as render_plotspec
 
+    confidence = None
+    try:
+        calibrated = getattr(explanation, "calibrated_explanations", None)
+        if calibrated is not None:
+            confidence = calibrated.get_confidence()
+    except Exception:
+        confidence = None
+
     spec = build_regression_bars_spec(
         title=title,
         predict=predict,
@@ -659,6 +677,7 @@ def _plot_regression(
         instance=instance,
         y_minmax=getattr(explanation, "y_minmax", None),
         interval=interval,
+        confidence=confidence,
         sort_by=None,
         ascending=False,
     )

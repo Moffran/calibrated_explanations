@@ -169,6 +169,7 @@ def build_regression_bars_spec(
     instance: Sequence[Any] | None,
     y_minmax: tuple[float, float] | None,
     interval: bool,
+    confidence: float | None = None,
     uncertainty_color: str | None = None,
     uncertainty_alpha: float | None = None,
     sort_by: str | None = None,
@@ -212,16 +213,24 @@ def build_regression_bars_spec(
     high = float(predict.get("high", pred))
     low, high, xlim = _normalize_interval_bounds(low, high, y_minmax=y_minmax)
     has_interval = not math.isclose(low, high, rel_tol=1e-12, abs_tol=1e-12)
+    if confidence is not None:
+        try:
+            confidence_label = f"Prediction interval with {confidence}% confidence"
+        except Exception:
+            confidence_label = "Prediction interval"
+    else:
+        confidence_label = (
+            "Prediction interval with unknown confidence"
+            if y_minmax is None
+            else "Prediction interval"
+        )
+
     header = IntervalHeaderSpec(
         pred=pred,
         low=low,
         high=high,
         xlim=xlim,
-        xlabel=(
-            "Prediction interval with unknown confidence"
-            if y_minmax is None
-            else "Prediction interval"
-        ),
+        xlabel=confidence_label,
         ylabel="Median prediction",
         dual=False,
         show_intervals=has_interval,
