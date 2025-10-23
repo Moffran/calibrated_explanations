@@ -104,6 +104,7 @@ def test_failure_regression(regression_dataset):
         cal_exp.set_difficulty_estimator(DifficultyEstimator)
 
 
+@pytest.mark.viz
 def test_regression_ce(regression_dataset):
     """
     Tests the CalibratedExplainer for regression models.
@@ -209,6 +210,7 @@ def test_regression_reject_learner_custom_calibration(regression_dataset):
     assert not np.isnan(reject_rate)
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_ce(regression_dataset):
     """
     Tests probabilistic explanations for regression models.
@@ -320,6 +322,7 @@ def test_regression_as_classification_ce(regression_dataset):
     alternative_explanation.plot(show=False)
 
 
+@pytest.mark.viz
 def test_regression_conditional_ce(regression_dataset):
     """
     Tests conditional explanations for regression models.
@@ -376,6 +379,7 @@ def test_regression_conditional_ce(regression_dataset):
     repr(alternative_explanation)
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_conditional_ce(regression_dataset):
     """
     Tests probabilistic conditional explanations for regression models.
@@ -563,6 +567,7 @@ def test_var_normalized_probabilistic_regression_ce(regression_dataset):
     cal_exp.explore_alternatives(x_test, y_test[0])
 
 
+@pytest.mark.viz
 def test_regression_fast_ce(regression_dataset):
     """
     Tests fast explanations for regression models.
@@ -628,6 +633,7 @@ def test_probabilistic_regression_fast_ce(regression_dataset):
     fast_explanation.plot(show=False, uncertainty=True)
 
 
+@pytest.mark.viz
 def test_regression_conditional_fast_ce(regression_dataset):
     """
     Tests conditional perturbed explanations for regression models.
@@ -662,6 +668,7 @@ def test_regression_conditional_fast_ce(regression_dataset):
     )
 
 
+@pytest.mark.viz
 def test_probabilistic_regression_conditional_fast_ce(regression_dataset):
     """
     Tests probabilistic conditional perturbed explanations for regression models.
