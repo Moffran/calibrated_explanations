@@ -948,6 +948,9 @@ def _plot_alternative(
 
         neg_label = None
         pos_label = None
+        x_axis_label = None
+        xlim_override: tuple[float, float] | None = None
+        xticks_override: Sequence[float] | None = None
         if not is_regression:
             class_labels = None
             try:
@@ -966,6 +969,96 @@ def _plot_alternative(
                 except Exception:
                     neg_label = None
                     pos_label = None
+            # Legacy plots fixed the probability axis to [0,1] with evenly spaced ticks
+            xlim_override = (0.0, 1.0)
+            xticks_override = [float(x) for x in np.linspace(0.0, 1.0, 11)]
+            is_thresholded = False
+            try:
+                is_thresholded = bool(explanation.is_thresholded())
+            except Exception:
+                is_thresholded = False
+            if is_thresholded:
+                threshold_value = getattr(explanation, "y_threshold", None)
+                if np.isscalar(threshold_value):
+                    try:
+                        x_axis_label = (
+                            f"Probability of target being below {float(threshold_value):.2f}"
+                        )
+                    except Exception:
+                        x_axis_label = "Probability"
+                elif isinstance(threshold_value, tuple) and len(threshold_value) >= 2:
+                    try:
+                        x_axis_label = (
+                            "Probability of target being between "
+                            f"{float(threshold_value[0]):.3f} and {float(threshold_value[1]):.3f}"
+                        )
+                    except Exception:
+                        x_axis_label = "Probability"
+                else:
+                    try:
+                        x_axis_label = (
+                            f"Probability of target being below {float(threshold_value):.2f}"
+                        )
+                    except Exception:
+                        x_axis_label = "Probability"
+            else:
+                predicted_idx = None
+                try:
+                    prediction = getattr(explanation, "prediction", None)
+                    if isinstance(prediction, Mapping):
+                        predicted_idx = prediction.get("classes")
+                except Exception:
+                    predicted_idx = None
+                idx_value = None
+                if predicted_idx is not None:
+                    with contextlib.suppress(Exception):
+                        idx_value = int(predicted_idx)
+                is_multi = False
+                if explainer is not None:
+                    with contextlib.suppress(Exception):
+                        is_multi = bool(explainer.is_multiclass())
+                if class_labels is None:
+                    if is_multi:
+                        x_axis_label = f"Probability for class '{predicted_idx}'"
+                    else:
+                        x_axis_label = "Probability for the positive class"
+                else:
+                    if is_multi and idx_value is not None and 0 <= idx_value < len(class_labels):
+                        x_axis_label = f"Probability for class '{class_labels[idx_value]}'"
+                    elif not is_multi and len(class_labels) > 1:
+                        x_axis_label = f"Probability for class '{class_labels[1]}'"
+                    else:
+                        x_axis_label = "Probability"
+                if x_axis_label is None:
+                    x_axis_label = "Probability"
+        else:
+            if normalised_y_minmax is not None:
+                try:
+                    xlim_override = (
+                        float(normalised_y_minmax[0]),
+                        float(normalised_y_minmax[1]),
+                    )
+                except Exception:
+                    xlim_override = None
+            if xlim_override is None:
+                try:
+                    xlim_override = (
+                        float(predict_payload.get("low", 0.0)),
+                        float(predict_payload.get("high", 0.0)),
+                    )
+                except Exception:
+                    xlim_override = None
+            confidence = None
+            try:
+                calibrated = getattr(explanation, "calibrated_explanations", None)
+                if calibrated is not None:
+                    confidence = calibrated.get_confidence()
+            except Exception:
+                confidence = None
+            if confidence is not None:
+                x_axis_label = f"Prediction interval with {confidence}% confidence"
+            else:
+                x_axis_label = "Prediction interval"
 
         from .viz.builders import (
             build_alternative_probabilistic_spec,
@@ -988,11 +1081,19 @@ def _plot_alternative(
             "legacy_solid_behavior": True,
         }
         if is_regression:
+            builder_kwargs.update({
+                "xlabel": x_axis_label,
+                "xlim": xlim_override,
+                "xticks": xticks_override,
+            })
             spec = build_alternative_regression_spec(**builder_kwargs)
         else:
             builder_kwargs.update({
                 "neg_label": neg_label,
                 "pos_label": pos_label,
+                "xlabel": x_axis_label,
+                "xlim": xlim_override,
+                "xticks": xticks_override,
             })
             spec = build_alternative_probabilistic_spec(**builder_kwargs)
 

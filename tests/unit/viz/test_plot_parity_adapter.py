@@ -1,9 +1,13 @@
 from calibrated_explanations.viz import matplotlib_adapter as mpl_adapter
+from calibrated_explanations.viz.builders import _legacy_get_fill_color
 from tests.unit.viz.test_plot_parity_fixtures import (
     factual_probabilistic_no_uncertainty,
     factual_probabilistic_zero_crossing,
     factual_regression_interval,
     alternative_probabilistic_cross_05,
+    alternative_regression_interval,
+    alternative_regression_point,
+    alternative_regression_probability_scale,
     triangular_probabilistic,
     global_probabilistic_multiclass,
 )
@@ -12,6 +16,10 @@ from tests.unit.viz.test_plot_parity_fixtures import (
 def _role_alpha(pr):
     v = pr.get("visual", {})
     return v.get("color_role"), v.get("alpha")
+
+
+REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
+REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)
 
 
 def test_factual_probabilistic_no_uncertainty_primitives():
@@ -54,10 +62,69 @@ def test_factual_regression_interval_primitives():
 
 def test_alternative_probabilistic_cross_primitives():
     spec = alternative_probabilistic_cross_05()
+    assert spec.header is None
     primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
-    solids = primitives.get("solids", [])
-    # With pivot removed, features are treated in contribution space -> expect solids
-    assert len(solids) >= 1
+    assert not primitives.get("header")
+    overlays = primitives.get("overlays", [])
+    assert isinstance(overlays, list) and len(overlays) >= 1
+    indices = {item.get("index") for item in overlays}
+    # Base interval should be present (index -1) alongside feature overlays (>=0)
+    assert -1 in indices
+    assert any(idx is not None and idx >= 0 for idx in indices)
+
+
+def test_alternative_regression_primitives():
+    spec = alternative_regression_interval()
+    assert spec.header is None
+    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
+    assert not primitives.get("header")
+    overlays = primitives.get("overlays", [])
+    assert isinstance(overlays, list) and len(overlays) >= 1
+    indices = {item.get("index") for item in overlays}
+    assert -1 in indices
+    assert any(idx is not None and idx >= 0 for idx in indices)
+    assert any(item.get("color") == REG_BASE_COLOR for item in overlays if item.get("index") == -1)
+    assert any(item.get("color") == REG_BAR_COLOR for item in overlays if item.get("index") is not None and item.get("index") >= 0)
+    lines = primitives.get("lines", [])
+    assert isinstance(lines, list) and len(lines) >= 1
+    line_indices = {item.get("index") for item in lines}
+    assert -1 in line_indices
+    assert any(idx is not None and idx >= 0 for idx in line_indices)
+    assert any(item.get("color") == REG_BAR_COLOR for item in lines if item.get("index") is not None and item.get("index") >= 0)
+
+
+def test_alternative_regression_point_primitives():
+    spec = alternative_regression_point()
+    assert spec.header is None
+    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
+    assert not primitives.get("header")
+    overlays = primitives.get("overlays", [])
+    assert isinstance(overlays, list) and len(overlays) >= 1
+    indices = {item.get("index") for item in overlays}
+    assert -1 in indices
+    assert any(idx is not None and idx >= 0 for idx in indices)
+    assert any(item.get("color") == REG_BASE_COLOR for item in overlays if item.get("index") == -1)
+    assert any(item.get("color") == REG_BAR_COLOR for item in overlays if item.get("index") is not None and item.get("index") >= 0)
+    lines = primitives.get("lines", [])
+    assert isinstance(lines, list) and len(lines) >= 1
+    line_indices = {item.get("index") for item in lines}
+    assert any(idx is not None and idx >= 0 for idx in line_indices)
+    assert any(item.get("color") == REG_BAR_COLOR for item in lines if item.get("index") is not None and item.get("index") >= 0)
+
+
+def test_alternative_regression_probability_scale_primitives():
+    spec = alternative_regression_probability_scale()
+    assert spec.header is None
+    primitives = mpl_adapter.render(spec, export_drawn_primitives=True)
+    assert not primitives.get("header")
+    overlays = primitives.get("overlays", [])
+    assert isinstance(overlays, list) and len(overlays) >= 1
+    assert any(item.get("color") == REG_BASE_COLOR for item in overlays if item.get("index") == -1)
+    assert any(item.get("color") == REG_BAR_COLOR for item in overlays if item.get("index") is not None and item.get("index") >= 0)
+    lines = primitives.get("lines", [])
+    assert isinstance(lines, list) and len(lines) >= 1
+    assert any(item.get("color") == REG_BAR_COLOR for item in lines if item.get("index") is not None and item.get("index") >= 0)
+    assert spec.body is not None and spec.body.xlim == (0.0, 1.0)
 
 
 def test_triangular_primitives():

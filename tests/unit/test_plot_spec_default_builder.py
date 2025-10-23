@@ -1,10 +1,10 @@
-import math
 from types import MappingProxyType, SimpleNamespace
 
 import numpy as np
 
 from calibrated_explanations.plugins import PlotRenderContext
 from calibrated_explanations.plugins.builtins import PlotSpecDefaultBuilder
+from calibrated_explanations.viz.builders import _legacy_get_fill_color
 from calibrated_explanations.viz.plotspec import PlotSpec
 
 
@@ -49,12 +49,12 @@ def test_plot_spec_builder_handles_alternative_probabilistic():
     spec = builder.build(context)
 
     assert isinstance(spec, PlotSpec)
-    assert spec.header is not None
-    assert math.isclose(spec.header.pred, 0.6)
-    assert spec.header.dual is True
+    assert spec.header is None
     assert spec.body is not None
     assert len(spec.body.bars) == 2
     assert {bar.color_role for bar in spec.body.bars} <= {"positive", "negative"}
+    base_segments = getattr(spec.body, "base_segments", ())
+    assert base_segments
 
 
 def test_plot_spec_builder_handles_alternative_regression():
@@ -80,11 +80,77 @@ def test_plot_spec_builder_handles_alternative_regression():
     spec = builder.build(context)
 
     assert isinstance(spec, PlotSpec)
-    assert spec.header is not None
-    assert spec.header.dual is False
+    assert spec.header is None
     assert spec.body is not None
     assert len(spec.body.bars) == 2
-    assert all(bar.color_role == "regression" for bar in spec.body.bars)
+    assert all(bar.color_role == REG_BAR_COLOR for bar in spec.body.bars)
+    base_segments = getattr(spec.body, "base_segments", ())
+    base_lines = getattr(spec.body, "base_lines", ())
+    assert base_segments
+    assert base_lines
+    assert base_segments[0].color == REG_BASE_COLOR
+    assert base_lines[0][1] == REG_BAR_COLOR
+
+
+def test_plot_spec_builder_handles_alternative_regression_without_intervals():
+    builder = PlotSpecDefaultBuilder()
+    explanation = SimpleNamespace(get_mode=lambda: "regression", y_minmax=(-1.0, 3.0))
+    payload = {
+        "predict": {"predict": 0.5, "low": 0.2, "high": 0.8},
+        "feature_predict": [1.1, -0.4],
+        "features_to_plot": [0, 1],
+        "column_names": ["rule_a", "rule_b"],
+        "instance": [0.1, -0.2],
+    }
+    context = _make_context(
+        {"type": "alternative", "mode": "regression", "title": "alt_no_interval"},
+        payload,
+        explanation,
+    )
+
+    spec = builder.build(context)
+
+    assert isinstance(spec, PlotSpec)
+    assert spec.header is None
+    assert spec.body is not None
+    assert len(spec.body.bars) == 2
+    for bar in spec.body.bars:
+        assert bar.color_role == REG_BAR_COLOR
+        assert bar.interval_low <= bar.interval_high
+        assert getattr(bar, "line_color", None) == REG_BAR_COLOR
+
+
+def test_plot_spec_builder_normalizes_probability_regression_scale():
+    builder = PlotSpecDefaultBuilder()
+    explanation = SimpleNamespace(get_mode=lambda: "regression", y_minmax=(22500.0, 500001.0))
+    payload = {
+        "predict": {"predict": 0.22, "low": 0.18, "high": 0.24},
+        "feature_predict": {
+            "predict": [0.01, 0.3],
+            "low": [0.0, 0.28],
+            "high": [0.02, 0.32],
+        },
+        "features_to_plot": [0, 1],
+        "column_names": ["rule_a", "rule_b"],
+        "instance": [0.5, 1.2],
+    }
+    context = _make_context(
+        {"type": "alternative", "mode": "regression", "title": "alt_prob_scale"},
+        payload,
+        explanation,
+    )
+
+    spec = builder.build(context)
+
+    assert isinstance(spec, PlotSpec)
+    assert spec.body is not None
+    assert spec.body.xlim == (0.0, 1.0)
+    assert spec.body.xlabel == "Probability"
+    base_segments = getattr(spec.body, "base_segments", ())
+    assert base_segments
+    assert base_segments[0].low == 0.18 and base_segments[0].high == 0.24
+    overlays = [getattr(bar, "segments", ()) for bar in spec.body.bars]
+    assert overlays and all(seg[0].low >= 0.0 and seg[0].high <= 1.0 for seg in overlays if seg)
 
 
 def test_plot_spec_builder_infers_missing_features_and_labels():
@@ -121,3 +187,5 @@ def test_plot_spec_builder_infers_missing_features_and_labels():
     assert [bar.label for bar in spec.body.bars] == ["0", "1", "2"]
     # Ensure intervals are respected after normalisation
     assert all(bar.interval_low is not None and bar.interval_high is not None for bar in spec.body.bars)
+REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
+REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)

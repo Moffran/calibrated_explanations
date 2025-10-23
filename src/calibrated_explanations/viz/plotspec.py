@@ -54,6 +54,14 @@ class BarHPanelSpec:
     ylabel: str | None = None
     # When True, follow legacy behavior: suppress drawing solids when intervals cross zero
     solid_on_interval_crosses_zero: bool = True
+    # Legacy alternative-plot specific metadata
+    is_alternative: bool = False
+    base_segments: Sequence["IntervalSegment"] | None = None
+    base_lines: Sequence[tuple[float, str, float | None]] | None = None
+    pivot: float | None = None
+    xlim: Tuple[float, float] | None = None
+    xticks: Sequence[float] | None = None
+    bar_span: float = 0.2
 
 
 @dataclass
@@ -64,6 +72,16 @@ class PlotSpec:
     figure_size: Tuple[float, float] | None = None
     header: IntervalHeaderSpec | None = None
     body: BarHPanelSpec | None = None
+
+
+@dataclass(frozen=True)
+class IntervalSegment:
+    """Segment describing an interval fill for alternative probability plots."""
+
+    low: float
+    high: float
+    color: str
+    alpha: float | None = None
 
 
 __all__ = [

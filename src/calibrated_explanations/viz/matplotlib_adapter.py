@@ -294,6 +294,181 @@ def render(
                 ax.set_yticklabels([header.ylabel])
 
     def _render_body(ax, body: BarHPanelSpec):
+        if getattr(body, "is_alternative", False):
+            bars = list(body.bars)
+            n = len(bars)
+            if n == 0:
+                return
+            y_min = -0.5
+            y_max = (n - 1) + 0.5
+            y_base = np.array([y_min, y_max])
+            bar_span = float(getattr(body, "bar_span", 0.2))
+
+            base_segments = getattr(body, "base_segments", None)
+            if base_segments:
+                for seg in base_segments:
+                    try:
+                        alpha_seg = float(seg.alpha) if getattr(seg, "alpha", None) is not None else 1.0
+                        low = float(seg.low)
+                        high = float(seg.high)
+                        if low > high:
+                            low, high = high, low
+                        ax.fill_betweenx(y_base, low, high, color=seg.color, alpha=alpha_seg)
+                        if export_drawn_primitives:
+                            primitives.setdefault("overlays", []).append(
+                                {
+                                    "index": -1,
+                                    "x0": low,
+                                    "x1": high,
+                                    "color": seg.color,
+                                    "alpha": alpha_seg,
+                                }
+                            )
+                    except Exception as exc:  # pragma: no cover - defensive drawing
+                        logging.getLogger(__name__).debug(
+                            "Failed to draw alternative base segment: %s", exc
+                        )
+                if export_drawn_primitives:
+                    try:
+                        min_low = min(float(seg.low) for seg in base_segments)
+                        max_high = max(float(seg.high) for seg in base_segments)
+                        first_seg = base_segments[0]
+                        primitives.setdefault("base_interval", {})["body"] = {
+                            "x0": float(min_low),
+                            "x1": float(max_high),
+                            "color": getattr(first_seg, "color", "r"),
+                            "alpha": float(
+                                getattr(first_seg, "alpha", 1.0)
+                                if getattr(first_seg, "alpha", None) is not None
+                                else 1.0
+                            ),
+                        }
+                    except Exception as exc:  # pragma: no cover - defensive logging
+                        logging.getLogger(__name__).debug(
+                            "Failed to record base_interval for alternative plot: %s", exc
+                        )
+
+            base_lines = getattr(body, "base_lines", None)
+            if base_lines:
+                for line_entry in base_lines:
+                    try:
+                        x_val, color, alpha_val = line_entry
+                        alpha_line = float(alpha_val) if alpha_val is not None else 1.0
+                        xv = float(x_val)
+                        ax.plot([xv, xv], y_base, color=color, alpha=alpha_line, linewidth=2)
+                        if export_drawn_primitives:
+                            primitives.setdefault("lines", []).append(
+                                {
+                                    "index": -1,
+                                    "x": xv,
+                                    "color": color,
+                                    "alpha": alpha_line,
+                                }
+                            )
+                    except Exception as exc:  # pragma: no cover - defensive drawing
+                        logging.getLogger(__name__).debug(
+                            "Failed to draw alternative base line: %s", exc
+                        )
+
+            for idx, item in enumerate(bars):
+                y_j = np.array([idx - bar_span, idx + bar_span])
+                segments = getattr(item, "segments", None)
+                if segments:
+                    for seg in segments:
+                        try:
+                            alpha_seg = float(seg.alpha) if getattr(seg, "alpha", None) is not None else 1.0
+                            low = float(seg.low)
+                            high = float(seg.high)
+                            if low > high:
+                                low, high = high, low
+                            ax.fill_betweenx(y_j, low, high, color=seg.color, alpha=alpha_seg)
+                            if export_drawn_primitives:
+                                primitives.setdefault("overlays", []).append(
+                                    {
+                                        "index": idx,
+                                        "x0": low,
+                                        "x1": high,
+                                        "color": seg.color,
+                                        "alpha": alpha_seg,
+                                    }
+                                )
+                        except Exception as exc:  # pragma: no cover - defensive drawing
+                            logging.getLogger(__name__).debug(
+                                "Failed to draw alternative segment: %s", exc
+                            )
+                else:
+                    try:
+                        lo = float(item.interval_low) if item.interval_low is not None else float(item.value)
+                        hi = float(item.interval_high) if item.interval_high is not None else float(item.value)
+                        color = getattr(item, "color_role", None) or config["colors"].get("positive", "r")
+                        ax.fill_betweenx(y_j, lo, hi, color=color)
+                        if export_drawn_primitives:
+                            primitives.setdefault("overlays", []).append(
+                                {"index": idx, "x0": lo, "x1": hi, "color": color, "alpha": 1.0}
+                            )
+                    except Exception as exc:  # pragma: no cover - defensive drawing
+                        logging.getLogger(__name__).debug(
+                            "Failed to draw fallback alternative bar: %s", exc
+                        )
+
+                if getattr(item, "line", None) is not None:
+                    try:
+                        x_val = float(item.line)
+                        color = item.line_color or "r"
+                        alpha_line = float(item.line_alpha) if item.line_alpha is not None else 1.0
+                        ax.plot([x_val, x_val], y_j, color=color, alpha=alpha_line, linewidth=2)
+                        if export_drawn_primitives:
+                            primitives.setdefault("lines", []).append(
+                                {
+                                    "index": idx,
+                                    "x": x_val,
+                                    "color": color,
+                                    "alpha": alpha_line,
+                                }
+                            )
+                    except Exception as exc:  # pragma: no cover - defensive drawing
+                        logging.getLogger(__name__).debug(
+                            "Failed to draw alternative marker line: %s", exc
+                        )
+
+            ax.set_yticks(range(n))
+            ax.set_yticklabels([bar.label for bar in bars])
+            ax.set_ylim([y_min, y_max])
+
+            instance_vals = [
+                str(bar.instance_value) if bar.instance_value is not None else ""
+                for bar in bars
+            ]
+            if any(val != "" for val in instance_vals):
+                ax_twin = ax.twinx()
+                ax_twin.set_yticks(range(n))
+                ax_twin.set_yticklabels(instance_vals)
+                ax_twin.set_ylim([y_min, y_max])
+                ax_twin.set_ylabel("Instance values")
+
+            if getattr(body, "xticks", None):
+                try:
+                    ax.set_xticks(list(float(x) for x in body.xticks))
+                except Exception as exc:  # pragma: no cover
+                    logging.getLogger(__name__).debug("Failed to set xticks for alternative plot: %s", exc)
+            if getattr(body, "xlim", None):
+                try:
+                    x0, x1 = body.xlim
+                    x0f, x1f = float(x0), float(x1)
+                    if math.isfinite(x0f) and math.isfinite(x1f):
+                        if x0f == x1f:
+                            eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
+                            x0f -= eps
+                            x1f += eps
+                        ax.set_xlim([x0f, x1f])
+                except Exception as exc:  # pragma: no cover - defensive logging
+                    logging.getLogger(__name__).debug("Failed to set xlim for alternative plot: %s", exc)
+            if body.xlabel:
+                ax.set_xlabel(body.xlabel)
+            if body.ylabel:
+                ax.set_ylabel(body.ylabel)
+            return
+
         n = len(body.bars)
         xs = np.linspace(0, n - 1, n)
         alpha_val = float(config["colors"]["alpha"])
@@ -881,6 +1056,28 @@ def render(
                     "semantic": "uncertainty_area",
                 }
             )
+        for line_entry in primitives.get("lines", []) if isinstance(primitives, dict) else []:
+            try:
+                idx = int(line_entry.get("index", 0))
+            except Exception:
+                idx = 0
+            try:
+                x_val = float(line_entry.get("x", 0.0))
+            except Exception:
+                x_val = 0.0
+            normalized.append(
+                {
+                    "id": f"line.{idx}.{len(normalized)}",
+                    "axis_id": "body",
+                    "type": "line",
+                    "coords": {"index": idx, "x": x_val},
+                    "style": {
+                        "color": line_entry.get("color"),
+                        "alpha": float(line_entry.get("alpha", 1.0)),
+                    },
+                    "semantic": "marker_line",
+                }
+            )
         # base_interval
         base = primitives.get("base_interval") if isinstance(primitives, dict) else None
         if isinstance(base, dict):
@@ -963,6 +1160,16 @@ def render(
                     hitem.setdefault("overlay", (coords.get("x0"), coords.get("x1")))
                     hitem.setdefault("color", item.get("style", {}).get("color"))
                     hitem.setdefault("alpha", float(item.get("style", {}).get("alpha", 0.2)))
+            elif sem == "marker_line":
+                coords = item.get("coords", {})
+                out.setdefault("lines", []).append(
+                    {
+                        "index": int(coords.get("index", 0)),
+                        "x": float(coords.get("x", 0.0)),
+                        "color": item.get("style", {}).get("color"),
+                        "alpha": float(item.get("style", {}).get("alpha", 1.0)),
+                    }
+                )
 
         # Return the normalized wrapper (plot_spec + primitives) as before so
         # adapter callers receive a stable shape.
