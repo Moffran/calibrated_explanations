@@ -1,0 +1,1 @@
+**Calibrated explanations, from binary and multiclass classification to probabilistic and interval regression.** Deliver trusted decisions with calibrated prediction intervals, dual-uncertainty insights, and research-backed interpretation guides that stay in lockstep across docs, notebooks, and runtime defaults.

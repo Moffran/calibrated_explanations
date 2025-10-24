@@ -7,6 +7,11 @@ registering plugins and, when appropriate, marking them as trusted. Metadata is
 validated against the active schema version (`schema_version=1` today) so that
 future or incompatible payloads fail fast with actionable messages.
 
+Plot plugins now default to the PlotSpec pipeline: adapters receive a backend-agnostic
+specification and render it without importing the core package. This separation keeps
+plot builders focused on producing PlotSpec documents while adapters provide the
+runtime glue, making the plugin surface explicit for downstream maintainers.
+
 ## Registry overview
 
 Plugins are keyed by identifiers (`core.explanation.factual`, `core.interval.fast`,

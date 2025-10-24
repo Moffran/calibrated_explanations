@@ -8,6 +8,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 # Add project directories to sys.path
 # sys.path.insert(0, os.path.abspath('../..'))
@@ -85,6 +86,20 @@ myst_enable_extensions = [
     "colon_fence",
     "linkify",
 ]
+
+_SHARED_FRAGMENT_DIR = Path(__file__).parent / "_shared"
+
+
+def _load_shared_fragment(fragment_name: str) -> str:
+    fragment_path = _SHARED_FRAGMENT_DIR / fragment_name
+    with fragment_path.open(encoding="utf-8") as fragment_file:
+        return fragment_file.read().strip()
+
+
+myst_substitutions = {
+    "hero_calibrated_explanations": _load_shared_fragment("hero_calibrated_explanations.md"),
+    "optional_extras_template": _load_shared_fragment("optional_extras_template.md"),
+}
 
 # -- Options for HTML output -------------------------------------------------
 

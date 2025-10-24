@@ -17,3 +17,11 @@ architecture. Update this checklist whenever a page moves or is retired.
 - [ ] Confirm new or renamed pages are added to the appropriate section toctree.
 - [ ] Ensure deprecated filenames include a short pointer to their replacement.
 - [ ] Re-run the gating commands in :doc:`release_checklist` after updating this table.
+
+## Shared fragments rollout
+
+Use the `_shared` partials when editing audience landing hubs, README mirrors, or quickstarts:
+
+- Include the canonical hero copy with `{{ hero_calibrated_explanations }}` at the top of README, Overview, practitioner, researcher, and contributor landing pages.
+- End each of those pages—and any quickstart or interpretation guide that references telemetry—with the opt-in callouts from `{{ optional_extras_template }}`. Optional extras must remain the final section in the page outline.
+- When creating new audience or quickstart pages, add them to the verification checklist above and confirm the shared fragments render correctly by running `sphinx-build -b html -W`.
