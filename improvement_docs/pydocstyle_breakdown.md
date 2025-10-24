@@ -1,3 +1,5 @@
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+
 # Roadmap for Achieving `pydocstyle --convention=numpy` Compliance
 
 This document breaks the repository-wide docstring overhaul into focused, repeatable workstreams. Each stage can be executed in isolation and merged independently, gradually driving the codebase toward full compliance.

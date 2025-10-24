@@ -1,3 +1,5 @@
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+
 Last updated: 2025-10-24
 
 # Documentation Information Architecture Proposal
@@ -14,13 +16,25 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
 
 ## Guiding principles
 
-- **Calibrated explanations first:** Every landing page states how to obtain, interpret, and trust calibrated explanations before discussing tooling.
-- **Highlight probabilistic regression:** Probabilistic regression appears alongside classification from the first page, with links to runnable guides and research references.
-- **Role-based entry points:** Each audience has an obvious landing page with curated tasks and cross-links.
-- **Task-first navigation:** "How-to" and tutorials remain runnable and scoped to a single workflow; advanced concepts move to dedicated concept guides. Quickstarts stay simple and mirror notebook snippets before introducing optional extras.
-- **Research-backed narrative:** High-traffic pages link to the peer-reviewed papers and preprints that underpin the methodology.
-- **Plugin extensibility with guardrails:** Extensibility content reiterates that plugins must preserve calibration pathways; telemetry and governance content is clearly marked as optional/advanced.
-- **Release alignment:** Each minor release identifies documentation deltas and assigns owners.
+1. **Deliver calibrated explanations first.** The first message in every hub and
+   task flow must be how to obtain, interpret, and trust calibrated explanations
+   before introducing telemetry or other extras.
+2. **Spotlight probabilistic regression.** Probabilistic regression guidance sits
+   alongside classification in navigation, quickstarts, and release messaging.
+3. **Keep examples simple by default.** Tutorials mirror README/notebook flows
+   with minimal prerequisites; complexity is introduced only when explaining the
+   plugin architecture or optional extras.
+4. **Structure content for the three core audiences.** Practitioner, researcher,
+   and contributor journeys each get curated landing pages with clear cross-links
+   and calls to action.
+5. **Ground every narrative in published research.** High-traffic pages link to
+   peer-reviewed papers, benchmarks, and citing guidance.
+6. **Champion plugin extensibility with guardrails.** Extensibility stories start
+   by reinforcing calibration semantics, showing how plugins extend the core
+   contract while labelling telemetry/governance as optional.
+7. **Treat telemetry and similar extras as optional.** Extras are clearly marked,
+   documented as opt-in, and never distract from the calibrated explanation
+   journey.
 
 ## Proposed top-level navigation
 

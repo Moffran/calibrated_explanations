@@ -1,3 +1,5 @@
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+
 Last updated: 2025-10-24
 
 # Code Documentation Review

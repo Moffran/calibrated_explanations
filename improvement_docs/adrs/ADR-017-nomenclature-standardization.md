@@ -1,3 +1,5 @@
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+
 # ADR-017: Internal nomenclature standardisation
 
 Status: Accepted (2025-10-06)

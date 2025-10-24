@@ -1,3 +1,5 @@
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+
 Last updated: 2025-10-24
 
 # Documentation Standardization Plan
@@ -28,6 +30,7 @@ codebase with measurable coverage thresholds and automated enforcement.
 1. Enable `pydocstyle` in CI as non-blocking (warning-only) to surface regressions.
 2. Iterate on false positives; extend ignores only when accompanied by inline justification.
 3. Once ≥85% coverage achieved, flip the CI check to blocking for touched files.
+4. Capture and commit the initial failure report before blocking enforcement so future regressions reference a known baseline.
 
 ## Phase 3 – Continuous Improvement (Ongoing)
 1. Add documentation coverage badge to README fed by scheduled job.
