@@ -1,4 +1,4 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) on 2025-10-24 reached **86.0%** line coverage with `fail_under=85` satisfied; `tests/unit/legacy/test_plotting_module.py::test_plot_probabilistic_defaults_save_extensions` still fails on Windows due to path separator expectations. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) on 2025-10-24 reached **86.0%** line coverage with `fail_under=85` satisfied. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
 # Coverage Gap Remediation Plan (2025-02)
 
