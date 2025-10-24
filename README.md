@@ -11,6 +11,10 @@
 <!-- [![Lint Status for Calibrated Explanations][lint-status]][lint-log] -->
 <!-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/main?urlpath=https%3A%2F%2Fgithub.com%2FMoffran%2Fcalibrated_explanations%2Fblob%2Fmain%2Fnotebooks%2Fquickstart.ipynb) -->
 
+> **Calibrated explanations, from binary and multiclass classification to probabilistic and interval regression.** Deliver trusted decisions with calibrated prediction intervals, dual-uncertainty insights, and research-backed interpretation guides that stay in lockstep across docs, notebooks, and runtime defaults.
+>
+> 🎓 **Backed by research:** Explore the peer-reviewed work and citation guidance in [docs/citing.md](docs/citing.md) to see the studies covering binary & multiclass classification alongside probabilistic and interval regression.
+
 ## Table of Contents
 - [Calibrated Explanations (Documentation)](#calibrated-explanations-documentation)
   - [Table of Contents](#table-of-contents)
@@ -146,107 +150,6 @@ print(f"Runtime telemetry -> {explainer.runtime_telemetry}")
 factual.plot(uncertainty=True)        # uses plot_spec.default.*
 alternatives.plot(uncertainty=True)
 ```
-
-Telemetry captures the active interval/plot plugins, uncertainty payload, and,
-when a preprocessor is configured, the ADR-009 snapshot. Example payload:
-
-```json
-{
-  "mode": "factual",
-  "interval_source": "core.interval.legacy",
-  "proba_source": "core.interval.legacy",
-  "plot_source": "plot_spec.default.factual",
-  "plot_fallbacks": ["plot_spec.default.factual", "legacy"],
-  "uncertainty": {
-    "representation": "percentile",
-    "calibrated_value": 0.42,
-    "lower_bound": 0.32,
-    "upper_bound": 0.58,
-    "legacy_interval": [0.32, 0.58]
-  },
-  "preprocessor": {
-    "auto_encode": "true",
-    "transformer_id": "sklearn.compose:ColumnTransformer"
-  }
-}
-```
-
-To review the registered plugins and defaults from the command line:
-
-```bash
-python -m calibrated_explanations.plugins list plots
-python -m calibrated_explanations.plugins show plot_spec.default
-```
-
-Passing `CE_PLOT_STYLE=legacy` (or configuring `[tool.calibrated_explanations.plots]`
-in `pyproject.toml`) forces the historical Matplotlib renderer. The fallback
-chain is recorded in telemetry so downstream services can detect which path was
-used.
-
-## Performance scaffolding (experimental)
-
-Phase 3 introduces a small, opt-in performance module. You can use these primitives directly for your own pipelines:
-
-- `calibrated_explanations.perf.LRUCache`
-- `calibrated_explanations.perf.make_key`
-- `calibrated_explanations.perf.JoblibBackend`
-- `calibrated_explanations.perf.sequential_map`
-
-A tiny micro-benchmark is available at `scripts/micro_bench_perf.py` that prints JSON with import-time and simple map timings. This is intended for smoke testing and CI perf guards; it does not change library behavior.
-
-## Plugin registry (experimental)
-
-Calibrated explanations include a plugin registry covering explanation strategies,
-interval calibrators, and plot renderers. The registry honours the ADR-006 trust
-model: only plugins marked as trusted (either via metadata or
-`CE_TRUST_PLUGIN=<identifier>`) are selected automatically. Security note:
-registering or using third-party plugins executes arbitrary code—only load
-plugins you trust.
-
-### Configuring plugin selection
-
-Configuration sources are layered in priority order. For each explanation mode
-(`factual`, `alternative`, `fast`) you can pass keyword overrides to
-`CalibratedExplainer`, specify environment variables, or set defaults in
-`pyproject.toml`:
-
-- Keyword arguments: `CalibratedExplainer(..., factual_plugin="...", interval_plugin="...", fast_interval_plugin="...", plot_style="...")`
-- Environment variables:
-  - `CE_EXPLANATION_PLUGIN_<MODE>` with optional `..._FALLBACKS`
-  - `CE_INTERVAL_PLUGIN`, `CE_INTERVAL_PLUGIN_FALLBACKS`,
-    `CE_INTERVAL_PLUGIN_FAST`, `CE_INTERVAL_PLUGIN_FAST_FALLBACKS`
-  - `CE_PLOT_STYLE`, `CE_PLOT_STYLE_FALLBACKS`
-- `pyproject.toml` tables:
-  - `[tool.calibrated_explanations.explanations]` for per-mode explanation
-    plugins
-  - `[tool.calibrated_explanations.intervals]` with `default`, `fast`, and
-    `_fallbacks` keys
-  - `[tool.calibrated_explanations.plots]` with `style` and `style_fallbacks`
-
-### CLI helpers
-
-A small console entry point, `ce.plugins`, lists registered plugins and inspects
-metadata without importing the entire library:
-
-```bash
-ce.plugins list all                # show explanations, intervals, plots
-ce.plugins show core.interval.fast --kind intervals
-ce.plugins trust <id>              # mark an explanation plugin as trusted
-ce.plugins untrust <id>            # revoke trust for an explanation plugin
-```
-
-The CLI surfaces dependency hints (interval/plot fallbacks) and trust state so
-operators can validate configuration before running large jobs.
-
-```python
-   calib_y_hat_cls, (low, high) = classifier.predict(X_test_cls, uq_interval=True)
-   calib_y_hat_reg, low_high = regressor.predict(X_test_reg, uq_interval=True) # default low_high_percentiles=(5, 95)
-   calib_y_hat_reg, low_high = regressor.predict(X_test_reg, low_high_percentiles=(10,90), uq_interval=True)
-   thrld_y_hat_reg, low_high = regressor.predict(X_test_reg, threshold=your_threshold, uq_interval=True)
-   thrld_proba_reg, (low, high) = regressor.predict_proba(X_test_reg, threshold=your_threshold, uq_interval=True)
-```
-
-[Table of Content](#table-of-contents)
 
 ## Usage
 The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) notebook is similar to this section in structure and includes plots and output.

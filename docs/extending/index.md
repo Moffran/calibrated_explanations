@@ -1,6 +1,17 @@
 # Extending the library
 
-Guidance for plugin authors and contributors building on top of the core.
+{{ hero_calibrated_explanations }}
+
+{{ backed_by_research_banner }}
+
+Contributors and plugin authors keep calibrated explanations front and centre.
+Begin with the calibrated plugin example, then dive into guardrails and ADR
+references.
+
+| Resource | Purpose |
+| --- | --- |
+| [Plugin guide](../plugins.md) | Builds a minimal calibrated plugin, cites ADR-024/025/026, and routes telemetry/CLI details to optional appendices. |
+| [Contribution guide](../contributing.md) | Covers governance, coding standards, and ADR links for extensibility. |
 
 ```{toctree}
 :maxdepth: 1
@@ -8,3 +19,5 @@ Guidance for plugin authors and contributors building on top of the core.
 ../plugins
 ../contributing
 ```
+
+{{ optional_extras_template }}

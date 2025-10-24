@@ -23,5 +23,7 @@ architecture. Update this checklist whenever a page moves or is retired.
 Use the `_shared` partials when editing audience landing hubs, README mirrors, or quickstarts:
 
 - Include the canonical hero copy with `{{ hero_calibrated_explanations }}` at the top of README, Overview, practitioner, researcher, and contributor landing pages.
+- Surface the research pedigree banner with `{{ backed_by_research_banner }}` directly below the hero on those same pages so readers can jump to :doc:`../citing` from every entry point.
 - End each of those pages—and any quickstart or interpretation guide that references telemetry—with the opt-in callouts from `{{ optional_extras_template }}`. Optional extras must remain the final section in the page outline.
+- Pair any alternatives coverage with `{{ alternatives_triangular }}` so the triangular walkthrough accompanies rule tables and `explore_alternatives` code snippets.
 - When creating new audience or quickstart pages, add them to the verification checklist above and confirm the shared fragments render correctly by running `sphinx-build -b html -W`.

@@ -1,35 +1,29 @@
 # Overview
 
-Calibrated Explanations delivers calibrated, uncertainty-aware feature importance
-for classification and regression models. The library wraps existing estimators
-so teams can surface factual, alternative, and fast explanations with calibrated
-probabilities and reproducible rule payloads.
+{{ hero_calibrated_explanations }}
 
-## Release highlights (v0.8.0)
+{{ backed_by_research_banner }}
 
-- PlotSpec routing is now the default renderer, with fallbacks recorded in
-  telemetry for auditability.
-- Telemetry payloads capture interval, probability, preprocessing, and plotting
-  sources so downstream services can inspect execution without custom hooks.
-- Documentation adopts a role-based structure to guide practitioners, researchers,
-  and maintainers to the right entry point.
+Calibrated Explanations keeps the calibrated, interpretation-first journey front
+and centre for every audience. Start with the quickstarts below, then dive into
+role-specific highlights and research context.
 
-See the [release notes](../governance/release_notes.md) for a curated summary of
-changes and links to the full changelog.
+| Classification (binary & multiclass) | Probabilistic regression |
+| --- | --- |
+| [Run the classification quickstart](../get-started/quickstart_classification.md) and pair it with the [demo notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_binary_classification.ipynb). | [Run the regression quickstart](../get-started/quickstart_regression.md) and explore the [probabilistic regression notebook](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/demo_probabilistic_regression.ipynb). |
 
-## Quick links
+> 🔁 **Interval regression insight:** Interval guidance ships alongside the
+> probabilistic regression quickstart—look for the interval notes directly under
+> the primary code path.
 
-- [Install the package](../get-started/installation.md)
-- [Run the classification quickstart](../get-started/quickstart_classification.md)
-- [Explore the regression quickstart](../get-started/quickstart_regression.md)
-- [Browse the API reference](../reference/api.md)
+## Highlights
 
-## Optional extras
+- **Interpretation first:** Reuse the [Interpret calibrated explanations guide](../how-to/interpret_explanations.md) across
+  factual, alternative, and probabilistic workflows, including the triangular
+  plot walkthrough for alternatives.
+- **Research pedigree:** [Review the literature](../citing.md) spanning binary,
+  multiclass, probabilistic, and interval regression.
+- **Role-based navigation:** Practitioners, researchers, and contributors each
+  have dedicated hubs with calibrated-first hero copy and governance guardrails.
 
-Some functionality is provided via optional extras to keep the core lean:
-
-- Visualization (matplotlib): `pip install "calibrated_explanations[viz]"`
-- LIME integration: `pip install "calibrated_explanations[lime]"`
-
-Plotting raises a friendly error if matplotlib is not installed, with guidance
-for enabling the `viz` extra.
+{{ optional_extras_template }}
