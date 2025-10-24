@@ -1,6 +1,6 @@
 # Release Plan to v1.0.0
 
-Last updated: 2025-10-05
+Last updated: 2025-10-24
 Maintainers: Core team
 Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution.
 
@@ -110,48 +110,22 @@ with shims, docstring coverage dashboard shows baseline met, ADR-019
 critical-path thresholds pass consistently, and full test suite stability
 achieved via ADR-023 exemption.
 
-### v0.9.0 (docs, packaging, performance polish)
+### v0.9.0 (documentation realignment & targeted runtime polish)
 
-1. Finalise documentation workflow per ADR-012 (CI build, gallery/linkcheck) and
-   ensure plugin/telemetry pages are cross-linked.【F:improvement_docs/adrs/ADR-012-documentation-and-gallery-build-policy.md†L1-L80】
-2. Publish plugin authoring guide + cookiecutter or scaffolding tasks (stretch
-   from plugin gap plan).【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L72-L78】
-3. Ship scoped performance enhancements aligned with ADR-003/ADR-004: deliver an
-   opt-in calibrator cache with eviction policy documentation, wire the
-   multiprocessing backend toggle for `CalibratedExplainer.explain`, and update
-   both ADRs to Accepted with implementation notes and rollout guidance.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】
-   - explain repeatedly scans the entire perturbed_feature array and recomputes counts in pure Python loops. For every feature, instance, and candidate value, the code rebuilds boolean masks by iterating across the full perturbed_feature array and recalculates calibration counts from scratch, both for categorical and numeric features. This creates roughly quadratic complexity in the number of perturbations and explains the observed slowness; vectorizing these lookups or pre-grouping the perturbations would reduce the runtime drastically without leaving Python.
-   - _explain_predict_step builds perturbation arrays with repeated np.concatenate, causing repeated full copies. The helper invoked by explain appends each new perturbation by concatenating NumPy arrays inside nested loops for every feature and candidate value. Because np.concatenate copies its inputs, this turns perturbation generation into an O(n²) process. Accumulating perturbations in Python lists and concatenating once (or preallocating) would greatly reduce overhead.
-4. Address `CalibratedExplainer.explain` fallback performance by batching perturbation
-   generation, vectorising aggregation loops, and expanding regression tests so the
-   Python implementation meets release SLAs without a C/Cython port. Capture the outcome
-   in release notes and guidance for plugin authors.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】
-5. Publish migration notes summarising plugin configuration defaults and
-   remaining legacy escapes.
-6. Turn ADR-018 tooling on by finishing pydocstyle batches E (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) and F (`serialization.py`, `core.py`), then making docstring linting blocking in CI, adding
-   coverage gates for touched modules, and wiring badges/reporting into the docs
-   workflow.【F:improvement_docs/documentation_standardization_plan.md†L24-L34】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L17-L62】【F:improvement_docs/pydocstyle_breakdown.md†L28-L29】
-7. Advance ADR-017 enforcement by pruning deprecated shims scheduled for removal
-   and locking naming lint rules in the release branch.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L28-L37】
-8. Audit ADR-019 waiver inventory, trim expired exemptions, and raise
-   non-critical modules toward the 90% floor to reduce debt before the v1 RC, and enable
-   `--cov-fail-under=88` in CI.
+1. **Reintroduce calibrated-explanations-first messaging across entry points.** Update README quickstart, Overview, and practitioner quickstarts so telemetry/PlotSpec steps are collapsed into clearly labelled "Optional extras" callouts. Place probabilistic regression next to classification in every onboarding path and link to interpretation guides and citing.md.
+2. **Ship audience-specific landing pages.** Implement practitioner, researcher, and contributor hubs per the information architecture update: add probabilistic regression quickstart + concept guide, interpretation guides mirroring notebooks, and a researcher "theory & literature" page with published papers and benchmark references.【F:improvement_docs/documentation_information_architecture.md†L5-L118】
+3. **Clarify plugin extensibility narrative.** Revise docs/plugins.md to open with a "hello, calibrated plugin" example that demonstrates preserving calibration semantics, move telemetry/CLI details into optional appendices, and document guardrails tying plugins back to calibrated explanations.【F:improvement_docs/documentation_review.md†L9-L49】
+4. **Label telemetry and performance scaffolding as optional tooling.** Move telemetry schema/how-to material into contributor governance sections with "Optional" badges, ensure practitioner guides mention telemetry only for compliance scenarios, and audit navigation labels to avoid implying these extras are mandatory.【F:improvement_docs/documentation_information_architecture.md†L70-L113】
+5. **Highlight research pedigree throughout.** Add "Backed by research" callouts to Overview, practitioner quickstarts, and probabilistic regression concept pages; cross-link citing.md and key publications in relevant sections.【F:improvement_docs/documentation_review.md†L15-L34】
+6. **Complete ADR-012 doc workflow enforcement.** Keep Sphinx `-W`, gallery build, and linkcheck mandatory; extend CI smoke tests to run the refreshed quickstarts and fail if optional extras are presented without labels.【F:improvement_docs/adrs/ADR-012-documentation-and-gallery-build-policy.md†L1-L80】
+7. **Turn ADR-018 tooling fully blocking.** Finish pydocstyle batches E (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) and F (`serialization.py`, `core.py`), then enforce blocking docstring linting and publish dashboards that foreground calibrated explanation examples.【F:improvement_docs/documentation_standardization_plan.md†L5-L41】【F:improvement_docs/pydocstyle_breakdown.md†L28-L29】
+8. **Advance ADR-017 naming cleanup.** Prune deprecated shims scheduled for removal and ensure naming lint rules stay green on the release branch.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L28-L37】
+9. **Sustain ADR-019 coverage uplift.** Audit waiver inventory, retire expired exemptions, raise non-critical modules toward the 90% floor, and enable `--cov-fail-under=88` in CI.
+10. **Scoped runtime polish for explain performance.** Deliver the opt-in calibrator cache, multiprocessing toggle, and vectorised perturbation handling per ADR-003/ADR-004 analysis so calibrated explanations stay responsive without compromising accuracy. Capture improvements and guidance for plugin authors.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】
+11. **Plugin CLI and discovery parity (optional extras).** Extend trust toggles and entry-point discovery to interval/plot plugins, but ship them as opt-in features with clear documentation that calibrated explanations remain usable without telemetry/CLI adoption.
+12. **Explanation export convenience.** Provide `to_json()`/`from_json()` helpers on explanation collections that wrap schema v1 utilities and document them as optional aids for integration teams.
 
-9. Extend plugin CLI trust toggles to interval and plot plugins.
-   - Add trust/untrust commands for interval calibrators and plot components (builders/renderers/styles) mirroring existing explanation plugin flows; update docs and CLI tests.
-   - Ensure trust state is reflected in `list` output and respected by resolution helpers.
-10. Enable entry-point discovery for interval and plot plugins.
-    - Discover and register identifier-keyed interval and plot plugins via entry points alongside explanations; surface discovery in CLI and guard with the trust model.
-    - Document entry-point group names and add smoke tests.
-11. Add first-class explanation export convenience.
-    - Provide `to_json()`/`from_json()` (or `export_json`) on explanation collections/instances that wrap existing schema v1 helpers; document usage and keep adapters as the single source of truth.
-
-Release gate: Docs CI green, packaging metadata includes CLI, caching/parallel
-controls implemented with ADR updates merged, migration guide available,
-docstring lint gates passing, ADR-019 waivers documented, plugin CLI supports
-trust toggles for explanations/intervals/plots, entry-point discovery enabled
-for interval/plot plugins, explanation export convenience documented, and no
-outstanding deprecated naming shims slated for removal.
+Release gate: Audience landing pages published with calibrated explanations/probabilistic regression foregrounded, research callouts present on all entry points, telemetry/performance extras labelled optional, docs CI (including quickstart smoke tests) green, ADR-017/018/019 gates enforced, runtime performance enhancements landed without altering calibration outputs, and optional plugin extras (CLI/discovery/export) documented as add-ons.
 
 ### v1.0.0-rc (release candidate readiness)
 

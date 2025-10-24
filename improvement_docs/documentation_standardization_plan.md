@@ -1,3 +1,5 @@
+Last updated: 2025-10-24
+
 # Documentation Standardization Plan
 
 ## Goal
@@ -18,7 +20,8 @@ codebase with measurable coverage thresholds and automated enforcement.
 2. Prioritize user-facing areas (`explanations`, `utils`, `plugins`, `api`) for immediate cleanup.
 3. Create parallel issues/checklists for each subpackage with assignees and review deadlines.
 4. Add module summaries and upgrade docstrings to numpydoc format; capture tricky cases in a
-   shared FAQ.
+   shared FAQ. Reinforce calibrated explanations/probabilistic regression as the primary narrative in
+   examples and parameter descriptions, and mark telemetry/performance hooks as optional context only.
 5. Track progress in a dashboard (GitHub project or spreadsheet) updated weekly.
 
 ## Phase 2 – Tooling Enforcement (Weeks 5-6)
@@ -30,5 +33,5 @@ codebase with measurable coverage thresholds and automated enforcement.
 1. Add documentation coverage badge to README fed by scheduled job.
 2. Extend linting to notebooks/examples via `nbdoclint` or custom hooks.
 3. Review documentation debt quarterly; treat drops below 90% as release blockers.
-4. Encourage contributors to add usage examples; integrate with existing documentation CI
-   (ADR-012) for end-to-end validation.
+4. Encourage contributors to add usage examples that highlight calibrated explanations and probabilistic
+   regression outcomes; integrate with existing documentation CI (ADR-012) for end-to-end validation.
