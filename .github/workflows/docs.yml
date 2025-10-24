@@ -23,6 +23,9 @@ jobs:
           pip install -r docs/requirements-doc.txt
           pip install .
 
+      - name: Enforce shared documentation fragments
+        run: python scripts/check_required_fragments.py
+
       - name: Build documentation (HTML)
         run: |
           cd docs

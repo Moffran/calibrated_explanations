@@ -15,6 +15,12 @@
 >
 > 🎓 **Backed by research:** Explore the peer-reviewed work and citation guidance in [docs/citing.md](docs/citing.md) to see the studies covering binary & multiclass classification alongside probabilistic and interval regression.
 
+| Classification (binary & multiclass) | Probabilistic regression |
+| --- | --- |
+| [Classification quickstart](docs/get-started/quickstart_classification.md) · [Binary notebook](notebooks/demo_binary_classification.ipynb) | [Regression quickstart](docs/get-started/quickstart_regression.md) · [Probabilistic notebook](notebooks/demo_probabilistic_regression.ipynb) |
+
+> 🔺 **Triangular alternatives:** Whenever you call `explore_alternatives`, pair it with `plot(style="triangular")` to interpret probability and interval shifts. Fast explanations live in the optional external plugins lane.
+
 ## Table of Contents
 - [Calibrated Explanations (Documentation)](#calibrated-explanations-documentation)
   - [Table of Contents](#table-of-contents)
@@ -37,7 +43,6 @@
     - [From PyPI](#from-pypi)
     - [From conda-forge](#from-conda-forge)
     - [Dependencies](#dependencies)
-    - [Optional extras](#optional-extras)
   - [Contributing](#contributing)
     - [Roadmap and ADRs](#roadmap-and-adrs)
   - [Documentation](#documentation)
@@ -48,6 +53,7 @@
     - [Citing and Bibtex](#citing-and-bibtex)
   - [Acknowledgements](#acknowledgements)
   - [Support](#support)
+  - [Optional extras](#optional-extras)
 
 ## Introduction
 
@@ -509,62 +515,6 @@ The following dependencies are required and will be installed automatically if n
 - [matplotlib](https://matplotlib.org/)
 - [NumPy](https://numpy.org/)
 
-### Optional extras
-
-Install these extras only when you need them—core calibrated explanations run
-without any optional dependencies.
-
-- **Visualization (matplotlib)**
-
-  ```powershell
-  pip install "calibrated_explanations[viz]"
-  ```
-
-- **LIME integration**
-
-  ```powershell
-  pip install "calibrated_explanations[lime]"
-  ```
-
-- **Notebooks (Jupyter, nbconvert)**
-
-  ```powershell
-  pip install "calibrated_explanations[notebooks]"
-  ```
-
-- **Development tools (tests, linting, typing, schema validation)**
-
-  ```powershell
-  pip install "calibrated_explanations[dev]"
-  ```
-
-- **Evaluation utilities (benchmarks, plots)**
-
-  ```powershell
-  pip install "calibrated_explanations[eval]"
-  ```
-
-- **External plugins bundle (FAST explanations)**
-
-  ```powershell
-  pip install "calibrated_explanations[external-plugins]"
-  ```
-
-  Then import and register the fast plugin when you want the opt-in speed-up:
-
-  ```python
-  from external_plugins.fast_explanations import register
-
-  register()
-  ```
-
-Plotting functions perform a lazy import and will raise a clear error if
-matplotlib isn’t installed, with a hint to install the viz extra. Tests that
-depend on plotting are marked with `pytest.mark.viz` and can be selected via:
-
-```powershell
-pytest -m viz
-```
 
 [Table of Content](#table-of-contents)
 
@@ -691,6 +641,47 @@ For any questions or issues, please open an [issue](https://github.com/Moffran/c
 
 [Table of Content](#table-of-contents)
 
+## Optional extras
+
+These integrations are **opt-in**—all primary quickstarts, notebooks, and runtime
+APIs work without them. Enable only the tooling you need:
+
+- **Telemetry & compliance logging**: Follow the
+  [configure telemetry guide](docs/how-to/configure_telemetry.md) to emit
+  optional provenance payloads for regulated environments. Skip this step when
+  you only need calibrated explanations.
+- **PlotSpec visualisation plugins**: Install PlotSpec styles with
+  `pip install "calibrated-explanations[plotspec]"` and read
+  [viz_plotspec.md](docs/viz_plotspec.md) to render calibrated factual and
+  alternative plots. These styles stay optional for all workflows.
+- **CLI & registry governance**: The plugin CLI is an opt-in helper for
+  discovery and denylist management. Run `python -m calibrated_explanations.plugins`
+  only when you want to inspect plugin routing; it honours the `CE_DENY_PLUGIN`
+  toggle.
+- **External plugin bundle**: Fast explanations and other vetted extensions live
+  in the external plugin lane. Install them with
+  `pip install "calibrated-explanations[external-plugins]"` and review the
+  [external plugins catalogue](docs/external_plugins/index.md) before enabling
+  anything in production. When you opt in to fast explanations, register the
+  plugin explicitly:
+
+  ```python
+  from external_plugins.fast_explanations import register
+
+  register()
+  ```
+- **Additional extras**: Use targeted extras when you want specific tooling.
+
+  ```bash
+  pip install "calibrated-explanations[viz]"         # Matplotlib visualisations
+  pip install "calibrated-explanations[lime]"        # LIME bridge
+  pip install "calibrated-explanations[notebooks]"   # Notebook authoring
+  pip install "calibrated-explanations[dev]"         # Tests, linting, typing
+  pip install "calibrated-explanations[eval]"        # Benchmark helpers
+  ```
+
+> 💡 Keep these extras at the end of the page so calibration-first workflows stay
+> front and centre.
 
 [pypi-version]: https://img.shields.io/pypi/v/calibrated-explanations
 [calibrated-explanations-on-pypi]: https://pypi.org/project/calibrated-explanations

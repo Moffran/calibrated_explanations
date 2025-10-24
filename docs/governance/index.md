@@ -8,6 +8,7 @@ Release policies, review cadences, and contact points for maintainers.
 section_owners
 release_checklist
 nav_crosswalk
+waivers_inventory
 release_notes
 ../pr_guide
 ```
