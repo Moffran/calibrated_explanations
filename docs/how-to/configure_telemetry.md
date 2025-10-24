@@ -31,6 +31,12 @@ python run_batch.py
 The telemetry dictionary will report `interval_source="core.interval.fast"` and
 list the configured plot style with fallbacks.
 
+```{note}
+Install the external FAST bundle before referencing `core.interval.fast`.
+Run ``pip install "calibrated-explanations[external-plugins]"`` and call
+``external_plugins.fast_explanations.register()`` to populate the registry.
+```
+
 ## CLI inspection
 
 Use the bundled CLI to review registry state, trusted plugins, and default

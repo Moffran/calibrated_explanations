@@ -68,6 +68,7 @@ from ..plugins.registry import (
     find_interval_descriptor,
     find_interval_plugin,
     find_interval_plugin_trusted,
+    is_identifier_denied,
 )
 from ..plugins.predict import PredictBridge
 
@@ -456,7 +457,10 @@ class CalibratedExplainer:
 
         default_identifier = _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode)
         if default_identifier and default_identifier not in seen:
-            expanded.append(default_identifier)
+            if mode == "fast" and find_explanation_descriptor(default_identifier) is None:
+                pass
+            else:
+                expanded.append(default_identifier)
         return tuple(expanded)
 
     def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
@@ -497,7 +501,10 @@ class CalibratedExplainer:
                             ordered.append(fallback)
                             seen.add(fallback)
         if default_identifier not in seen:
-            ordered.append(default_identifier)
+            if fast and find_interval_descriptor(default_identifier) is None:
+                pass
+            else:
+                ordered.append(default_identifier)
         key = "fast" if fast else "default"
         self._interval_preferred_identifier[key] = preferred_identifier
         return tuple(ordered)
@@ -725,6 +732,12 @@ class CalibratedExplainer:
 
         errors: List[str] = []
         for identifier in chain:
+            if is_identifier_denied(identifier):
+                message = f"{identifier}: denied via CE_DENY_PLUGIN"
+                if preferred_identifier == identifier:
+                    raise ConfigurationError("Interval plugin override failed: " + message)
+                errors.append(message)
+                continue
             descriptor = find_interval_descriptor(identifier)
             plugin = None
             metadata: Mapping[str, Any] | None = None
@@ -903,9 +916,24 @@ class CalibratedExplainer:
 
         preferred_identifier = raw_override if isinstance(raw_override, str) else None
         chain = self._explanation_plugin_fallbacks.get(mode, ())
+        if not chain and mode == "fast":
+            raise ConfigurationError(
+                "Fast explanation plugin 'core.explanation.fast' is not registered. "
+                "Install the external plugins extra with ``pip install \"calibrated-explanations[external-plugins]\"`` "
+                "and call ``external_plugins.fast_explanations.register()`` or rerun "
+                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
+            )
         errors: List[str] = []
         for identifier in chain:
             is_preferred = preferred_identifier is not None and identifier == preferred_identifier
+            if is_identifier_denied(identifier):
+                message = f"{identifier}: denied via CE_DENY_PLUGIN"
+                if is_preferred:
+                    raise ConfigurationError(
+                        "Explanation plugin override failed: " + message
+                    )
+                errors.append(message)
+                continue
             descriptor = find_explanation_descriptor(identifier)
             metadata: Mapping[str, Any] | None = None
             plugin = None

@@ -43,3 +43,15 @@ and future migration phases.【F:improvement_docs/adrs/ADR-017-nomenclature-stan
   repeating logic inline.
 - Coverage: new modules should ship with docstrings so coverage tooling can
   report progress and CI lint jobs can highlight regressions.
+
+## Plugin guardrails & denylist controls
+
+- Review `docs/plugins.md` before touching the registry. It links directly to
+  ADR-024/025/026 and provides the minimal calibrated plugin scaffold.
+- Use `CE_DENY_PLUGIN` during development to block plugin identifiers without
+  modifying code. CLI discovery labels denied plugins so you can confirm the
+  toggle took effect.
+- External plugins (for example FAST explanations) live under
+  `external_plugins/` and are installed via `pip install
+  "calibrated-explanations[external-plugins]"` followed by an explicit
+  `register()` call.

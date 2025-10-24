@@ -115,6 +115,12 @@ class DummyExplanation:
             "weight_low": [0.1],
             "weight_high": [0.5],
             "value": [f"value_{self.index}"],
+            "feature": [self.index],
+            "feature_value": [self.x_test[0] if len(self.x_test) else None],
+            "predict": [self.predict],
+            "predict_low": [self.prediction_interval[0]],
+            "predict_high": [self.prediction_interval[1]],
+            "is_conjunctive": [False],
         }
 
 
@@ -396,6 +402,15 @@ def test_alternative_specific_filters(calibrated_collection):
             call[0] for call in exp.calls if call[0] in {"super", "semi", "counter", "ensured"}
         ]
         assert {"super", "semi", "counter", "ensured"}.issubset(set(actions))
+
+
+def test_collection_to_json_and_back(calibrated_collection):
+    payload = calibrated_collection.to_json()
+    assert payload["collection"]["size"] == len(calibrated_collection)
+    exported = CalibratedExplanations.from_json(payload)
+    assert exported.metadata["size"] == len(calibrated_collection)
+    assert len(exported.explanations) == len(calibrated_collection)
+    assert all(exp.task == "classification" for exp in exported.explanations)
 
 
 def test_frozen_explainer_read_only():

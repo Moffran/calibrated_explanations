@@ -91,6 +91,13 @@ def test_env_trust_marks_plugin_trusted(monkeypatch):
     registry._ENV_TRUST_CACHE = None
 
 
+def test_is_identifier_denied(monkeypatch):
+    monkeypatch.setenv("CE_DENY_PLUGIN", "alpha , beta")
+    assert registry.is_identifier_denied("alpha")
+    assert registry.is_identifier_denied("beta")
+    assert not registry.is_identifier_denied("gamma")
+
+
 def test_validate_plugin_meta_rejects_bad_meta():
     class BadPlugin:
         plugin_meta = {"capabilities": ["explain"]}  # missing name and schema_version

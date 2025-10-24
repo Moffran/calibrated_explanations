@@ -80,6 +80,25 @@ def _env_trusted_names() -> set[str]:
     return set(names)
 
 
+def _env_denylist() -> set[str]:
+    """Return plugin identifiers blocked via ``CE_DENY_PLUGIN``."""
+
+    raw = os.getenv("CE_DENY_PLUGIN", "")
+    names: set[str] = set()
+    for chunk in raw.replace(";", ",").split(","):
+        name = chunk.strip()
+        if name:
+            names.add(name)
+    return names
+
+
+def is_identifier_denied(identifier: str) -> bool:
+    """Return ``True`` when *identifier* appears in the denylist environment toggle."""
+
+    denied = _env_denylist()
+    return identifier in denied
+
+
 def _should_trust(meta: Mapping[str, Any]) -> bool:
     """Return whether metadata demands trust by default."""
     declared = _normalise_trust(meta)
@@ -1400,6 +1419,7 @@ __all__ = [
     "clear_interval_plugins",
     "clear_plot_plugins",
     "ensure_builtin_plugins",
+    "is_identifier_denied",
     "register_explanation_plugin",
     "register_interval_plugin",
     "register_plot_builder",

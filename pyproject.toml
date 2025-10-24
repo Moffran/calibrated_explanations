@@ -61,6 +61,7 @@ eval = [
   "shap",
   "seaborn",
 ]
+"external-plugins" = []
 
 [project.scripts]
 "ce.plugins" = "calibrated_explanations.plugins.cli:main"
@@ -72,7 +73,7 @@ markers = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "external_plugins"]
 
 [tool.setuptools.package-data]
 calibrated_explanations = ["py.typed", "schemas/*.json"]

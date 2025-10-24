@@ -508,39 +508,56 @@ The following dependencies are required and will be installed automatically if n
 
 ### Optional extras
 
-Some features can be installed as optional extras to keep the core lean. Note: in v0.6.0, a subset (e.g., matplotlib) may still be present in the core install for compatibility; extras remain available to support minimal or controlled environments.
+Install these extras only when you need them—core calibrated explanations run
+without any optional dependencies.
 
-- Visualization (matplotlib)
+- **Visualization (matplotlib)**
 
-```powershell
-pip install "calibrated_explanations[viz]"
-```
+  ```powershell
+  pip install "calibrated_explanations[viz]"
+  ```
 
-- LIME integration
+- **LIME integration**
 
-```powershell
-pip install "calibrated_explanations[lime]"
-```
+  ```powershell
+  pip install "calibrated_explanations[lime]"
+  ```
 
-- Notebooks (Jupyter, nbconvert)
+- **Notebooks (Jupyter, nbconvert)**
 
-```powershell
-pip install "calibrated_explanations[notebooks]"
-```
+  ```powershell
+  pip install "calibrated_explanations[notebooks]"
+  ```
 
-- Development tools (tests, linting, typing, schema validation)
+- **Development tools (tests, linting, typing, schema validation)**
 
-```powershell
-pip install "calibrated_explanations[dev]"
-```
+  ```powershell
+  pip install "calibrated_explanations[dev]"
+  ```
 
-- Evaluation utilities (benchmarks, plots)
+- **Evaluation utilities (benchmarks, plots)**
 
-```powershell
-pip install "calibrated_explanations[eval]"
-```
+  ```powershell
+  pip install "calibrated_explanations[eval]"
+  ```
 
-Plotting functions perform a lazy import and will raise a clear error if matplotlib isn’t installed, with a hint to install the viz extra. Tests that depend on plotting are marked with `pytest.mark.viz` and can be selected via:
+- **External plugins bundle (FAST explanations)**
+
+  ```powershell
+  pip install "calibrated_explanations[external-plugins]"
+  ```
+
+  Then import and register the fast plugin when you want the opt-in speed-up:
+
+  ```python
+  from external_plugins.fast_explanations import register
+
+  register()
+  ```
+
+Plotting functions perform a lazy import and will raise a clear error if
+matplotlib isn’t installed, with a hint to install the viz extra. Tests that
+depend on plotting are marked with `pytest.mark.viz` and can be selected via:
 
 ```powershell
 pytest -m viz

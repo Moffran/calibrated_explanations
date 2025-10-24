@@ -18,6 +18,7 @@ references.
 
 ../plugins
 ../contributing
+../external_plugins/index
 ```
 
 {{ optional_extras_template }}

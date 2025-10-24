@@ -5,6 +5,7 @@ Module containing all plotting functionality.
 import contextlib
 import math
 import warnings
+from pathlib import Path
 
 import numpy as np
 
@@ -35,6 +36,16 @@ def __require_matplotlib():
         if _MATPLOTLIB_IMPORT_ERROR is not None:
             msg += f"\nOriginal import error: {_MATPLOTLIB_IMPORT_ERROR}"
         raise RuntimeError(msg)
+
+
+def _compose_save_target(path, title: str, ext) -> str:
+    """Return a filesystem path for saving plot artefacts using OS separators."""
+    ext_str = str(ext)
+    base_str = str(path)
+    base_path = Path(path)
+    if base_str.endswith(("/", "\\")) or base_path.is_dir():
+        return str(base_path / f"{title}{ext_str}")
+    return f"{base_str}{title}{ext_str}"
 
 
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments
@@ -190,7 +201,7 @@ def _plot_probabilistic(
         ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
         ax_main_twin.set_ylabel("Instance values")
     for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
+        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
@@ -310,7 +321,7 @@ def _plot_regression(
     ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
     ax_main_twin.set_ylabel("Instance values")
     for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
+        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
@@ -396,7 +407,7 @@ def _plot_triangular(
     plt.legend()
 
     for ext in save_ext:
-        plt.savefig(path + title + ext, bbox_inches="tight")
+        plt.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         plt.show()
 
@@ -557,7 +568,7 @@ def _plot_alternative(
     with contextlib.suppress(Exception):
         fig.tight_layout()
     for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
+        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 

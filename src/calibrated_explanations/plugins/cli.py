@@ -13,6 +13,7 @@ from .registry import (
     find_plot_builder_descriptor,
     find_plot_renderer_descriptor,
     find_plot_style_descriptor,
+    is_identifier_denied,
     list_explanation_descriptors,
     list_interval_descriptors,
     list_plot_builder_descriptors,
@@ -85,7 +86,11 @@ def _emit_explanation_descriptor(descriptor) -> None:
     plot = ", ".join(_string_tuple(meta.get("plot_dependency"))) or "-"
     fallbacks = ", ".join(_string_tuple(meta.get("fallbacks")))
     trust_state = "trusted" if descriptor.trusted else "untrusted"
-    print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
+    labels = [trust_state]
+    if is_identifier_denied(descriptor.identifier):
+        labels.append("denied via CE_DENY_PLUGIN")
+    label_text = "; ".join(labels)
+    print(f"  - {descriptor.identifier} ({label_text}; {_format_common_metadata(meta)})")
     print(f"    modes={modes}; tasks={tasks}")
     print(f"    interval_dependency={interval}; plot_dependency={plot}")
     if fallbacks:
@@ -98,7 +103,11 @@ def _emit_interval_descriptor(descriptor) -> None:
     modes = ", ".join(_string_tuple(meta.get("modes"))) or "-"
     deps = ", ".join(_string_tuple(meta.get("dependencies"))) or "-"
     trust_state = "trusted" if descriptor.trusted else "untrusted"
-    print(f"  - {descriptor.identifier} ({trust_state}; {_format_common_metadata(meta)})")
+    labels = [trust_state]
+    if is_identifier_denied(descriptor.identifier):
+        labels.append("denied via CE_DENY_PLUGIN")
+    label_text = "; ".join(labels)
+    print(f"  - {descriptor.identifier} ({label_text}; {_format_common_metadata(meta)})")
     print(f"    modes={modes}; dependencies={deps}")
 
 
@@ -339,6 +348,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not getattr(args, "command", None):
         parser.print_help()
         return 0
+    print(
+        "🔒 Optional tooling: the plugin CLI is opt-in. Core calibrated explanations run "
+        "without it. Set CE_DENY_PLUGIN to block plugin identifiers when experimenting."
+    )
+    print()
     return int(args.func(args))
 
 
