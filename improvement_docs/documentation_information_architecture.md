@@ -16,25 +16,28 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
 
 ## Guiding principles
 
-1. **Deliver calibrated explanations first.** The first message in every hub and
-   task flow must be how to obtain, interpret, and trust calibrated explanations
-   before introducing telemetry or other extras.
-2. **Spotlight probabilistic regression.** Probabilistic regression guidance sits
-   alongside classification in navigation, quickstarts, and release messaging.
-3. **Keep examples simple by default.** Tutorials mirror README/notebook flows
-   with minimal prerequisites; complexity is introduced only when explaining the
-   plugin architecture or optional extras.
-4. **Structure content for the three core audiences.** Practitioner, researcher,
-   and contributor journeys each get curated landing pages with clear cross-links
-   and calls to action.
-5. **Ground every narrative in published research.** High-traffic pages link to
-   peer-reviewed papers, benchmarks, and citing guidance.
-6. **Champion plugin extensibility with guardrails.** Extensibility stories start
-   by reinforcing calibration semantics, showing how plugins extend the core
-   contract while labelling telemetry/governance as optional.
-7. **Treat telemetry and similar extras as optional.** Extras are clearly marked,
-   documented as opt-in, and never distract from the calibrated explanation
-   journey.
+1. **Calibrated explanations first.** Every hub begins with factual and
+   alternative explanations so readers immediately see how to obtain calibrated
+   outputs.
+2. **Probabilistic regression stands beside classification.** Regression (point,
+   interval, probabilistic) content appears next to binary and multiclass
+   guidance in every navigation path.
+3. **Alternatives always include triangular plots and note fast plugins.** When
+   alternatives are introduced, the triangular plot storytelling accompanies the
+   text, and fast explanations are referenced only as an external plugin path.
+4. **Simple, reproducible examples lead.** Tutorials replicate README/notebook
+   snippets before branching into advanced usage.
+5. **Audience-led structure.** Practitioner, researcher, and contributor
+   journeys receive dedicated landing pages following this proposal.
+6. **External plugin readiness.** Documentation reserves placeholders for
+   community plugin listings, references the `external_plugins/` folder, and
+   explains the aggregated installation extra that installs supported plugins.
+7. **Research citations on every path.** High-traffic pages link to published
+   work and citing guidance to reinforce the research foundation.
+8. **Plugin contract highlighted.** Extensibility content reiterates calibration
+   guardrails and how plugins stay aligned with the framework.
+9. **Extras labelled optional.** Telemetry, performance tooling, and similar
+   add-ons are always flagged as optional supplements.
 
 ## Proposed top-level navigation
 
@@ -45,16 +48,16 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
    - Quick links for each audience (Practitioner, Researcher, Contributor) to dive deeper.
 2. **Practitioner track**
    - **Install & Quickstart** page featuring two runnable snippets: calibrated classification and probabilistic regression. Telemetry/PlotSpec steps are collapsed under "Optional: operational add-ons".
-   - **Interpretation guides** for factual, alternative, and fast explanations that reuse notebook examples and highlight calibrated intervals, uncertainty breakdowns, and regression thresholds.
+  - **Interpretation guides** for factual and alternative explanations that reuse notebook examples, highlight calibrated intervals, uncertainty breakdowns, regression thresholds, and pair alternatives with the triangular plot walkthrough. Fast explanations are referenced only as an external plugin pointer within an "Optional extensions" callout.
    - **Integration how-tos** (pipelines, deployment) that reference telemetry only as an optional compliance aid.
 3. **Researcher track**
    - Theory overview summarising calibration guarantees, probabilistic regression math, and links to published papers/preprints.
    - Evaluation playbook with benchmark references, dataset notes, and reproducibility checklists.
    - Roadmap for contributing new research-backed modes (with criteria for alignment to calibrated explanations).
 4. **Contributor track**
-   - Plugin system overview starting with a "hello, calibrated plugin" example before registry/CLI details; reiterates that plugins must preserve calibration semantics.
-   - Development workflow, coding standards, and governance documents.
-   - Telemetry and performance scaffolding pages flagged as optional extras for observability.
+  - Plugin system overview starting with a "hello, calibrated plugin" example before registry/CLI details; reiterates that plugins must preserve calibration semantics and points to the `external_plugins/` folder plus the aggregated installation extra for community bundles.
+  - Development workflow, coding standards, and governance documents.
+  - Telemetry and performance scaffolding pages flagged as optional extras for observability, plus a placeholder page that lists vetted external plugins and outlines submission criteria.
 5. **Concepts & Architecture** (shared)
    - Deep dives on explanation lifecycle, calibration strategies, and uncertainty decomposition.
    - Probabilistic regression concept article with diagrams, comparisons, and cross-links to research.
@@ -79,6 +82,7 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
 | `docs/calibrated_explanations.md` | Concepts & Architecture | Reframe as lifecycle overview, add probabilistic regression deep dive, and embed research citations throughout. |
 | `docs/research_hub.md` (new) | Researcher track – Theory overview | Curate papers, benchmarks, and ongoing studies. |
 | `docs/plugins.md` | Contributor track – Plugin overview | Start with minimal calibrated plugin example, then cover registry workflow and compliance guardrails. |
+| `docs/external_plugins.md` (new) | Contributor track – External plugin index | Provide placeholder sections for community plugins, link to `external_plugins/` folder, and explain how to install via the aggregated extras path. |
 | `docs/telemetry.md` | Contributor track / Optional extras | Position telemetry as optional; cross-link from governance and plugin compliance notes only. |
 | `docs/api_reference/` auto docs | Reference | Group modules into calibrated core, probabilistic regression, plugin interfaces, viz extras; ensure probabilistic regression helpers are first. |
 | `docs/contributing.md` | Contributor track – Development workflow | Pair with contributor checklist and governance links; emphasise preserving calibration semantics. |

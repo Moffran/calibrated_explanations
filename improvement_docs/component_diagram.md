@@ -23,8 +23,11 @@ Key steps:
 
 1. Fit your model (outside library scope).
 2. Calibrate once with calibration set.
-3. Generate factual or alternative explanations.
-4. Plot results.
+3. Generate factual or alternative explanations, noting that alternatives ship
+   with triangular plot visualisations while fast explanations are offered only
+   via external plugins.
+4. Plot results (triangular plot for alternatives; calibrated interval plots for
+   factual/regression cases).
 
 (Internals like cache, parallelism, plugins are transparent and optional.)
 
@@ -81,7 +84,7 @@ flowchart TB
 | Explanation Manager | Coordinate explanation strategies, reuse calibrated artifacts | 001 |
 | Schema & Validation | Versioned JSON envelope for explanations | 005 |
 | Plugin Registry | Controlled discovery & trust gating of third-party strategies | 006 |
-| Visualization (PlotSpec) | Backend-agnostic spec & rendering adapters | 007 |
+| Visualization (PlotSpec) | Backend-agnostic spec & rendering adapters (triangular plot for alternatives, interval views for factual/regression) | 007 |
 | Metrics/Logging | Hit ratios, latency, resource stats, structured logs | (Cross-cutting) |
 
 ## Cross-Cutting Concerns
@@ -97,7 +100,7 @@ flowchart TB
 
 - Initial implementation stubs some services (cache disabled, serial execution) to preserve behavior parity.
 - After baseline metrics, caching + parallel heuristics activate behind config flags.
-- Additional backends (plotly, distributed executors) integrate by appending new strategy or renderer classes without changing core orchestrators.
+- Additional backends (plotly, distributed executors, external fast explanation plugins) integrate by appending new strategy or renderer classes without changing core orchestrators, provided they respect calibrated output contracts.
 
 ## Usage Narrative (Happy Path)
 

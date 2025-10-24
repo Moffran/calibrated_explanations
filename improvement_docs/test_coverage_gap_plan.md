@@ -23,13 +23,13 @@ The same run highlighted thin coverage across gateway modules such as `core/__in
 ## Gap analysis by subsystem
 
 ### 1. Plotting router and builder chain
-* `_plot_probabilistic` and `_plot_global` orchestrate style negotiation, interval guards, and fallback to legacy drawing, but current tests barely exercise the override matrix (`style_override`, `use_legacy`) or the defensive logging paths, leaving large sections uncovered.【F:src/calibrated_explanations/plotting.py†L601-L640】
+* `_plot_probabilistic` and `_plot_global` orchestrate style negotiation, interval guards, triangular alternative rendering, and fallback to legacy drawing, but current tests barely exercise the override matrix (`style_override`, `use_legacy`) or the defensive logging paths, leaving large sections uncovered—including the triangular plot path.【F:src/calibrated_explanations/plotting.py†L601-L640】
 * The modern rendering path through `viz/builders.py` constructs probability segments, pivot-aware colour roles, and ranking heuristics; coverage shows those branches are almost entirely cold, especially the uncertainty segment assembly near the bottom of the module.【F:src/calibrated_explanations/viz/builders.py†L431-L470】【F:src/calibrated_explanations/viz/builders.py†L838-L852】
 * Save-extension handling still behaves differently on Windows vs. POSIX (the failing assertion that expects `tmp_path / "defaultsvg"`), signalling that IO-related branches lack coverage and break parity across platforms.【F:tests/unit/legacy/test_plotting_module.py†L205-L209】
 
 **Remediation tactics**
 1. Parameterise new plotting tests to drive combinations of `style_override`, `use_legacy`, interval flags, and `save_ext` inputs, asserting both figure assembly and normalised paths (use `pathlib.Path` to abstract separators).
-2. Extract focused builder tests for `_build_probability_segments`, ranking heuristics, and pivot-aware colouring so the cold loops in `viz/builders.py` receive deterministic coverage without heavy matplotlib integration.
+2. Extract focused builder tests for `_build_probability_segments`, ranking heuristics, triangular plot assembly, and pivot-aware colouring so the cold loops in `viz/builders.py` receive deterministic coverage without heavy matplotlib integration.
 3. Restore the Windows assertion by adjusting implementation (or test) path handling, then assert the branch that converts extension lists to filenames so the cross-platform guard remains covered.
 
 ### 2. Explanation assembly and validation
@@ -46,11 +46,13 @@ The same run highlighted thin coverage across gateway modules such as `core/__in
 * Registry trust-management helpers (`mark_plot_renderer_trusted/untrusted`) mutate shared registries and metadata, but there are no assertions that the trust sets or propagated metadata stay consistent.【F:src/calibrated_explanations/plugins/registry.py†L1211-L1234】
 * Built-in plugins perform heavy payload normalisation—deriving feature indices, column names, and interval flags from heterogeneous payloads—yet coverage shows those branches are rarely executed.【F:src/calibrated_explanations/plugins/builtins.py†L661-L709】
 * CLI emitters rely on registry lookups and metadata formatting; failure paths for missing identifiers and trust filtering remain untested, leaving CLI ergonomics brittle.【F:src/calibrated_explanations/plugins/cli.py†L51-L90】
+* No coverage exists around the forthcoming `external_plugins` extras installer, leaving the aggregated installation path and folder bootstrap logic unverified.
 
 **Remediation tactics**
 1. Build registry tests that seed dummy descriptors, toggling trust flags to confirm `_PLOT_RENDERERS`, `_TRUSTED_PLOT_RENDERERS`, and metadata propagation stay in sync.
 2. Add unit tests for the probabilistic built-ins that feed mixed payloads (mapping vs. array) to cover feature-index derivation, logging branches, and auto-selection of `features_to_plot`.
 3. Exercise CLI commands via `CliRunner`, verifying that invalid identifiers raise the documented errors and that trusted/untrusted filters and JSON emitters behave as expected.
+4. Add tests for the aggregated `external-plugins` extras installer that validate dependency resolution, folder discovery (`external_plugins/`), and opt-in semantics.
 
 ### 4. Prediction helpers and package gateways
 * `core/prediction_helpers.initialize_explanation` hides several branch-heavy validation paths (Mondrian bins, regression thresholds, warning hooks) that remain untested, leaving subtle validation errors undetected.【F:src/calibrated_explanations/core/prediction_helpers.py†L82-L108】

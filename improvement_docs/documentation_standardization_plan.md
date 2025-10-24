@@ -23,7 +23,8 @@ codebase with measurable coverage thresholds and automated enforcement.
 3. Create parallel issues/checklists for each subpackage with assignees and review deadlines.
 4. Add module summaries and upgrade docstrings to numpydoc format; capture tricky cases in a
    shared FAQ. Reinforce calibrated explanations/probabilistic regression as the primary narrative in
-   examples and parameter descriptions, and mark telemetry/performance hooks as optional context only.
+   examples and parameter descriptions, pair alternative explanations with triangular plot context,
+   and mark telemetry/performance hooks (including fast explanation plugins) as optional references only.
 5. Track progress in a dashboard (GitHub project or spreadsheet) updated weekly.
 
 ## Phase 2 – Tooling Enforcement (Weeks 5-6)

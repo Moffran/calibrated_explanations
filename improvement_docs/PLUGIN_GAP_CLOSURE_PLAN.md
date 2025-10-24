@@ -28,6 +28,9 @@ Status: Draft roadmap owned by core maintainers
    editing code.
 3. Extend validation/telemetry hooks to cover interval/plot execution and update
    docs/ADR statuses accordingly.
+4. Prepare the external plugin ecosystem with a discoverable folder, aggregated
+   installation extras, and documentation placeholders that reinforce
+   calibrated-explanations guardrails.
 
 ## Step-by-step plan
 
@@ -75,6 +78,10 @@ Status: Draft roadmap owned by core maintainers
 5. Implement the `CE_DENY_PLUGIN` registry toggle described in ADR-006 and wire
    it into CLI trust workflows so operators can explicitly block unsafe
    extensions prior to v1.0.0.【F:improvement_docs/adrs/ADR-006-plugin-registry-trust-model.md†L40-L76】
+6. Create an `external_plugins/` namespace containing README and installation
+   metadata, define the `external-plugins` extras group in packaging configs, and
+   add documentation placeholders that list bundled plugins while reiterating the
+   calibration contract.
 
 ### 4. Stretch follow-ups (post v0.7 hardening)
 

@@ -20,30 +20,55 @@ Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution
 
 ## Guiding principles
 
-1. **Deliver calibrated explanations first.** Every milestone must foreground the
-   core calibrated explanation workflows documented in the README and
-   quickstart notebooks before discussing telemetry or optional tooling, so
-   contributors invest in the features that define the project.【F:README.md†L1-L140】【F:notebooks/quickstart.ipynb†L1-L20】
-2. **Spotlight probabilistic regression.** Preserve the repo’s differentiator by
-   positioning probabilistic regression guidance alongside classification in
-   all landing and release assets, drawing on existing notebook examples for
-   accuracy.【F:notebooks/demo_probabilistic_regression.ipynb†L1-L20】
-3. **Favour simple, reproducible examples.** Align tutorials with the accessible
-   flows outlined in the README and gallery, adding complexity only when the
-   plugin architecture or extras require deeper dives.【F:docs/index.rst†L1-L80】
-4. **Communicate with a clear, audience-led structure.** Follow the information
-   architecture’s practitioner/researcher/contributor framing when planning
-   docs and features so each release improves navigation for its primary
-   audiences.【F:improvement_docs/documentation_information_architecture.md†L40-L118】
-5. **Reference published research.** Tie major features and examples back to the
-   papers and benchmarks cited in our citation guide to keep the project rooted
-   in peer-reviewed work.【F:docs/citing.md†L1-L140】
-6. **Champion the plugin contract.** Highlight the plugin system as the gateway
-   for extension, documenting guardrails that keep contributions faithful to
-   calibrated explanation semantics.【F:improvement_docs/documentation_review.md†L9-L49】【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L24-L70】
-7. **Treat telemetry and other extras as optional.** Extras such as telemetry or
-   dashboards should be clearly labelled opt-in so they never dilute the core
-   calibrated explanation story.【F:improvement_docs/documentation_information_architecture.md†L70-L113】
+1. **Keep calibrated explanations front and centre.** Every milestone must begin
+   with factual explanations (`explain_factual`) and alternative exploration
+   (`explore_alternatives`), ensuring users can obtain calibrated answers before
+   encountering any extras.
+2. **Highlight probabilistic regression alongside classification.** The plan
+   must showcase probabilistic and interval regression next to binary and
+   multiclass classification so our differentiator is unmistakable, using the
+   existing notebooks and quickstarts as canonical references.【F:notebooks/demo_probabilistic_regression.ipynb†L1-L20】
+3. **Introduce alternatives with their triangular plots.** Whenever alternatives
+   appear in docs or runtime work, pair them with the triangular alternative plot
+   narrative and clarify that fast explanations live in an external plugin lane,
+   not in the core onboarding.
+4. **Use simple, reproducible examples first.** Tutorials should mirror the
+   README and notebooks and layer in complexity only when discussing plugins or
+   extras.【F:README.md†L1-L140】
+5. **Deliver a clear, audience-led structure.** Follow the practitioner,
+   researcher, and contributor journeys from the information architecture so
+   navigation reinforces the calibrated-explanations-first story.【F:improvement_docs/documentation_information_architecture.md†L40-L118】
+6. **Plan for external plugins.** Provide placeholders in documentation for
+   listing community plugins, maintain an `external_plugins/` folder, and spell
+   out how aggregated installation paths (e.g., extras) keep them discoverable.
+7. **Ground messaging in published research.** Promote the research pedigree of
+   calibrated explanations and probabilistic regression on every major landing
+   page, citing the papers catalogued in `citing.md`.【F:docs/citing.md†L1-L140】
+8. **Champion the plugin contract.** Keep the plugin system visible as the means
+   to extend the framework—emphasising calibration guardrails and the ease of
+   building aligned extensions.【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L24-L70】
+9. **Label extras as optional.** Telemetry, performance tooling, dashboards, and
+   other peripherals remain opt-in so they never dilute the calibrated
+   explanation narrative.
+
+## Gap analysis against improvement plans
+
+- **Triangular alternative plots missing from the release milestones.** The
+  documentation review and information architecture plans expect every
+  alternatives narrative to pair with the triangular plot guidance, but the
+  release plan previously omitted the work; v0.9.0 now carries an explicit task
+  to wire the storytelling and PlotSpec updates together.【F:improvement_docs/documentation_information_architecture.md†L58-L87】【F:improvement_docs/documentation_review.md†L1-L34】
+- **External plugin ecosystem lacking structure.** The plugin gap plan and doc
+  review call for discoverability improvements, yet the release plan had no
+  tasks for placeholders or aggregated installation; v0.9.0 now introduces the
+  `external_plugins/` folder, documentation hooks, and an installation extra to
+  keep community plugins aligned.【F:improvement_docs/PLUGIN_GAP_CLOSURE_PLAN.md†L60-L94】【F:improvement_docs/documentation_review.md†L24-L49】
+- **Research-forward messaging not tied to milestones.** Supporting documents
+  highlight the need for research callouts and citation pathways, so v0.9.0 now
+  commits to reinforcing "Backed by research" content on all landing pages.
+- **Fast explanations treated as core in some guides.** Plans now ensure fast
+  explanation guidance is reframed as an external plugin topic during v0.9.0 so
+  core docs stay focused on calibrated factual and alternative flows.【F:improvement_docs/documentation_information_architecture.md†L44-L76】
 
 ## Release milestones
 
@@ -124,18 +149,20 @@ achieved via ADR-023 exemption.
 ### v0.9.0 (documentation realignment & targeted runtime polish)
 
 1. **Reintroduce calibrated-explanations-first messaging across entry points.** Update README quickstart, Overview, and practitioner quickstarts so telemetry/PlotSpec steps are collapsed into clearly labelled "Optional extras" callouts. Place probabilistic regression next to classification in every onboarding path and link to interpretation guides and citing.md.
-2. **Ship audience-specific landing pages.** Implement practitioner, researcher, and contributor hubs per the information architecture update: add probabilistic regression quickstart + concept guide, interpretation guides mirroring notebooks, and a researcher "theory & literature" page with published papers and benchmark references.【F:improvement_docs/documentation_information_architecture.md†L5-L118】
-3. **Clarify plugin extensibility narrative.** Revise docs/plugins.md to open with a "hello, calibrated plugin" example that demonstrates preserving calibration semantics, move telemetry/CLI details into optional appendices, and document guardrails tying plugins back to calibrated explanations.【F:improvement_docs/documentation_review.md†L9-L49】
+2. **Ship audience-specific landing pages.** Implement practitioner, researcher, and contributor hubs per the information architecture update: add probabilistic regression quickstart + concept guide, interpretation guides mirroring notebooks (factual and alternatives with triangular plots), and a researcher "theory & literature" page with published papers and benchmark references.【F:improvement_docs/documentation_information_architecture.md†L5-L118】
+3. **Clarify plugin extensibility narrative.** Revise docs/plugins.md to open with a "hello, calibrated plugin" example that demonstrates preserving calibration semantics, move telemetry/CLI details into optional appendices, and document guardrails tying plugins back to calibrated explanations. Include a prominent pointer to the new `external_plugins/` folder and aggregated installation extras for community plugins.【F:improvement_docs/documentation_review.md†L9-L49】
 4. **Label telemetry and performance scaffolding as optional tooling.** Move telemetry schema/how-to material into contributor governance sections with "Optional" badges, ensure practitioner guides mention telemetry only for compliance scenarios, and audit navigation labels to avoid implying these extras are mandatory.【F:improvement_docs/documentation_information_architecture.md†L70-L113】
 5. **Highlight research pedigree throughout.** Add "Backed by research" callouts to Overview, practitioner quickstarts, and probabilistic regression concept pages; cross-link citing.md and key publications in relevant sections.【F:improvement_docs/documentation_review.md†L15-L34】
-6. **Complete ADR-012 doc workflow enforcement.** Keep Sphinx `-W`, gallery build, and linkcheck mandatory; extend CI smoke tests to run the refreshed quickstarts and fail if optional extras are presented without labels.【F:improvement_docs/adrs/ADR-012-documentation-and-gallery-build-policy.md†L1-L80】
-7. **Turn ADR-018 tooling fully blocking.** Finish pydocstyle batches E (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) and F (`serialization.py`, `core.py`), capture and commit the baseline failure report before flipping enforcement, add the documentation coverage badge, and extend linting to notebooks/examples so the Phase 3 automation backlog is complete.【F:improvement_docs/documentation_standardization_plan.md†L29-L41】【F:improvement_docs/pydocstyle_breakdown.md†L28-L33】
-8. **Advance ADR-017 naming cleanup.** Prune deprecated shims scheduled for removal and ensure naming lint rules stay green on the release branch.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L28-L37】
-9. **Sustain ADR-019 coverage uplift.** Audit waiver inventory, retire expired exemptions, raise non-critical modules toward the 90% floor, enable `--cov-fail-under=88` in CI, and execute the module-level remediation sprints for interval regressors, registry/CLI, plotting, and explanation caching per the dedicated gap plan.【F:improvement_docs/test_coverage_gap_plan.md†L5-L120】
-10. **Scoped runtime polish for explain performance.** Deliver the opt-in calibrator cache, multiprocessing toggle, and vectorised perturbation handling per ADR-003/ADR-004 analysis so calibrated explanations stay responsive without compromising accuracy. Capture improvements and guidance for plugin authors.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】
-11. **Plugin CLI, discovery, and denylist parity (optional extras).** Extend trust toggles and entry-point discovery to interval/plot plugins, add the `CE_DENY_PLUGIN` registry control highlighted in the OSS scope review, and ship the whole surface as opt-in so calibrated explanations remain usable without telemetry/CLI adoption.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L68-L110】
-12. **Explanation export convenience.** Provide `to_json()`/`from_json()` helpers on explanation collections that wrap schema v1 utilities and document them as optional aids for integration teams.
-13. **Scope streaming-friendly explanation delivery.** Prototype generator or chunked export paths (or record a formal deferral) so memory-sensitive users know how large batches will be handled, capturing the outcome directly in the OSS scope inventory.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L86-L118】
+6. **Triangular alternatives plots everywhere alternatives appear.** Update explanation guides, PlotSpec docs, and runtime examples so any mention of `explore_alternatives` introduces the triangular plot and its interpretation, reinforcing calibrated decision boundaries.
+7. **Complete ADR-012 doc workflow enforcement.** Keep Sphinx `-W`, gallery build, and linkcheck mandatory; extend CI smoke tests to run the refreshed quickstarts and fail if optional extras are presented without labels.【F:improvement_docs/adrs/ADR-012-documentation-and-gallery-build-policy.md†L1-L80】
+8. **Turn ADR-018 tooling fully blocking.** Finish pydocstyle batches E (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) and F (`serialization.py`, `core.py`), capture and commit the baseline failure report before flipping enforcement, add the documentation coverage badge, and extend linting to notebooks/examples so the Phase 3 automation backlog is complete.【F:improvement_docs/documentation_standardization_plan.md†L29-L41】【F:improvement_docs/pydocstyle_breakdown.md†L28-L33】
+9. **Advance ADR-017 naming cleanup.** Prune deprecated shims scheduled for removal and ensure naming lint rules stay green on the release branch.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L28-L37】
+10. **Sustain ADR-019 coverage uplift.** Audit waiver inventory, retire expired exemptions, raise non-critical modules toward the 90% floor, enable `--cov-fail-under=88` in CI, and execute the module-level remediation sprints for interval regressors, registry/CLI, plotting, and explanation caching per the dedicated gap plan.【F:improvement_docs/test_coverage_gap_plan.md†L5-L120】
+11. **Scoped runtime polish for explain performance.** Deliver the opt-in calibrator cache, multiprocessing toggle, and vectorised perturbation handling per ADR-003/ADR-004 analysis so calibrated explanations stay responsive without compromising accuracy. Capture improvements and guidance for plugin authors.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】
+12. **Plugin CLI, discovery, and denylist parity (optional extras).** Extend trust toggles and entry-point discovery to interval/plot plugins, add the `CE_DENY_PLUGIN` registry control highlighted in the OSS scope review, and ship the whole surface as opt-in so calibrated explanations remain usable without telemetry/CLI adoption.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L68-L110】
+13. **External plugin distribution path.** Document and test an aggregated installation extra (e.g., `pip install calibrated-explanations[external-plugins]`) that installs all supported external plugins, outline curation criteria, and add placeholders in docs and README for community plugin listings.
+14. **Explanation export convenience.** Provide `to_json()`/`from_json()` helpers on explanation collections that wrap schema v1 utilities and document them as optional aids for integration teams.
+15. **Scope streaming-friendly explanation delivery.** Prototype generator or chunked export paths (or record a formal deferral) so memory-sensitive users know how large batches will be handled, capturing the outcome directly in the OSS scope inventory.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L86-L118】
 
 Release gate: Audience landing pages published with calibrated explanations/probabilistic regression foregrounded, research callouts present on all entry points, telemetry/performance extras labelled optional, docs CI (including quickstart smoke tests, notebook lint, and doc coverage badge) green, ADR-017/018/019 gates enforced, runtime performance enhancements landed without altering calibration outputs, plugin denylist control shipped, streaming plan recorded, and optional plugin extras (CLI/discovery/export) documented as add-ons.
 

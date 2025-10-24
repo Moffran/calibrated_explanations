@@ -18,6 +18,7 @@ backlog associated with the current coverage report.
    - `core.interval_regressor` happy-path predictions and error handling.【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】
    - Plugin CLI command smoke tests ensuring registry resolution works.
    - Discretizer utilities to cover edge cases around binning strategies.
+   - External plugin extras installer (`external_plugins` folder, packaging extras) so aggregated installs remain tested.
 2. Capture baseline coverage numbers and iterate until package-wide coverage stabilises above 90%.
 3. Add lightweight fixtures (e.g., small sklearn datasets) so interval regression tests remain fast.
 
