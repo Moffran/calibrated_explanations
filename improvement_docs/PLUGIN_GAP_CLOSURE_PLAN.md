@@ -1,3 +1,5 @@
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+
 # Plugin Solution Gap Closure Plan
 
 Last updated: 2025-10-05
@@ -70,6 +72,9 @@ Status: Draft roadmap owned by core maintainers
    low/high fields with CE-formatted payloads.
 4. Close the loop by updating ADR-013/ADR-015 status blocks and noting
    implementation checkpoints for future contributors.
+5. Implement the `CE_DENY_PLUGIN` registry toggle described in ADR-006 and wire
+   it into CLI trust workflows so operators can explicitly block unsafe
+   extensions prior to v1.0.0.【F:improvement_docs/adrs/ADR-006-plugin-registry-trust-model.md†L40-L76】
 
 ### 4. Stretch follow-ups (post v0.7 hardening)
 

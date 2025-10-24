@@ -1,3 +1,5 @@
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Archived as of v0.8.x delivery · Implementation window: Historical (≤v0.8.x).
+
 # Test Coverage Assessment
 
 ## Summary finding

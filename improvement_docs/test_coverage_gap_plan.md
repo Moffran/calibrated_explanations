@@ -1,87 +1,86 @@
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) on 2025-10-24 reached **86.0%** line coverage with `fail_under=85` satisfied. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+
 # Coverage Gap Remediation Plan (2025-02)
 
 ## Baseline snapshot
-The latest repository-wide coverage run (`pytest --cov=src/calibrated_explanations`) reports 78.6% line coverage, below the 90% policy target. The table summarises the largest sources of uncovered code to prioritise remediation.
+The latest repository-wide coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) reports **86.0%** line coverage (7,605 statements, 840 misses; branch coverage 78.1%), which keeps the package short of the 90% policy target even though the interim `fail_under=85` gate passes. The run terminated after the Windows-only legacy plotting assertion noted above; coverage artifacts (`.coverage`, `coverage.xml`) were still generated for triage.
 
 | Module | Stmts | Miss | Branch miss | Coverage |
 | --- | ---: | ---: | ---: | ---: |
-| `core/calibrated_explainer.py` | 1,442 | 277 | 727 | 77.4% |
-| `explanations/explanation.py` | 818 | 106 | 318 | 85.1% |
-| `viz/plots.py` | 366 | 114 | 177 | 64.0% |
-| `legacy/_plots_legacy.py` | 428 | 121 | 169 | 68.9% |
-| `viz/matplotlib_adapter.py` | 512 | 99 | 296 | 76.9% |
-| `plugins/registry.py` | 672 | 145 | 288 | 72.2% |
-| `_interval_regressor.py` | 142 | 49 | 35 | 59.1% |
-| `core/validation.py` | 73 | 18 | 51 | 70.6% |
-| `utils/helper.py` | 218 | 27 | 147 | 84.9% |
-| `utils/perturbation.py` | 46 | 8 | 20 | 74.2% |
+| `plotting.py` | 666 | 227 | 262 | 63.1% |
+| `core/calibrated_explainer.py` | 1,520 | 147 | 660 | 86.8% |
+| `explanations/explanation.py` | 997 | 123 | 354 | 85.6% |
+| `viz/builders.py` | 415 | 99 | 172 | 70.4% |
+| `plugins/registry.py` | 756 | 77 | 250 | 86.3% |
+| `plugins/builtins.py` | 387 | 55 | 118 | 80.4% |
+| `core/wrap_explainer.py` | 355 | 28 | 150 | 90.7% |
+| `plugins/cli.py` | 204 | 10 | 82 | 90.9% |
+| `core/prediction_helpers.py` | 63 | 6 | 28 | 81.3% |
+| `__init__.py` | 29 | 7 | 8 | 75.7% |
 
-The same run highlighted thin coverage in `api/__init__.py` (48.1%) and `core/calibration_helpers.py` (70.8%), both of which expose public entry points.
+The same run highlighted thin coverage across gateway modules such as `core/__init__.py` (80.0%) and the root package initializer (75.7%), both of which guard public imports and configuration defaults.
 
 ## Gap analysis by subsystem
 
-### 1. Interval calibration runtime
-* `_interval_regressor.IntervalRegressor.predict_probability` contains an error path when test bins are supplied without calibration bins, plus iterative per-threshold execution that is never validated; no unit test ensures the branch importing `safe_first_element` behaves correctly when the relative import fails.【F:src/calibrated_explanations/core/interval_regressor.py†L104-L135】
-* The singledispatch `compute_proba_cal` has an untested `TypeError` fallback and tuple threshold branch, and the `insert_calibration` routine mutates conformal predictor state and bins—scenarios absent from the suite.【F:src/calibrated_explanations/core/interval_regressor.py†L246-L378】
-* `core/calibrated_explainer._resolve_interval_plugin` performs layered fallback resolution with metadata gating (fast mode, capability checks, bin requirements) yet lacks targeted mocks verifying override precedence and error aggregation.【F:src/calibrated_explanations/core/calibrated_explainer.py†L720-L789】
+### 1. Plotting router and builder chain
+* `_plot_probabilistic` and `_plot_global` orchestrate style negotiation, interval guards, and fallback to legacy drawing, but current tests barely exercise the override matrix (`style_override`, `use_legacy`) or the defensive logging paths, leaving large sections uncovered.【F:src/calibrated_explanations/plotting.py†L601-L640】
+* The modern rendering path through `viz/builders.py` constructs probability segments, pivot-aware colour roles, and ranking heuristics; coverage shows those branches are almost entirely cold, especially the uncertainty segment assembly near the bottom of the module.【F:src/calibrated_explanations/viz/builders.py†L431-L470】【F:src/calibrated_explanations/viz/builders.py†L838-L852】
+* Save-extension handling still behaves differently on Windows vs. POSIX (the failing assertion that expects `tmp_path / "defaultsvg"`), signalling that IO-related branches lack coverage and break parity across platforms.【F:tests/unit/legacy/test_plotting_module.py†L205-L209】
 
 **Remediation tactics**
-1. Create fast-running synthetic fixtures for interval regressors using small numpy arrays; exercise scalar, tuple, and vector thresholds, plus the bin-mismatch `ValueError`.
-2. Add unit tests that patch the helper import to force the fallback import path and confirm `safe_first_element` usage.
-3. Mock plugin descriptors in `core/calibrated_explainer` to validate preferred/fallback resolution, error accumulation, and fast-mode gating.
+1. Parameterise new plotting tests to drive combinations of `style_override`, `use_legacy`, interval flags, and `save_ext` inputs, asserting both figure assembly and normalised paths (use `pathlib.Path` to abstract separators).
+2. Extract focused builder tests for `_build_probability_segments`, ranking heuristics, and pivot-aware colouring so the cold loops in `viz/builders.py` receive deterministic coverage without heavy matplotlib integration.
+3. Restore the Windows assertion by adjusting implementation (or test) path handling, then assert the branch that converts extension lists to filenames so the cross-platform guard remains covered.
 
 ### 2. Explanation assembly and validation
-* `core/calibrated_explainer.__init__` configures categorical handling, pyproject overrides, and plugin registries; misconfigurations such as non-numeric classification labels and absent difficulty estimators are not covered.【F:src/calibrated_explanations/core/calibrated_explainer.py†L320-L378】
-* `core/validation.py` enforces schema checks (e.g., calibration split lengths, column name alignment), but branches raising `ConfigurationError` and `ValidationError` remain untested.【F:src/calibrated_explanations/core/validation.py†L20-L88】
-* `explanations/explanation.py` includes thresholded vs. regression formatting and caching of feature contributions; numerous conditional branches handle missing metadata, cached predictions, and shap/lime fallbacks without coverage.【F:src/calibrated_explanations/explanations/explanation.py†L353-L607】
+* `core.CalibratedExplainer.__init__` still lacks coverage over categorical target conversion, pyproject overrides, and fast-mode toggles; these guardrails drive label maps, difficulty estimators, and plugin registration state during runtime.【F:src/calibrated_explanations/core/calibrated_explainer.py†L321-L360】
+* `explanations/explanation.py` continues to miss large swaths of logic when switching between probabilistic and regression outputs, ranking features, and hydrating cached metadata, particularly around the plotting bridge that now feeds the `plotting` router.【F:src/calibrated_explanations/explanations/explanation.py†L1409-L1445】【F:src/calibrated_explanations/explanations/explanation.py†L2291-L2313】
+* `core/wrap_explainer.py` retains unexecuted flows for estimator wrappers (fast vs. lime vs. reject learners) and difficulty estimator assignment, so public APIs can regress without coverage alerts.【F:src/calibrated_explanations/core/wrap_explainer.py†L331-L376】【F:src/calibrated_explanations/core/wrap_explainer.py†L497-L506】
 
 **Remediation tactics**
-1. Build fixture-based tests that instantiate `CalibratedExplainer` with categorical labels, pyproject overrides, and custom plugin hints to cover initialization branches.
-2. Expand validation tests using dummy pandas DataFrames to trigger shape mismatches, duplicate columns, and illegal percentile settings.
-3. Test `Explanation` rendering helpers for thresholded/regression modes, ensuring caching branches (e.g., when prediction metadata is missing) behave as expected.
+1. Build fixture-based tests that instantiate `CalibratedExplainer` with categorical labels, pyproject overrides, and custom plugin hints to cover initialization branches and label map handling.
+2. Expand explanation tests to cover both thresholded and regression outputs, verifying caching invalidation, ranking heuristics, and shap/lime fallbacks with dummy explainers.
+3. Exercise the wrapper APIs (`wrap_explainer.explain_fast`, `.explain_lime`, `.set_difficulty_estimator`) with mocked estimators to assert the gating predicates and integration points.
 
-### 3. Plotting stack (modern + legacy)
-* `_plots._plot_regression` performs numerous matplotlib operations, with early exits when `show=False` and no save path; none of the fill-between branches or axis labeling logic are validated through the new plot spec adapter.【F:src/calibrated_explanations/viz/plots.py†L700-L817】
-* `_plots_legacy` still ships for backward compatibility yet lacks tests across its procedural drawing functions, including sampling-based label ordering and color interpolation.【F:src/calibrated_explanations/legacy/_plots_legacy.py†L217-L365】
-* `viz/matplotlib_adapter.render` manages lazy imports, renderer fallbacks, DPI overrides, and multiple save-path workflows with little to no automated validation.【F:src/calibrated_explanations/viz/matplotlib_adapter.py†L54-L228】
-
-**Remediation tactics**
-1. Write headless matplotlib tests that use the Agg backend to assert figure creation, axis labeling, and colormap selections without requiring GUI display.
-2. Cover the no-op branches (`show=False` with no `save_ext`) to keep fast paths stable in environments lacking matplotlib.
-3. Backfill tests around the adapter to assert it honors DPI overrides, merges configuration dictionaries, and surfaces import errors consistently.
-4. Treat `_plots_legacy` as deprecation candidate—either surround with targeted regression tests or mark sections for exclusion via `.coveragerc` once confirmed unused.
-
-### 4. Plugin registry and CLI integration
-* `plugins/registry.py` constructs composite plot plugins by pairing builders and renderers and exposes numerous descriptor listing utilities with trusted/untrusted filters, none of which are exercised.【F:src/calibrated_explanations/plugins/registry.py†L840-L910】
-* CLI commands in `plugins/cli.py` depend on registry lookups and option parsing, but the branches handling invalid identifiers and default fallbacks remain untested.【F:src/calibrated_explanations/plugins/cli.py†L28-L138】
-* `api/__init__.py` and `api/config.py` expose convenience imports and configuration hydration; failure modes when environment variables or pyproject sections are missing are uncovered.【F:src/calibrated_explanations/api/__init__.py†L53-L67】【F:src/calibrated_explanations/api/config.py†L94-L116】
+### 3. Plugin registry and builtins
+* Registry trust-management helpers (`mark_plot_renderer_trusted/untrusted`) mutate shared registries and metadata, but there are no assertions that the trust sets or propagated metadata stay consistent.【F:src/calibrated_explanations/plugins/registry.py†L1211-L1234】
+* Built-in plugins perform heavy payload normalisation—deriving feature indices, column names, and interval flags from heterogeneous payloads—yet coverage shows those branches are rarely executed.【F:src/calibrated_explanations/plugins/builtins.py†L661-L709】
+* CLI emitters rely on registry lookups and metadata formatting; failure paths for missing identifiers and trust filtering remain untested, leaving CLI ergonomics brittle.【F:src/calibrated_explanations/plugins/cli.py†L51-L90】
 
 **Remediation tactics**
-1. Implement lightweight registry tests that register dummy descriptors and ensure trusted-only filters behave as documented.
-2. Add CLI invocation tests via `CliRunner` (from `click.testing`) to exercise error messaging and JSON output modes.
-3. Simulate missing config files and override environment variables to ensure the API layer surfaces descriptive exceptions.
+1. Build registry tests that seed dummy descriptors, toggling trust flags to confirm `_PLOT_RENDERERS`, `_TRUSTED_PLOT_RENDERERS`, and metadata propagation stay in sync.
+2. Add unit tests for the probabilistic built-ins that feed mixed payloads (mapping vs. array) to cover feature-index derivation, logging branches, and auto-selection of `features_to_plot`.
+3. Exercise CLI commands via `CliRunner`, verifying that invalid identifiers raise the documented errors and that trusted/untrusted filters and JSON emitters behave as expected.
 
-### 5. Utilities and perturbation helpers
-* `utils.helper.safe_first_element` and related utilities guard against ragged arrays, but the branches handling scalars vs. iterables are not asserted.【F:src/calibrated_explanations/utils/helper.py†L49-L88】
-* Perturbation helpers expose multiple sampling strategies (Gaussian, uniform, salt-and-pepper) with dead branches for unsupported modes and deterministic seeding.【F:src/calibrated_explanations/utils/perturbation.py†L67-L205】
-* Performance helpers in `perf/cache.py` and `perf/parallel.py` provide caching and parallelism toggles; their coverage deficits stem from missing unit tests for cache eviction and thread fallback logic.【F:src/calibrated_explanations/perf/cache.py†L1-L33】
+### 4. Prediction helpers and package gateways
+* `core/prediction_helpers.initialize_explanation` hides several branch-heavy validation paths (Mondrian bins, regression thresholds, warning hooks) that remain untested, leaving subtle validation errors undetected.【F:src/calibrated_explanations/core/prediction_helpers.py†L82-L108】
+* `core/__init__.__getattr__` emits deprecation warnings conditionally; without direct tests the branch that suppresses warnings during pytest runs can regress silently.【F:src/calibrated_explanations/core/__init__.py†L17-L30】
+* The package-level `__getattr__` lazily imports interval and Venn-Abers helpers, but coverage misses the lazy import and caching behaviour that guard public API stability.【F:src/calibrated_explanations/__init__.py†L61-L75】
 
 **Remediation tactics**
-1. Add focused unit tests for helper utilities covering scalar/list inputs, dtype preservation, and error paths.
-2. Parameterize perturbation tests to validate each sampler and confirm deterministic behaviour under fixed seeds.
-3. Mock timeouts and concurrency settings to assert caching/parallel wrappers respect configuration flags.
+1. Add `prediction_helpers` unit tests covering Mondrian bin validation, regression threshold assertions, and warning emission so each branch remains exercised.
+2. Monkeypatch environment flags in tests to assert the deprecation warning logic inside `core/__init__` behaves correctly for both pytest and runtime consumers.
+3. Drive the package-level lazy imports under test, asserting that repeated attribute access returns cached objects and that unsupported names raise `AttributeError` as expected.
+
+### 5. Legacy compatibility surfaces
+* Legacy re-export modules (`legacy/_interval_regressor.py`, `legacy/_plots.py`, `_plots_legacy.py`) remain mostly uncovered; they primarily wrap legacy entry points but should either gain smoke tests or be explicitly excluded in `.coveragerc` to avoid perpetual red flags.【F:src/calibrated_explanations/legacy/_interval_regressor.py†L1-L16】【F:src/calibrated_explanations/legacy/_plots.py†L1-L18】
+* The Windows-only plotting test failure shows legacy plotting utilities still influence default behaviours, so on-going maintenance needs to ratify which legacy paths stay supported.
+
+**Remediation tactics**
+1. Decide whether to surround the legacy modules with minimal smoke tests (ensuring imports succeed and wrappers delegate) or document permanent exclusions in `.coveragerc`.
+2. Once plotting path handling is normalised, capture a regression test around the legacy save-extension ordering so the Windows behaviour remains stable.
 
 ## Proposed remediation roadmap
 
 | Phase | Scope | Target modules | Success criteria |
 | --- | --- | --- | --- |
-| Sprint 1 | Interval regression + validation foundations | `core.interval_regressor`, `core/calibrated_explainer` (init + plugin resolution), `core/validation` | Branch coverage for interval insertion and plugin resolution ≥80%; validation error branches exercised in new tests. |
-| Sprint 2 | Registry + utility backfill | `plugins/registry`, `plugins/cli`, `api/config`, `utils/helper`, `utils/perturbation` | All public API/CLI entry points have smoke tests; helper/perturbation modules reach ≥90% line coverage. |
-| Sprint 3 | Plotting stack | `_plots`, `_plots_legacy`, `viz/matplotlib_adapter`, `viz/builders` | Headless plotting tests cover both modern and legacy renderers; aggregate plotting coverage ≥85% with decisions on legacy exclusions documented. |
-| Sprint 4 | Explanation rendering depth | `explanations/explanation`, `core/calibrated_explainer` (explanation caching paths) | Tests for regression vs. classification explanations, cache invalidation, and shap/lime fallbacks; explanation module coverage ≥90%. |
+| Sprint 1 | Plotting router + builder hardening | `plotting`, `viz/builders`, legacy plotting save paths | Windows save-extension assertions restored; plotting router coverage ≥80%; builder uncertainty segments executed in tests. |
+| Sprint 2 | Explanation pipeline + wrappers | `core/calibrated_explainer`, `explanations/explanation`, `core/wrap_explainer` | Categorical init and caching branches covered; wrapper APIs exercised; module coverage ≥90%. |
+| Sprint 3 | Plugin registry + built-ins | `plugins/registry`, `plugins/builtins`, `plugins/cli` | Trust toggles round-trip metadata; CLI smoke tests capture error paths; plugin modules reach ≥88% coverage. |
+| Sprint 4 | Gateways + legacy surfaces | `core/prediction_helpers`, `core/__init__`, `calibrated_explanations/__init__`, `legacy/_interval_regressor.py`, `legacy/_plots.py` | Lazy import guards and Mondrian validation tested; decision logged for legacy re-exports (tests vs. `.coveragerc`); residual modules ≥85% or explicitly excluded. |
 
 ## Supporting actions
-1. Introduce fixtures under `tests/conftest.py` for synthetic calibration datasets and dummy plugin descriptors to avoid repetition across new tests.
-2. Capture matplotlib headless configuration in a shared fixture (Agg backend) to keep plotting tests fast and deterministic.
-3. Extend `.coveragerc` to document intentional exclusions (e.g., optional third-party integrations) after auditing whether sections like `_plots_legacy` remain required in 2025.
-4. Track coverage per phase by adding temporary thresholds for the touched modules (via `coverage report --fail-under=<module-threshold>` in CI) to prevent regressions while the plan is underway.
+1. Land shared fixtures in `tests/conftest.py` for synthetic calibration payloads, plugin descriptors, and plotting datasets so the new test suites stay concise.
+2. Normalize filesystem assertions (paths, extension ordering) via helper utilities that wrap `pathlib.Path`, guaranteeing the Windows/Posix parity fix remains exercised.
+3. Update `.coveragerc` after Sprint 4 to reflect the final decision on legacy re-exports, attaching expiry dates to any exclusions that remain.
+4. Track per-module thresholds each sprint (e.g., `coverage report --fail-under=<module-threshold>`) and surface them in CI dashboards to prevent regressions while the plan is underway.
