@@ -137,19 +137,22 @@ explainer.calibrate(X_cal, y_cal)
 factual = explainer.explain_factual(X_test[:5])
 alternatives = explainer.explore_alternatives(X_test[:5])
 
-# 3. Retrieve calibrated predictions with uncertainty
-prediction, (low, high) = explainer.predict(X_test[:1], uq_interval=True, threshold=0.5)
-print(f"Calibrated probability: {prediction[0]:.3f}, interval={low[0]:.3f}-{high[0]:.3f}")
+# 3. Retrieve calibrated probabilities and intervals
+probability, (low, high) = explainer.predict(
+    X_test[:1],
+    uq_interval=True,
+    threshold=0.5,
+)
+print(f"Calibrated probability: {probability[0]:.3f}, interval={low[0]:.3f}-{high[0]:.3f}")
 
-# 4. Inspect telemetry (mode, interval/plot sources, preprocessor snapshot, …)
-print(f"Plot source -> {factual.telemetry['plot_source']}")
-print(f"Telemetry keys -> {sorted(factual.telemetry.keys())}")
-print(f"Runtime telemetry -> {explainer.runtime_telemetry}")
-
-# 5. Plotting now routes through PlotSpec builders by default
-factual.plot(uncertainty=True)        # uses plot_spec.default.*
-alternatives.plot(uncertainty=True)
+# 4. Pair alternatives with the triangular plot to interpret trade-offs
+alternatives.plot(style="triangular")
 ```
+
+The triangular plot keeps calibrated alternatives front-and-centre—use the
+rhombus overlay to spot options whose uncertainty still crosses the decision
+threshold, then consult the [interpretation guide](docs/how-to/interpret_explanations.md)
+for next steps.
 
 ## Usage
 The [notebooks folder](https://github.com/Moffran/calibrated_explanations/tree/main/notebooks) contains a number of notebooks illustrating different use cases for `calibrated-explanations`. The [quickstart_wrap](https://github.com/Moffran/calibrated_explanations/blob/main/notebooks/quickstart_wrap.ipynb) notebook is similar to this section in structure and includes plots and output.

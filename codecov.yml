@@ -7,7 +7,7 @@ coverage:
       default:
         informational: true
       runtime-calibration:
-        target: '85%'
+        target: '88%'
         threshold: '0%'
         paths:
           - "src/calibrated_explanations/core/"

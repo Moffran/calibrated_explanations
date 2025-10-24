@@ -6,6 +6,12 @@
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...main)
 
 
+### Changed
+
+- Raised pytest's coverage floor to 88% and tightened the Codecov runtime-calibration
+  patch gate to 88%, keeping ADR-019's v0.9.0 milestone enforced in CI.
+
+
 
 ## [v0.8.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.8.0) - 2025-10-24
 

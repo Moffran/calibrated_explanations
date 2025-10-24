@@ -417,20 +417,20 @@ _MATPLOTLIB_OPTIONAL_MODULES = {
 
 
 _MODULE_COVERAGE_THRESHOLDS = {
-    "src/calibrated_explanations/_interval_regressor.py": 85.0,
-    "src/calibrated_explanations/core/calibrated_explainer.py": 85.0,
-    "src/calibrated_explanations/plugins/registry.py": 85.0,
-    "src/calibrated_explanations/plugins/cli.py": 85.0,
-    "src/calibrated_explanations/api/config.py": 85.0,
-    "src/calibrated_explanations/utils/helper.py": 85.0,
-    "src/calibrated_explanations/utils/perturbation.py": 85.0,
-    "src/calibrated_explanations/_plots.py": 85.0,
-    "src/calibrated_explanations/_plots_legacy.py": 85.0,
-    "src/calibrated_explanations/viz/matplotlib_adapter.py": 85.0,
-    "src/calibrated_explanations/explanations/explanation.py": 85.0,
-    "src/calibrated_explanations/perf/cache.py": 85.0,
-    "src/calibrated_explanations/perf/parallel.py": 85.0,
-    "src/calibrated_explanations/perf/__init__.py": 85.0,
+    "src/calibrated_explanations/_interval_regressor.py": 88.0,
+    "src/calibrated_explanations/core/calibrated_explainer.py": 88.0,
+    "src/calibrated_explanations/plugins/registry.py": 88.0,
+    "src/calibrated_explanations/plugins/cli.py": 88.0,
+    "src/calibrated_explanations/api/config.py": 88.0,
+    "src/calibrated_explanations/utils/helper.py": 88.0,
+    "src/calibrated_explanations/utils/perturbation.py": 88.0,
+    "src/calibrated_explanations/_plots.py": 88.0,
+    "src/calibrated_explanations/_plots_legacy.py": 88.0,
+    "src/calibrated_explanations/viz/matplotlib_adapter.py": 88.0,
+    "src/calibrated_explanations/explanations/explanation.py": 88.0,
+    "src/calibrated_explanations/perf/cache.py": 88.0,
+    "src/calibrated_explanations/perf/parallel.py": 88.0,
+    "src/calibrated_explanations/perf/__init__.py": 88.0,
 }
 
 

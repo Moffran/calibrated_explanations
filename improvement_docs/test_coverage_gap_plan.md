@@ -1,9 +1,9 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) on 2025-10-24 reached **86.0%** line coverage with `fail_under=85` satisfied. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) on 2025-10-24 reached **88.4%** line coverage with `fail_under=88` satisfied. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
 # Coverage Gap Remediation Plan (2025-02)
 
 ## Baseline snapshot
-The latest repository-wide coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) reports **86.0%** line coverage (7,605 statements, 840 misses; branch coverage 78.1%), which keeps the package short of the 90% policy target even though the interim `fail_under=85` gate passes. The run terminated after the Windows-only legacy plotting assertion noted above; coverage artifacts (`.coverage`, `coverage.xml`) were still generated for triage.
+The baseline repository-wide coverage snapshot captured prior to the uplift (`pytest --cov=src/calibrated_explanations --cov-report=term`) reported **86.0%** line coverage (7,605 statements, 840 misses; branch coverage 78.1%), which kept the package short of the 90% policy target even though the interim `fail_under=85` gate passed. We retain the table below for historical context while the active gate now enforces `fail_under=88`.
 
 | Module | Stmts | Miss | Branch miss | Coverage |
 | --- | ---: | ---: | ---: | ---: |
@@ -79,7 +79,7 @@ The same run highlighted thin coverage across gateway modules such as `core/__in
 | Sprint 1 | Plotting router + builder hardening | `plotting`, `viz/builders`, legacy plotting save paths | Windows save-extension assertions restored; plotting router coverage ≥80%; builder uncertainty segments executed in tests. |
 | Sprint 2 | Explanation pipeline + wrappers | `core/calibrated_explainer`, `explanations/explanation`, `core/wrap_explainer` | Categorical init and caching branches covered; wrapper APIs exercised; module coverage ≥90%. |
 | Sprint 3 | Plugin registry + built-ins | `plugins/registry`, `plugins/builtins`, `plugins/cli` | Trust toggles round-trip metadata; CLI smoke tests capture error paths; plugin modules reach ≥88% coverage. |
-| Sprint 4 | Gateways + legacy surfaces | `core/prediction_helpers`, `core/__init__`, `calibrated_explanations/__init__`, `legacy/_interval_regressor.py`, `legacy/_plots.py` | Lazy import guards and Mondrian validation tested; decision logged for legacy re-exports (tests vs. `.coveragerc`); residual modules ≥85% or explicitly excluded. |
+| Sprint 4 | Gateways + legacy surfaces | `core/prediction_helpers`, `core/__init__`, `calibrated_explanations/__init__`, `legacy/_interval_regressor.py`, `legacy/_plots.py` | Lazy import guards and Mondrian validation tested; decision logged for legacy re-exports (tests vs. `.coveragerc`); residual modules ≥88% or explicitly excluded. |
 
 ## Supporting actions
 1. Land shared fixtures in `tests/conftest.py` for synthetic calibration payloads, plugin descriptors, and plotting datasets so the new test suites stay concise.
