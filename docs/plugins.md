@@ -132,19 +132,19 @@ usable without it.
 
 {{ optional_extras_template }}
 
-#### CLI discovery (optional)
+### CLI discovery (optional)
 
 The :mod:`calibrated_explanations.plugins.cli` module surfaces plugin metadata
 for auditing. It is optional tooling—set ``CE_DENY_PLUGIN`` during local testing
 to simulate trust boundaries before promoting a plugin.
 
-#### Telemetry instrumentation (optional)
+### Telemetry instrumentation (optional)
 
 If your plugin emits telemetry, document the signals and link back to
 :doc:`concepts/telemetry`. Keep emission disabled by default so calibrated
 explanations remain privacy-preserving out of the box.
 
-#### Aggregated install extra (optional)
+### Aggregated install extra (optional)
 
 `pip install "calibrated-explanations[external-plugins]"` installs vetted
 external bundles, including fast explanations. Import the module and call its

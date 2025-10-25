@@ -6,6 +6,8 @@ Understand the theory powering calibrated explanations across binary and
 multiclass classification plus probabilistic and interval regression. Start with
 interpretation and alternatives, then dive into telemetry and architecture.
 
+For proofs, benchmarks, and citations that underpin these concepts, visit the {doc}`../research/index` hub before diving into individual guides.
+
 | Concept | Why it matters |
 | --- | --- |
 | [Interpret explanations](../how-to/interpret_explanations.md) | Reuses notebook screenshots and walks through dual uncertainty plus the triangular plot. |

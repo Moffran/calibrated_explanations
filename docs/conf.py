@@ -76,7 +76,7 @@ templates_path = ["_templates"]
 language = "en"
 
 # Patterns to ignore when looking for source files
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_shared/**"]
 
 # Pygments style for syntax highlighting
 pygments_style = "sphinx"

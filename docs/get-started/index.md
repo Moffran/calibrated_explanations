@@ -27,6 +27,7 @@ probabilistic, and interval outputs, and visit the
   probabilistic thresholds pair with interval regression.
 - {doc}`../citing` – Cite the binary, multiclass, probabilistic, and interval
   regression research when you publish results.
+- {doc}`../research/index` – Research hub with proofs, benchmarks, and funding context underpinning the quickstarts.
 
 ```{toctree}
 :maxdepth: 1

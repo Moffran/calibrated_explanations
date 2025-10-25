@@ -23,7 +23,8 @@ role-specific highlights and research context.
 - **Research pedigree:** [Review the literature](../citing.md) spanning binary,
   multiclass, probabilistic, and interval regression.
 - **Role-based navigation:** Practitioners, researchers, and contributors each
-  have dedicated hubs with calibrated-first hero copy and governance guardrails.
+  have dedicated hubs—visit the {doc}`../practitioner/index`, {doc}`../researcher/index`,
+  and {doc}`../contributor/index` pages for tailored workflows and governance guardrails.
 
 ## Resources
 

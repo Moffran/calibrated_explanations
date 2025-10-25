@@ -17,6 +17,15 @@ multiclass, probabilistic, and interval regression workflows.
 {{ optional_extras_template }}
 
 ```{toctree}
+:caption: Audience hubs
+:maxdepth: 1
+
+practitioner/index
+researcher/index
+contributor/index
+```
+
+```{toctree}
 :caption: Overview
 :maxdepth: 1
 

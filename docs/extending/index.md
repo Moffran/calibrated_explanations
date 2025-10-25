@@ -6,6 +6,8 @@ Contributors and plugin authors keep calibrated explanations front and centre.
 Begin with the calibrated plugin example, then dive into guardrails and ADR
 references.
 
+Review the {doc}`../research/index` summaries when extending calibrated workflows so new plugins stay aligned with the published guarantees.
+
 | Resource | Purpose |
 | --- | --- |
 | [Plugin guide](../plugins.md) | Builds a minimal calibrated plugin, cites ADR-024/025/026, and routes telemetry/CLI details to optional appendices. |

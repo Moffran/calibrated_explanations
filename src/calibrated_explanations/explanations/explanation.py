@@ -2322,8 +2322,8 @@ class FastExplanation(CalibratedExplanation):
         max_rule_size : int
             The maximum size of the conjunctive rules. Default is 2.
 
-        Warning
-        -------
+        Warnings
+        --------
         This method is not supported for :class:`.FastExplanation` and will not alter the explanation.
         """
         warnings.warn(
@@ -2340,8 +2340,8 @@ class FastExplanation(CalibratedExplanation):
     def add_new_rule_condition(self, feature, rule_boundary):
         """Create a new rule condition for a numerical feature.
 
-        Warning
-        -------
+        Warnings
+        --------
         This method is not supported for :class:`.FastExplanation` and will not alter the explanation.
         """
         warnings.warn(

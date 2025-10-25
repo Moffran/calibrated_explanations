@@ -1,7 +1,12 @@
 # Plot explanations with PlotSpec
 
-PlotSpec is the default plotting backend in v0.8.0. It produces telemetry-aware
-renderings that document interval sources and fallbacks.
+```{admonition} Optional plotting extra
+:class: tip
+
+PlotSpec stays opt-in for v0.9.0. The quickstarts and notebooks render calibrated explanations without it; enable the PlotSpec extras only when you need uncertainty-aware visuals for reports or audits.
+```
+
+PlotSpec is the optional plotting backend introduced alongside the governance refresh. It produces telemetry-aware renderings that document interval sources and fallbacks while keeping the calibrated workflow unchanged.
 
 ## Requirements
 
@@ -45,14 +50,14 @@ cross zero the adapter falls back to translucent bars that match legacy output.
 
 ## Runtime telemetry
 
-PlotSpec identifiers are recorded on both the batch telemetry and
+When you opt into PlotSpec, the library documents the chosen builder and renderer. PlotSpec identifiers are recorded on both the batch telemetry and
 `explainer.runtime_telemetry` as `plot_source` and `plot_fallbacks`. Use these
 fields to verify whether the PlotSpec adapter or a legacy fallback rendered the
 chart.
 
 ## CLI discovery
 
-List registered plot styles and identify defaults:
+Use the plugin CLI when you need to audit optional plot routes. List registered plot styles and identify defaults:
 
 ```bash
 python -m calibrated_explanations.plugins.cli list plots
@@ -61,3 +66,5 @@ python -m calibrated_explanations.plugins.cli show plot_spec.default.factual --k
 
 The CLI output includes builder/renderer IDs, fallback chains, and compatibility
 flags.
+
+{{ optional_extras_template }}

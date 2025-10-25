@@ -26,6 +26,8 @@ print(f"Mode: {factual.mode}  Calibrated prediction: {factual.calibrated_predict
 print(f"Mode: {alternative.mode}  Calibrated prediction: {alternative.calibrated_prediction:.3f}")
 ```
 
+{{ alternatives_triangular }}
+
 Key attributes shared by both modes:
 
 | Attribute | Description |
@@ -135,3 +137,5 @@ After you absorb the tables and plots:
 3. Share this guide with auditors and stakeholders so everyone relies on the same vocabulary when discussing factual or alternative explanations.
 
 Keeping the interpretation workflow front and centre ensures calibrated explanations drive safe, explainable decisions rather than becoming another opaque model output.
+
+{{ optional_extras_template }}
