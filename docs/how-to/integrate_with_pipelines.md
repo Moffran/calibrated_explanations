@@ -34,7 +34,7 @@ preprocessor = ColumnTransformer(
 )
 
 config = ExplainerConfig(model=RandomForestClassifier(random_state=0), preprocessor=preprocessor)
-explainer = WrapCalibratedExplainer._from_config(config)  # `_from_config` is private in 0.8.0
+explainer = WrapCalibratedExplainer._from_config(config)  # `_from_config` is private in 0.9.0
 ```
 
 When you call `fit` and `calibrate`, the wrapper fits both the underlying model
@@ -68,3 +68,7 @@ expose), and whether auto-encoding is enabled.
   DataFrames.
 - When migrating to a public configuration API, replace `_from_config` with the
   official constructor provided by the release notes.
+
+> **Telemetry note:** Runtime telemetry remains opt-in. Enable it only when governance teams need pipeline provenance, then follow :doc:`configure_telemetry` to capture preprocessing metadata for each batch.
+
+{{ optional_extras_template }}

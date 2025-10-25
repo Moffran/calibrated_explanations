@@ -24,9 +24,7 @@ jobs:
           ruff check --select N --exit-zero
       - name: pydocstyle (ADR-018 baseline)
         run: |
-          set +e
           pydocstyle src tests
-          exit 0
       - name: Docstring coverage report
         run: |
           python scripts/check_docstring_coverage.py

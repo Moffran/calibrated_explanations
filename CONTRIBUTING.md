@@ -62,7 +62,7 @@ Additional checks:
 
 - Linting via ruff (style and simple correctness rules).
 - Naming guardrails: run `ruff check --select N` locally to preview the CI naming warnings introduced for the v0.7.0 release gate (ADR-017).
-- Docstring guardrails: run `pydocstyle --convention=numpy src tests` to surface ADR-018 numpydoc issues; CI reports the same warnings in exit-zero mode so they stay visible without blocking merges.
+- Docstring guardrails: run `pydocstyle --convention=numpy src tests` to surface ADR-018 numpydoc issues; CI runs the same checks in blocking mode, so fix violations before opening a pull request.
 - Docstring coverage: `python scripts/check_docstring_coverage.py` prints the current module/class/function/method coverage mix and accepts `--fail-under` for teams that want to experiment with stricter thresholds.
 - Type checking via mypy. During Phase 1B, new core modules (e.g., `core/exceptions.py`, `core/validation.py`) are checked with stricter settings.
 - Performance guard: see `scripts/check_perf_regression.py` and `benchmarks/perf_thresholds.json`.

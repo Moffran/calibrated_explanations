@@ -28,7 +28,7 @@ from .utils.helper import transform_to_numeric
 # Provide a default no-op handler to avoid "No handler" warnings for library users.
 _logging.getLogger(__name__).addHandler(_logging.NullHandler())
 
-__version__ = "v0.8.0"
+__version__ = "v0.9.0"
 
 # Note: core submodules are intentionally not imported here to avoid importing
 # large backends and to make deprecation transitions explicit. We still expose

@@ -17,9 +17,10 @@ runtime APIs work without them. Enable only the tooling you need:
   plugin routing; it honours the ``CE_DENY_PLUGIN`` toggle.
 - **External plugin bundle**: Fast explanations and other vetted extensions live
   in the external plugin lane. Install them with
-  ``pip install "calibrated-explanations[external-plugins]"`` and review the
-  {doc}`external_plugins/index` catalogue before enabling anything in
-  production.
+  ``pip install "calibrated-explanations[external-plugins]"``—the extra pins
+  compatible versions of ``numpy``, ``pandas``, and ``scikit-learn`` required by
+  the FAST plugins. Review the {doc}`external_plugins/index`
+  catalogue before enabling anything in production.
 
 > 💡 Keep these extras at the end of the page so calibration-first workflows stay
 > front and centre.

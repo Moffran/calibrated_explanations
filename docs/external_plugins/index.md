@@ -30,10 +30,10 @@ listing.
 ### Optional: aggregated install extra
 
 `pip install "calibrated-explanations[external-plugins]"` installs every curated
-external plugin plus its dependencies. Import the relevant module and call its
+external plugin plus the pinned versions of ``numpy``, ``pandas``, and ``scikit-learn`` required by FAST mode. Import the relevant module and call its
 `register()` helper to populate the registry.
 
 ### Optional: telemetry disclosure
 
 External plugins should clearly mark telemetry emission as opt-in and link back
-to :doc:`../concepts/telemetry` whenever instrumentation is enabled.
+to :doc:`../governance/optional_telemetry` whenever instrumentation is enabled.

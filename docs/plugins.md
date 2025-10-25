@@ -141,11 +141,11 @@ to simulate trust boundaries before promoting a plugin.
 ### Telemetry instrumentation (optional)
 
 If your plugin emits telemetry, document the signals and link back to
-:doc:`concepts/telemetry`. Keep emission disabled by default so calibrated
+:doc:`governance/optional_telemetry`. Keep emission disabled by default so calibrated
 explanations remain privacy-preserving out of the box.
 
 ### Aggregated install extra (optional)
 
 `pip install "calibrated-explanations[external-plugins]"` installs vetted
-external bundles, including fast explanations. Import the module and call its
+external bundles, including fast explanations, and pins the numpy/pandas/scikit-learn stack required by those plugins. Import the module and call its
 ``register()`` helper to populate the registry explicitly.

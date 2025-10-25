@@ -48,7 +48,7 @@ def test_crosswalk_covers_legacy_pages() -> None:
             "get-started/troubleshooting",
         ),
         "viz_plotspec.md": ("how-to/plot_with_plotspec",),
-        "architecture.md": ("concepts/index", "concepts/telemetry"),
+        "architecture.md": ("concepts/index", "governance/optional_telemetry"),
         "pr_guide.md": ("governance/release_notes", "governance/section_owners"),
     }
 

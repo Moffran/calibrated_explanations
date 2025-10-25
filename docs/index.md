@@ -14,8 +14,6 @@ multiclass, probabilistic, and interval regression workflows.
   for binary & multiclass classification plus probabilistic and interval
   regression results when you publish your findings.
 
-{{ optional_extras_template }}
-
 ```{toctree}
 :caption: Audience hubs
 :maxdepth: 1
@@ -80,3 +78,5 @@ extending/index
 
 governance/index
 ```
+
+{{ optional_extras_template }}

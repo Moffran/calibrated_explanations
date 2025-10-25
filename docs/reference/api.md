@@ -47,6 +47,6 @@ removing the original keys. Warnings encourage users to migrate while preserving
 backwards compatibility.
 
 `calibrated_explanations.api.config.ExplainerConfig` and the accompanying
-builder expose typed configuration scaffolding. In v0.8.0 the helper remains a
+builder expose typed configuration scaffolding. In v0.9.0 the helper remains a
 private entry point for the wrapper (`WrapCalibratedExplainer._from_config`), but
 telemetry records any supplied defaults or preprocessors.

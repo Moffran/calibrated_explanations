@@ -8,7 +8,7 @@ architecture. Update this checklist whenever a page moves or is retired.
 | `calibrated_explanations.rst` (legacy landing page) | :doc:`../overview/index` | Landing narrative split into role-based overview and section toctrees. |
 | `getting_started.md` | :doc:`../get-started/index` with :doc:`../get-started/installation`, :doc:`../get-started/quickstart_classification`, :doc:`../get-started/quickstart_regression`, :doc:`../get-started/troubleshooting` | Content decomposed into dedicated installation, runnable quickstarts, and troubleshooting checklists. |
 | `viz_plotspec.md` | :doc:`../how-to/plot_with_plotspec` | PlotSpec guidance converted to a how-to focused on configuration plus telemetry links. |
-| `architecture.md` | :doc:`../concepts/index` and :doc:`../concepts/telemetry` | Architecture material merged into the concepts index with telemetry instrumentation guidance. |
+| `architecture.md` | :doc:`../concepts/index` and :doc:`optional_telemetry` | Architecture material remains in the concepts index; optional telemetry moved under governance so provenance scaffolding is clearly opt-in. |
 | *(new)* interpretation guide | :doc:`../how-to/interpret_explanations` | Primary resource for reading factual and alternative explanations, PlotSpec visuals, and telemetry provenance. |
 | `pr_guide.md` | :doc:`release_notes` and :doc:`section_owners` | Governance actions captured under maintainership docs with owners and release narrative. |
 
@@ -28,4 +28,5 @@ Use the `_shared` partials when editing audience landing hubs, README mirrors, o
 - Reserve `{{ alternatives_triangular }}` for pages dedicated to alternatives,
   such as the concepts explainer, so the triangular walkthrough accompanies rule
   tables and `explore_alternatives` code snippets where readers expect it.
-- When creating new audience or quickstart pages, add them to the verification checklist above and confirm the shared fragments render correctly by running `sphinx-build -b html -W`.
+- When creating new audience or quickstart pages, add them to the verification checklist above and confirm the shared fragments
+  render correctly by running `sphinx-build -b html -W`.

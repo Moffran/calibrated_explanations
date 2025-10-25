@@ -25,10 +25,10 @@ copyright = "2023, Helena Löfström, Tuwe Löfström"
 author = "Helena Löfström, Tuwe Löfström"
 
 # The short X.Y version
-version = "0.8.0"
+version = "0.9.0"
 
 # The full version, including alpha/beta/rc tags
-release = "0.8.0"
+release = "0.9.0"
 
 # -- General configuration ---------------------------------------------------
 

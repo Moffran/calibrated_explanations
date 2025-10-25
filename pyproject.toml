@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrated_explanations"
-version = "0.8.0"
+version = "0.9.0"
 authors = [
   { name="Helena Löfström", email="helena.lofstrom@ju.se" },
   { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },
@@ -61,7 +61,11 @@ eval = [
   "shap",
   "seaborn",
 ]
-"external-plugins" = []
+"external-plugins" = [
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "scikit-learn>=1.3",
+]
 
 [project.scripts]
 "ce.plugins" = "calibrated_explanations.plugins.cli:main"

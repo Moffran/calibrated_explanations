@@ -6,7 +6,7 @@ extras installation path.
 
 ## Installation extras
 
-All vetted plugins should be installable via the aggregated extras group:
+All vetted plugins should be installable via the aggregated extras group with pinned FAST dependencies:
 
 ```
 pip install calibrated-explanations[external-plugins]

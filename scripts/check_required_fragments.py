@@ -45,6 +45,34 @@ DOC_CHECKS: dict[str, tuple[str, ...]] = {
         "research/index",
         "{{ optional_extras_template }}",
     ),
+    "docs/practitioner/index.md": (
+        "{{ hero_calibrated_explanations }}",
+        "{{ optional_extras_template }}",
+    ),
+    "docs/researcher/index.md": (
+        "{{ hero_calibrated_explanations }}",
+        "{{ optional_extras_template }}",
+    ),
+    "docs/contributor/index.md": (
+        "{{ hero_calibrated_explanations }}",
+        "{{ optional_extras_template }}",
+    ),
+    "docs/how-to/configure_telemetry.md": (
+        "Optional telemetry extra",
+        "{{ optional_extras_template }}",
+    ),
+    "docs/how-to/integrate_with_pipelines.md": (
+        "Telemetry note:",
+        "{{ optional_extras_template }}",
+    ),
+    "docs/governance/optional_telemetry.md": (
+        "Optional telemetry extra",
+        "{{ optional_extras_template }}",
+    ),
+    "docs/concepts/telemetry.md": (
+        "Telemetry moved to governance",
+        "{{ optional_extras_template }}",
+    ),
     "docs/concepts/alternatives.md": (
         "{{ alternatives_triangular }}",
         "{{ optional_extras_template }}",

@@ -34,4 +34,4 @@ package via conda and then add the relevant extras with `pip`.
 python -c "import calibrated_explanations; print(calibrated_explanations.__version__)"
 ```
 
-The command should echo `0.8.0` or later once your environment is ready.
+The command should echo `0.9.0` or later once your environment is ready.
