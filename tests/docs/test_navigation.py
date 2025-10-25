@@ -28,7 +28,8 @@ def test_top_level_toctree_targets_exist() -> None:
         "extending/index",
         "governance/index",
     )
-    index = (DOCS / "index.rst").read_text()
+    index_path = _resolve_doc("index")
+    index = index_path.read_text()
     for slug in expected:
         assert slug in index, f"Missing toctree entry for {slug}"
         target = _resolve_doc(slug)
