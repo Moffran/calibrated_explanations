@@ -84,7 +84,7 @@ Calibrated Explanations offers a range of features designed to enhance both the 
 * **Fast, reliable, stable, and robust feature importance explanations** for:
   - **Binary classification models** ([Read paper](https://doi.org/10.1016/j.eswa.2024.123154)).
   - **Multi-class classification models** ([Read paper](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf), [Slides](https://copa-conference.com/presentations/Lofstrom.pdf)).
-  - **Regression models** ([Read paper](https://arxiv.org/abs/2308.16245)), including:
+  - **Regression models** ([Read paper](https://doi.org/10.1007/s10994-024-06642-8)), including:
     - **Probabilistic explanations**: Provides the probability that the target exceeds a user-defined threshold.
     - **Difficulty-adaptable explanations**: Adjust explanations based on conformal normalization for varying levels of data difficulty.
 
@@ -104,7 +104,7 @@ Calibrated Explanations offers a range of features designed to enhance both the 
     - A new ranking metric, called _ensured_ ranking, to help balance uncertainty and probability among alternative explanations.
     - A new plot to help visualize uncertainties among alternative explanations.
 
-* **Conjunctional rules**: Provides feature importance explanations for interactions between multiple features, highlighting joint contributions (discussed in detail in the [regression paper](https://arxiv.org/abs/2308.16245)).
+* **Conjunctional rules**: Provides feature importance explanations for interactions between multiple features, highlighting joint contributions (discussed in detail in the [regression paper](https://doi.org/10.1007/s10994-024-06642-8)).
 
 * **Conditional rules for contextual explanations**: Allows users to create explanations conditioned on specific criteria, enabling better handling of e.g. fairness and bias constraints ([Read paper](https://doi.org/10.1007/978-3-031-63787-2_17)). Using conformal terminology, this means that Mondrian categories are supported.
 
