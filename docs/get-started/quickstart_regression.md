@@ -88,4 +88,10 @@ interpretation walkthroughs.
 > probabilistic threshold results, use {doc}`../citing` to pick the appropriate
 > references.
 
+> 🔬 **Research hub:** Cross-check {doc}`../research/index` for detailed
+> replication notes on the Machine Learning (2025) regression study and the Fast
+> Calibrated Explanations (2024) performance paper catalogued in
+> {doc}`../research/theory_and_literature`—both reinforce the interval and
+> probabilistic workflows demonstrated here.
+
 {{ optional_extras_template }}

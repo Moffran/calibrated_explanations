@@ -10,4 +10,5 @@ configure_telemetry
 export_explanations
 plot_with_plotspec
 interpret_explanations
+tune_runtime_performance
 ```

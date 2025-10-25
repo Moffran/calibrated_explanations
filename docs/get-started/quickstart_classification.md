@@ -77,4 +77,10 @@ interpretation walkthroughs.
 > publish results using the binary, multiclass, probabilistic, or interval
 > regression workflows showcased here.
 
+> 🔬 **Research hub:** Visit {doc}`../research/index` for the flagship
+> {doc}`../research/theory_and_literature` papers—especially the Expert Systems
+> with Applications (2024) evaluation and the PMLR 230 (2024) multiclass
+> tutorial—that document the datasets and calibration proofs underpinning this
+> quickstart.
+
 {{ optional_extras_template }}
