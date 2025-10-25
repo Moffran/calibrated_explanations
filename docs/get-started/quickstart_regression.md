@@ -75,6 +75,7 @@ alternatives = explainer.explore_alternatives(
 )
 ```
 
-{{ alternatives_triangular }}
+See the [Alternatives concept guide](../concepts/alternatives.md) for visual and
+interpretation walkthroughs.
 
 {{ optional_extras_template }}

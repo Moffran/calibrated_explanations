@@ -19,8 +19,9 @@ role-specific highlights and research context.
 ## Highlights
 
 - **Interpretation first:** Reuse the [Interpret calibrated explanations guide](../how-to/interpret_explanations.md) across
-  factual, alternative, and probabilistic workflows, including the triangular
-  plot walkthrough for alternatives.
+  factual, alternative, and probabilistic workflows, and dive into the
+  [Alternatives concept explainer](../concepts/alternatives.md) for the dedicated
+  walkthrough.
 - **Research pedigree:** [Review the literature](../citing.md) spanning binary,
   multiclass, probabilistic, and interval regression.
 - **Role-based navigation:** Practitioners, researchers, and contributors each

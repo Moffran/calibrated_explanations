@@ -68,13 +68,7 @@ how calibrated predictions, intervals, and rule tables translate into actions.
 alternatives = explainer.explore_alternatives(X_test[:2])
 ```
 
-{{ alternatives_triangular }}
-
-```python
-alternatives.plot(style="triangular")
-```
-
-The triangular plot highlights which alternatives remain uncertain (inside the
-rhombus) versus those that shift the calibrated probability decisively.
+See the [Alternatives concept guide](../concepts/alternatives.md) for visual and
+interpretation walkthroughs.
 
 {{ optional_extras_template }}

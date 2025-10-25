@@ -18,8 +18,8 @@ links directly to the companion notebook.
 
 After you finish a quickstart, read the
 {doc}`../how-to/interpret_explanations` guide to interpret factual, alternative,
-probabilistic, and interval outputs—including the triangular plot story for
-alternatives.
+probabilistic, and interval outputs, and visit the
+{doc}`../concepts/alternatives` explainer for the full alternatives walkthrough.
 
 ```{toctree}
 :maxdepth: 1
