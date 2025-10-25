@@ -10,6 +10,26 @@
 
 - Raised pytest's coverage floor to 88% and tightened the Codecov runtime-calibration
   patch gate to 88%, keeping ADR-019's v0.9.0 milestone enforced in CI.
+- Lint workflow now fails if docstring coverage drops below 94% or notebook
+  linting (via ``nbqa ruff``) regresses, fulfilling ADR-018's blocking
+  requirements and keeping documentation CI green for v0.9.0.
+
+### CI
+
+- Extended the shared documentation fragment checker to enforce optional extras
+  placement as the final section on required pages, aligning with ADR-012's
+  navigation guardrails.
+
+### Docs
+
+- Authored the v0.9.0 release notes, highlighting optional telemetry/plugin
+  extras and linking to the release plan for governance sign-off.
+
+### Tests
+
+- Added a packaging regression test that inspects the ``external-plugins`` extra
+  metadata to guarantee the curated fast-explanations bundle remains an opt-in
+  install with the expected dependencies.
 
 
 
@@ -39,8 +59,6 @@
 ### Fixed
 
 - Resolved pytest test suite failures caused by matplotlib lazy loading conflicts with pytest-cov instrumentation. matplotlib 3.8+ uses lazy `__getattr__` to delay submodule loading, which breaks when pytest-cov instruments code before matplotlib initializes. Solution: Skip viz tests that directly call `render()` during CI/CD (8 test modules ignored), exempt `matplotlib_adapter.py` and legacy shims from coverage. Tests achieve 86.19% coverage (target: 85%) with 586 tests passing.
-
-### Docs
 
 - Reorganised the documentation site to follow ADR-022's role-based navigation with refreshed quickstarts, telemetry concept guides, troubleshooting material, and section ownership guidance.
 - Updated the README Quick Start to highlight telemetry inspection workflows and PlotSpec defaults, aligning the repository's front door with the new documentation narrative.
@@ -130,8 +148,6 @@ and notebooks accordingly.【F:src/calibrated_explanations/explanations/explanat
 ## [v0.6.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.1) - 2025-10-05
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.0...v0.6.1)
-
-### Tests
 
 - Added runtime regression coverage to compare plugin-orchestrated factual, alternative, and fast explanations against the legacy `_use_plugin=False` code paths (`tests/integration/core/test_explanation_parity.py`).
 - Exercised schema v1 guardrails by asserting that payloads missing required keys are rejected when `jsonschema` is installed (`tests/unit/core/test_serialization_and_quick.py::test_validate_payload_rejects_missing_required_fields`).

@@ -22,9 +22,12 @@ jobs:
       - name: Ruff naming warnings (ADR-017)
         run: |
           ruff check --select N --exit-zero
+      - name: Notebook lint (ADR-018 notebooks)
+        run: |
+          nbqa ruff notebooks
       - name: pydocstyle (ADR-018 baseline)
         run: |
           pydocstyle src tests
       - name: Docstring coverage report
         run: |
-          python scripts/check_docstring_coverage.py
+          python scripts/check_docstring_coverage.py --fail-under 94.0

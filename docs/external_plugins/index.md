@@ -25,8 +25,6 @@ listing.
 | --- | --- | --- |
 | _TBD_ | _community_ | _Pending_ |
 
-{{ optional_extras_template }}
-
 ### Optional: aggregated install extra
 
 `pip install "calibrated-explanations[external-plugins]"` installs every curated
@@ -37,3 +35,5 @@ external plugin plus the pinned versions of ``numpy``, ``pandas``, and ``scikit-
 
 External plugins should clearly mark telemetry emission as opt-in and link back
 to :doc:`../governance/optional_telemetry` whenever instrumentation is enabled.
+
+{{ optional_extras_template }}

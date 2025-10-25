@@ -130,8 +130,6 @@ python -m calibrated_explanations.plugins.cli list all
 The CLI always prints an opt-in reminder so core calibrated explanations remain
 usable without it.
 
-{{ optional_extras_template }}
-
 ### CLI discovery (optional)
 
 The :mod:`calibrated_explanations.plugins.cli` module surfaces plugin metadata
@@ -149,3 +147,5 @@ explanations remain privacy-preserving out of the box.
 `pip install "calibrated-explanations[external-plugins]"` installs vetted
 external bundles, including fast explanations, and pins the numpy/pandas/scikit-learn stack required by those plugins. Import the module and call its
 ``register()`` helper to populate the registry explicitly.
+
+{{ optional_extras_template }}

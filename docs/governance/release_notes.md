@@ -3,6 +3,17 @@
 Highlights for recent releases are summarised here. For the complete list of
 changes see the project changelog on GitHub.
 
+## v0.9.0
+
+- Documentation CI now enforces notebook linting, docstring coverage (≥94%), and
+  optional-extras placement checks so telemetry, PlotSpec, and plugin tooling
+  stay clearly labelled as opt-in guardrails.
+- Release automation exercises the aggregated ``external-plugins`` extra to
+  confirm the curated fast-explanation bundle remains an optional install with
+  the expected dependencies.
+- For the full milestone scope—including calibrated-explanations-first messaging
+  and governance updates—see the `v0.9.0 release plan <../../improvement_docs/RELEASE_PLAN_v1.md#v090-documentation-realignment--targeted-runtime-polish>`_.
+
 ## v0.8.0
 
 - Adopted the role-based documentation information architecture defined in
