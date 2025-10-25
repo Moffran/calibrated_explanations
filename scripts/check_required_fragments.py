@@ -13,7 +13,7 @@ HERO_TEXT = (DOCS / "_shared" / "hero_calibrated_explanations.md").read_text(enc
 README_CHECKS: dict[str, tuple[str, ...]] = {
     "README.md": (
         HERO_TEXT,
-        "Backed by research",
+        "docs/research/index.md",
         "docs/citing.md",
         "Optional extras",
     )
@@ -22,27 +22,27 @@ README_CHECKS: dict[str, tuple[str, ...]] = {
 DOC_CHECKS: dict[str, tuple[str, ...]] = {
     "docs/index.md": (
         "{{ hero_calibrated_explanations }}",
-        "{{ backed_by_research_banner }}",
+        "research/index",
         "{{ optional_extras_template }}",
     ),
     "docs/overview/index.md": (
         "{{ hero_calibrated_explanations }}",
-        "{{ backed_by_research_banner }}",
+        "research/index",
         "{{ optional_extras_template }}",
     ),
     "docs/get-started/index.md": (
         "{{ hero_calibrated_explanations }}",
-        "{{ backed_by_research_banner }}",
+        "research/index",
         "{{ optional_extras_template }}",
     ),
     "docs/concepts/index.md": (
         "{{ hero_calibrated_explanations }}",
-        "{{ backed_by_research_banner }}",
+        "research/index",
         "{{ optional_extras_template }}",
     ),
     "docs/extending/index.md": (
         "{{ hero_calibrated_explanations }}",
-        "{{ backed_by_research_banner }}",
+        "research/index",
         "{{ optional_extras_template }}",
     ),
     "docs/concepts/alternatives.md": (
@@ -96,7 +96,7 @@ def main() -> int:
             print(f"::error ::{failure}")
         print(
             "Documentation fragments check failed. "
-            "Ensure hero, research banner, triangular plot, and optional extras includes are present."
+            "Ensure hero, research hub reference, triangular plot, and optional extras includes are present."
         )
         return 1
     return 0

@@ -7,12 +7,12 @@ v0.9.0 release plan:
 1. **Navigation audit** – verify each top-level section matches the information
    architecture and that new pages are linked from the appropriate toctree.
    Confirm the :doc:`nav_crosswalk` is updated for every legacy page that moved.
-2. **Hero & banner verification** – confirm README plus the practitioner,
+2. **Hero & research hub verification** – confirm README plus the practitioner,
    researcher, and contributor landing hubs render the shared hero copy,
-   dual quickstart table, interval regression signpost, and
-   ``{{ backed_by_research_banner }}`` directly beneath the hero. This step is a
-   release gate for the calibrated-explanations-first narrative (FR-001 –
-   FR-005).
+   dual quickstart table, interval regression signpost, and the existing
+   research hub link in its usual spot (hero body or Resources callout). This
+   step is a release gate for the calibrated-explanations-first narrative
+   (FR-001 – FR-005).
 3. **Optional extras audit** – ensure README, Overview, quickstarts, landing hubs,
    telemetry docs, and plugin guides end with the shared
    ``{{ optional_extras_template }}``. Optional tooling (telemetry, PlotSpec,

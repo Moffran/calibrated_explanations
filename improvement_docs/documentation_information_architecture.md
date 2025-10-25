@@ -44,7 +44,7 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
 1. **Overview** (shared landing page)
    - Crisp statement of calibrated explanations and probabilistic regression as the core differentiators.
    - Release highlights ordered by impact on calibrated explanations; telemetry or operational extras appear in an "Optional tooling" callout.
-   - "Backed by research" banner linking to citing.md and key papers.
+   - Concise research hub link near the hero (no banner) pointing to citing.md and key papers.
    - Quick links for each audience (Practitioner, Researcher, Contributor) to dive deeper.
 2. **Practitioner track**
    - **Install & Quickstart** page featuring two runnable snippets: calibrated classification and probabilistic regression. Telemetry/PlotSpec steps are collapsed under "Optional: operational add-ons".
