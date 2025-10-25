@@ -71,4 +71,8 @@ alternatives = explainer.explore_alternatives(X_test[:2])
 See the [Alternatives concept guide](../concepts/alternatives.md) for visual and
 interpretation walkthroughs.
 
+> 📝 **Citing calibrated explanations:** Reference {doc}`../citing` when you
+> publish results using the binary, multiclass, probabilistic, or interval
+> regression workflows showcased here.
+
 {{ optional_extras_template }}

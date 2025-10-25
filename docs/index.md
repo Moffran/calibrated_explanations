@@ -10,5 +10,8 @@ multiclass, probabilistic, and interval regression workflows.
 
 - {doc}`Research hub <research/index>` – Publication summaries, benchmark
   coverage, and funding acknowledgements in one place.
+- {doc}`Citing calibrated explanations <citing>` – Copy ready-to-use citations
+  for binary & multiclass classification plus probabilistic and interval
+  regression results when you publish your findings.
 
 {{ optional_extras_template }}

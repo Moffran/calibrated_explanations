@@ -29,5 +29,8 @@ role-specific highlights and research context.
 
 - {doc}`Research hub <../research/index>` – Publication summaries, benchmark
   notes, and funding context that underpin the platform.
+- {doc}`Citing calibrated explanations <../citing>` – Reference the canonical
+  papers for binary & multiclass classification plus probabilistic and interval
+  regression when publishing your work.
 
 {{ optional_extras_template }}

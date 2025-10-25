@@ -78,4 +78,12 @@ alternatives = explainer.explore_alternatives(
 See the [Alternatives concept guide](../concepts/alternatives.md) for visual and
 interpretation walkthroughs.
 
+> 📘 **Deep dive:** The {doc}`../concepts/probabilistic_regression` guide explains
+> how calibrated probabilities and intervals stay aligned across regression
+> tasks.
+
+> 📝 **Citing calibrated explanations:** When publishing regression or
+> probabilistic threshold results, use {doc}`../citing` to pick the appropriate
+> references.
+
 {{ optional_extras_template }}

@@ -1,60 +1,21 @@
 # Research hub
 
-Calibrated Explanations builds on a multi-year research program that spans
-classification, regression, and uncertainty quantification. Use this hub to find
-concise summaries of the literature, empirical benchmarks, and the funding that
-keeps the work moving. When you are ready to cite specific results, jump to the
-full bibliography in {doc}`../citing`.
+Calibrated Explanations builds on a multi-year research program spanning
+classification, probabilistic and interval regression, and uncertainty-aware
+interpretation tooling. Start here to find the published literature,
+benchmarks, and funding context, then drill into the dedicated pages for full
+references.
 
-## Publication highlights
+## Resources
 
-### Peer-reviewed work
-- **Trustworthy explanations dissertation (2023):** Introduces the
-  decision-support principles behind calibrated explanations and documents the
-  evaluation scaffolding used for subsequent studies.
-- **Expert Systems with Applications (2024):** Establishes calibrated
-  explanations for binary classification with uncertainty-aware factual and
-  alternative rules, validated on 25 benchmark datasets and runtime stability
-  checks.
-- **Machine Learning journal (2025):** Extends the method to regression and
-  probabilistic regression with interval guarantees that match the classification
-  results.
-- **xAI 2024 proceedings:** Demonstrates conditional calibrated explanations for
-  fairness-sensitive workflows.
-- **PMLR 230 (2024):** Adds multi-class coverage with empirical calibration and
-  tutorial material (paper and slides) for researchers adopting the method.
-- **Annals of Mathematics and Artificial Intelligence (2023):** Documents the
-  original study tying calibration quality to explanation reliability, including
-  public code for reproducing the experiments.
+- {doc}`theory_and_literature` – Published papers, in-flight studies, benchmarks,
+  and funding acknowledgements with links to replication assets.
+- {doc}`../citing` – Copy BibTeX entries for binary & multiclass classification
+  plus probabilistic and interval regression papers when preparing your own
+  publications.
 
-### Preprints and in-flight studies
-- **Ensured explanations (2024):** Investigates strategies that actively reduce
-  epistemic uncertainty in the generated alternatives.
-- **Fast calibrated explanations (2024):** Shares a plugin-oriented approach for
-  speeding up rule generation while preserving uncertainty guarantees.
+```{toctree}
+:maxdepth: 1
 
-## Benchmarks and evaluations
-
-Calibrated Explanations has been stress-tested on 25 publicly available
-benchmark datasets for binary classification, with the same evaluation harness
-reused for regression and probabilistic extensions. The replication packages
-linked from the journal papers include dataset manifests, metric definitions,
-plots, and supporting notebooks so you can compare against your own workloads.
-
-## Funding and acknowledgements
-
-The research has been funded by the [Swedish Knowledge Foundation](https://www.kks.se/)
-through the Knowledge Intensive Product Realization SPARK environment at
-Jönköping University. Grants include AFAIR (20200223), ETIAI (20230040), PREMACOP
-(20220187), and the Industrial Graduate School in Digital Retailing (INSiDR,
-20160035). The project also thanks contributors for engineering support,
-including release automation, regression tooling, and third-party libraries such
-as `crepes`, `venn-abers`, `ConformaSight`, and scikit-learn components that ship
-with the distribution.
-
-## Keep exploring
-
-- Dive into the full citation list and BibTeX entries in {doc}`../citing`.
-- Browse the [project README](https://github.com/Moffran/calibrated_explanations#readme)
-  for end-to-end walkthroughs that demonstrate how the research artifacts surface
-  in day-to-day usage.
+theory_and_literature
+```

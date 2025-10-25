@@ -19,6 +19,15 @@ After you finish a quickstart, read the
 probabilistic, and interval outputs, and visit the
 {doc}`../concepts/alternatives` explainer for the full alternatives walkthrough.
 
+## Interpretation & research links
+
+- {doc}`../how-to/interpret_explanations` – Deep dive on factual, alternative,
+  probabilistic, and interval outputs mirrored in the notebooks.
+- {doc}`../concepts/probabilistic_regression` – Concept guide explaining how
+  probabilistic thresholds pair with interval regression.
+- {doc}`../citing` – Cite the binary, multiclass, probabilistic, and interval
+  regression research when you publish results.
+
 ```{toctree}
 :maxdepth: 1
 

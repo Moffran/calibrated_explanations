@@ -9,6 +9,7 @@ interpretation and alternatives, then dive into telemetry and architecture.
 | Concept | Why it matters |
 | --- | --- |
 | [Interpret explanations](../how-to/interpret_explanations.md) | Reuses notebook screenshots and walks through dual uncertainty plus the triangular plot. |
+| [Probabilistic & interval regression](probabilistic_regression.md) | Shows how calibrated probabilities and interval regression stay in lockstep across quickstarts and notebooks. |
 | [Alternatives & triangular plots](alternatives.md) | Explains how the triangular view pairs with rule tables for calibrated alternatives. |
 | [Telemetry & observability](telemetry.md) | Documents provenance fields and opt-in instrumentation. |
 | [Architecture overview](../architecture.md) | Connects runtime components, caching, and plugin guardrails. |
@@ -16,6 +17,7 @@ interpretation and alternatives, then dive into telemetry and architecture.
 ```{toctree}
 :maxdepth: 1
 
+probabilistic_regression
 alternatives
 ../architecture
 telemetry
