@@ -2,8 +2,6 @@
 
 {{ hero_calibrated_explanations }}
 
-{{ backed_by_research_banner }}
-
 Alternative explanations quantify how predictions and uncertainty move when you
 adjust feature values. Use them alongside the triangular plot to stay aligned
 with calibrated decision boundaries.

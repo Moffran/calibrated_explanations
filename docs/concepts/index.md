@@ -2,8 +2,6 @@
 
 {{ hero_calibrated_explanations }}
 
-{{ backed_by_research_banner }}
-
 Understand the theory powering calibrated explanations across binary and
 multiclass classification plus probabilistic and interval regression. Start with
 interpretation and alternatives, then dive into telemetry and architecture.

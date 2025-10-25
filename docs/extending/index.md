@@ -2,8 +2,6 @@
 
 {{ hero_calibrated_explanations }}
 
-{{ backed_by_research_banner }}
-
 Contributors and plugin authors keep calibrated explanations front and centre.
 Begin with the calibrated plugin example, then dive into guardrails and ADR
 references.

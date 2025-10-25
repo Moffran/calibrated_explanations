@@ -23,7 +23,7 @@ architecture. Update this checklist whenever a page moves or is retired.
 Use the `_shared` partials when editing audience landing hubs, README mirrors, or quickstarts:
 
 - Include the canonical hero copy with `{{ hero_calibrated_explanations }}` at the top of README, Overview, practitioner, researcher, and contributor landing pages.
-- Surface the research pedigree banner with `{{ backed_by_research_banner }}` directly below the hero on those same pages so readers can jump to :doc:`../citing` from every entry point.
+- Point readers to the research hub near the top of those same pages (for example, in a Resources section) so they can jump to :doc:`../research/index` without embedding the `{{ backed_by_research_banner }}` partial.
 - End each of those pages—and any quickstart or interpretation guide that references telemetry—with the opt-in callouts from `{{ optional_extras_template }}`. Optional extras must remain the final section in the page outline.
 - Reserve `{{ alternatives_triangular }}` for pages dedicated to alternatives,
   such as the concepts explainer, so the triangular walkthrough accompanies rule

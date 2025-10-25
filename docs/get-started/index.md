@@ -2,8 +2,6 @@
 
 {{ hero_calibrated_explanations }}
 
-{{ backed_by_research_banner }}
-
 Follow these curated paths to run calibrated explanations without any optional
 telemetry or plugin prerequisites. Each quickstart mirrors the README flow and
 links directly to the companion notebook.

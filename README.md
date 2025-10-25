@@ -11,9 +11,9 @@
 <!-- [![Lint Status for Calibrated Explanations][lint-status]][lint-log] -->
 <!-- [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Moffran/calibrated_explanations/main?urlpath=https%3A%2F%2Fgithub.com%2FMoffran%2Fcalibrated_explanations%2Fblob%2Fmain%2Fnotebooks%2Fquickstart.ipynb) -->
 
-> **Calibrated explanations, from binary and multiclass classification to probabilistic and interval regression.** Deliver trusted decisions with calibrated prediction intervals, dual-uncertainty insights, and research-backed interpretation guides that stay in lockstep across docs, notebooks, and runtime defaults.
+> **Calibrated explanations, from binary and multiclass classification to probabilistic and interval regression.** Deliver trusted decisions with calibrated prediction intervals, dual-uncertainty insights, and interpretation guides that stay in lockstep across docs, notebooks, and runtime defaults. See the [research hub](docs/research/index.md) for papers and proofs.
 >
-> 🎓 **Backed by research:** Explore the peer-reviewed work and citation guidance in [docs/citing.md](docs/citing.md) to see the studies covering binary & multiclass classification alongside probabilistic and interval regression.
+> 🎓 **Research hub:** Explore the peer-reviewed work, benchmarks, and funding acknowledgements in [docs/research/index.md](docs/research/index.md), then grab detailed citations in [docs/citing.md](docs/citing.md).
 
 | Classification (binary & multiclass) | Probabilistic regression |
 | --- | --- |

@@ -2,8 +2,6 @@
 
 {{ hero_calibrated_explanations }}
 
-{{ backed_by_research_banner }}
-
 Calibrated Explanations keeps the calibrated, interpretation-first journey front
 and centre for every audience. Start with the quickstarts below, then dive into
 role-specific highlights and research context.
@@ -26,5 +24,10 @@ role-specific highlights and research context.
   multiclass, probabilistic, and interval regression.
 - **Role-based navigation:** Practitioners, researchers, and contributors each
   have dedicated hubs with calibrated-first hero copy and governance guardrails.
+
+## Resources
+
+- {doc}`Research hub <../research/index>` – Publication summaries, benchmark
+  notes, and funding context that underpin the platform.
 
 {{ optional_extras_template }}

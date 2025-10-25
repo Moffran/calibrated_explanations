@@ -31,6 +31,12 @@
    reference/index
 
 .. toctree::
+   :caption: Research
+   :maxdepth: 1
+
+   research/index
+
+.. toctree::
    :caption: Extending the library
    :maxdepth: 1
 

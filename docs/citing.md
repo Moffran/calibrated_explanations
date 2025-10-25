@@ -1,6 +1,8 @@
 # Citing calibrated-explanations
 
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
+
+For narrative summaries of the research program, benchmarks, and funding, visit the {doc}`research hub <research/index>` before diving into the detailed references below.
 ## Published papers
 - [Löfström, H](https://github.com/Moffran). (2023). [Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440&dswid=6197) (Doctoral dissertation, Jönköping University, Jönköping International Business School).
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27. https://doi.org/10.1016/j.eswa.2024.123154
