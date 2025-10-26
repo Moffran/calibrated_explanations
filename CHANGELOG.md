@@ -5,31 +5,85 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...main)
 
+### Release plan alignment
 
-### Changed
+- **Calibrated-explanations-first messaging (Tasks 1 & 5):** Rewrote the README,
+  overview landing page, and quickstarts so calibrated factual and alternative
+  flows lead every entry point, with telemetry, PlotSpec, and plugin extras
+  demoted into consistent "Optional extras" callouts and cross-linked research
+  hubs.【F:README.md†L1-L86】【F:docs/index.md†L1-L44】【F:docs/_shared/optional_extras_template.md†L1-L24】【F:docs/_shared/backed_by_research.md†L1-L20】
+- **Audience-specific hubs & triangular alternatives (Tasks 2 & 6):** Added
+  practitioner, researcher, and contributor landing pages that pair probabilistic
+  regression guidance with triangular alternative plot coaching so every
+  `explore_alternatives` mention narrates the calibrated decision boundary
+  story.【F:docs/practitioner/index.md†L1-L54】【F:docs/researcher/index.md†L1-L54】【F:docs/_shared/alternatives_triangular.md†L1-L14】【F:docs/get-started/quickstart_classification.md†L1-L84】
+- **Plugin extensibility & external distribution (Tasks 3, 12 & 13):** Reframed
+  `docs/plugins.md` around a calibration-preserving "hello plugin" example,
+  surfaced the `external_plugins/` namespace and curated installation extra, and
+  exposed `CE_DENY_PLUGIN` governance toggles across docs and CLI output so the
+  optional plugin lane remains discoverable yet clearly opt-in.【F:docs/plugins.md†L1-L200】【F:external_plugins/__init__.py†L1-L23】【F:README.md†L640-L686】【F:src/calibrated_explanations/plugins/cli.py†L74-L123】
+- **Optional tooling labelling & documentation guardrails (Tasks 4 & 7):**
+  Introduced a reusable optional-extras fragment, moved telemetry governance to
+  contributor sections with explicit badges, and wired the docs workflow to fail
+  when hero/research/optional-extras fragments or ordering regress, keeping
+  ADR-012 enforcement automated.【F:docs/governance/optional_telemetry.md†L1-L80】【F:scripts/check_required_fragments.py†L1-L132】【F:.github/workflows/docs.yml†L19-L40】
+- **Research-forward storytelling (Task 5):** Maintained research hub call-outs
+  across README, overview, and concept guides so every onboarding path links to
+  `docs/research/` and `citing.md`, reinforcing the calibration pedigree.【F:README.md†L22-L60】【F:docs/overview/index.md†L1-L62】【F:docs/citing.md†L1-L140】
+- **ADR-018/017/019 enforcement (Tasks 8–10):** Elevated docstring coverage and
+  notebook lint to blocking status, retired transitional core/plot shims, and
+  tightened coverage thresholds to 88% alongside Codecov patch gates that focus
+  on runtime and calibration modules.【F:.github/workflows/lint.yml†L38-L86】【F:src/calibrated_explanations/core/_legacy_explain.py†L1-L110】【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】
+- **Runtime performance polish (Task 11):** Added opt-in calibrator caching,
+  parallel execution controls, and refactored perturbation/discretisation
+  routines so explain latency improves without altering calibrated outputs.
+  Telemetry-ready factories encapsulate the new knobs for plugin authors.【F:src/calibrated_explanations/perf/__init__.py†L1-L52】【F:src/calibrated_explanations/perf/cache.py†L1-L120】【F:src/calibrated_explanations/core/calibrated_explainer.py†L199-L377】
+- **Documentation-first plugin governance (Task 12):** Expanded CLI and
+  registry tests to surface denied identifiers, audit trusted plugins, and keep
+  the governance narrative inline with the release checklist.【F:tests/plugins/test_cli.py†L74-L152】【F:docs/governance/release_checklist.md†L1-L92】【F:src/calibrated_explanations/plugins/registry.py†L84-L154】
+- **External plugin bundle verification (Task 13):** Shipped packaging tests and
+  documentation for the `external-plugins` extra so the curated FAST bundle
+  stays optional yet discoverable.【F:tests/plugins/test_external_plugins_extra.py†L1-L90】【F:external_plugins/fast_explanations/__init__.py†L1-L92】
+- **Explanation export helpers (Task 14):** Added `CalibratedExplanations.to_json`
+  and `.from_json` wrappers and refreshed the export how-to so integration teams
+  can persist schema v1 collections with calibrated metadata intact.【F:src/calibrated_explanations/explanations/explanations.py†L180-L247】【F:docs/how-to/export_explanations.md†L1-L86】
+- **Streaming-friendly delivery status (Task 15):** Recorded the deferral and
+  interim batching guidance in the OSS scope inventory, closing the release gate
+  while signalling follow-up expectations.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L1-L18】
 
-- Raised pytest's coverage floor to 88% and tightened the Codecov runtime-calibration
-  patch gate to 88%, keeping ADR-019's v0.9.0 milestone enforced in CI.
-- Lint workflow now fails if docstring coverage drops below 94% or notebook
-  linting (via ``nbqa ruff``) regresses, fulfilling ADR-018's blocking
-  requirements and keeping documentation CI green for v0.9.0.
+### Runtime
 
-### CI
+- Accelerated categorical perturbations, discretisation, and prediction batching
+  for both factual and alternative explanations, backed by legacy parity helpers
+  preserved in `core/_legacy_explain.py` for regression testing.【F:src/calibrated_explanations/core/calibrated_explainer.py†L880-L1120】【F:src/calibrated_explanations/core/_legacy_explain.py†L1-L140】
+- Introduced calibration summary caching and telemetry-aware performance
+  factories so heavy workloads can reuse intermediate results without breaking
+  calibration guarantees.【F:src/calibrated_explanations/core/calibrated_explainer.py†L356-L416】【F:src/calibrated_explanations/perf/cache.py†L121-L320】
 
-- Extended the shared documentation fragment checker to enforce optional extras
-  placement as the final section on required pages, aligning with ADR-012's
-  navigation guardrails.
+### Documentation
 
-### Docs
+- Published practitioner/researcher/contributor hubs, refreshed quickstarts with
+  probabilistic regression walkthroughs, and rewrote plugins governance material
+  to foreground calibrated-explanations-first messaging while labelling extras
+  as optional.【F:docs/get-started/quickstart_regression.md†L1-L94】【F:docs/research/index.md†L1-L80】【F:docs/plugins.md†L200-L420】
+- Added runtime performance tuning, governance checklists, and optional telemetry
+  guides so compliance and SRE flows stay audience scoped.【F:docs/how-to/tune_runtime_performance.md†L1-L140】【F:docs/governance/release_checklist.md†L40-L92】
 
-- Authored the v0.9.0 release notes, highlighting optional telemetry/plugin
-  extras and linking to the release plan for governance sign-off.
+### CI & QA
 
-### Tests
+- Hardened docs CI with the shared fragment checker, ensured Sphinx `-W`,
+  navigation smoke tests, and linkcheck remain blocking, and elevated docstring
+  coverage thresholds to 94% via lint automation.【F:.github/workflows/docs.yml†L19-L40】【F:.github/workflows/lint.yml†L38-L86】
+- Raised global coverage minimums to 88% and tightened Codecov calibration
+  patch targets so ADR-019 enforcement captures runtime changes.【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】
 
-- Added a packaging regression test that inspects the ``external-plugins`` extra
-  metadata to guarantee the curated fast-explanations bundle remains an opt-in
-  install with the expected dependencies.
+### Tests & Tooling
+
+- Expanded plugin registry, CLI, and builtin adapter suites, added dedicated
+  legacy plotting regression tests, and introduced performance benchmarks and
+  telemetry hooks to monitor the new runtime toggles.【F:tests/plugins/test_builtins_module.py†L1-L180】【F:tests/legacy/test_plotting.py†L1-L200】【F:evaluation/scripts/compare_explain_performance.py†L1-L200】
+- Refreshed reports documenting docstring coverage baselines and lint outputs to
+  back ADR-018's blocking rollout.【F:reports/docstring_coverage_20251025.txt†L1-L32】【F:reports/pydocstyle-baseline.txt†L1-L120】
 
 
 
