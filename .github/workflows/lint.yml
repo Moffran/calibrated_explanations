@@ -19,12 +19,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[dev]
-      - name: Ruff naming warnings (ADR-017)
+      - name: Ruff naming enforcement (ADR-017)
         run: |
-          ruff check --select N --exit-zero
-      - name: Notebook lint (ADR-018 notebooks)
+          ruff check --select N
+      - name: Notebook naming lint (ADR-018 notebooks)
         run: |
-          nbqa ruff notebooks
+          python -m nbqa ruff --select N notebooks
       - name: pydocstyle (ADR-018 baseline)
         run: |
           pydocstyle src tests

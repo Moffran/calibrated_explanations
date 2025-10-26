@@ -2,7 +2,7 @@
 <!-- ======================= -->
 
 [![Calibrated Explanations PyPI version][pypi-version]][calibrated-explanations-on-pypi]
-[![Docstring coverage](https://img.shields.io/badge/docstring%20coverage-94%25-brightgreen)](reports/docstring_coverage_20251010.txt)
+[![Docstring coverage](https://img.shields.io/badge/docstring%20coverage-94%25-brightgreen)](reports/docstring_coverage_20251025.txt)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/calibrated-explanations.svg)](https://anaconda.org/conda-forge/calibrated-explanations)
 [![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/Moffran/calibrated_explanations)](https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG.md)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/moffran/calibrated_explanations/blob/main/LICENSE)

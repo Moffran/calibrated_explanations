@@ -11,8 +11,6 @@ coverage:
         threshold: '0%'
         paths:
           - "src/calibrated_explanations/core/"
-          - "src/calibrated_explanations/_interval_regressor.py"
-          - "src/calibrated_explanations/_venn_abers.py"
           - "src/calibrated_explanations/plugins/intervals.py"
           - "src/calibrated_explanations/plugins/builtins.py"
           - "src/calibrated_explanations/utils/perturbation.py"

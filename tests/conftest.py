@@ -410,22 +410,17 @@ def pytest_collection_modifyitems(config, items):
 _MATPLOTLIB_OPTIONAL_FAIL_UNDER = 50.0
 
 _MATPLOTLIB_OPTIONAL_MODULES = {
-    "src/calibrated_explanations/_plots.py",
-    "src/calibrated_explanations/_plots_legacy.py",
     "src/calibrated_explanations/viz/matplotlib_adapter.py",
 }
 
 
 _MODULE_COVERAGE_THRESHOLDS = {
-    "src/calibrated_explanations/_interval_regressor.py": 88.0,
     "src/calibrated_explanations/core/calibrated_explainer.py": 88.0,
     "src/calibrated_explanations/plugins/registry.py": 88.0,
     "src/calibrated_explanations/plugins/cli.py": 88.0,
     "src/calibrated_explanations/api/config.py": 88.0,
     "src/calibrated_explanations/utils/helper.py": 88.0,
     "src/calibrated_explanations/utils/perturbation.py": 88.0,
-    "src/calibrated_explanations/_plots.py": 88.0,
-    "src/calibrated_explanations/_plots_legacy.py": 88.0,
     "src/calibrated_explanations/viz/matplotlib_adapter.py": 88.0,
     "src/calibrated_explanations/explanations/explanation.py": 88.0,
     "src/calibrated_explanations/perf/cache.py": 88.0,
