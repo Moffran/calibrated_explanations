@@ -26,9 +26,20 @@ def test_plotspec_roundtrip_and_validate():
 
 def test_validate_rejects_bad_payload():
     with pytest.raises(ValueError):
+        validate_plotspec(["not", "a", "dict"])
+    with pytest.raises(ValueError):
         validate_plotspec({})
     with pytest.raises(ValueError):
         validate_plotspec({"plotspec_version": "1.0.0", "body": {"bars": "notalist"}})
+    with pytest.raises(ValueError):
+        validate_plotspec({"plotspec_version": "1.0.0", "title": "missing body"})
+    with pytest.raises(ValueError):
+        validate_plotspec(
+            {
+                "plotspec_version": "1.0.0",
+                "body": {"bars": [{"label": "a"}]},
+            }
+        )
 
 
 def test_interval_header_spec_optional_fields():
@@ -85,3 +96,77 @@ def test_plotspec_all_fields():
     )
     assert spec.figure_size == (6.0, 4.0)
     assert spec.body.bars[0].label == "feat"
+
+
+def test_plotspec_to_dict_with_optional_fields():
+    header = IntervalHeaderSpec(
+        pred=0.2,
+        low=-0.1,
+        high=0.7,
+        xlim=(-1.0, 1.0),
+        xlabel="x",
+        ylabel="y",
+    )
+    body = BarHPanelSpec(
+        bars=[
+            BarItem(
+                label="f0",
+                value=0.4,
+                interval_low=-0.2,
+                interval_high=0.5,
+                color_role="positive",
+                instance_value={"foo": "bar"},
+            ),
+        ],
+        xlabel="xlabel",
+        ylabel="ylabel",
+    )
+    spec = PlotSpec(title="Example", figure_size=(8, 3), header=header, body=body)
+
+    serialized = plotspec_to_dict(spec)
+
+    assert serialized["figure_size"] == (8, 3)
+    assert serialized["header"]["xlim"] == (-1.0, 1.0)
+    assert serialized["body"]["bars"][0]["interval_high"] == 0.5
+    assert serialized["body"]["bars"][0]["instance_value"] == {"foo": "bar"}
+
+
+def test_plotspec_from_dict_casts_values():
+    raw = {
+        "plotspec_version": "1.0.0",
+        "title": "dict",
+        "figure_size": [5, 2],
+        "header": {
+            "pred": "0.5",
+            "low": 0,
+            "high": 1,
+            "xlim": ["0", "2"],
+            "xlabel": "pred",
+        },
+        "body": {
+            "xlabel": "Contribution",
+            "ylabel": "Feature",
+            "bars": [
+                {
+                    "label": "a",
+                    "value": "0.25",
+                    "interval_low": 0,
+                    "interval_high": "0.5",
+                    "color_role": "positive",
+                },
+                {
+                    "label": "b",
+                    "value": 0.1,
+                    "interval_low": None,
+                    "interval_high": None,
+                },
+            ],
+        },
+    }
+
+    spec = plotspec_from_dict(raw)
+
+    assert spec.figure_size == (5, 2)
+    assert spec.header is not None and spec.header.pred == 0.5
+    assert spec.body is not None and spec.body.bars[0].interval_high == 0.5
+    assert spec.body.bars[1].interval_low is None

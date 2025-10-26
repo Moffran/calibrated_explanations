@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 from time import monotonic
-from typing import Dict
+from typing import Dict, Iterable, List
 
 import numpy as np
 import pytest
 
-from calibrated_explanations.perf.cache import CalibratorCache, CacheConfig, LRUCache, make_key
+from calibrated_explanations.perf.cache import (
+    CalibratorCache,
+    CacheConfig,
+    LRUCache,
+    _default_size_estimator,
+    _hash_part,
+    make_key,
+)
 
 
 def test_lru_cache_rejects_invalid_limits() -> None:
@@ -100,3 +107,158 @@ def test_make_key_normalises_arrays() -> None:
     assert key[0] == "ns"
     assert key[1] == "v"
     assert "payload" in str(key[-1])
+
+
+def test_default_size_estimator_prefers_numpy_buffers() -> None:
+    array = np.arange(6, dtype=np.int16)
+    assert _default_size_estimator(array) == array.nbytes
+
+    class DummyArray:
+        def __init__(self, data: Iterable[int]):
+            self._data = list(data)
+
+        @property
+        def __array_interface__(self) -> Dict[str, object]:  # type: ignore[override]
+            array = np.asarray(self._data, dtype=np.float32)
+            return array.__array_interface__
+
+    shim = DummyArray([1, 2, 3, 4])
+    expected = np.asarray([1, 2, 3, 4], dtype=np.float32).nbytes
+    assert _default_size_estimator(shim) == expected
+
+    class Opaque:
+        pass
+
+    assert _default_size_estimator(Opaque()) == 256
+
+
+def test_hash_part_covers_nested_structures() -> None:
+    array = np.arange(3, dtype=np.uint8)
+    hashed_array = _hash_part(array)
+    assert hashed_array[0] == "nd"
+    assert hashed_array[1] == array.shape
+
+    assert _hash_part(None) is None
+
+    nested_sets: List[object] = [{1, 2}, {3, 4}]
+    hashed_nested = _hash_part(nested_sets)
+    assert isinstance(hashed_nested, tuple)
+    assert all(isinstance(item, tuple) for item in hashed_nested)
+
+    hashed_mapping = _hash_part({"beta": 3})
+    assert ("beta", 3) in hashed_mapping
+
+    sentinel = object()
+    hashed_sentinel = _hash_part(sentinel)
+    assert hashed_sentinel[0] == "repr"
+
+
+def test_cache_config_from_env_parses_tokens(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "CE_CACHE",
+        "enable,namespace=prod,version=v9,max_items=0,max_bytes=2,ttl=5.5,off",
+    )
+    base = CacheConfig(enabled=False, namespace="dev", version="v1", max_items=5, ttl_seconds=1.0)
+    config = CacheConfig.from_env(base)
+
+    assert config.enabled is False  # last toggle wins
+    assert config.namespace == "prod"
+    assert config.version == "v9"
+    assert config.max_items == 1  # clamped to minimum of 1
+    assert config.max_bytes == 2
+    assert config.ttl_seconds == 5.5
+
+    monkeypatch.setenv("CE_CACHE", "1")
+    config_enabled = CacheConfig.from_env(base)
+    assert config_enabled.enabled is True
+
+
+def test_lru_cache_updates_existing_and_enforces_limits() -> None:
+    events: List[str] = []
+
+    def telemetry(event: str, payload: Dict[str, object]) -> None:
+        events.append(f"{event}:{payload['key']}")
+        if event == "cache_store" and payload.get("key") == "gamma":
+            raise RuntimeError("boom")
+
+    cache = LRUCache[str, np.ndarray](
+        namespace="perf",
+        version="v1",
+        max_items=2,
+        max_bytes=8,
+        ttl_seconds=None,
+        telemetry=telemetry,
+        size_estimator=lambda value: int(value.nbytes),
+    )
+
+    alpha = np.ones(2, dtype=np.int8)
+    beta = np.ones(4, dtype=np.int8)
+    gamma = np.ones(6, dtype=np.int8)
+
+    cache.set("alpha", alpha)
+    cache.set("alpha", beta)
+    assert cache.get("alpha") is beta
+
+    cache.set("beta", beta)
+    assert "cache_store:beta" in events
+
+    cache.set("gamma", gamma)  # triggers shrink by bytes and telemetry failure branch
+    assert cache.get("alpha") is None
+    assert cache.get("beta") is None
+    assert np.array_equal(cache.get("gamma"), gamma)
+    assert cache.metrics.misses >= 2
+    assert any(evt.startswith("cache_evict") for evt in events if evt.startswith("cache"))
+
+
+def test_cache_metrics_snapshot_reflects_operations() -> None:
+    cache = LRUCache[str, int](
+        namespace="perf",
+        version="v1",
+        max_items=1,
+        max_bytes=None,
+        ttl_seconds=None,
+        telemetry=None,
+        size_estimator=lambda value: value,
+    )
+
+    cache.set("one", 1)
+    cache.set("two", 2)
+    assert cache.get("one") is None
+    assert cache.get("two") == 2
+
+    snapshot = cache.metrics.snapshot()
+    assert snapshot["hits"] == 1
+    assert snapshot["evictions"] == 1
+
+
+def test_calibrator_cache_handles_disabled_state() -> None:
+    config = CacheConfig(enabled=False)
+    cache: CalibratorCache[int] = CalibratorCache(config)
+
+    assert cache.enabled is False
+    assert cache.metrics.snapshot()["hits"] == 0
+    assert cache.get(stage="predict", parts=[1]) is None
+    cache.set(stage="predict", parts=[1], value=1)
+    assert cache.compute(stage="predict", parts=[1], fn=lambda: 5) == 5
+
+
+def test_calibrator_cache_compute_reuses_results() -> None:
+    config = CacheConfig(enabled=True, max_items=4)
+    cache: CalibratorCache[int] = CalibratorCache(config)
+
+    calls = 0
+
+    def factory() -> int:
+        nonlocal calls
+        calls += 1
+        return 99
+
+    result_first = cache.compute(stage="score", parts=["sample"], fn=factory)
+    result_second = cache.compute(stage="score", parts=["sample"], fn=factory)
+
+    assert result_first == 99
+    assert result_second == 99
+    assert calls == 1
+
+    cache.forksafe_reset()
+    assert cache.get(stage="score", parts=["sample"]) is None
