@@ -2,7 +2,7 @@
 
 Measures:
 - Import time for calibrated_explanations
-- sequential_map vs JoblibBackend.map on a trivial CPU-bound function
+- Sequential comprehension vs ParallelExecutor.map on a trivial CPU-bound function
 
 Usage (optional): run as a script to print JSON metrics. CI integration can
 parse this later and compare to thresholds in benchmarks/perf_thresholds.json.
@@ -30,20 +30,20 @@ def fib(n: int) -> int:
 
 
 def measure_map_throughput() -> dict[str, float]:
-    from calibrated_explanations.perf import sequential_map, JoblibBackend
+    from calibrated_explanations.perf import ParallelConfig, ParallelExecutor
 
     items = [30] * 2000  # small, deterministic CPU work
 
     t0 = time.perf_counter()
-    sequential_map(fib, items)
+    [fib(item) for item in items]
     seq = time.perf_counter() - t0
 
-    jb = JoblibBackend()
+    executor = ParallelExecutor(ParallelConfig(enabled=True, strategy="threads"))
     t0 = time.perf_counter()
-    jb.map(fib, items, workers=None)
+    executor.map(fib, items)
     par = time.perf_counter() - t0
 
-    return {"sequential_s": seq, "joblib_s": par}
+    return {"sequential_s": seq, "parallel_s": par}
 
 
 def main() -> None:

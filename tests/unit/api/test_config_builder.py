@@ -19,6 +19,7 @@ def test_builder_propagates_configuration_fields():
         .parallel_workers(4)
         .perf_cache(True, max_items=42)
         .perf_parallel(True, backend="joblib")
+        .perf_telemetry(lambda *args, **kwargs: None)
         .build_config()
     )
 
@@ -34,6 +35,7 @@ def test_builder_propagates_configuration_fields():
     assert cfg.perf_parallel_enabled is True
     assert cfg.perf_parallel_backend == "joblib"
     assert hasattr(cfg, "_perf_factory")
+    assert cfg.perf_telemetry is not None
 
 
 def test_builder_swallows_perf_factory_errors(monkeypatch):

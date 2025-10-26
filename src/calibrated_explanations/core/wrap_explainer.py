@@ -117,10 +117,13 @@ class WrapCalibratedExplainer:
 
                 perf_factory = _from_config(cfg)
             # stash created primitives for downstream use; keep None when disabled
-            w._perf_cache = perf_factory.make_cache() if perf_factory is not None else None  # type: ignore[attr-defined]
-            w._perf_parallel = (
-                perf_factory.make_parallel_backend() if perf_factory is not None else None
-            )  # type: ignore[attr-defined]
+            if perf_factory is not None:
+                cache = perf_factory.make_cache()
+                w._perf_cache = cache  # type: ignore[attr-defined]
+                w._perf_parallel = perf_factory.make_parallel_executor(cache)  # type: ignore[attr-defined]
+            else:
+                w._perf_cache = None
+                w._perf_parallel = None
         except Exception as exc:  # pragma: no cover - defensive
             w._perf_cache = None
             w._perf_parallel = None
@@ -240,14 +243,33 @@ class WrapCalibratedExplainer:
         self._logger.info("Calibrating with %s samples", getattr(x_calibration, "shape", ["?"])[0])
 
         if "mode" in kwargs:
-            self.explainer = CalibratedExplainer(self.learner, x_cal_local, y_calibration, **kwargs)
+            self.explainer = CalibratedExplainer(
+                self.learner,
+                x_cal_local,
+                y_calibration,
+                perf_cache=getattr(self, "_perf_cache", None),
+                perf_parallel=getattr(self, "_perf_parallel", None),
+                **kwargs,
+            )
         elif "predict_proba" in dir(self.learner):
             self.explainer = CalibratedExplainer(
-                self.learner, x_cal_local, y_calibration, mode="classification", **kwargs
+                self.learner,
+                x_cal_local,
+                y_calibration,
+                mode="classification",
+                perf_cache=getattr(self, "_perf_cache", None),
+                perf_parallel=getattr(self, "_perf_parallel", None),
+                **kwargs,
             )
         else:
             self.explainer = CalibratedExplainer(
-                self.learner, x_cal_local, y_calibration, mode="regression", **kwargs
+                self.learner,
+                x_cal_local,
+                y_calibration,
+                mode="regression",
+                perf_cache=getattr(self, "_perf_cache", None),
+                perf_parallel=getattr(self, "_perf_parallel", None),
+                **kwargs,
             )
         self.calibrated = True
         if preprocessor_metadata is not None and self.explainer is not None:

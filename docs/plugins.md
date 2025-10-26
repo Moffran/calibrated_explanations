@@ -101,6 +101,23 @@ Use these decision records when designing new plugins:
   captures the calibrated explanation contract for explanation and interval
   plugins.
 
+### Runtime performance toggles
+
+v0.9.0 introduces an opt-in calibrator cache and parallel executor. Plugin
+authors should treat these as shared infrastructure:
+
+- Avoid mutating request-level objects captured by the cache key. Values stored
+  in the cache must be deterministic, pickle-safe, and process independent.
+- When you spawn subprocesses (for example inside a plugin), call
+  ``explainer._perf_cache.forksafe_reset()`` or reuse the provided
+  :class:`~calibrated_explanations.perf.parallel.ParallelExecutor` to inherit the
+  built-in fork guards.
+- Respect ``CE_CACHE``/``CE_PARALLEL`` overrides documented in
+  :doc:`how-to/tune_runtime_performance`. Plugins should not force their own
+  worker settings—delegate to the executor attached to the explainer instead.
+- Emit telemetry sparingly and honour the ``perf_telemetry`` callback when
+  provided so operators can aggregate cache hit/miss data consistently.
+
 ### Fast explanations and external bundles
 
 The fast explanations implementation now ships as an external plugin. Install

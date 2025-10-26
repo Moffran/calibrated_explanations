@@ -44,9 +44,16 @@ class ExplainerConfig:
 
     # Performance feature flags (ADR-003/ADR-004) – disabled by default
     perf_cache_enabled: bool = False
-    perf_cache_max_items: int = 128
+    perf_cache_max_items: int = 512
+    perf_cache_max_bytes: int | None = 32 * 1024 * 1024
+    perf_cache_namespace: str = "calibrator"
+    perf_cache_version: str = "v1"
+    perf_cache_ttl: float | None = None
     perf_parallel_enabled: bool = False
-    perf_parallel_backend: Literal["auto", "sequential", "joblib"] = "auto"
+    perf_parallel_backend: Literal["auto", "sequential", "joblib", "threads", "processes"] = "auto"
+    perf_parallel_workers: int | None = None
+    perf_parallel_min_batch: int = 32
+    perf_telemetry: Any | None = None
 
 
 class ExplainerBuilder:
@@ -138,7 +145,16 @@ class ExplainerBuilder:
         return self
 
     # Perf flags (feature-flagged; no behavior change when off)
-    def perf_cache(self, enabled: bool, *, max_items: int | None = None) -> ExplainerBuilder:
+    def perf_cache(
+        self,
+        enabled: bool,
+        *,
+        max_items: int | None = None,
+        max_bytes: int | None = None,
+        namespace: str | None = None,
+        version: str | None = None,
+        ttl: float | None = None,
+    ) -> ExplainerBuilder:
         """Enable or disable the performance cache options.
 
         Parameters
@@ -151,10 +167,23 @@ class ExplainerBuilder:
         self._cfg.perf_cache_enabled = enabled
         if max_items is not None:
             self._cfg.perf_cache_max_items = max_items
+        if max_bytes is not None:
+            self._cfg.perf_cache_max_bytes = max_bytes
+        if namespace is not None:
+            self._cfg.perf_cache_namespace = namespace
+        if version is not None:
+            self._cfg.perf_cache_version = version
+        if ttl is not None:
+            self._cfg.perf_cache_ttl = ttl
         return self
 
     def perf_parallel(
-        self, enabled: bool, *, backend: Literal["auto", "sequential", "joblib"] | None = None
+        self,
+        enabled: bool,
+        *,
+        backend: Literal["auto", "sequential", "joblib", "threads", "processes"] | None = None,
+        workers: int | None = None,
+        min_batch: int | None = None,
     ) -> ExplainerBuilder:
         """Configure the parallel backend used for performance operations.
 
@@ -168,6 +197,16 @@ class ExplainerBuilder:
         self._cfg.perf_parallel_enabled = enabled
         if backend is not None:
             self._cfg.perf_parallel_backend = backend
+        if workers is not None:
+            self._cfg.perf_parallel_workers = workers
+        if min_batch is not None:
+            self._cfg.perf_parallel_min_batch = min_batch
+        return self
+
+    def perf_telemetry(self, callback: Any | None) -> ExplainerBuilder:
+        """Register a telemetry callback shared by cache and parallel executors."""
+
+        self._cfg.perf_telemetry = callback
         return self
 
     def build_config(self) -> ExplainerConfig:

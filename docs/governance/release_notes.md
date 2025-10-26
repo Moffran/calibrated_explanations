@@ -12,9 +12,10 @@ changes see the project changelog on GitHub.
   confirm the curated fast-explanation bundle remains an optional install with
   the expected dependencies.
 - Runtime performance controls—the calibrator cache, multiprocessing toggle, and
-  FAST vectorised perturbations—stay opt-in in v0.9.0. Follow
-  :doc:`../how-to/tune_runtime_performance` to enable them deliberately and to
-  record rollback steps in your change log.
+  vectorised perturbations baked into the core explainer—stay opt-in in v0.9.0.
+  Follow :doc:`../how-to/tune_runtime_performance` to enable them deliberately,
+  honour the new ``CE_CACHE``/``CE_PARALLEL`` environment overrides, and record
+  rollback steps in your change log.
 - For the full milestone scope—including calibrated-explanations-first messaging
   and governance updates—see the `v0.9.0 release plan <../../improvement_docs/RELEASE_PLAN_v1.md#v090-documentation-realignment-targeted-runtime-polish>`_.
 
