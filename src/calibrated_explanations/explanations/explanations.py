@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import warnings
-from copy import deepcopy
+from copy import copy, deepcopy
 from dataclasses import dataclass
 from time import time
 from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union, cast
@@ -120,10 +120,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             # Handle single item access
             return self.explanations[key]
         if isinstance(key, (slice, list, np.ndarray)):
-            new_ = deepcopy(self)
+            new_ = copy(self)
             if isinstance(key, slice):
                 # Handle slicing
-                new_.explanations = self.explanations[key]
+                new_.explanations = list(self.explanations[key])
             if isinstance(key, (list, np.ndarray)):
                 if isinstance(key[0], (bool, np.bool_)):
                     # Handle boolean indexing
@@ -149,6 +149,13 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             else:
                 # assume list of tuples aligned with instances
                 new_.y_threshold = [self.y_threshold[e.index] for e in new_]
+            # Reset cached aggregates to avoid referencing stale state from the source
+            new_._feature_names_cache = None
+            new_._predictions_cache = None
+            new_._probabilities_cache = None
+            new_._lower_cache = None
+            new_._upper_cache = None
+            new_._class_labels_cache = None
             for i, e in enumerate(new_):
                 e.index = i
             return new_

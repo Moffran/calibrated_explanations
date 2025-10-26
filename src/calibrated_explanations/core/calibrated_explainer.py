@@ -1963,41 +1963,104 @@ class CalibratedExplainer:
             slice_instances = feature_instances
 
             if f in self.categorical_features:
-                grouped: Dict[int, Dict[Tuple[Any, Any], np.ndarray]] = {}
-                for rel_idx, row in enumerate(feature_slice):
-                    inst = int(row[1])
-                    key = (row[2], row[3])
-                    grouped.setdefault(inst, {}).setdefault(key, []).append(rel_idx)
-                for inst, mapping in grouped.items():
-                    for key, rel_list in mapping.items():
-                        grouped[inst][key] = np.asarray(rel_list, dtype=int)
-                feature_values = self.feature_values[f]
+                feature_values_list = self.feature_values[f]
+                feature_values = np.asarray(feature_values_list, dtype=object)
+                num_feature_values = int(feature_values.size)
                 value_counts_cache: Dict[Any, int] = categorical_value_counts.get(int(f), {})
+                counts_template = (
+                    np.array([value_counts_cache.get(val, 0) for val in feature_values_list], dtype=float)
+                    if num_feature_values
+                    else np.zeros((0,), dtype=float)
+                )
+
+                if num_feature_values == 0:
+                    for inst in unique_instances:
+                        i = int(inst)
+                        instance_binned[i]["predict"][f] = np.zeros((0,), dtype=float)
+                        instance_binned[i]["low"][f] = np.zeros((0,), dtype=float)
+                        instance_binned[i]["high"][f] = np.zeros((0,), dtype=float)
+                        instance_binned[i]["current_bin"][f] = -1
+                        instance_binned[i]["counts"][f] = counts_template.copy()
+                        instance_binned[i]["fractions"][f] = np.zeros((0,), dtype=float)
+                        rule_values[i][f] = (feature_values_list, x[i, f], x[i, f])
+                        weights_predict[i, f] = 0
+                        weights_low[i, f] = 0
+                        weights_high[i, f] = 0
+                    continue
+
+                value_to_index = {val: idx for idx, val in enumerate(feature_values_list)}
+                value_indices = np.array(
+                    [value_to_index.get(row[2], -1) for row in feature_slice], dtype=int
+                )
+                valid_mask = value_indices >= 0
+                feature_instances_local = feature_instances
+
+                sums_shape = (n_instances, num_feature_values)
+                predict_sums = np.zeros(sums_shape, dtype=float)
+                low_sums = np.zeros(sums_shape, dtype=float)
+                high_sums = np.zeros(sums_shape, dtype=float)
+                combo_counts = np.zeros(sums_shape, dtype=float)
+
+                if np.any(valid_mask):
+                    np.add.at(
+                        predict_sums,
+                        (feature_instances_local[valid_mask], value_indices[valid_mask]),
+                        np.asarray(feature_predict_local[valid_mask], dtype=float),
+                    )
+                    np.add.at(
+                        low_sums,
+                        (feature_instances_local[valid_mask], value_indices[valid_mask]),
+                        np.asarray(feature_low_local[valid_mask], dtype=float),
+                    )
+                    np.add.at(
+                        high_sums,
+                        (feature_instances_local[valid_mask], value_indices[valid_mask]),
+                        np.asarray(feature_high_local[valid_mask], dtype=float),
+                    )
+                    np.add.at(
+                        combo_counts,
+                        (feature_instances_local[valid_mask], value_indices[valid_mask]),
+                        1,
+                    )
+
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    average_matrix = np.divide(
+                        predict_sums,
+                        combo_counts,
+                        out=np.zeros_like(predict_sums),
+                        where=combo_counts > 0,
+                    )
+                    low_matrix_local = np.divide(
+                        low_sums,
+                        combo_counts,
+                        out=np.zeros_like(low_sums),
+                        where=combo_counts > 0,
+                    )
+                    high_matrix_local = np.divide(
+                        high_sums,
+                        combo_counts,
+                        out=np.zeros_like(high_sums),
+                        where=combo_counts > 0,
+                    )
+
+                current_bins = np.full(n_instances, -1, dtype=int)
+                if value_to_index:
+                    current_bins = np.array(
+                        [value_to_index.get(val, -1) for val in np.asarray(x[:, f])],
+                        dtype=int,
+                    )
+
                 for inst in unique_instances:
                     i = int(inst)
-                    current_bin = -1
-                    average_predict = np.zeros(len(feature_values))
-                    low_predict = np.zeros(len(feature_values))
-                    high_predict = np.zeros(len(feature_values))
-                    counts = np.zeros(len(feature_values))
-                    for bin_index, value in enumerate(feature_values):
-                        rel_indices = grouped.get(i, {}).get((value, None))
-                        rel_indices = rel_indices if rel_indices is not None else np.empty((0,), dtype=int)
-                        if x[i, f] == value:
-                            current_bin = bin_index
-                        counts[bin_index] = value_counts_cache.get(value, 0)
-                        if rel_indices.size:
-                            average_predict[bin_index] = safe_mean(feature_predict_local[rel_indices])
-                            low_predict[bin_index] = safe_mean(feature_low_local[rel_indices])
-                            high_predict[bin_index] = safe_mean(feature_high_local[rel_indices])
-                        else:
-                            average_predict[bin_index] = 0
-                            low_predict[bin_index] = 0
-                            high_predict[bin_index] = 0
-                    mask = np.ones_like(average_predict, dtype=bool)
-                    if 0 <= current_bin < mask.size:
+                    avg_row = np.array(average_matrix[i], copy=True)
+                    low_row = np.array(low_matrix_local[i], copy=True)
+                    high_row = np.array(high_matrix_local[i], copy=True)
+                    current_bin = current_bins[i]
+                    mask = np.ones(num_feature_values, dtype=bool)
+                    if 0 <= current_bin < num_feature_values:
                         mask[current_bin] = False
                     uncovered = np.nonzero(mask)[0]
+                    counts = counts_template.copy()
                     counts_uncovered = counts[mask]
                     total_counts = counts_uncovered.sum() if uncovered.size else 0
                     fractions = (
@@ -2005,13 +2068,15 @@ class CalibratedExplainer:
                         if uncovered.size and total_counts
                         else np.zeros(uncovered.size, dtype=float)
                     )
-                    instance_binned[i]["predict"][f] = average_predict
-                    instance_binned[i]["low"][f] = low_predict
-                    instance_binned[i]["high"][f] = high_predict
+
+                    instance_binned[i]["predict"][f] = avg_row
+                    instance_binned[i]["low"][f] = low_row
+                    instance_binned[i]["high"][f] = high_row
                     instance_binned[i]["current_bin"][f] = current_bin
                     instance_binned[i]["counts"][f] = counts
                     instance_binned[i]["fractions"][f] = fractions
-                    rule_values[i][f] = (feature_values, x[i, f], x[i, f])
+                    rule_values[i][f] = (feature_values_list, x[i, f], x[i, f])
+
                     if uncovered.size == 0:
                         predict_matrix[i, f] = 0
                         low_matrix[i, f] = 0
@@ -2020,9 +2085,9 @@ class CalibratedExplainer:
                         weights_low[i, f] = 0
                         weights_high[i, f] = 0
                     else:
-                        predict_matrix[i, f] = safe_mean(average_predict[mask])
-                        low_matrix[i, f] = safe_mean(low_predict[mask])
-                        high_matrix[i, f] = safe_mean(high_predict[mask])
+                        predict_matrix[i, f] = safe_mean(avg_row[mask])
+                        low_matrix[i, f] = safe_mean(low_row[mask])
+                        high_matrix[i, f] = safe_mean(high_row[mask])
                         weights_predict[i, f] = self._assign_weight(
                             predict_matrix[i, f], prediction["predict"][i]
                         )
