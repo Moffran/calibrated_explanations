@@ -267,6 +267,9 @@ class CalibratedExplainer:
         # crepes broadcasting/shape errors (useful for synthetic tiny datasets).
         self.suppress_crepes_errors = bool(kwargs.get("suppress_crepes_errors", False))
         self.oob = kwargs.get("oob", False)
+        self._categorical_value_counts_cache: Dict[int, Dict[Any, int]] | None = None
+        self._numeric_sorted_cache: Dict[int, np.ndarray] | None = None
+        self._calibration_summary_shape: Tuple[int, int] | None = None
         if self.oob:
             try:
                 if mode == "classification":
@@ -311,6 +314,7 @@ class CalibratedExplainer:
             else:
                 categorical_features = []
         self.categorical_features = list(categorical_features)
+        self._invalidate_calibration_summaries()
         self.features_to_ignore = kwargs.get("features_to_ignore", [])
         self._preprocess()
 
@@ -1255,6 +1259,7 @@ class CalibratedExplainer:
 
         if isinstance(self._X_cal[0], dict):
             self.__X_cal = np.array([[x[f] for f in x] for x in self._X_cal])
+        self._invalidate_calibration_summaries()
 
     @property
     def y_cal(self):
@@ -1297,6 +1302,54 @@ class CalibratedExplainer:
             raise DataShapeError("Number of features must match existing calibration data")
         self.x_cal = np.vstack((self.x_cal, x))
         self.y_cal = np.concatenate((self.y_cal, y))
+
+    def _invalidate_calibration_summaries(self) -> None:
+        """Drop cached calibration summaries used during explanation."""
+
+        self._categorical_value_counts_cache = None
+        self._numeric_sorted_cache = None
+        self._calibration_summary_shape = None
+
+    def _get_calibration_summaries(
+        self, x_cal_np: Optional[np.ndarray] = None
+    ) -> Tuple[Dict[int, Dict[Any, int]], Dict[int, np.ndarray]]:
+        """Return cached categorical counts and sorted numeric calibration values."""
+
+        if x_cal_np is None:
+            x_cal_np = np.asarray(self.x_cal)
+        shape = getattr(x_cal_np, "shape", None)
+        if (
+            self._categorical_value_counts_cache is None
+            or self._numeric_sorted_cache is None
+            or self._calibration_summary_shape != shape
+        ):
+            categorical_value_counts: Dict[int, Dict[Any, int]] = {}
+            numeric_sorted_cache: Dict[int, np.ndarray] = {}
+            if x_cal_np.size:
+                categorical_features = tuple(int(f) for f in self.categorical_features)
+                for f_cat in categorical_features:
+                    unique_vals, unique_counts = np.unique(
+                        x_cal_np[:, f_cat], return_counts=True
+                    )
+                    categorical_value_counts[int(f_cat)] = {
+                        val: int(cnt)
+                        for val, cnt in zip(
+                            unique_vals.tolist(), unique_counts.tolist()
+                        )
+                    }
+                numeric_features = [
+                    f for f in range(self.num_features) if f not in categorical_features
+                ]
+                for f_num in numeric_features:
+                    numeric_sorted_cache[f_num] = np.sort(
+                        np.asarray(x_cal_np[:, f_num])
+                    )
+            self._categorical_value_counts_cache = categorical_value_counts
+            self._numeric_sorted_cache = numeric_sorted_cache
+            self._calibration_summary_shape = shape
+        assert self._categorical_value_counts_cache is not None
+        assert self._numeric_sorted_cache is not None
+        return self._categorical_value_counts_cache, self._numeric_sorted_cache
 
     @property
     def num_features(self):
@@ -1872,19 +1925,9 @@ class CalibratedExplainer:
         else:
             feature_index_map = {}
 
-        categorical_value_counts: Dict[int, Dict[Any, int]] = {}
-        if x_cal_np.size:
-            for f_cat in self.categorical_features:
-                unique_vals, unique_counts = np.unique(x_cal_np[:, f_cat], return_counts=True)
-                categorical_value_counts[int(f_cat)] = {
-                    val: int(cnt)
-                    for val, cnt in zip(unique_vals.tolist(), unique_counts.tolist())
-                }
-        numeric_sorted_cache: Dict[int, np.ndarray] = {}
-        if x_cal_np.size:
-            numeric_features = [f for f in range(num_features) if f not in self.categorical_features]
-            for f_num in numeric_features:
-                numeric_sorted_cache[f_num] = np.sort(np.asarray(x_cal_np[:, f_num]))
+        categorical_value_counts, numeric_sorted_cache = self._get_calibration_summaries(
+            x_cal_np
+        )
 
         for f in range(self.num_features):
             if f in features_to_ignore_set:
@@ -1929,13 +1972,7 @@ class CalibratedExplainer:
                     for key, rel_list in mapping.items():
                         grouped[inst][key] = np.asarray(rel_list, dtype=int)
                 feature_values = self.feature_values[f]
-                value_counts_cache: Dict[Any, int] = {}
-                if x_cal_np.size:
-                    unique_vals, unique_counts = np.unique(x_cal_np[:, f], return_counts=True)
-                    value_counts_cache = {
-                        val: int(cnt)
-                        for val, cnt in zip(unique_vals.tolist(), unique_counts.tolist())
-                    }
+                value_counts_cache: Dict[Any, int] = categorical_value_counts.get(int(f), {})
                 for inst in unique_instances:
                     i = int(inst)
                     current_bin = -1
