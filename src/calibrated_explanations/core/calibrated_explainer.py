@@ -3269,13 +3269,13 @@ class CalibratedExplainer:
         array-like
             The discretized data sample.
         """
-        x = np.array(x)  # Ensure x is a numpy array
+        x = np.array(x, copy=True)  # Ensure x is a numpy array
         for f in self.discretizer.to_discretize:
             bins = np.concatenate(([-np.inf], self.discretizer.mins[f][1:], [np.inf]))
-            x[:, f] = [
-                self.discretizer.means[f][np.digitize(x[i, f], bins, right=True) - 1]
-                for i in range(len(x))
-            ]
+            bin_indices = np.digitize(x[:, f], bins, right=True) - 1
+            means = np.asarray(self.discretizer.means[f])
+            bin_indices = np.clip(bin_indices, 0, len(means) - 1)
+            x[:, f] = means[bin_indices]
         return x
 
     # pylint: disable=too-many-branches
