@@ -37,7 +37,7 @@ from ..utils.discretizers import (
     EntropyDiscretizer,
     RegressorDiscretizer,
 )
-from ..utils.helper import calculate_metrics, prepare_for_saving, safe_mean
+from ..utils.helper import calculate_metrics, prepare_for_saving, safe_first_element, safe_mean
 
 # @dataclass
 # class PredictionInterval:
@@ -769,59 +769,76 @@ class CalibratedExplanation(ABC):
         tuple
             The predicted value, lower bound, upper bound, and count.
         """
-        if not (len(original_features) >= 2):
+        if len(original_features) < 2:
             raise ValueError("Conjunctive rules require at least two features")
-        rule_predict, rule_low, rule_high, rule_count = 0, 0, 0, 0
-        of1, of2, of3 = 0, 0, 0
-        rule_value1, rule_value2, rule_value3 = 0, 0, 0
-        if len(original_features) == 2:
-            of1, of2 = original_features[0], original_features[1]
-            rule_value1, rule_value2 = rule_value_set[0], rule_value_set[1]
-        elif len(original_features) >= 3:
-            of1, of2, of3 = original_features[0], original_features[1], original_features[2]
-            rule_value1, rule_value2, rule_value3 = (
-                rule_value_set[0],
-                rule_value_set[1],
-                rule_value_set[2],
-            )
-        for value_1 in rule_value1:
-            perturbed[of1] = value_1
-            for value_2 in rule_value2:
-                perturbed[of2] = value_2
-                if len(original_features) >= 3:
-                    for value_3 in rule_value3:
-                        perturbed[of3] = value_3
-                        # pylint: disable=protected-access
-                        p_value, low, high, _ = self._get_explainer()._predict(
-                            perturbed.reshape(1, -1),
+
+        predict_fn = self._get_explainer()._predict  # pylint: disable=protected-access
+        perturbed_row = perturbed.reshape(1, -1)
+
+        base_values = np.array([perturbed[idx] for idx in original_features], copy=True)
+
+        rule_predict = 0.0
+        rule_low = 0.0
+        rule_high = 0.0
+        rule_count = 0
+
+        value_iterables = [np.asarray(values) for values in rule_value_set[: len(original_features)]]
+
+        def _restore() -> None:
+            for pos, feat_idx in enumerate(original_features):
+                perturbed[feat_idx] = base_values[pos]
+
+        try:
+            if len(original_features) == 2:
+                of1, of2 = original_features[:2]
+                values1, values2 = value_iterables[:2]
+                for value_1 in values1:
+                    perturbed[of1] = value_1
+                    perturbed_row[0, of1] = value_1
+                    for value_2 in values2:
+                        perturbed[of2] = value_2
+                        perturbed_row[0, of2] = value_2
+                        p_value, low, high, _ = predict_fn(
+                            perturbed_row,
                             threshold=threshold,
                             low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
                             classes=predicted_class,
                             bins=bins,
                         )
-                        from ..utils.helper import safe_first_element
-
-                        rule_predict += safe_first_element(p_value)
-                        rule_low += safe_first_element(low)
-                        rule_high += safe_first_element(high)
+                        rule_predict += float(safe_first_element(p_value))
+                        rule_low += float(safe_first_element(low))
+                        rule_high += float(safe_first_element(high))
                         rule_count += 1
-                else:
-                    p_value, low, high, _ = self._get_explainer()._predict(  # pylint: disable=protected-access
-                        perturbed.reshape(1, -1),
-                        threshold=threshold,
-                        low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
-                        classes=predicted_class,
-                        bins=bins,
-                    )
-                    from ..utils.helper import safe_first_element
+            else:
+                of1, of2, of3 = original_features[:3]
+                values1, values2, values3 = value_iterables[:3]
+                for value_1 in values1:
+                    perturbed[of1] = value_1
+                    perturbed_row[0, of1] = value_1
+                    for value_2 in values2:
+                        perturbed[of2] = value_2
+                        perturbed_row[0, of2] = value_2
+                        for value_3 in values3:
+                            perturbed[of3] = value_3
+                            perturbed_row[0, of3] = value_3
+                            p_value, low, high, _ = predict_fn(
+                                perturbed_row,
+                                threshold=threshold,
+                                low_high_percentiles=self.calibrated_explanations.low_high_percentiles,
+                                classes=predicted_class,
+                                bins=bins,
+                            )
+                            rule_predict += float(safe_first_element(p_value))
+                            rule_low += float(safe_first_element(low))
+                            rule_high += float(safe_first_element(high))
+                            rule_count += 1
+        finally:
+            _restore()
 
-                    rule_predict += safe_first_element(p_value)
-                    rule_low += safe_first_element(low)
-                    rule_high += safe_first_element(high)
-                    rule_count += 1
-        rule_predict /= rule_count
-        rule_low /= rule_count
-        rule_high /= rule_count
+        if rule_count:
+            rule_predict /= rule_count
+            rule_low /= rule_count
+            rule_high /= rule_count
         return rule_predict, rule_low, rule_high
 
     @abstractmethod
@@ -1206,114 +1223,137 @@ class FactualExplanation(CalibratedExplanation):
 
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
-        """
-        Add conjunctive factual rules.
+        """Add conjunctive factual rules."""
 
-        Parameters
-        ----------
-        n_top_features : int, optional
-            Number of top features to combine.
-        max_rule_size : int, optional
-            Maximum size of the conjunctions.
-
-        Returns
-        -------
-        self : :class:`.FactualExplanation`
-            Returns a self reference, to allow for method chaining
-        """
         if max_rule_size >= 4:
             raise ValueError("max_rule_size must be 2 or 3")
         if max_rule_size < 2:
             return self
-        factual = deepcopy(self._get_rules()) if not self._has_rules else deepcopy(self.rules)
-        conjunctive = self.conjunctive_rules if self._has_conjunctive_rules else deepcopy(factual)
-        self._has_conjunctive_rules = False
-        self.conjunctive_rules = []
-        # pylint: disable=unsubscriptable-object, invalid-name
-        threshold = None if self.y_threshold is None else self.y_threshold
-        x_original = deepcopy(self.x_test)
 
-        num_rules = len(factual["rule"])
-        predicted_class = factual["classes"]
-        conjunctive["classes"] = predicted_class
-        if n_top_features is None:
-            n_top_features = num_rules
-        top_conjunctives = self._rank_features(
-            np.reshape(conjunctive["weight"], (len(conjunctive["weight"]))),
-            width=np.reshape(
-                np.array(conjunctive["weight_high"]) - np.array(conjunctive["weight_low"]),
-                (len(conjunctive["weight"])),
-            ),
-            num_to_show=np.min([num_rules, n_top_features]),
+        factual = self._get_rules() if not self._has_rules else self.rules
+
+        def _clone_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
+            cloned: Dict[str, Any] = {}
+            for key, value in payload.items():
+                if isinstance(value, list):
+                    cloned[key] = list(value)
+                else:
+                    cloned[key] = value
+            return cloned
+
+        conjunctive_state = (
+            _clone_payload(self.conjunctive_rules)
+            if self._has_conjunctive_rules and self.conjunctive_rules is not None
+            else _clone_payload(factual)
         )
 
-        covered_features = []
-        covered_combinations = [conjunctive["feature"][i] for i in range(len(conjunctive["rule"]))]
-        for f1, cf1 in enumerate(factual["feature"]):  # cf = factual feature
-            covered_features.append(cf1)
-            of1 = factual["feature"][f1]  # of = original feature
-            rule_value1 = (
-                factual["feature_value"][f1]
-                if isinstance(factual["feature_value"][f1], np.ndarray)
-                else [factual["feature_value"][f1]]
+        self._has_conjunctive_rules = False
+        self.conjunctive_rules = []
+
+        threshold = None if self.y_threshold is None else self.y_threshold
+        scratch = np.array(self.x_test, copy=True)
+        predicted_class = factual["classes"]
+        conjunctive_state["classes"] = predicted_class
+
+        if n_top_features is None:
+            n_top_features = len(factual["rule"])
+
+        def _normalise_features(values: Any) -> Tuple[int, ...]:
+            if isinstance(values, (list, tuple, np.ndarray)):
+                return tuple(sorted(int(v) for v in np.asarray(values).ravel()))
+            return (int(values),)
+
+        for current_size in range(max_rule_size, 1, -1):
+            num_rules = len(factual["rule"])
+            if num_rules == 0:
+                break
+
+            weights_array = np.asarray(conjunctive_state["weight"], dtype=float)
+            width_array = np.asarray(conjunctive_state["weight_high"], dtype=float) - np.asarray(
+                conjunctive_state["weight_low"], dtype=float
             )
-            for _, cf2 in enumerate(top_conjunctives):  # cf = conjunctive feature
-                if cf2 in covered_features:
-                    continue
-                rule_values = [rule_value1]
-                original_features = [of1]
-                of2 = conjunctive["feature"][cf2]
-                if conjunctive["is_conjunctive"][cf2]:
-                    if of1 in of2:
+            top_conjunctives = list(
+                self._rank_features(
+                    weights_array,
+                    width=width_array,
+                    num_to_show=min(num_rules, n_top_features),
+                )
+            )
+
+            covered_combinations = {
+                _normalise_features(conjunctive_state["feature"][i])
+                for i in range(len(conjunctive_state["feature"]))
+            }
+
+            covered_features = set()
+
+            for f1, cf1 in enumerate(factual["feature"]):
+                covered_features.add(cf1)
+                of1 = factual["feature"][f1]
+                feature_value1 = factual["feature_value"][f1]
+                rule_value1 = (
+                    feature_value1 if isinstance(feature_value1, np.ndarray) else [feature_value1]
+                )
+
+                for cf2 in top_conjunctives:
+                    if cf2 in covered_features:
                         continue
-                    original_features.extend(iter(of2))
-                    rule_values.extend(iter(conjunctive["feature_value"][cf2]))
-                else:
-                    if of1 == of2:
+                    rule_values = [rule_value1]
+                    original_features = [of1]
+                    of2 = conjunctive_state["feature"][cf2]
+                    if conjunctive_state["is_conjunctive"][cf2]:
+                        if of1 in of2:
+                            continue
+                        original_features.extend(int(v) for v in of2)
+                        rule_values.extend(conjunctive_state["feature_value"][cf2])
+                    else:
+                        if of1 == of2:
+                            continue
+                        original_features.append(of2)
+                        feature_value2 = conjunctive_state["feature_value"][cf2]
+                        rule_values.append(
+                            feature_value2
+                            if isinstance(feature_value2, np.ndarray)
+                            else [feature_value2]
+                        )
+
+                    combo_key = _normalise_features(original_features)
+                    if combo_key in covered_combinations:
                         continue
-                    original_features.append(of2)
-                    rule_values.append(
-                        conjunctive["feature_value"][cf2]
-                        if isinstance(conjunctive["feature_value"][cf2], np.ndarray)
-                        else [conjunctive["feature_value"][cf2]]
+                    covered_combinations.add(combo_key)
+
+                    rule_predict, rule_low, rule_high = self._predict_conjunctive(
+                        rule_values,
+                        original_features,
+                        scratch,
+                        threshold,
+                        predicted_class,
+                        bins=self.bin,
                     )
-                skip = False
-                for ofs in covered_combinations:
-                    with contextlib.suppress(ValueError):
-                        if np.all(np.sort(original_features) == ofs):
-                            skip = True
-                            break
-                if skip:
-                    continue
-                covered_combinations.append(np.sort(original_features))
 
-                rule_predict, rule_low, rule_high = self._predict_conjunctive(
-                    rule_values,
-                    original_features,
-                    deepcopy(x_original),
-                    threshold,
-                    predicted_class,
-                    bins=self.bin,
-                )
+                    conjunctive_state["predict"].append(rule_predict)
+                    conjunctive_state["predict_low"].append(rule_low)
+                    conjunctive_state["predict_high"].append(rule_high)
+                    conjunctive_state["weight"].append(rule_predict - self.prediction["predict"])
+                    conjunctive_state["weight_low"].append(
+                        rule_low - self.prediction["predict"] if rule_low != -np.inf else -np.inf
+                    )
+                    conjunctive_state["weight_high"].append(
+                        rule_high - self.prediction["predict"] if rule_high != np.inf else np.inf
+                    )
+                    conjunctive_state["value"].append(
+                        factual["value"][f1] + "\n" + conjunctive_state["value"][cf2]
+                    )
+                    conjunctive_state["feature"].append(list(original_features))
+                    conjunctive_state["feature_value"].append(rule_values)
+                    conjunctive_state["rule"].append(
+                        factual["rule"][f1] + " & \n" + conjunctive_state["rule"][cf2]
+                    )
+                    conjunctive_state["is_conjunctive"].append(True)
 
-                conjunctive["predict"].append(rule_predict)
-                conjunctive["predict_low"].append(rule_low)
-                conjunctive["predict_high"].append(rule_high)
-                conjunctive["weight"].append(rule_predict - self.prediction["predict"])
-                conjunctive["weight_low"].append(
-                    rule_low - self.prediction["predict"] if rule_low != -np.inf else -np.inf
-                )
-                conjunctive["weight_high"].append(
-                    rule_high - self.prediction["predict"] if rule_high != np.inf else np.inf
-                )
-                conjunctive["value"].append(factual["value"][f1] + "\n" + conjunctive["value"][cf2])
-                conjunctive["feature"].append(original_features)
-                conjunctive["feature_value"].append(rule_values)
-                conjunctive["rule"].append(factual["rule"][f1] + " & \n" + conjunctive["rule"][cf2])
-                conjunctive["is_conjunctive"].append(True)
-        self.conjunctive_rules = conjunctive
+        self.conjunctive_rules = conjunctive_state
         self._has_conjunctive_rules = True
-        return self.add_conjunctions(n_top_features=n_top_features, max_rule_size=max_rule_size - 1)
+        return self
 
     def _is_lesser(self, rule_boundary, instance_value):
         """Return whether `instance_value` falls below the provided rule boundary."""

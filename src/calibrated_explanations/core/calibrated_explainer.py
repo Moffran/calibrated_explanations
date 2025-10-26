@@ -14,9 +14,10 @@ conformal predictive systems (regression).
 from __future__ import annotations
 
 import warnings as _warnings
-from time import time
 import os
 from pathlib import Path
+from collections import defaultdict
+from time import time
 
 import numpy as np
 import contextlib
@@ -1800,18 +1801,18 @@ class CalibratedExplainer:
         # Track total explanation time
         total_time = time()
 
-        features_to_ignore = (
-            self.features_to_ignore
-            if features_to_ignore is None
-            else np.union1d(self.features_to_ignore, features_to_ignore)
-        )
-        features_to_ignore = np.asarray(features_to_ignore, dtype=int)
-        features_to_ignore_set = set(features_to_ignore.tolist())
+        if features_to_ignore is None:
+            features_to_ignore_array = np.asarray(self.features_to_ignore, dtype=int)
+        else:
+            features_to_ignore_array = np.asarray(
+                np.union1d(self.features_to_ignore, features_to_ignore), dtype=int
+            )
+        features_to_ignore_set = set(features_to_ignore_array.tolist())
 
         # Validate inputs and initialize explanation object
         x = self._validate_and_prepare_input(x)
         explanation = self._initialize_explanation(
-            x, low_high_percentiles, threshold, bins, features_to_ignore
+            x, low_high_percentiles, threshold, bins, features_to_ignore_array
         )
 
         instance_time = time()
@@ -1828,42 +1829,24 @@ class CalibratedExplainer:
             greater_values,
             covered_values,
             x_cal,
-        ) = self._explain_predict_step(x, threshold, low_high_percentiles, bins, features_to_ignore)
+        ) = self._explain_predict_step(
+            x, threshold, low_high_percentiles, bins, features_to_ignore_array
+        )
 
         # Step 2: Initialize data structures to store feature-level results
-        # Dictionaries to store aggregated results across all instances
-        feature_weights: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
-        feature_predict: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
-        binned_predict: Dict[str, List[Any]] = {  # Results for discretized feature values
-            "predict": [],
-            "low": [],
-            "high": [],
-            "current_bin": [],
-            "rule_values": [],
-            "counts": [],
-            "fractions": [],
-        }
+        n_instances = x.shape[0]
+        num_features = self.num_features
 
-        # Initialize per-instance storage
-        rule_values: Dict[int, Dict[int, Any]] = {}
-        instance_weights: Dict[int, Dict[str, np.ndarray]] = {}
-        instance_predict: Dict[int, Dict[str, np.ndarray]] = {}
-        instance_binned: Dict[int, Dict[str, Dict[int, Any]]] = {}
+        weights_predict = np.zeros((n_instances, num_features))
+        weights_low = np.zeros((n_instances, num_features))
+        weights_high = np.zeros((n_instances, num_features))
+        predict_matrix = np.zeros((n_instances, num_features))
+        low_matrix = np.zeros((n_instances, num_features))
+        high_matrix = np.zeros((n_instances, num_features))
 
-        # Initialize data structures for each test instance
-        for i, instance in enumerate(x):
-            rule_values[i] = {}
-            instance_weights[i] = {
-                "predict": np.zeros(instance.shape[0]),
-                "low": np.zeros(instance.shape[0]),
-                "high": np.zeros(instance.shape[0]),
-            }
-            instance_predict[i] = {
-                "predict": np.zeros(instance.shape[0]),
-                "low": np.zeros(instance.shape[0]),
-                "high": np.zeros(instance.shape[0]),
-            }
-            instance_binned[i] = {
+        rule_values: List[Dict[int, Any]] = [dict() for _ in range(n_instances)]
+        instance_binned: List[Dict[str, Dict[int, Any]]] = [
+            {
                 "predict": {},
                 "low": {},
                 "high": {},
@@ -1872,35 +1855,59 @@ class CalibratedExplainer:
                 "counts": {},
                 "fractions": {},
             }
-
+            for _ in range(n_instances)
+        ]
 
         # Step 3: Process each feature to analyze its effects
         perturbed_feature = np.asarray(perturbed_feature, dtype=object)
         x_cal_np = np.asarray(x_cal)
         if perturbed_feature.size:
             feature_ids = perturbed_feature[:, 0].astype(int)
+            feature_index_lists: Dict[int, List[int]] = defaultdict(list)
+            for idx, fid in enumerate(feature_ids):
+                feature_index_lists[int(fid)].append(idx)
             feature_index_map = {
-                int(fid): np.where(feature_ids == fid)[0] for fid in np.unique(feature_ids)
+                fid: np.asarray(indices, dtype=int) for fid, indices in feature_index_lists.items()
             }
         else:
             feature_index_map = {}
 
+        categorical_value_counts: Dict[int, Dict[Any, int]] = {}
+        if x_cal_np.size:
+            for f_cat in self.categorical_features:
+                unique_vals, unique_counts = np.unique(x_cal_np[:, f_cat], return_counts=True)
+                categorical_value_counts[int(f_cat)] = {
+                    val: int(cnt)
+                    for val, cnt in zip(unique_vals.tolist(), unique_counts.tolist())
+                }
+        numeric_sorted_cache: Dict[int, np.ndarray] = {}
+        if x_cal_np.size:
+            numeric_features = [f for f in range(num_features) if f not in self.categorical_features]
+            for f_num in numeric_features:
+                numeric_sorted_cache[f_num] = np.sort(np.asarray(x_cal_np[:, f_num]))
+
         for f in range(self.num_features):
             if f in features_to_ignore_set:
-                for i in range(len(x)):
+                for i in range(n_instances):
                     rule_values[i][f] = (self.feature_values[f], x[i, f], x[i, f])
                     instance_binned[i]["predict"][f] = predict[i]
                     instance_binned[i]["low"][f] = low[i]
                     instance_binned[i]["high"][f] = high[i]
+                    instance_binned[i]["current_bin"][f] = -1
+                    instance_binned[i]["counts"][f] = np.array([], dtype=float)
+                    instance_binned[i]["fractions"][f] = np.array([], dtype=float)
                 continue
 
             feature_indices = feature_index_map.get(f)
             if feature_indices is None or feature_indices.size == 0:
-                for i in range(len(x)):
+                for i in range(n_instances):
                     rule_values[i][f] = (self.feature_values[f], x[i, f], x[i, f])
                     instance_binned[i]["predict"][f] = predict[i]
                     instance_binned[i]["low"][f] = low[i]
                     instance_binned[i]["high"][f] = high[i]
+                    instance_binned[i]["current_bin"][f] = -1
+                    instance_binned[i]["counts"][f] = np.array([], dtype=float)
+                    instance_binned[i]["fractions"][f] = np.array([], dtype=float)
                 continue
 
             feature_slice = perturbed_feature[feature_indices]
@@ -1950,12 +1957,17 @@ class CalibratedExplainer:
                             average_predict[bin_index] = 0
                             low_predict[bin_index] = 0
                             high_predict[bin_index] = 0
-                    uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
-                    total_counts = np.sum(counts[uncovered]) if uncovered.size else 0
-                    if uncovered.size == 0 or total_counts == 0:
-                        fractions = np.zeros_like(counts[uncovered])
-                    else:
-                        fractions = counts[uncovered] / total_counts
+                    mask = np.ones_like(average_predict, dtype=bool)
+                    if 0 <= current_bin < mask.size:
+                        mask[current_bin] = False
+                    uncovered = np.nonzero(mask)[0]
+                    counts_uncovered = counts[mask]
+                    total_counts = counts_uncovered.sum() if uncovered.size else 0
+                    fractions = (
+                        counts_uncovered / total_counts
+                        if uncovered.size and total_counts
+                        else np.zeros(uncovered.size, dtype=float)
+                    )
                     instance_binned[i]["predict"][f] = average_predict
                     instance_binned[i]["low"][f] = low_predict
                     instance_binned[i]["high"][f] = high_predict
@@ -1964,27 +1976,23 @@ class CalibratedExplainer:
                     instance_binned[i]["fractions"][f] = fractions
                     rule_values[i][f] = (feature_values, x[i, f], x[i, f])
                     if uncovered.size == 0:
-                        instance_predict[i]["predict"][f] = 0
-                        instance_predict[i]["low"][f] = 0
-                        instance_predict[i]["high"][f] = 0
-                        instance_weights[i]["predict"][f] = 0
-                        instance_weights[i]["low"][f] = 0
-                        instance_weights[i]["high"][f] = 0
+                        predict_matrix[i, f] = 0
+                        low_matrix[i, f] = 0
+                        high_matrix[i, f] = 0
+                        weights_predict[i, f] = 0
+                        weights_low[i, f] = 0
+                        weights_high[i, f] = 0
                     else:
-                        instance_predict[i]["predict"][f] = safe_mean(average_predict[uncovered])
-                        instance_predict[i]["low"][f] = safe_mean(low_predict[uncovered])
-                        instance_predict[i]["high"][f] = safe_mean(high_predict[uncovered])
-                        instance_weights[i]["predict"][f] = self._assign_weight(
-                            instance_predict[i]["predict"][f], prediction["predict"][i]
+                        predict_matrix[i, f] = safe_mean(average_predict[mask])
+                        low_matrix[i, f] = safe_mean(low_predict[mask])
+                        high_matrix[i, f] = safe_mean(high_predict[mask])
+                        weights_predict[i, f] = self._assign_weight(
+                            predict_matrix[i, f], prediction["predict"][i]
                         )
-                        tmp_low = self._assign_weight(
-                            instance_predict[i]["low"][f], prediction["predict"][i]
-                        )
-                        tmp_high = self._assign_weight(
-                            instance_predict[i]["high"][f], prediction["predict"][i]
-                        )
-                        instance_weights[i]["low"][f] = np.min([tmp_low, tmp_high])
-                        instance_weights[i]["high"][f] = np.max([tmp_low, tmp_high])
+                        tmp_low = self._assign_weight(low_matrix[i, f], prediction["predict"][i])
+                        tmp_high = self._assign_weight(high_matrix[i, f], prediction["predict"][i])
+                        weights_low[i, f] = np.min([tmp_low, tmp_high])
+                        weights_high[i, f] = np.max([tmp_low, tmp_high])
             else:
                 slice_bins = np.array(feature_slice[:, 2], dtype=int)
                 slice_flags = np.asarray(feature_slice[:, 3], dtype=object)
@@ -1995,7 +2003,12 @@ class CalibratedExplainer:
                 for key, rel_list in numeric_grouped.items():
                     numeric_grouped[key] = np.asarray(rel_list, dtype=int)
 
-                feature_values = np.unique(np.asarray(x_cal_np[:, f]))
+                sorted_cal = numeric_sorted_cache.get(f)
+                if sorted_cal is None:
+                    feature_values = np.unique(np.asarray(x_cal_np[:, f]))
+                    sorted_cal = np.sort(feature_values)
+                else:
+                    feature_values = np.unique(sorted_cal)
                 lower_boundary = np.array(rule_boundaries[:, f, 0], copy=True)
                 upper_boundary = np.array(rule_boundaries[:, f, 1], copy=True)
                 if feature_values.size:
@@ -2023,16 +2036,23 @@ class CalibratedExplainer:
                 bin_value = np.zeros(len(x), dtype=int)
                 current_bin = -np.ones(len(x), dtype=int)
 
-                sorted_cal = np.sort(np.asarray(x_cal_np[:, f]))
+                unique_lower, lower_inverse = np.unique(lower_boundary, return_inverse=True)
+                unique_upper, upper_inverse = np.unique(upper_boundary, return_inverse=True)
+                lower_groups = {
+                    idx: np.flatnonzero(lower_inverse == idx) for idx in range(unique_lower.size)
+                }
+                upper_groups = {
+                    idx: np.flatnonzero(upper_inverse == idx) for idx in range(unique_upper.size)
+                }
                 lower_cache = {
                     val: 0 if val == -np.inf else int(np.searchsorted(sorted_cal, val, side="left"))
-                    for val in np.unique(lower_boundary)
+                    for val in unique_lower
                 }
                 upper_cache = {
                     val: 0 if val == np.inf else int(
                         sorted_cal.size - np.searchsorted(sorted_cal, val, side="right")
                     )
-                    for val in np.unique(upper_boundary)
+                    for val in unique_upper
                 }
                 bounds_matrix = np.column_stack((lower_boundary, upper_boundary))
                 unique_bounds, bound_inverse = np.unique(bounds_matrix, axis=0, return_inverse=True)
@@ -2046,11 +2066,11 @@ class CalibratedExplainer:
                     )
                     between_cache[idx_bound] = right - left
 
-                for j, val in enumerate(np.unique(lower_boundary)):
+                for j, val in enumerate(unique_lower):
                     values_tuple = lesser_values[f].get(j)
                     if not values_tuple or values_tuple[0].size == 0:
                         continue
-                    for idx in np.where(lower_boundary == val)[0]:
+                    for idx in lower_groups.get(j, []):
                         inst = int(idx)
                         rel_indices = numeric_grouped.get((inst, j, True), np.empty((0,), dtype=int))
                         avg_predict_map[inst][bin_value[inst]] = (
@@ -2066,11 +2086,11 @@ class CalibratedExplainer:
                         rule_value_map[inst].append(values_tuple[0])
                         bin_value[inst] += 1
 
-                for j, val in enumerate(np.unique(upper_boundary)):
+                for j, val in enumerate(unique_upper):
                     values_tuple = greater_values[f].get(j)
                     if not values_tuple or values_tuple[0].size == 0:
                         continue
-                    for idx in np.where(upper_boundary == val)[0]:
+                    for idx in upper_groups.get(j, []):
                         inst = int(idx)
                         rel_indices = numeric_grouped.get((inst, j, False), np.empty((0,), dtype=int))
                         avg_predict_map[inst][bin_value[inst]] = (
@@ -2113,44 +2133,54 @@ class CalibratedExplainer:
                 for idx in range(len(x)):
                     inst = int(idx)
                     rule_values[inst][f] = (rule_value_map[inst], x[inst, f], x[inst, f])
-                    uncovered = np.setdiff1d(np.arange(len(avg_predict_map[inst])), current_bin[inst])
-                    total_counts = np.sum(counts_map[inst][uncovered]) if uncovered.size else 0
-                    if uncovered.size == 0 or total_counts == 0:
-                        fractions = np.zeros_like(counts_map[inst][uncovered])
-                    else:
-                        fractions = counts_map[inst][uncovered] / total_counts
+                    mask = np.ones_like(avg_predict_map[inst], dtype=bool)
+                    if 0 <= current_bin[inst] < mask.size:
+                        mask[current_bin[inst]] = False
+                    uncovered = np.nonzero(mask)[0]
+                    counts_uncovered = counts_map[inst][mask]
+                    total_counts = counts_uncovered.sum() if uncovered.size else 0
+                    fractions = (
+                        counts_uncovered / total_counts
+                        if uncovered.size and total_counts
+                        else np.zeros(uncovered.size, dtype=float)
+                    )
                     instance_binned[inst]["predict"][f] = avg_predict_map[inst]
                     instance_binned[inst]["low"][f] = low_predict_map[inst]
                     instance_binned[inst]["high"][f] = high_predict_map[inst]
                     instance_binned[inst]["current_bin"][f] = current_bin[inst]
                     instance_binned[inst]["counts"][f] = counts_map[inst]
                     instance_binned[inst]["fractions"][f] = fractions
-                    instance_predict[inst]["predict"][f] = (
-                        safe_mean(avg_predict_map[inst][uncovered]) if uncovered.size else 0
-                    )
-                    instance_predict[inst]["low"][f] = (
-                        safe_mean(low_predict_map[inst][uncovered]) if uncovered.size else 0
-                    )
-                    instance_predict[inst]["high"][f] = (
-                        safe_mean(high_predict_map[inst][uncovered]) if uncovered.size else 0
-                    )
                     if uncovered.size == 0:
-                        instance_weights[inst]["predict"][f] = 0
-                        instance_weights[inst]["low"][f] = 0
-                        instance_weights[inst]["high"][f] = 0
+                        predict_matrix[inst, f] = 0
+                        low_matrix[inst, f] = 0
+                        high_matrix[inst, f] = 0
+                        weights_predict[inst, f] = 0
+                        weights_low[inst, f] = 0
+                        weights_high[inst, f] = 0
                     else:
-                        instance_weights[inst]["predict"][f] = self._assign_weight(
-                            instance_predict[inst]["predict"][f], prediction["predict"][inst]
+                        predict_matrix[inst, f] = safe_mean(avg_predict_map[inst][mask])
+                        low_matrix[inst, f] = safe_mean(low_predict_map[inst][mask])
+                        high_matrix[inst, f] = safe_mean(high_predict_map[inst][mask])
+                        weights_predict[inst, f] = self._assign_weight(
+                            predict_matrix[inst, f], prediction["predict"][inst]
                         )
-                        tmp_low = self._assign_weight(
-                            instance_predict[inst]["low"][f], prediction["predict"][inst]
-                        )
-                        tmp_high = self._assign_weight(
-                            instance_predict[inst]["high"][f], prediction["predict"][inst]
-                        )
-                        instance_weights[inst]["low"][f] = np.min([tmp_low, tmp_high])
-                        instance_weights[inst]["high"][f] = np.max([tmp_low, tmp_high])
-        for i in range(len(x)):
+                        tmp_low = self._assign_weight(low_matrix[inst, f], prediction["predict"][inst])
+                        tmp_high = self._assign_weight(high_matrix[inst, f], prediction["predict"][inst])
+                        weights_low[inst, f] = np.min([tmp_low, tmp_high])
+                        weights_high[inst, f] = np.max([tmp_low, tmp_high])
+        binned_predict: Dict[str, List[Any]] = {
+            "predict": [],
+            "low": [],
+            "high": [],
+            "current_bin": [],
+            "rule_values": [],
+            "counts": [],
+            "fractions": [],
+        }
+        feature_weights: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
+        feature_predict: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
+
+        for i in range(n_instances):
             binned_predict["predict"].append(instance_binned[i]["predict"])
             binned_predict["low"].append(instance_binned[i]["low"])
             binned_predict["high"].append(instance_binned[i]["high"])
@@ -2159,15 +2189,15 @@ class CalibratedExplainer:
             binned_predict["counts"].append(instance_binned[i]["counts"])
             binned_predict["fractions"].append(instance_binned[i]["fractions"])
 
-            feature_weights["predict"].append(instance_weights[i]["predict"])
-            feature_weights["low"].append(instance_weights[i]["low"])
-            feature_weights["high"].append(instance_weights[i]["high"])
+            feature_weights["predict"].append(weights_predict[i].copy())
+            feature_weights["low"].append(weights_low[i].copy())
+            feature_weights["high"].append(weights_high[i].copy())
 
-            feature_predict["predict"].append(instance_predict[i]["predict"])
-            feature_predict["low"].append(instance_predict[i]["low"])
-            feature_predict["high"].append(instance_predict[i]["high"])
+            feature_predict["predict"].append(predict_matrix[i].copy())
+            feature_predict["low"].append(low_matrix[i].copy())
+            feature_predict["high"].append(high_matrix[i].copy())
         elapsed_time = time() - instance_time
-        list_instance_time = [elapsed_time / len(x) for _ in range(len(x))]
+        list_instance_time = [elapsed_time / n_instances for _ in range(n_instances)]
 
         explanation = explanation.finalize(
             binned_predict,
@@ -2234,20 +2264,22 @@ class CalibratedExplainer:
                 continue
             if f in self.categorical_features:
                 feature_values = self.feature_values[f]
-                x_copy = np.array(x, copy=True)
+                x_copy = x.copy()
+                original_column = x[:, f].copy()
                 for value in feature_values:
                     x_copy[:, f] = value
-                    perturbed_x_parts.append(np.array(x_copy))
+                    perturbed_x_parts.append(x_copy.copy())
                     perturbed_feature_parts.append(
                         np.array([(f, i, value, None) for i in range(x.shape[0])], dtype=object)
                     )
                     if bins is not None:
                         perturbed_bins_parts.append(np.array(bins, copy=True))
-                    perturbed_class_parts.append(np.array(prediction["predict"]))
+                    perturbed_class_parts.append(np.array(prediction["predict"], copy=True))
                     if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                         threshold_items.extend(threshold[i] for i in range(x.shape[0]))
+                x_copy[:, f] = original_column
             else:
-                x_copy = np.array(x, copy=True)
+                x_copy = x.copy()
                 feature_values = np.unique(np.array(x_cal[:, f]))
                 lower_boundary = np.array(rule_boundaries[:, f, 0], copy=True)
                 upper_boundary = np.array(rule_boundaries[:, f, 1], copy=True)
@@ -2276,7 +2308,7 @@ class CalibratedExplainer:
                     if lesser_values[f][j][0].size == 0 or indices.size == 0:
                         continue
                     for value in lesser_values[f][j][0]:
-                        x_local = np.array(x_copy[indices, :], copy=True)
+                        x_local = x_copy[indices, :].copy()
                         x_local[:, f] = value
                         perturbed_x_parts.append(x_local)
                         perturbed_feature_parts.append(
@@ -2286,7 +2318,7 @@ class CalibratedExplainer:
                             perturbed_bins_parts.append(
                                 np.array(bins[indices] if len(indices) > 1 else [bins[indices[0]]])
                             )
-                        perturbed_class_parts.append(np.array(prediction["classes"][indices]))
+                        perturbed_class_parts.append(np.array(prediction["classes"][indices], copy=True))
                         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                             threshold_items.extend(threshold[i] for i in indices)
                 for j, val in enumerate(np.unique(upper_boundary)):
@@ -2295,7 +2327,7 @@ class CalibratedExplainer:
                     if greater_values[f][j][0].size == 0 or indices.size == 0:
                         continue
                     for value in greater_values[f][j][0]:
-                        x_local = np.array(x_copy[indices, :], copy=True)
+                        x_local = x_copy[indices, :].copy()
                         x_local[:, f] = value
                         perturbed_x_parts.append(x_local)
                         perturbed_feature_parts.append(
@@ -2305,7 +2337,7 @@ class CalibratedExplainer:
                             perturbed_bins_parts.append(
                                 np.array(bins[indices] if len(indices) > 1 else [bins[indices[0]]])
                             )
-                        perturbed_class_parts.append(np.array(prediction["classes"][indices]))
+                        perturbed_class_parts.append(np.array(prediction["classes"][indices], copy=True))
                         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                             threshold_items.extend(threshold[i] for i in indices)
                 for i in range(len(x)):
@@ -2315,16 +2347,16 @@ class CalibratedExplainer:
                     )
                     if covered_values[f][i][0].size == 0:
                         continue
-                    x_local = np.array(x_copy[i, :], copy=True)
                     for value in covered_values[f][i][0]:
+                        x_local = x_copy[i, :].copy()
                         x_local[f] = value
-                        perturbed_x_parts.append(x_local.reshape(1, -1).copy())
+                        perturbed_x_parts.append(x_local[np.newaxis, :])
                         perturbed_feature_parts.append(
                             np.array([(f, i, i, None)], dtype=object)
                         )
                         if bins is not None:
                             perturbed_bins_parts.append(np.array([bins[i]]))
-                        perturbed_class_parts.append(np.array([prediction["classes"][i]]))
+                        perturbed_class_parts.append(np.array([prediction["classes"][i]], copy=True))
                         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                             threshold_items.append(threshold[i])
 
