@@ -1805,6 +1805,8 @@ class CalibratedExplainer:
             if features_to_ignore is None
             else np.union1d(self.features_to_ignore, features_to_ignore)
         )
+        features_to_ignore = np.asarray(features_to_ignore, dtype=int)
+        features_to_ignore_set = set(features_to_ignore.tolist())
 
         # Validate inputs and initialize explanation object
         x = self._validate_and_prepare_input(x)
@@ -1871,9 +1873,20 @@ class CalibratedExplainer:
                 "fractions": {},
             }
 
+
         # Step 3: Process each feature to analyze its effects
+        perturbed_feature = np.asarray(perturbed_feature, dtype=object)
+        x_cal_np = np.asarray(x_cal)
+        if perturbed_feature.size:
+            feature_ids = perturbed_feature[:, 0].astype(int)
+            feature_index_map = {
+                int(fid): np.where(feature_ids == fid)[0] for fid in np.unique(feature_ids)
+            }
+        else:
+            feature_index_map = {}
+
         for f in range(self.num_features):
-            if f in features_to_ignore:
+            if f in features_to_ignore_set:
                 for i in range(len(x)):
                     rule_values[i][f] = (self.feature_values[f], x[i, f], x[i, f])
                     instance_binned[i]["predict"][f] = predict[i]
@@ -1881,79 +1894,86 @@ class CalibratedExplainer:
                     instance_binned[i]["high"][f] = high[i]
                 continue
 
-            # Get discretized values for this feature
-            feature_values = self.feature_values[f]
-            perturbed_mask = perturbed_feature[:, 0] == f
-            perturbed_instances = perturbed_feature[perturbed_mask, 1]
-            perturbed = np.unique(perturbed_instances)
+            feature_indices = feature_index_map.get(f)
+            if feature_indices is None or feature_indices.size == 0:
+                for i in range(len(x)):
+                    rule_values[i][f] = (self.feature_values[f], x[i, f], x[i, f])
+                    instance_binned[i]["predict"][f] = predict[i]
+                    instance_binned[i]["low"][f] = low[i]
+                    instance_binned[i]["high"][f] = high[i]
+                continue
 
-            # Handle categorical and numerical features differently
+            feature_slice = perturbed_feature[feature_indices]
+            feature_predict_local = predict[feature_indices]
+            feature_low_local = low[feature_indices]
+            feature_high_local = high[feature_indices]
+            feature_instances = feature_slice[:, 1].astype(int)
+            unique_instances = np.unique(feature_instances)
+
+            slice_instances = feature_instances
+
             if f in self.categorical_features:
-                # Process categorical feature - analyze effect of each possible value
-                for i in np.unique(perturbed):
+                grouped: Dict[int, Dict[Tuple[Any, Any], np.ndarray]] = {}
+                for rel_idx, row in enumerate(feature_slice):
+                    inst = int(row[1])
+                    key = (row[2], row[3])
+                    grouped.setdefault(inst, {}).setdefault(key, []).append(rel_idx)
+                for inst, mapping in grouped.items():
+                    for key, rel_list in mapping.items():
+                        grouped[inst][key] = np.asarray(rel_list, dtype=int)
+                feature_values = self.feature_values[f]
+                value_counts_cache: Dict[Any, int] = {}
+                if x_cal_np.size:
+                    unique_vals, unique_counts = np.unique(x_cal_np[:, f], return_counts=True)
+                    value_counts_cache = {
+                        val: int(cnt)
+                        for val, cnt in zip(unique_vals.tolist(), unique_counts.tolist())
+                    }
+                for inst in unique_instances:
+                    i = int(inst)
                     current_bin = -1
-                    # Initialize arrays to store predictions for each feature value
                     average_predict = np.zeros(len(feature_values))
                     low_predict = np.zeros(len(feature_values))
                     high_predict = np.zeros(len(feature_values))
                     counts = np.zeros(len(feature_values))
-
-                    # Calculate predictions for each possible feature value
-                    for bin_value, value in enumerate(feature_values):
-                        mask = (
-                            (perturbed_feature[:, 0] == f)
-                            & (perturbed_feature[:, 1] == i)
-                            & (perturbed_feature[:, 2] == value)
-                        )
-                        indices = np.where(mask)[0]
-
+                    for bin_index, value in enumerate(feature_values):
+                        rel_indices = grouped.get(i, {}).get((value, None))
+                        rel_indices = rel_indices if rel_indices is not None else np.empty((0,), dtype=int)
                         if x[i, f] == value:
-                            current_bin = bin_value
-
-                        average_predict[bin_value] = (
-                            predict[indices][0] if indices.size else 0
-                        )
-                        low_predict[bin_value] = low[indices][0] if indices.size else 0
-                        high_predict[bin_value] = high[indices][0] if indices.size else 0
-                        counts[bin_value] = int(np.sum(x_cal[:, f] == value))
-
-                    # Store results for this instance
-                    rule_values[i][f] = (feature_values, x[i, f], x[i, f])
+                            current_bin = bin_index
+                        counts[bin_index] = value_counts_cache.get(value, 0)
+                        if rel_indices.size:
+                            average_predict[bin_index] = safe_mean(feature_predict_local[rel_indices])
+                            low_predict[bin_index] = safe_mean(feature_low_local[rel_indices])
+                            high_predict[bin_index] = safe_mean(feature_high_local[rel_indices])
+                        else:
+                            average_predict[bin_index] = 0
+                            low_predict[bin_index] = 0
+                            high_predict[bin_index] = 0
                     uncovered = np.setdiff1d(np.arange(len(average_predict)), current_bin)
-                    total_counts = np.sum(counts[uncovered])
-                    if total_counts == 0:
+                    total_counts = np.sum(counts[uncovered]) if uncovered.size else 0
+                    if uncovered.size == 0 or total_counts == 0:
                         fractions = np.zeros_like(counts[uncovered])
                     else:
                         fractions = counts[uncovered] / total_counts
-
-                    # Store binned predictions
                     instance_binned[i]["predict"][f] = average_predict
                     instance_binned[i]["low"][f] = low_predict
                     instance_binned[i]["high"][f] = high_predict
                     instance_binned[i]["current_bin"][f] = current_bin
                     instance_binned[i]["counts"][f] = counts
                     instance_binned[i]["fractions"][f] = fractions
-
-                    # Handle special case where current bin is the only bin
-                    if len(uncovered) == 0:
+                    rule_values[i][f] = (feature_values, x[i, f], x[i, f])
+                    if uncovered.size == 0:
                         instance_predict[i]["predict"][f] = 0
                         instance_predict[i]["low"][f] = 0
                         instance_predict[i]["high"][f] = 0
-
                         instance_weights[i]["predict"][f] = 0
                         instance_weights[i]["low"][f] = 0
                         instance_weights[i]["high"][f] = 0
                     else:
-                        # Calculate the weighted average (only makes a difference for categorical features)
-                        # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*fractions[uncovered])
-                        # instance_predict['low'][f] = np.sum(low_predict[uncovered]*fractions[uncovered])
-                        # instance_predict['high'][f] = np.sum(high_predict[uncovered]*fractions[uncovered])
-                        # Calculate the average predictions
                         instance_predict[i]["predict"][f] = safe_mean(average_predict[uncovered])
                         instance_predict[i]["low"][f] = safe_mean(low_predict[uncovered])
                         instance_predict[i]["high"][f] = safe_mean(high_predict[uncovered])
-
-                        # Calculate feature importance weights
                         instance_weights[i]["predict"][f] = self._assign_weight(
                             instance_predict[i]["predict"][f], prediction["predict"][i]
                         )
@@ -1966,25 +1986,32 @@ class CalibratedExplainer:
                         instance_weights[i]["low"][f] = np.min([tmp_low, tmp_high])
                         instance_weights[i]["high"][f] = np.max([tmp_low, tmp_high])
             else:
-                # Get unique feature values and boundaries for this feature
-                feature_values = np.unique(np.array(x_cal[:, f]))
-                lower_boundary = rule_boundaries[:, f, 0]
-                upper_boundary = rule_boundaries[:, f, 1]
+                slice_bins = np.array(feature_slice[:, 2], dtype=int)
+                slice_flags = np.asarray(feature_slice[:, 3], dtype=object)
+                numeric_grouped: Dict[Tuple[int, int, Any], np.ndarray] = {}
+                for rel_idx, inst in enumerate(slice_instances):
+                    key = (int(inst), int(slice_bins[rel_idx]), slice_flags[rel_idx])
+                    numeric_grouped.setdefault(key, []).append(rel_idx)
+                for key, rel_list in numeric_grouped.items():
+                    numeric_grouped[key] = np.asarray(rel_list, dtype=int)
 
-                # Initialize dictionaries to store predictions and counts for each instance
+                feature_values = np.unique(np.asarray(x_cal_np[:, f]))
+                lower_boundary = np.array(rule_boundaries[:, f, 0], copy=True)
+                upper_boundary = np.array(rule_boundaries[:, f, 1], copy=True)
+                if feature_values.size:
+                    min_val = np.min(feature_values)
+                    max_val = np.max(feature_values)
+                    lower_boundary = np.where(min_val < lower_boundary, lower_boundary, -np.inf)
+                    upper_boundary = np.where(max_val > upper_boundary, upper_boundary, np.inf)
+                rule_boundaries[:, f, 0] = lower_boundary
+                rule_boundaries[:, f, 1] = upper_boundary
+
                 avg_predict_map: Dict[int, np.ndarray] = {}
                 low_predict_map: Dict[int, np.ndarray] = {}
                 high_predict_map: Dict[int, np.ndarray] = {}
                 counts_map: Dict[int, np.ndarray] = {}
                 rule_value_map: Dict[int, List[np.ndarray]] = {}
                 for i in range(len(x)):
-                    # Set boundary values and initialize arrays based on number of bins
-                    lower_boundary[i] = (
-                        lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
-                    )
-                    upper_boundary[i] = (
-                        upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
-                    )
                     num_bins = 1 + (1 if lower_boundary[i] != -np.inf else 0)
                     num_bins += 1 if upper_boundary[i] != np.inf else 0
                     avg_predict_map[i] = np.zeros(num_bins)
@@ -1993,144 +2020,136 @@ class CalibratedExplainer:
                     counts_map[i] = np.zeros(num_bins)
                     rule_value_map[i] = []
 
-                # Track bin assignments
                 bin_value = np.zeros(len(x), dtype=int)
                 current_bin = -np.ones(len(x), dtype=int)
 
-                # Process instances below lower boundary
+                sorted_cal = np.sort(np.asarray(x_cal_np[:, f]))
+                lower_cache = {
+                    val: 0 if val == -np.inf else int(np.searchsorted(sorted_cal, val, side="left"))
+                    for val in np.unique(lower_boundary)
+                }
+                upper_cache = {
+                    val: 0 if val == np.inf else int(
+                        sorted_cal.size - np.searchsorted(sorted_cal, val, side="right")
+                    )
+                    for val in np.unique(upper_boundary)
+                }
+                bounds_matrix = np.column_stack((lower_boundary, upper_boundary))
+                unique_bounds, bound_inverse = np.unique(bounds_matrix, axis=0, return_inverse=True)
+                between_cache: Dict[int, int] = {}
+                for idx_bound, (lb, ub) in enumerate(unique_bounds):
+                    left = 0 if lb == -np.inf else int(np.searchsorted(sorted_cal, lb, side="left"))
+                    right = (
+                        sorted_cal.size
+                        if ub == np.inf
+                        else int(np.searchsorted(sorted_cal, ub, side="right"))
+                    )
+                    between_cache[idx_bound] = right - left
+
                 for j, val in enumerate(np.unique(lower_boundary)):
-                    if lesser_values[f][j][0].shape[0] == 0:
+                    values_tuple = lesser_values[f].get(j)
+                    if not values_tuple or values_tuple[0].size == 0:
                         continue
-                    feature_mask = perturbed_feature[:, 0] == f
-                    bin_mask = perturbed_feature[:, 2] == j
-                    lesser_mask = np.asarray(perturbed_feature[:, 3], dtype=object)
-                    lesser_mask = lesser_mask == True  # noqa: E712 - intentional identity check
-                    for i in np.where(lower_boundary == val)[0]:
-                        instance_mask = perturbed_feature[:, 1] == i
-                        mask = feature_mask & bin_mask & instance_mask & lesser_mask
-                        index = np.where(mask)[0]
+                    for idx in np.where(lower_boundary == val)[0]:
+                        inst = int(idx)
+                        rel_indices = numeric_grouped.get((inst, j, True), np.empty((0,), dtype=int))
+                        avg_predict_map[inst][bin_value[inst]] = (
+                            safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
+                        )
+                        low_predict_map[inst][bin_value[inst]] = (
+                            safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
+                        )
+                        high_predict_map[inst][bin_value[inst]] = (
+                            safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
+                        )
+                        counts_map[inst][bin_value[inst]] = lower_cache.get(val, 0)
+                        rule_value_map[inst].append(values_tuple[0])
+                        bin_value[inst] += 1
 
-                        # Store predictions and counts for values below boundary
-                        avg_predict_map[i][bin_value[i]] = (
-                            safe_mean(predict[index]) if index.size else 0
-                        )
-                        low_predict_map[i][bin_value[i]] = (
-                            safe_mean(low[index]) if index.size else 0
-                        )
-                        high_predict_map[i][bin_value[i]] = (
-                            safe_mean(high[index]) if index.size else 0
-                        )
-                        counts_map[i][bin_value[i]] = int(np.sum(x_cal[:, f] < val))
-                        rule_value_map[i].append(lesser_values[f][j][0])
-                        bin_value[i] += 1
-
-                # Process instances above upper boundary
                 for j, val in enumerate(np.unique(upper_boundary)):
-                    if greater_values[f][j][0].shape[0] == 0:
+                    values_tuple = greater_values[f].get(j)
+                    if not values_tuple or values_tuple[0].size == 0:
                         continue
-                    feature_mask = perturbed_feature[:, 0] == f
-                    bin_mask = perturbed_feature[:, 2] == j
-                    greater_mask = np.asarray(perturbed_feature[:, 3], dtype=object) == False  # noqa: E712
-                    for i in np.where(upper_boundary == val)[0]:
-                        instance_mask = perturbed_feature[:, 1] == i
-                        mask = feature_mask & bin_mask & instance_mask & greater_mask
-                        index = np.where(mask)[0]
+                    for idx in np.where(upper_boundary == val)[0]:
+                        inst = int(idx)
+                        rel_indices = numeric_grouped.get((inst, j, False), np.empty((0,), dtype=int))
+                        avg_predict_map[inst][bin_value[inst]] = (
+                            safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
+                        )
+                        low_predict_map[inst][bin_value[inst]] = (
+                            safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
+                        )
+                        high_predict_map[inst][bin_value[inst]] = (
+                            safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
+                        )
+                        counts_map[inst][bin_value[inst]] = upper_cache.get(val, 0)
+                        rule_value_map[inst].append(values_tuple[0])
+                        bin_value[inst] += 1
 
-                        # Store predictions and counts for values above boundary
-                        avg_predict_map[i][bin_value[i]] = (
-                            safe_mean(predict[index]) if index.size else 0
+                for inst in range(len(x)):
+                    current_index = bin_value[inst]
+                    for j in range(unique_bounds.shape[0]):
+                        rel_indices = numeric_grouped.get(
+                            (inst, j, None), np.empty((0,), dtype=int)
                         )
-                        low_predict_map[i][bin_value[i]] = (
-                            safe_mean(low[index]) if index.size else 0
+                        avg_predict_map[inst][current_index] = (
+                            safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
                         )
-                        high_predict_map[i][bin_value[i]] = (
-                            safe_mean(high[index]) if index.size else 0
+                        low_predict_map[inst][current_index] = (
+                            safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
                         )
-                        counts_map[i][bin_value[i]] = int(np.sum(x_cal[:, f] > val))
-                        rule_value_map[i].append(greater_values[f][j][0])
-                        bin_value[i] += 1
+                        high_predict_map[inst][current_index] = (
+                            safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
+                        )
+                        counts_map[inst][current_index] = between_cache.get(j, 0)
+                        rule_entry = covered_values[f].get(j)
+                        if rule_entry is None:
+                            rule_entry = covered_values[f].get(inst)
+                        rule_value_map[inst].append(
+                            rule_entry[0] if rule_entry is not None else np.array([])
+                        )
+                        current_bin[inst] = current_index
 
-                # Process instances between boundaries
-                unique_boundaries = np.unique(
-                    np.stack([lower_boundary, upper_boundary], axis=1), axis=0
-                )
-                between_mask = np.equal(perturbed_feature[:, 3], None)
-                for i in range(len(x)):
-                    instance_mask = perturbed_feature[:, 1] == i
-                    for j, (_lower, _upper) in enumerate(unique_boundaries):
-                        feature_mask = perturbed_feature[:, 0] == f
-                        bin_mask = perturbed_feature[:, 2] == j
-                        mask = feature_mask & instance_mask & bin_mask & between_mask
-                        index = np.where(mask)[0]
-
-                        # Store predictions and counts for values between boundaries
-                        avg_predict_map[i][bin_value[i]] = (
-                            safe_mean(predict[index]) if index.size else 0
-                        )
-                        low_predict_map[i][bin_value[i]] = (
-                            safe_mean(low[index]) if index.size else 0
-                        )
-                        high_predict_map[i][bin_value[i]] = (
-                            safe_mean(high[index]) if index.size else 0
-                        )
-                        counts_map[i][bin_value[i]] = int(
-                            np.sum((x_cal[:, f] >= _lower) & (x_cal[:, f] <= _upper))
-                        )
-                        rule_value_map[i].append(covered_values[f][j][0])
-                        current_bin[i] = bin_value[i]
-                # For each test instance
-                for i in range(len(x)):
-                    # Store rule values for this feature and instance
-                    rule_values[i][f] = (rule_value_map[i], x[i, f], x[i, f])
-
-                    # Get indices of bins not containing current value
-                    uncovered = np.setdiff1d(np.arange(len(avg_predict_map[i])), current_bin[i])
-
-                    # Calculate fractions for uncovered bins
-                    total_counts = np.sum(counts_map[i][uncovered])
-                    if total_counts == 0:
-                        fractions = np.zeros_like(counts_map[i][uncovered])
+                for idx in range(len(x)):
+                    inst = int(idx)
+                    rule_values[inst][f] = (rule_value_map[inst], x[inst, f], x[inst, f])
+                    uncovered = np.setdiff1d(np.arange(len(avg_predict_map[inst])), current_bin[inst])
+                    total_counts = np.sum(counts_map[inst][uncovered]) if uncovered.size else 0
+                    if uncovered.size == 0 or total_counts == 0:
+                        fractions = np.zeros_like(counts_map[inst][uncovered])
                     else:
-                        fractions = counts_map[i][uncovered] / total_counts
-
-                    # Store binned prediction results for this feature and instance
-                    instance_binned[i]["predict"][f] = avg_predict_map[i]
-                    instance_binned[i]["low"][f] = low_predict_map[i]
-                    instance_binned[i]["high"][f] = high_predict_map[i]
-                    instance_binned[i]["current_bin"][f] = current_bin[i]
-                    instance_binned[i]["counts"][f] = counts_map[i]
-                    instance_binned[i]["fractions"][f] = fractions
-
-                    # Handle the situation where the current bin is the only bin
-                    if len(uncovered) == 0:
-                        instance_predict[i]["predict"][f] = 0
-                        instance_predict[i]["low"][f] = 0
-                        instance_predict[i]["high"][f] = 0
-
-                        instance_weights[i]["predict"][f] = 0
-                        instance_weights[i]["low"][f] = 0
-                        instance_weights[i]["high"][f] = 0
+                        fractions = counts_map[inst][uncovered] / total_counts
+                    instance_binned[inst]["predict"][f] = avg_predict_map[inst]
+                    instance_binned[inst]["low"][f] = low_predict_map[inst]
+                    instance_binned[inst]["high"][f] = high_predict_map[inst]
+                    instance_binned[inst]["current_bin"][f] = current_bin[inst]
+                    instance_binned[inst]["counts"][f] = counts_map[inst]
+                    instance_binned[inst]["fractions"][f] = fractions
+                    instance_predict[inst]["predict"][f] = (
+                        safe_mean(avg_predict_map[inst][uncovered]) if uncovered.size else 0
+                    )
+                    instance_predict[inst]["low"][f] = (
+                        safe_mean(low_predict_map[inst][uncovered]) if uncovered.size else 0
+                    )
+                    instance_predict[inst]["high"][f] = (
+                        safe_mean(high_predict_map[inst][uncovered]) if uncovered.size else 0
+                    )
+                    if uncovered.size == 0:
+                        instance_weights[inst]["predict"][f] = 0
+                        instance_weights[inst]["low"][f] = 0
+                        instance_weights[inst]["high"][f] = 0
                     else:
-                        # Calculate the weighted average (only makes a difference for categorical features)
-                        # instance_predict['predict'][f] = np.sum(average_predict[uncovered]*fractions[uncovered])
-                        # instance_predict['low'][f] = np.sum(low_predict[uncovered]*fractions[uncovered])
-                        # instance_predict['high'][f] = np.sum(high_predict[uncovered]*fractions[uncovered])
-                        instance_predict[i]["predict"][f] = safe_mean(avg_predict_map[i][uncovered])
-                        instance_predict[i]["low"][f] = safe_mean(low_predict_map[i][uncovered])
-                        instance_predict[i]["high"][f] = safe_mean(high_predict_map[i][uncovered])
-
-                        instance_weights[i]["predict"][f] = self._assign_weight(
-                            instance_predict[i]["predict"][f], prediction["predict"][i]
+                        instance_weights[inst]["predict"][f] = self._assign_weight(
+                            instance_predict[inst]["predict"][f], prediction["predict"][inst]
                         )
                         tmp_low = self._assign_weight(
-                            instance_predict[i]["low"][f], prediction["predict"][i]
+                            instance_predict[inst]["low"][f], prediction["predict"][inst]
                         )
                         tmp_high = self._assign_weight(
-                            instance_predict[i]["high"][f], prediction["predict"][i]
+                            instance_predict[inst]["high"][f], prediction["predict"][inst]
                         )
-                        instance_weights[i]["low"][f] = np.min([tmp_low, tmp_high])
-                        instance_weights[i]["high"][f] = np.max([tmp_low, tmp_high])
-
+                        instance_weights[inst]["low"][f] = np.min([tmp_low, tmp_high])
+                        instance_weights[inst]["high"][f] = np.max([tmp_low, tmp_high])
         for i in range(len(x)):
             binned_predict["predict"].append(instance_binned[i]["predict"])
             binned_predict["low"].append(instance_binned[i]["low"])
@@ -2195,39 +2214,58 @@ class CalibratedExplainer:
             perturbed_class,
         ) = _eps(self, x, threshold, low_high_percentiles, bins, features_to_ignore)
 
+        perturbed_x_parts: List[np.ndarray] = []
+        perturbed_feature_parts: List[np.ndarray] = []
+        perturbed_bins_parts: List[np.ndarray] = []
+        perturbed_class_parts: List[np.ndarray] = []
+        threshold_items: List[Any] = []
+
+        features_to_ignore_array = (
+            np.asarray(features_to_ignore, dtype=int)
+            if features_to_ignore is not None
+            else np.empty((0,), dtype=int)
+        )
+        features_to_ignore_set = set(int(f) for f in features_to_ignore_array.tolist())
+
         # Sub-step 1.b: prepare and add the perturbed test instances (unchanged logic)
         # pylint: disable=too-many-nested-blocks
         for f in range(self.num_features):
-            if f in features_to_ignore:
+            if f in features_to_ignore_set:
                 continue
             if f in self.categorical_features:
                 feature_values = self.feature_values[f]
                 x_copy = np.array(x, copy=True)
                 for value in feature_values:
                     x_copy[:, f] = value
-                    perturbed_x = np.concatenate((perturbed_x, np.array(x_copy)))
-                    perturbed_feature = np.concatenate(
-                        (perturbed_feature, [(f, i, value, None) for i in range(x.shape[0])])
+                    perturbed_x_parts.append(np.array(x_copy))
+                    perturbed_feature_parts.append(
+                        np.array([(f, i, value, None) for i in range(x.shape[0])], dtype=object)
                     )
-                    perturbed_bins = (
-                        np.concatenate((perturbed_bins, bins)) if bins is not None else None
-                    )
-                    perturbed_class = np.concatenate((perturbed_class, prediction["predict"]))
-                    perturbed_threshold = concatenate_thresholds(
-                        perturbed_threshold, threshold, list(range(x.shape[0]))
-                    )
+                    if bins is not None:
+                        perturbed_bins_parts.append(np.array(bins, copy=True))
+                    perturbed_class_parts.append(np.array(prediction["predict"]))
+                    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                        threshold_items.extend(threshold[i] for i in range(x.shape[0]))
             else:
                 x_copy = np.array(x, copy=True)
                 feature_values = np.unique(np.array(x_cal[:, f]))
-                lower_boundary = rule_boundaries[:, f, 0]
-                upper_boundary = rule_boundaries[:, f, 1]
-                for i in range(len(x)):
-                    lower_boundary[i] = (
-                        lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
-                    )
-                    upper_boundary[i] = (
-                        upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
-                    )
+                lower_boundary = np.array(rule_boundaries[:, f, 0], copy=True)
+                upper_boundary = np.array(rule_boundaries[:, f, 1], copy=True)
+
+                if feature_values.size:
+                    has_lesser = (
+                        feature_values[np.newaxis, :] < lower_boundary[:, np.newaxis]
+                    ).any(axis=1)
+                    has_greater = (
+                        feature_values[np.newaxis, :] > upper_boundary[:, np.newaxis]
+                    ).any(axis=1)
+                else:
+                    has_lesser = np.zeros(lower_boundary.shape[0], dtype=bool)
+                    has_greater = np.zeros(upper_boundary.shape[0], dtype=bool)
+                lower_boundary = np.where(has_lesser, lower_boundary, -np.inf)
+                upper_boundary = np.where(has_greater, upper_boundary, np.inf)
+                rule_boundaries[:, f, 0] = lower_boundary
+                rule_boundaries[:, f, 1] = upper_boundary
 
                 lesser_values[f] = {}
                 greater_values[f] = {}
@@ -2235,77 +2273,88 @@ class CalibratedExplainer:
                 for j, val in enumerate(np.unique(lower_boundary)):
                     lesser_values[f][j] = (np.unique(self.__get_lesser_values(f, val)), val)
                     indices = np.where(lower_boundary == val)[0]
+                    if lesser_values[f][j][0].size == 0 or indices.size == 0:
+                        continue
                     for value in lesser_values[f][j][0]:
-                        x_local = x_copy[indices, :]
+                        x_local = np.array(x_copy[indices, :], copy=True)
                         x_local[:, f] = value
-                        perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
-                        perturbed_feature = np.concatenate(
-                            (perturbed_feature, [(f, i, j, True) for i in indices])
+                        perturbed_x_parts.append(x_local)
+                        perturbed_feature_parts.append(
+                            np.array([(f, i, j, True) for i in indices], dtype=object)
                         )
                         if bins is not None:
-                            perturbed_bins = np.concatenate(
-                                (
-                                    perturbed_bins,
-                                    bins[indices] if len(indices) > 1 else [bins[indices[0]]],
-                                )
+                            perturbed_bins_parts.append(
+                                np.array(bins[indices] if len(indices) > 1 else [bins[indices[0]]])
                             )
-                        perturbed_class = np.concatenate(
-                            (perturbed_class, prediction["classes"][indices])
-                        )
-                        perturbed_threshold = concatenate_thresholds(
-                            perturbed_threshold, threshold, indices
-                        )
+                        perturbed_class_parts.append(np.array(prediction["classes"][indices]))
+                        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                            threshold_items.extend(threshold[i] for i in indices)
                 for j, val in enumerate(np.unique(upper_boundary)):
                     greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
                     indices = np.where(upper_boundary == val)[0]
+                    if greater_values[f][j][0].size == 0 or indices.size == 0:
+                        continue
                     for value in greater_values[f][j][0]:
-                        x_local = x_copy[indices, :]
+                        x_local = np.array(x_copy[indices, :], copy=True)
                         x_local[:, f] = value
-                        perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
-                        perturbed_feature = np.concatenate(
-                            (perturbed_feature, [(f, i, j, False) for i in indices])
+                        perturbed_x_parts.append(x_local)
+                        perturbed_feature_parts.append(
+                            np.array([(f, i, j, False) for i in indices], dtype=object)
                         )
                         if bins is not None:
-                            perturbed_bins = np.concatenate(
-                                (
-                                    perturbed_bins,
-                                    bins[indices] if len(indices) > 1 else [bins[indices[0]]],
-                                )
+                            perturbed_bins_parts.append(
+                                np.array(bins[indices] if len(indices) > 1 else [bins[indices[0]]])
                             )
-                        perturbed_class = np.concatenate(
-                            (perturbed_class, prediction["classes"][indices])
-                        )
-                        perturbed_threshold = concatenate_thresholds(
-                            perturbed_threshold, threshold, indices
-                        )
-                indices = range(len(x))
-                for i in indices:
+                        perturbed_class_parts.append(np.array(prediction["classes"][indices]))
+                        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                            threshold_items.extend(threshold[i] for i in indices)
+                for i in range(len(x)):
                     covered_values[f][i] = (
                         self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]),
                         (lower_boundary[i], upper_boundary[i]),
                     )
+                    if covered_values[f][i][0].size == 0:
+                        continue
+                    x_local = np.array(x_copy[i, :], copy=True)
                     for value in covered_values[f][i][0]:
-                        x_local = x_copy[i, :]
                         x_local[f] = value
-                        perturbed_x = np.concatenate(
-                            (perturbed_x, np.array(x_local.reshape(1, -1)))
+                        perturbed_x_parts.append(x_local.reshape(1, -1).copy())
+                        perturbed_feature_parts.append(
+                            np.array([(f, i, i, None)], dtype=object)
                         )
-                        perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
-                        perturbed_bins = (
-                            np.concatenate((perturbed_bins, [bins[i]]))
-                            if bins is not None
-                            else None
-                        )
-                        perturbed_class = np.concatenate(
-                            (perturbed_class, [prediction["classes"][i]])
-                        )
+                        if bins is not None:
+                            perturbed_bins_parts.append(np.array([bins[i]]))
+                        perturbed_class_parts.append(np.array([prediction["classes"][i]]))
                         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                            if isinstance(threshold[0], tuple) and len(perturbed_threshold) == 0:
-                                perturbed_threshold = [threshold[i]]
-                            else:
-                                perturbed_threshold = np.concatenate(
-                                    (perturbed_threshold, [threshold[i]])
-                                )
+                            threshold_items.append(threshold[i])
+
+        if perturbed_x_parts:
+            base_parts = [perturbed_x] if perturbed_x.size else []
+            perturbed_x = np.concatenate(base_parts + perturbed_x_parts, axis=0)
+        if perturbed_feature_parts:
+            base_parts = [perturbed_feature.astype(object)] if perturbed_feature.size else []
+            perturbed_feature = np.concatenate(base_parts + perturbed_feature_parts, axis=0)
+        if perturbed_bins is not None and perturbed_bins_parts:
+            base_parts = [perturbed_bins] if perturbed_bins.size else []
+            perturbed_bins = np.concatenate(base_parts + perturbed_bins_parts, axis=0)
+        if perturbed_class_parts:
+            base_parts = [perturbed_class] if perturbed_class.size else []
+            perturbed_class = np.concatenate(base_parts + perturbed_class_parts, axis=0)
+
+        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+            if isinstance(threshold[0], tuple):
+                base_items: List[Any] = (
+                    list(perturbed_threshold) if len(perturbed_threshold) else []
+                )
+                perturbed_threshold = base_items + threshold_items
+            else:
+                base_array = perturbed_threshold if len(perturbed_threshold) else np.empty((0,))
+                if threshold_items:
+                    perturbed_threshold = np.concatenate(
+                        [base_array, np.asarray(threshold_items)]
+                    )
+                else:
+                    perturbed_threshold = base_array
         # Sub-step 1.c: Predict and convert to numpy arrays to allow boolean indexing
         if (
             threshold is not None
