@@ -646,7 +646,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             Returns a self reference, to allow for method chaining.
         """
         for explanation in self.explanations:
-            explanation.remove_conjunctions()
             explanation.add_conjunctions(n_top_features, max_rule_size)
         return self
 
