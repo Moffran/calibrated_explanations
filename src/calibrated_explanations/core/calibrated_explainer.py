@@ -2300,21 +2300,44 @@ class CalibratedExplainer:
             if f in features_to_ignore_set:
                 continue
             if f in self.categorical_features:
-                feature_values = self.feature_values[f]
-                x_copy = x.copy()
-                original_column = x[:, f].copy()
-                for value in feature_values:
-                    x_copy[:, f] = value
-                    perturbed_x_parts.append(x_copy.copy())
-                    perturbed_feature_parts.append(
-                        np.array([(f, i, value, None) for i in range(x.shape[0])], dtype=object)
-                    )
-                    if bins is not None:
-                        perturbed_bins_parts.append(np.array(bins, copy=True))
-                    perturbed_class_parts.append(np.array(prediction["predict"], copy=True))
-                    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                        threshold_items.extend(threshold[i] for i in range(x.shape[0]))
-                x_copy[:, f] = original_column
+                feature_values = np.asarray(self.feature_values[f])
+                if feature_values.size == 0:
+                    continue
+
+                num_instances = x.shape[0]
+                num_values = int(feature_values.size)
+
+                # Assemble the perturbations for this categorical feature in a single
+                # tiled matrix to avoid repeatedly copying the full feature matrix.
+                tiled_x = np.tile(x, (num_values, 1))
+                tiled_x[:, f] = np.repeat(feature_values, num_instances)
+                perturbed_x_parts.append(tiled_x)
+
+                feature_info = np.empty((num_instances * num_values, 4), dtype=object)
+                feature_info[:, 0] = f
+                feature_info[:, 1] = np.tile(np.arange(num_instances), num_values)
+                feature_info[:, 2] = np.repeat(feature_values, num_instances)
+                feature_info[:, 3] = None
+                perturbed_feature_parts.append(feature_info)
+
+                if bins is not None:
+                    bins_array = np.array(bins, copy=True)
+                    if bins_array.ndim == 0:
+                        perturbed_bins_parts.append(np.repeat(bins_array, num_values))
+                    else:
+                        tile_shape = (num_values,) + (1,) * (bins_array.ndim - 1)
+                        perturbed_bins_parts.append(np.tile(bins_array, tile_shape))
+
+                predict_array = np.array(prediction["predict"], copy=True)
+                if predict_array.ndim == 0:
+                    perturbed_class_parts.append(np.repeat(predict_array, num_values))
+                else:
+                    tile_shape = (num_values,) + (1,) * (predict_array.ndim - 1)
+                    perturbed_class_parts.append(np.tile(predict_array, tile_shape))
+
+                if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                    for _ in range(num_values):
+                        threshold_items.extend(threshold[i] for i in range(num_instances))
             else:
                 x_copy = x.copy()
                 feature_values = np.unique(np.array(x_cal[:, f]))
