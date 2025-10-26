@@ -1,9 +1,12 @@
 import numpy as np
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core import prediction_helpers as ph
+import pytest
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+
+from calibrated_explanations.core import prediction_helpers as ph
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.exceptions import DataShapeError, ValidationError
 
 
 def test_prediction_helpers_round_trip():
@@ -42,3 +45,298 @@ def test_prediction_helpers_round_trip():
         else prediction["predict"].shape[0]
     )  # type: ignore[index]
     assert base_pred_len == len(x_valid)
+
+
+class _StubExplainer:
+    """Lightweight implementation of ``_ExplainerProtocol`` for unit tests."""
+
+    def __init__(
+        self,
+        *,
+        num_features: int = 3,
+        mode: str = "classification",
+        mondrian: bool = False,
+        fast: bool = False,
+        multiclass: bool = True,
+    ) -> None:
+        self.num_features = num_features
+        self.mode = mode
+        self._mondrian = mondrian
+        self._fast = fast
+        self._multiclass = multiclass
+        self.x_cal = np.zeros((2, num_features))
+        self.interval_learner = self._build_interval_learner()
+        self._learner = self.interval_learner[0] if isinstance(self.interval_learner, list) else self.interval_learner
+        self.assign_threshold_calls: list = []
+        self.predict_calls: list = []
+
+    def _build_interval_learner(self):
+        class _Learner:
+            def __init__(self, *, as_list: bool) -> None:
+                self.as_list = as_list
+                self.calls = []
+
+            def predict_proba(self, x, bins=None):
+                self.calls.append((np.asarray(x), bins))
+                return np.full((len(x), 2), 0.5)
+
+        learner = _Learner(as_list=self._fast)
+        if self._fast:
+            # ``explain_predict_step`` indexes the learner list by ``num_features``
+            return [learner for _ in range(self.num_features + 1)]
+        return learner
+
+    # ``_ExplainerProtocol`` API -------------------------------------------------
+    def _is_mondrian(self) -> bool:  # noqa: D401 - protocol implementation
+        return self._mondrian
+
+    def is_multiclass(self) -> bool:  # noqa: D401 - protocol implementation
+        return self._multiclass
+
+    def is_fast(self) -> bool:  # noqa: D401 - protocol implementation
+        return self._fast
+
+    def _predict(self, x, **kwargs):  # noqa: D401 - protocol implementation
+        self.predict_calls.append((np.asarray(x), kwargs))
+        size = np.asarray(x).shape[0]
+        classes = np.arange(size) if self._multiclass else np.zeros(size, dtype=int)
+        return (
+            np.full((size,), 0.1),
+            np.full((size,), -0.1),
+            np.full((size,), 0.2),
+            classes,
+        )
+
+    def assign_threshold(self, threshold):  # noqa: D401 - protocol implementation
+        self.assign_threshold_calls.append(threshold)
+        return threshold
+
+    def _discretize(self, x):  # noqa: D401 - protocol implementation
+        return np.asarray(x) + 1
+
+    def rule_boundaries(self, x, x_perturbed):  # noqa: D401 - protocol implementation
+        return {"rule": "boundaries", "shape": np.asarray(x_perturbed).shape}
+
+
+def test_validate_and_prepare_input_reshapes_vector():
+    explainer = _StubExplainer(num_features=3)
+    vector = np.array([1.0, 2.0, 3.0])
+
+    prepared = ph.validate_and_prepare_input(explainer, vector)
+
+    assert prepared.shape == (1, 3)
+    assert isinstance(prepared, np.ndarray)
+
+
+def test_validate_and_prepare_input_rejects_wrong_width():
+    explainer = _StubExplainer(num_features=4)
+    matrix = np.ones((2, 3))
+
+    with pytest.raises(DataShapeError):
+        ph.validate_and_prepare_input(explainer, matrix)
+
+
+def test_initialize_explanation_requires_bins_for_mondrian(monkeypatch):
+    explainer = _StubExplainer(mondrian=True)
+    x = np.ones((2, explainer.num_features))
+
+    # Avoid constructing the heavy ``CalibratedExplanations`` implementation.
+    class _Collection:
+        def __init__(self, *_args, **_kwargs) -> None:
+            self.low_high_percentiles = None
+
+    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+
+    with pytest.raises(ValidationError):
+        ph.initialize_explanation(
+            explainer,
+            x,
+            (10, 90),
+            threshold=None,
+            bins=None,
+            features_to_ignore=None,
+        )
+
+
+def test_initialize_explanation_validates_bin_length(monkeypatch):
+    explainer = _StubExplainer(mondrian=True)
+    x = np.ones((2, explainer.num_features))
+
+    class _Collection:
+        def __init__(self, *_args, **_kwargs) -> None:
+            self.low_high_percentiles = None
+
+    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+
+    with pytest.raises(DataShapeError):
+        ph.initialize_explanation(
+            explainer,
+            x,
+            (5, 95),
+            threshold=None,
+            bins=np.ones((1,)),
+            features_to_ignore=None,
+        )
+
+
+def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch):
+    explainer = _StubExplainer(mode="classification")
+    x = np.ones((2, explainer.num_features))
+
+    class _Collection:
+        def __init__(self, *_args, **_kwargs) -> None:
+            self.low_high_percentiles = None
+
+    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+
+    with pytest.raises(ValidationError):
+        ph.initialize_explanation(
+            explainer,
+            x,
+            (5, 95),
+            threshold=0.5,
+            bins=None,
+            features_to_ignore=None,
+        )
+
+
+def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
+    explainer = _StubExplainer(mode="regression")
+    x = np.ones((2, explainer.num_features))
+    bins = np.ones((2,))
+    threshold = [(0.1, 0.2), (0.3, 0.4)]
+
+    recorded_calls: list[tuple] = []
+
+    def _fake_assert(thresh, data):
+        recorded_calls.append((thresh, np.asarray(data).shape))
+        return thresh
+
+    class _Collection:
+        def __init__(self, *_args, **_kwargs) -> None:
+            self.low_high_percentiles = None
+
+    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(ph, "assert_threshold", _fake_assert)
+
+    with pytest.warns(UserWarning, match="list of interval thresholds"):
+        explanation = ph.initialize_explanation(
+            explainer,
+            x,
+            (5, 95),
+            threshold=threshold,
+            bins=bins,
+            features_to_ignore=None,
+        )
+
+    assert explanation.low_high_percentiles is None
+    assert recorded_calls == [(threshold, x.shape)]
+
+
+def test_initialize_explanation_sets_percentiles_without_threshold(monkeypatch):
+    explainer = _StubExplainer(mode="regression")
+    x = np.ones((3, explainer.num_features))
+
+    class _Collection:
+        def __init__(self, *_args, **_kwargs) -> None:
+            self.low_high_percentiles = None
+
+    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+
+    explanation = ph.initialize_explanation(
+        explainer,
+        x,
+        (25, 75),
+        threshold=None,
+        bins=None,
+        features_to_ignore=None,
+    )
+
+    assert explanation.low_high_percentiles == (25, 75)
+
+
+def test_predict_internal_delegates_to_underlying_protocol():
+    explainer = _StubExplainer(multiclass=False)
+    x = np.ones((2, explainer.num_features))
+
+    result = ph.predict_internal(
+        explainer,
+        x,
+        threshold=0.3,
+        low_high_percentiles=(1, 99),
+        classes=[1],
+        bins=np.array([0, 1]),
+        feature=0,
+    )
+
+    assert explainer.predict_calls
+    call_x, kwargs = explainer.predict_calls[-1]
+    np.testing.assert_array_equal(call_x, x)
+    assert kwargs["threshold"] == 0.3
+    assert kwargs["low_high_percentiles"] == (1, 99)
+    assert kwargs["classes"] == [1]
+    np.testing.assert_array_equal(kwargs["bins"], np.array([0, 1]))
+    assert kwargs["feature"] == 0
+    assert isinstance(result, tuple)
+
+
+def test_explain_predict_step_collects_probability_matrix():
+    explainer = _StubExplainer(multiclass=False, fast=False)
+    input_x = np.ones((2, explainer.num_features))
+
+    outputs = ph.explain_predict_step(
+        explainer,
+        input_x,
+        threshold=0.5,
+        low_high_percentiles=(10, 90),
+        bins=None,
+        features_to_ignore=None,
+    )
+
+    prediction = outputs[3]
+    assert "__full_probabilities__" in prediction
+    np.testing.assert_allclose(prediction["__full_probabilities__"], 0.5)
+    assert explainer.assign_threshold_calls == [0.5]
+    assert outputs[10] == 0.5  # perturbed_threshold echoes assigned threshold
+    assert outputs[11] is None  # perturbed_bins is ``None`` when no bins supplied
+    assert outputs[12].shape == (0, explainer.num_features)
+    assert outputs[13].dtype == int
+    assert not input_x.flags.writeable
+
+
+def test_explain_predict_step_multiclass_fast_uses_indexed_interval_learner():
+    explainer = _StubExplainer(multiclass=True, fast=True)
+    input_x = np.ones((1, explainer.num_features))
+
+    ph.explain_predict_step(
+        explainer,
+        input_x,
+        threshold=None,
+        low_high_percentiles=(10, 90),
+        bins=np.array([0]),
+        features_to_ignore=None,
+    )
+
+    learner = explainer.interval_learner[explainer.num_features]
+    assert len(learner.calls) == 1
+    np.testing.assert_array_equal(learner.calls[0][0], input_x)
+    np.testing.assert_array_equal(learner.calls[0][1], np.array([0]))
+
+
+def test_explain_predict_step_fast_binary_uses_indexed_interval_learner():
+    explainer = _StubExplainer(multiclass=False, fast=True)
+    input_x = np.ones((1, explainer.num_features))
+
+    ph.explain_predict_step(
+        explainer,
+        input_x,
+        threshold=None,
+        low_high_percentiles=(10, 90),
+        bins=np.array([0]),
+        features_to_ignore=None,
+    )
+
+    learner = explainer.interval_learner[explainer.num_features]
+    assert len(learner.calls) == 1
+    np.testing.assert_array_equal(learner.calls[0][0], input_x)
+    np.testing.assert_array_equal(learner.calls[0][1], np.array([0]))
