@@ -2362,44 +2362,78 @@ class CalibratedExplainer:
                 lesser_values[f] = {}
                 greater_values[f] = {}
                 covered_values[f] = {}
+                bins_array = np.asarray(bins) if bins is not None else None
+                classes_array = np.asarray(prediction["classes"])
+
                 for j, val in enumerate(np.unique(lower_boundary)):
                     lesser_values[f][j] = (np.unique(self.__get_lesser_values(f, val)), val)
                     indices = np.where(lower_boundary == val)[0]
-                    if lesser_values[f][j][0].size == 0 or indices.size == 0:
+                    values = lesser_values[f][j][0]
+                    if values.size == 0 or indices.size == 0:
                         continue
-                    for value in lesser_values[f][j][0]:
-                        x_local = x_copy[indices, :].copy()
-                        x_local[:, f] = value
-                        perturbed_x_parts.append(x_local)
-                        perturbed_feature_parts.append(
-                            np.array([(f, i, j, True) for i in indices], dtype=object)
-                        )
-                        if bins is not None:
-                            perturbed_bins_parts.append(
-                                np.array(bins[indices] if len(indices) > 1 else [bins[indices[0]]])
-                            )
-                        perturbed_class_parts.append(np.array(prediction["classes"][indices], copy=True))
-                        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                            threshold_items.extend(threshold[i] for i in indices)
+
+                    base_slice = np.array(x[indices, :], copy=True)
+                    num_instances_subset = base_slice.shape[0]
+                    num_values = values.size
+
+                    tiled_x = np.tile(base_slice, (num_values, 1))
+                    tiled_x[:, f] = np.repeat(values, num_instances_subset)
+                    perturbed_x_parts.append(tiled_x)
+
+                    feature_info = np.empty((num_instances_subset * num_values, 4), dtype=object)
+                    feature_info[:, 0] = f
+                    feature_info[:, 1] = np.tile(indices, num_values)
+                    feature_info[:, 2] = j
+                    feature_info[:, 3] = True
+                    perturbed_feature_parts.append(feature_info)
+
+                    if bins_array is not None:
+                        bins_subset = np.array(bins_array[indices], copy=True)
+                        tile_shape = (num_values,) + (1,) * (bins_subset.ndim - 1)
+                        perturbed_bins_parts.append(np.tile(bins_subset, tile_shape))
+
+                    class_subset = np.array(classes_array[indices], copy=True)
+                    tile_shape = (num_values,) + (1,) * (class_subset.ndim - 1)
+                    perturbed_class_parts.append(np.tile(class_subset, tile_shape))
+
+                    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                        threshold_subset = [threshold[i] for i in indices]
+                        threshold_items.extend(threshold_subset * num_values)
+
                 for j, val in enumerate(np.unique(upper_boundary)):
                     greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
                     indices = np.where(upper_boundary == val)[0]
-                    if greater_values[f][j][0].size == 0 or indices.size == 0:
+                    values = greater_values[f][j][0]
+                    if values.size == 0 or indices.size == 0:
                         continue
-                    for value in greater_values[f][j][0]:
-                        x_local = x_copy[indices, :].copy()
-                        x_local[:, f] = value
-                        perturbed_x_parts.append(x_local)
-                        perturbed_feature_parts.append(
-                            np.array([(f, i, j, False) for i in indices], dtype=object)
-                        )
-                        if bins is not None:
-                            perturbed_bins_parts.append(
-                                np.array(bins[indices] if len(indices) > 1 else [bins[indices[0]]])
-                            )
-                        perturbed_class_parts.append(np.array(prediction["classes"][indices], copy=True))
-                        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                            threshold_items.extend(threshold[i] for i in indices)
+
+                    base_slice = np.array(x[indices, :], copy=True)
+                    num_instances_subset = base_slice.shape[0]
+                    num_values = values.size
+
+                    tiled_x = np.tile(base_slice, (num_values, 1))
+                    tiled_x[:, f] = np.repeat(values, num_instances_subset)
+                    perturbed_x_parts.append(tiled_x)
+
+                    feature_info = np.empty((num_instances_subset * num_values, 4), dtype=object)
+                    feature_info[:, 0] = f
+                    feature_info[:, 1] = np.tile(indices, num_values)
+                    feature_info[:, 2] = j
+                    feature_info[:, 3] = False
+                    perturbed_feature_parts.append(feature_info)
+
+                    if bins_array is not None:
+                        bins_subset = np.array(bins_array[indices], copy=True)
+                        tile_shape = (num_values,) + (1,) * (bins_subset.ndim - 1)
+                        perturbed_bins_parts.append(np.tile(bins_subset, tile_shape))
+
+                    class_subset = np.array(classes_array[indices], copy=True)
+                    tile_shape = (num_values,) + (1,) * (class_subset.ndim - 1)
+                    perturbed_class_parts.append(np.tile(class_subset, tile_shape))
+
+                    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                        threshold_subset = [threshold[i] for i in indices]
+                        threshold_items.extend(threshold_subset * num_values)
                 for i in range(len(x)):
                     covered_values[f][i] = (
                         self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]),
