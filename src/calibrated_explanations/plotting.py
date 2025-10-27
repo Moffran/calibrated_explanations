@@ -93,6 +93,7 @@ def _read_plot_pyproject() -> Dict[str, Any]:
 
 
 def _split_csv(value: Any) -> Sequence[str]:
+    """Normalize comma-separated labels into a tuple."""
     if not value:
         return ()
     if isinstance(value, str):
@@ -819,6 +820,7 @@ def _plot_triangular(
 
 # `__plot_triangular`
 def __plot_proba_triangle():
+    """Render the static probability triangle overlay."""
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
     plt.plot(x, ((1 - x) / x), color="black")
@@ -1416,6 +1418,7 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
 
 
 def _plot_proba_triangle():
+    """Build a Matplotlib figure showcasing the probability triangle layout."""
     __require_matplotlib()
     fig = plt.figure()
     x = np.arange(0, 1, 0.01)

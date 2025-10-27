@@ -589,6 +589,7 @@ class WrapCalibratedExplainer:
         self.explainer.plot(x, y=y, threshold=threshold, **kwargs)
 
     def _get_bins(self, x: Any, **kwargs: Any) -> Any:
+        """Derive bin assignments from the configured Mondrian categorizer."""
         if isinstance(self.mc, MondrianCategorizer):
             return self.mc.apply(x)
         return self.mc(x) if self.mc is not None else kwargs.get("bins")

@@ -142,10 +142,12 @@ class _PredictBridgeMonitor(PredictBridge):
     """Runtime guard ensuring plugins use the calibrated predict bridge."""
 
     def __init__(self, bridge: PredictBridge) -> None:
+        """Wrap the active predict bridge and start recording usage."""
         self._bridge = bridge
         self._calls: List[str] = []
 
     def reset_usage(self) -> None:
+        """Clear recorded bridge interactions."""
         self._calls.clear()
 
     def predict(
@@ -156,6 +158,7 @@ class _PredictBridgeMonitor(PredictBridge):
         task: str,
         bins: Any | None = None,
     ) -> Mapping[str, Any]:
+        """Forward predict calls while tagging invocation history."""
         self._calls.append("predict")
         return self._bridge.predict(x, mode=mode, task=task, bins=bins)
 
@@ -166,19 +169,23 @@ class _PredictBridgeMonitor(PredictBridge):
         task: str,
         bins: Any | None = None,
     ) -> Sequence[Any]:
+        """Proxy interval predictions and record the access."""
         self._calls.append("predict_interval")
         return self._bridge.predict_interval(x, task=task, bins=bins)
 
     def predict_proba(self, x: Any, bins: Any | None = None) -> Sequence[Any]:
+        """Delegate ``predict_proba`` while tracking usage."""
         self._calls.append("predict_proba")
         return self._bridge.predict_proba(x, bins=bins)
 
     @property
     def calls(self) -> Tuple[str, ...]:
+        """Return a tuple describing which bridge methods were used."""
         return tuple(self._calls)
 
     @property
     def used(self) -> bool:
+        """Return True when the monitor observed any bridge invocation."""
         return bool(self._calls)
 
 
@@ -2456,6 +2463,7 @@ class CalibratedExplainer:
         return _ih(self, x, low_high_percentiles, threshold, bins, features_to_ignore)
 
     def _explain_predict_step(self, x, threshold, low_high_percentiles, bins, features_to_ignore):
+        """Run the helper-assisted setup for an explanation request."""
         # Phase 1A: delegate initial setup to prediction_helpers to lock behavior
         from .prediction_helpers import explain_predict_step as _eps
 
@@ -3122,6 +3130,7 @@ class CalibratedExplainer:
         return threshold
 
     def _assign_weight(self, instance_predict, prediction):
+        """Compute contribution weight as the delta from the global prediction."""
         return (
             prediction - instance_predict
             if np.isscalar(prediction)
@@ -3278,6 +3287,7 @@ class CalibratedExplainer:
             self.__initialize_interval_learner()
 
     def __constant_sigma(self, x: np.ndarray, learner=None, beta=None) -> np.ndarray:  # pylint: disable=unused-argument
+        """Return a unit difficulty vector when no estimator is configured."""
         return np.ones(x.shape[0]) if isinstance(x, (np.ndarray, list, tuple)) else np.ones(1)
 
     def _get_sigma_test(self, x: np.ndarray) -> np.ndarray:
@@ -3312,6 +3322,7 @@ class CalibratedExplainer:
             self.__initialize_interval_learner()
 
     def __update_interval_learner(self, xs, ys, bins=None) -> None:  # pylint: disable=unused-argument
+        """Refresh the interval learner with new calibration data."""
         if self.is_fast():
             raise ConfigurationError("Fast explanations are not supported in this update path.")
         if self.mode == "classification":
@@ -3333,6 +3344,7 @@ class CalibratedExplainer:
         self.__initialized = True
 
     def __initialize_interval_learner(self) -> None:
+        """Create the interval learner backend using calibration helpers."""
         # Thin delegator kept for backward-compatibility internal calls
         from .calibration_helpers import initialize_interval_learner as _init_il
 
@@ -3340,6 +3352,7 @@ class CalibratedExplainer:
 
     # pylint: disable=attribute-defined-outside-init
     def __initialize_interval_learner_for_fast_explainer(self):
+        """Provision fast-path interval learners for Mondrian explanations."""
         from .calibration_helpers import (
             initialize_interval_learner_for_fast_explainer as _init_fast,
         )
@@ -3444,6 +3457,7 @@ class CalibratedExplainer:
         return rejected, error_rate, reject_rate
 
     def _preprocess(self):
+        """Identify constant calibration features that can be ignored downstream."""
         constant_columns = [
             f for f in range(self.num_features) if np.all(self.x_cal[:, f] == self.x_cal[0, f])
         ]
@@ -3813,6 +3827,7 @@ class CalibratedExplainer:
         return self.__shap_enabled
 
     def _preload_lime(self, x_cal=None):
+        """Materialize LIME explainer artifacts when the dependency is available."""
         if not (lime := safe_import("lime.lime_tabular", "LimeTabularExplainer")):
             return None, None
         if not self._is_lime_enabled():
@@ -3839,6 +3854,7 @@ class CalibratedExplainer:
         return self.lime, self.lime_exp
 
     def _preload_shap(self, num_test=None):
+        """Eagerly compute SHAP explanations to amortize repeated requests."""
         if shap := safe_import("shap"):
             if (
                 not self._is_shap_enabled()

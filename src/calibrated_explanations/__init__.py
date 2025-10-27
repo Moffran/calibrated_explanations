@@ -72,4 +72,5 @@ def __getattr__(name: str):
 
 
 def __dir__():
+    """Return sorted public attributes for interactive shells."""
     return sorted(list(globals().keys()) + __all__)

@@ -412,6 +412,7 @@ def _plot_triangular(
 
 # `__plot_triangular`
 def __plot_proba_triangle():
+    """Draw the static probability triangle reference lines."""
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
     plt.plot(x, ((1 - x) / x), color="black")
@@ -748,6 +749,7 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
 
 
 def _plot_proba_triangle():
+    """Create a Matplotlib figure illustrating the probability triangle."""
     plt.figure()
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
@@ -760,6 +762,7 @@ def _plot_proba_triangle():
 
 # pylint: disable=invalid-name
 def __color_brew(n):
+    """Return ``n`` visually distinct colors using a HSV sweep."""
     color_list = []
 
     # Initialize saturation & value; calculate chroma & value shift
@@ -783,6 +786,7 @@ def __color_brew(n):
 
 
 def __get_fill_color(venn_abers, reduction=1):  # pylint: disable=unused-private-member
+    """Select fill color/alpha for a Venn-Abers region."""
     colors = __color_brew(2)
     winner_class = int(venn_abers["predict"] >= 0.5)
     color = colors[winner_class]

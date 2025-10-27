@@ -200,6 +200,7 @@ class LRUCache(Generic[K, V]):
         telemetry: TelemetryCallback | None,
         size_estimator: Callable[[Any], int],
     ) -> None:
+        """Initialize cache bookkeeping and validate sizing constraints."""
         if max_items <= 0:
             raise ValueError("max_items must be positive")
         if max_bytes is not None and max_bytes <= 0:
@@ -286,12 +287,14 @@ class LRUCache(Generic[K, V]):
     # Private helpers
     # ------------------------------------------------------------------
     def _safe_estimate(self, value: Any) -> int:
+        """Best-effort estimate of object size, swallowing estimator errors."""
         try:
             return int(self._size_estimator(value))
         except Exception:  # pragma: no cover - defensive fall-back
             return 0
 
     def _shrink_if_needed(self) -> None:
+        """Evict entries until the cache fits item and byte budgets."""
         if self.max_bytes is None and len(self._store) <= self.max_items:
             return
         while len(self._store) > self.max_items:
@@ -302,10 +305,12 @@ class LRUCache(Generic[K, V]):
             self._evict_oldest()
 
     def _evict_oldest(self) -> None:
+        """Remove the least-recently-used entry."""
         key, _ = next(iter(self._store.items()))
         self._evict_no_lock(key)
 
     def _evict_no_lock(self, key: K) -> None:
+        """Remove ``key`` from the store without acquiring the lock."""
         entry = self._store.pop(key, None)
         if entry is not None:
             self._bytes -= entry.cost
@@ -313,6 +318,7 @@ class LRUCache(Generic[K, V]):
             self._emit("cache_evict", {"key": key, "cost": entry.cost})
 
     def _emit(self, event: str, payload: Mapping[str, Any]) -> None:
+        """Send telemetry events when a callback is registered."""
         if self._telemetry is None:
             return
         try:  # pragma: no cover - telemetry is optional best effort

@@ -138,6 +138,7 @@ class VennAbers:
         warnings.filterwarnings("default", category=RuntimeWarning)
 
     def __predict_proba_with_difficulty(self, x, bins=None):
+        """Augment raw probabilities with optional difficulty adjustments."""
         if "bins" in self._predict_proba.__code__.co_varnames:
             probs = self._predict_proba(x, bins=bins)
         else:

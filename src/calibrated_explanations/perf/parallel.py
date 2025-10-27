@@ -98,6 +98,7 @@ class ParallelExecutor:
         *,
         cache: CalibratorCache[Any] | None = None,
     ) -> None:
+        """Store configuration and telemetry state for later map calls."""
         self.config = config
         self.cache = cache
         self.metrics = ParallelMetrics()
@@ -139,6 +140,7 @@ class ParallelExecutor:
     def _resolve_strategy(
         self,
     ) -> Callable[[Callable[[T], R], Sequence[T], Any], List[R]]:
+        """Return a concrete execution strategy based on configuration."""
         strategy = self.config.strategy
         if strategy == "auto":
             strategy = self._auto_strategy()
@@ -151,6 +153,7 @@ class ParallelExecutor:
         return partial(self._serial_strategy)
 
     def _auto_strategy(self) -> str:
+        """Choose a sensible default backend for the current platform."""
         if os.name == "nt":  # prefer threads on Windows for compatibility
             return "threads"
         cpu_count = os.cpu_count() or 1
@@ -167,11 +170,13 @@ class ParallelExecutor:
     def _serial_strategy(
         self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
     ) -> List[R]:
+        """Fallback strategy executing sequentially in the current process."""
         return [fn(item) for item in items]
 
     def _thread_strategy(
         self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
     ) -> List[R]:
+        """Execute work items using a thread pool."""
         max_workers = workers or self.config.max_workers or min(32, (os.cpu_count() or 1) * 5)
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
             return list(pool.map(fn, items))
@@ -179,6 +184,7 @@ class ParallelExecutor:
     def _process_strategy(
         self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
     ) -> List[R]:
+        """Execute work items using a process pool with cache isolation."""
         max_workers = workers or self.config.max_workers or (os.cpu_count() or 1)
         # Reset cache to avoid cross-process contamination (fork safety)
         if self.cache is not None:
@@ -189,6 +195,7 @@ class ParallelExecutor:
     def _joblib_strategy(
         self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
     ) -> List[R]:
+        """Dispatch work through joblib's Parallel abstraction when available."""
         if _JoblibParallel is None:
             return self._thread_strategy(fn, items, workers=workers)
         n_jobs = workers or self.config.max_workers or -1
@@ -199,6 +206,7 @@ class ParallelExecutor:
     # Telemetry
     # ------------------------------------------------------------------
     def _emit(self, event: str, payload: Mapping[str, Any]) -> None:
+        """Emit telemetry payloads guarding against user callback failures."""
         if self.config.telemetry is None:
             return
         try:  # pragma: no cover - telemetry best effort

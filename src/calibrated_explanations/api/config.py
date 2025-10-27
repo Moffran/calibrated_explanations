@@ -65,6 +65,7 @@ class ExplainerBuilder:
     """
 
     def __init__(self, model: Any) -> None:
+        """Store base model reference and seed configuration defaults."""
         self._cfg = ExplainerConfig(model=model)
 
     # Simple fluent setters
