@@ -33,7 +33,9 @@ from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
 from calibrated_explanations.plugins.plots import PlotRenderContext
 
 
-def _make_interval_context(task: str, metadata: Dict[str, Any] | None = None) -> IntervalCalibratorContext:
+def _make_interval_context(
+    task: str, metadata: Dict[str, Any] | None = None
+) -> IntervalCalibratorContext:
     """Create a minimal interval context for exercising the plugin."""
 
     metadata_map: Dict[str, Any] = {"task": task}
@@ -125,16 +127,16 @@ def _make_collection(*, with_instances: bool) -> builtins_mod.CalibratedExplanat
 
 
 def _make_plot_context(**kwargs: Any) -> PlotRenderContext:
-    base_kwargs = dict(
-        explanation=None,
-        instance_metadata=MappingProxyType({"type": "alternative"}),
-        style="plot_spec.default",
-        intent=MappingProxyType({"type": "global", "title": "demo"}),
-        show=False,
-        path=None,
-        save_ext=None,
-        options=MappingProxyType({"payload": {"y": np.asarray([1, 2, 3])}}),
-    )
+    base_kwargs = {
+        "explanation": None,
+        "instance_metadata": MappingProxyType({"type": "alternative"}),
+        "style": "plot_spec.default",
+        "intent": MappingProxyType({"type": "global", "title": "demo"}),
+        "show": False,
+        "path": None,
+        "save_ext": None,
+        "options": MappingProxyType({"payload": {"y": np.asarray([1, 2, 3])}}),
+    }
     base_kwargs.update(kwargs)
     return PlotRenderContext(**base_kwargs)
 
@@ -163,7 +165,7 @@ def test_legacy_predict_bridge_includes_intervals_and_classes():
             self.predict_calls: list[Dict[str, Any]] = []
 
         def predict(self, *args: Any, **kwargs: Any) -> Any:
-            self.predict_calls.append(dict(args=args, kwargs=kwargs))
+            self.predict_calls.append({"args": args, "kwargs": kwargs})
             if kwargs.get("calibrated"):
                 return ["a", "b"]
             return (
@@ -219,12 +221,14 @@ def test_predict_bridge_interval_and_proba():
 def test_supports_and_explain_methods(monkeypatch: pytest.MonkeyPatch):
     module_name = "calibrated_explanations.core.calibrated_explainer"
     dummy_module = ModuleType(module_name)
-    DummyExplainer = type("DummyExplainer", (), {"explain_factual": lambda self, *a, **k: "ok"})
-    dummy_module.CalibratedExplainer = DummyExplainer
+    dummy_explainer_cls = type(
+        "DummyExplainer", (), {"explain_factual": lambda self, *a, **k: "ok"}
+    )
+    dummy_module.CalibratedExplainer = dummy_explainer_cls
     original = sys.modules.get(module_name)
     sys.modules[module_name] = dummy_module
     try:
-        instance = DummyExplainer()
+        instance = dummy_explainer_cls()
         plugin = LegacyFactualExplanationPlugin()
         assert plugin.supports(instance)
         assert plugin.supports_mode("factual", task="classification")
@@ -401,7 +405,9 @@ def test_plot_spec_builder_global_and_error_paths(monkeypatch: pytest.MonkeyPatc
     assert "y_test" in payload
     assert payload.get("title") == "demo"
 
-    bad_ctx = _make_plot_context(options=MappingProxyType({"payload": 1}), intent=MappingProxyType({"type": "global"}))
+    bad_ctx = _make_plot_context(
+        options=MappingProxyType({"payload": 1}), intent=MappingProxyType({"type": "global"})
+    )
     with pytest.raises(RuntimeError):
         builder.build(bad_ctx)
 
@@ -588,11 +594,23 @@ def test_plot_spec_builder_unsupported_intent():
 def test_register_builtins_invokes_registry(monkeypatch: pytest.MonkeyPatch):
     calls: list[tuple[str, Iterable[str]]] = []
 
-    monkeypatch.setattr(builtins_mod, "register_interval_plugin", lambda *args: calls.append(("interval", args)))
-    monkeypatch.setattr(builtins_mod, "register_explanation_plugin", lambda *args: calls.append(("explanation", args)))
-    monkeypatch.setattr(builtins_mod, "register_plot_builder", lambda *args: calls.append(("builder", args)))
-    monkeypatch.setattr(builtins_mod, "register_plot_renderer", lambda *args: calls.append(("renderer", args)))
-    monkeypatch.setattr(builtins_mod, "register_plot_style", lambda *args, **kwargs: calls.append(("style", args)))
+    monkeypatch.setattr(
+        builtins_mod, "register_interval_plugin", lambda *args: calls.append(("interval", args))
+    )
+    monkeypatch.setattr(
+        builtins_mod,
+        "register_explanation_plugin",
+        lambda *args: calls.append(("explanation", args)),
+    )
+    monkeypatch.setattr(
+        builtins_mod, "register_plot_builder", lambda *args: calls.append(("builder", args))
+    )
+    monkeypatch.setattr(
+        builtins_mod, "register_plot_renderer", lambda *args: calls.append(("renderer", args))
+    )
+    monkeypatch.setattr(
+        builtins_mod, "register_plot_style", lambda *args, **kwargs: calls.append(("style", args))
+    )
 
     _register_builtins()
 

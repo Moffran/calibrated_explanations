@@ -131,14 +131,22 @@ def test_auto_strategy(monkeypatch):
     assert executor._auto_strategy() == "threads"
 
     monkeypatch.setattr("calibrated_explanations.perf.parallel.os.name", "posix", raising=False)
-    monkeypatch.setattr("calibrated_explanations.perf.parallel.os.cpu_count", lambda: 1, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.perf.parallel.os.cpu_count", lambda: 1, raising=False
+    )
     assert executor._auto_strategy() == "threads"
 
-    monkeypatch.setattr("calibrated_explanations.perf.parallel.os.cpu_count", lambda: 8, raising=False)
-    monkeypatch.setattr("calibrated_explanations.perf.parallel._JoblibParallel", object(), raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.perf.parallel.os.cpu_count", lambda: 8, raising=False
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.perf.parallel._JoblibParallel", object(), raising=False
+    )
     assert executor._auto_strategy() == "joblib"
 
-    monkeypatch.setattr("calibrated_explanations.perf.parallel._JoblibParallel", None, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.perf.parallel._JoblibParallel", None, raising=False
+    )
     assert executor._auto_strategy() == "processes"
 
 
@@ -195,7 +203,9 @@ def test_joblib_strategy(monkeypatch):
         return [fn(item) for item in items]
 
     monkeypatch.setattr(executor, "_thread_strategy", fake_thread)
-    monkeypatch.setattr("calibrated_explanations.perf.parallel._JoblibParallel", None, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.perf.parallel._JoblibParallel", None, raising=False
+    )
     assert executor._joblib_strategy(echo, [1, 2]) == [1, 2]
     assert calls["thread"]
 
@@ -205,13 +215,17 @@ def test_joblib_strategy(monkeypatch):
             self.prefer = prefer
 
         def __call__(self, iterator):
-            return [op for op in iterator]
+            return list(iterator)
 
     def fake_delayed(fn):
         return lambda value: fn(value)
 
-    monkeypatch.setattr("calibrated_explanations.perf.parallel._JoblibParallel", FakeParallel, raising=False)
-    monkeypatch.setattr("calibrated_explanations.perf.parallel._joblib_delayed", fake_delayed, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.perf.parallel._JoblibParallel", FakeParallel, raising=False
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.perf.parallel._joblib_delayed", fake_delayed, raising=False
+    )
     result = executor._joblib_strategy(echo, [1, 2, 3])
     assert result == [1, 2, 3]
 

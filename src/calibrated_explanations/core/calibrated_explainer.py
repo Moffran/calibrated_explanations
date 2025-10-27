@@ -47,7 +47,6 @@ from ..utils.discretizers import (
 from ..utils.helper import (
     assert_threshold,
     check_is_fitted,
-    concatenate_thresholds,
     convert_targets_to_numeric,
     immutable_array,
     safe_import,
@@ -930,7 +929,7 @@ class CalibratedExplainer:
         if not chain and mode == "fast":
             raise ConfigurationError(
                 "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                "Install the external plugins extra with ``pip install \"calibrated-explanations[external-plugins]\"`` "
+                'Install the external plugins extra with ``pip install "calibrated-explanations[external-plugins]"`` '
                 "and call ``external_plugins.fast_explanations.register()`` or rerun "
                 "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
             )
@@ -940,9 +939,7 @@ class CalibratedExplainer:
             if is_identifier_denied(identifier):
                 message = f"{identifier}: denied via CE_DENY_PLUGIN"
                 if is_preferred:
-                    raise ConfigurationError(
-                        "Explanation plugin override failed: " + message
-                    )
+                    raise ConfigurationError("Explanation plugin override failed: " + message)
                 errors.append(message)
                 continue
             descriptor = find_explanation_descriptor(identifier)
@@ -1328,22 +1325,16 @@ class CalibratedExplainer:
             if x_cal_np.size:
                 categorical_features = tuple(int(f) for f in self.categorical_features)
                 for f_cat in categorical_features:
-                    unique_vals, unique_counts = np.unique(
-                        x_cal_np[:, f_cat], return_counts=True
-                    )
+                    unique_vals, unique_counts = np.unique(x_cal_np[:, f_cat], return_counts=True)
                     categorical_value_counts[int(f_cat)] = {
                         val: int(cnt)
-                        for val, cnt in zip(
-                            unique_vals.tolist(), unique_counts.tolist()
-                        )
+                        for val, cnt in zip(unique_vals.tolist(), unique_counts.tolist())
                     }
                 numeric_features = [
                     f for f in range(self.num_features) if f not in categorical_features
                 ]
                 for f_num in numeric_features:
-                    numeric_sorted_cache[f_num] = np.sort(
-                        np.asarray(x_cal_np[:, f_num])
-                    )
+                    numeric_sorted_cache[f_num] = np.sort(np.asarray(x_cal_np[:, f_num]))
             self._categorical_value_counts_cache = categorical_value_counts
             self._numeric_sorted_cache = numeric_sorted_cache
             self._calibration_summary_shape = shape
@@ -1897,7 +1888,7 @@ class CalibratedExplainer:
         low_matrix = np.zeros((n_instances, num_features))
         high_matrix = np.zeros((n_instances, num_features))
 
-        rule_values: List[Dict[int, Any]] = [dict() for _ in range(n_instances)]
+        rule_values: List[Dict[int, Any]] = [{} for _ in range(n_instances)]
         instance_binned: List[Dict[str, Dict[int, Any]]] = [
             {
                 "predict": {},
@@ -1925,9 +1916,7 @@ class CalibratedExplainer:
         else:
             feature_index_map = {}
 
-        categorical_value_counts, numeric_sorted_cache = self._get_calibration_summaries(
-            x_cal_np
-        )
+        categorical_value_counts, numeric_sorted_cache = self._get_calibration_summaries(x_cal_np)
 
         for f in range(self.num_features):
             if f in features_to_ignore_set:
@@ -1968,7 +1957,9 @@ class CalibratedExplainer:
                 num_feature_values = int(feature_values.size)
                 value_counts_cache: Dict[Any, int] = categorical_value_counts.get(int(f), {})
                 counts_template = (
-                    np.array([value_counts_cache.get(val, 0) for val in feature_values_list], dtype=float)
+                    np.array(
+                        [value_counts_cache.get(val, 0) for val in feature_values_list], dtype=float
+                    )
                     if num_feature_values
                     else np.zeros((0,), dtype=float)
                 )
@@ -2151,9 +2142,9 @@ class CalibratedExplainer:
                     for val in unique_lower
                 }
                 upper_cache = {
-                    val: 0 if val == np.inf else int(
-                        sorted_cal.size - np.searchsorted(sorted_cal, val, side="right")
-                    )
+                    val: 0
+                    if val == np.inf
+                    else int(sorted_cal.size - np.searchsorted(sorted_cal, val, side="right"))
                     for val in unique_upper
                 }
                 bounds_matrix = np.column_stack((lower_boundary, upper_boundary))
@@ -2174,7 +2165,9 @@ class CalibratedExplainer:
                         continue
                     for idx in lower_groups.get(j, []):
                         inst = int(idx)
-                        rel_indices = numeric_grouped.get((inst, j, True), np.empty((0,), dtype=int))
+                        rel_indices = numeric_grouped.get(
+                            (inst, j, True), np.empty((0,), dtype=int)
+                        )
                         avg_predict_map[inst][bin_value[inst]] = (
                             safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
                         )
@@ -2194,7 +2187,9 @@ class CalibratedExplainer:
                         continue
                     for idx in upper_groups.get(j, []):
                         inst = int(idx)
-                        rel_indices = numeric_grouped.get((inst, j, False), np.empty((0,), dtype=int))
+                        rel_indices = numeric_grouped.get(
+                            (inst, j, False), np.empty((0,), dtype=int)
+                        )
                         avg_predict_map[inst][bin_value[inst]] = (
                             safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
                         )
@@ -2266,8 +2261,12 @@ class CalibratedExplainer:
                         weights_predict[inst, f] = self._assign_weight(
                             predict_matrix[inst, f], prediction["predict"][inst]
                         )
-                        tmp_low = self._assign_weight(low_matrix[inst, f], prediction["predict"][inst])
-                        tmp_high = self._assign_weight(high_matrix[inst, f], prediction["predict"][inst])
+                        tmp_low = self._assign_weight(
+                            low_matrix[inst, f], prediction["predict"][inst]
+                        )
+                        tmp_high = self._assign_weight(
+                            high_matrix[inst, f], prediction["predict"][inst]
+                        )
                         weights_low[inst, f] = np.min([tmp_low, tmp_high])
                         weights_high[inst, f] = np.max([tmp_low, tmp_high])
         binned_predict: Dict[str, List[Any]] = {
@@ -2357,7 +2356,7 @@ class CalibratedExplainer:
             if features_to_ignore is not None
             else np.empty((0,), dtype=int)
         )
-        features_to_ignore_set = set(int(f) for f in features_to_ignore_array.tolist())
+        features_to_ignore_set = {int(f) for f in features_to_ignore_array.tolist()}
 
         # Sub-step 1.b: prepare and add the perturbed test instances (unchanged logic)
         # pylint: disable=too-many-nested-blocks
@@ -2510,12 +2509,12 @@ class CalibratedExplainer:
                         x_local = x_copy[i, :].copy()
                         x_local[f] = value
                         perturbed_x_parts.append(x_local[np.newaxis, :])
-                        perturbed_feature_parts.append(
-                            np.array([(f, i, i, None)], dtype=object)
-                        )
+                        perturbed_feature_parts.append(np.array([(f, i, i, None)], dtype=object))
                         if bins is not None:
                             perturbed_bins_parts.append(np.array([bins[i]]))
-                        perturbed_class_parts.append(np.array([prediction["classes"][i]], copy=True))
+                        perturbed_class_parts.append(
+                            np.array([prediction["classes"][i]], copy=True)
+                        )
                         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                             threshold_items.append(threshold[i])
 
@@ -2541,9 +2540,7 @@ class CalibratedExplainer:
             else:
                 base_array = perturbed_threshold if len(perturbed_threshold) else np.empty((0,))
                 if threshold_items:
-                    perturbed_threshold = np.concatenate(
-                        [base_array, np.asarray(threshold_items)]
-                    )
+                    perturbed_threshold = np.concatenate([base_array, np.asarray(threshold_items)])
                 else:
                     perturbed_threshold = base_array
         # Sub-step 1.c: Predict and convert to numpy arrays to allow boolean indexing
@@ -2708,7 +2705,9 @@ class CalibratedExplainer:
             f for f in range(self.num_features) if f not in self.features_to_ignore
         ]
 
-        def _process_feature(f_idx: int) -> Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        def _process_feature(
+            f_idx: int,
+        ) -> Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
             local_predict, local_low, local_high, _ = self._predict(
                 x,
                 threshold=threshold,

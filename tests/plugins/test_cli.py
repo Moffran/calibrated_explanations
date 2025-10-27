@@ -31,7 +31,9 @@ def test_string_tuple_variants(value, expected):
 
 
 def test_emit_descriptor_helpers_cover_branches(monkeypatch, capsys):
-    monkeypatch.setattr(cli, "is_identifier_denied", lambda identifier: identifier.endswith("-denied"))
+    monkeypatch.setattr(
+        cli, "is_identifier_denied", lambda identifier: identifier.endswith("-denied")
+    )
 
     explanation = DummyDescriptor(
         identifier="explainer-denied",

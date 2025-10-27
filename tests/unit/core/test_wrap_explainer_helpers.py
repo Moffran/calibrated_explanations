@@ -226,7 +226,9 @@ def test_predict_proba_requires_threshold_for_regression(wrapper: WrapCalibrated
         wrapper.predict_proba(np.array([1, 2]), threshold=0.5)
 
 
-def test_from_config_sets_perf_primitives_to_none_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_from_config_sets_perf_primitives_to_none_when_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr("calibrated_explanations.perf.from_config", lambda _: None)
     cfg = SimpleNamespace(
         model=_PredictOnlyLearner(),

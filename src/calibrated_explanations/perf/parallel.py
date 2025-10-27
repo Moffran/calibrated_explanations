@@ -2,19 +2,23 @@
 
 from __future__ import annotations
 
+import logging
+import os
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
-import os
-from typing import Any, Callable, Iterable, List, Literal, Mapping, Sequence, Tuple, TypeVar
+from typing import Any, Callable, Iterable, List, Literal, Mapping, Sequence, TypeVar
 
 try:  # pragma: no cover - optional dependency
-    from joblib import Parallel as _JoblibParallel, delayed as _joblib_delayed
+    from joblib import Parallel as _JoblibParallel
+    from joblib import delayed as _joblib_delayed
 except Exception:  # pragma: no cover - joblib remains optional
     _JoblibParallel = None  # type: ignore[assignment]
     _joblib_delayed = None  # type: ignore[assignment]
 
 from .cache import CalibratorCache, TelemetryCallback
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -72,7 +76,7 @@ class ParallelConfig:
             if token.startswith("min_batch="):
                 cfg.min_batch_size = max(1, int(token.split("=", 1)[1]))
                 continue
-            if token == "enable":
+            if token == "enable":  # noqa: S105  # nosec B105 - configuration toggle keyword
                 cfg.enabled = True
         return cfg
 
@@ -188,9 +192,8 @@ class ParallelExecutor:
             return
         try:  # pragma: no cover - telemetry best effort
             self.config.telemetry(event, payload)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Parallel telemetry callback failed for %s: %s", event, exc)
 
 
 __all__ = ["ParallelConfig", "ParallelExecutor", "ParallelMetrics"]
-

@@ -16,7 +16,6 @@ Classes:
         Represents fast explanations, enabling efficient interpretation of model behavior for large datasets.
 """
 
-import contextlib
 import math
 import re
 import warnings
@@ -782,7 +781,9 @@ class CalibratedExplanation(ABC):
         rule_high = 0.0
         rule_count = 0
 
-        value_iterables = [np.asarray(values) for values in rule_value_set[: len(original_features)]]
+        value_iterables = [
+            np.asarray(values) for values in rule_value_set[: len(original_features)]
+        ]
 
         def _restore() -> None:
             for pos, feat_idx in enumerate(original_features):

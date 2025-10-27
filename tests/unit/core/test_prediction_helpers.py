@@ -66,7 +66,11 @@ class _StubExplainer:
         self._multiclass = multiclass
         self.x_cal = np.zeros((2, num_features))
         self.interval_learner = self._build_interval_learner()
-        self._learner = self.interval_learner[0] if isinstance(self.interval_learner, list) else self.interval_learner
+        self._learner = (
+            self.interval_learner[0]
+            if isinstance(self.interval_learner, list)
+            else self.interval_learner
+        )
         self.assign_threshold_calls: list = []
         self.predict_calls: list = []
 

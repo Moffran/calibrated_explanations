@@ -88,9 +88,7 @@ def test_predict_with_difficulty_and_class_selection():
     assert selected_classes == [1]
     assert np.allclose(np.sum(probs, axis=1), 1.0)
 
-    interval_probs = calibrator.predict_proba(
-        np.array([[7.0], [8.0]]), output_interval=True
-    )
+    interval_probs = calibrator.predict_proba(np.array([[7.0], [8.0]]), output_interval=True)
     calibrated, low, high, inferred_classes = interval_probs
     assert calibrated.shape == (2, 3)
     assert low.shape == high.shape == (2, 3)
@@ -127,9 +125,7 @@ def test_predict_proba_requires_bins_for_mondrian_multiclass():
     with pytest.raises(ValueError, match="bins must be provided if Mondrian"):
         calibrator.predict_proba(np.array([[1.0], [2.0]]))
 
-    probs, predicted_classes = calibrator.predict_proba(
-        np.array([[1.0], [2.0]]), bins=test_bins
-    )
+    probs, predicted_classes = calibrator.predict_proba(np.array([[1.0], [2.0]]), bins=test_bins)
     assert probs.shape == (2, 3)
     assert predicted_classes.shape == (2,)
 
@@ -184,9 +180,7 @@ def test_binary_predict_rounds_probabilities():
     assert probs.shape == (2, 2)
     assert np.allclose(np.sum(probs, axis=1), 1.0)
 
-    interval = calibrator.predict_proba(
-        np.array([[6.5], [7.5]]), output_interval=True
-    )
+    interval = calibrator.predict_proba(np.array([[6.5], [7.5]]), output_interval=True)
     calibrated, low, high = interval
     assert calibrated.shape == (2, 2)
     assert low.shape == high.shape == (2,)

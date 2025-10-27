@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .cache import CalibratorCache, CacheConfig, CacheMetrics, TelemetryCallback
+from .cache import CacheConfig, CacheMetrics, CalibratorCache, TelemetryCallback
 from .parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
 
 
@@ -19,15 +19,11 @@ class PerfFactory:
     def make_cache(self) -> CalibratorCache[Any]:
         return CalibratorCache(self.cache)
 
-    def make_parallel_executor(
-        self, cache: CalibratorCache[Any] | None = None
-    ) -> ParallelExecutor:
+    def make_parallel_executor(self, cache: CalibratorCache[Any] | None = None) -> ParallelExecutor:
         return ParallelExecutor(self.parallel, cache=cache)
 
     # Backwards compatible name retained for earlier scaffolding usage
-    def make_parallel_backend(
-        self, cache: CalibratorCache[Any] | None = None
-    ) -> ParallelExecutor:
+    def make_parallel_backend(self, cache: CalibratorCache[Any] | None = None) -> ParallelExecutor:
         return self.make_parallel_executor(cache=cache)
 
 
@@ -66,4 +62,3 @@ __all__ = [
     "TelemetryCallback",
     "from_config",
 ]
-

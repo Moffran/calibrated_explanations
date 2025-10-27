@@ -49,12 +49,16 @@ class DummyLearner:
 class DummyIntervalLearner:
     """Interval learner returning deterministic zero arrays."""
 
-    def predict_uncertainty(self, x: np.ndarray, *_args: Any, **_kwargs: Any) -> tuple[np.ndarray, ...]:
+    def predict_uncertainty(
+        self, x: np.ndarray, *_args: Any, **_kwargs: Any
+    ) -> tuple[np.ndarray, ...]:
         n = x.shape[0]
         zeros = np.zeros(n)
         return zeros, zeros, zeros, None
 
-    def predict_probability(self, x: np.ndarray, *_args: Any, **_kwargs: Any) -> tuple[np.ndarray, ...]:
+    def predict_probability(
+        self, x: np.ndarray, *_args: Any, **_kwargs: Any
+    ) -> tuple[np.ndarray, ...]:
         n = x.shape[0]
         zeros = np.zeros(n)
         return zeros, zeros, zeros, None
@@ -88,7 +92,9 @@ def _make_explainer(
     return CalibratedExplainer(learner, x_cal, y_cal, **kwargs)
 
 
-def test_read_pyproject_section_handles_multiple_sources(monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]") -> None:
+def test_read_pyproject_section_handles_multiple_sources(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]"
+) -> None:
     module = __import__("calibrated_explanations.core.calibrated_explainer", fromlist=["_tomllib"])
     monkeypatch.chdir(tmp_path)
 
@@ -116,10 +122,7 @@ def test_read_pyproject_section_handles_multiple_sources(monkeypatch: pytest.Mon
         "_tomllib",
         DummyToml({"tool": {"calibrated_explanations": {"explanations": ["value"]}}}),
     )
-    assert (
-        _read_pyproject_section(("tool", "calibrated_explanations", "explanations"))
-        == {}
-    )
+    assert _read_pyproject_section(("tool", "calibrated_explanations", "explanations")) == {}
 
     # Proper mapping -> returned as dictionary copy
     monkeypatch.setattr(
@@ -167,6 +170,7 @@ def test_oob_predictions_binary(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_oob_predictions_multiclass_categorical(monkeypatch: pytest.MonkeyPatch) -> None:
     import pandas.core.arrays.categorical  # noqa: F401  ensure module is available
+
     calls: list[str] = []
 
     def fake_safe_isinstance(_obj: Any, name: str) -> bool:
@@ -179,9 +183,7 @@ def test_oob_predictions_multiclass_categorical(monkeypatch: pytest.MonkeyPatch)
     )
 
     learner = DummyLearner(
-        oob_decision_function=np.array(
-            [[0.1, 0.2, 0.7], [0.6, 0.2, 0.2], [0.2, 0.5, 0.3]]
-        )
+        oob_decision_function=np.array([[0.1, 0.2, 0.7], [0.6, 0.2, 0.2], [0.2, 0.5, 0.3]])
     )
     x_cal = np.arange(3).reshape(-1, 1)
     y_cal = pd.Categorical(["cat", "dog", "bird"])
@@ -277,8 +279,7 @@ def test_explanation_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> Non
         "capabilities": ("explain", "explanation:factual", "task:both"),
     }
     assert (
-        explainer._check_explanation_runtime_metadata(ok, identifier="demo", mode="factual")
-        is None
+        explainer._check_explanation_runtime_metadata(ok, identifier="demo", mode="factual") is None
     )
 
 
@@ -403,10 +404,7 @@ def test_interval_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
     ok = missing_caps | {"capabilities": ("interval:regression",), "fast_compatible": True}
-    assert (
-        explainer._check_interval_runtime_metadata(ok, identifier="demo", fast=False)
-        is None
-    )
+    assert explainer._check_interval_runtime_metadata(ok, identifier="demo", fast=False) is None
 
 
 def test_gather_interval_hints(monkeypatch: pytest.MonkeyPatch) -> None:

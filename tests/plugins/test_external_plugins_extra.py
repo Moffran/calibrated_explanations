@@ -1,4 +1,5 @@
 """Tests for aggregated external plugin extras packaging."""
+
 from __future__ import annotations
 
 from importlib import metadata
@@ -19,11 +20,7 @@ def _parse_external_plugins_from_pyproject() -> set[str]:
         pytest.skip(f"pyproject.toml not found at {pyproject_path}")
 
     pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-    extras = (
-        pyproject.get("project", {})
-        .get("optional-dependencies", {})
-        .get("external-plugins")
-    )
+    extras = pyproject.get("project", {}).get("optional-dependencies", {}).get("external-plugins")
     if extras is None:  # pragma: no cover - ensures informative failures if config drifts
         pytest.fail("external-plugins extra not declared in pyproject.toml")
     return {dependency.strip() for dependency in extras}

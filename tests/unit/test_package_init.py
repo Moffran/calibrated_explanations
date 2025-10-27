@@ -7,27 +7,27 @@ def test_interval_regressor_lazy_import(monkeypatch):
     # Ensure IntervalRegressor isn't cached before access.
     monkeypatch.delitem(ce.__dict__, "IntervalRegressor", raising=False)
 
-    IntervalRegressor = ce.IntervalRegressor
+    interval_regressor = ce.IntervalRegressor
 
-    from calibrated_explanations.core.interval_regressor import IntervalRegressor as Impl
+    from calibrated_explanations.core.interval_regressor import (
+        IntervalRegressor as IntervalRegressorImpl,
+    )
 
-    assert IntervalRegressor is Impl
-    assert ce.__dict__["IntervalRegressor"] is Impl
+    assert interval_regressor is IntervalRegressorImpl
+    assert ce.__dict__["IntervalRegressor"] is IntervalRegressorImpl
 
 
 def test_venn_abers_lazy_import(monkeypatch):
     monkeypatch.delitem(ce.__dict__, "VennAbers", raising=False)
 
-    VennAbers = ce.VennAbers
+    venn_abers = ce.VennAbers
 
-    from calibrated_explanations.core.venn_abers import VennAbers as Impl
+    from calibrated_explanations.core.venn_abers import VennAbers as VennAbersImpl
 
-    assert VennAbers is Impl
-    assert ce.__dict__["VennAbers"] is Impl
+    assert venn_abers is VennAbersImpl
+    assert ce.__dict__["VennAbers"] is VennAbersImpl
 
 
 def test_unknown_attribute_raises():
     with pytest.raises(AttributeError):
         getattr(ce, "NotARealAttribute")
-
-

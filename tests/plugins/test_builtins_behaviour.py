@@ -9,7 +9,11 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.plugins import builtins
-from calibrated_explanations.plugins.explanations import ExplanationBatch, ExplanationContext, ExplanationRequest
+from calibrated_explanations.plugins.explanations import (
+    ExplanationBatch,
+    ExplanationContext,
+    ExplanationRequest,
+)
 from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
 from calibrated_explanations.plugins.plots import PlotRenderContext
 
@@ -34,47 +38,47 @@ class _SentinelExplainer:
 
 
 def _make_interval_context(**overrides):
-    base = dict(
-        learner="learner",
-        calibration_splits=[("x_cal", "y_cal")],
-        bins={"calibration": "bins"},
-        residuals={},
-        difficulty={"estimator": "difficulty"},
-        metadata={},
-        fast_flags={},
-    )
+    base = {
+        "learner": "learner",
+        "calibration_splits": [("x_cal", "y_cal")],
+        "bins": {"calibration": "bins"},
+        "residuals": {},
+        "difficulty": {"estimator": "difficulty"},
+        "metadata": {},
+        "fast_flags": {},
+    }
     base.update(overrides)
     return IntervalCalibratorContext(**base)
 
 
 def _make_explanation_context(explainer, predict_bridge, **overrides):
-    context = dict(
-        task="classification",
-        mode="factual",
-        feature_names=(),
-        categorical_features=(),
-        categorical_labels={},
-        discretizer=None,
-        helper_handles={"explainer": explainer},
-        predict_bridge=predict_bridge,
-        interval_settings={},
-        plot_settings={},
-    )
+    context = {
+        "task": "classification",
+        "mode": "factual",
+        "feature_names": (),
+        "categorical_features": (),
+        "categorical_labels": {},
+        "discretizer": None,
+        "helper_handles": {"explainer": explainer},
+        "predict_bridge": predict_bridge,
+        "interval_settings": {},
+        "plot_settings": {},
+    }
     context.update(overrides)
     return ExplanationContext(**context)
 
 
 def _make_plot_context(**overrides):
-    context = dict(
-        explanation=None,
-        instance_metadata={},
-        style="plot_spec.default",
-        intent={},
-        show=False,
-        path=None,
-        save_ext=None,
-        options={},
-    )
+    context = {
+        "explanation": None,
+        "instance_metadata": {},
+        "style": "plot_spec.default",
+        "intent": {},
+        "show": False,
+        "path": None,
+        "save_ext": None,
+        "options": {},
+    }
     context.update(overrides)
     return PlotRenderContext(**context)
 
@@ -244,7 +248,9 @@ def test_explanation_plugin_requires_initialisation():
 
 def test_explanation_initialise_requires_explainer():
     plugin = builtins.LegacyFactualExplanationPlugin()
-    context = _make_explanation_context(explainer=None, predict_bridge=builtins.LegacyPredictBridge(_SentinelExplainer([1])))
+    context = _make_explanation_context(
+        explainer=None, predict_bridge=builtins.LegacyPredictBridge(_SentinelExplainer([1]))
+    )
     with pytest.raises(RuntimeError):
         plugin.initialize(context)
 
@@ -257,7 +263,13 @@ def test_explanation_batch_adapts_legacy_collection(monkeypatch):
             bridge_calls.append((args, kwargs))
             return {"predict": np.array([1])}
 
-    request = ExplanationRequest(threshold=0.5, low_high_percentiles=(0.1, 0.9), bins="bins", features_to_ignore=(1,), extras={})
+    request = ExplanationRequest(
+        threshold=0.5,
+        low_high_percentiles=(0.1, 0.9),
+        bins="bins",
+        features_to_ignore=(1,),
+        extras={},
+    )
 
     class DummyExplainer:
         def __init__(self):
@@ -274,7 +286,9 @@ def test_explanation_batch_adapts_legacy_collection(monkeypatch):
 
     explainer = DummyExplainer()
     plugin = builtins.LegacyFactualExplanationPlugin()
-    context = _make_explanation_context(explainer=explainer, predict_bridge=DummyBridge(), task="classification")
+    context = _make_explanation_context(
+        explainer=explainer, predict_bridge=DummyBridge(), task="classification"
+    )
     plugin.initialize(context)
     batch = plugin.explain_batch("sample", request)
     assert isinstance(batch, ExplanationBatch)
@@ -352,9 +366,7 @@ def test_plotspec_builder_rejects_non_mapping_payloads():
     with pytest.raises(RuntimeError):
         builder.build(_make_plot_context(intent={"type": "global"}, options={"payload": 3}))
     with pytest.raises(RuntimeError):
-        builder.build(
-            _make_plot_context(intent={"type": "alternative"}, options={"payload": 3})
-        )
+        builder.build(_make_plot_context(intent={"type": "alternative"}, options={"payload": 3}))
     with pytest.raises(RuntimeError):
         builder.build(
             _make_plot_context(
@@ -643,11 +655,19 @@ def test_plotspec_renderer_without_save(monkeypatch):
 def test_register_builtins_uses_registry(monkeypatch):
     recorded = {"interval": [], "explanation": [], "builder": [], "renderer": [], "style": []}
 
-    monkeypatch.setattr(builtins, "register_interval_plugin", lambda *a: recorded["interval"].append(a))
-    monkeypatch.setattr(builtins, "register_explanation_plugin", lambda *a: recorded["explanation"].append(a))
+    monkeypatch.setattr(
+        builtins, "register_interval_plugin", lambda *a: recorded["interval"].append(a)
+    )
+    monkeypatch.setattr(
+        builtins, "register_explanation_plugin", lambda *a: recorded["explanation"].append(a)
+    )
     monkeypatch.setattr(builtins, "register_plot_builder", lambda *a: recorded["builder"].append(a))
-    monkeypatch.setattr(builtins, "register_plot_renderer", lambda *a: recorded["renderer"].append(a))
-    monkeypatch.setattr(builtins, "register_plot_style", lambda *a, **k: recorded["style"].append((a, k)))
+    monkeypatch.setattr(
+        builtins, "register_plot_renderer", lambda *a: recorded["renderer"].append(a)
+    )
+    monkeypatch.setattr(
+        builtins, "register_plot_style", lambda *a, **k: recorded["style"].append((a, k))
+    )
 
     builtins._register_builtins()  # noqa: SLF001
     assert recorded["interval"]
@@ -664,4 +684,3 @@ def test_register_builtins_handles_missing_fast_plugins(monkeypatch):
     # Ensure import fails even if module existed previously
     sys.modules.pop("external_plugins.fast_explanations", None)
     builtins._register_builtins()  # noqa: SLF001
-

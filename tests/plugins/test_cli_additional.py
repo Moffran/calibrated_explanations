@@ -8,7 +8,9 @@ from calibrated_explanations.plugins import cli
 
 
 class DummyDescriptor:
-    def __init__(self, identifier: str, metadata: dict[str, object] | None = None, *, trusted: bool = True):
+    def __init__(
+        self, identifier: str, metadata: dict[str, object] | None = None, *, trusted: bool = True
+    ):
         self.identifier = identifier
         self.metadata = metadata or {}
         self.trusted = trusted
@@ -48,7 +50,9 @@ def test_emit_explanation_descriptor_reports_fallbacks(monkeypatch, capsys):
         },
         trusted=False,
     )
-    monkeypatch.setattr(cli, "is_identifier_denied", lambda identifier: identifier == "demo.explainer")
+    monkeypatch.setattr(
+        cli, "is_identifier_denied", lambda identifier: identifier == "demo.explainer"
+    )
 
     cli._emit_explanation_descriptor(descriptor)
 

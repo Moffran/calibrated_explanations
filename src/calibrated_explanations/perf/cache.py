@@ -16,25 +16,40 @@ used by the explainer runtime and documentation examples.
 
 from __future__ import annotations
 
-from collections import OrderedDict
-from dataclasses import dataclass as _dataclass, field
-from hashlib import sha1
+import logging
 import os
 import sys
 import threading
+from collections import OrderedDict
+from dataclasses import dataclass as _dataclass
+from dataclasses import field
+from hashlib import sha256
 from time import monotonic
-from typing import Any, Callable, Generic, Hashable, Iterable, Mapping, MutableMapping, Tuple, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Hashable,
+    Iterable,
+    Mapping,
+    MutableMapping,
+    Tuple,
+    TypeVar,
+)
 
 import numpy as np
 
+logger = logging.getLogger(__name__)
 
 if sys.version_info >= (3, 10):
     dataclass = _dataclass
 else:  # pragma: no cover - exercised in older Python versions via CI
+
     def dataclass(*args, **kwargs):
         kwargs = dict(kwargs)
         kwargs.pop("slots", None)
         return _dataclass(*args, **kwargs)
+
 
 K = TypeVar("K", bound=Hashable)
 V = TypeVar("V")
@@ -53,14 +68,14 @@ def _default_size_estimator(value: Any) -> int:
     if hasattr(value, "nbytes"):
         try:
             return int(value.nbytes)  # type: ignore[arg-type]
-        except Exception:  # pragma: no cover - extremely defensive
-            pass
+        except Exception as exc:  # pragma: no cover - extremely defensive
+            logger.debug("Failed to read nbytes attribute for %s: %s", type(value).__name__, exc)
     if hasattr(value, "__array_interface__"):
         try:
             view = np.asarray(value)
             return int(view.nbytes)
-        except Exception:  # pragma: no cover - extremely defensive
-            pass
+        except Exception as exc:  # pragma: no cover - extremely defensive
+            logger.debug("Failed to coerce array interface for %s: %s", type(value).__name__, exc)
     # Fallback constant that biases towards early eviction instead of OOM
     return 256
 
@@ -73,7 +88,7 @@ def _hash_part(part: Any) -> Hashable:
     if isinstance(part, (str, bytes, int, float, bool, tuple)):
         return part
     if isinstance(part, np.ndarray):
-        return ("nd", part.shape, part.dtype.str, sha1(part.view(np.uint8)).hexdigest())
+        return ("nd", part.shape, part.dtype.str, sha256(part.view(np.uint8)).hexdigest())
     if isinstance(part, (list, set, frozenset)):
         return tuple(sorted(_hash_part(item) for item in part))
     if isinstance(part, Mapping):
@@ -171,7 +186,7 @@ class CacheConfig:
             if token.startswith("ttl="):
                 cfg.ttl_seconds = max(0.0, float(token.split("=", 1)[1]))
                 continue
-            if token == "enable":
+            if token == "enable":  # noqa: S105  # nosec B105 - configuration toggle keyword
                 cfg.enabled = True
         return cfg
 
@@ -308,8 +323,8 @@ class LRUCache(Generic[K, V]):
             return
         try:  # pragma: no cover - telemetry is optional best effort
             self._telemetry(event, {"namespace": self.namespace, **payload})
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Telemetry callback failed for %s: %s", event, exc)
 
 
 @dataclass
@@ -376,4 +391,3 @@ __all__ = [
     "TelemetryCallback",
     "make_key",
 ]
-

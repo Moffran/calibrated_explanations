@@ -29,7 +29,6 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
-    FastExplanation,
 )
 from ..explanations.explanation import (
     CalibratedExplanation as _AbstractExplanation,
@@ -340,7 +339,6 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
             _expected_cls=AlternativeExplanation,
             plugin_meta=self.plugin_meta,
         )
-
 
 
 class LegacyPlotBuilder(PlotBuilder):

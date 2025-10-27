@@ -180,11 +180,11 @@ def test_getitem_preserves_threshold_variants_and_str():
     )
     bins = ["b0", "b1", "b2"]
     tuple_threshold = (0.25, 0.75)
-    tuple_collection = CalibratedExplanations(
-        DummyCalibratedExplainer(), x, tuple_threshold, bins
-    )
+    tuple_collection = CalibratedExplanations(DummyCalibratedExplainer(), x, tuple_threshold, bins)
     tuple_collection.explanations = [
-        DummyExplanation(i, x[i], predict=0.1 * (i + 1), interval=(i, i + 1), feature_weights=[1, 2, 3])
+        DummyExplanation(
+            i, x[i], predict=0.1 * (i + 1), interval=(i, i + 1), feature_weights=[1, 2, 3]
+        )
         for i in range(len(x))
     ]
     assert str(tuple_collection).startswith("CalibratedExplanations(")
@@ -194,22 +194,22 @@ def test_getitem_preserves_threshold_variants_and_str():
     assert subset.bins == ["b1", "b2"]
 
     list_thresholds = [(0.0, 1.0), (1.0, 2.0), (2.0, 3.0)]
-    list_collection = CalibratedExplanations(
-        DummyCalibratedExplainer(), x, list_thresholds, bins
-    )
+    list_collection = CalibratedExplanations(DummyCalibratedExplainer(), x, list_thresholds, bins)
     list_collection.explanations = [
-        DummyExplanation(i, x[i], predict=0.2 * (i + 1), interval=(i, i + 1), feature_weights=[2, 3, 4])
+        DummyExplanation(
+            i, x[i], predict=0.2 * (i + 1), interval=(i, i + 1), feature_weights=[2, 3, 4]
+        )
         for i in range(len(x))
     ]
     subset_by_index = list_collection[[0, 2]]
     assert isinstance(subset_by_index, CalibratedExplanations)
     assert subset_by_index.y_threshold == [list_thresholds[i] for i in [0, 2]]
 
-    none_collection = CalibratedExplanations(
-        DummyCalibratedExplainer(), x, None, bins
-    )
+    none_collection = CalibratedExplanations(DummyCalibratedExplainer(), x, None, bins)
     none_collection.explanations = [
-        DummyExplanation(i, x[i], predict=0.3 * (i + 1), interval=(i, i + 1), feature_weights=[3, 4, 5])
+        DummyExplanation(
+            i, x[i], predict=0.3 * (i + 1), interval=(i, i + 1), feature_weights=[3, 4, 5]
+        )
         for i in range(len(x))
     ]
     sliced_none = none_collection[1:]
@@ -428,15 +428,12 @@ def test_plot_routing(monkeypatch, calibrated_collection):
 def test_get_explanation_validations(calibrated_collection):
     with pytest.warns(DeprecationWarning):
         assert calibrated_collection.get_explanation(0) is calibrated_collection.explanations[0]
-    with pytest.warns(DeprecationWarning):
-        with pytest.raises(TypeError):
-            calibrated_collection.get_explanation("one")
-    with pytest.warns(DeprecationWarning):
-        with pytest.raises(ValueError):
-            calibrated_collection.get_explanation(-1)
-    with pytest.warns(DeprecationWarning):
-        with pytest.raises(ValueError):
-            calibrated_collection.get_explanation(100)
+    with pytest.warns(DeprecationWarning), pytest.raises(TypeError):
+        calibrated_collection.get_explanation("one")
+    with pytest.warns(DeprecationWarning), pytest.raises(ValueError):
+        calibrated_collection.get_explanation(-1)
+    with pytest.warns(DeprecationWarning), pytest.raises(ValueError):
+        calibrated_collection.get_explanation(100)
 
 
 def test_conjunction_management(calibrated_collection):
@@ -553,7 +550,9 @@ def test_as_lime_regression_branch():
     x = np.array([[0.1, 0.2, 0.3]])
     collection = CalibratedExplanations(dummy_explainer, x, 0.5, bins=["bin0"])
     collection.explanations = [
-        DummyExplanation(0, x[0], predict=0.42, interval=(0.0, 1.0), feature_weights=[1.0, 2.0, 3.0])
+        DummyExplanation(
+            0, x[0], predict=0.42, interval=(0.0, 1.0), feature_weights=[1.0, 2.0, 3.0]
+        )
     ]
     lime = collection.as_lime()
     assert lime[0].predicted_value == collection.explanations[0].prediction["predict"]

@@ -27,7 +27,9 @@ def test_probability_helper_utilities_and_segments():
 
     assert builders._legacy_get_fill_color(1.0) == "#ff0000"
     assert builders._legacy_get_fill_color(0.2) != builders._legacy_get_fill_color(0.8)
-    assert builders._legacy_get_fill_color(0.8, reduction=0.5) != builders._legacy_get_fill_color(0.8)
+    assert builders._legacy_get_fill_color(0.8, reduction=0.5) != builders._legacy_get_fill_color(
+        0.8
+    )
 
     two_segments = builders._build_probability_segments(
         low=0.2, high=0.8, center=0.5, reduction=1.0, pivot=0.5
@@ -139,7 +141,10 @@ def test_build_alternative_regression_spec_paths():
     assert spec.body.base_segments[0].color == builders.REGRESSION_BASE_COLOR
     assert spec.body.base_lines[0][0] == pytest.approx(0.5)
     assert spec.body.xticks == (0.0, 0.5, 1.0)
-    assert all(hasattr(bar, "line") and bar.line_color == builders.REGRESSION_BAR_COLOR for bar in spec.body.bars)
+    assert all(
+        hasattr(bar, "line") and bar.line_color == builders.REGRESSION_BAR_COLOR
+        for bar in spec.body.bars
+    )
 
     seq_spec = builders.build_alternative_regression_spec(
         title=None,

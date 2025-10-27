@@ -15,7 +15,7 @@ same way as the original methods.
 from __future__ import annotations
 
 from time import time
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 
@@ -94,7 +94,10 @@ def explain_predict_step(
             greater_values[f] = {}
             covered_values[f] = {}
             for j, val in enumerate(np.unique(lower_boundary)):
-                lesser_values[f][j] = (np.unique(explainer._CalibratedExplainer__get_lesser_values(f, val)), val)
+                lesser_values[f][j] = (
+                    np.unique(explainer._CalibratedExplainer__get_lesser_values(f, val)),
+                    val,
+                )
                 indices = np.where(lower_boundary == val)[0]
                 for value in lesser_values[f][j][0]:
                     x_local = x_copy[indices, :]
@@ -117,7 +120,10 @@ def explain_predict_step(
                         perturbed_threshold, threshold, indices
                     )
             for j, val in enumerate(np.unique(upper_boundary)):
-                greater_values[f][j] = (np.unique(explainer._CalibratedExplainer__get_greater_values(f, val)), val)
+                greater_values[f][j] = (
+                    np.unique(explainer._CalibratedExplainer__get_greater_values(f, val)),
+                    val,
+                )
                 indices = np.where(upper_boundary == val)[0]
                 for value in greater_values[f][j][0]:
                     x_local = x_copy[indices, :]
@@ -154,9 +160,7 @@ def explain_predict_step(
                     perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
                     if bins is not None:
                         perturbed_bins = np.concatenate((perturbed_bins, [bins[i]]))
-                    perturbed_class = np.concatenate(
-                        (perturbed_class, [prediction["classes"][i]])
-                    )
+                    perturbed_class = np.concatenate((perturbed_class, [prediction["classes"][i]]))
                     if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                         if isinstance(threshold[0], tuple) and len(perturbed_threshold) == 0:
                             perturbed_threshold = [threshold[i]]
@@ -401,7 +405,9 @@ def explain(
                     mask = feature_mask & bin_mask & instance_mask & lesser_mask
                     index = np.where(mask)[0]
 
-                    avg_predict_map[i][bin_value[i]] = safe_mean(predict[index]) if index.size else 0
+                    avg_predict_map[i][bin_value[i]] = (
+                        safe_mean(predict[index]) if index.size else 0
+                    )
                     low_predict_map[i][bin_value[i]] = safe_mean(low[index]) if index.size else 0
                     high_predict_map[i][bin_value[i]] = safe_mean(high[index]) if index.size else 0
                     counts_map[i][bin_value[i]] = int(np.sum(x_cal[:, f] < val))
@@ -419,14 +425,18 @@ def explain(
                     mask = feature_mask & bin_mask & instance_mask & greater_mask
                     index = np.where(mask)[0]
 
-                    avg_predict_map[i][bin_value[i]] = safe_mean(predict[index]) if index.size else 0
+                    avg_predict_map[i][bin_value[i]] = (
+                        safe_mean(predict[index]) if index.size else 0
+                    )
                     low_predict_map[i][bin_value[i]] = safe_mean(low[index]) if index.size else 0
                     high_predict_map[i][bin_value[i]] = safe_mean(high[index]) if index.size else 0
                     counts_map[i][bin_value[i]] = int(np.sum(x_cal[:, f] > val))
                     rule_value_map[i].append(greater_values[f][j][0])
                     bin_value[i] += 1
 
-            unique_boundaries = np.unique(np.stack([lower_boundary, upper_boundary], axis=1), axis=0)
+            unique_boundaries = np.unique(
+                np.stack([lower_boundary, upper_boundary], axis=1), axis=0
+            )
             between_mask = np.equal(perturbed_feature[:, 3], None)
             for i in range(len(x)):
                 instance_mask = perturbed_feature[:, 1] == i
@@ -436,7 +446,9 @@ def explain(
                     mask = feature_mask & instance_mask & bin_mask & between_mask
                     index = np.where(mask)[0]
 
-                    avg_predict_map[i][bin_value[i]] = safe_mean(predict[index]) if index.size else 0
+                    avg_predict_map[i][bin_value[i]] = (
+                        safe_mean(predict[index]) if index.size else 0
+                    )
                     low_predict_map[i][bin_value[i]] = safe_mean(low[index]) if index.size else 0
                     high_predict_map[i][bin_value[i]] = safe_mean(high[index]) if index.size else 0
                     counts_map[i][bin_value[i]] = int(

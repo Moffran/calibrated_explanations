@@ -424,7 +424,9 @@ def test_register_helpers_validate_identifiers():
         registry.register_plot_renderer("", _Renderer())
 
     with pytest.raises(ValueError):
-        registry.register_plot_style("", metadata={"style": "", "builder_id": "b", "renderer_id": "r"})
+        registry.register_plot_style(
+            "", metadata={"style": "", "builder_id": "b", "renderer_id": "r"}
+        )
 
 
 def test_register_plot_style_validation():
@@ -621,7 +623,9 @@ def test_load_entrypoint_plugins_errors(monkeypatch):
 
             return Bad()
 
-    monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: LegacyEntryPoints([LegacyEntryPoint()]))
+    monkeypatch.setattr(
+        registry.importlib_metadata, "entry_points", lambda: LegacyEntryPoints([LegacyEntryPoint()])
+    )
     with pytest.warns(RuntimeWarning):
         registry.load_entrypoint_plugins()
 

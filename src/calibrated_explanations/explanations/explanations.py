@@ -217,9 +217,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 domain.provenance = cast(Mapping[str, Any] | None, _jsonify(provenance))
             if metadata is not None:
                 domain.metadata = cast(Mapping[str, Any] | None, _jsonify(metadata))
-            instances.append(
-                _explanation_to_json(domain, include_version=include_version)
-            )
+            instances.append(_explanation_to_json(domain, include_version=include_version))
 
         payload: dict[str, Any] = {
             "collection": self._collection_metadata(),
@@ -265,7 +263,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     rules_blob = {}
 
         payload: dict[str, Any] = {
-            "task": getattr(exp, "get_mode", lambda: getattr(self.calibrated_explainer, "mode", None))(),
+            "task": getattr(
+                exp, "get_mode", lambda: getattr(self.calibrated_explainer, "mode", None)
+            )(),
             "rules": _jsonify(rules_blob or {}),
             "feature_weights": _jsonify(getattr(exp, "feature_weights", {})),
             "feature_predict": _jsonify(getattr(exp, "feature_predict", {})),
