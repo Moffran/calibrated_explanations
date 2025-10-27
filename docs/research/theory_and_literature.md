@@ -54,7 +54,7 @@ tooling, and third-party libraries such as `crepes`, `venn-abers`,
 ## Keep exploring
 
 - Dive into the full citation list and BibTeX entries in {doc}`../citing`.
-- Browse the [project README](https://github.com/Moffran/calibrated_explanations#readme)
+- Browse the [project README](https://github.com/Moffran/calibrated_explanations/blob/main/README.md)
   for end-to-end walkthroughs that demonstrate how the research artifacts surface
   in day-to-day usage.
 - Visit the {doc}`../concepts/probabilistic_regression` guide to see how the

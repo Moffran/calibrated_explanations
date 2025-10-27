@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -24,8 +24,8 @@ class DummyLearner:
         self,
         *,
         mode: str = "classification",
-        oob_decision_function: np.ndarray | None = None,
-        oob_prediction: np.ndarray | None = None,
+        oob_decision_function: Optional[np.ndarray] = None,
+        oob_prediction: Optional[np.ndarray] = None,
     ) -> None:
         self.mode = mode
         self.fitted_ = True  # ensures check_is_fitted succeeds
