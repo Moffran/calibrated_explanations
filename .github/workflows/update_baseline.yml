@@ -58,7 +58,7 @@ jobs:
           echo "Threshold regeneration not automated; adjust manually if needed." >> perf_diff.txt
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: new-micro-baseline-${{ steps.gen.outputs.date_tag }}
           path: |
