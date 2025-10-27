@@ -70,6 +70,14 @@ intervals to decisions, then explore the triangular plot walkthrough for
 alternative explanations.
 ```
 
+- The header row reports the calibrated probability with its uncertainty
+  interval.
+- Each subsequent line is a factual rule: the observed value, the associated
+  feature, and its signed contribution with bounds.
+
+Follow up with the {doc}`concepts/alternatives` tutorial to see how alternative
+rules appear in the triangular plot and how to narrate their trade-offs.
+
 ## Audience journeys
 
 ### New practitioners
@@ -78,6 +86,8 @@ alternative explanations.
   for a notebook-ready flow and interpretation checkpoints.
 - Compare factual and alternative outputs with the
   {doc}`concepts/alternatives` triangular plot guide.
+- Share the outcome with stakeholders via the
+  {doc}`how-to/interpret_explanations` storytelling checklist.
 
 ### Practitioners
 
@@ -93,10 +103,12 @@ alternative explanations.
   splits, and replication workflow summaries.
 - Find DOIs, arXiv IDs, and evaluation coverage in the
   {doc}`research/theory_and_literature` roundup.
-- Replicate studies with the evaluation notebooks referenced from the hub and
-  tracked in the release plan.
+- Reproduce experiments via the evaluation scripts and notebooks under the
+  [evaluation/](https://github.com/Moffran/calibrated_explanations/tree/main/evaluation)
+  directory; result archives (`*.pkl`, `.zip`) live alongside each run for quick
+  diffing against the published tables.
 
-### Contributors & maintainers
+### Contributors
 
 - Spin up a development environment with the
   {doc}`contributing` workflow (venv, `pip install -e .[dev]`, required checks).
@@ -104,6 +116,14 @@ alternative explanations.
   and governance expectations.
 - Review the {doc}`governance/release_checklist` before shipping changes to keep
   docs, quickstarts, and QA gates in sync.
+
+### Maintainers
+
+- Prioritise issues via the triage workflow outlined in the
+  {doc}`contributor/index` hub and capture ADR impacts while reviewing pull
+  requests.
+- Align milestones with the {doc}`governance/nav_crosswalk` so README, RTD
+  navigation, and notebooks stay consistent.
 
 ## Key references
 

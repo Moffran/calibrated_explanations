@@ -7,9 +7,18 @@
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://github.com/Moffran/calibrated_explanations/blob/main/LICENSE)
 [![Downloads](https://static.pepy.tech/badge/calibrated-explanations)](https://pepy.tech/project/calibrated-explanations)
 
-Calibrated Explanations delivers factual and alternative rules with calibrated
-probabilities, prediction intervals, and uncertainty-aware feature importances
-for classification and regression workloads.
+Calibrated Explanations turns any scikit-learn-compatible estimator into a
+calibrated explainer that returns:
+
+- **Factual rules** – the calibrated reasons your model backed its prediction.
+- **Alternative rules** – what needs to change to flip or reinforce that
+  decision, complete with uncertainty bounds.
+- **Prediction intervals** – uncertainty-aware probabilities or regression
+  ranges that quantify both aleatoric and epistemic risk.
+
+Every quickstart, notebook, and benchmark follows the same recipe: fit your
+estimator, calibrate on held-out data, then interpret the returned rule table
+before acting.
 
 ---
 
@@ -63,10 +72,15 @@ for classification and regression workloads.
    0.15  : worst concave points > 0.12              -0.308 [-0.548,  0.077]
    0.34  : worst concavity > 0.22                   -0.090 [-0.123,  0.077]
    ```
+   - The header row shows the calibrated prediction and its low/high credible
+     interval.
+   - Each subsequent line is a factual rule: the observed value, the matching
+     feature, and its signed contribution with uncertainty bounds.
 4. **Interpret what you see** – follow the
    [Interpret Calibrated Explanations guide](https://calibrated-explanations.readthedocs.io/en/latest/how-to/interpret_explanations.html)
    to learn how calibrated intervals, rule weights, and the triangular plot work
-together.
+   together. The [triangular alternatives tutorial](https://calibrated-explanations.readthedocs.io/en/latest/concepts/alternatives.html)
+   then shows how to narrate trade-offs across alternative rules.
 
 ---
 
@@ -166,15 +180,34 @@ stays lightweight.
 
 ## Research and reproducibility
 
-- Replicate classification, regression, and probabilistic studies with the
-  scripts and notebooks under
-  [`evaluation/`](https://github.com/Moffran/calibrated_explanations/tree/main/evaluation)
-  (dataset manifests, metric definitions, and result archives included).
-- Match published experiments by following the dataset splits in the evaluation
-  README and honouring the random seeds embedded in the notebooks.
-- Consult the
-  [theory & literature overview](https://calibrated-explanations.readthedocs.io/en/latest/research/theory_and_literature.html)
-  for DOIs, arXiv links, and benchmark coverage.
+1. **Set up the evaluation environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   python -m pip install --upgrade pip
+   python -m pip install -e .[dev,eval]
+   ```
+   The optional `[eval]` extras pull in `xgboost`, `venn-abers`, and plotting
+   dependencies used across the published studies.
+2. **Load the benchmark assets** – datasets live in the
+   [`data/`](https://github.com/Moffran/calibrated_explanations/tree/main/data)
+   directory (CSV files and zipped archives) and are referenced directly by the
+   evaluation scripts.
+3. **Re-run the flagship experiments** – each paper has a matching notebook or
+   script under [`evaluation/`](https://github.com/Moffran/calibrated_explanations/tree/main/evaluation):
+   - `Classification_Experiment_sota.py` and the accompanying notebooks cover
+     the 25-dataset binary classification suite.
+   - `multiclass/` and `regression/` host the multiclass and interval
+     regression pipelines, respectively.
+   - `ensure/` and `fastCE/` contain the ensured-explanations and accelerated
+     plugin studies.
+   Result archives (`*.pkl`, `.zip`) sit beside each run for quick comparison.
+4. **Keep results traceable** – preserve the random seeds baked into the scripts
+   (typically `42` or `0`) and record any deviations alongside the active ADRs
+   noted in [`improvement_docs/adrs/`](https://github.com/Moffran/calibrated_explanations/tree/main/improvement_docs/adrs).
+5. **Cite the sources** – the
+   [theory & literature overview](https://calibrated-explanations.readthedocs.io/en/latest/research/theory_and_literature.html)
+   lists DOIs, arXiv IDs, and funding acknowledgements to include in your work.
 
 ---
 
