@@ -212,9 +212,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             provenance = getattr(exp, "provenance", None)
             metadata = getattr(exp, "metadata", None)
             if provenance is not None:
-                domain.provenance = cast(Mapping[str, Any] | None, _jsonify(provenance))
+                domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
             if metadata is not None:
-                domain.metadata = cast(Mapping[str, Any] | None, _jsonify(metadata))
+                domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata))
             instances.append(_explanation_to_json(domain, include_version=include_version))
 
         payload: dict[str, Any] = {
