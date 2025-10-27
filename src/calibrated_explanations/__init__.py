@@ -48,6 +48,37 @@ def __getattr__(name: str):
     (which would trigger deprecation emissions) while preserving the public API
     surface for users and tests.
     """
+    if name == "viz":
+        module = importlib.import_module(f"{__name__}.viz")
+        globals()[name] = module
+        return module
+    if name in {
+        "BinaryEntropyDiscretizer",
+        "BinaryRegressorDiscretizer",
+        "EntropyDiscretizer",
+        "RegressorDiscretizer",
+    }:
+        module = importlib.import_module(f"{__name__}.utils.discretizers")
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
+    if name in {
+        "AlternativeExplanation",
+        "FactualExplanation",
+        "FastExplanation",
+    }:
+        module = importlib.import_module(f"{__name__}.explanations.explanation")
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
+    if name in {
+        "AlternativeExplanations",
+        "CalibratedExplanations",
+    }:
+        module = importlib.import_module(f"{__name__}.explanations.explanations")
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
     if name == "CalibratedExplainer":
         from .core.calibrated_explainer import CalibratedExplainer
 
@@ -68,9 +99,10 @@ def __getattr__(name: str):
 
         globals()[name] = VennAbers
         return VennAbers
+    if name == "transform_to_numeric":
+        module = importlib.import_module(f"{__name__}.utils.helper")
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
     raise AttributeError(name)
 
-
-def __dir__():
-    """Return sorted public attributes for interactive shells."""
-    return sorted(list(globals().keys()) + __all__)
