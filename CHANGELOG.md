@@ -1,6 +1,21 @@
 <!-- markdownlint-disable-file -->
 # Changelog
 
+## Highlights
+
+- **Faster calibrated explanations.** Explore the latest latency benchmarks and
+  optimization notes in the [explain performance evaluation
+  report](evaluation/explain_performance.md).
+- **Revamped documentation experience.** Dive into the reorganised guides,
+  role-based hubs, and refreshed quickstarts starting at the
+  [documentation homepage](docs/index.md).
+- **Plugin governance guardrails.** Optional extras, telemetry governance, and
+  plugin trust workflows now ship with automated enforcement across docs and
+  CI.
+- **Expanded export tooling.** Persist and reload explanation collections via
+  the new `CalibratedExplanations.to_json`/`.from_json` helpers and refreshed
+  how-to guides.
+
 ## [Unreleased]
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...main)
