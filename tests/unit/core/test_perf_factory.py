@@ -31,6 +31,7 @@ def test_from_config_builds_factory() -> None:
         perf_cache_max_items=4,
         perf_parallel_enabled=True,
         perf_parallel_backend="threads",
+        perf_parallel_granularity="instance",
     )
     factory = from_config(cfg)
     cache = factory.make_cache()
@@ -38,3 +39,11 @@ def test_from_config_builds_factory() -> None:
     assert cache.config.max_items == 4
     executor = factory.make_parallel_executor(cache)
     assert executor.config.strategy == "threads"
+    assert executor.config.granularity == "instance"
+
+
+def test_parallel_config_parses_granularity_env(monkeypatch) -> None:
+    monkeypatch.setenv("CE_PARALLEL", "enable,granularity=instance")
+    cfg = ParallelConfig.from_env(ParallelConfig())
+    assert cfg.enabled is True
+    assert cfg.granularity == "instance"

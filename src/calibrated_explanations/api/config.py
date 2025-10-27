@@ -53,6 +53,7 @@ class ExplainerConfig:
     perf_parallel_backend: Literal["auto", "sequential", "joblib", "threads", "processes"] = "auto"
     perf_parallel_workers: int | None = None
     perf_parallel_min_batch: int = 32
+    perf_parallel_granularity: Literal["feature", "instance"] = "feature"
     perf_telemetry: Any | None = None
 
 
@@ -184,6 +185,7 @@ class ExplainerBuilder:
         backend: Literal["auto", "sequential", "joblib", "threads", "processes"] | None = None,
         workers: int | None = None,
         min_batch: int | None = None,
+        granularity: Literal["feature", "instance"] | None = None,
     ) -> ExplainerBuilder:
         """Configure the parallel backend used for performance operations.
 
@@ -201,6 +203,8 @@ class ExplainerBuilder:
             self._cfg.perf_parallel_workers = workers
         if min_batch is not None:
             self._cfg.perf_parallel_min_batch = min_batch
+        if granularity is not None:
+            self._cfg.perf_parallel_granularity = granularity
         return self
 
     def perf_telemetry(self, callback: Any | None) -> ExplainerBuilder:

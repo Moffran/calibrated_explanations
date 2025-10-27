@@ -1788,6 +1788,7 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         _use_plugin: bool = True,
+        _skip_instance_parallel: bool = False,
     ) -> CalibratedExplanations:
         """Call self as a function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
 
@@ -1811,6 +1812,7 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         _use_plugin: bool = True,
+        _skip_instance_parallel: bool = False,
     ) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
 
@@ -1842,19 +1844,36 @@ class CalibratedExplainer:
                 extras={"mode": mode},
             )
 
-        # Track total explanation time
-        total_time = time()
-
         if features_to_ignore is None:
             features_to_ignore_array = np.asarray(self.features_to_ignore, dtype=int)
         else:
             features_to_ignore_array = np.asarray(
                 np.union1d(self.features_to_ignore, features_to_ignore), dtype=int
             )
+
+        x = self._validate_and_prepare_input(x)
+
+        executor = getattr(self, "_perf_parallel", None)
+        if (
+            not _skip_instance_parallel
+            and executor is not None
+            and executor.config.enabled
+            and getattr(executor.config, "granularity", "feature") == "instance"
+        ):
+            return self._explain_parallel_instances(
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore_array,
+                executor,
+            )
+
+        # Track total explanation time
+        total_time = time()
         features_to_ignore_set = set(features_to_ignore_array.tolist())
 
-        # Validate inputs and initialize explanation object
-        x = self._validate_and_prepare_input(x)
+        # Initialize explanation object
         explanation = self._initialize_explanation(
             x, low_high_percentiles, threshold, bins, features_to_ignore_array
         )
@@ -2311,6 +2330,124 @@ class CalibratedExplainer:
         self.latest_explanation = explanation
         self._last_explanation_mode = self._infer_explanation_mode()
         return explanation
+
+    def _explain_parallel_instances(
+        self,
+        x: np.ndarray,
+        threshold,
+        low_high_percentiles,
+        bins,
+        features_to_ignore_array: np.ndarray,
+        executor: ParallelExecutor,
+    ) -> CalibratedExplanations:
+        """Partition *x* along the instance axis and combine chunk explanations."""
+
+        n_instances = x.shape[0]
+        if n_instances == 0:
+            empty_explanation = self._initialize_explanation(
+                x, low_high_percentiles, threshold, bins, features_to_ignore_array
+            )
+            self.latest_explanation = empty_explanation
+            self._last_explanation_mode = self._infer_explanation_mode()
+            return empty_explanation
+
+        ignore_list = features_to_ignore_array.tolist()
+
+        chunk_size = max(1, executor.config.min_batch_size)
+        ranges: List[Tuple[int, int, Any, Any]] = []
+        for start in range(0, n_instances, chunk_size):
+            stop = min(start + chunk_size, n_instances)
+            threshold_slice = self._slice_threshold(threshold, start, stop, n_instances)
+            bins_slice = self._slice_bins(bins, start, stop)
+            ranges.append((start, stop, threshold_slice, bins_slice))
+
+        if len(ranges) == 1:
+            start, stop, threshold_slice, bins_slice = ranges[0]
+            subset = np.asarray(x[start:stop])
+            return self.explain(
+                subset,
+                threshold=threshold_slice,
+                low_high_percentiles=low_high_percentiles,
+                bins=bins_slice,
+                features_to_ignore=ignore_list,
+                _use_plugin=False,
+                _skip_instance_parallel=True,
+            )
+
+        total_start = time()
+
+        tasks: List[Tuple[int, np.ndarray, Any, Any]] = [
+            (start, np.asarray(x[start:stop]), threshold_slice, bins_slice)
+            for start, stop, threshold_slice, bins_slice in ranges
+        ]
+
+        def _run(task: Tuple[int, np.ndarray, Any, Any]) -> Tuple[int, CalibratedExplanations]:
+            start_idx, subset, threshold_slice_local, bins_slice_local = task
+            result = self.explain(
+                subset,
+                threshold=threshold_slice_local,
+                low_high_percentiles=low_high_percentiles,
+                bins=bins_slice_local,
+                features_to_ignore=ignore_list,
+                _use_plugin=False,
+                _skip_instance_parallel=True,
+            )
+            return start_idx, result
+
+        ordered_results = sorted(
+            executor.map(_run, tasks, work_items=n_instances), key=lambda item: item[0]
+        )
+
+        combined = self._initialize_explanation(
+            x, low_high_percentiles, threshold, bins, features_to_ignore_array
+        )
+        combined.explanations = []
+        offset = 0
+        for _, chunk_result in ordered_results:
+            for explanation in chunk_result.explanations:
+                explanation.calibrated_explanations = combined
+                explanation.index = offset
+                explanation.x_test = combined.x_test
+                combined.explanations.append(explanation)
+                offset += 1
+
+        combined.current_index = combined.start_index
+        combined.end_index = len(combined.x_test)
+        combined.total_explain_time = time() - total_start
+        self.latest_explanation = combined
+        self._last_explanation_mode = self._infer_explanation_mode()
+        return combined
+
+    @staticmethod
+    def _slice_threshold(threshold, start: int, stop: int, total_len: int):
+        """Return the portion of *threshold* covering ``[start, stop)``."""
+
+        if threshold is None or np.isscalar(threshold):
+            return threshold
+        try:
+            length = len(threshold)
+        except TypeError:
+            return threshold
+        if length != total_len:
+            return threshold
+        if safe_isinstance(threshold, "pandas.core.series.Series"):
+            return threshold.iloc[start:stop]
+        sliced = threshold[start:stop]
+        if isinstance(threshold, np.ndarray):
+            return sliced
+        if isinstance(threshold, list):
+            return sliced
+        return sliced
+
+    @staticmethod
+    def _slice_bins(bins, start: int, stop: int):
+        """Return the subset of *bins* covering ``[start, stop)``."""
+
+        if bins is None:
+            return None
+        if safe_isinstance(bins, "pandas.core.series.Series"):
+            return bins.iloc[start:stop].to_numpy()
+        return bins[start:stop]
 
     def _validate_and_prepare_input(self, x):
         """Delegate to extracted helper (Phase 1A)."""

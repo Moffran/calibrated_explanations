@@ -50,6 +50,7 @@ class ParallelConfig:
     strategy: Literal["auto", "threads", "processes", "joblib", "sequential"] = "auto"
     max_workers: int | None = None
     min_batch_size: int = 32
+    granularity: Literal["feature", "instance"] = "feature"
     telemetry: TelemetryCallback | None = None
 
     @classmethod
@@ -78,6 +79,11 @@ class ParallelConfig:
                 continue
             if token == "enable":  # noqa: S105  # nosec B105 - configuration toggle keyword
                 cfg.enabled = True
+                continue
+            if token.startswith("granularity="):
+                value = token.split("=", 1)[1].strip().lower()
+                if value in {"feature", "instance"}:
+                    cfg.granularity = value  # type: ignore[assignment]
         return cfg
 
 
@@ -103,11 +109,13 @@ class ParallelExecutor:
         items: Sequence[T] | Iterable[T],
         *,
         workers: int | None = None,
+        work_items: int | None = None,
     ) -> List[R]:
         items_list = list(items)
         if not self.config.enabled or len(items_list) == 0:
             return [fn(item) for item in items_list]
-        if len(items_list) < self.config.min_batch_size:
+        candidate = work_items if work_items is not None else len(items_list)
+        if candidate < self.config.min_batch_size:
             return [fn(item) for item in items_list]
         self.metrics.submitted += len(items_list)
         try:

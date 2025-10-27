@@ -45,6 +45,7 @@ def from_config(cfg: Any) -> PerfFactory:
         strategy=getattr(cfg, "perf_parallel_backend", "auto"),
         max_workers=getattr(cfg, "perf_parallel_workers", None),
         min_batch_size=getattr(cfg, "perf_parallel_min_batch", 32),
+        granularity=getattr(cfg, "perf_parallel_granularity", "feature"),
         telemetry=getattr(cfg, "perf_telemetry", None),
     )
     parallel_cfg = ParallelConfig.from_env(parallel_cfg)
