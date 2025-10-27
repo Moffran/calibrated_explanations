@@ -1,6 +1,37 @@
 # Contributing and Roadmap
 
-Contributions are welcome. Please see the repository’s `CONTRIBUTING.md` for the full guide.
+Contributions are welcome. This page distills the day-to-day workflow, tooling,
+and governance guardrails so you can get productive quickly. For the complete
+policy and code of conduct, read the repository’s {file}`../CONTRIBUTING.md`.
+
+## Local development setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .[dev]
+python -m pip install -r docs/requirements-doc.txt
+```
+
+The `dev` extra installs pytest, mypy, ruff, nbqa, and other quality gates used
+in continuous integration. The docs requirements enable `make -C docs html`
+without missing extensions.
+
+## Required checks before you push
+
+Run the same commands that CI executes:
+
+```bash
+pytest                        # unit and integration tests
+ruff check .                  # linting and import order
+mypy src tests                # type checks (targeting Python 3.11)
+nbqa ruff notebooks           # optional, keeps notebooks linted
+make -C docs html             # optional, confirms Sphinx builds cleanly
+```
+
+Document any skipped steps in the pull-request description so reviewers can
+triage quickly.
 
 ## Roadmap-driven development
 
@@ -13,10 +44,13 @@ When opening a PR, please align with the active milestone in the release plan an
 
 ## Quality gates (summary)
 
-- Type checks: mypy for new/modified core modules.
-- Linting: ruff and markdownlint.
-- Tests: add unit tests for new behavior; keep runtime reasonable.
-- Docs: update README/docs when public behavior changes.
+- Type checks: `mypy src tests` for new/modified modules.
+- Linting: `ruff check .` for Python, `markdownlint` for docs (see
+  {file}`../.markdownlint.json`).
+- Tests: add unit tests for new behaviour; keep runtime reasonable and note any
+  slow suites.
+- Docs: update README/docs when public behaviour changes and rebuild Sphinx to
+  confirm there are no warnings.
 
 ## Style excerpts (ADR-017 & ADR-018)
 

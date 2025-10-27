@@ -4,9 +4,28 @@
 
 Help shape calibrated explanations by improving the core library, documentation, and plugin ecosystem. This hub curates the onboarding guides, coding standards, and quality gates needed to land changes safely.
 
+## Get set up quickly
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .[dev]
+python -m pip install -r docs/requirements-doc.txt
+```
+
+Run the same checks that back the continuous-integration gates:
+
+```bash
+pytest
+ruff check .
+mypy src tests
+make -C docs html  # optional but catches doc regressions
+```
+
 ## Start contributing
 
-- {doc}`../contributing` – Contribution guidelines, code of conduct, and review expectations.
+- {doc}`../contributing` – Contribution guidelines, coding standards, and review expectations.
 - {doc}`../extending/index` – Architecture notes for plugins, registries, and calibration backends.
 - {doc}`../reference/index` – API reference entry point for the calibration and explanation objects.
 

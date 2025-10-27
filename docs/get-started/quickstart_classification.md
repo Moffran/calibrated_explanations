@@ -59,6 +59,21 @@ factual = explainer.explain_factual(X_test[:5])
 print(factual[0])  # first explanation with rule details
 ```
 
+```{admonition} Sample output (truncated)
+:class: hint
+
+```text
+Prediction [ Low ,  High]
+0.077 [0.000, 0.083]
+Value : Feature                                  Weight [ Low  ,  High ]
+0.07  : mean concave points > 0.05               -0.418 [-0.576, -0.256]
+0.15  : worst concave points > 0.12              -0.308 [-0.548,  0.077]
+```
+
+The first column shows the instance value, followed by the matching feature and
+its calibrated contribution with uncertainty bounds.
+```
+
 Use the [interpretation guide](../how-to/interpret_explanations.md) to understand
 how calibrated predictions, intervals, and rule tables translate into actions.
 

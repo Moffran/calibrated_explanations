@@ -10,27 +10,32 @@ papers, benchmark references, and funding acknowledgements.
 ### Peer-reviewed work
 - **Trustworthy explanations dissertation (2023):** Introduces the
   decision-support principles behind calibrated explanations and documents the
-  evaluation scaffolding used for subsequent studies.
-- **Expert Systems with Applications (2024):** Establishes calibrated
-  explanations for binary classification with uncertainty-aware factual and
-  alternative rules, validated on 25 benchmark datasets and runtime stability
-  checks.
-- **Machine Learning journal (2025):** Extends the method to regression and
-  probabilistic regression with interval guarantees that match the classification
-  results.
-- **xAI 2024 proceedings:** Demonstrates conditional calibrated explanations for
-  fairness-sensitive workflows.
-- **PMLR 230 (2024):** Adds multi-class coverage with empirical calibration and
-  tutorial material (paper and slides) for researchers adopting the method.
-- **Annals of Mathematics and Artificial Intelligence (2023):** Documents the
-  original study tying calibration quality to explanation reliability, including
-  public code for reproducing the experiments.
+  evaluation scaffolding used for subsequent studies. Accessible via the Jönköping
+  University repository.
+- **Expert Systems with Applications (2024):** Binary-classification study with
+  calibrated factual and alternative rules across 25 benchmarks. DOI:
+  [`10.1016/j.eswa.2024.123154`](https://doi.org/10.1016/j.eswa.2024.123154).
+- **Machine Learning journal (2025):** Regression and probabilistic regression
+  extension with interval guarantees mirroring the classification workflow. DOI:
+  [`10.1007/s10994-024-06642-8`](https://doi.org/10.1007/s10994-024-06642-8).
+- **xAI 2024 proceedings:** Conditional calibrated explanations for fairness-aware
+  deployments. DOI:
+  [`10.1007/978-3-031-63787-2_17`](https://doi.org/10.1007/978-3-031-63787-2_17).
+- **PMLR 230 (2024):** Multiclass calibration analysis with empirical guarantees
+  and tutorial material. Proceedings and artefacts available through the
+  [PMLR volume](https://proceedings.mlr.press/v230/lofstrom24a.html) and
+  [conference slides](https://copa-conference.com/presentations/Lofstrom.pdf).
+- **Annals of Mathematics and Artificial Intelligence (2023):** First study that
+  links calibration quality to explanation reliability. DOI:
+  [`10.1007/s10472-023-09837-2`](https://doi.org/10.1007/s10472-023-09837-2).
 
 ### Preprints and in-flight studies
 - **Ensured explanations (2024):** Investigates strategies that actively reduce
-  epistemic uncertainty in the generated alternatives.
-- **Fast calibrated explanations (2024):** Shares a plugin-oriented approach for
-  speeding up rule generation while preserving uncertainty guarantees.
+  epistemic uncertainty in the generated alternatives. Preprint:
+  [`arXiv:2410.05479`](https://arxiv.org/abs/2410.05479).
+- **Fast calibrated explanations (2024):** Plugin-oriented acceleration of rule
+  generation while preserving uncertainty guarantees. DOI:
+  [`10.1007/978-3-032-08333-3_16`](https://doi.org/10.1007/978-3-032-08333-3_16).
 
 ## Benchmarks and evaluations
 
