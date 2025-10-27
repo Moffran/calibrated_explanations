@@ -24,7 +24,7 @@ jobs:
           ruff check --select N
       - name: Notebook naming lint (ADR-018 notebooks)
         run: |
-          python -m nbqa ruff --select N notebooks
+          python -m nbqa ruff notebooks --select N
       - name: pydocstyle (ADR-018 baseline)
         run: |
           pydocstyle src tests
