@@ -19,7 +19,6 @@ from ..viz.plotspec import PlotSpec
 
 def _resolve_type_alias() -> Any:
     """Return ``typing.TypeAlias`` when available, otherwise fall back to ``object``."""
-
     try:  # pragma: no branch - helper used to exercise fallback in tests
         typing_mod = importlib.import_module("typing")
     except ImportError:  # pragma: no cover - stdlib module is always present on supported versions

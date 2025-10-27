@@ -64,7 +64,6 @@ def _default_size_estimator(value: Any) -> int:
     arrays.  Instead, rely on ``nbytes`` when available and fall back to a
     conservative constant.
     """
-
     if hasattr(value, "nbytes"):
         try:
             return int(value.nbytes)  # type: ignore[arg-type]
@@ -82,7 +81,6 @@ def _default_size_estimator(value: Any) -> int:
 
 def _hash_part(part: Any) -> Hashable:
     """Normalise cache key parts to stable, hashable values."""
-
     if part is None:
         return None
     if isinstance(part, (str, bytes, int, float, bool, tuple)):
@@ -104,7 +102,6 @@ def make_key(namespace: str, version: str, parts: Iterable[Any]) -> Tuple[Hashab
     instance, while ``parts`` encodes the payload specific to the current
     computation.
     """
-
     return (namespace, version, *(_hash_part(part) for part in parts))
 
 
@@ -130,7 +127,6 @@ class CacheMetrics:
 
     def snapshot(self) -> Mapping[str, int]:
         """Return a dictionary suitable for logging or JSON serialisation."""
-
         return {
             "hits": self.hits,
             "misses": self.misses,
@@ -157,7 +153,6 @@ class CacheConfig:
     @classmethod
     def from_env(cls, base: "CacheConfig | None" = None) -> "CacheConfig":
         """Merge ``CE_CACHE`` overrides with ``base`` defaults."""
-
         cfg = CacheConfig(**(base.__dict__ if base is not None else {}))
         raw = os.getenv("CE_CACHE")
         if not raw:
@@ -226,7 +221,6 @@ class LRUCache(Generic[K, V]):
     # ------------------------------------------------------------------
     def get(self, key: K, default: V | None = None) -> V | None:
         """Return the cached value for ``key`` if present and not expired."""
-
         with self._lock:
             entry = self._store.get(key)
             if entry is None:
@@ -246,7 +240,6 @@ class LRUCache(Generic[K, V]):
 
     def set(self, key: K, value: V) -> None:
         """Store ``value`` under ``key`` honouring eviction policies."""
-
         cost = max(0, self._safe_estimate(value))
         if self.max_bytes is not None and cost > self.max_bytes:
             # Value is larger than the entire cache budget – skip storing.
@@ -269,10 +262,12 @@ class LRUCache(Generic[K, V]):
             self._shrink_if_needed()
 
     def __contains__(self, key: K) -> bool:  # pragma: no cover - trivial
+        """Return True when *key* is present in the cache."""
         with self._lock:
             return key in self._store
 
     def __len__(self) -> int:  # pragma: no cover - trivial
+        """Return the number of cached entries."""
         with self._lock:
             return len(self._store)
 
@@ -281,7 +276,6 @@ class LRUCache(Generic[K, V]):
     # ------------------------------------------------------------------
     def forksafe_reset(self) -> None:
         """Reset cache state after ``fork`` to avoid cross-process leakage."""
-
         with self._lock:
             self._store.clear()
             self._bytes = 0
@@ -335,6 +329,7 @@ class CalibratorCache(Generic[V]):
     _cache: LRUCache[Tuple[Hashable, ...], V] | None = field(init=False, default=None)
 
     def __post_init__(self) -> None:
+        """Initialise the underlying cache if caching is enabled."""
         if self.config.enabled:
             self._cache = LRUCache(
                 namespace=self.config.namespace,
@@ -350,27 +345,32 @@ class CalibratorCache(Generic[V]):
 
     @property
     def enabled(self) -> bool:
+        """Return True when the cache backend is active."""
         return self._cache is not None
 
     @property
     def metrics(self) -> CacheMetrics:
+        """Return telemetry counters, falling back to empty metrics when disabled."""
         if self._cache is None:
             return CacheMetrics()
         return self._cache.metrics
 
     def get(self, *, stage: str, parts: Iterable[Any]) -> V | None:
+        """Retrieve a cached value for ``stage`` and ``parts``."""
         if self._cache is None:
             return None
         key = make_key(self.config.namespace, f"{self.config.version}:{stage}", parts)
         return self._cache.get(key)
 
     def set(self, *, stage: str, parts: Iterable[Any], value: V) -> None:
+        """Store ``value`` for ``stage`` and ``parts`` if caching is enabled."""
         if self._cache is None:
             return
         key = make_key(self.config.namespace, f"{self.config.version}:{stage}", parts)
         self._cache.set(key, value)
 
     def compute(self, *, stage: str, parts: Iterable[Any], fn: Callable[[], V]) -> V:
+        """Return a cached value or compute and store it when missing."""
         cached = self.get(stage=stage, parts=parts)
         if cached is not None:
             return cached
@@ -379,6 +379,7 @@ class CalibratorCache(Generic[V]):
         return value
 
     def forksafe_reset(self) -> None:
+        """Reset the cache safely after ``fork`` events."""
         if self._cache is not None:
             self._cache.forksafe_reset()
 

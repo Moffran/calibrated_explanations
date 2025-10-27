@@ -17,19 +17,21 @@ class PerfFactory:
     parallel: ParallelConfig
 
     def make_cache(self) -> CalibratorCache[Any]:
+        """Return a cache instance configured with the factory defaults."""
         return CalibratorCache(self.cache)
 
     def make_parallel_executor(self, cache: CalibratorCache[Any] | None = None) -> ParallelExecutor:
+        """Return a parallel executor configured with the factory defaults."""
         return ParallelExecutor(self.parallel, cache=cache)
 
     # Backwards compatible name retained for earlier scaffolding usage
     def make_parallel_backend(self, cache: CalibratorCache[Any] | None = None) -> ParallelExecutor:
+        """Return a parallel executor using the legacy backend name."""
         return self.make_parallel_executor(cache=cache)
 
 
 def from_config(cfg: Any) -> PerfFactory:
     """Build a :class:`PerfFactory` from an ``ExplainerConfig`` like object."""
-
     cache_cfg = CacheConfig(
         enabled=getattr(cfg, "perf_cache_enabled", False),
         namespace=getattr(cfg, "perf_cache_namespace", "calibrator"),

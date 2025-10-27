@@ -34,6 +34,7 @@ class ParallelMetrics:
     failures: int = 0
 
     def snapshot(self) -> Mapping[str, int]:
+        """Return the metrics as a serialisable mapping."""
         return {
             "submitted": self.submitted,
             "completed": self.completed,
@@ -55,6 +56,7 @@ class ParallelConfig:
 
     @classmethod
     def from_env(cls, base: "ParallelConfig | None" = None) -> "ParallelConfig":
+        """Merge ``CE_PARALLEL`` overrides with an optional ``base`` configuration."""
         cfg = ParallelConfig(**(base.__dict__ if base is not None else {}))
         raw = os.getenv("CE_PARALLEL")
         if not raw:
@@ -111,6 +113,7 @@ class ParallelExecutor:
         workers: int | None = None,
         work_items: int | None = None,
     ) -> List[R]:
+        """Execute *fn* across *items* using the configured parallel strategy."""
         items_list = list(items)
         if not self.config.enabled or len(items_list) == 0:
             return [fn(item) for item in items_list]

@@ -1,5 +1,5 @@
 """
-Calibrated Explanations (calibrated_explanations)
+Calibrated Explanations (calibrated_explanations).
 
 is a Python package for explaining black-box models.
 

@@ -353,13 +353,11 @@ class CalibratedExplanation(ABC):
     @abstractmethod
     def _check_preconditions(self):
         """Validate that required explanation inputs and state are available."""
-
         pass
 
     @abstractmethod
     def _get_rules(self):
         """Populate the underlying rule structures when first accessed."""
-
         pass
 
     def reset(self):
@@ -845,7 +843,6 @@ class CalibratedExplanation(ABC):
     @abstractmethod
     def _is_lesser(self, rule_boundary, instance_value):
         """Return True when an instance value satisfies a 'less than' rule boundary."""
-
         pass
 
     # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-return-statements
@@ -1140,7 +1137,6 @@ class FactualExplanation(CalibratedExplanation):
 
     def _check_preconditions(self):
         """Warn when the selected discretizer is incompatible with factual explanations."""
-
         if self.is_regression():
             if not isinstance(self._get_explainer().discretizer, BinaryRegressorDiscretizer):
                 warnings.warn(
@@ -1225,7 +1221,6 @@ class FactualExplanation(CalibratedExplanation):
     # pylint: disable=too-many-locals, too-many-branches, too-many-statements
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """Add conjunctive factual rules."""
-
         if max_rule_size >= 4:
             raise ValueError("max_rule_size must be 2 or 3")
         if max_rule_size < 2:
@@ -1361,7 +1356,6 @@ class FactualExplanation(CalibratedExplanation):
 
     def _is_lesser(self, rule_boundary, instance_value):
         """Return whether `instance_value` falls below the provided rule boundary."""
-
         return instance_value < rule_boundary
 
     def plot(self, filter_top=None, **kwargs):
@@ -1592,7 +1586,6 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def _check_preconditions(self):
         """Warn when the configured discretizer is unsuitable for alternative explanations."""
-
         if self.is_regression():
             if not isinstance(self._get_explainer().discretizer, RegressorDiscretizer):
                 warnings.warn(
@@ -1759,7 +1752,6 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def __set_up_result(self):
         """Initialise the container used to build alternative explanation rules."""
-
         result = {
             "base_predict": [],
             "base_predict_low": [],
@@ -1877,7 +1869,6 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def __extracted_non_conjunctive_rules(self, new_rules):
         """Split out non-conjunctive rules while preserving the original mapping."""
-
         self.conjunctive_rules = MappingProxyType(new_rules)
         new_rules["predict"] = [
             value
@@ -2146,7 +2137,6 @@ class AlternativeExplanation(CalibratedExplanation):
 
     def _is_lesser(self, rule_boundary, instance_value):
         """Return whether the instance value exceeds the provided rule boundary."""
-
         return rule_boundary < instance_value
 
     # pylint: disable=consider-iterating-dictionary
@@ -2412,7 +2402,6 @@ class FastExplanation(CalibratedExplanation):
 
     def _is_lesser(self, rule_boundary, instance_value):
         """Return False as fast explanations do not support ordered rule comparisons."""
-
         pass
 
     def add_new_rule_condition(self, feature, rule_boundary):
@@ -2430,7 +2419,6 @@ class FastExplanation(CalibratedExplanation):
 
     def _check_preconditions(self):
         """Provide a placeholder hook; FAST explanations require no extra checks."""
-
         pass
 
     # pylint: disable=too-many-statements, too-many-branches

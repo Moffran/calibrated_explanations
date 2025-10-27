@@ -31,7 +31,6 @@ class ExportedExplanationCollection:
 
 def _jsonify(value: Any) -> Any:
     """Convert numpy objects and arrays into JSON-serialisable primitives."""
-
     if isinstance(value, np.ndarray):
         return [_jsonify(item) for item in value.tolist()]
     if isinstance(value, (list, tuple, set)):
@@ -207,7 +206,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             When ``True`` (default) the ``schema_version`` field is included on
             the top-level payload as well as on each explanation entry.
         """
-
         instances = []
         for exp in self.explanations:
             domain = legacy_to_domain(exp.index, self._legacy_payload(exp))
@@ -230,7 +228,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
         """Materialise domain explanations from a :meth:`to_json` payload."""
-
         explanations_blob = payload.get("explanations", []) or []
         domain: list[DomainExplanation] = []
         for item in explanations_blob:
@@ -247,7 +244,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def _legacy_payload(self, exp) -> Mapping[str, Any]:
         """Build a legacy-shaped payload from an explanation instance."""
-
         rules_blob = None
         # prefer conjunctive rules when present and populated
         if getattr(exp, "_has_conjunctive_rules", False):
@@ -275,7 +271,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def _collection_metadata(self) -> Mapping[str, Any]:
         """Collect calibration metadata required to interpret the payload."""
-
         base = getattr(self, "calibrated_explainer", None)
         underlying = getattr(base, "_explainer", None)
 
@@ -569,7 +564,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def __convert_to_alternative_explanations(self) -> "AlternativeExplanations":
         """Return an ``AlternativeExplanations`` view sharing this collection's backing data."""
-
         alternative_explanations = AlternativeExplanations.__new__(AlternativeExplanations)
         alternative_explanations.__dict__.update(self.__dict__)
         return alternative_explanations
@@ -621,12 +615,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def _get_explainer(self):
         """Return the underlying :class:`~calibrated_explanations.core.calibrated_explainer.CalibratedExplainer` instance."""
-
         return self.calibrated_explainer
 
     def _get_rules(self):
         """Return the materialised rule payload for each explanation in the collection."""
-
         return [
             # pylint: disable=protected-access
             explanation._get_rules()
@@ -700,7 +692,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def _is_alternative(self):
         """Return True when the collection represents an alternative explanation workflow."""
-
         return isinstance(
             self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer)
         )

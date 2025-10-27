@@ -38,7 +38,6 @@ def explain_predict_step(
     pre-refactor layout.  The implementation is intentionally verbose to
     minimise behavioural drift.
     """
-
     from .prediction_helpers import explain_predict_step as _eps
 
     (
@@ -213,7 +212,6 @@ def explain(
     The function mirrors the historical control flow to enable correctness
     comparisons with the optimised implementation.
     """
-
     total_time = time()
 
     features_to_ignore = (

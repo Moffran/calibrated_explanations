@@ -209,7 +209,6 @@ class ExplainerBuilder:
 
     def perf_telemetry(self, callback: Any | None) -> ExplainerBuilder:
         """Register a telemetry callback shared by cache and parallel executors."""
-
         self._cfg.perf_telemetry = callback
         return self
 

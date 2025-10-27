@@ -55,7 +55,6 @@ from .registry import (
 
 def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
     """Produce positive/negative labels for thresholded regression."""
-
     try:
         if (
             isinstance(threshold, Sequence)
@@ -79,7 +78,6 @@ class LegacyPredictBridge(PredictBridge):
 
     def __init__(self, explainer: Any) -> None:
         """Store the wrapped explainer used for legacy compatibility calls."""
-
         self._explainer = explainer
 
     def predict(
@@ -218,12 +216,10 @@ class _LegacyExplanationBase(ExplanationPlugin):
 
     def supports(self, model: Any) -> bool:
         """Return True when the legacy plugin can handle the supplied model instance."""
-
         return _supports_calibrated_explainer(model)
 
     def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:  # pragma: no cover - legacy
         """Dispatch to the underlying explainer for single-instance explanations."""
-
         if not self.supports(model):
             raise ValueError("Unsupported model for legacy plugin")
         explanation_callable = getattr(model, self._explanation_attr)
@@ -231,12 +227,10 @@ class _LegacyExplanationBase(ExplanationPlugin):
 
     def supports_mode(self, mode: str, *, task: str) -> bool:
         """Return True when the plugin implements the requested explanation mode."""
-
         return mode == self._mode
 
     def initialize(self, context: ExplanationContext) -> None:
         """Capture context dependencies required by legacy explanation flows."""
-
         self._context = context
         self._bridge = context.predict_bridge
         self._explainer = context.helper_handles.get("explainer")
@@ -245,7 +239,6 @@ class _LegacyExplanationBase(ExplanationPlugin):
 
     def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
         """Execute the explanation call and adapt legacy collections into batches."""
-
         if self._context is None or self._bridge is None or self._explainer is None:
             raise RuntimeError("Plugin must be initialised before use")
 
@@ -298,7 +291,6 @@ class LegacyFactualExplanationPlugin(_LegacyExplanationBase):
 
     def __init__(self) -> None:
         """Configure the plugin to proxy factual explanation calls."""
-
         super().__init__(
             _mode="factual",
             _explanation_attr="explain_factual",
@@ -332,7 +324,6 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
 
     def __init__(self) -> None:
         """Configure the plugin to proxy alternative explanation calls."""
-
         super().__init__(
             _mode="alternative",
             _explanation_attr="explore_alternatives",

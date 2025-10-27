@@ -173,7 +173,6 @@ def render(
         helper centralizes that mapping so both the factual and alternative
         regression paths stay in sync with the legacy implementation.
         """
-
         pos_color = colors_cfg.get("negative")
         neg_color = colors_cfg.get("positive")
         # Fall back to the opposite entry when a color is missing so we always

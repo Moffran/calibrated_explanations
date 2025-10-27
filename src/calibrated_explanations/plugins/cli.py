@@ -133,7 +133,6 @@ def _emit_plot_descriptor(descriptor) -> None:
 
 def _emit_plot_builder_descriptor(descriptor) -> None:
     """Display a plot builder descriptor with trust context."""
-
     meta = descriptor.metadata
     trust_state = "trusted" if descriptor.trusted else "untrusted"
     style = meta.get("style", "-")
@@ -150,7 +149,6 @@ def _emit_plot_builder_descriptor(descriptor) -> None:
 
 def _emit_plot_renderer_descriptor(descriptor) -> None:
     """Display a plot renderer descriptor with trust context."""
-
     meta = descriptor.metadata
     trust_state = "trusted" if descriptor.trusted else "untrusted"
     capabilities = ", ".join(_string_tuple(meta.get("capabilities"))) or "-"

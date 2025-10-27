@@ -25,7 +25,6 @@ from .legacy import plotting as legacy
 
 def _derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
     """Return positive/negative labels summarising a regression threshold."""
-
     try:
         if (
             isinstance(threshold, Sequence)
@@ -70,7 +69,6 @@ else:
 
 def _read_plot_pyproject() -> Dict[str, Any]:
     """Return ``pyproject.toml`` plot configuration when available."""
-
     if _plot_tomllib is None:
         return {}
 
@@ -121,7 +119,6 @@ def _format_save_path(base_path: Any, filename: str) -> str:
 
 def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence[str]:
     """Determine the ordered style fallback chain for plot builders/renderers."""
-
     chain: List[str] = []
     if isinstance(explicit_style, str) and explicit_style:
         chain.append(explicit_style)
@@ -167,7 +164,6 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
 
 def _plot_config_path() -> Path:
     """Return the resolved path to the plot configuration file."""
-
     return Path(__file__).resolve().parent / "utils" / "configurations" / "plot_config.ini"
 
 

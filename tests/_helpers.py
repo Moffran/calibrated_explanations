@@ -1,18 +1,18 @@
 def assert_predictions_match(y_pred1, y_pred2, msg="Predictions don't match"):
-    """Helper to verify predictions match exactly."""
+    """Verify predictions match exactly."""
     assert len(y_pred1) == len(y_pred2), f"{msg}: Different lengths"
     assert all(y1 == y2 for y1, y2 in zip(y_pred1, y_pred2)), msg
 
 
 def assert_valid_confidence_bounds(predictions, bounds, msg="Invalid confidence bounds"):
-    """Helper to verify confidence bounds contain predictions."""
+    """Ensure confidence bounds contain predictions."""
     low, high = bounds
     for i, pred in enumerate(predictions):
         assert low[i] <= pred <= high[i], f"{msg} at index {i}"
 
 
 def generic_test(cal_exp, x_prop_train, y_prop_train, x, y):
-    """Generic calibrated explainer test routine.
+    """Run a generic calibrated explainer test routine.
 
     This function encapsulates repeated assertions used across several
     test modules. Tests should import and call this helper rather than

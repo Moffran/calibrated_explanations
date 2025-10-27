@@ -34,15 +34,21 @@ def color_brew(n: int):
 
 
 def get_fill_color(venn_abers: dict, reduction: float = 1.0) -> str:
-    """Compute a hex color string based on a Venn‑Abers-style probability dict.
+    """Compute a hex color string based on a Venn-Abers-style probability dict.
 
     Parameters
-    - venn_abers: dict with keys 'predict' (float in [0,1]) and optionally
-      'low_high' (sequence of two floats). The function uses 'predict' to pick
-      the winning class and to set the blend alpha.
-    - reduction: optional override for the alpha used when mixing with white.
+    ----------
+    venn_abers : dict
+        Dictionary with key ``'predict'`` (float in [0, 1]) and optionally
+        ``'low_high'`` (sequence of two floats). The function uses ``'predict'``
+        to pick the winning class and to set the blend alpha.
+    reduction : float, optional
+        Override for the alpha used when mixing with white.
 
-    Returns a color string '#RRGGBB'.
+    Returns
+    -------
+    str
+        A color string ``'#RRGGBB'``.
     """
     colors = color_brew(2)
     # determine winning class: 1 if predict >= 0.5 else 0

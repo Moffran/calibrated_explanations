@@ -1302,7 +1302,6 @@ class CalibratedExplainer:
 
     def _invalidate_calibration_summaries(self) -> None:
         """Drop cached calibration summaries used during explanation."""
-
         self._categorical_value_counts_cache = None
         self._numeric_sorted_cache = None
         self._calibration_summary_shape = None
@@ -1311,7 +1310,6 @@ class CalibratedExplainer:
         self, x_cal_np: Optional[np.ndarray] = None
     ) -> Tuple[Dict[int, Dict[Any, int]], Dict[int, np.ndarray]]:
         """Return cached categorical counts and sorted numeric calibration values."""
-
         if x_cal_np is None:
             x_cal_np = np.asarray(self.x_cal)
         shape = getattr(x_cal_np, "shape", None)
@@ -1619,7 +1617,6 @@ class CalibratedExplainer:
         **kwargs,
     ):
         """Cache-aware wrapper around :meth:`_predict_impl`."""
-
         cache = getattr(self, "_perf_cache", None)
         cache_enabled = getattr(cache, "enabled", False)
         key_parts = None
@@ -2341,7 +2338,6 @@ class CalibratedExplainer:
         executor: ParallelExecutor,
     ) -> CalibratedExplanations:
         """Partition *x* along the instance axis and combine chunk explanations."""
-
         n_instances = x.shape[0]
         if n_instances == 0:
             empty_explanation = self._initialize_explanation(
@@ -2421,7 +2417,6 @@ class CalibratedExplainer:
     @staticmethod
     def _slice_threshold(threshold, start: int, stop: int, total_len: int):
         """Return the portion of *threshold* covering ``[start, stop)``."""
-
         if threshold is None or np.isscalar(threshold):
             return threshold
         try:
@@ -2442,7 +2437,6 @@ class CalibratedExplainer:
     @staticmethod
     def _slice_bins(bins, start: int, stop: int):
         """Return the subset of *bins* covering ``[start, stop)``."""
-
         if bins is None:
             return None
         if safe_isinstance(bins, "pandas.core.series.Series"):
