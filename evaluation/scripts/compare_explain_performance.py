@@ -30,7 +30,7 @@ import hashlib
 from collections import OrderedDict
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Literal, Mapping, Sequence, Tuple
 
 import numpy as np
 from sklearn.datasets import make_classification, make_regression
@@ -102,9 +102,23 @@ CACHE_MAX_BYTES: int | None = 64 * 1024 * 1024
 CACHE_TTL_SECONDS: float | None = None
 
 PARALLEL_ENABLED: bool = True
-PARALLEL_STRATEGY: str = "process"
-PARALLEL_WORKERS: int | None = 6
+# Strategy can be "threads", "processes", or "joblib" (when installed).
+# Threads are generally the safest default, while processes can help with
+# CPU-bound workloads at the cost of higher start-up overhead.  Joblib
+# delegates to its own smart chunking and can saturate all cores.
+PARALLEL_STRATEGY: Literal["auto", "sequential", "joblib", "threads", "processes"] = "threads"
+# Tune worker counts per backend:
+#   - threads: try 4-8 workers on laptops, or up to 5x CPU cores for servers.
+#   - processes: match the physical core count (``os.cpu_count()``) for best results.
+#   - joblib: ``-1`` uses all available cores, or pass an explicit integer.
+PARALLEL_WORKERS: int | None = None
+# For instance-level granularity we typically parallelise over examples.
+# Keep the batch size small (e.g. 1-4) to maximise concurrency, but bump this
+# up for feature-level work to avoid overhead.
 PARALLEL_MIN_BATCH: int = 1
+# ``feature`` maintains the historical behaviour.  Switch to ``instance`` to
+# parallelise explanation calls for each row.
+PARALLEL_GRANULARITY: Literal["feature", "instance"] = "feature"
 
 EXPLANATION_APIS: Tuple[str, ...] = ("explain_factual", "explore_alternatives")
 VARIANT_ORDER: Tuple[str, ...] = (
@@ -280,9 +294,10 @@ def _build_parallel_executor(cache: CalibratorCache[Any] | None = None) -> Paral
         return None
     cfg = ParallelConfig(
         enabled=True,
-        strategy=PARALLEL_STRATEGY,  # type: ignore[arg-type]
+        strategy=PARALLEL_STRATEGY,
         max_workers=PARALLEL_WORKERS,
         min_batch_size=PARALLEL_MIN_BATCH,
+        granularity=PARALLEL_GRANULARITY,
     )
     return ParallelExecutor(cfg, cache=cache)
 
