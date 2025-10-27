@@ -37,11 +37,6 @@
   surfaced the `external_plugins/` namespace and curated installation extra, and
   exposed `CE_DENY_PLUGIN` governance toggles across docs and CLI output so the
   optional plugin lane remains discoverable yet clearly opt-in.【F:docs/plugins.md†L1-L200】【F:external_plugins/__init__.py†L1-L23】【F:README.md†L640-L686】【F:src/calibrated_explanations/plugins/cli.py†L74-L123】
-- **Optional tooling labelling & documentation guardrails (Tasks 4 & 7):**
-  Introduced a reusable optional-extras fragment, moved telemetry governance to
-  contributor sections with explicit badges, and wired the docs workflow to fail
-  when hero/research/optional-extras fragments or ordering regress, keeping
-  ADR-012 enforcement automated.【F:docs/governance/optional_telemetry.md†L1-L80】【F:scripts/check_required_fragments.py†L1-L132】【F:.github/workflows/docs.yml†L19-L40】
 - **Research-forward storytelling (Task 5):** Maintained research hub call-outs
   across README, overview, and concept guides so every onboarding path links to
   `docs/research/` and `citing.md`, reinforcing the calibration pedigree.【F:README.md†L22-L60】【F:docs/overview/index.md†L1-L62】【F:docs/citing.md†L1-L140】

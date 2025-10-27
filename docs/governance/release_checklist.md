@@ -13,15 +13,10 @@ v0.9.0 release plan:
    research hub link in its usual spot (hero body or Resources callout). This
    step is a release gate for the calibrated-explanations-first narrative
    (FR-001 – FR-005).
-3. **Optional extras audit** – ensure README, Overview, quickstarts, landing hubs,
-   telemetry docs, and plugin guides end with the shared
-   ``{{ optional_extras_template }}``. Optional tooling (telemetry, PlotSpec,
-   CLI, external plugins) must not appear earlier in the flow. Run the
-   navigation smoke tests after updating any page to preserve opt-in placement.
+3. **Optional extras** – Optional tooling (telemetry, PlotSpec,
+   CLI, external plugins) must not appear early in the flow. 
 4. **Alternatives storytelling** – check every `explore_alternatives` snippet in
-   docs and notebooks uses the triangular plot walkthrough via
-   ``{{ alternatives_triangular }}`` and references fast explanations only as an
-   external plugin pointer.
+   docs and notebooks uses the triangular plot to complement the standard plot. 
 5. **Quickstart validation** – execute the classification and regression
    quickstarts (or CI equivalent) to ensure code snippets run without edits and
    update {doc}`../get-started/troubleshooting` with any new callouts. Confirm
@@ -43,7 +38,6 @@ v0.9.0 release plan:
     CI (no warnings allowed):
 
       ```bash
-      python scripts/check_required_fragments.py
       python -m sphinx -b html -W docs docs/_build/html
       python -m sphinx -b linkcheck docs docs/_build/linkcheck
       pytest tests/docs
