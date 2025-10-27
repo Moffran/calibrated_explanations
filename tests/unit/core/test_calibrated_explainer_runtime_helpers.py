@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import types
 
+import numpy as np
 import pytest
 
 from calibrated_explanations.core import calibrated_explainer as explainer_module
@@ -22,6 +23,9 @@ def _stub_explainer(mode: str = "classification") -> CalibratedExplainer:
     explainer = CalibratedExplainer.__new__(CalibratedExplainer)
     explainer.mode = mode
     explainer.bins = None
+    explainer._plot_style_override = None
+    explainer._interval_plugin_override = None
+    explainer._fast_interval_plugin_override = None
     explainer._interval_plugin_hints = {}
     explainer._interval_plugin_fallbacks = {"default": (), "fast": ()}
     explainer._interval_preferred_identifier = {"default": None, "fast": None}
@@ -365,3 +369,175 @@ def test_instantiate_plugin_handles_multiple_paths(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "copy", types.SimpleNamespace(deepcopy=raising_deepcopy))
     assert explainer._instantiate_plugin(broken) is broken
+
+
+def test_build_plot_style_chain_inserts_defaults(monkeypatch):
+    explainer = _stub_explainer()
+    explainer._plot_style_override = None
+    explainer._pyproject_plots = {}
+
+    monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
+    monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
+    monkeypatch.setenv("CE_PLOT_STYLE", " legacy ")
+
+    chain = explainer._build_plot_style_chain()
+
+    assert chain[0] == "plot_spec.default"
+    assert chain[1] == "legacy"
+    assert chain.count("legacy") == 1
+
+
+def test_build_plot_style_chain_appends_legacy_once(monkeypatch):
+    explainer = _stub_explainer()
+    explainer._plot_style_override = "plot_spec.default"
+    explainer._pyproject_plots = {"style_fallbacks": ("modern", "plot_spec.default")}
+
+    monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
+    monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
+
+    chain = explainer._build_plot_style_chain()
+
+    assert chain[0] == "plot_spec.default"
+    assert chain[-1] == "legacy"
+    assert chain.count("plot_spec.default") == 1
+
+
+def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch):
+    explainer = _stub_explainer(mode="regression")
+    explainer._interval_plugin_fallbacks = {"default": ("denied.plugin", "ok.plugin"), "fast": ()}
+    explainer._instantiate_plugin = lambda plugin: plugin
+    explainer._check_interval_runtime_metadata = lambda metadata, **_: None
+
+    monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(
+        explainer_module,
+        "is_identifier_denied",
+        lambda identifier: identifier == "denied.plugin",
+    )
+
+    descriptor = types.SimpleNamespace(
+        metadata={
+            "schema_version": 1,
+            "modes": ("regression",),
+            "capabilities": ("interval:regression",),
+            "fast_compatible": True,
+        },
+        trusted=True,
+        plugin=types.SimpleNamespace(plugin_meta={"name": "ok.plugin"}),
+    )
+
+    monkeypatch.setattr(
+        explainer_module,
+        "find_interval_descriptor",
+        lambda identifier: descriptor if identifier == "ok.plugin" else None,
+    )
+    monkeypatch.setattr(explainer_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(
+        explainer_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
+
+    plugin, identifier = explainer._resolve_interval_plugin(fast=False)
+
+    assert identifier == "ok.plugin"
+    assert plugin is descriptor.plugin
+
+
+def test_resolve_interval_plugin_denied_override_raises(monkeypatch):
+    explainer = _stub_explainer(mode="regression")
+    explainer._interval_plugin_override = "denied.plugin"
+    explainer._interval_plugin_fallbacks = {"default": ("denied.plugin",), "fast": ()}
+
+    monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(
+        explainer_module,
+        "is_identifier_denied",
+        lambda identifier: identifier == "denied.plugin",
+    )
+
+    with pytest.raises(ConfigurationError) as excinfo:
+        explainer._resolve_interval_plugin(fast=False)
+
+    assert "denied via CE_DENY_PLUGIN" in str(excinfo.value)
+
+
+def test_build_interval_context_enriches_metadata():
+    explainer = _stub_explainer(mode="regression")
+    explainer.x_cal = np.asarray([[1.0, 2.0]])
+    explainer.y_cal = np.asarray([1.5])
+    explainer._X_cal = explainer.x_cal
+    explainer.bins = np.asarray([0])
+    explainer.difficulty_estimator = "difficulty"
+    explainer._interval_context_metadata = {"default": {"preexisting": {"value": 1}}, "fast": {}}
+    explainer._CalibratedExplainer__noise_type = "gaussian"
+    explainer.categorical_features = [1]
+    explainer.learner = object()
+
+    context = explainer._build_interval_context(fast=False, metadata={"extra": 2})
+
+    assert context.learner is explainer.learner
+    assert context.calibration_splits[0] == (explainer.x_cal, explainer.y_cal)
+    assert context.bins["calibration"].shape == (1,)
+    assert context.difficulty["estimator"] == "difficulty"
+    assert context.fast_flags == {"fast": False}
+    assert context.metadata["preexisting"] == {"value": 1}
+    assert context.metadata["extra"] == 2
+    assert context.metadata["task"] == "regression"
+    assert context.metadata["mode"] == "regression"
+    assert context.metadata["categorical_features"] == (1,)
+    assert context.metadata["num_features"] == 2
+    assert context.metadata["noise_config"]["noise_type"] == "gaussian"
+
+
+def test_get_calibration_summaries_caches_results():
+    explainer = _stub_explainer()
+    explainer.x_cal = np.asarray([[0, "a"], [1, "b"], [0, "a"]], dtype=object)
+    explainer._X_cal = explainer.x_cal
+    explainer.categorical_features = [1]
+    explainer._categorical_value_counts_cache = None
+    explainer._numeric_sorted_cache = None
+    explainer._calibration_summary_shape = None
+
+    counts, numeric = explainer._get_calibration_summaries()
+
+    assert counts[1]["a"] == 2
+    assert counts[1]["b"] == 1
+    assert np.array_equal(numeric[0], np.array([0, 0, 1]))
+
+    counts_cached, numeric_cached = explainer._get_calibration_summaries()
+
+    assert counts_cached is counts
+    assert numeric_cached is numeric
+
+
+class _RaisingInterval:
+    def predict_uncertainty(self, *_, **__):
+        raise RuntimeError("boom")
+
+    def predict_probability(self, *_, **__):
+        raise RuntimeError("boom")
+
+
+def test_predict_impl_returns_degraded_arrays_when_suppressed():
+    explainer = _stub_explainer(mode="regression")
+    explainer._CalibratedExplainer__initialized = True
+    explainer._CalibratedExplainer__fast = False
+    explainer.interval_learner = _RaisingInterval()
+    explainer.suppress_crepes_errors = True
+    explainer._X_cal = np.zeros((1, 1))
+
+    x = np.ones((2, 1))
+
+    predict, low, high, classes = explainer._predict_impl(x)
+
+    assert np.all(predict == 0)
+    assert np.all(low == 0)
+    assert np.all(high == 0)
+    assert classes is None
+
+    threshold = [0.5, 0.5]
+    predict_t, low_t, high_t, classes_t = explainer._predict_impl(x, threshold=threshold)
+
+    assert np.all(predict_t == 0)
+    assert np.all(low_t == 0)
+    assert np.all(high_t == 0)
+    assert classes_t is None
