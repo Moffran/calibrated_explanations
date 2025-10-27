@@ -17,14 +17,24 @@ used by the explainer runtime and documentation examples.
 from __future__ import annotations
 
 from collections import OrderedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass as _dataclass, field
 from hashlib import sha1
 import os
+import sys
 import threading
 from time import monotonic
 from typing import Any, Callable, Generic, Hashable, Iterable, Mapping, MutableMapping, Tuple, TypeVar
 
 import numpy as np
+
+
+if sys.version_info >= (3, 10):
+    dataclass = _dataclass
+else:  # pragma: no cover - exercised in older Python versions via CI
+    def dataclass(*args, **kwargs):
+        kwargs = dict(kwargs)
+        kwargs.pop("slots", None)
+        return _dataclass(*args, **kwargs)
 
 K = TypeVar("K", bound=Hashable)
 V = TypeVar("V")
