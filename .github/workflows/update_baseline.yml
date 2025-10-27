@@ -38,7 +38,7 @@ jobs:
           DATE_TAG=$(date -u +%Y%m%d)
           # API baseline collection not automated here; keep previous behavior minimal
           # Save micro benchmarks for perf guard
-          python scripts/micro_bench_perf.py > benchmarks/micro_${DATE_TAG}.json
+          python scripts/micro_bench_perf.py --explain-backend legacy > benchmarks/micro_${DATE_TAG}.json
           echo "date_tag=$DATE_TAG" >> $GITHUB_OUTPUT
 
       - name: Micro baseline diff vs current committed baseline

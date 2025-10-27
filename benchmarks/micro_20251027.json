@@ -1,0 +1,16 @@
+{
+  "import_time_seconds": 0.9322996999835595,
+  "map": {
+    "sequential_s": 0.004582100082188845,
+    "parallel_s": 0.05964929994661361
+  },
+  "classification": {
+    "explain_factual_time_s": 0.26023060001898557,
+    "explore_alternatives_time_s": 0.43115159997250885
+  },
+  "regression": {
+    "explain_factual_time_s": 0.10849819995928556,
+    "explore_alternatives_time_s": 0.15485849999822676
+  },
+  "timestamp": "2025-10-27T12:41:13Z"
+}
