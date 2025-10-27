@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import types
 
 import pytest
@@ -26,11 +27,15 @@ def _stub_explainer(mode: str = "classification") -> CalibratedExplainer:
     explainer._interval_preferred_identifier = {"default": None, "fast": None}
     explainer._telemetry_interval_sources = {"default": None, "fast": None}
     explainer._interval_context_metadata = {"default": {}, "fast": {}}
+    explainer._interval_plugin_override = None
+    explainer._fast_interval_plugin_override = None
     explainer._explanation_plugin_overrides = {
         mode: None for mode in ("factual", "alternative", "fast")
     }
     explainer._pyproject_explanations = {}
+    explainer._pyproject_intervals = {}
     explainer._pyproject_plots = {}
+    explainer._plot_style_override = None
     explainer._explanation_plugin_fallbacks = {}
     return explainer
 
@@ -233,3 +238,130 @@ def test_ensure_interval_runtime_state_populates_defaults():
     assert explainer._telemetry_interval_sources == {"default": None, "fast": None}
     assert explainer._interval_preferred_identifier == {"default": None, "fast": None}
     assert explainer._interval_context_metadata == {"default": {}, "fast": {}}
+
+
+def test_build_interval_chain_merges_sources_and_metadata(monkeypatch):
+    explainer = _stub_explainer()
+    explainer._interval_plugin_override = "tests.override"
+    explainer._pyproject_intervals = {
+        "default": "tests.pyproject",
+        "default_fallbacks": ("tests.pyproject.fallback",),
+    }
+
+    monkeypatch.setenv("CE_INTERVAL_PLUGIN", " env.direct ")
+    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FALLBACKS", "env.shared, env.extra")
+
+    descriptors = {
+        "tests.override": types.SimpleNamespace(metadata={"fallbacks": ("env.shared",)}),
+        "env.direct": types.SimpleNamespace(metadata={"fallbacks": ()}),
+        "tests.pyproject": types.SimpleNamespace(
+            metadata={"fallbacks": ("tests.metadata.fallback",)}
+        ),
+    }
+
+    monkeypatch.setattr(
+        explainer_module,
+        "find_interval_descriptor",
+        lambda identifier: descriptors.get(identifier),
+    )
+
+    chain = explainer._build_interval_chain(fast=False)
+
+    assert chain[0] == "tests.override"
+    assert chain.count("env.shared") == 1
+    assert "env.direct" in chain
+    assert "tests.metadata.fallback" in chain
+    assert chain[-1] == "core.interval.legacy"
+    assert explainer._interval_preferred_identifier["default"] == "tests.override"
+
+
+def test_build_interval_chain_fast_skips_missing_default(monkeypatch):
+    explainer = _stub_explainer()
+    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST", "fast.direct")
+    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST_FALLBACKS", "fast.extra")
+
+    descriptors = {
+        "fast.direct": types.SimpleNamespace(metadata={"fallbacks": ()})
+    }
+
+    monkeypatch.setattr(
+        explainer_module,
+        "find_interval_descriptor",
+        lambda identifier: descriptors.get(identifier),
+    )
+
+    chain = explainer._build_interval_chain(fast=True)
+
+    assert chain == ("fast.direct", "fast.extra")
+    assert explainer._interval_preferred_identifier["fast"] == "fast.direct"
+
+
+def test_build_plot_style_chain_inserts_defaults(monkeypatch):
+    explainer = _stub_explainer()
+    explainer._plot_style_override = "tests.override"
+    explainer._pyproject_plots = {
+        "style": "tests.pyproject",
+        "style_fallbacks": ("legacy", "tests.pyproject.fallback"),
+    }
+
+    monkeypatch.setenv("CE_PLOT_STYLE", " env.direct ")
+    monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "env.extra, legacy")
+
+    chain = explainer._build_plot_style_chain()
+
+    assert chain[0] == "tests.override"
+    assert "env.direct" in chain
+    assert chain.count("legacy") == 1
+    assert "plot_spec.default" in chain
+    legacy_index = chain.index("legacy")
+    assert chain[legacy_index - 1] == "plot_spec.default"
+
+
+def test_gather_interval_hints_merges_modes():
+    explainer = _stub_explainer()
+    explainer._interval_plugin_hints = {
+        "fast": ("fast.hint",),
+        "factual": ("hint.one", "shared"),
+        "alternative": ("shared", "hint.two"),
+    }
+
+    assert explainer._gather_interval_hints(fast=True) == ("fast.hint",)
+    assert explainer._gather_interval_hints(fast=False) == ("hint.one", "shared", "hint.two")
+
+
+def test_instantiate_plugin_handles_multiple_paths(monkeypatch):
+    explainer = _stub_explainer()
+
+    class CallableWithMeta:
+        plugin_meta = {}
+
+        def __call__(self):  # pragma: no cover - guard against accidental call
+            raise AssertionError("should not be invoked")
+
+    callable_with_meta = CallableWithMeta()
+    assert explainer._instantiate_plugin(callable_with_meta) is callable_with_meta
+
+    class SimplePlugin:
+        def __init__(self) -> None:
+            self.token = object()
+
+    prototype = SimplePlugin()
+    clone = explainer._instantiate_plugin(prototype)
+    assert isinstance(clone, SimplePlugin)
+    assert clone is not prototype
+
+    class BrokenPlugin:
+        def __init__(self) -> None:
+            raise RuntimeError("boom")
+
+    broken = BrokenPlugin.__new__(BrokenPlugin)
+    sentinel = object()
+    fake_copy = types.SimpleNamespace(deepcopy=lambda value: sentinel)
+    monkeypatch.setitem(sys.modules, "copy", fake_copy)
+    assert explainer._instantiate_plugin(broken) is sentinel
+
+    def raising_deepcopy(value):
+        raise RuntimeError("fail")
+
+    monkeypatch.setitem(sys.modules, "copy", types.SimpleNamespace(deepcopy=raising_deepcopy))
+    assert explainer._instantiate_plugin(broken) is broken

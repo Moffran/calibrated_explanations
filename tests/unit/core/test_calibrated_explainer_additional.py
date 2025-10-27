@@ -283,6 +283,25 @@ def test_explanation_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> Non
     )
 
 
+def test_explanation_metadata_accepts_mode_alias(monkeypatch: pytest.MonkeyPatch) -> None:
+    learner = DummyLearner()
+    x_cal = np.ones((2, 2))
+    y_cal = np.array([0, 1])
+    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+
+    metadata = {
+        "schema_version": EXPLANATION_PROTOCOL_VERSION,
+        "tasks": ("classification",),
+        "modes": ("factual",),
+        "capabilities": ("explain", "mode:factual", "task:both"),
+    }
+
+    assert (
+        explainer._check_explanation_runtime_metadata(metadata, identifier="demo", mode="factual")
+        is None
+    )
+
+
 def test_instantiate_plugin_variants(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
@@ -317,6 +336,68 @@ def test_runtime_and_preprocessor_metadata_helpers(monkeypatch: pytest.MonkeyPat
 
     explainer.set_preprocessor_metadata({"scale": 2})
     assert explainer.preprocessor_metadata == {"scale": 2}
+
+
+def test_build_interval_context_uses_stored_fast_calibrators(monkeypatch: pytest.MonkeyPatch) -> None:
+    learner = DummyLearner()
+    x_cal = np.ones((2, 2))
+    y_cal = np.array([0, 1])
+    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+
+    explainer.interval_learner = ["a", "b"]
+    explainer._interval_context_metadata["fast"] = {"fast_calibrators": ("cached",)}
+
+    context = explainer._build_interval_context(fast=True, metadata={"note": "demo"})
+
+    assert context.metadata["existing_fast_calibrators"] == ("cached",)
+    assert context.metadata["note"] == "demo"
+
+
+def test_build_interval_context_falls_back_to_interval_learner(monkeypatch: pytest.MonkeyPatch) -> None:
+    learner = DummyLearner()
+    x_cal = np.ones((2, 2))
+    y_cal = np.array([0, 1])
+    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+
+    explainer.interval_learner = ["only-fast"]
+    explainer._interval_context_metadata["fast"] = {}
+
+    context = explainer._build_interval_context(fast=True, metadata={})
+
+    assert context.metadata["existing_fast_calibrators"] == ("only-fast",)
+
+
+def test_capture_interval_calibrators_records_sequences(monkeypatch: pytest.MonkeyPatch) -> None:
+    learner = DummyLearner()
+    x_cal = np.ones((2, 2))
+    y_cal = np.array([0, 1])
+    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+
+    context = explainer._build_interval_context(fast=True, metadata={})
+    calibrators = ["first", "second"]
+
+    explainer._capture_interval_calibrators(context=context, calibrator=calibrators, fast=True)
+
+    assert context.metadata["fast_calibrators"] == ("first", "second")
+
+
+def test_build_instance_telemetry_payload_variants(monkeypatch: pytest.MonkeyPatch) -> None:
+    learner = DummyLearner()
+    x_cal = np.ones((2, 2))
+    y_cal = np.array([0, 1])
+    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+
+    class Explanation:
+        def __init__(self, payload: dict[str, Any]) -> None:
+            self._payload = payload
+
+        def to_telemetry(self) -> dict[str, Any]:
+            return dict(self._payload)
+
+    telemetry = explainer._build_instance_telemetry_payload([Explanation({"foo": "bar"})])
+    assert telemetry == {"foo": "bar"}
+
+    assert explainer._build_instance_telemetry_payload(object()) == {}
 
     explainer.set_preprocessor_metadata(None)
     assert explainer.preprocessor_metadata is None
