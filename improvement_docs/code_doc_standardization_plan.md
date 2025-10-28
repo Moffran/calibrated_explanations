@@ -2,10 +2,10 @@
 
 Last updated: 2025-10-24
 
-# Documentation Standardization Plan
+# Code Doc Standardization Plan
 
 ## Goal
-Achieve consistent, numpydoc-compliant documentation across the `calibrated_explanations`
+Achieve consistent, numpydoc-compliant code documentation across the `calibrated_explanations`
 codebase with measurable coverage thresholds and automated enforcement.
 
 ## Phase 0 – Preparation (Week 1)

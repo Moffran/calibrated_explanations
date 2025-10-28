@@ -8,7 +8,7 @@ Last updated: 2025-10-24
 
 Define a documentation structure that serves three distinct audiences while keeping the value proposition crystal clear:
 
-1. **Practitioners** who need trustworthy, calibrated explanations (and probabilistic regression) in production systems.
+1. **Practitioners** who need trustworthy, calibrated explanations in production systems.
 2. **Researchers** validating the methodology against the published literature and exploring future work.
 3. **Contributors and maintainers** extending the framework through plugins without diluting the calibrated-explanations contract.
 
@@ -22,9 +22,7 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
 2. **Probabilistic regression stands beside classification.** Regression (point,
    interval, probabilistic) content appears next to binary and multiclass
    guidance in every navigation path.
-3. **Alternatives always include triangular plots and note fast plugins.** When
-   alternatives are introduced, the triangular plot storytelling accompanies the
-   text, and fast explanations are referenced only as an external plugin path.
+3. **Alternatives include triangular plots.** When alternatives are introduced, the triangular plot storytelling accompanies the text.
 4. **Simple, reproducible examples lead.** Tutorials replicate README/notebook
    snippets before branching into advanced usage.
 5. **Audience-led structure.** Practitioner, researcher, and contributor
@@ -38,6 +36,7 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
    guardrails and how plugins stay aligned with the framework.
 9. **Extras labelled optional.** Telemetry, performance tooling, and similar
    add-ons are always flagged as optional supplements.
+10. **Fast explanations as external plugin.** Fast explanations are referenced only as an external plugin path.
 
 ## Proposed top-level navigation
 
@@ -48,7 +47,7 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
    - Quick links for each audience (Practitioner, Researcher, Contributor) to dive deeper.
 2. **Practitioner track**
    - **Install & Quickstart** page featuring two runnable snippets: calibrated classification and probabilistic regression. Telemetry/PlotSpec steps are collapsed under "Optional: operational add-ons".
-  - **Interpretation guides** for factual and alternative explanations that reuse notebook examples, highlight calibrated intervals, uncertainty breakdowns, regression thresholds, and pair alternatives with the triangular plot walkthrough. Fast explanations are referenced only as an external plugin pointer within an "Optional extensions" callout.
+  - **Interpretation guides** for factual and alternative explanations that reuse notebook examples, highlight calibrated intervals, uncertainty breakdowns, regression thresholds, and pair alternatives with the triangular plot walkthrough. 
    - **Integration how-tos** (pipelines, deployment) that reference telemetry only as an optional compliance aid.
 3. **Researcher track**
    - Theory overview summarising calibration guarantees, probabilistic regression math, and links to published papers/preprints.
