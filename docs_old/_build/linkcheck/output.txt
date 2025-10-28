@@ -1,0 +1,5 @@
+citing.md:8: [redirected with Found] https://doi.org/10.1016/j.eswa.2024.123154 to https://linkinghub.elsevier.com/retrieve/pii/S0957417424000198
+citing.md:12: [redirected with Found] https://doi.org/10.1007/978-3-032-08333-3_16 to https://link.springer.com/chapter/10.1007/978-3-032-08333-3_16
+citing.md:10: [redirected with Found] https://doi.org/10.1007/978-3-031-63787-2_17 to https://link.springer.com/chapter/10.1007/978-3-031-63787-2_17
+citing.md:9: [redirected with Found] https://doi.org/10.1007/s10994-024-06642-8 to https://link.springer.com/article/10.1007/s10994-024-06642-8
+citing.md:7: [redirected with Found] https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440&amp;dswid=6197 to https://www.diva-portal.org/smash/record.jsf?amp%3Bdswid=6197&pid=diva2%3A1810440&dswid=-5580
