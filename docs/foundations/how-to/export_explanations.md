@@ -15,7 +15,7 @@ batch = explainer.explain_factual(X_test[:10])
 payload = batch.to_json()
 
 with open("factual.json", "w", encoding="utf-8") as fh:
-    json.dump(payload, fh, indent=2)
+    json.dump(payload, fh, indent=2, default=str)
 ```
 
 The payload includes:
@@ -80,7 +80,7 @@ runtime team can revisit chunked exports post-release.
   compliance workflows require them:
 
   ```python
-  telemetry = explainer.runtime_telemetry
+  telemetry = explainer.explainer.runtime_telemetry
   with open("factual.telemetry.json", "w", encoding="utf-8") as fh:
       json.dump(telemetry, fh, indent=2)
   ```

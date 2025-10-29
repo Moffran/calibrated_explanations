@@ -33,8 +33,9 @@ class HelloCalibratedPlugin:
         "version": "0.1.0",
         "provider": "example-team",
         "capabilities": ("binary-classification", "probabilistic-regression"),
+        "dependencies": (),
         "modes": ("factual", "alternative"),
-        "tasks": ("classification", "probabilistic-regression"),
+        "tasks": ("classification", "regression"),
         "trusted": False,
     }
 
@@ -59,6 +60,8 @@ class HelloCalibratedPlugin:
 Run :func:`calibrated_explanations.plugins.base.validate_plugin_meta` to confirm
 required keys match ADR-026. Then register the plugin with an identifier that
 follows the dot-separated naming guidelines.
+Set ``dependencies`` to the packages your plugin needs (leave it empty when the
+plugin only relies on the calibrated explanations runtime).
 
 ```python
 from calibrated_explanations.plugins.base import validate_plugin_meta

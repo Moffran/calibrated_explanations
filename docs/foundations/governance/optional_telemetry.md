@@ -16,9 +16,9 @@ opt-in audit trails when regulators require reproducible provenance.
 
 ## Payload structure
 
-Each explanation batch exposes a ``telemetry`` attribute and the wrapper
-mirrors the most recent payload on
-``CalibratedExplainer.runtime_telemetry``. Review the mapping before
+Each explanation batch exposes a ``telemetry`` attribute and the wrapped
+calibrator surfaces the most recent payload on
+``explainer.explainer.runtime_telemetry``. Review the mapping before
 persisting or routing the metadata to other systems:
 
 | Key | Description |
@@ -42,7 +42,7 @@ When the wrapper is built via configuration, telemetry includes an
 ADR-009 preprocessor snapshot:
 
 ```python
-payload = explainer.runtime_telemetry
+payload = explainer.explainer.runtime_telemetry
 pre = payload.get("preprocessor", {})
 print(pre.get("identifier"))  # e.g. sklearn.compose:ColumnTransformer
 print(pre.get("auto_encode"))
@@ -58,7 +58,7 @@ modes:
 
 ```python
 explainer.explain_fast(X_test[:5])
-fast_meta = explainer.runtime_telemetry
+fast_meta = explainer.explainer.runtime_telemetry
 print(fast_meta.get("interval_source"))
 ```
 
@@ -82,7 +82,7 @@ preprocessing policy, and interval provenance:
 import json
 
 with open("batch.telemetry.json", "w", encoding="utf-8") as fh:
-    json.dump(explainer.runtime_telemetry, fh, indent=2)
+    json.dump(explainer.explainer.runtime_telemetry, fh, indent=2)
 ```
 
 ## Instrumentation examples

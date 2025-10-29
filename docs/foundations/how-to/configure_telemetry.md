@@ -20,8 +20,10 @@ print(telemetry["uncertainty"]["calibrated_value"])
 print(telemetry.get("preprocessor", {}))
 ```
 
-`explainer.runtime_telemetry` mirrors the latest batch payload and is safe to log
-from background workers.
+When you need the most recent payload outside the batch, reach into the wrapped
+calibrator: `explainer.explainer.runtime_telemetry`. The wrapper keeps the last
+telemetry dictionary there so background workers can log provenance without
+storing the full batch object.
 
 ## Configure via environment variables
 
@@ -64,7 +66,7 @@ trails:
 ```python
 import json
 
-payload = explainer.runtime_telemetry
+payload = explainer.explainer.runtime_telemetry
 with open("telemetry.json", "w", encoding="utf-8") as fh:
     json.dump(payload, fh, indent=2)
 ```

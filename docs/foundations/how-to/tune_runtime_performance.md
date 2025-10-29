@@ -23,11 +23,14 @@ The cache saves intermediate calibration artefacts so repeated explanation runs
 avoid recomputing identical payloads. It is disabled unless you flip the feature
 flag when building your configuration.
 
+When you already have a fitted wrapper, reuse its learner when constructing the
+builder so the cached artefacts align with your deployed estimator:
+
 ```python
 from calibrated_explanations import WrapCalibratedExplainer
 from calibrated_explanations.api.config import ExplainerBuilder
 
-model = make_model()  # Replace with your fitted estimator
+model = existing_explainer.learner  # reuse the fitted estimator
 builder = ExplainerBuilder(model)
 config = (
     builder.perf_cache(

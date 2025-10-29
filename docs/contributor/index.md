@@ -9,9 +9,11 @@ CLI, configuration, and documentation updates.
 
 1. Review the {doc}`plugin-contract` to understand the surfaces that must remain
    calibrated-first across explanations, intervals, and PlotSpec outputs.
-2. Set up your environment using the workflow in {doc}`../contributing` and run
+2. Follow the {doc}`../foundations/governance/test_policy` so every Python
+   example added to the docs or README gains a matching test in `tests/docs/`.
+3. Set up your environment using the workflow in {doc}`../contributing` and run
    the formatter, tests, and doc builds locally.
-3. Use the {doc}`extending/guides/index` collection when adding new plugins or
+4. Use the {doc}`extending/guides/index` collection when adding new plugins or
    command-line tooling.
 
 ## Advanced contributor tooling

@@ -21,6 +21,8 @@ v0.9.0 release plan:
    quickstarts (or CI equivalent) to ensure code snippets run without edits and
    update {doc}`../../get-started/troubleshooting` with any new callouts. Confirm
    interval regression guidance sits adjacent to probabilistic regression steps.
+   Cross-check {doc}`test_policy` so every updated snippet has a matching
+   `tests/docs/` module.
 6. **Interpretation guide audit** – confirm {doc}`../how-to/interpret_explanations`
    reflects the latest telemetry schema, alternative rule structure, triangular
    plot copy, and quickstart outputs. Ensure README, quickstarts, and landing

@@ -28,7 +28,10 @@ explainer_cls = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
 explainer_cls.fit(X_train, y_train)
 explainer_cls.calibrate(X_train, y_train, feature_names=breast_cancer.feature_names)
 factual_cls = explainer_cls.explain_factual(X_test[:1])
-prob_cls, (low_cls, high_cls) = explainer_cls.predict(X_test[:1], uq_interval=True)
+probabilities_cls, probability_interval_cls = explainer_cls.predict_proba(
+    X_test[:1], uq_interval=True
+)
+low_cls, high_cls = probability_interval_cls
 
 # Regression parity
 boston = load_diabetes()
@@ -44,7 +47,10 @@ explainer_reg.calibrate(X_train_reg, y_train_reg, feature_names=boston.feature_n
 factual_reg = explainer_reg.explain_factual(X_test_reg[:1])
 prob_reg, (low_reg, high_reg) = explainer_reg.predict(X_test_reg[:1], uq_interval=True)
 
-print(f"Classification probability: {prob_cls[0]:.3f} [{low_cls[0]:.3f}, {high_cls[0]:.3f}]")
+print(
+    f"Classification probability: {probabilities_cls[0, 1]:.3f} "
+    f"[{low_cls[0]:.3f}, {high_cls[0]:.3f}]"
+)
 print(factual_cls[0])
 print(f"Regression prediction: {prob_reg[0]:.3f} [{low_reg[0]:.3f}, {high_reg[0]:.3f}]")
 print(factual_reg[0])

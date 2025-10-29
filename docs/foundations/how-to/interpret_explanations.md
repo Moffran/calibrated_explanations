@@ -19,23 +19,25 @@ Understanding the explanation objects is the core reason to use this library. Th
 Calibrated explanations return collections (`CalibratedExplanations`, `AlternativeExplanations`) that behave like sequences. The first step is to look at the summary for each item:
 
 ```python
-factual = explainer.explain_factual(X_test[:1])[0]
-alternative = explainer.explore_alternatives(X_test[:1])[0]
+factual_batch = explainer.explain_factual(X_test[:1])
+factual = factual_batch[0]
+alternative_batch = explainer.explore_alternatives(X_test[:1])
+alternative = alternative_batch[0]
 
-print(f"Mode: {factual.mode}  Calibrated prediction: {factual.calibrated_prediction:.3f}")
-print(f"Mode: {alternative.mode}  Calibrated prediction: {alternative.calibrated_prediction:.3f}")
+print(f"Mode: {factual.get_mode()}  Calibrated prediction: {factual.predict:.3f}")
+print(f"Mode: {alternative.get_mode()}  Calibrated prediction: {alternative.predict:.3f}")
 ```
 
 Key attributes shared by both modes:
 
 | Attribute | Description |
 | --------- | ----------- |
-| `calibrated_prediction` | Calibrated probability (classification) or numeric estimate (regression). |
+| `predict` | Calibrated probability (classification) or numeric estimate (regression). |
 | `prediction_interval` | Tuple of `(low, high)` values; mirrors `uncertainty["lower_bound"]`/`["upper_bound"]`. |
 | `rules` | Ordered list of feature-level rules, highest absolute weight first. |
 | `telemetry` | Dictionary describing the interval, probability, and plot sources that produced the explanation. |
 
-For regression with `threshold` values, `calibrated_prediction` expresses the probability that the outcome lies within the threshold bounds; the interval reflects percentile uncertainty around the calibrated estimate.
+For regression with `threshold` values, the `predict` value expresses the probability that the outcome lies within the threshold bounds; the interval reflects percentile uncertainty around the calibrated estimate.
 
 ## 2. Examine the rule tables in detail
 
@@ -61,7 +63,7 @@ Read the table from top to bottom:
 
 1. **Weight sign** – positive weights push the calibrated prediction towards the positive outcome; negative weights pull it away. Large magnitude implies greater influence.
 2. **Condition** – confirms the feature value observed in the instance (for example, `glucose >= 140`). Use this to cross-check domain constraints.
-3. **Prediction field** – shows the calibrated prediction contribution when the feature is perturbed; compare it to `calibrated_prediction` to understand marginal impact.
+3. **Prediction field** – shows the calibrated prediction contribution when the feature is perturbed; compare it to `predict` to understand marginal impact.
 4. **Weight interval** – showcases the uncertainty around the contribution estimate; wide ranges imply the feature weight is poorly supported by calibration data.
 
 `baseline_prediction` (when present) captures the calibrated output before feature-level adjustments and is useful when comparing against alternative scenarios.
@@ -113,7 +115,7 @@ If the plot does not match the table, regenerate the explanation—the library g
 Telemetry proves which components produced the explanation:
 
 ```python
-telemetry = factual.telemetry
+telemetry = getattr(factual_batch, "telemetry", {})
 print(telemetry["interval_source"])
 print(telemetry["plot_source"])
 print(telemetry["uncertainty"])

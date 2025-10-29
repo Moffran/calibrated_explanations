@@ -19,12 +19,13 @@ notebooks to keep probabilistic and interval narratives aligned.
    (or within) the threshold.
 
 ```python
-probability, (low, high) = explainer.predict(
+probabilities, probability_interval = explainer.predict_proba(
     X_test[:1],
     threshold=150,
     uq_interval=True,
 )
-print(f"Calibrated probability: {probability[0]:.3f}")
+low, high = probability_interval
+print(f"Calibrated probability: {probabilities[0, 1]:.3f}")
 print(f"Interval bounds: {low[0]:.3f} – {high[0]:.3f}")
 ```
 

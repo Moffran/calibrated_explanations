@@ -57,10 +57,10 @@ explainer.calibrate(
 factual = explainer.explain_factual(X_test[:3])
 print(f"Prediction interval: {factual.prediction_interval[0]}")
 
-probabilistic = explainer.predict(
+probabilities, probability_interval = explainer.predict_proba(
     X_test[:1], threshold=150, uq_interval=True
 )
-print("Calibrated probability:", probabilistic[0])
+print("Calibrated probability:", probabilities[0, 1])
 ```
 
 > 🎯 **Interval regression insight:** The prediction interval remains the
