@@ -96,13 +96,6 @@ def _load_shared_fragment(fragment_name: str) -> str:
         return fragment_file.read().strip()
 
 
-myst_substitutions = {
-    "hero_calibrated_explanations": _load_shared_fragment("hero_calibrated_explanations.md"),
-    "optional_extras_template": _load_shared_fragment("optional_extras_template.md"),
-    "alternatives_triangular": _load_shared_fragment("alternatives_triangular.md"),
-    "backed_by_research_banner": _load_shared_fragment("backed_by_research.md"),
-}
-
 # -- Options for HTML output -------------------------------------------------
 
 # HTML theme
