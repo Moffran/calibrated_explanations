@@ -33,18 +33,19 @@ def _run_readme_snippet() -> SimpleNamespace:
 
     factual = explainer.explain_factual(X_test[:1])
     alternatives = explainer.explore_alternatives(X_test[:1])
-    probability, (low, high) = explainer.predict(
+    probabilities, probability_interval = explainer.predict_proba(
         X_test[:1], uq_interval=True
     )
+    low, high = probability_interval
 
-    print(f"Calibrated probability: {probability[0]:.3f}")
+    print(f"Calibrated probability: {probabilities[0, 1]:.3f}")
     print(factual[0])
 
     return SimpleNamespace(
         explainer=explainer,
         factual=factual,
         alternatives=alternatives,
-        probability=probability,
+        probabilities=probabilities,
         low=low,
         high=high,
     )
@@ -54,5 +55,5 @@ def test_readme_quickstart_snippet(capsys):
     context = _run_readme_snippet()
     output = capsys.readouterr().out
     assert "Calibrated probability:" in output
-    assert 0.0 <= context.probability[0] <= 1.0
+    assert 0.0 <= context.probabilities[0, 1] <= 1.0
     assert context.alternatives

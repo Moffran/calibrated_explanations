@@ -55,13 +55,15 @@ before acting.
    explainer.fit(X_proper, y_proper)
    explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
 
-   factual = explainer.explain_factual(X_test[:1])
-   alternatives = explainer.explore_alternatives(X_test[:1])
-   probability, (low, high) = explainer.predict(X_test[:1], uq_interval=True)
-
-   print(f"Calibrated probability: {probability[0]:.3f}")
-   print(factual[0])
-   ```
+factual = explainer.explain_factual(X_test[:1])
+alternatives = explainer.explore_alternatives(X_test[:1])
+proba_matrix, probability_interval = explainer.predict_proba(
+    X_test[:1], uq_interval=True
+)
+low, high = probability_interval
+print(f"Calibrated probability: {proba_matrix[0, 1]:.3f}")
+print(factual[0])
+```
 3. **Check the output** – the first factual explanation prints a calibrated rule
    table. A real run looks like:
    ```text
