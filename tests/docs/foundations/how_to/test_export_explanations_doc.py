@@ -42,7 +42,7 @@ def test_export_explanations_snippets(tmp_path):
     parquet_path = tmp_path / "factual_rules.parquet"
     df.to_parquet(parquet_path)
 
-    telemetry = context.explainer.explainer.runtime_telemetry
+    telemetry = context.explainer.runtime_telemetry
     telemetry_path = tmp_path / "factual.telemetry.json"
     with telemetry_path.open("w", encoding="utf-8") as fh:
         json.dump(telemetry, fh, indent=2)

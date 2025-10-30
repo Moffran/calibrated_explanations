@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging as _logging
 import warnings as _warnings
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Dict
 
 from crepes.extras import MondrianCategorizer
 
@@ -212,8 +212,7 @@ class WrapCalibratedExplainer:
         -----
         if mode is not explicitly set, it is automatically determined based on the the absence or presence of a predict_proba method in the learner.
         """
-        if not self.fitted:
-            raise NotFittedError("The WrapCalibratedExplainer must be fitted before calibration.")
+        self._assert_fitted("The WrapCalibratedExplainer must be fitted before calibration.")
         self.calibrated = False
 
         if mc is not None:
@@ -285,14 +284,16 @@ class WrapCalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the docstring for explain_factual in CalibratedExplainer for more details.
 
         """
-        if not self.fitted:
-            raise NotFittedError(
+        assert (
+            self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
-        if not self.calibrated:
-            raise NotFittedError(
+            ._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
+            .explainer
+            is not None
+        )
         # Optional preprocessing
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
@@ -305,7 +306,6 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        assert self.explainer is not None
         return self.explainer.explain_factual(x_local, **kwargs)
 
     def explain_counterfactual(self, x: Any, **kwargs: Any) -> Any:
@@ -326,14 +326,16 @@ class WrapCalibratedExplainer:
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the docstring for explore_alternatives in CalibratedExplainer for more details.
 
         """
-        if not self.fitted:
-            raise NotFittedError(
+        assert (
+            self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
-        if not self.calibrated:
-            raise NotFittedError(
+            ._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
+            .explainer
+            is not None
+        )
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         cfg = getattr(self, "_cfg", None)
@@ -343,7 +345,6 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        assert self.explainer is not None
         return self.explainer.explore_alternatives(x_local, **kwargs)
 
     def explain_fast(self, x: Any, **kwargs: Any) -> Any:
@@ -353,14 +354,16 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
         """
-        if not self.fitted:
-            raise NotFittedError(
+        assert (
+            self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
-        if not self.calibrated:
-            raise NotFittedError(
+            ._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
+            .explainer
+            is not None
+        )
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         # Apply config defaults when available and not explicitly provided
@@ -371,7 +374,6 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        assert self.explainer is not None
         return self.explainer.explain_fast(x_local, **kwargs)
 
     def explain_lime(self, x: Any, **kwargs: Any) -> Any:
@@ -381,20 +383,21 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.explain_fast` : Refer to the docstring for explain_fast in CalibratedExplainer for more details.
         """
-        if not self.fitted:
-            raise NotFittedError(
+        assert (
+            self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
-        if not self.calibrated:
-            raise NotFittedError(
+            ._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated before explaining."
             )
+            .explainer
+            is not None
+        )
         x_local = self._maybe_preprocess_for_inference(x)
         kwargs = self._normalize_public_kwargs(kwargs)
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        assert self.explainer is not None
         return self.explainer.explain_lime(x_local, **kwargs)
 
     # pylint: disable=too-many-return-statements
@@ -411,8 +414,7 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.predict` : Refer to the docstring for predict in CalibratedExplainer for more details.
         """
-        if not self.fitted:
-            raise NotFittedError("The WrapCalibratedExplainer must be fitted before predicting.")
+        self._assert_fitted("The WrapCalibratedExplainer must be fitted before predicting.")
         if not self.calibrated:
             if "threshold" in kwargs:
                 raise DataShapeError(
@@ -435,7 +437,13 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        assert self.explainer is not None
+        assert (
+            self._assert_calibrated(
+                "The WrapCalibratedExplainer must be calibrated to get calibrated predictions."
+            )
+            .explainer
+            is not None
+        )
         return self.explainer.predict(
             x_local, uq_interval=uq_interval, calibrated=calibrated, **kwargs
         )
@@ -454,17 +462,15 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.predict_proba` : Refer to the docstring for predict_proba in CalibratedExplainer for more details.
         """
-        if not self.fitted:
-            raise NotFittedError(
-                "The WrapCalibratedExplainer must be fitted before predicting probabilities."
-            )
+        self._assert_fitted(
+            "The WrapCalibratedExplainer must be fitted before predicting probabilities."
+        )
         if "predict_proba" not in dir(self.learner):
             if threshold is None:
                 raise ValidationError("The threshold parameter must be specified for regression.")
-            if not self.calibrated:
-                raise NotFittedError(
-                    "The WrapCalibratedExplainer must be calibrated to get calibrated probabilities for regression."
-                )
+            self._assert_calibrated(
+                "The WrapCalibratedExplainer must be calibrated to get calibrated probabilities for regression."
+            )
         if not self.calibrated:
             if threshold is not None:
                 raise DataShapeError(
@@ -486,7 +492,13 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
-        assert self.explainer is not None
+        assert (
+            self._assert_calibrated(
+                "The WrapCalibratedExplainer must be calibrated to get calibrated probabilities."
+            )
+            .explainer
+            is not None
+        )
         return self.explainer.predict_proba(
             x_local, uq_interval=uq_interval, calibrated=calibrated, threshold=threshold, **kwargs
         )
@@ -498,15 +510,16 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.calibrated_confusion_matrix` : Refer to the docstring for calibrated_confusion_matrix in CalibratedExplainer for more details.
         """
-        if not self.fitted:
-            raise NotFittedError(
+        assert (
+            self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before providing a confusion matrix."
             )
-        if not self.calibrated:
-            raise NotFittedError(
+            ._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated before providing a confusion matrix."
             )
-        assert self.explainer is not None
+            .explainer
+            is not None
+        )
         return self.explainer.calibrated_confusion_matrix()
 
     def set_difficulty_estimator(self, difficulty_estimator: Any) -> None:
@@ -516,15 +529,16 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.set_difficulty_estimator` : Refer to the docstring for set_difficulty_estimator in CalibratedExplainer for more details.
         """
-        if not self.fitted:
-            raise NotFittedError(
+        assert (
+            self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before assigning a difficulty estimator."
             )
-        if not self.calibrated:
-            raise NotFittedError(
+            ._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated before assigning a difficulty estimator."
             )
-        assert self.explainer is not None
+            .explainer
+            is not None
+        )
         self.explainer.set_difficulty_estimator(difficulty_estimator)
 
     def initialize_reject_learner(self, threshold: float | None = None) -> Any:
@@ -534,15 +548,16 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.initialize_reject_learner` : Refer to the docstring for initialize_reject_learner in CalibratedExplainer for more details.
         """
-        if not self.fitted:
-            raise NotFittedError(
-                "The WrapCalibratedExplainer must be fitted and calibrated before initializing reject learner."
+        assert (
+            self._assert_fitted(
+                "The WrapCalibratedExplainer must be fitted before initializing the reject learner."
             )
-        if not self.calibrated:
-            raise NotFittedError(
-                "The WrapCalibratedExplainer must be calibrated before initializing reject learner."
+            ._assert_calibrated(
+                "The WrapCalibratedExplainer must be calibrated before initializing the reject learner."
             )
-        assert self.explainer is not None
+            .explainer
+            is not None
+        )
         return self.explainer.initialize_reject_learner(threshold=threshold)
 
     def predict_reject(self, x: Any, bins: Any = None, confidence: float = 0.95) -> Any:
@@ -553,15 +568,16 @@ class WrapCalibratedExplainer:
         :meth:`.CalibratedExplainer.predict_reject` : Refer to the docstring for predict_reject in CalibratedExplainer for more details.
         """
         bins = self._get_bins(x, **{"bins": bins})
-        if not self.fitted:
-            raise NotFittedError(
+        assert (
+            self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before predicting rejection."
             )
-        if not self.calibrated:
-            raise NotFittedError(
+            ._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated before predicting rejection."
             )
-        assert self.explainer is not None
+            .explainer
+            is not None
+        )
         return self.explainer.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
@@ -572,12 +588,16 @@ class WrapCalibratedExplainer:
         --------
         :meth:`.CalibratedExplainer.plot` : Refer to the docstring for plot in CalibratedExplainer for more details.
         """
-        if not self.fitted:
-            raise NotFittedError(
+        assert (
+            self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before plotting."
             )
-        if not self.calibrated:
-            raise NotFittedError("The WrapCalibratedExplainer must be calibrated before plotting.")
+            ._assert_calibrated(
+                "The WrapCalibratedExplainer must be calibrated before plotting."
+            )
+            .explainer
+            is not None
+        )
         # Apply config defaults when available and not explicitly provided
         cfg = getattr(self, "_cfg", None)
         if cfg is not None:
@@ -585,7 +605,6 @@ class WrapCalibratedExplainer:
                 threshold = cfg.threshold
             kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
         kwargs["bins"] = self._get_bins(x, **kwargs)
-        assert self.explainer is not None
         self.explainer.plot(x, y=y, threshold=threshold, **kwargs)
 
     def _get_bins(self, x: Any, **kwargs: Any) -> Any:
@@ -594,7 +613,67 @@ class WrapCalibratedExplainer:
             return self.mc.apply(x)
         return self.mc(x) if self.mc is not None else kwargs.get("bins")
 
+    @property
+    def runtime_telemetry(self) -> Mapping[str, Any]:
+        """Return the most recent telemetry payload reported by the explainer."""
+        assert (
+            self._assert_fitted(
+                "The WrapCalibratedExplainer must be fitted before accessing runtime telemetry."
+            )
+            ._assert_calibrated(
+                "The WrapCalibratedExplainer must be calibrated before accessing runtime telemetry."
+            )
+            .explainer
+            is not None
+        )
+        return self.explainer.runtime_telemetry
+
+    @property
+    def preprocessor_metadata(self) -> Dict[str, Any] | None:
+        """Return the telemetry-safe preprocessing snapshot if available."""
+        assert (
+            self._assert_fitted(
+                "The WrapCalibratedExplainer must be fitted before accessing preprocessor metadata."
+            )
+            ._assert_calibrated(
+                "The WrapCalibratedExplainer must be calibrated before accessing preprocessor metadata."
+            )
+            .explainer
+            is not None
+        )
+        return self.explainer._preprocessor_metadata
+
+    def set_preprocessor_metadata(self, metadata: Mapping[str, Any] | None) -> None:
+        """Update the stored preprocessing metadata snapshot."""
+        assert (
+            self._assert_fitted(
+                "The WrapCalibratedExplainer must be fitted before setting preprocessor metadata."
+            )
+            ._assert_calibrated(
+                "The WrapCalibratedExplainer must be calibrated before setting preprocessor metadata."
+            )
+            .explainer
+            is not None
+        )
+        self.explainer.set_preprocessor_metadata(metadata)
+
     # ------ Internal helpers (reduce duplication) ------
+    def _assert_fitted(self, message: str | None = None) -> WrapCalibratedExplainer:
+        if not self.fitted:
+            raise NotFittedError(
+                message
+                or "The WrapCalibratedExplainer must be fitted before this operation."
+            )
+        return self
+
+    def _assert_calibrated(self, message: str | None = None) -> WrapCalibratedExplainer:
+        if not self.calibrated:
+            raise NotFittedError(
+                message
+                or "The WrapCalibratedExplainer must be calibrated before this operation."
+            )
+        return self
+
     def _normalize_public_kwargs(
         self, kwargs: dict[str, Any], allowed: "set[str] | None" = None
     ) -> dict[str, Any]:

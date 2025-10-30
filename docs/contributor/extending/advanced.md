@@ -3,7 +3,7 @@
 Reach for these optional extras when you need deeper instrumentation or
 performance tooling while maintaining the calibrated explanation contract.
 
-- {doc}`../../plugin-contract` – Revisit the contract before layering advanced
+- {doc}`../plugin-contract` – Revisit the contract before layering advanced
   options on top of existing plugins.
 - {doc}`../../foundations/how-to/tune_runtime_performance` – Shared executor and
   cache guidance; reuse rather than reimplement parallelism.

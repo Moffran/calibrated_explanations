@@ -56,7 +56,7 @@ def _build_pipeline_context() -> SimpleNamespace:
     explainer.calibrate(X_cal, y_cal)
     factual = explainer.explain_factual(X_test)
 
-    telemetry = explainer.explainer.runtime_telemetry
+    telemetry = explainer.runtime_telemetry
     pre = telemetry.get("preprocessor", {})
     print(pre.get("identifier"))
     print(pre.get("pipeline"))

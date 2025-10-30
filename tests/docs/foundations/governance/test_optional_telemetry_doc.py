@@ -36,19 +36,19 @@ def test_optional_telemetry_snippets(tmp_path):
     explainer = context.explainer
     X_test = context.X_test
 
-    payload = explainer.explainer.runtime_telemetry
+    payload = explainer.runtime_telemetry
     pre = payload.get("preprocessor", {})
     print(pre.get("identifier"))  # e.g. sklearn.compose:ColumnTransformer
     print(pre.get("auto_encode"))
 
     if hasattr(explainer, "explain_fast"):
         explainer.explain_fast(X_test[:5])
-        fast_meta = explainer.explainer.runtime_telemetry
+        fast_meta = explainer.runtime_telemetry
         print(fast_meta.get("interval_source"))
 
     output = tmp_path / "batch.telemetry.json"
     with output.open("w", encoding="utf-8") as fh:
-        json.dump(explainer.explainer.runtime_telemetry, fh, indent=2)
+        json.dump(explainer.runtime_telemetry, fh, indent=2)
 
     prometheus_client = pytest.importorskip("prometheus_client")
     Gauge = prometheus_client.Gauge

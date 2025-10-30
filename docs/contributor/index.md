@@ -11,7 +11,7 @@ CLI, configuration, and documentation updates.
    calibrated-first across explanations, intervals, and PlotSpec outputs.
 2. Follow the {doc}`../foundations/governance/test_policy` so every Python
    example added to the docs or README gains a matching test in `tests/docs/`.
-3. Set up your environment using the workflow in {doc}`../contributing` and run
+3. Set up your environment using the workflow in {doc}`../foundations/governance/pr_guide` and run
    the formatter, tests, and doc builds locally.
 4. Use the {doc}`extending/guides/index` collection when adding new plugins or
    command-line tooling.

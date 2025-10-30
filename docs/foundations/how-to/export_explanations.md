@@ -80,7 +80,7 @@ runtime team can revisit chunked exports post-release.
   compliance workflows require them:
 
   ```python
-  telemetry = explainer.explainer.runtime_telemetry
+  telemetry = explainer.runtime_telemetry
   with open("factual.telemetry.json", "w", encoding="utf-8") as fh:
       json.dump(telemetry, fh, indent=2)
   ```

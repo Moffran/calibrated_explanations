@@ -21,11 +21,9 @@ def test_interpret_explanations_snippets():
     factual_rules = factual.build_rules_payload()
     for rule in factual_rules:
         print(
-            f"{rule['feature']:>20} | weight={rule['weight']:+.3f} "
+            f"{rule['feature']:>20} "
             f"| condition={rule['condition']['operator']} {rule['condition']['value']} "
-            f"| prediction={rule['prediction']['calibrated_value']:.3f} "
-            f"| prediction interval=({rule['prediction']['lower_bound']:.3f}, "
-            f"{rule['prediction']['upper_bound']:.3f}) "
+            f"| weight={rule['weight']:+.3f} "
             f"| weight interval=({rule['uncertainty']['lower_bound']:.3f}, "
             f"{rule['uncertainty']['upper_bound']:.3f})"
         )

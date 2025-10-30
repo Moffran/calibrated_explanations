@@ -21,7 +21,7 @@ print(telemetry.get("preprocessor", {}))
 ```
 
 When you need the most recent payload outside the batch, reach into the wrapped
-calibrator: `explainer.explainer.runtime_telemetry`. The wrapper keeps the last
+calibrator: `explainer.runtime_telemetry`. The wrapper keeps the last
 telemetry dictionary there so background workers can log provenance without
 storing the full batch object.
 
@@ -66,7 +66,7 @@ trails:
 ```python
 import json
 
-payload = explainer.explainer.runtime_telemetry
+payload = explainer.runtime_telemetry
 with open("telemetry.json", "w", encoding="utf-8") as fh:
     json.dump(payload, fh, indent=2)
 ```

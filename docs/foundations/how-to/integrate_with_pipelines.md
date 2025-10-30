@@ -52,7 +52,7 @@ The runtime attaches preprocessing metadata to telemetry so you can audit which
 transformers executed:
 
 ```python
-telemetry = explainer.explainer.runtime_telemetry
+telemetry = explainer.runtime_telemetry
 pre = telemetry.get("preprocessor", {})
 print(pre.get("identifier"))
 print(pre.get("pipeline"))

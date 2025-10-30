@@ -15,7 +15,7 @@ def test_configure_telemetry_snippets(tmp_path):
     print(telemetry["uncertainty"]["calibrated_value"])
     print(telemetry.get("preprocessor", {}))
 
-    payload = context.explainer.explainer.runtime_telemetry
+    payload = context.explainer.runtime_telemetry
     output = tmp_path / "telemetry.json"
     with output.open("w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2)
