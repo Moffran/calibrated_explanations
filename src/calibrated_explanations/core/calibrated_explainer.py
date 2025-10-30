@@ -2484,10 +2484,12 @@ class CalibratedExplainer:
             perturbed_class,
         ) = _eps(self, x, threshold, low_high_percentiles, bins, features_to_ignore)
 
-        perturbed_x_parts: List[np.ndarray] = []
-        perturbed_feature_parts: List[np.ndarray] = []
-        perturbed_bins_parts: List[np.ndarray] = []
-        perturbed_class_parts: List[np.ndarray] = []
+        predict_chunks: List[np.ndarray] = []
+        low_chunks: List[np.ndarray] = []
+        high_chunks: List[np.ndarray] = []
+        feature_chunks: List[np.ndarray] = []
+        bins_chunks: List[np.ndarray] = []
+        class_chunks: List[np.ndarray] = []
         threshold_items: List[Any] = []
 
         features_to_ignore_array = (
@@ -2497,11 +2499,33 @@ class CalibratedExplainer:
         )
         features_to_ignore_set = {int(f) for f in features_to_ignore_array.tolist()}
 
+        base_feature = (
+            perturbed_feature.astype(object)
+            if perturbed_feature.size
+            else np.empty((0, 4), dtype=object)
+        )
+        if perturbed_x.size:
+            base_predict, base_low, base_high, _ = self._predict(
+                perturbed_x,
+                threshold=perturbed_threshold,
+                low_high_percentiles=low_high_percentiles,
+                classes=perturbed_class,
+                bins=perturbed_bins,
+            )
+            predict_chunks.append(np.asarray(base_predict))
+            low_chunks.append(np.asarray(base_low))
+            high_chunks.append(np.asarray(base_high))
+
         # Sub-step 1.b: prepare and add the perturbed test instances (unchanged logic)
         # pylint: disable=too-many-nested-blocks
         for f in range(self.num_features):
             if f in features_to_ignore_set:
                 continue
+            feature_x_parts: List[np.ndarray] = []
+            feature_feature_parts: List[np.ndarray] = []
+            feature_bins_parts: List[np.ndarray] = []
+            feature_class_parts: List[np.ndarray] = []
+            feature_threshold_parts: List[Any] = []
             if f in self.categorical_features:
                 feature_values = np.asarray(self.feature_values[f])
                 if feature_values.size == 0:
@@ -2514,33 +2538,39 @@ class CalibratedExplainer:
                 # tiled matrix to avoid repeatedly copying the full feature matrix.
                 tiled_x = np.tile(x, (num_values, 1))
                 tiled_x[:, f] = np.repeat(feature_values, num_instances)
-                perturbed_x_parts.append(tiled_x)
+                feature_x_parts.append(tiled_x)
 
                 feature_info = np.empty((num_instances * num_values, 4), dtype=object)
                 feature_info[:, 0] = f
                 feature_info[:, 1] = np.tile(np.arange(num_instances), num_values)
                 feature_info[:, 2] = np.repeat(feature_values, num_instances)
                 feature_info[:, 3] = None
-                perturbed_feature_parts.append(feature_info)
+                feature_feature_parts.append(feature_info)
 
                 if bins is not None:
                     bins_array = np.array(bins, copy=True)
                     if bins_array.ndim == 0:
-                        perturbed_bins_parts.append(np.repeat(bins_array, num_values))
+                        feature_bins_parts.append(np.repeat(bins_array, num_values))
                     else:
                         tile_shape = (num_values,) + (1,) * (bins_array.ndim - 1)
-                        perturbed_bins_parts.append(np.tile(bins_array, tile_shape))
+                        feature_bins_parts.append(np.tile(bins_array, tile_shape))
 
                 predict_array = np.array(prediction["predict"], copy=True)
                 if predict_array.ndim == 0:
-                    perturbed_class_parts.append(np.repeat(predict_array, num_values))
+                    feature_class_parts.append(np.repeat(predict_array, num_values))
                 else:
                     tile_shape = (num_values,) + (1,) * (predict_array.ndim - 1)
-                    perturbed_class_parts.append(np.tile(predict_array, tile_shape))
+                    feature_class_parts.append(np.tile(predict_array, tile_shape))
 
                 if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                    for _ in range(num_values):
-                        threshold_items.extend(threshold[i] for i in range(num_instances))
+                    base_threshold = [threshold[i] for i in range(num_instances)]
+                    if base_threshold:
+                        if isinstance(base_threshold[0], tuple):
+                            feature_threshold_parts.append(base_threshold * num_values)
+                        else:
+                            feature_threshold_parts.append(
+                                np.tile(np.asarray(base_threshold), num_values)
+                            )
             else:
                 x_copy = x.copy()
                 feature_values = np.unique(np.array(x_cal[:, f]))
@@ -2581,27 +2611,33 @@ class CalibratedExplainer:
 
                     tiled_x = np.tile(base_slice, (num_values, 1))
                     tiled_x[:, f] = np.repeat(values, num_instances_subset)
-                    perturbed_x_parts.append(tiled_x)
+                    feature_x_parts.append(tiled_x)
 
                     feature_info = np.empty((num_instances_subset * num_values, 4), dtype=object)
                     feature_info[:, 0] = f
                     feature_info[:, 1] = np.tile(indices, num_values)
                     feature_info[:, 2] = j
                     feature_info[:, 3] = True
-                    perturbed_feature_parts.append(feature_info)
+                    feature_feature_parts.append(feature_info)
 
                     if bins_array is not None:
                         bins_subset = np.array(bins_array[indices], copy=True)
                         tile_shape = (num_values,) + (1,) * (bins_subset.ndim - 1)
-                        perturbed_bins_parts.append(np.tile(bins_subset, tile_shape))
+                        feature_bins_parts.append(np.tile(bins_subset, tile_shape))
 
                     class_subset = np.array(classes_array[indices], copy=True)
                     tile_shape = (num_values,) + (1,) * (class_subset.ndim - 1)
-                    perturbed_class_parts.append(np.tile(class_subset, tile_shape))
+                    feature_class_parts.append(np.tile(class_subset, tile_shape))
 
                     if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                         threshold_subset = [threshold[i] for i in indices]
-                        threshold_items.extend(threshold_subset * num_values)
+                        if threshold_subset:
+                            if isinstance(threshold_subset[0], tuple):
+                                feature_threshold_parts.append(threshold_subset * num_values)
+                            else:
+                                feature_threshold_parts.append(
+                                    np.tile(np.asarray(threshold_subset), num_values)
+                                )
 
                 for j, val in enumerate(np.unique(upper_boundary)):
                     greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
@@ -2616,27 +2652,33 @@ class CalibratedExplainer:
 
                     tiled_x = np.tile(base_slice, (num_values, 1))
                     tiled_x[:, f] = np.repeat(values, num_instances_subset)
-                    perturbed_x_parts.append(tiled_x)
+                    feature_x_parts.append(tiled_x)
 
                     feature_info = np.empty((num_instances_subset * num_values, 4), dtype=object)
                     feature_info[:, 0] = f
                     feature_info[:, 1] = np.tile(indices, num_values)
                     feature_info[:, 2] = j
                     feature_info[:, 3] = False
-                    perturbed_feature_parts.append(feature_info)
+                    feature_feature_parts.append(feature_info)
 
                     if bins_array is not None:
                         bins_subset = np.array(bins_array[indices], copy=True)
                         tile_shape = (num_values,) + (1,) * (bins_subset.ndim - 1)
-                        perturbed_bins_parts.append(np.tile(bins_subset, tile_shape))
+                        feature_bins_parts.append(np.tile(bins_subset, tile_shape))
 
                     class_subset = np.array(classes_array[indices], copy=True)
                     tile_shape = (num_values,) + (1,) * (class_subset.ndim - 1)
-                    perturbed_class_parts.append(np.tile(class_subset, tile_shape))
+                    feature_class_parts.append(np.tile(class_subset, tile_shape))
 
                     if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                         threshold_subset = [threshold[i] for i in indices]
-                        threshold_items.extend(threshold_subset * num_values)
+                        if threshold_subset:
+                            if isinstance(threshold_subset[0], tuple):
+                                feature_threshold_parts.append(threshold_subset * num_values)
+                            else:
+                                feature_threshold_parts.append(
+                                    np.tile(np.asarray(threshold_subset), num_values)
+                                )
                 for i in range(len(x)):
                     covered_values[f][i] = (
                         self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]),
@@ -2647,28 +2689,103 @@ class CalibratedExplainer:
                     for value in covered_values[f][i][0]:
                         x_local = x_copy[i, :].copy()
                         x_local[f] = value
-                        perturbed_x_parts.append(x_local[np.newaxis, :])
-                        perturbed_feature_parts.append(np.array([(f, i, i, None)], dtype=object))
+                        feature_x_parts.append(x_local[np.newaxis, :])
+                        feature_feature_parts.append(np.array([(f, i, i, None)], dtype=object))
                         if bins is not None:
-                            perturbed_bins_parts.append(np.array([bins[i]]))
-                        perturbed_class_parts.append(
+                            feature_bins_parts.append(np.array([bins[i]]))
+                        feature_class_parts.append(
                             np.array([prediction["classes"][i]], copy=True)
                         )
                         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                            threshold_items.append(threshold[i])
+                            feature_threshold_parts.append(np.asarray([threshold[i]]))
 
-        if perturbed_x_parts:
-            base_parts = [perturbed_x] if perturbed_x.size else []
-            perturbed_x = np.concatenate(base_parts + perturbed_x_parts, axis=0)
-        if perturbed_feature_parts:
-            base_parts = [perturbed_feature.astype(object)] if perturbed_feature.size else []
-            perturbed_feature = np.concatenate(base_parts + perturbed_feature_parts, axis=0)
-        if perturbed_bins is not None and perturbed_bins_parts:
-            base_parts = [perturbed_bins] if perturbed_bins.size else []
-            perturbed_bins = np.concatenate(base_parts + perturbed_bins_parts, axis=0)
-        if perturbed_class_parts:
-            base_parts = [perturbed_class] if perturbed_class.size else []
-            perturbed_class = np.concatenate(base_parts + perturbed_class_parts, axis=0)
+            if not feature_x_parts:
+                continue
+
+            feature_x = np.concatenate(feature_x_parts, axis=0)
+            feature_info = np.concatenate(feature_feature_parts, axis=0)
+            feature_chunks.append(feature_info)
+
+            feature_bins = None
+            if bins is not None and feature_bins_parts:
+                feature_bins = np.concatenate(feature_bins_parts, axis=0)
+                bins_chunks.append(feature_bins)
+
+            if feature_class_parts:
+                feature_classes = np.concatenate(feature_class_parts, axis=0)
+            else:
+                feature_classes = np.empty((feature_x.shape[0],), dtype=int)
+            class_chunks.append(feature_classes)
+
+            if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                threshold_part = []
+                use_numpy = True
+                for entry in feature_threshold_parts:
+                    if entry is None:
+                        continue
+                    if isinstance(entry, np.ndarray):
+                        threshold_part.append(entry)
+                    else:
+                        use_numpy = False
+                        threshold_part.append(entry)
+                feature_threshold = None
+                if threshold_part:
+                    if use_numpy:
+                        feature_threshold = np.concatenate(threshold_part, axis=0)
+                        threshold_items.extend(feature_threshold.tolist())
+                    else:
+                        feature_threshold = []
+                        for entry in threshold_part:
+                            if isinstance(entry, np.ndarray):
+                                feature_threshold.extend(entry.tolist())
+                            else:
+                                feature_threshold.extend(entry)
+                        threshold_items.extend(feature_threshold)
+                else:
+                    feature_threshold = np.empty((0,))
+            else:
+                feature_threshold = perturbed_threshold
+
+            chunk_predict, chunk_low, chunk_high, _ = self._predict(
+                feature_x,
+                threshold=feature_threshold,
+                low_high_percentiles=low_high_percentiles,
+                classes=feature_classes,
+                bins=feature_bins,
+            )
+            predict_chunks.append(np.asarray(chunk_predict))
+            low_chunks.append(np.asarray(chunk_low))
+            high_chunks.append(np.asarray(chunk_high))
+
+        if feature_chunks:
+            combined_features: List[np.ndarray] = []
+            if base_feature.size:
+                combined_features.append(base_feature)
+            combined_features.extend(feature_chunks)
+            perturbed_feature = np.concatenate(combined_features, axis=0)
+        else:
+            perturbed_feature = base_feature
+
+        if bins is not None:
+            combined_bins: List[np.ndarray] = []
+            if perturbed_bins is not None and perturbed_bins.size:
+                combined_bins.append(perturbed_bins)
+            if bins_chunks:
+                combined_bins.extend([chunk for chunk in bins_chunks if chunk.size])
+            if combined_bins:
+                perturbed_bins = np.concatenate(combined_bins, axis=0)
+            elif perturbed_bins is None and bins_chunks:
+                combined = [chunk for chunk in bins_chunks if chunk.size]
+                perturbed_bins = (
+                    np.concatenate(combined, axis=0) if combined else np.empty((0,), dtype=object)
+                )
+
+        combined_classes: List[np.ndarray] = []
+        if perturbed_class.size:
+            combined_classes.append(perturbed_class)
+        combined_classes.extend(class_chunks)
+        if combined_classes:
+            perturbed_class = np.concatenate(combined_classes, axis=0)
 
         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
             if isinstance(threshold[0], tuple):
@@ -2689,16 +2806,14 @@ class CalibratedExplainer:
             and isinstance(threshold[0], tuple)
         ):
             perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
-        predict, low, high, _ = self._predict(
-            perturbed_x,
-            threshold=perturbed_threshold,
-            low_high_percentiles=low_high_percentiles,
-            classes=perturbed_class,
-            bins=perturbed_bins,
-        )
-        predict = np.array(predict)
-        low = np.array(low)
-        high = np.array(high)
+        if predict_chunks:
+            predict = np.concatenate(predict_chunks, axis=0)
+            low = np.concatenate(low_chunks, axis=0)
+            high = np.concatenate(high_chunks, axis=0)
+        else:
+            predict = np.empty((0,))
+            low = np.empty((0,))
+            high = np.empty((0,))
         # predicted_class = np.array(perturbed_class)
         return (
             predict,
