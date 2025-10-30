@@ -46,47 +46,65 @@ Rules translate the calibration result into actionable statements. Use the helpe
 ### 2.1 Factual explanations
 
 ```python
-factual_rules = factual.build_rules_payload()
-for rule in factual_rules:
+factual_payload = factual.build_rules_payload()
+factual_core = factual_payload["core"]
+for rule in factual_core["feature_rules"]:
+    interval = rule["weight"]["uncertainty_interval"]
     print(
-        f"{rule['feature']:>20} "
+        f"{rule['condition']['feature']:>20} "
         f"| condition={rule['condition']['operator']} {rule['condition']['value']} "
-        f"| weight={rule['weight']:+.3f} "
-        f"| weight interval=({rule['uncertainty']['lower_bound']:.3f}, "
-        f"{rule['uncertainty']['upper_bound']:.3f})"
+        f"| weight={rule['weight']['value']:+.3f} "
+        f"| weight interval=({interval['lower']:.3f}, {interval['upper']:.3f})"
+    )
+
+# the metadata block preserves the detailed calibration artefacts
+factual_metadata = factual_payload["metadata"]["feature_rules"]
+for extra in factual_metadata:
+    print(
+        f"  repr={extra['weight_uncertainty']['representation']} "
+        f"prediction interval=({extra['prediction_uncertainty']['lower_bound']:.3f}, "
+        f"{extra['prediction_uncertainty']['upper_bound']:.3f})"
     )
 ```
 
-Read the table from top to bottom:
+The `build_rules_payload` result is a dictionary with two top-level keys:
+
+- `core` contains the calibrated prediction (`core["prediction"]`) and the factual feature rules (`core["feature_rules"]`).
+- `metadata` exposes the full uncertainty records and any derived artefacts (such as the baseline prediction) so downstream consumers can distinguish provenance data from the explanation itself.
+
+Read the factual core from top to bottom:
 
 1. **Weight sign** – positive weights push the calibrated prediction towards the positive outcome; negative weights pull it away. Large magnitude implies greater influence.
 2. **Condition** – confirms the feature value observed in the instance (for example, `glucose >= 140`). Use this to cross-check domain constraints.
-3. **Prediction field** – shows the calibrated prediction contribution when the feature is perturbed; compare it to `predict` to understand marginal impact.
-4. **Weight interval** – showcases the uncertainty around the contribution estimate; wide ranges imply the feature weight is poorly supported by calibration data.
-
-`baseline_prediction` (when present) captures the calibrated output before feature-level adjustments and is useful when comparing against alternative scenarios.
+3. **Prediction** – available through the metadata, showing the calibrated contribution when the feature is perturbed; compare it to `predict` to understand marginal impact.
+4. **Weight interval** – the core payload keeps only the numeric bounds; consult the metadata if you need the representation (percentile vs. probabilistic) or raw percentiles used to derive them.
 
 ### 2.2 Alternative explanations
 
 Alternative explanations add scenario guidance on top of feature contributions. The payload uses the same helper:
 
 ```python
-alternative_rules = alternative.build_rules_payload()
-for item in alternative_rules:
-    if item['kind'] == 'alternative':
-        print('Suggested changes:', item['conditions'])
-        print('Resulting calibrated prediction:', item['calibrated_prediction'])
-        for feature_rule in item['feature_rules']:
-            print(
-                f"  {feature_rule['feature']}: weight={feature_rule['weight']:+.3f} "
-                f"condition={feature_rule['condition']['operator']} {feature_rule['condition']['value']}"
-            )
+alternative_payload = alternative.build_rules_payload()
+alternative_core = alternative_payload["core"]
+for rule in alternative_core["feature_rules"]:
+    interval = rule["prediction"]["uncertainty_interval"]
+    print(
+        f"{rule['condition']['feature']:>20} "
+        f"| new condition={rule['condition']['operator']} {rule['condition']['value']} "
+        f"| predicted value={rule['prediction']['value']:+.3f} "
+        f"| interval=({interval['lower']:.3f}, {interval['upper']:.3f})"
+    )
+
+alternative_metadata = alternative_payload["metadata"]["feature_rules"]
+for extra in alternative_metadata:
+    print(
+        f"  Δ prediction={extra['weight_value']:+.3f} "
+        f"(repr={extra['weight_uncertainty']['representation']})"
+    )
 ```
 
-- `conditions` describe the feature adjustments recommended to reach the alternative outcome.
-- `calibrated_prediction` shows the probability or value after applying those adjustments; compare it with the factual `calibrated_prediction` to judge impact.
-- `feature_rules` mirrors the factual structure so you can see how each feature behaves under the alternative scenario.
-- `feature_rules[n]["uncertainty"]` reports the weight interval under the alternative scenario; wide ranges suggest collecting more calibration data before acting.
+- `core["feature_rules"]` lists the recommended feature adjustments alongside the calibrated prediction estimate and uncertainty interval for each alternative scenario.
+- `metadata["feature_rules"]` retains the richer calibration context: the difference from the factual baseline (`weight_value`), the detailed uncertainty metadata, and the alternative value used to create the scenario.
 
 Use these payloads to answer “which change makes the most difference?”—the best candidate is the scenario with the highest calibrated probability swing and acceptable feature adjustments. If uncertainty bounds remain wide, treat the recommendation with caution and look for additional calibration data.
 ## 3. Connect explanations to plots

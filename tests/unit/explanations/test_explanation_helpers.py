@@ -93,6 +93,28 @@ class SimpleExplanation(explanation_module.CalibratedExplanation):
     def _is_lesser(self, other):  # pragma: no cover - comparison unused in tests
         return False
 
+    def build_rules_payload(self):
+        rules = getattr(self, "rules", None) or getattr(self, "_rules", None) or {}
+        if isinstance(rules, dict) and "feature" in rules:
+            return explanation_module.FactualExplanation.build_rules_payload(self)
+        prediction_interval = self._build_interval(
+            self.prediction.get("low"),
+            self.prediction.get("high"),
+        )
+        return {
+            "core": {
+                "kind": "simple",
+                "prediction": {
+                    "value": explanation_module.CalibratedExplanation._to_python_number(
+                        self.prediction.get("predict")
+                    ),
+                    "uncertainty_interval": prediction_interval,
+                },
+                "feature_rules": [],
+            },
+            "metadata": {"feature_rules": []},
+        }
+
 
 def _make_explanation(
     *,
@@ -410,13 +432,19 @@ def test_build_condition_payload_parses_rules(telemetry_explanation):
 
 
 def test_build_factual_rules_payload_serializes_rules(telemetry_explanation):
-    payload = telemetry_explanation._build_factual_rules_payload()
-    assert len(payload) == 2
-    first = payload[0]
-    assert first["kind"] == "factual"
-    assert first["condition"]["operator"] in {"<=", ">"}
-    assert first["uncertainty"]["representation"] == "percentile"
-    assert first["prediction"]["raw_percentiles"] == [0.05, 0.95]
+    payload = telemetry_explanation.build_rules_payload()
+    core = payload["core"]
+    metadata = payload["metadata"]
+    assert core["kind"] == "factual"
+    assert len(core["feature_rules"]) == 2
+    first = core["feature_rules"][0]
+    assert set(first.keys()) == {"weight", "condition"}
+    assert "uncertainty_interval" in first["weight"]
+    assert metadata["feature_rules"][0]["weight_uncertainty"]["representation"] == "percentile"
+    assert metadata["feature_rules"][0]["prediction_uncertainty"]["raw_percentiles"] == [
+        0.05,
+        0.95,
+    ]
 
 
 def test_build_factual_rules_payload_threshold_representation():
@@ -425,25 +453,29 @@ def test_build_factual_rules_payload_threshold_representation():
     explanation._rules = rules
     explanation.rules = rules
     explanation._has_rules = True
-    payload = explanation._build_factual_rules_payload()
-    assert payload[0]["prediction"]["representation"] == "threshold"
-    assert payload[0]["prediction"]["threshold"] == [0.2, 0.8]
-    assert payload[0]["uncertainty"]["representation"] == "venn_abers"
+    payload = explanation.build_rules_payload()
+    metadata_rule = payload["metadata"]["feature_rules"][0]
+    prediction_metadata = metadata_rule["prediction_uncertainty"]
+    assert prediction_metadata["representation"] == "threshold"
+    assert prediction_metadata["threshold"] == [0.2, 0.8]
+    assert metadata_rule["weight_uncertainty"]["representation"] == "venn_abers"
 
 
 def test_build_rules_payload_for_alternative(alternative_explanation):
     payload = alternative_explanation.build_rules_payload()
-    assert len(payload) == 1
-    rule = payload[0]
-    assert rule["kind"] == "alternative"
-    assert rule["uncertainty"]["representation"] == "percentile"
-    assert rule["feature_rules"][0]["uncertainty"]["representation"] == "percentile"
+    core = payload["core"]
+    metadata = payload["metadata"]
+    assert core["kind"] == "alternative"
+    assert len(core["feature_rules"]) == 1
+    feature_rule = metadata["feature_rules"][0]
+    assert feature_rule["prediction_uncertainty"]["representation"] == "percentile"
+    assert feature_rule["weight_uncertainty"]["representation"] == "percentile"
 
 
 def test_to_telemetry_includes_serialized_rules(telemetry_explanation):
     telemetry = telemetry_explanation.to_telemetry()
-    assert set(telemetry.keys()) == {"uncertainty", "rules"}
-    assert telemetry["rules"]
+    assert set(telemetry.keys()) == {"uncertainty", "rules", "metadata"}
+    assert telemetry["rules"]["core"]
     assert telemetry["uncertainty"]["representation"] == "percentile"
 
 

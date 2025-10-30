@@ -190,6 +190,11 @@ class CalibratedExplanation(ABC):
         """Return the number of rules in the explanation."""
         return len(self._get_rules()["rule"])
 
+    @abstractmethod
+    def build_rules_payload(self) -> Dict[str, Any]:
+        """Return structured rule payload separating core content from metadata."""
+        raise NotImplementedError
+
     @property
     def prediction_interval(self):
         """Get the prediction interval from the prediction dictionary.
@@ -485,6 +490,14 @@ class CalibratedExplanation(ABC):
                 payload["confidence_level"] = confidence
         return payload
 
+    @staticmethod
+    def _build_interval(low: Any, high: Any) -> Dict[str, Any]:
+        """Return a minimal uncertainty interval with Python-native bounds."""
+        return {
+            "lower": CalibratedExplanation._to_python_number(low),
+            "upper": CalibratedExplanation._to_python_number(high),
+        }
+
     def _build_instance_uncertainty(self) -> Dict[str, Any]:
         """Build uncertainty payload for the current instance prediction."""
         if self.is_thresholded():
@@ -576,132 +589,15 @@ class CalibratedExplanation(ABC):
             "text": rule_text,
         }
 
-    def _build_factual_rules_payload(self) -> List[Dict[str, Any]]:
-        """Serialise factual/fast explanation rules."""
-        rules = self._get_rules()
-        if not rules or "rule" not in rules:
-            return []
-        percentiles = None
-        if not self.is_probabilistic() and not self.is_thresholded():
-            percentiles = self._get_percentiles()
-        payload: List[Dict[str, Any]] = []
-        count = len(rules.get("rule", []))
-        for idx in range(count):
-            feature_index = rules["feature"][idx]
-            condition = self._build_condition_payload(
-                feature_index,
-                rules["rule"][idx],
-                rules["feature_value"][idx],
-                rules["value"][idx],
-            )
-            weight_value = CalibratedExplanation._to_python_number(rules["weight"][idx])
-            representation = "venn_abers" if self.is_probabilistic() else "percentile"
-            weight_uncertainty = self._build_uncertainty_payload(
-                value=weight_value,
-                low=rules["weight_low"][idx],
-                high=rules["weight_high"][idx],
-                representation=representation,
-                percentiles=percentiles if representation == "percentile" else None,
-                include_percentiles=representation == "percentile",
-            )
-            prediction_uncertainty = self._build_uncertainty_payload(
-                value=rules["predict"][idx],
-                low=rules["predict_low"][idx],
-                high=rules["predict_high"][idx],
-                representation=representation if not self.is_thresholded() else "threshold",
-                percentiles=percentiles
-                if representation == "percentile" and not self.is_thresholded()
-                else None,
-                threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
-                include_percentiles=representation == "percentile" and not self.is_thresholded(),
-            )
-            payload.append(
-                {
-                    "kind": "factual",
-                    "feature": self._safe_feature_name(feature_index),
-                    "weight": weight_value,
-                    "uncertainty": weight_uncertainty,
-                    "condition": condition,
-                    "prediction": prediction_uncertainty,
-                    "baseline_prediction": CalibratedExplanation._to_python_number(
-                        rules.get("base_predict", [None])[0]
-                    ),
-                }
-            )
-        return payload
-
-    def _build_alternative_rules_payload(self) -> List[Dict[str, Any]]:
-        """Serialise alternative explanation rules."""
-        rules = self._get_rules()
-        if not rules or "rule" not in rules:
-            return []
-        percentiles = None
-        if not self.is_probabilistic() and not self.is_thresholded():
-            percentiles = self._get_percentiles()
-        payload: List[Dict[str, Any]] = []
-        count = len(rules.get("rule", []))
-        for idx in range(count):
-            feature_index = rules["feature"][idx]
-            condition = self._build_condition_payload(
-                feature_index,
-                rules["rule"][idx],
-                rules["feature_value"][idx],
-                rules["value"][idx],
-            )
-            representation = (
-                "threshold"
-                if self.is_thresholded()
-                else ("venn_abers" if self.is_probabilistic() else "percentile")
-            )
-            prediction_uncertainty = self._build_uncertainty_payload(
-                value=rules["predict"][idx],
-                low=rules["predict_low"][idx],
-                high=rules["predict_high"][idx],
-                representation=representation,
-                percentiles=None if representation != "percentile" else percentiles,
-                threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
-                include_percentiles=representation == "percentile",
-            )
-            weight_representation = "venn_abers" if self.is_probabilistic() else "percentile"
-            feature_rule_uncertainty = self._build_uncertainty_payload(
-                value=rules["weight"][idx],
-                low=rules["weight_low"][idx],
-                high=rules["weight_high"][idx],
-                representation=weight_representation,
-                percentiles=None if weight_representation != "percentile" else percentiles,
-                include_percentiles=weight_representation == "percentile",
-            )
-            feature_rule = {
-                "feature": self._safe_feature_name(feature_index),
-                "weight": CalibratedExplanation._to_python_number(rules["weight"][idx]),
-                "uncertainty": feature_rule_uncertainty,
-                "condition": deepcopy(condition),
-            }
-            rule_payload: Dict[str, Any] = {
-                "kind": "alternative",
-                "conditions": [condition],
-                "calibrated_prediction": CalibratedExplanation._to_python_number(
-                    rules["predict"][idx]
-                ),
-                "uncertainty": prediction_uncertainty,
-                "feature_rules": [feature_rule],
-            }
-            if self.is_thresholded():
-                rule_payload["threshold"] = self._normalize_threshold_value()
-            payload.append(rule_payload)
-        return payload
-
-    def build_rules_payload(self) -> List[Dict[str, Any]]:
-        """Return a telemetry-ready list of rule payloads."""
-        if isinstance(self, AlternativeExplanation):
-            return self._build_alternative_rules_payload()
-        return self._build_factual_rules_payload()
-
     def to_telemetry(self) -> Dict[str, Any]:
         """Return telemetry payload for this explanation instance."""
+        payload = self.build_rules_payload()
+        metadata = payload.get("metadata", {})
+        metadata.setdefault("prediction_uncertainty", self._build_instance_uncertainty())
         return {
-            "uncertainty": self._build_instance_uncertainty(),
-            "rules": self.build_rules_payload(),
+            "uncertainty": metadata["prediction_uncertainty"],
+            "rules": payload,
+            "metadata": metadata,
         }
 
     def _define_conditions(self):
@@ -1134,6 +1030,117 @@ class FactualExplanation(CalibratedExplanation):
             for f in reversed(feature_order)
         )
         return "\n".join(output) + "\n"
+
+    def build_rules_payload(self) -> Dict[str, Any]:
+        """Return structured payload describing factual feature rules."""
+        rules = self._get_rules()
+        prediction_value = CalibratedExplanation._to_python_number(
+            self.prediction.get("predict")
+        )
+        prediction_interval = CalibratedExplanation._build_interval(
+            self.prediction.get("low"),
+            self.prediction.get("high"),
+        )
+        core: Dict[str, Any] = {
+            "kind": "factual",
+            "prediction": {
+                "value": prediction_value,
+                "uncertainty_interval": prediction_interval,
+            },
+            "feature_rules": [],
+        }
+        metadata: Dict[str, Any] = {"feature_rules": []}
+
+        if not rules or "rule" not in rules:
+            return {"core": core, "metadata": metadata}
+
+        base_predict = rules.get("base_predict", [None])
+        base_low = rules.get("base_predict_low", [None])
+        base_high = rules.get("base_predict_high", [None])
+        baseline_value = CalibratedExplanation._to_python_number(base_predict[0])
+        if baseline_value is not None:
+            metadata["baseline_prediction"] = baseline_value
+            metadata["baseline_interval"] = CalibratedExplanation._build_interval(
+                base_low[0],
+                base_high[0],
+            )
+
+        percentiles = None
+        if not self.is_probabilistic():
+            percentiles = self._get_percentiles()
+        representation = "venn_abers" if self.is_probabilistic() else "percentile"
+
+        count = len(rules.get("rule", []))
+        for idx in range(count):
+            feature_index = rules["feature"][idx]
+            condition = self._build_condition_payload(
+                feature_index,
+                rules["rule"][idx],
+                rules["feature_value"][idx],
+                rules["value"][idx],
+            )
+            weight_value = CalibratedExplanation._to_python_number(rules["weight"][idx])
+            weight_interval = CalibratedExplanation._build_interval(
+                rules["weight_low"][idx],
+                rules["weight_high"][idx],
+            )
+            core["feature_rules"].append(
+                {
+                    "weight": {
+                        "value": weight_value,
+                        "uncertainty_interval": weight_interval,
+                    },
+                    "condition": condition,
+                }
+            )
+
+            weight_uncertainty = self._build_uncertainty_payload(
+                value=weight_value,
+                low=rules["weight_low"][idx],
+                high=rules["weight_high"][idx],
+                representation=representation,
+                percentiles=percentiles if representation == "percentile" else None,
+                include_percentiles=representation == "percentile",
+            )
+            prediction_representation = (
+                "threshold" if self.is_thresholded() else representation
+            )
+            prediction_uncertainty = self._build_uncertainty_payload(
+                value=rules["predict"][idx],
+                low=rules["predict_low"][idx],
+                high=rules["predict_high"][idx],
+                representation=prediction_representation,
+                percentiles=(
+                    percentiles
+                    if prediction_representation == "percentile"
+                    and not self.is_thresholded()
+                    else None
+                ),
+                threshold=self._normalize_threshold_value()
+                if self.is_thresholded()
+                else None,
+                include_percentiles=(
+                    prediction_representation == "percentile"
+                    and not self.is_thresholded()
+                ),
+            )
+            metadata_rule: Dict[str, Any] = {
+                "feature": self._safe_feature_name(feature_index),
+                "feature_index": CalibratedExplanation._to_python_number(feature_index),
+                "weight_uncertainty": weight_uncertainty,
+                "prediction_uncertainty": prediction_uncertainty,
+                "prediction_value": CalibratedExplanation._to_python_number(
+                    rules["predict"][idx]
+                ),
+                "condition_text": rules["rule"][idx],
+                "instance_value": CalibratedExplanation._to_python_number(
+                    rules["feature_value"][idx]
+                ),
+            }
+            metadata["feature_rules"].append(metadata_rule)
+
+        metadata["prediction_uncertainty"] = self._build_instance_uncertainty()
+        return {"core": core, "metadata": metadata}
 
     def _check_preconditions(self):
         """Warn when the selected discretizer is incompatible with factual explanations."""
@@ -1583,6 +1590,97 @@ class AlternativeExplanation(CalibratedExplanation):
             for f in reversed(feature_order)
         )
         return "\n".join(output) + "\n"
+
+    def build_rules_payload(self) -> Dict[str, Any]:
+        """Return structured payload describing alternative feature rules."""
+        rules = self._get_rules()
+        core: Dict[str, Any] = {"kind": "alternative", "feature_rules": []}
+        metadata: Dict[str, Any] = {"feature_rules": []}
+
+        if not rules or "rule" not in rules:
+            return {"core": core, "metadata": metadata}
+
+        percentiles = None
+        if not self.is_probabilistic() and not self.is_thresholded():
+            percentiles = self._get_percentiles()
+        prediction_representation = (
+            "threshold"
+            if self.is_thresholded()
+            else ("venn_abers" if self.is_probabilistic() else "percentile")
+        )
+        weight_representation = "venn_abers" if self.is_probabilistic() else "percentile"
+
+        count = len(rules.get("rule", []))
+        for idx in range(count):
+            feature_index = rules["feature"][idx]
+            condition = self._build_condition_payload(
+                feature_index,
+                rules["rule"][idx],
+                rules["feature_value"][idx],
+                rules["value"][idx],
+            )
+            prediction_value = CalibratedExplanation._to_python_number(
+                rules["predict"][idx]
+            )
+            prediction_interval = CalibratedExplanation._build_interval(
+                rules["predict_low"][idx],
+                rules["predict_high"][idx],
+            )
+            core["feature_rules"].append(
+                {
+                    "prediction": {
+                        "value": prediction_value,
+                        "uncertainty_interval": prediction_interval,
+                    },
+                    "condition": condition,
+                }
+            )
+
+            prediction_uncertainty = self._build_uncertainty_payload(
+                value=rules["predict"][idx],
+                low=rules["predict_low"][idx],
+                high=rules["predict_high"][idx],
+                representation=prediction_representation,
+                percentiles=(
+                    percentiles if prediction_representation == "percentile" else None
+                ),
+                threshold=self._normalize_threshold_value()
+                if self.is_thresholded()
+                else None,
+                include_percentiles=prediction_representation == "percentile",
+            )
+            weight_value = CalibratedExplanation._to_python_number(rules["weight"][idx])
+            weight_uncertainty = self._build_uncertainty_payload(
+                value=rules["weight"][idx],
+                low=rules["weight_low"][idx],
+                high=rules["weight_high"][idx],
+                representation=weight_representation,
+                percentiles=(
+                    percentiles if weight_representation == "percentile" else None
+                ),
+                include_percentiles=weight_representation == "percentile",
+            )
+            metadata_rule: Dict[str, Any] = {
+                "feature": self._safe_feature_name(feature_index),
+                "feature_index": CalibratedExplanation._to_python_number(feature_index),
+                "prediction_uncertainty": prediction_uncertainty,
+                "prediction_value": prediction_value,
+                "weight_value": weight_value,
+                "weight_uncertainty": weight_uncertainty,
+                "condition_text": rules["rule"][idx],
+                "instance_value": CalibratedExplanation._to_python_number(
+                    rules["feature_value"][idx]
+                ),
+                "alternative_value": CalibratedExplanation._to_python_number(
+                    rules["value"][idx]
+                ),
+            }
+            if self.is_thresholded():
+                metadata_rule["threshold"] = self._normalize_threshold_value()
+            metadata["feature_rules"].append(metadata_rule)
+
+        metadata["prediction_uncertainty"] = self._build_instance_uncertainty()
+        return {"core": core, "metadata": metadata}
 
     def _check_preconditions(self):
         """Warn when the configured discretizer is unsuitable for alternative explanations."""
@@ -2379,6 +2477,10 @@ class FastExplanation(CalibratedExplanation):
         # sum_weights_high = np.sum((fast['weight_high']))
         # output.append(f"{'Mean':6}: {'':40s} {sum_weights:>6.3f} [{sum_weights_low:>6.3f}, {sum_weights_high:>6.3f}]")
         return "\n".join(output) + "\n"
+
+    def build_rules_payload(self) -> Dict[str, Any]:
+        """Reuse the factual payload structure for fast explanations."""
+        return FactualExplanation.build_rules_payload(self)
 
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """Warn that conjunctions are not supported for ``FastExplanation`` and perform no work.

@@ -2573,7 +2573,6 @@ class CalibratedExplainer:
                                 np.tile(np.asarray(base_threshold), num_values)
                             )
             else:
-                x_copy = x.copy()
                 feature_values = np.unique(np.array(x_cal[:, f]))
                 lower_boundary = np.array(rule_boundaries[:, f, 0], copy=True)
                 upper_boundary = np.array(rule_boundaries[:, f, 1], copy=True)
@@ -2688,7 +2687,7 @@ class CalibratedExplainer:
                     if covered_values[f][i][0].size == 0:
                         continue
                     for value in covered_values[f][i][0]:
-                        x_local = x_copy[i, :].copy()
+                        x_local = np.array(x[i, :], copy=True)
                         x_local[f] = value
                         feature_x_parts.append(x_local[np.newaxis, :])
                         feature_feature_parts.append(np.array([(f, i, i, None)], dtype=object))

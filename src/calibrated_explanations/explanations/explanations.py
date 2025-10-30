@@ -8,7 +8,7 @@ import warnings
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from time import time
-from typing import Any, List, Mapping, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 
@@ -106,6 +106,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     def __len__(self):
         """Return the number of explanations."""
         return len(self.x_test[:, 0])
+
+    def build_rules_payload(self) -> List[Dict[str, Any]]:
+        """Delegate payload materialisation to each stored explanation."""
+        return [exp.build_rules_payload() for exp in self.explanations]
 
     def __getitem__(self, key: Union[int, slice, List[int], List[bool], np.ndarray]):
         """Return the explanation for the given key.
