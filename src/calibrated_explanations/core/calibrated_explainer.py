@@ -16,7 +16,7 @@ from __future__ import annotations
 import warnings as _warnings
 import os
 from pathlib import Path
-from collections import defaultdict
+from collections import Counter, defaultdict
 from time import time
 
 import numpy as np
@@ -33,6 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 from crepes import ConformalClassifier
 from crepes.extras import hinge
 from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import KFold, StratifiedKFold
 
 from ..perf import CalibratorCache, ParallelExecutor
 from ..plotting import _plot_global
@@ -4002,8 +4003,9 @@ class CalibratedExplainer:
         """Generate a calibrated confusion matrix.
 
         Generates a confusion matrix for the calibration set to provide insights about model behavior.
-        The confusion matrix is only available for classification tasks. Leave-one-out cross-validation is
-        used on the calibration set to generate the confusion matrix.
+        The confusion matrix is only available for classification tasks. Stratified cross-validation is
+        used on the calibration set to generate the confusion matrix while avoiding quadratic
+        recalibration overhead.
 
         Returns
         -------
@@ -4014,22 +4016,51 @@ class CalibratedExplainer:
             raise ValidationError(
                 "The confusion matrix is only available for classification tasks."
             )
-        cal_predicted_classes = np.zeros(len(self.y_cal))
-        for i in range(len(self.y_cal)):
+        y_cal = np.asarray(self.y_cal)
+        bins = None if self.bins is None else np.asarray(self.bins)
+        n_samples = len(y_cal)
+
+        if n_samples == 0:
+            raise ValidationError("At least one calibration sample is required to build a confusion matrix.")
+
+        cal_predicted_classes = np.empty_like(y_cal)
+
+        # Determine the maximum feasible number of stratified folds.
+        n_splits = min(10, n_samples)
+        class_counts = Counter(y_cal)
+        while n_splits > 1 and any(count < n_splits for count in class_counts.values()):
+            n_splits -= 1
+
+        if n_splits <= 1:
+            va = VennAbers(self.x_cal, self.y_cal, self.learner, bins=self.bins)
+            _, _, _, predict = va.predict_proba(
+                self.x_cal,
+                output_interval=True,
+                bins=self.bins,
+            )
+            cal_predicted_classes[:] = predict
+            return confusion_matrix(self.y_cal, cal_predicted_classes)
+
+        if len(class_counts) > 1:
+            splitter = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
+            split_iter = splitter.split(self.x_cal, y_cal)
+        else:
+            splitter = KFold(n_splits=n_splits, shuffle=True, random_state=0)
+            split_iter = splitter.split(self.x_cal)
+
+        for train_idx, test_idx in split_iter:
             va = VennAbers(
-                np.concatenate((self.x_cal[:i], self.x_cal[i + 1 :]), axis=0),
-                np.concatenate((self.y_cal[:i], self.y_cal[i + 1 :])),
+                self.x_cal[train_idx],
+                y_cal[train_idx],
                 self.learner,
-                bins=np.concatenate((self.bins[:i], self.bins[i + 1 :]))
-                if self.bins is not None
-                else None,
+                bins=bins[train_idx] if bins is not None else None,
             )
             _, _, _, predict = va.predict_proba(
-                [self.x_cal[i]],
+                self.x_cal[test_idx],
                 output_interval=True,
-                bins=[self.bins[i]] if self.bins is not None else None,
+                bins=bins[test_idx] if bins is not None else None,
             )
-            cal_predicted_classes[i] = predict[0]
+            cal_predicted_classes[test_idx] = predict
         return confusion_matrix(self.y_cal, cal_predicted_classes)
 
     def predict_calibration(self):
