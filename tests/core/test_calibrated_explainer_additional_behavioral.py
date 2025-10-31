@@ -10,7 +10,12 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
+from calibrated_explanations.core.exceptions import (
+    DataShapeError,
+    NotFittedError,
+    ValidationError,
+)
+from calibrated_explanations.integrations import LimeHelper, ShapHelper
 
 
 @pytest.fixture()
@@ -96,9 +101,9 @@ def _make_minimal_explainer(num_features: int = 2) -> CalibratedExplainer:
     explainer.rng = np.random.default_rng(0)
     explainer.bins = None
     explainer._CalibratedExplainer__fast = False
-    explainer._CalibratedExplainer__lime_enabled = False
-    explainer._CalibratedExplainer__shap_enabled = False
     explainer._CalibratedExplainer__initialized = False
+    explainer._lime_helper = LimeHelper(explainer)
+    explainer._shap_helper = ShapHelper(explainer)
     return explainer
 
 

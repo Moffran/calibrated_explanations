@@ -39,6 +39,7 @@ from ..perf import CalibratorCache, ParallelExecutor
 from ..plotting import _plot_global
 from .venn_abers import VennAbers
 from ..explanations import AlternativeExplanations, CalibratedExplanations
+from ..integrations import LimeHelper, ShapHelper
 from ..utils.discretizers import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
@@ -50,7 +51,6 @@ from ..utils.helper import (
     check_is_fitted,
     convert_targets_to_numeric,
     immutable_array,
-    safe_import,
     safe_mean,
     safe_isinstance,
 )
@@ -359,12 +359,8 @@ class CalibratedExplainer:
         self.feature_values: Dict[int, List[Any]] = {}
         self.feature_frequencies: Dict[int, np.ndarray] = {}
         self.latest_explanation: Optional[CalibratedExplanations] = None
-        self.__shap_enabled = False
-        self.__lime_enabled = False
-        self.lime: Any = None
-        self.lime_exp: Any = None
-        self.shap: Any = None
-        self.shap_exp: Any = None
+        self._lime_helper = LimeHelper(self)
+        self._shap_helper = ShapHelper(self)
         self.reject = kwargs.get("reject", False)
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
@@ -3069,8 +3065,7 @@ class CalibratedExplainer:
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FastExplanation` for each instance.
         """
-        if not self.__lime_enabled:
-            self._preload_lime()
+        explainer, _ = self._preload_lime()
         total_time = time()
         instance_time = []
         if safe_isinstance(x, "pandas.core.frame.DataFrame"):
@@ -3143,7 +3138,10 @@ class CalibratedExplainer:
         else:
             prediction["classes"] = np.ones(x.shape[0])
 
-            explainer = self.lime
+        if explainer is None:
+            raise ConfigurationError(
+                "LIME integration requested but the optional dependency is missing."
+            )
 
         def low_proba(x):
             _, low, _, _ = self._predict(
@@ -3908,87 +3906,40 @@ class CalibratedExplainer:
         return (proba, (low, high)) if uq_interval else proba
 
     def _is_lime_enabled(self, is_enabled=None) -> bool:
-        """Return whether lime export is enabled.
+        """Return whether LIME export is enabled."""
 
-        If is_enabled is not None, then the lime export is enabled/disabled according to the value of is_enabled.
-
-        Parameters
-        ----------
-            is_enabled (bool, optional): is used to assign whether lime export is enabled or not. Defaults to None.
-
-        Returns
-        -------
-            bool: returns whether lime export is enabled
-        """
+        helper = getattr(self, "_lime_helper", None)
+        if helper is None:
+            helper = self._lime_helper = LimeHelper(self)
         if is_enabled is not None:
-            self.__lime_enabled = is_enabled
-        return self.__lime_enabled
+            helper.set_enabled(bool(is_enabled))
+        return helper.is_enabled()
 
     def _is_shap_enabled(self, is_enabled=None) -> bool:
-        """Return whether shap export is enabled.
+        """Return whether SHAP export is enabled."""
 
-        If is_enabled is not None, then the shap export is enabled/disabled according to the value of is_enabled.
-
-        Parameters
-        ----------
-            is_enabled (bool, optional): is used to assign whether shap export is enabled or not. Defaults to None.
-
-        Returns
-        -------
-            bool: returns whether shap export is enabled
-        """
+        helper = getattr(self, "_shap_helper", None)
+        if helper is None:
+            helper = self._shap_helper = ShapHelper(self)
         if is_enabled is not None:
-            self.__shap_enabled = is_enabled
-        return self.__shap_enabled
+            helper.set_enabled(bool(is_enabled))
+        return helper.is_enabled()
 
     def _preload_lime(self, x_cal=None):
         """Materialize LIME explainer artifacts when the dependency is available."""
-        if not (lime := safe_import("lime.lime_tabular", "LimeTabularExplainer")):
-            return None, None
-        if not self._is_lime_enabled():
-            if self.mode == "classification":
-                self.lime = lime(
-                    self.x_cal[:1, :] if x_cal is None else x_cal,
-                    feature_names=self.feature_names,
-                    class_names=["0", "1"],
-                    mode=self.mode,
-                )
-                self.lime_exp = self.lime.explain_instance(
-                    self.x_cal[0, :], self.learner.predict_proba, num_features=self.num_features
-                )
-            elif "regression" in self.mode:
-                self.lime = lime(
-                    self.x_cal[:1, :] if x_cal is None else x_cal,
-                    feature_names=self.feature_names,
-                    mode="regression",
-                )
-                self.lime_exp = self.lime.explain_instance(
-                    self.x_cal[0, :], self.learner.predict, num_features=self.num_features
-                )
-            self._is_lime_enabled(True)
-        return self.lime, self.lime_exp
+
+        helper = getattr(self, "_lime_helper", None)
+        if helper is None:
+            helper = self._lime_helper = LimeHelper(self)
+        return helper.preload(x_cal=x_cal)
 
     def _preload_shap(self, num_test=None):
         """Eagerly compute SHAP explanations to amortize repeated requests."""
-        if shap := safe_import("shap"):
-            if (
-                not self._is_shap_enabled()
-                or num_test is not None
-                and self.shap_exp.shape[0] != num_test
-            ):
 
-                def f(x):
-                    return self._predict(x)[0]
-
-                self.shap = shap.Explainer(f, self.x_cal, feature_names=self.feature_names)
-                self.shap_exp = (
-                    self.shap(self.x_cal[0, :].reshape(1, -1))
-                    if num_test is None
-                    else self.shap(self.x_cal[:num_test, :])
-                )
-                self._is_shap_enabled(True)
-            return self.shap, self.shap_exp
-        return None, None
+        helper = getattr(self, "_shap_helper", None)
+        if helper is None:
+            helper = self._shap_helper = ShapHelper(self)
+        return helper.preload(num_test=num_test)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, x, y=None, threshold=None, **kwargs):
