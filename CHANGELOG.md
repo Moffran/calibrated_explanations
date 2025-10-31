@@ -1,6 +1,10 @@
 <!-- markdownlint-disable-file -->
 # Changelog
 
+## [Unreleased]
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...main)
+
 ## Highlights
 
 - **Faster calibrated explanations.** Explore the latest latency benchmarks and
@@ -15,10 +19,6 @@
 - **Expanded export tooling.** Persist and reload explanation collections via
   the new `CalibratedExplanations.to_json`/`.from_json` helpers and refreshed
   how-to guides.
-
-## [Unreleased]
-
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...main)
 
 ### Release plan alignment
 
