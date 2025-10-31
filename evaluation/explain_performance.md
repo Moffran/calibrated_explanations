@@ -8,13 +8,13 @@ perturbation workloads.
 ## Methodology
 
 1. Build calibrated explainers using 2,000-sample datasets generated via
-   `make_classification` and `make_regression` (10 total features with five
+   `make_classification` and `make_regression` (64 total features with 16
    informative dimensions; classification adds no redundant features and
    regression noise is set to 0.2).
-2. Fit random forest learners (100 estimators for both classification and
+2. Fit random forest learners (10 estimators for both classification and
    regression) and initialise `CalibratedExplainer` instances with the new
    discretiser initialisation.
-3. Reserve 500 samples for calibration and 500 held-out test instances per task.
+3. Reserve 500 samples for calibration and 100 held-out test instances per task.
 4. Execute five strategy variants with a single warm-up run followed by ten
    timed repeats, recording mean wall-clock durations: the historical legacy
    pipeline, the modern pipeline, cached modern (`cache=True`), parallel modern
@@ -37,21 +37,21 @@ PYTHONPATH=./src:. python evaluation/scripts/compare_explain_performance.py
 
 | Strategy        | Time (s) | Speedup vs Legacy | Speedup vs Modern |
 |-----------------|---------:|------------------:|------------------:|
-| Legacy          |   21.37 |             1.00× |             0.07× |
-| Modern          |    1.46 |            14.62× |             1.00× |
-| Cached          |    1.38 |            15.51× |             1.06× |
-| Parallel        |    1.61 |            13.31× |             0.91× |
-| Cache + Parallel|    1.31 |            16.31× |             1.12× |
+| Legacy          |   85.73 |             1.00× |             0.03× |
+| Modern          |    2.56 |            33.49× |             1.00× |
+| Cached          |    2.60 |            33.00× |             0.99× |
+| Parallel        |    2.52 |            33.99× |             1.01× |
+| Cache + Parallel|    2.15 |            39.85× |             1.19× |
 
 #### `explore_alternatives`
 
 | Strategy        | Time (s) | Speedup vs Legacy | Speedup vs Modern |
 |-----------------|---------:|------------------:|------------------:|
-| Legacy          |   65.22 |             1.00× |             0.04× |
-| Modern          |    2.51 |            26.04× |             1.00× |
-| Cached          |    2.19 |            29.74× |             1.14× |
-| Parallel        |    2.59 |            25.21× |             0.97× |
-| Cache + Parallel|    2.17 |            30.13× |             1.16× |
+| Legacy          |  158.91 |             1.00× |             0.02× |
+| Modern          |    2.58 |            61.61× |             1.00× |
+| Cached          |    2.45 |            64.96× |             1.05× |
+| Parallel        |    2.72 |            58.47× |             0.95× |
+| Cache + Parallel|    2.44 |            65.19× |             1.06× |
 
 ### Regression
 
@@ -59,26 +59,26 @@ PYTHONPATH=./src:. python evaluation/scripts/compare_explain_performance.py
 
 | Strategy        | Time (s) | Speedup vs Legacy | Speedup vs Modern |
 |-----------------|---------:|------------------:|------------------:|
-| Legacy          |   20.50 |             1.00× |             0.09× |
-| Modern          |    1.77 |            11.58× |             1.00× |
-| Cached          |    1.22 |            16.81× |             1.45× |
-| Parallel        |    1.97 |            10.38× |             0.90× |
-| Cache + Parallel|    1.40 |            14.60× |             1.26× |
+| Legacy          |   71.22 |             1.00× |             0.03× |
+| Modern          |    2.01 |            35.51× |             1.00× |
+| Cached          |    1.76 |            40.54× |             1.14× |
+| Parallel        |    1.87 |            38.10× |             1.07× |
+| Cache + Parallel|    1.58 |            45.18× |             1.27× |
 
 #### `explore_alternatives`
 
 | Strategy        | Time (s) | Speedup vs Legacy | Speedup vs Modern |
 |-----------------|---------:|------------------:|------------------:|
-| Legacy          |   57.19 |             1.00× |             0.05× |
-| Modern          |    2.69 |            21.28× |             1.00× |
-| Cached          |    2.14 |            26.67× |             1.25× |
-| Parallel        |    2.65 |            21.62× |             1.02× |
-| Cache + Parallel|    2.08 |            27.46× |             1.29× |
+| Legacy          |  135.08 |             1.00× |             0.02× |
+| Modern          |    3.01 |            44.88× |             1.00× |
+| Cached          |    2.71 |            49.89× |             1.11× |
+| Parallel        |    2.89 |            46.81× |             1.04× |
+| Cache + Parallel|    3.15 |            42.86× |             0.96× |
 
 ## Analysis
 
-- The modern pipeline is now 11.6–26.0× faster than the legacy baseline across all workloads, turning multi-minute jobs into low-single-digit seconds.
-- Classification runs favour the combined cache+parallel variant (1.31 s / 16.31× for `explain_factual`, 2.17 s / 30.13× for `explore_alternatives`), delivering the highest throughput with minimal overhead.
-- Caching dominates regression `explain_factual`: the cached-only path drops latency to 1.22 s (16.81× vs legacy, 1.45× vs modern) while parallel-only execution remains the slowest modern option.
-- Regression `explore_alternatives` benefits from both optimisations, with cache+parallel at 2.08 s (27.46× vs legacy, 1.29× vs modern) and caching alone close behind.
-- Despite the heavier 2,000-sample workloads, every optimised variant preserves explanation parity with the legacy implementation, so the feature flags can be tuned strictly for performance.
+- Even without cache or parallel enabled, the modern pipeline cuts legacy runtimes of 71–159 s down to roughly 2–3 s (33–62× improvements across all workloads).
+- Classification runs gain the most from enabling both optimisations: cache+parallel clocks 2.15 s / 39.85× for `explain_factual` and 2.44 s / 65.19× for `explore_alternatives`, edging out the other variants.
+- Regression `explain_factual` also prefers the combined strategy, dropping to 1.58 s (45.18× vs legacy, 1.27× vs modern).
+- Regression `explore_alternatives` is cache-bound: caching alone lands at 2.71 s (49.89× vs legacy, 1.11× vs modern) while adding the parallel executor nudges latency up to 3.15 s.
+- Every modern variant continues to match the legacy payload bit-for-bit, so teams can toggle cache and parallel strictly based on latency goals.
