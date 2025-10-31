@@ -20,8 +20,19 @@ This page summarizes the stable JSON contract for serialized explanations in v0.
 
 - `feature` (integer): feature index.
 - `rule` (string): human-readable rule string.
-- `weight` (object): feature weight summary (typically `{predict, low, high}`).
-- `prediction` (object): rule-level prediction summary (same shape as top-level prediction).
+- `rule_weight` (object|null):
+  - **Factual explanations** – calibrated feature weight summary with
+    uncertainty bounds, always exposing `{predict, low, high}` to match the CE
+    paper definition.
+  - **Alternative explanations** – optional metadata. When present it captures the
+    delta from the factual baseline for ranking/metadata; consumers should rely
+    on the `prediction` field for decision making.
+- `rule_prediction` (object|null):
+  - **Factual explanations** – optional metadata used in legacy exports. The
+    calibrated prediction for the instance lives at the top level.
+  - **Alternative explanations** – calibrated prediction estimate plus
+    uncertainty interval for the alternative condition. This is the primary
+    quantity mandated by the CE papers.
 - `instance_prediction` (object|null): instance-specific prediction (optional).
 - `feature_value` (any): the instance feature value (optional).
 - `is_conjunctive` (boolean): whether this rule is part of a conjunction.

@@ -929,9 +929,17 @@ class CalibratedExplanation(ABC):
 
 # pylint: disable=too-many-instance-attributes, too-many-locals, too-many-arguments
 class FactualExplanation(CalibratedExplanation):
-    """Class for storing and visualizing factual explanations.
+    """Store and visualise calibrated factual explanations.
 
-    Provides factual explanations for a given instance, highlighting features that contribute to the model's prediction.
+    The public contract mirrors the CE definition established in the
+    classification and regression papers: a factual explanation couples the
+    calibrated prediction and its uncertainty interval with a collection of
+    factual feature rules. Each rule binds the observed feature value to a
+    condition and exposes the calibrated feature weight plus its uncertainty
+    interval. Downstream helpers (telemetry, JSON export, plots) rely on this
+    invariant, so the internal representation and helper payloads **must** keep
+    the prediction + interval pair alongside weight + interval information for
+    every factual rule.
     """
 
     def __init__(
@@ -1510,9 +1518,15 @@ class FactualExplanation(CalibratedExplanation):
 
 
 class AlternativeExplanation(CalibratedExplanation):
-    """Class representing an alternative explanation for a given instance.
+    """Store and visualise calibrated alternative explanations.
 
-    Offers alternative explanations by exploring how changes to feature values could alter the model's prediction.
+    Consistent with the CE papers, alternative explanations surface a collection
+    of alternative feature rules. Each rule pairs an alternative condition for
+    the feature with the calibrated prediction estimate and its uncertainty
+    interval for that scenario. Feature-weight deltas are retained internally
+    for ranking and metadata, but the user-facing payload **must not** replace
+    the prediction + interval pair with weights—the prediction interval is the
+    authoritative quantity for each alternative rule.
     """
 
     def __init__(

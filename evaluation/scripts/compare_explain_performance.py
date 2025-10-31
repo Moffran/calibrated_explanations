@@ -106,16 +106,16 @@ PARALLEL_ENABLED: bool = True
 # Threads are generally the safest default, while processes can help with
 # CPU-bound workloads at the cost of higher start-up overhead.  Joblib
 # delegates to its own smart chunking and can saturate all cores.
-PARALLEL_STRATEGY: Literal["auto", "sequential", "joblib", "threads", "processes"] = "joblib"
+PARALLEL_STRATEGY: Literal["auto", "sequential", "joblib", "threads", "processes"] = "threads"
 # Tune worker counts per backend:
 #   - threads: try 4-8 workers on laptops, or up to 5x CPU cores for servers.
 #   - processes: match the physical core count (``os.cpu_count()``) for best results.
 #   - joblib: ``-1`` uses all available cores, or pass an explicit integer.
-PARALLEL_WORKERS: int | None = -1
+PARALLEL_WORKERS: int | None = 6
 # For instance-level granularity we typically parallelise over examples.
 # Keep the batch size small (e.g. 1-4) to maximise concurrency, but bump this
 # up for feature-level work to avoid overhead.
-PARALLEL_MIN_BATCH: int = 1
+PARALLEL_MIN_BATCH: int = 4
 # ``feature`` maintains the historical behaviour.  Switch to ``instance`` to
 # parallelise explanation calls for each row.
 PARALLEL_GRANULARITY: Literal["feature", "instance"] = "instance"

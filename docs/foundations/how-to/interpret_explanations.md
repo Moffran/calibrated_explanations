@@ -9,9 +9,19 @@ Understanding the explanation objects is the core reason to use this library. Th
 ```{admonition} Terminology
 :class: tip
 
-- **Factual explanation** – describes why the model produced the calibrated prediction for the observed instance.
-- **Alternative explanation** – proposes changes to feature values that would produce a different calibrated outcome.
-- **Rule** – a feature-level contribution (weight + condition) inside each explanation.
+- **Factual explanation** – per the original CE classification and regression
+  papers, this pairs the calibrated prediction and its uncertainty interval with
+  factual feature rules. Every rule binds the observed feature value to a
+  condition and surfaces the calibrated feature weight plus its uncertainty
+  interval.
+- **Alternative explanation** – proposes changes to feature values that would
+  produce a different calibrated outcome. Each rule couples the alternative
+  condition with the calibrated prediction estimate and uncertainty interval for
+  that scenario.
+- **Rule** – a feature-level contribution (weight + condition) inside each
+  factual explanation and a prediction + condition pair inside each alternative
+  explanation. Metadata retains the complementary quantities for ranking and
+  provenance.
 ```
 
 ## 1. Start with the explanation collections
