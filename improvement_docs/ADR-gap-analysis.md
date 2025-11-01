@@ -140,6 +140,25 @@ descending order of this product within each ADR.
 | 3 | Release plan lacks status table | 4 | 3 | 12 | `RELEASE_PLAN_v1.md` has no structured tracking for deprecation windows. |
 | 4 | CI gates for deprecation policy missing | 4 | 3 | 12 | No automated enforcement of the "two minor releases" window or migration-note presence. |
 
+## ADR-012 – Documentation & Gallery Build Policy
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Notebooks never rendered in docs CI | 5 | 4 | 20 | Docs workflow skips sphinx-gallery/nbconvert execution, so notebook breakage ships undetected. |
+| 2 | Docs build ignores `[viz]`/`[notebooks]` extras | 4 | 3 | 12 | CI installs bespoke requirements instead of project extras, letting dependency drift go unnoticed. |
+| 3 | Example runtime ceiling unenforced | 3 | 3 | 9 | No automation times notebooks/examples, so the <30 s headless contract can regress silently. |
+| 4 | Gallery tooling decision undocumented | 2 | 2 | 4 | ADR-required choice between sphinx-gallery/nbconvert is not recorded, leaving contributors without guidance. |
+
+## ADR-013 – Interval Calibrator Plugin Strategy
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Runtime skips protocol validation for calibrators | 5 | 4 | 20 | Resolved plugins are not checked against classification/regression protocols or interval invariants before use. |
+| 2 | FAST plugin returns non-protocol collections | 5 | 3 | 15 | `FastIntervalCalibratorPlugin.create` yields lists instead of protocol objects, breaking ADR guarantees. |
+| 3 | Interval context remains mutable | 4 | 3 | 12 | Context builders hand plugins plain dicts, allowing mutation despite the read-only requirement. |
+| 4 | Legacy default plugin rebuilds calibrators | 3 | 3 | 9 | Default plugin reinstantiates calibrators rather than returning frozen instances as mandated. |
+| 5 | CLI interval validation commands missing | 2 | 2 | 4 | `ce.plugins explain-interval` and related commands are absent, reducing observability of runtime validation. |
+
 ## ADR-014 – Visualization Plugin Architecture
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
@@ -164,3 +183,109 @@ descending order of this product within each ADR.
 | 5 | Environment variable names diverge | 3 | 2 | 6 | Resolver expects mode-specific keys instead of `CE_EXPLANATION_PLUGIN[_FAST]` documented in the ADR. |
 | 6 | Helper handles expose mutable explainer | 3 | 2 | 6 | Plugins receive direct access to the explainer instance, undermining the intended immutable context. |
 
+## ADR-016 – PlotSpec Separation and Schema
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | PlotSpec dataclass lacks `kind`/`mode`/`feature_order` | 5 | 3 | 15 | Core schema from ADR-016 never landed, so adapters must guess fundamental metadata. |
+| 2 | Feature indices discarded during dict conversion | 4 | 3 | 12 | Builders renumber `feature_order`, breaking parity with caller-supplied indices. |
+| 3 | Validator still enforces legacy envelope | 4 | 3 | 12 | `viz.serializers.validate_plotspec` ignores ADR-016 invariants and is never invoked by builders. |
+| 4 | Builders skip validation hooks | 3 | 3 | 9 | PlotSpec payloads return without structural checks, letting malformed specs leak to adapters. |
+| 5 | `save_behavior` metadata unimplemented | 3 | 2 | 6 | Save hints stay in ad hoc dict manipulation instead of declared dataclass fields. |
+
+## ADR-017 – Nomenclature Standardization
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Double-underscore fields still mutated outside legacy | 5 | 4 | 20 | Core helpers touch `__` attributes directly, contravening the ADR’s hard ban. |
+| 2 | Naming guardrails lack automated enforcement | 4 | 4 | 16 | Ruff/pre-commit configuration does not fail on new snake-case or `__` violations, leaving the policy unenforced. |
+| 3 | Kitchen-sink `utils/helper.py` persists | 3 | 3 | 9 | Monolithic helper resists the topic-focused split mandated for Phase 1. |
+| 4 | Telemetry for lint drift missing | 3 | 3 | 9 | No runtime metrics capture naming debt, undermining the ADR’s governance plan. |
+| 5 | Transitional shims remain first-class | 3 | 2 | 6 | `_legacy_explain` and similar helpers live alongside active modules instead of isolated legacy shims. |
+
+## ADR-018 – Documentation Standardisation
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Wrapper public APIs lack full numpydoc blocks | 4 | 3 | 12 | `WrapCalibratedExplainer` methods omit Parameters/Returns/Raises despite being the stable user surface. |
+| 2 | `IntervalRegressor.__init__` docstring outdated | 4 | 2 | 8 | Documented parameters no longer exist, misleading users of the calibrator. |
+| 3 | `IntervalRegressor.bins` setter undocumented | 3 | 2 | 6 | Public mutator ships without a summary or type guidance. |
+| 4 | Guard helpers missing summaries | 2 | 2 | 4 | `_assert_fitted`/`_assert_calibrated` lack the mandated one-line docstrings. |
+| 5 | Nested combined-plot plugin classes undocumented | 2 | 2 | 4 | Dynamically returned classes expose blank docstrings, hurting plugin discoverability. |
+
+## ADR-019 – Test Coverage Standard
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Coverage floor still enforced at 88 % | 5 | 4 | 20 | CI, local tooling, and the release checklist gate at 88 %, missing the ADR-mandated 90 % threshold. |
+| 2 | Critical modules below 95 % without gates | 5 | 3 | 15 | Prediction helpers, serialization, and registry lack per-path enforcement and sit under target coverage. |
+| 3 | Codecov patch gate optional | 4 | 4 | 16 | Patch status stays informational, so sub-88 % diffs can merge contrary to ADR policy. |
+| 4 | Public API packages under-tested | 4 | 3 | 12 | `__init__` shims and gateway modules remain far from the guardrail, risking unnoticed regressions. |
+| 5 | Exemptions lack expiry metadata | 3 | 2 | 6 | `.coveragerc` omissions omit review dates, weakening waiver governance. |
+
+## ADR-020 – Legacy User API Stability
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Release checklist omits legacy API gate | 4 | 3 | 12 | No checkbox ensures contract/tests stay in sync before shipping. |
+| 2 | Wrapper regression tests miss parity on key methods | 4 | 3 | 12 | `explain_factual`/`explore_alternatives` signatures and normalisation aren’t asserted, risking drift. |
+| 3 | Contributor workflow ignores contract document | 3 | 3 | 9 | CONTRIBUTING never directs authors to update the canonical contract alongside code changes. |
+| 4 | Notebook audit process undefined | 3 | 2 | 6 | ADR’s periodic notebook review step has no script or checklist entry. |
+
+## ADR-021 – Calibrated Interval Semantics
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Interval invariants never enforced | 5 | 4 | 20 | Prediction bridges return payloads without checking `low ≤ predict ≤ high`, undermining safety guarantees. |
+| 2 | FAST explanations drop probability cubes | 4 | 3 | 12 | `explain_fast` omits `__full_probabilities__`, so ADR-promised metadata is missing for FAST runs. |
+| 3 | JSON export stores live callables | 3 | 2 | 6 | `_collection_metadata` serializes `assign_threshold` functions, breaking downstream tooling expectations. |
+
+## ADR-022 – Documentation Information Architecture
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Seven-section navigation not implemented | 5 | 4 | 20 | Landing page still groups content into four buckets, defying the mandated IA. |
+| 2 | “Extending the library” lane missing | 4 | 3 | 12 | Contributor workflows surface as audience hubs instead of the prescribed top-level section. |
+| 3 | Telemetry concept page lacks substance | 4 | 2 | 8 | Concept entry redirects rather than teaching telemetry semantics envisioned by the ADR. |
+
+## ADR-023 – Matplotlib Coverage Exemption
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Visualization tests never run in CI | 5 | 4 | 20 | Workflows skip the promised `pytest --no-cov -m viz` job, so regressions go undetected. |
+| 2 | Pytest ignores block viz suite entirely | 5 | 3 | 15 | `pytest.ini` `--ignore` entries prevent even manual runs, nullifying the safety valve. |
+| 3 | Coverage threshold messaging inconsistent | 3 | 4 | 12 | ADR cites an 85 % floor but tooling enforces 88 %, confusing contributors and waiver reviews. |
+
+## ADR-024 – Legacy Plot Input Contracts
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | `_plot_global` ignores `show=False` | 5 | 3 | 15 | Helper always calls `plt.show()`, violating the headless contract and breaking CI/headless runs. |
+| 2 | `_plot_global` lacks save parameters | 4 | 3 | 12 | Helper cannot honour ADR-shared save semantics, leaving plots unsaveable through the documented interface. |
+| 3 | Save-path concatenation drift undocumented | 2 | 2 | 4 | Helper now normalises directories, diverging from ADR guidance without updated docs. |
+
+## ADR-025 – Legacy Plot Rendering Semantics
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Matplotlib guard allows silent skips | 4 | 3 | 12 | Helpers return early without requiring Matplotlib even when file output is requested, hiding failures. |
+| 2 | Regression axis not forced symmetric | 4 | 3 | 12 | `_plot_regression` sets raw min/max limits instead of the symmetric range promised by the ADR. |
+| 3 | Interval backdrop disabled | 3 | 3 | 9 | Commented-out `fill_betweenx` leaves regression interval visuals inconsistent with documented design. |
+| 4 | One-sided interval warning untested | 3 | 2 | 6 | Guard exists but lacks coverage, so regressions could ship unnoticed. |
+
+## ADR-026 – Explanation Plugin Semantics
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | Predict bridge skips interval invariant checks | 5 | 3 | 15 | `_PredictBridgeMonitor` never enforces `low ≤ predict ≤ high`, letting malformed intervals through. |
+| 2 | Explanation context exposes mutable dicts | 4 | 3 | 12 | Context builder embeds plain dicts despite the frozen contract, enabling plugin-side mutation. |
+| 3 | Telemetry omits interval dependency hints | 3 | 2 | 6 | Batch telemetry drops `interval_dependencies`, reducing observability. |
+| 4 | Mondrian bins left mutable in requests | 2 | 2 | 4 | `ExplanationRequest` stores caller-supplied bins verbatim, violating the immutability promise. |
+
+## ADR-027 – Documentation Standard (Audience Hubs)
+
+| Rank | Gap | Violation | Scope | Unified severity | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | PR template lacks parity review gate | 5 | 3 | 15 | Adoption Step 5 requires reviewers to confirm classification/regression parity, but no checklist enforces it. |
+| 2 | “Task API comparison” reference missing | 3 | 3 | 9 | Get Started hub omits the mandated comparison link, weakening practitioner onboarding. |
+| 3 | Researcher future-work ledger absent | 3 | 2 | 6 | Researcher advanced hub lacks the promised roadmap tied to literature references. |
