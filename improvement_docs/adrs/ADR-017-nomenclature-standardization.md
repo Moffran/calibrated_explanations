@@ -6,7 +6,7 @@ Status: Accepted (2025-10-06)
 
 ## Context
 
-Repeated refactors left the package with a patchwork of naming schemes. The canonical calibration modules now live in `core/venn_abers.py`, `core/interval_regressor.py`, and the plotting surface in `viz/plots.py`, while compatibility wrappers remain under `legacy/_*.py` emitting `DeprecationWarning` so stack traces stay familiar during the migration. Transitional shims such as `core.py` still exist but are clearly marked, letting contributors infer intent without losing the public API guarantees documented in the README. 【F:src/calibrated_explanations/core/venn_abers.py†L1-L120】【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】【F:src/calibrated_explanations/viz/plots.py†L1-L20】【F:src/calibrated_explanations/legacy/_plots.py†L1-L13】
+Repeated refactors left the package with a patchwork of naming schemes. The canonical calibration modules now live in `core/venn_abers.py`, `core/interval_regressor.py`, and the plotting surface in `viz/plots.py`. Earlier compatibility wrappers lived under `legacy/_*.py` and emitted `DeprecationWarning` during the migration; they have now been retired, leaving `legacy/plotting.py` as the lone legacy surface while the public API remains unchanged. Transitional shims such as `core.py` still exist but are clearly marked, letting contributors infer intent without losing the public API guarantees documented in the README.【F:src/calibrated_explanations/core/venn_abers.py†L1-L120】【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】【F:src/calibrated_explanations/viz/plots.py†L1-L20】【F:src/calibrated_explanations/legacy/plotting.py†L1-L120】
 
 ## Decision
 

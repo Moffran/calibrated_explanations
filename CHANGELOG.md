@@ -41,9 +41,10 @@
   across README, overview, and concept guides so every onboarding path links to
   `docs/research/` and `citing.md`, reinforcing the calibration pedigree.【F:README.md†L22-L60】【F:docs/overview/index.md†L1-L62】【F:docs/citing.md†L1-L140】
 - **ADR-018/017/019 enforcement (Tasks 8–10):** Elevated docstring coverage and
-  notebook lint to blocking status, retired transitional core/plot shims, and
-  tightened coverage thresholds to 88% alongside Codecov patch gates that focus
-  on runtime and calibration modules.【F:.github/workflows/lint.yml†L38-L86】【F:src/calibrated_explanations/core/_legacy_explain.py†L1-L110】【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】
+  notebook lint to blocking status, retired transitional core/plot shims (removing
+  `legacy/_interval_regressor.py`, `legacy/_venn_abers.py`, and `legacy/_plots*.py`),
+  and tightened coverage thresholds to 88% alongside Codecov patch gates that focus
+  on runtime and calibration modules.【F:.github/workflows/lint.yml†L38-L86】【F:src/calibrated_explanations/core/_legacy_explain.py†L1-L110】【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】【F:src/calibrated_explanations/legacy/__init__.py†L1-L6】
 - **Runtime performance polish (Task 11):** Added opt-in calibrator caching,
   parallel execution controls, and refactored perturbation/discretisation
   routines so explain latency improves without altering calibrated outputs.
