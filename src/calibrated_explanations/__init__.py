@@ -10,8 +10,7 @@ by Helena Löfström et al.
 import importlib
 import logging as _logging
 
-# Expose viz namespace (internal; subject to change). Avoid importing heavy backends eagerly.
-from . import viz  # noqa: F401
+# Expose viz namespace lazily via __getattr__ (avoid importing heavy backends eagerly)
 from .explanations.explanation import (
     AlternativeExplanation,  # noqa: F401
     FactualExplanation,  # noqa: F401
