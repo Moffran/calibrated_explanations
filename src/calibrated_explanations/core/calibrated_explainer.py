@@ -81,6 +81,7 @@ from .exceptions import (
     ConfigurationError,
     NotFittedError,
 )
+from .explain._helpers import compute_feature_effects as _compute_feature_effects
 
 
 def _read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
@@ -1007,8 +1008,15 @@ class CalibratedExplainer:
                             ordered.append(fallback)
                             seen.add(fallback)
         if default_identifier not in seen:
-            if fast and find_interval_descriptor(default_identifier) is None:
-                pass
+            if fast:
+                # Prefer the core fast identifier when available; otherwise
+                # fall back to the external fast interval identifier if registered.
+                if find_interval_descriptor(default_identifier) is not None:
+                    ordered.append(default_identifier)
+                else:
+                    ext_fast = "external.interval.fast"
+                    if find_interval_descriptor(ext_fast) is not None:
+                        ordered.append(ext_fast)
             else:
                 ordered.append(default_identifier)
         key = "fast" if fast else "default"
@@ -2337,242 +2345,19 @@ class CalibratedExplainer:
                 extras={"mode": mode},
             )
 
-        if features_to_ignore is None:
-            features_to_ignore_array = np.asarray(self.features_to_ignore, dtype=int)
-        else:
-            features_to_ignore_array = np.asarray(
-                np.union1d(self.features_to_ignore, features_to_ignore), dtype=int
-            )
-
-        x = self._validate_and_prepare_input(x)
-
-        executor = getattr(self, "_perf_parallel", None)
-        if (
-            not _skip_instance_parallel
-            and executor is not None
-            and executor.config.enabled
-            and getattr(executor.config, "granularity", "feature") == "instance"
-        ):
-            return self._explain_parallel_instances(
-                x,
-                threshold,
-                low_high_percentiles,
-                bins,
-                features_to_ignore_array,
-                executor,
-            )
-
-        # Track total explanation time
-        total_time = time()
-        features_to_ignore_set = set(features_to_ignore_array.tolist())
-
-        # Initialize explanation object
-        explanation = self._initialize_explanation(
-            x, low_high_percentiles, threshold, bins, features_to_ignore_array
+        # Delegate to the new explain plugin system
+        # This replaces all sequential/parallel branching logic
+        from .explain import explain as plugin_explain
+        return plugin_explain(
+            self,
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins,
+            features_to_ignore=features_to_ignore,
+            _use_plugin=False,  # Already in plugin path
+            _skip_instance_parallel=_skip_instance_parallel,
         )
-
-        instance_time = time()
-
-        # Step 1: Get predictions for original test instances
-        (
-            predict,
-            low,
-            high,
-            prediction,
-            perturbed_feature,
-            rule_boundaries,
-            lesser_values,
-            greater_values,
-            covered_values,
-            x_cal,
-        ) = self._explain_predict_step(
-            x, threshold, low_high_percentiles, bins, features_to_ignore_array
-        )
-
-        # Step 2: Initialize data structures to store feature-level results
-        n_instances = x.shape[0]
-        num_features = self.num_features
-
-        weights_predict = np.zeros((n_instances, num_features))
-        weights_low = np.zeros((n_instances, num_features))
-        weights_high = np.zeros((n_instances, num_features))
-        predict_matrix = np.zeros((n_instances, num_features))
-        low_matrix = np.zeros((n_instances, num_features))
-        high_matrix = np.zeros((n_instances, num_features))
-
-        rule_values: List[Dict[int, Any]] = [{} for _ in range(n_instances)]
-        instance_binned: List[Dict[str, Dict[int, Any]]] = [
-            {
-                "predict": {},
-                "low": {},
-                "high": {},
-                "current_bin": {},
-                "rule_values": {},
-                "counts": {},
-                "fractions": {},
-            }
-            for _ in range(n_instances)
-        ]
-
-        # Step 3: Process each feature to analyze its effects
-        perturbed_feature = np.asarray(perturbed_feature, dtype=object)
-        x_cal_np = np.asarray(x_cal)
-        if perturbed_feature.size:
-            feature_ids = perturbed_feature[:, 0].astype(int)
-            feature_index_lists: Dict[int, List[int]] = defaultdict(list)
-            for idx, fid in enumerate(feature_ids):
-                feature_index_lists[int(fid)].append(idx)
-            feature_index_map = {
-                fid: np.asarray(indices, dtype=int) for fid, indices in feature_index_lists.items()
-            }
-        else:
-            feature_index_map = {}
-
-        categorical_value_counts, numeric_sorted_cache = self._get_calibration_summaries(x_cal_np)
-
-        features_to_ignore_tuple = tuple(int(f) for f in features_to_ignore_set)
-        categorical_features_tuple = tuple(int(f) for f in self.categorical_features)
-        feature_values_all = self.feature_values
-        baseline_predict = prediction["predict"]
-
-        feature_tasks: List[Tuple[Any, ...]] = []
-
-        for f in range(self.num_features):
-            feature_indices = feature_index_map.get(f)
-            lower_boundary = np.array(rule_boundaries[:, f, 0], copy=True)
-            upper_boundary = np.array(rule_boundaries[:, f, 1], copy=True)
-            if isinstance(lesser_values, Mapping):
-                lesser_feature = lesser_values.get(f, {})
-            else:
-                try:
-                    lesser_feature = lesser_values[f]
-                except (IndexError, KeyError, TypeError):
-                    lesser_feature = {}
-            if isinstance(greater_values, Mapping):
-                greater_feature = greater_values.get(f, {})
-            else:
-                try:
-                    greater_feature = greater_values[f]
-                except (IndexError, KeyError, TypeError):
-                    greater_feature = {}
-            if isinstance(covered_values, Mapping):
-                covered_feature = covered_values.get(f, {})
-            else:
-                try:
-                    covered_feature = covered_values[f]
-                except (IndexError, KeyError, TypeError):
-                    covered_feature = {}
-
-            value_counts_cache = categorical_value_counts.get(int(f), {})
-            numeric_sorted_values = numeric_sorted_cache.get(f)
-            if isinstance(x_cal_np, np.ndarray) and x_cal_np.ndim >= 2 and x_cal_np.shape[0] and f < x_cal_np.shape[1]:
-                x_cal_column = np.asarray(x_cal_np[:, f])
-            else:
-                x_cal_column = np.empty((0,))
-            x_column = np.asarray(x[:, f])
-
-            feature_tasks.append(
-                (
-                    f,
-                    x_column,
-                    predict,
-                    low,
-                    high,
-                    baseline_predict,
-                    features_to_ignore_tuple,
-                    categorical_features_tuple,
-                    feature_values_all,
-                    feature_indices,
-                    perturbed_feature,
-                    lower_boundary,
-                    upper_boundary,
-                    lesser_feature,
-                    greater_feature,
-                    covered_feature,
-                    value_counts_cache,
-                    numeric_sorted_values,
-                    x_cal_column,
-                )
-            )
-
-        use_parallel = (
-            executor is not None
-            and executor.config.enabled
-            and getattr(executor.config, "granularity", "feature") == "feature"
-        )
-
-        if use_parallel and feature_tasks:
-            self._explain_parallel_features(
-                executor,
-                feature_tasks,
-                weights_predict=weights_predict,
-                weights_low=weights_low,
-                weights_high=weights_high,
-                predict_matrix=predict_matrix,
-                low_matrix=low_matrix,
-                high_matrix=high_matrix,
-                rule_values=rule_values,
-                instance_binned=instance_binned,
-                rule_boundaries=rule_boundaries,
-                n_instances=n_instances,
-            )
-        else:
-            for task in feature_tasks:
-                result = _feature_task(task)
-                self._merge_feature_result(
-                    result,
-                    weights_predict,
-                    weights_low,
-                    weights_high,
-                    predict_matrix,
-                    low_matrix,
-                    high_matrix,
-                    rule_values,
-                    instance_binned,
-                    rule_boundaries,
-                )
-        binned_predict: Dict[str, List[Any]] = {
-            "predict": [],
-            "low": [],
-            "high": [],
-            "current_bin": [],
-            "rule_values": [],
-            "counts": [],
-            "fractions": [],
-        }
-        feature_weights: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
-        feature_predict: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
-
-        for i in range(n_instances):
-            binned_predict["predict"].append(instance_binned[i]["predict"])
-            binned_predict["low"].append(instance_binned[i]["low"])
-            binned_predict["high"].append(instance_binned[i]["high"])
-            binned_predict["current_bin"].append(instance_binned[i]["current_bin"])
-            binned_predict["rule_values"].append(rule_values[i])
-            binned_predict["counts"].append(instance_binned[i]["counts"])
-            binned_predict["fractions"].append(instance_binned[i]["fractions"])
-
-            feature_weights["predict"].append(weights_predict[i].copy())
-            feature_weights["low"].append(weights_low[i].copy())
-            feature_weights["high"].append(weights_high[i].copy())
-
-            feature_predict["predict"].append(predict_matrix[i].copy())
-            feature_predict["low"].append(low_matrix[i].copy())
-            feature_predict["high"].append(high_matrix[i].copy())
-        elapsed_time = time() - instance_time
-        list_instance_time = [elapsed_time / n_instances for _ in range(n_instances)]
-
-        explanation = explanation.finalize(
-            binned_predict,
-            feature_weights,
-            feature_predict,
-            prediction,
-            instance_time=list_instance_time,
-            total_time=total_time,
-        )
-        self.latest_explanation = explanation
-        self._last_explanation_mode = self._infer_explanation_mode()
-        return explanation
 
     def _explain_parallel_instances(
         self,
@@ -3308,7 +3093,8 @@ class CalibratedExplainer:
             and executor.config.enabled
             and getattr(executor.config, "granularity", "feature") == "feature"
         ):
-            feature_results = self._compute_feature_effects(
+            feature_results = _compute_feature_effects(
+                self,
                 features_to_process,
                 x,
                 threshold,
@@ -3318,7 +3104,8 @@ class CalibratedExplainer:
                 executor,
             )
         else:
-            feature_results = self._compute_feature_effects(
+            feature_results = _compute_feature_effects(
+                self,
                 features_to_process,
                 x,
                 threshold,

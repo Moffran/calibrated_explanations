@@ -8,7 +8,7 @@ Date: 2025-10-05
 
 Authors: Core maintainers
 
-Supersedes: ADR-015 — Explanation Plugin Interface (Code-Grounded)
+Supersedes: N/A
 
 Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-014-plot-plugin-strategy
 

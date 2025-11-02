@@ -324,6 +324,17 @@ def test_binary_fast_ce(binary_dataset):
     Args:
         binary_dataset (tuple): The binary classification dataset.
     """
+    # Skip if fast plugins are not available
+    fast_plugins = pytest.importorskip("external_plugins.fast_explanations")
+    print(f"DEBUG: Fast plugins imported: {fast_plugins}")
+    fast_plugins.register()  # Register the fast plugins before creating explainer
+    print("DEBUG: Fast plugins registered")
+    
+    # Verify registration worked
+    from calibrated_explanations.plugins.registry import find_interval_descriptor
+    desc = find_interval_descriptor("core.interval.fast")
+    print(f"DEBUG: Fast interval descriptor found: {desc}")
+    
     (
         x_prop_train,
         y_prop_train,

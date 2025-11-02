@@ -7,6 +7,11 @@
 
 ## Highlights
 
+- **Plugin-based explain architecture.** All explain logic (sequential,
+  feature-parallel, instance-parallel) now lives in dedicated plugins under
+  `core/explain/`, replacing the monolithic branching in `CalibratedExplainer.explain`.
+  This clean separation improves maintainability, testability, and sets the foundation
+  for future distributed execution strategies.
 - **Faster calibrated explanations.** Explore the latest latency benchmarks and
   optimization notes in the [explain performance evaluation
   report](evaluation/explain_performance.md).
@@ -22,6 +27,16 @@
 
 ### Release plan alignment
 
+- **Explain plugin decomposition (ADR-004 compliance):** Moved all explain execution
+  strategies into a plugin system (`src/calibrated_explanations/core/explain/`)
+  with three implementations: `SequentialExplainPlugin` (single-threaded fallback),
+  `FeatureParallelExplainPlugin` (executor-backed feature distribution), and
+  `InstanceParallelExplainPlugin` (instance-level chunking). `CalibratedExplainer.explain`
+  is now a thin 13-line delegator that selects and invokes the appropriate plugin
+  based on executor configuration. All legacy equivalence tests and instance-parallel
+  tests pass, confirming behavioral parity with the original implementation.
+  【F:src/calibrated_explanations/core/explain/__init__.py†L1-L175】
+  【F:src/calibrated_explanations/core/calibrated_explainer.py†L2299-L2351】
 - **Calibrated-explanations-first messaging (Tasks 1 & 5):** Rewrote the README,
   overview landing page, and quickstarts so calibrated factual and alternative
   flows lead every entry point, with telemetry, PlotSpec, and plugin extras
