@@ -8,14 +8,15 @@ feature-parallel, and instance-parallel explain implementations.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Tuple, Mapping, Sequence
+import contextlib
 from functools import partial
+from typing import TYPE_CHECKING, Any, List, Mapping, Sequence, Tuple
 
 import numpy as np
 
 from ...utils.helper import safe_isinstance
-from ._computation import FeatureTaskResult
 from ..prediction_helpers import initialize_explanation as _ih
+from ._computation import FeatureTaskResult
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 
 def slice_threshold(threshold: Any, start: int, stop: int, total_len: int) -> Any:
     """Return the portion of *threshold* covering ``[start, stop)``.
-    
+
     Handles scalar, array-like, and pandas Series thresholds appropriately.
     """
     if threshold is None or np.isscalar(threshold):
@@ -44,7 +45,7 @@ def slice_threshold(threshold: Any, start: int, stop: int, total_len: int) -> An
 
 def slice_bins(bins: Any, start: int, stop: int) -> Any:
     """Return the subset of *bins* covering ``[start, stop)``.
-    
+
     Handles pandas Series and array-like bins.
     """
     if bins is None:
@@ -59,7 +60,7 @@ def merge_ignore_features(
     features_to_ignore: Any,
 ) -> np.ndarray:
     """Merge explainer default and request-specific features to ignore.
-    
+
     Returns
     -------
     np.ndarray
@@ -67,9 +68,7 @@ def merge_ignore_features(
     """
     if features_to_ignore is None:
         return np.asarray(explainer.features_to_ignore, dtype=int)
-    return np.asarray(
-        np.union1d(explainer.features_to_ignore, features_to_ignore), dtype=int
-    )
+    return np.asarray(np.union1d(explainer.features_to_ignore, features_to_ignore), dtype=int)
 
 
 def initialize_explanation(
@@ -81,7 +80,7 @@ def initialize_explanation(
     features_to_ignore: np.ndarray,
 ):
     """Initialize a CalibratedExplanations container.
-    
+
     Delegates to the prediction_helpers module which contains the
     authoritative initialization logic.
     """
@@ -97,15 +96,15 @@ def explain_predict_step(
     features_to_ignore: np.ndarray,
 ) -> Tuple:
     """Execute the baseline prediction and perturbation planning step.
-    
+
     This is the first phase of explanation generation that:
     1. Predicts on original test instances
     2. Determines rule boundaries for numerical features
     3. Plans perturbation sets (lesser/greater/covered values)
-    
+
     Delegates to explainer._explain_predict_step which orchestrates
     the prediction_helpers logic.
-    
+
     Returns
     -------
     tuple
@@ -224,10 +223,8 @@ def compute_weight_delta(baseline, perturbed) -> np.ndarray:
         return np.asarray(baseline_arr - perturbed_arr, dtype=float)
 
     if baseline_arr.shape != perturbed_arr.shape:
-        try:
+        with contextlib.suppress(ValueError):
             baseline_arr = np.broadcast_to(baseline_arr, perturbed_arr.shape)
-        except ValueError:
-            pass
 
     try:
         return np.asarray(baseline_arr - perturbed_arr, dtype=float)

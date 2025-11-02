@@ -13,35 +13,35 @@ def _run_quickstart_classification() -> SimpleNamespace:
 
     # Binary classification dataset (malignant vs benign tumours)
     dataset = load_breast_cancer()
-    X = dataset.data
+    x = dataset.data
     y = dataset.target
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, stratify=y, random_state=0
+    x_train, x_test, y_train, y_test = train_test_split(
+        x, y, test_size=0.2, stratify=y, random_state=0
     )
-    X_proper, X_cal, y_proper, y_cal = train_test_split(
-        X_train, y_train, test_size=0.25, stratify=y_train, random_state=0
+    x_proper, x_cal, y_proper, y_cal = train_test_split(
+        x_train, y_train, test_size=0.25, stratify=y_train, random_state=0
     )
 
     explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-    explainer.fit(X_proper, y_proper)
-    explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
+    explainer.fit(x_proper, y_proper)
+    explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
 
-    factual = explainer.explain_factual(X_test[:5])
+    factual = explainer.explain_factual(x_test[:5])
     print(factual[0])  # first explanation with rule details
 
-    alternatives = explainer.explore_alternatives(X_test[:2])
+    alternatives = explainer.explore_alternatives(x_test[:2])
 
     return SimpleNamespace(
         dataset=dataset,
-        X=X,
+        X=x,
         y=y,
-        X_train=X_train,
-        X_test=X_test,
+        X_train=x_train,
+        X_test=x_test,
         y_train=y_train,
         y_test=y_test,
-        X_proper=X_proper,
-        X_cal=X_cal,
+        X_proper=x_proper,
+        X_cal=x_cal,
         y_proper=y_proper,
         y_cal=y_cal,
         explainer=explainer,

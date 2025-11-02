@@ -47,7 +47,7 @@ The structure clarifies ownership, navigational hierarchy, and update workflows 
    - Quick links for each audience (Practitioner, Researcher, Contributor) to dive deeper.
 2. **Practitioner track**
    - **Install & Quickstart** page featuring two runnable snippets: calibrated classification and probabilistic regression. Telemetry/PlotSpec steps are collapsed under "Optional: operational add-ons".
-  - **Interpretation guides** for factual and alternative explanations that reuse notebook examples, highlight calibrated intervals, uncertainty breakdowns, regression thresholds, and pair alternatives with the triangular plot walkthrough. 
+  - **Interpretation guides** for factual and alternative explanations that reuse notebook examples, highlight calibrated intervals, uncertainty breakdowns, regression thresholds, and pair alternatives with the triangular plot walkthrough.
    - **Integration how-tos** (pipelines, deployment) that reference telemetry only as an optional compliance aid.
 3. **Researcher track**
    - Theory overview summarising calibration guarantees, probabilistic regression math, and links to published papers/preprints.

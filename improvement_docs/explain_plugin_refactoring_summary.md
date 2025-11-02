@@ -71,7 +71,7 @@ def explain(self, x, threshold=None, low_high_percentiles=(5, 95),
         # Existing plugin registry path (explanation plugins)
         mode = self._infer_explanation_mode()
         return self._invoke_explanation_plugin(...)
-    
+
     # NEW: Delegate to explain plugin system
     from .explain import explain as plugin_explain
     return plugin_explain(self, x, threshold, low_high_percentiles,
@@ -96,7 +96,7 @@ The `select_plugin()` function in `core/explain/__init__.py`:
   - `test_legacy_explain_categorical_paths_and_ignore`
   - `test_legacy_explain_accepts_threshold_tuples_for_regression`
   - `test_legacy_explain_handles_continuous_bins_and_boundaries`
-  
+
 - `test_instance_parallel.py`: 1/1 tests pass
   - Confirms instance-parallel chunking produces identical results
 

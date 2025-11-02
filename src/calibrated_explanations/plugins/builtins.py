@@ -36,6 +36,7 @@ from ..explanations.explanation import (
 )
 from ..explanations.explanations import CalibratedExplanations
 from ..utils.helper import safe_isinstance
+from ..utils.perturbation import perturb_dataset
 from .explanations import (
     ExplanationBatch,
     ExplanationContext,
@@ -54,7 +55,6 @@ from .registry import (
     register_plot_renderer,
     register_plot_style,
 )
-from ..utils.perturbation import perturb_dataset
 
 
 def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
@@ -825,9 +825,7 @@ def _register_builtin_fast_plugins() -> None:
                     metadata.setdefault("fast_calibrators", tuple(calibrators))
                 return calibrators
 
-        register_interval_plugin(
-            "core.interval.fast", BuiltinFastIntervalCalibratorPlugin()
-        )
+        register_interval_plugin("core.interval.fast", BuiltinFastIntervalCalibratorPlugin())
 
     if find_explanation_descriptor("core.explanation.fast") is None:
 
@@ -862,9 +860,7 @@ def _register_builtin_fast_plugins() -> None:
                     plugin_meta=self.plugin_meta,
                 )
 
-        register_explanation_plugin(
-            "core.explanation.fast", BuiltinFastExplanationPlugin()
-        )
+        register_explanation_plugin("core.explanation.fast", BuiltinFastExplanationPlugin())
 
 
 def _register_builtins() -> None:

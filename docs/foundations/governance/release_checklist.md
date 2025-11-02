@@ -14,9 +14,9 @@ v0.9.0 release plan:
    step is a release gate for the calibrated-explanations-first narrative
    (FR-001 – FR-005).
 3. **Optional extras** – Optional tooling (telemetry, PlotSpec,
-   CLI, external plugins) must not appear early in the flow. 
+   CLI, external plugins) must not appear early in the flow.
 4. **Alternatives storytelling** – check every `explore_alternatives` snippet in
-   docs and notebooks uses the triangular plot to complement the standard plot. 
+   docs and notebooks uses the triangular plot to complement the standard plot.
 5. **Quickstart validation** – execute the classification and regression
    quickstarts (or CI equivalent) to ensure code snippets run without edits and
    update {doc}`../../get-started/troubleshooting` with any new callouts. Confirm

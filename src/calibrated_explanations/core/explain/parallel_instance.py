@@ -7,7 +7,6 @@ using the sequential plugin to avoid nested parallelism.
 
 from __future__ import annotations
 
-from functools import partial
 from time import time
 from typing import TYPE_CHECKING, Any, List, Tuple
 
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
 
 class InstanceParallelExplainPlugin(BaseExplainPlugin):
     """Instance-parallel explain execution strategy.
-    
+
     Partitions test instances into chunks and processes them in parallel,
     with each chunk explained sequentially. This strategy is preferred when
     the number of instances is large relative to the number of features.
@@ -47,7 +46,7 @@ class InstanceParallelExplainPlugin(BaseExplainPlugin):
 
     def supports(self, request: ExplainRequest, config: ExplainConfig) -> bool:
         """Return True if instance-level parallelism is enabled and appropriate.
-        
+
         Requirements:
         - Executor must be available and enabled
         - Granularity must be 'instance'
@@ -65,9 +64,7 @@ class InstanceParallelExplainPlugin(BaseExplainPlugin):
             return False
         # Check minimum instances threshold
         n_instances = request.x.shape[0] if request.x.ndim > 0 else 0
-        if n_instances < config.min_instances_for_parallel:
-            return False
-        return True
+        return n_instances >= config.min_instances_for_parallel
 
     def execute(
         self,
@@ -76,7 +73,7 @@ class InstanceParallelExplainPlugin(BaseExplainPlugin):
         explainer: CalibratedExplainer,
     ) -> CalibratedExplanations:
         """Execute instance-parallel explain operation.
-        
+
         This implementation:
         1. Partitions instances into chunks
         2. Creates per-chunk requests with sliced thresholds/bins
@@ -102,7 +99,6 @@ class InstanceParallelExplainPlugin(BaseExplainPlugin):
             explainer._last_explanation_mode = explainer._infer_explanation_mode()
             return empty_explanation
 
-        ignore_list = features_to_ignore_array.tolist()
         chunk_size = max(1, executor.config.min_batch_size)
         total_start_time = time()
 
@@ -110,9 +106,7 @@ class InstanceParallelExplainPlugin(BaseExplainPlugin):
         ranges: List[Tuple[int, int, Any, Any]] = []
         for start in range(0, n_instances, chunk_size):
             stop = min(start + chunk_size, n_instances)
-            threshold_slice = slice_threshold(
-                request.threshold, start, stop, n_instances
-            )
+            threshold_slice = slice_threshold(request.threshold, start, stop, n_instances)
             bins_slice = slice_bins(request.bins, start, stop)
             ranges.append((start, stop, threshold_slice, bins_slice))
 
@@ -142,7 +136,7 @@ class InstanceParallelExplainPlugin(BaseExplainPlugin):
 
         # Step 4: Define worker function that invokes sequential plugin
         def _instance_parallel_task(
-            task: Tuple[int, np.ndarray, Any, Any]
+            task: Tuple[int, np.ndarray, Any, Any],
         ) -> Tuple[int, CalibratedExplanations]:
             """Execute a single instance-chunk explanation task."""
             start_idx, subset, threshold_slice, bins_slice = task

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 class FeatureParallelExplainPlugin(BaseExplainPlugin):
     """Feature-parallel explain execution strategy.
-    
+
     Distributes feature perturbation tasks across an executor's workers,
     enabling parallel computation of feature effects. Falls back to sequential
     processing if the executor is unavailable or disabled.
@@ -42,7 +42,7 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
 
     def supports(self, request: ExplainRequest, config: ExplainConfig) -> bool:
         """Return True if feature-level parallelism is enabled and appropriate.
-        
+
         Requirements:
         - Executor must be available and enabled
         - Granularity must be 'feature'
@@ -55,9 +55,7 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
         if config.granularity != "feature":
             return False
         # Reject if instance parallel flag is set to avoid nested parallelism
-        if request.skip_instance_parallel is False and config.granularity == "instance":
-            return False
-        return True
+        return request.skip_instance_parallel or config.granularity != "instance"
 
     def execute(
         self,
@@ -66,7 +64,7 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
         explainer: CalibratedExplainer,
     ) -> CalibratedExplanations:
         """Execute feature-parallel explain operation.
-        
+
         This implementation mirrors the original sequential path but substitutes
         _explain_parallel_features for the sequential feature loop.
         """
@@ -150,8 +148,7 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
             for idx, fid in enumerate(feature_ids):
                 feature_index_lists[int(fid)].append(idx)
             feature_index_map = {
-                fid: np.asarray(indices, dtype=int)
-                for fid, indices in feature_index_lists.items()
+                fid: np.asarray(indices, dtype=int) for fid, indices in feature_index_lists.items()
             }
         else:
             feature_index_map = {}

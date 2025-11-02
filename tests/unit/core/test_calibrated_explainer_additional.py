@@ -338,7 +338,9 @@ def test_runtime_and_preprocessor_metadata_helpers(monkeypatch: pytest.MonkeyPat
     assert explainer.preprocessor_metadata == {"scale": 2}
 
 
-def test_build_interval_context_uses_stored_fast_calibrators(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_build_interval_context_uses_stored_fast_calibrators(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
@@ -353,7 +355,9 @@ def test_build_interval_context_uses_stored_fast_calibrators(monkeypatch: pytest
     assert context.metadata["note"] == "demo"
 
 
-def test_build_interval_context_falls_back_to_interval_learner(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_build_interval_context_falls_back_to_interval_learner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])

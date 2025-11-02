@@ -10,7 +10,7 @@ Supersedes: None
 Superseded-by: None
 
 Updated: 2025-10-31
-Update Note: Added Paper-aligned semantics for clarification 
+Update Note: Added Paper-aligned semantics for clarification
 
 ## Context
 

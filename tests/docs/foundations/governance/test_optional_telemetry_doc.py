@@ -14,7 +14,7 @@ def _build_classification_context() -> SimpleNamespace:
     from calibrated_explanations import WrapCalibratedExplainer
 
     breast_cancer = load_breast_cancer()
-    X_train, X_test, y_train, y_test = train_test_split(
+    x_train, x_test, y_train, y_test = train_test_split(
         breast_cancer.data,
         breast_cancer.target,
         test_size=0.2,
@@ -22,19 +22,19 @@ def _build_classification_context() -> SimpleNamespace:
         random_state=0,
     )
     explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-    explainer.fit(X_train, y_train)
+    explainer.fit(x_train, y_train)
     explainer.calibrate(
-        X_train,
+        x_train,
         y_train,
         feature_names=breast_cancer.feature_names,
     )
-    return SimpleNamespace(explainer=explainer, X_test=X_test)
+    return SimpleNamespace(explainer=explainer, X_test=x_test)
 
 
 def test_optional_telemetry_snippets(tmp_path):
     context = _build_classification_context()
     explainer = context.explainer
-    X_test = context.X_test
+    x_test = context.X_test
 
     payload = explainer.runtime_telemetry
     pre = payload.get("preprocessor", {})
@@ -45,7 +45,7 @@ def test_optional_telemetry_snippets(tmp_path):
     if hasattr(explainer, "explain_fast") and hasattr(explainer.explainer, "is_fast"):
         try:
             if explainer.explainer.is_fast():
-                explainer.explain_fast(X_test[:5], _use_plugin=False)
+                explainer.explain_fast(x_test[:5], _use_plugin=False)
                 fast_meta = explainer.runtime_telemetry
                 print(fast_meta.get("interval_source"))
         except Exception:
@@ -57,14 +57,12 @@ def test_optional_telemetry_snippets(tmp_path):
         json.dump(explainer.runtime_telemetry, fh, indent=2)
 
     prometheus_client = pytest.importorskip("prometheus_client")
-    Gauge = prometheus_client.Gauge
+    gauge = prometheus_client.Gauge
 
     logger = logging.getLogger("calibrated_explanations.telemetry")
-    interval_source = Gauge(
-        "ce_interval_source", "Active interval calibrator", ["identifier"]
-    )
+    interval_source = gauge("ce_interval_source", "Active interval calibrator", ["identifier"])
 
-    batch = explainer.explain_factual(X_test[:10])
+    batch = explainer.explain_factual(x_test[:10])
     payload = getattr(batch, "telemetry", {})
 
     logger.info("explain_factual", extra={"telemetry": payload})

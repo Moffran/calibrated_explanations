@@ -7,6 +7,7 @@ It is based on the paper "Calibrated Explanations: with Uncertainty Information 
 by Helena Löfström et al.
 """
 
+import importlib
 import logging as _logging
 
 # Expose viz namespace (internal; subject to change). Avoid importing heavy backends eagerly.
@@ -105,4 +106,3 @@ def __getattr__(name: str):
         globals()[name] = value
         return value
     raise AttributeError(name)
-

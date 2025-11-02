@@ -183,19 +183,13 @@ def test_build_rules_payload_covers_probabilistic_and_thresholded_alternatives()
     _assert_uncertainty_schema(
         class_metadata_rule["prediction_uncertainty"], "venn_abers", False, None
     )
-    _assert_uncertainty_schema(
-        class_metadata_rule["weight_uncertainty"], "venn_abers", False, None
-    )
+    _assert_uncertainty_schema(class_metadata_rule["weight_uncertainty"], "venn_abers", False, None)
 
     reg_explainer, reg_test = _train_regression_explainer()
     reg_batch = reg_explainer.explore_alternatives(reg_test[:1], threshold=2.5)
     reg_payload = reg_batch[0].build_rules_payload()
     reg_metadata_rule = reg_payload["metadata"]["feature_rules"][0]
-    _assert_uncertainty_schema(
-        reg_metadata_rule["prediction_uncertainty"], "threshold", False, 2.5
-    )
+    _assert_uncertainty_schema(reg_metadata_rule["prediction_uncertainty"], "threshold", False, 2.5)
     assert _extract_threshold_value(reg_metadata_rule.get("threshold")) == pytest.approx(2.5)
     # Feature-level weights retain probabilistic uncertainty blocks for thresholds.
-    _assert_uncertainty_schema(
-        reg_metadata_rule["weight_uncertainty"], "venn_abers", False, None
-    )
+    _assert_uncertainty_schema(reg_metadata_rule["weight_uncertainty"], "venn_abers", False, None)

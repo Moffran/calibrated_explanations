@@ -159,4 +159,4 @@ exclude = ["tests", "build", "benchmarks", "notebooks", "scripts", "docs", "dist
 
 [tool.codespell]
 ignore-words-list = "dataframe,nd"
-skip = "notebooks,scripts,evaluation,benchmarks,build,dist,*.lock,*.csv,*.json,*.png,*.jpg,*.gif,*.zip"
+skip = "notebooks,scripts,evaluation,benchmarks,build,dist,docs/_build,docs_old/_build,*.lock,*.csv,*.json,*.png,*.jpg,*.gif,*.zip"

@@ -143,7 +143,10 @@ def test_assign_threshold_and_weight_behaviour():
     assert empty_tuple.dtype == object  # tuples preserved via object dtype
 
     assert explainer._assign_weight(0.2, 0.6) == pytest.approx(0.4)
-    assert explainer._assign_weight([0.1, 0.3], [0.4, 0.9]) == [pytest.approx(0.3), pytest.approx(0.6)]
+    assert explainer._assign_weight([0.1, 0.3], [0.4, 0.9]) == [
+        pytest.approx(0.3),
+        pytest.approx(0.6),
+    ]
 
 
 def test_numeric_sampling_helpers_respect_calibration_distribution():
@@ -172,7 +175,9 @@ def test_set_difficulty_estimator_enforces_fitted_contract():
     explainer = _make_minimal_explainer()
 
     calls: list[str] = []
-    setattr(explainer, "_CalibratedExplainer__initialize_interval_learner", lambda: calls.append("init"))
+    setattr(
+        explainer, "_CalibratedExplainer__initialize_interval_learner", lambda: calls.append("init")
+    )
 
     class DummyEstimator:
         def __init__(self, fitted: bool, value: float = 1.0):
@@ -191,9 +196,7 @@ def test_set_difficulty_estimator_enforces_fitted_contract():
 
     estimator = DummyEstimator(fitted=True, value=2.5)
     explainer.set_difficulty_estimator(estimator, initialize=False)
-    np.testing.assert_array_equal(
-        explainer._get_sigma_test(np.zeros((4, 2))), np.full(4, 2.5)
-    )
+    np.testing.assert_array_equal(explainer._get_sigma_test(np.zeros((4, 2))), np.full(4, 2.5))
 
     explainer.set_difficulty_estimator(estimator, initialize=True)
     assert "init" in calls
@@ -320,4 +323,3 @@ def test_lime_and_shap_flags_toggle():
     assert explainer._is_shap_enabled() is False
     assert explainer._is_shap_enabled(True) is True
     assert explainer._is_shap_enabled() is True
-

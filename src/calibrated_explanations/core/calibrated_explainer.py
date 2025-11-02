@@ -16,7 +16,7 @@ from __future__ import annotations
 import warnings as _warnings
 import os
 from pathlib import Path
-from collections import Counter, defaultdict
+from collections import Counter
 from functools import partial
 from time import time
 
@@ -156,7 +156,9 @@ def _assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
         try:
             return float(prediction - instance_predict)
         except TypeError:
-            return float(np.asarray(prediction, dtype=float) - np.asarray(instance_predict, dtype=float))
+            return float(
+                np.asarray(prediction, dtype=float) - np.asarray(instance_predict, dtype=float)
+            )
 
     base_arr = np.asarray(prediction)
     inst_arr = np.asarray(instance_predict)
@@ -475,8 +477,12 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
 
         unique_lower, lower_inverse = np.unique(lower_boundary, return_inverse=True)
         unique_upper, upper_inverse = np.unique(upper_boundary, return_inverse=True)
-        lower_groups = {idx: np.flatnonzero(lower_inverse == idx) for idx in range(unique_lower.size)}
-        upper_groups = {idx: np.flatnonzero(upper_inverse == idx) for idx in range(unique_upper.size)}
+        lower_groups = {
+            idx: np.flatnonzero(lower_inverse == idx) for idx in range(unique_lower.size)
+        }
+        upper_groups = {
+            idx: np.flatnonzero(upper_inverse == idx) for idx in range(unique_upper.size)
+        }
         lower_cache = {
             val: 0 if val == -np.inf else int(np.searchsorted(sorted_cal, val, side="left"))
             for val in unique_lower
@@ -624,6 +630,7 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         lower_update,
         upper_update,
     )
+
 
 _DEFAULT_EXPLANATION_IDENTIFIERS: Dict[str, str] = {
     "factual": "core.explanation.factual",
@@ -2368,6 +2375,7 @@ class CalibratedExplainer:
         # Delegate to the new explain plugin system
         # This replaces all sequential/parallel branching logic
         from .explain import explain as plugin_explain
+
         return plugin_explain(
             self,
             x,
@@ -2553,10 +2561,8 @@ class CalibratedExplainer:
             return np.asarray(baseline_arr - perturbed_arr, dtype=float)
 
         if baseline_arr.shape != perturbed_arr.shape:
-            try:
+            with contextlib.suppress(ValueError):
                 baseline_arr = np.broadcast_to(baseline_arr, perturbed_arr.shape)
-            except ValueError:
-                pass
 
         try:
             return np.asarray(baseline_arr - perturbed_arr, dtype=float)
@@ -2841,9 +2847,7 @@ class CalibratedExplainer:
                         feature_feature_parts.append(np.array([(f, i, i, None)], dtype=object))
                         if bins is not None:
                             feature_bins_parts.append(np.array([bins[i]]))
-                        feature_class_parts.append(
-                            np.array([prediction["classes"][i]], copy=True)
-                        )
+                        feature_class_parts.append(np.array([prediction["classes"][i]], copy=True))
                         if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                             feature_threshold_parts.append(np.asarray([threshold[i]]))
 
@@ -4214,7 +4218,9 @@ class CalibratedExplainer:
         n_samples = len(y_cal)
 
         if n_samples == 0:
-            raise ValidationError("At least one calibration sample is required to build a confusion matrix.")
+            raise ValidationError(
+                "At least one calibration sample is required to build a confusion matrix."
+            )
 
         cal_predicted_classes = np.empty_like(y_cal)
 

@@ -2,7 +2,7 @@
 
 This package provides a plugin-based architecture for explain execution strategies:
 - Sequential: single-threaded feature-by-feature processing
-- Feature-parallel: parallel processing across features  
+- Feature-parallel: parallel processing across features
 - Instance-parallel: parallel processing across instances
 
 The plugin system replaces branching logic in CalibratedExplainer.explain,
@@ -25,8 +25,8 @@ if TYPE_CHECKING:
 # Global plugin registry (initialized on first import)
 _REGISTERED_PLUGINS: List[BaseExplainPlugin] = [
     InstanceParallelExplainPlugin(),  # Priority 30: check first
-    FeatureParallelExplainPlugin(),   # Priority 20: check second
-    SequentialExplainPlugin(),        # Priority 10: fallback
+    FeatureParallelExplainPlugin(),  # Priority 20: check second
+    SequentialExplainPlugin(),  # Priority 10: fallback
 ]
 
 
@@ -35,36 +35,39 @@ def select_plugin(
     config: ExplainConfig,
 ) -> BaseExplainPlugin:
     """Select the appropriate explain plugin based on request and config.
-    
+
     Plugins are checked in priority order (highest first). The first plugin
     that returns True from its supports() method is selected.
-    
+
     Parameters
     ----------
     request : ExplainRequest
         The explain request context
     config : ExplainConfig
         Execution configuration with executor and granularity
-        
+
     Returns
     -------
     BaseExplainPlugin
         The selected plugin (sequential if no others support)
-        
+
     Raises
     ------
     ValueError
         If conflicting parallelism settings are detected
     """
     # Validate configuration for conflicts
-    if config.executor is not None and config.executor.config.enabled:
+    if (
+        config.executor is not None
+        and config.executor.config.enabled
+        and config.granularity not in ("feature", "instance", "none")
+    ):
         # Check for mixed granularity (both feature and instance parallel requested)
         # This should be caught by plugin supports() methods, but add explicit check
-        if config.granularity not in ("feature", "instance", "none"):
-            raise ValueError(
-                f"Invalid parallelism granularity: {config.granularity}. "
-                "Must be 'feature', 'instance', or 'none'."
-            )
+        raise ValueError(
+            f"Invalid parallelism granularity: {config.granularity}. "
+            "Must be 'feature', 'instance', or 'none'."
+        )
 
     # Check plugins in priority order
     for plugin in sorted(_REGISTERED_PLUGINS, key=lambda p: p.priority, reverse=True):
@@ -88,10 +91,10 @@ def explain(
     _skip_instance_parallel: bool = False,
 ):
     """Execute explain operation using the plugin system.
-    
+
     This is the thin delegator that replaces the monolithic explain method.
     It builds request/config context and delegates to the selected plugin.
-    
+
     Parameters
     ----------
     explainer : CalibratedExplainer
@@ -110,7 +113,7 @@ def explain(
         Whether to use plugin system (for backward compatibility)
     _skip_instance_parallel : bool, default=False
         Prevent recursive instance parallelism
-        
+
     Returns
     -------
     CalibratedExplanations

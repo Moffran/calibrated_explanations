@@ -284,9 +284,7 @@ def test_build_interval_chain_fast_skips_missing_default(monkeypatch):
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST", "fast.direct")
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST_FALLBACKS", "fast.extra")
 
-    descriptors = {
-        "fast.direct": types.SimpleNamespace(metadata={"fallbacks": ()})
-    }
+    descriptors = {"fast.direct": types.SimpleNamespace(metadata={"fallbacks": ()})}
 
     monkeypatch.setattr(
         explainer_module,
@@ -300,7 +298,7 @@ def test_build_interval_chain_fast_skips_missing_default(monkeypatch):
     assert explainer._interval_preferred_identifier["fast"] == "fast.direct"
 
 
-def test_build_plot_style_chain_inserts_defaults(monkeypatch):
+def test_build_plot_style_chain_inserts_defaults_when_legacy_env(monkeypatch):
     explainer = _stub_explainer()
     explainer._plot_style_override = "tests.override"
     explainer._pyproject_plots = {
@@ -432,9 +430,7 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch):
         lambda identifier: descriptor if identifier == "ok.plugin" else None,
     )
     monkeypatch.setattr(explainer_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(
-        explainer_module, "find_interval_plugin_trusted", lambda identifier: None
-    )
+    monkeypatch.setattr(explainer_module, "find_interval_plugin_trusted", lambda identifier: None)
 
     plugin, identifier = explainer._resolve_interval_plugin(fast=False)
 

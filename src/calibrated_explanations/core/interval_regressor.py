@@ -54,9 +54,7 @@ class IntervalRegressor:
         self._residual_cal_storage = np.array(initial_residuals, copy=True)
         self._residual_cal_size = self._residual_cal_storage.shape[0]
 
-        sigma_cal = np.asarray(
-            self.ce._get_sigma_test(x=self.ce.x_cal)
-        )  # pylint: disable=protected-access
+        sigma_cal = np.asarray(self.ce._get_sigma_test(x=self.ce.x_cal))  # pylint: disable=protected-access
         if sigma_cal.ndim != 1:
             sigma_cal = sigma_cal.reshape(-1)
         self._sigma_cal_storage = np.array(sigma_cal, copy=True)

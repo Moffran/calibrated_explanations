@@ -395,19 +395,16 @@ def test_convert_condition_value_special_tokens():
     assert explanation_module.CalibratedExplanation._convert_condition_value(
         None, 1.2
     ) == pytest.approx(1.2)
-    assert explanation_module.CalibratedExplanation._convert_condition_value(
-        "-inf", 0.0
-    ) == float("-inf")
+    assert explanation_module.CalibratedExplanation._convert_condition_value("-inf", 0.0) == float(
+        "-inf"
+    )
     assert explanation_module.CalibratedExplanation._convert_condition_value(
         "infinity", 0.0
     ) == float("inf")
     assert explanation_module.CalibratedExplanation._convert_condition_value(
         "7.5", 0.0
     ) == pytest.approx(7.5)
-    assert (
-        explanation_module.CalibratedExplanation._convert_condition_value("foo", 0.0)
-        == "foo"
-    )
+    assert explanation_module.CalibratedExplanation._convert_condition_value("foo", 0.0) == "foo"
 
 
 def test_build_condition_payload_parses_rules(telemetry_explanation):

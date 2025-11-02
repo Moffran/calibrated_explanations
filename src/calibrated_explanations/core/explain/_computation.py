@@ -36,8 +36,7 @@ def assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
             return float(prediction - instance_predict)
         except TypeError:
             return float(
-                np.asarray(prediction, dtype=float)
-                - np.asarray(instance_predict, dtype=float)
+                np.asarray(prediction, dtype=float) - np.asarray(instance_predict, dtype=float)
             )
 
     base_arr = np.asarray(prediction)
@@ -54,12 +53,12 @@ def assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
 
 def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     """Execute the per-feature aggregation logic for explain operations.
-    
+
     This function processes a single feature across all instances, computing:
     - Feature importance weights (predict, low, high)
     - Perturbed prediction matrices
     - Rule boundaries and binned results
-    
+
     Parameters
     ----------
     args : tuple
@@ -77,7 +76,7 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         - value_counts_cache: cached categorical value counts
         - numeric_sorted_values: sorted calibration values
         - x_cal_column: calibration data for this feature
-    
+
     Returns
     -------
     FeatureTaskResult
@@ -384,12 +383,8 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         if feature_values_numeric.size:
             min_val = np.min(feature_values_numeric)
             max_val = np.max(feature_values_numeric)
-            lower_boundary = np.where(
-                min_val < lower_boundary, lower_boundary, -np.inf
-            )
-            upper_boundary = np.where(
-                max_val > upper_boundary, upper_boundary, np.inf
-            )
+            lower_boundary = np.where(min_val < lower_boundary, lower_boundary, -np.inf)
+            upper_boundary = np.where(max_val > upper_boundary, upper_boundary, np.inf)
         lower_update = lower_boundary.copy()
         upper_update = upper_boundary.copy()
 
@@ -399,7 +394,7 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         high_predict_map: Dict[int, np.ndarray] = {}
         counts_map: Dict[int, np.ndarray] = {}
         rule_value_map: Dict[int, List[np.ndarray]] = {}
-        
+
         for i in range(n_instances):
             num_bins = 1 + (1 if lower_boundary[i] != -np.inf else 0)
             num_bins += 1 if upper_boundary[i] != np.inf else 0
@@ -416,18 +411,14 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         unique_lower, lower_inverse = np.unique(lower_boundary, return_inverse=True)
         unique_upper, upper_inverse = np.unique(upper_boundary, return_inverse=True)
         lower_groups = {
-            idx: np.flatnonzero(lower_inverse == idx)
-            for idx in range(unique_lower.size)
+            idx: np.flatnonzero(lower_inverse == idx) for idx in range(unique_lower.size)
         }
         upper_groups = {
-            idx: np.flatnonzero(upper_inverse == idx)
-            for idx in range(unique_upper.size)
+            idx: np.flatnonzero(upper_inverse == idx) for idx in range(unique_upper.size)
         }
 
         lower_cache = {
-            val: 0
-            if val == -np.inf
-            else int(np.searchsorted(sorted_cal, val, side="left"))
+            val: 0 if val == -np.inf else int(np.searchsorted(sorted_cal, val, side="left"))
             for val in unique_lower
         }
         upper_cache = {
@@ -438,15 +429,11 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         }
 
         bounds_matrix = np.column_stack((lower_boundary, upper_boundary))
-        unique_bounds, _ = np.unique(
-            bounds_matrix, axis=0, return_inverse=True
-        )
+        unique_bounds, _ = np.unique(bounds_matrix, axis=0, return_inverse=True)
         between_cache: Dict[int, int] = {}
         for idx_bound, (lower_b, upper_b) in enumerate(unique_bounds):
             left = (
-                0
-                if lower_b == -np.inf
-                else int(np.searchsorted(sorted_cal, lower_b, side="left"))
+                0 if lower_b == -np.inf else int(np.searchsorted(sorted_cal, lower_b, side="left"))
             )
             right = (
                 sorted_cal.size
@@ -466,23 +453,15 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
                 continue
             for idx in lower_groups.get(j, []):
                 inst = int(idx)
-                rel_indices = numeric_grouped.get(
-                    (inst, j, True), np.empty((0,), dtype=int)
-                )
+                rel_indices = numeric_grouped.get((inst, j, True), np.empty((0,), dtype=int))
                 avg_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_predict_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
                 )
                 low_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_low_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
                 )
                 high_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_high_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
                 )
                 counts_map[inst][bin_value[inst]] = lower_cache.get(val, 0)
                 rule_value_map[inst].append(values_tuple[0])
@@ -495,23 +474,15 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
                 continue
             for idx in upper_groups.get(j, []):
                 inst = int(idx)
-                rel_indices = numeric_grouped.get(
-                    (inst, j, False), np.empty((0,), dtype=int)
-                )
+                rel_indices = numeric_grouped.get((inst, j, False), np.empty((0,), dtype=int))
                 avg_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_predict_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
                 )
                 low_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_low_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
                 )
                 high_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_high_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
                 )
                 counts_map[inst][bin_value[inst]] = upper_cache.get(val, 0)
                 rule_value_map[inst].append(values_tuple[0])
@@ -521,23 +492,15 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         for inst in range(n_instances):
             current_index = bin_value[inst]
             for j in range(unique_bounds.shape[0]):
-                rel_indices = numeric_grouped.get(
-                    (inst, j, None), np.empty((0,), dtype=int)
-                )
+                rel_indices = numeric_grouped.get((inst, j, None), np.empty((0,), dtype=int))
                 avg_predict_map[inst][current_index] = (
-                    safe_mean(feature_predict_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
                 )
                 low_predict_map[inst][current_index] = (
-                    safe_mean(feature_low_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
                 )
                 high_predict_map[inst][current_index] = (
-                    safe_mean(feature_high_local[rel_indices])
-                    if rel_indices.size
-                    else 0
+                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
                 )
                 counts_map[inst][current_index] = between_cache.get(j, 0)
                 rule_entry = covered_feature.get(j)

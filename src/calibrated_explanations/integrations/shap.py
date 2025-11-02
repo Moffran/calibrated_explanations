@@ -67,6 +67,7 @@ class ShapHelper:
                 needs_refresh = True
 
         if needs_refresh:
+
             def _predict(x):
                 return self.explainer._predict(x)[0]  # pylint: disable=protected-access
 

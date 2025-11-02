@@ -32,4 +32,3 @@ def test_top_level_toctree_targets_exist() -> None:
         assert slug in index, f"Missing toctree entry for {slug}"
         target = _resolve_doc(slug)
         assert target.exists(), f"Document referenced by {slug} is missing"
-

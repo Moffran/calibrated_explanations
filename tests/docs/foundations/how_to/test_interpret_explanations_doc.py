@@ -8,11 +8,11 @@ from tests.docs.get_started.test_quickstart_classification_doc import (
 def test_interpret_explanations_snippets():
     context = _run_quickstart_classification()
     explainer = context.explainer
-    X_test = context.X_test
+    x_test = context.X_test
 
-    factual_batch = explainer.explain_factual(X_test[:1])
+    factual_batch = explainer.explain_factual(x_test[:1])
     factual = factual_batch[0]
-    alternative_batch = explainer.explore_alternatives(X_test[:1])
+    alternative_batch = explainer.explore_alternatives(x_test[:1])
     alternative = alternative_batch[0]
 
     print(f"Mode: {factual.get_mode()}  Calibrated prediction: {factual.predict:.3f}")

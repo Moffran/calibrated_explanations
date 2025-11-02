@@ -22,9 +22,8 @@ import warnings
 from abc import ABC, abstractmethod
 
 # from dataclasses import dataclass
-from copy import deepcopy
 from types import MappingProxyType
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from pandas import Categorical
@@ -1042,9 +1041,7 @@ class FactualExplanation(CalibratedExplanation):
     def build_rules_payload(self) -> Dict[str, Any]:
         """Return structured payload describing factual feature rules."""
         rules = self._get_rules()
-        prediction_value = CalibratedExplanation._to_python_number(
-            self.prediction.get("predict")
-        )
+        prediction_value = CalibratedExplanation._to_python_number(self.prediction.get("predict"))
         prediction_interval = CalibratedExplanation._build_interval(
             self.prediction.get("low"),
             self.prediction.get("high"),
@@ -1110,9 +1107,7 @@ class FactualExplanation(CalibratedExplanation):
                 percentiles=percentiles if representation == "percentile" else None,
                 include_percentiles=representation == "percentile",
             )
-            prediction_representation = (
-                "threshold" if self.is_thresholded() else representation
-            )
+            prediction_representation = "threshold" if self.is_thresholded() else representation
             prediction_uncertainty = self._build_uncertainty_payload(
                 value=rules["predict"][idx],
                 low=rules["predict_low"][idx],
@@ -1120,16 +1115,12 @@ class FactualExplanation(CalibratedExplanation):
                 representation=prediction_representation,
                 percentiles=(
                     percentiles
-                    if prediction_representation == "percentile"
-                    and not self.is_thresholded()
+                    if prediction_representation == "percentile" and not self.is_thresholded()
                     else None
                 ),
-                threshold=self._normalize_threshold_value()
-                if self.is_thresholded()
-                else None,
+                threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
                 include_percentiles=(
-                    prediction_representation == "percentile"
-                    and not self.is_thresholded()
+                    prediction_representation == "percentile" and not self.is_thresholded()
                 ),
             )
             metadata_rule: Dict[str, Any] = {
@@ -1137,9 +1128,7 @@ class FactualExplanation(CalibratedExplanation):
                 "feature_index": CalibratedExplanation._to_python_number(feature_index),
                 "weight_uncertainty": weight_uncertainty,
                 "prediction_uncertainty": prediction_uncertainty,
-                "prediction_value": CalibratedExplanation._to_python_number(
-                    rules["predict"][idx]
-                ),
+                "prediction_value": CalibratedExplanation._to_python_number(rules["predict"][idx]),
                 "condition_text": rules["rule"][idx],
                 "instance_value": CalibratedExplanation._to_python_number(
                     rules["feature_value"][idx]
@@ -1633,9 +1622,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 rules["feature_value"][idx],
                 rules["value"][idx],
             )
-            prediction_value = CalibratedExplanation._to_python_number(
-                rules["predict"][idx]
-            )
+            prediction_value = CalibratedExplanation._to_python_number(rules["predict"][idx])
             prediction_interval = CalibratedExplanation._build_interval(
                 rules["predict_low"][idx],
                 rules["predict_high"][idx],
@@ -1655,12 +1642,8 @@ class AlternativeExplanation(CalibratedExplanation):
                 low=rules["predict_low"][idx],
                 high=rules["predict_high"][idx],
                 representation=prediction_representation,
-                percentiles=(
-                    percentiles if prediction_representation == "percentile" else None
-                ),
-                threshold=self._normalize_threshold_value()
-                if self.is_thresholded()
-                else None,
+                percentiles=(percentiles if prediction_representation == "percentile" else None),
+                threshold=self._normalize_threshold_value() if self.is_thresholded() else None,
                 include_percentiles=prediction_representation == "percentile",
             )
             weight_value = CalibratedExplanation._to_python_number(rules["weight"][idx])
@@ -1669,9 +1652,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 low=rules["weight_low"][idx],
                 high=rules["weight_high"][idx],
                 representation=weight_representation,
-                percentiles=(
-                    percentiles if weight_representation == "percentile" else None
-                ),
+                percentiles=(percentiles if weight_representation == "percentile" else None),
                 include_percentiles=weight_representation == "percentile",
             )
             metadata_rule: Dict[str, Any] = {
@@ -1685,9 +1666,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 "instance_value": CalibratedExplanation._to_python_number(
                     rules["feature_value"][idx]
                 ),
-                "alternative_value": CalibratedExplanation._to_python_number(
-                    rules["value"][idx]
-                ),
+                "alternative_value": CalibratedExplanation._to_python_number(rules["value"][idx]),
             }
             if self.is_thresholded():
                 metadata_rule["threshold"] = self._normalize_threshold_value()

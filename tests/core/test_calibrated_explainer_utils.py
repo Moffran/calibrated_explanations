@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-import os
 
 import numpy as np
 
@@ -95,7 +94,9 @@ def test_predict_bridge_monitor_tracks_usage():
 
 def _make_explainer_stub() -> CalibratedExplainer:
     explainer = CalibratedExplainer.__new__(CalibratedExplainer)
-    explainer._explanation_plugin_overrides = {mode: None for mode in ("factual", "alternative", "fast")}
+    explainer._explanation_plugin_overrides = {
+        mode: None for mode in ("factual", "alternative", "fast")
+    }
     explainer._pyproject_explanations = {}
     explainer._pyproject_intervals = {}
     explainer._pyproject_plots = {}
@@ -191,7 +192,9 @@ def test_build_interval_chain_tracks_preferred_identifier(monkeypatch):
     # For the fast chain simulate missing default descriptor to exercise the skip branch.
     monkeypatch.setattr(
         "calibrated_explanations.core.calibrated_explainer.find_interval_descriptor",
-        lambda identifier: None if identifier.strip() == "core.interval.fast" else descriptor_map.get(identifier.strip()),
+        lambda identifier: None
+        if identifier.strip() == "core.interval.fast"
+        else descriptor_map.get(identifier.strip()),
     )
 
     fast_chain = explainer._build_interval_chain(fast=True)
@@ -288,7 +291,9 @@ def test_check_explanation_runtime_metadata_capabilities():
         "modes": ["factual"],
         "capabilities": ["explain", "mode:factual"],
     }
-    message = explainer._check_explanation_runtime_metadata(metadata, identifier="plugin", mode="factual")
+    message = explainer._check_explanation_runtime_metadata(
+        metadata, identifier="plugin", mode="factual"
+    )
     assert "missing required capabilities" in message
 
 
@@ -402,4 +407,3 @@ def test_check_interval_runtime_metadata_validations():
     assert "requires bins" in explainer._check_interval_runtime_metadata(
         requires_bins, identifier="interval", fast=True
     )
-

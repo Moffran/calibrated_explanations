@@ -15,15 +15,15 @@ def _build_pipeline_context() -> SimpleNamespace:
     from calibrated_explanations import WrapCalibratedExplainer
 
     dataset = load_breast_cancer()
-    X_train, X_test, y_train, y_test = train_test_split(
+    x_train, x_test, y_train, y_test = train_test_split(
         dataset.data,
         dataset.target,
         test_size=0.2,
         stratify=dataset.target,
         random_state=0,
     )
-    X_proper, X_cal, y_proper, y_cal = train_test_split(
-        X_train,
+    x_proper, x_cal, y_proper, y_cal = train_test_split(
+        x_train,
         y_train,
         test_size=0.25,
         stratify=y_train,
@@ -52,9 +52,9 @@ def _build_pipeline_context() -> SimpleNamespace:
     )
     explainer = WrapCalibratedExplainer._from_config(config)
 
-    explainer.fit(X_proper, y_proper)
-    explainer.calibrate(X_cal, y_cal)
-    factual = explainer.explain_factual(X_test)
+    explainer.fit(x_proper, y_proper)
+    explainer.calibrate(x_cal, y_cal)
+    factual = explainer.explain_factual(x_test)
 
     telemetry = explainer.runtime_telemetry
     pre = telemetry.get("preprocessor", {})

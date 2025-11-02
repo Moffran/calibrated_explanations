@@ -9,7 +9,11 @@ import pytest
 
 from calibrated_explanations.core import calibrated_explainer as explainer_module
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ConfigurationError, DataShapeError, ValidationError
+from calibrated_explanations.core.exceptions import (
+    ConfigurationError,
+    DataShapeError,
+    ValidationError,
+)
 from calibrated_explanations.utils.discretizers import RegressorDiscretizer
 
 
@@ -157,9 +161,7 @@ def test_update_interval_learner_branches(monkeypatch):
 
     explainer.is_fast = types.MethodType(lambda self: True, explainer)
     with pytest.raises(ConfigurationError):
-        explainer._CalibratedExplainer__update_interval_learner(
-            explainer.x_cal, explainer.y_cal
-        )
+        explainer._CalibratedExplainer__update_interval_learner(explainer.x_cal, explainer.y_cal)
 
     explainer.is_fast = types.MethodType(lambda self: False, explainer)
 
@@ -171,17 +173,13 @@ def test_update_interval_learner_branches(monkeypatch):
 
     monkeypatch.setattr(explainer_module, "VennAbers", _RecorderVA)
 
-    explainer._CalibratedExplainer__update_interval_learner(
-        explainer.x_cal, explainer.y_cal
-    )
+    explainer._CalibratedExplainer__update_interval_learner(explainer.x_cal, explainer.y_cal)
     assert created_instances and explainer._CalibratedExplainer__initialized is True
 
     explainer.mode = "regression"
     explainer.interval_learner = []
     with pytest.raises(ConfigurationError):
-        explainer._CalibratedExplainer__update_interval_learner(
-            explainer.x_cal, explainer.y_cal
-        )
+        explainer._CalibratedExplainer__update_interval_learner(explainer.x_cal, explainer.y_cal)
 
     class _IntervalLearner:
         def __init__(self):

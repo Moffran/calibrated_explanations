@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging as _logging
 import warnings as _warnings
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping
 
 from crepes.extras import MondrianCategorizer
 
@@ -288,9 +288,7 @@ class WrapCalibratedExplainer:
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
-            ._assert_calibrated(
-                "The WrapCalibratedExplainer must be calibrated before explaining."
-            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
             .explainer
             is not None
         )
@@ -330,9 +328,7 @@ class WrapCalibratedExplainer:
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
-            ._assert_calibrated(
-                "The WrapCalibratedExplainer must be calibrated before explaining."
-            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
             .explainer
             is not None
         )
@@ -358,9 +354,7 @@ class WrapCalibratedExplainer:
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
-            ._assert_calibrated(
-                "The WrapCalibratedExplainer must be calibrated before explaining."
-            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
             .explainer
             is not None
         )
@@ -387,9 +381,7 @@ class WrapCalibratedExplainer:
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
             )
-            ._assert_calibrated(
-                "The WrapCalibratedExplainer must be calibrated before explaining."
-            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
             .explainer
             is not None
         )
@@ -440,8 +432,7 @@ class WrapCalibratedExplainer:
         assert (
             self._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated to get calibrated predictions."
-            )
-            .explainer
+            ).explainer
             is not None
         )
         return self.explainer.predict(
@@ -495,8 +486,7 @@ class WrapCalibratedExplainer:
         assert (
             self._assert_calibrated(
                 "The WrapCalibratedExplainer must be calibrated to get calibrated probabilities."
-            )
-            .explainer
+            ).explainer
             is not None
         )
         return self.explainer.predict_proba(
@@ -592,9 +582,7 @@ class WrapCalibratedExplainer:
             self._assert_fitted(
                 "The WrapCalibratedExplainer must be fitted and calibrated before plotting."
             )
-            ._assert_calibrated(
-                "The WrapCalibratedExplainer must be calibrated before plotting."
-            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before plotting.")
             .explainer
             is not None
         )
@@ -661,16 +649,14 @@ class WrapCalibratedExplainer:
     def _assert_fitted(self, message: str | None = None) -> WrapCalibratedExplainer:
         if not self.fitted:
             raise NotFittedError(
-                message
-                or "The WrapCalibratedExplainer must be fitted before this operation."
+                message or "The WrapCalibratedExplainer must be fitted before this operation."
             )
         return self
 
     def _assert_calibrated(self, message: str | None = None) -> WrapCalibratedExplainer:
         if not self.calibrated:
             raise NotFittedError(
-                message
-                or "The WrapCalibratedExplainer must be calibrated before this operation."
+                message or "The WrapCalibratedExplainer must be calibrated before this operation."
             )
         return self
 

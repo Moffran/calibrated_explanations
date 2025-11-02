@@ -12,15 +12,15 @@ def _run_readme_snippet() -> SimpleNamespace:
     from calibrated_explanations import WrapCalibratedExplainer
 
     dataset = load_breast_cancer()
-    X_train, X_test, y_train, y_test = train_test_split(
+    x_train, x_test, y_train, y_test = train_test_split(
         dataset.data,
         dataset.target,
         test_size=0.2,
         stratify=dataset.target,
         random_state=0,
     )
-    X_proper, X_cal, y_proper, y_cal = train_test_split(
-        X_train,
+    x_proper, x_cal, y_proper, y_cal = train_test_split(
+        x_train,
         y_train,
         test_size=0.25,
         stratify=y_train,
@@ -28,14 +28,12 @@ def _run_readme_snippet() -> SimpleNamespace:
     )
 
     explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
-    explainer.fit(X_proper, y_proper)
-    explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
+    explainer.fit(x_proper, y_proper)
+    explainer.calibrate(x_cal, y_cal, feature_names=dataset.feature_names)
 
-    factual = explainer.explain_factual(X_test[:1])
-    alternatives = explainer.explore_alternatives(X_test[:1])
-    probabilities, probability_interval = explainer.predict_proba(
-        X_test[:1], uq_interval=True
-    )
+    factual = explainer.explain_factual(x_test[:1])
+    alternatives = explainer.explore_alternatives(x_test[:1])
+    probabilities, probability_interval = explainer.predict_proba(x_test[:1], uq_interval=True)
     low, high = probability_interval
 
     print(f"Calibrated probability: {probabilities[0, 1]:.3f}")

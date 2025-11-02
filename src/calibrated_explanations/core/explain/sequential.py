@@ -15,16 +15,16 @@ import numpy as np
 
 from ...explanations import CalibratedExplanations
 from ._base import BaseExplainPlugin
-from ._helpers import explain_predict_step, initialize_explanation, merge_ignore_features
+from ._helpers import explain_predict_step, initialize_explanation
 from ._shared import ExplainConfig, ExplainRequest
 
 if TYPE_CHECKING:
-    from ..calibrated_explainer import CalibratedExplainer, _feature_task
+    from ..calibrated_explainer import CalibratedExplainer
 
 
 class SequentialExplainPlugin(BaseExplainPlugin):
     """Sequential explain execution strategy.
-    
+
     Processes all test instances and features in a single thread.
     This is the default fallback when parallelism is disabled or unavailable.
     """
@@ -41,7 +41,7 @@ class SequentialExplainPlugin(BaseExplainPlugin):
 
     def supports(self, request: ExplainRequest, config: ExplainConfig) -> bool:
         """Return True - sequential plugin always supports any request.
-        
+
         This is the universal fallback plugin that handles:
         - No executor available
         - Executor disabled
@@ -58,7 +58,7 @@ class SequentialExplainPlugin(BaseExplainPlugin):
         explainer: CalibratedExplainer,
     ) -> CalibratedExplanations:
         """Execute sequential explain operation.
-        
+
         This implementation mirrors the original CalibratedExplainer.explain
         sequential path (lines 2365-2595) to ensure behavioral parity.
         """
@@ -141,8 +141,7 @@ class SequentialExplainPlugin(BaseExplainPlugin):
             for idx, fid in enumerate(feature_ids):
                 feature_index_lists[int(fid)].append(idx)
             feature_index_map = {
-                fid: np.asarray(indices, dtype=int)
-                for fid, indices in feature_index_lists.items()
+                fid: np.asarray(indices, dtype=int) for fid, indices in feature_index_lists.items()
             }
         else:
             feature_index_map = {}
