@@ -12,14 +12,17 @@ Run from the repository root::
 
 The script prints JSON with timing measurements and speed-ups relative to the
 sequential baseline for every dataset/operation combination.
+Pass ``--output path/to/results.json`` to persist the JSON to disk.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from time import perf_counter
-from typing import Any, Callable, Dict, List, Literal, Mapping, MutableMapping, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Literal, Mapping, MutableMapping, Sequence, Tuple
 
 import numpy as np
 from sklearn.datasets import make_classification, make_regression
@@ -548,9 +551,22 @@ def benchmark_parallel_options() -> Iterable[Mapping[str, Any]]:
             yield _benchmark_scenario(setup, operation)
 
 
-def main() -> None:
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run the parallel ablation benchmark and emit JSON results."
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Optional path to write the JSON results. Parent directories are created as needed.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
     """Entry-point printing ablation measurements as formatted JSON."""
 
+    args = _parse_args(argv)
     results = list(benchmark_parallel_options())
     metadata = {
         "timing_repeat": TIMING_REPEAT,
@@ -571,7 +587,12 @@ def main() -> None:
         ],
     }
     output = {"metadata": metadata, "results": results}
-    print(json.dumps(output, indent=2, sort_keys=True))
+    serialized = json.dumps(output, indent=2, sort_keys=True)
+    print(serialized)
+
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(serialized + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
