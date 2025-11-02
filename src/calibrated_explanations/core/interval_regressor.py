@@ -79,7 +79,6 @@ class IntervalRegressor:
 
     def _append_calibration_buffer(self, name, values):
         """Append new calibration values to the dynamic storage backing ``name``."""
-
         values = np.asarray(values)
         if values.size == 0:
             return
@@ -101,7 +100,6 @@ class IntervalRegressor:
 
     def _append_bins(self, values):
         """Append Mondrian bin assignments while reusing allocated storage."""
-
         values = np.asarray(values)
         if values.size == 0:
             return
@@ -122,7 +120,6 @@ class IntervalRegressor:
     @staticmethod
     def _ensure_capacity(storage, size, additional):
         """Grow ``storage`` so that ``size + additional`` entries fit without reallocation."""
-
         required = size + additional
         capacity = storage.shape[0]
         if capacity >= required:
@@ -455,25 +452,21 @@ class IntervalRegressor:
     @property
     def y_cal_hat(self):
         """Predicted calibration targets."""
-
         return self._y_cal_hat_storage[: self._y_cal_hat_size]
 
     @property
     def residual_cal(self):
         """Calibration residuals reused by conformal updates."""
-
         return self._residual_cal_storage[: self._residual_cal_size]
 
     @property
     def sigma_cal(self):
         """Calibration difficulty estimates."""
-
         return self._sigma_cal_storage[: self._sigma_cal_size]
 
     @property
     def bins(self):
         """Return the Mondrian bins associated with the calibration data."""
-
         if self._bins_storage is None:
             return None
         return self._bins_storage[: self._bins_size]

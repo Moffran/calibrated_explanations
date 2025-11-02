@@ -702,7 +702,6 @@ class PlotSpecDefaultRenderer(PlotRenderer):
 
 def _register_builtin_fast_plugins() -> None:
     """Register in-tree fallbacks for FAST plugins when extras are unavailable."""
-
     if find_interval_descriptor("core.interval.fast") is None:
 
         class BuiltinFastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
@@ -734,7 +733,6 @@ def _register_builtin_fast_plugins() -> None:
                 fast: bool = True,
             ) -> Any:
                 """Return the FAST calibrator list prepared from the explainer state."""
-
                 metadata = context.metadata
                 task = str(metadata.get("task") or metadata.get("mode") or "")
                 explainer = metadata.get("explainer")

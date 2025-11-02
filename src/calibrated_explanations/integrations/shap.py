@@ -28,12 +28,10 @@ class ShapHelper:
 
     def is_enabled(self) -> bool:
         """Return whether the helper has produced a cached SHAP explainer."""
-
         return self._enabled
 
     def set_enabled(self, value: bool) -> None:
         """Force the helper enabled flag, primarily for compatibility tests."""
-
         if not value:
             self.reset()
         else:
@@ -42,20 +40,17 @@ class ShapHelper:
     @property
     def explainer_instance(self) -> Any:
         """Expose the cached SHAP explainer, preloading it if necessary."""
-
         instance, _ = self.preload()
         return instance
 
     @property
     def reference_explanation(self) -> Any:
         """Return the cached explanation, preloading if required."""
-
         _, explanation = self.preload()
         return explanation
 
     def preload(self, num_test: Optional[int] = None) -> Tuple[Any, Any]:
         """Materialize the SHAP explainer when :mod:`shap` is available."""
-
         shap_module = safe_import("shap")
         if not shap_module:
             return None, None
@@ -87,7 +82,6 @@ class ShapHelper:
 
     def reset(self) -> None:
         """Drop cached objects so a future preload rebuilds them."""
-
         self._enabled = False
         self._explainer_instance = None
         self._reference_explanation = None

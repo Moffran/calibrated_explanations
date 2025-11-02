@@ -29,12 +29,10 @@ class LimeHelper:
 
     def is_enabled(self) -> bool:
         """Return whether the helper has produced a cached LIME explainer."""
-
         return self._enabled
 
     def set_enabled(self, value: bool) -> None:
         """Force the helper's enabled flag, primarily used in tests."""
-
         if not value:
             self.reset()
         else:
@@ -43,20 +41,17 @@ class LimeHelper:
     @property
     def explainer_instance(self) -> Any:
         """Expose the cached LIME explainer, triggering preload if necessary."""
-
         instance, _ = self.preload()
         return instance
 
     @property
     def reference_explanation(self) -> Any:
         """Return the cached reference explanation, triggering preload if required."""
-
         _, explanation = self.preload()
         return explanation
 
     def preload(self, x_cal: Optional[Any] = None) -> Tuple[Any, Any]:
         """Materialize and cache the LIME explainer if the dependency is present."""
-
         lime_cls = safe_import("lime.lime_tabular", "LimeTabularExplainer")
         if not lime_cls:
             return None, None
@@ -93,7 +88,6 @@ class LimeHelper:
 
     def reset(self) -> None:
         """Drop cached objects so that future calls rebuild the integration."""
-
         self._enabled = False
         self._explainer_instance = None
         self._reference_explanation = None

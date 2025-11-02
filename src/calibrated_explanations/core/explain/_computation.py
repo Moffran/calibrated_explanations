@@ -30,7 +30,6 @@ FeatureTaskResult = Tuple[
 
 def assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
     """Return the scalar delta between *prediction* and *instance_predict*."""
-
     if np.isscalar(prediction):
         try:
             return float(prediction - instance_predict)
@@ -82,7 +81,6 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     FeatureTaskResult
         Tuple containing feature weights, predictions, rule values, and binned results
     """
-
     (
         feature_index,
         x_column,

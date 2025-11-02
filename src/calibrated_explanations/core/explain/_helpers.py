@@ -215,7 +215,6 @@ def merge_feature_result(
 
 def compute_weight_delta(baseline, perturbed) -> np.ndarray:
     """Return the contribution weight delta between *baseline* and *perturbed*."""
-
     baseline_arr = np.asarray(baseline)
     perturbed_arr = np.asarray(perturbed)
 
@@ -252,7 +251,6 @@ def feature_effect_for_index(
     baseline_prediction: Mapping[str, Any],
 ) -> Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Compute feature-level contributions for a single feature index."""
-
     local_predict, local_low, local_high, _ = explainer._predict(
         x,
         threshold=threshold,

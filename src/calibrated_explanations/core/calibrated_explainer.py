@@ -151,7 +151,6 @@ FeatureTaskResult = Tuple[
 
 def _assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
     """Return the scalar delta between *prediction* and *instance_predict*."""
-
     if np.isscalar(prediction):
         try:
             return float(prediction - instance_predict)
@@ -174,7 +173,6 @@ def _assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
 
 def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""
-
     (
         feature_index,
         x_column,
@@ -2497,7 +2495,6 @@ class CalibratedExplainer:
         executor: ParallelExecutor | None,
     ) -> List[Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
         """Compute feature perturbation results, optionally in parallel."""
-
         worker = partial(
             self._feature_effect_for_index,
             x=x,
@@ -2524,7 +2521,6 @@ class CalibratedExplainer:
         baseline_prediction: Mapping[str, Any],
     ) -> Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Compute feature-level contributions for ``f_idx``."""
-
         local_predict, local_low, local_high, _ = self._predict(
             x,
             threshold=threshold,
@@ -2553,7 +2549,6 @@ class CalibratedExplainer:
 
     def _compute_weight_delta(self, baseline, perturbed) -> np.ndarray:
         """Return the contribution weight delta between *baseline* and *perturbed*."""
-
         baseline_arr = np.asarray(baseline)
         perturbed_arr = np.asarray(perturbed)
 
@@ -3193,7 +3188,6 @@ class CalibratedExplainer:
         rule_boundaries: np.ndarray,
     ) -> None:
         """Merge a :func:`_feature_task` result into the shared buffers."""
-
         (
             feature_index,
             feature_weights_predict,
@@ -3259,7 +3253,6 @@ class CalibratedExplainer:
         n_instances: int,
     ) -> None:
         """Dispatch feature tasks in parallel and merge their results."""
-
         if not feature_tasks:
             return
 
@@ -4154,7 +4147,6 @@ class CalibratedExplainer:
 
     def _is_lime_enabled(self, is_enabled=None) -> bool:
         """Return whether LIME export is enabled."""
-
         helper = getattr(self, "_lime_helper", None)
         if helper is None:
             helper = self._lime_helper = LimeHelper(self)
@@ -4164,7 +4156,6 @@ class CalibratedExplainer:
 
     def _is_shap_enabled(self, is_enabled=None) -> bool:
         """Return whether SHAP export is enabled."""
-
         helper = getattr(self, "_shap_helper", None)
         if helper is None:
             helper = self._shap_helper = ShapHelper(self)
@@ -4174,7 +4165,6 @@ class CalibratedExplainer:
 
     def _preload_lime(self, x_cal=None):
         """Materialize LIME explainer artifacts when the dependency is available."""
-
         helper = getattr(self, "_lime_helper", None)
         if helper is None:
             helper = self._lime_helper = LimeHelper(self)
@@ -4182,7 +4172,6 @@ class CalibratedExplainer:
 
     def _preload_shap(self, num_test=None):
         """Eagerly compute SHAP explanations to amortize repeated requests."""
-
         helper = getattr(self, "_shap_helper", None)
         if helper is None:
             helper = self._shap_helper = ShapHelper(self)
