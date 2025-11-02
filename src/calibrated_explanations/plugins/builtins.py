@@ -29,6 +29,7 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
+    FastExplanation,
 )
 from ..explanations.explanation import (
     CalibratedExplanation as _AbstractExplanation,
@@ -45,12 +46,15 @@ from .intervals import IntervalCalibratorContext, IntervalCalibratorPlugin
 from .plots import PlotBuilder, PlotRenderContext, PlotRenderer, PlotRenderResult
 from .predict import PredictBridge
 from .registry import (
+    find_explanation_descriptor,
+    find_interval_descriptor,
     register_explanation_plugin,
     register_interval_plugin,
     register_plot_builder,
     register_plot_renderer,
     register_plot_style,
 )
+from ..utils.perturbation import perturb_dataset
 
 
 def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
@@ -696,6 +700,173 @@ class PlotSpecDefaultRenderer(PlotRenderer):
         return PlotRenderResult(artifact=artifact, figure=None, saved_paths=tuple(saved), extras={})
 
 
+def _register_builtin_fast_plugins() -> None:
+    """Register in-tree fallbacks for FAST plugins when extras are unavailable."""
+
+    if find_interval_descriptor("core.interval.fast") is None:
+
+        class BuiltinFastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
+            """FAST interval plugin mirroring the external implementation."""
+
+            plugin_meta = {
+                "name": "core.interval.fast",
+                "schema_version": 1,
+                "version": package_version,
+                "provider": "calibrated_explanations",
+                "capabilities": [
+                    "interval:classification",
+                    "interval:regression",
+                ],
+                "modes": ("classification", "regression"),
+                "dependencies": (),
+                "trusted": True,
+                "trust": {"trusted": True},
+                "fast_compatible": True,
+                "requires_bins": False,
+                "confidence_source": "fast",
+                "legacy_compatible": True,
+            }
+
+            def create(
+                self,
+                context: IntervalCalibratorContext,
+                *,
+                fast: bool = True,
+            ) -> Any:
+                """Return the FAST calibrator list prepared from the explainer state."""
+
+                metadata = context.metadata
+                task = str(metadata.get("task") or metadata.get("mode") or "")
+                explainer = metadata.get("explainer")
+                if explainer is None:
+                    raise RuntimeError("FAST interval context missing 'explainer' handle")
+
+                x_cal, y_cal = context.calibration_splits[0]
+                bins = context.bins.get("calibration")
+                learner = context.learner
+                difficulty = metadata.get("difficulty_estimator")
+                categorical_features = tuple(metadata.get("categorical_features", ()))
+                noise_cfg = metadata.get("noise_config", {})
+                (
+                    explainer.fast_x_cal,
+                    explainer.scaled_x_cal,
+                    explainer.scaled_y_cal,
+                    scale_factor,
+                ) = perturb_dataset(
+                    x_cal,
+                    y_cal,
+                    categorical_features,
+                    noise_type=noise_cfg.get("noise_type"),
+                    scale_factor=noise_cfg.get("scale_factor"),
+                    severity=noise_cfg.get("severity"),
+                    seed=noise_cfg.get("seed"),
+                    rng=noise_cfg.get("rng"),
+                )
+                expanded_bins = np.tile(bins.copy(), scale_factor) if bins is not None else None
+                original_bins = explainer.bins
+                original_x_cal = explainer.x_cal
+                original_y_cal = explainer.y_cal
+                explainer.bins = expanded_bins
+
+                calibrators: list[Any] = []
+                num_features = int(metadata.get("num_features", 0) or 0)
+                if "classification" in task:
+                    from ..core.venn_abers import VennAbers
+
+                    for f in range(num_features):
+                        fast_x_cal = explainer.scaled_x_cal.copy()
+                        fast_x_cal[:, f] = explainer.fast_x_cal[:, f]
+                        calibrators.append(
+                            VennAbers(
+                                fast_x_cal,
+                                explainer.scaled_y_cal,
+                                learner,
+                                explainer.bins,
+                                difficulty_estimator=difficulty,
+                            )
+                        )
+                else:
+                    from ..core.interval_regressor import IntervalRegressor
+
+                    for f in range(num_features):
+                        fast_x_cal = explainer.scaled_x_cal.copy()
+                        fast_x_cal[:, f] = explainer.fast_x_cal[:, f]
+                        explainer.x_cal = fast_x_cal
+                        explainer.y_cal = explainer.scaled_y_cal
+                        calibrators.append(IntervalRegressor(explainer))
+
+                explainer.x_cal = original_x_cal
+                explainer.y_cal = original_y_cal
+                explainer.bins = original_bins
+
+                if "classification" in task:
+                    from ..core.venn_abers import VennAbers
+
+                    calibrators.append(
+                        VennAbers(
+                            x_cal,
+                            y_cal,
+                            learner,
+                            bins,
+                            difficulty_estimator=difficulty,
+                            predict_function=(
+                                metadata.get("predict_function")
+                                if metadata.get("predict_function") is not None
+                                else getattr(explainer, "predict_function", None)
+                            ),
+                        )
+                    )
+                else:
+                    from ..core.interval_regressor import IntervalRegressor
+
+                    calibrators.append(IntervalRegressor(explainer))
+
+                if isinstance(metadata, dict):
+                    metadata.setdefault("fast_calibrators", tuple(calibrators))
+                return calibrators
+
+        register_interval_plugin(
+            "core.interval.fast", BuiltinFastIntervalCalibratorPlugin()
+        )
+
+    if find_explanation_descriptor("core.explanation.fast") is None:
+
+        class BuiltinFastExplanationPlugin(_LegacyExplanationBase):
+            """Legacy wrapper delegating fast explanations to the explainer."""
+
+            plugin_meta = {
+                "name": "core.explanation.fast",
+                "schema_version": 1,
+                "version": package_version,
+                "provider": "calibrated_explanations",
+                "capabilities": [
+                    "explain",
+                    "explanation:fast",
+                    "task:classification",
+                    "task:regression",
+                ],
+                "modes": ("fast",),
+                "tasks": ("classification", "regression"),
+                "dependencies": ("core.interval.fast", "legacy"),
+                "interval_dependency": "core.interval.fast",
+                "plot_dependency": "legacy",
+                "trusted": True,
+                "trust": {"trusted": True},
+            }
+
+            def __init__(self) -> None:
+                super().__init__(
+                    _mode="fast",
+                    _explanation_attr="explain_fast",
+                    _expected_cls=FastExplanation,
+                    plugin_meta=self.plugin_meta,
+                )
+
+        register_explanation_plugin(
+            "core.explanation.fast", BuiltinFastExplanationPlugin()
+        )
+
+
 def _register_builtins() -> None:
     """Register in-tree plugins with the shared registry."""
     register_interval_plugin("core.interval.legacy", LegacyIntervalCalibratorPlugin())
@@ -708,9 +879,12 @@ def _register_builtins() -> None:
     try:
         from external_plugins.fast_explanations import register as _register_fast_plugins
     except ImportError:
-        pass
-    else:
+        _register_fast_plugins = None
+
+    if _register_fast_plugins is not None:
         _register_fast_plugins()
+
+    _register_builtin_fast_plugins()
 
     legacy_builder = LegacyPlotBuilder()
     legacy_renderer = LegacyPlotRenderer()

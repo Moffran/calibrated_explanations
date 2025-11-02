@@ -905,6 +905,11 @@ class CalibratedExplainer:
         self._last_explanation_mode: str | None = None
         self._last_telemetry: Dict[str, Any] = {}
         self._ensure_interval_runtime_state()
+        # Ensure builtin plugins (including optional fast plugins) are registered
+        # before we compute fallback chains. Without this, the initial chain
+        # construction may miss identifiers that are subsequently required during
+        # runtime resolution, causing ConfigurationError during explain_fast.
+        ensure_builtin_plugins()
         for mode in _EXPLANATION_MODES:
             self._explanation_plugin_fallbacks[mode] = self._build_explanation_chain(mode)
         self._interval_plugin_fallbacks["default"] = self._build_interval_chain(fast=False)
@@ -964,17 +969,17 @@ class CalibratedExplainer:
 
         default_identifier = _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode)
         if default_identifier and default_identifier not in seen:
-            if mode == "fast":
-                # Prefer the core fast explanation identifier when available; otherwise
-                # attempt to use the external fast explanation identifier if registered.
-                if find_explanation_descriptor(default_identifier) is not None:
-                    expanded.append(default_identifier)
-                else:
-                    ext_fast = "external.explanation.fast"
-                    if find_explanation_descriptor(ext_fast) is not None:
-                        expanded.append(ext_fast)
-            else:
-                expanded.append(default_identifier)
+            expanded.append(default_identifier)
+            seen.add(default_identifier)
+
+        if mode == "fast":
+            # Allow environments that only ship the external fast plugin to
+            # register under their own identifier while still preferring the
+            # core identifier when it becomes available at runtime.
+            ext_fast = "external.explanation.fast"
+            if ext_fast and ext_fast not in seen:
+                expanded.append(ext_fast)
+                seen.add(ext_fast)
         return tuple(expanded)
 
     def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
@@ -1495,6 +1500,14 @@ class CalibratedExplainer:
                 errors.append(f"{identifier}: error during supports_mode ({exc})")
                 continue
             return plugin, identifier
+
+        if mode == "fast" and "core.explanation.fast" in chain:
+            raise ConfigurationError(
+                "Fast explanation plugin 'core.explanation.fast' is not registered. "
+                'Install the external plugins extra with ``pip install "calibrated-explanations[external-plugins]"`` '
+                "and call ``external_plugins.fast_explanations.register()`` or rerun "
+                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
+            )
 
         raise ConfigurationError(
             "Unable to resolve explanation plugin for mode '"
