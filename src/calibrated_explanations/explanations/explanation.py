@@ -1468,42 +1468,53 @@ class FactualExplanation(CalibratedExplanation):
         column_names = (
             factual.get("feature_names") or factual.get("column_names") or factual.get("rule")
         )
-        if "classification" in self._get_explainer().mode or self.is_thresholded():
-            _plot_probabilistic(
-                self,
-                factual["value"],
-                predict,
-                feature_weights,
-                features_to_plot,
-                filter_top,
-                column_names,
-                title=title,
-                path=path,
-                interval=uncertainty,
-                show=show,
-                idx=self.index,
-                save_ext=save_ext,
-                style_override=style_override,
-                use_legacy=plot_use_legacy,
+        try:
+            if "classification" in self._get_explainer().mode or self.is_thresholded():
+                _plot_probabilistic(
+                    self,
+                    factual["value"],
+                    predict,
+                    feature_weights,
+                    features_to_plot,
+                    filter_top,
+                    column_names,
+                    title=title,
+                    path=path,
+                    interval=uncertainty,
+                    show=show,
+                    idx=self.index,
+                    save_ext=save_ext,
+                    style_override=style_override,
+                    use_legacy=plot_use_legacy,
+                )
+            else:
+                _plot_regression(
+                    self,
+                    factual["value"],
+                    predict,
+                    feature_weights,
+                    features_to_plot,
+                    filter_top,
+                    column_names,
+                    title=title,
+                    path=path,
+                    interval=uncertainty,
+                    show=show,
+                    idx=self.index,
+                    save_ext=save_ext,
+                    style_override=style_override,
+                    use_legacy=plot_use_legacy,
+                )
+        except RuntimeError as exc:  # pragma: no cover - optional dependency path
+            # Missing matplotlib or other plotting dependency: warn and no-op so
+            # core-only test runs do not fail when visualization extras are
+            # unavailable. Tests that require viz should use pytest.importorskip.
+            warnings.warn(
+                f"Plotting unavailable: {exc}",
+                RuntimeWarning,
+                stacklevel=2,
             )
-        else:
-            _plot_regression(
-                self,
-                factual["value"],
-                predict,
-                feature_weights,
-                features_to_plot,
-                filter_top,
-                column_names,
-                title=title,
-                path=path,
-                interval=uncertainty,
-                show=show,
-                idx=self.index,
-                save_ext=save_ext,
-                style_override=style_override,
-                use_legacy=plot_use_legacy,
-            )
+            return None
 
 
 class AlternativeExplanation(CalibratedExplanation):
