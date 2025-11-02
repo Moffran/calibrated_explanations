@@ -24,7 +24,7 @@ papers, benchmark references, and funding acknowledgements.
 - **PMLR 230 (2024):** Multiclass calibration analysis with empirical guarantees
   and tutorial material. Proceedings and artefacts available through the
   [PMLR volume](https://proceedings.mlr.press/v230/lofstrom24a.html) and
-  [conference slides](https://copa-conference.com/presentations/Lofstrom.pdf).
+  [paper/slides (MLResearch assets)](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf).
 - **Annals of Mathematics and Artificial Intelligence (2023):** First study that
   links calibration quality to explanation reliability. DOI:
   [`10.1007/s10472-023-09837-2`](https://doi.org/10.1007/s10472-023-09837-2).
