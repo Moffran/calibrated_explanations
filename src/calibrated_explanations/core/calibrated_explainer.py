@@ -964,8 +964,15 @@ class CalibratedExplainer:
 
         default_identifier = _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode)
         if default_identifier and default_identifier not in seen:
-            if mode == "fast" and find_explanation_descriptor(default_identifier) is None:
-                pass
+            if mode == "fast":
+                # Prefer the core fast explanation identifier when available; otherwise
+                # attempt to use the external fast explanation identifier if registered.
+                if find_explanation_descriptor(default_identifier) is not None:
+                    expanded.append(default_identifier)
+                else:
+                    ext_fast = "external.explanation.fast"
+                    if find_explanation_descriptor(ext_fast) is not None:
+                        expanded.append(ext_fast)
             else:
                 expanded.append(default_identifier)
         return tuple(expanded)
