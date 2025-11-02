@@ -17,6 +17,7 @@ import warnings as _warnings
 import os
 from pathlib import Path
 from collections import Counter, defaultdict
+from functools import partial
 from time import time
 
 import numpy as np
@@ -2381,21 +2382,14 @@ class CalibratedExplainer:
             for start, stop, threshold_slice, bins_slice in ranges
         ]
 
-        def _run(task: Tuple[int, np.ndarray, Any, Any]) -> Tuple[int, CalibratedExplanations]:
-            start_idx, subset, threshold_slice_local, bins_slice_local = task
-            result = self.explain(
-                subset,
-                threshold=threshold_slice_local,
-                low_high_percentiles=low_high_percentiles,
-                bins=bins_slice_local,
-                features_to_ignore=ignore_list,
-                _use_plugin=False,
-                _skip_instance_parallel=True,
-            )
-            return start_idx, result
+        worker = partial(
+            self._instance_parallel_task,
+            low_high_percentiles=low_high_percentiles,
+            ignore_list=ignore_list,
+        )
 
         ordered_results = sorted(
-            executor.map(_run, tasks, work_items=n_instances), key=lambda item: item[0]
+            executor.map(worker, tasks, work_items=n_instances), key=lambda item: item[0]
         )
 
         combined = self._initialize_explanation(
@@ -2417,6 +2411,118 @@ class CalibratedExplainer:
         self.latest_explanation = combined
         self._last_explanation_mode = self._infer_explanation_mode()
         return combined
+
+    def _instance_parallel_task(
+        self,
+        task: Tuple[int, np.ndarray, Any, Any],
+        *,
+        low_high_percentiles,
+        ignore_list: List[int],
+    ) -> Tuple[int, CalibratedExplanations]:
+        """Execute a single instance-chunk explanation task."""
+        start_idx, subset, threshold_slice, bins_slice = task
+        result = self.explain(
+            subset,
+            threshold=threshold_slice,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins_slice,
+            features_to_ignore=ignore_list,
+            _use_plugin=False,
+            _skip_instance_parallel=True,
+        )
+        return start_idx, result
+
+    def _compute_feature_effects(
+        self,
+        features_to_process: Sequence[int],
+        x: np.ndarray,
+        threshold,
+        low_high_percentiles,
+        bins,
+        prediction: Mapping[str, Any],
+        executor: ParallelExecutor | None,
+    ) -> List[Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+        """Compute feature perturbation results, optionally in parallel."""
+
+        worker = partial(
+            self._feature_effect_for_index,
+            x=x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins,
+            baseline_prediction=prediction,
+        )
+
+        if executor is None:
+            return [worker(f_idx) for f_idx in features_to_process]
+
+        work_items = max(len(features_to_process), 1) * max(x.shape[0], 1)
+        return executor.map(worker, features_to_process, work_items=work_items)
+
+    def _feature_effect_for_index(
+        self,
+        f_idx: int,
+        *,
+        x: np.ndarray,
+        threshold,
+        low_high_percentiles,
+        bins,
+        baseline_prediction: Mapping[str, Any],
+    ) -> Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Compute feature-level contributions for ``f_idx``."""
+
+        local_predict, local_low, local_high, _ = self._predict(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins,
+            feature=f_idx,
+        )
+
+        baseline_predict = baseline_prediction["predict"]
+        delta_predict = self._compute_weight_delta(baseline_predict, local_predict)
+        delta_low = self._compute_weight_delta(baseline_predict, local_low)
+        delta_high = self._compute_weight_delta(baseline_predict, local_high)
+
+        weights_low = np.minimum(delta_low, delta_high)
+        weights_high = np.maximum(delta_low, delta_high)
+
+        return (
+            f_idx,
+            np.asarray(delta_predict),
+            np.asarray(weights_low),
+            np.asarray(weights_high),
+            np.asarray(local_predict),
+            np.asarray(local_low),
+            np.asarray(local_high),
+        )
+
+    def _compute_weight_delta(self, baseline, perturbed) -> np.ndarray:
+        """Return the contribution weight delta between *baseline* and *perturbed*."""
+
+        baseline_arr = np.asarray(baseline)
+        perturbed_arr = np.asarray(perturbed)
+
+        if baseline_arr.shape == ():
+            return np.asarray(baseline_arr - perturbed_arr, dtype=float)
+
+        if baseline_arr.shape != perturbed_arr.shape:
+            try:
+                baseline_arr = np.broadcast_to(baseline_arr, perturbed_arr.shape)
+            except ValueError:
+                pass
+
+        try:
+            return np.asarray(baseline_arr - perturbed_arr, dtype=float)
+        except (TypeError, ValueError):
+            baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
+            perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
+            deltas = np.empty_like(perturbed_flat, dtype=float)
+            for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
+                delta_value = self._assign_weight(pert_value, base_value)
+                delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
+                deltas[idx] = float(delta_array[0])
+            return deltas.reshape(perturbed_arr.shape)
 
     @staticmethod
     def _slice_threshold(threshold, start: int, stop: int, total_len: int):
@@ -2955,42 +3061,31 @@ class CalibratedExplainer:
             f for f in range(self.num_features) if f not in self.features_to_ignore
         ]
 
-        def _process_feature(
-            f_idx: int,
-        ) -> Tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-            local_predict, local_low, local_high, _ = self._predict(
-                x,
-                threshold=threshold,
-                low_high_percentiles=low_high_percentiles,
-                bins=bins,
-                feature=f_idx,
-            )
-            weights_predict = np.zeros(len(x))
-            weights_low = np.zeros(len(x))
-            weights_high = np.zeros(len(x))
-            for idx in range(len(x)):
-                weights_predict[idx] = self._assign_weight(
-                    local_predict[idx], prediction["predict"][idx]
-                )
-                tmp_low = self._assign_weight(local_low[idx], prediction["predict"][idx])
-                tmp_high = self._assign_weight(local_high[idx], prediction["predict"][idx])
-                weights_low[idx] = np.min([tmp_low, tmp_high])
-                weights_high[idx] = np.max([tmp_low, tmp_high])
-            return (
-                f_idx,
-                np.asarray(weights_predict),
-                np.asarray(weights_low),
-                np.asarray(weights_high),
-                np.asarray(local_predict),
-                np.asarray(local_low),
-                np.asarray(local_high),
-            )
-
         executor = getattr(self, "_perf_parallel", None)
-        if executor is not None and executor.config.enabled:
-            feature_results = executor.map(_process_feature, features_to_process)
+        if (
+            executor is not None
+            and executor.config.enabled
+            and getattr(executor.config, "granularity", "feature") == "feature"
+        ):
+            feature_results = self._compute_feature_effects(
+                features_to_process,
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                prediction,
+                executor,
+            )
         else:
-            feature_results = [_process_feature(f_idx) for f_idx in features_to_process]
+            feature_results = self._compute_feature_effects(
+                features_to_process,
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                prediction,
+                None,
+            )
 
         for (
             feature_index,
