@@ -11,19 +11,10 @@ import importlib
 import logging as _logging
 
 # Expose viz namespace lazily via __getattr__ (avoid importing heavy backends eagerly)
-from .explanations.explanation import (
-    AlternativeExplanation,  # noqa: F401
-    FactualExplanation,  # noqa: F401
-    FastExplanation,  # noqa: F401
-)
-from .explanations.explanations import AlternativeExplanations, CalibratedExplanations  # noqa: F401
-from .utils.discretizers import (
-    BinaryEntropyDiscretizer,  # noqa: F401
-    BinaryRegressorDiscretizer,  # noqa: F401
-    EntropyDiscretizer,  # noqa: F401
-    RegressorDiscretizer,  # noqa: F401
-)
-from .utils.helper import transform_to_numeric
+# Note: avoid eager imports of explanation, viz and discretizer modules here.
+# Those modules import heavy dependencies (numpy, pandas, plotting backends)
+# and should be loaded lazily via __getattr__ below. Importing them at
+# package import time increases startup cost significantly.
 
 # Provide a default no-op handler to avoid "No handler" warnings for library users.
 _logging.getLogger(__name__).addHandler(_logging.NullHandler())
