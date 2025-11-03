@@ -81,7 +81,7 @@ from .exceptions import (
     ConfigurationError,
     NotFittedError,
 )
-from .explain._helpers import compute_feature_effects as _compute_feature_effects
+from .explain._helpers import compute_feature_effects
 
 
 def _read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
@@ -2961,7 +2961,7 @@ class CalibratedExplainer:
             and executor.config.enabled
             and getattr(executor.config, "granularity", "feature") == "feature"
         ):
-            feature_results = _compute_feature_effects(
+            feature_results = compute_feature_effects(
                 self,
                 features_to_process,
                 x,
@@ -2972,7 +2972,7 @@ class CalibratedExplainer:
                 executor,
             )
         else:
-            feature_results = _compute_feature_effects(
+            feature_results = compute_feature_effects(
                 self,
                 features_to_process,
                 x,
