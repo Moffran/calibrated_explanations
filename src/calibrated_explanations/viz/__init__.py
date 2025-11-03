@@ -10,11 +10,20 @@ tests that depend on the visualization extra.
 """
 
 try:  # guard to make the "viz" package behave like an optional extra
-    import matplotlib  # type: ignore  # only to detect availability
+    # Prefer non-binding availability check to avoid importing the heavy package
+    from importlib import util as _importlib_util
+
+    if _importlib_util.find_spec("matplotlib") is None:
+        raise ModuleNotFoundError(
+            "Visualization requires matplotlib."
+            " Install the 'viz' extra: pip install calibrated_explanations[viz]"
+        )
 except Exception as _exc:  # pragma: no cover - optional dependency path
+    # Chain the exception to distinguish import-time failures from our guard
     raise ModuleNotFoundError(
-        "Visualization requires matplotlib. Install the 'viz' extra: pip install calibrated_explanations[viz]"
-    )
+        "Visualization requires matplotlib."
+        " Install the 'viz' extra: pip install calibrated_explanations[viz]"
+    ) from _exc
 
 from . import matplotlib_adapter, plots
 from .builders import build_regression_bars_spec

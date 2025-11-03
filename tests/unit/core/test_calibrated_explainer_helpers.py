@@ -1,5 +1,4 @@
 import numpy as np
-import types
 
 import pytest
 
@@ -48,7 +47,7 @@ def test_predict_bridge_monitor_records_calls():
     bridge = DummyBridge()
     monitor = _PredictBridgeMonitor(bridge)
     assert not monitor.used
-    res = monitor.predict(np.array([1, 2, 3]), mode="m", task="t")
+    _ = monitor.predict(np.array([1, 2, 3]), mode="m", task="t")
     assert "predict" in monitor.calls
     assert monitor.used
     _ = monitor.predict_interval(np.array([1, 2]), task="t")
@@ -97,7 +96,9 @@ def test_check_explanation_runtime_metadata_various():
     # missing tasks
     good_schema = {"schema_version": ce.EXPLANATION_PROTOCOL_VERSION}
     meta_missing_tasks = dict(good_schema)
-    msg = inst._check_explanation_runtime_metadata(meta_missing_tasks, identifier="id", mode="factual")
+    msg = inst._check_explanation_runtime_metadata(
+        meta_missing_tasks, identifier="id", mode="factual"
+    )
     assert "missing tasks declaration" in msg
 
     # tasks incompatible
@@ -112,7 +113,11 @@ def test_check_explanation_runtime_metadata_various():
     assert "missing modes declaration" in msg
 
     # modes not matching
-    meta_ok = {"schema_version": ce.EXPLANATION_PROTOCOL_VERSION, "tasks": "both", "modes": ("fast",)}
+    meta_ok = {
+        "schema_version": ce.EXPLANATION_PROTOCOL_VERSION,
+        "tasks": "both",
+        "modes": ("fast",),
+    }
     msg = inst._check_explanation_runtime_metadata(meta_ok, identifier="id", mode="factual")
     assert "does not declare mode" in msg
 
@@ -134,7 +139,10 @@ def test_check_explanation_runtime_metadata_various():
             "task:classification",
         ],
     }
-    assert inst._check_explanation_runtime_metadata(meta_valid, identifier="id", mode="factual") is None
+    assert (
+        inst._check_explanation_runtime_metadata(meta_valid, identifier="id", mode="factual")
+        is None
+    )
 
 
 def test_slice_threshold_and_bins():

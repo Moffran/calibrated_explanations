@@ -17,7 +17,6 @@ import warnings as _warnings
 import os
 from pathlib import Path
 from collections import Counter
-from functools import partial
 from time import time
 
 import numpy as np

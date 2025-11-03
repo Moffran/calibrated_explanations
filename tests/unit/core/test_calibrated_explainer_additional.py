@@ -593,7 +593,10 @@ def test_feature_task_ignored_and_no_indices() -> None:
     # weights should be zero since feature is ignored
     assert np.allclose(result[1], np.zeros(2))
     # rule values should be populated
-    _, rule_values_result, *_ = (result[0], result[7],)
+    _, rule_values_result, *_ = (
+        result[0],
+        result[7],
+    )
     assert rule_values_result[0][0] == [1, 2]
 
 
@@ -660,8 +663,8 @@ def test_feature_task_categorical_no_values() -> None:
         high,
         baseline_predict,
         features_to_ignore,
-    categorical_features,
-    feature_values,
+        categorical_features,
+        feature_values,
         feature_indices,
         perturbed_feature,
         lower_boundary,
@@ -677,7 +680,10 @@ def test_feature_task_categorical_no_values() -> None:
     result = _feature_task(args)
     # weights should be zeros and binned_result should have zero-length arrays
     assert np.allclose(result[1], np.zeros(2))
-    _, binned_result, *_ = (result[0], result[8],)
+    _, binned_result, *_ = (
+        result[0],
+        result[8],
+    )
     assert len(binned_result) == 2
 
 
@@ -713,8 +719,8 @@ def test_feature_task_categorical_with_values() -> None:
         high,
         baseline_predict,
         features_to_ignore,
-    categorical_features,
-    feature_values,
+        categorical_features,
+        feature_values,
         feature_indices,
         perturbed_feature,
         lower_boundary,
@@ -768,7 +774,12 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         def map(self, func, items, work_items=None):
             return []
 
-    cfg_empty = ExplainConfig(executor=EmptyExec(), num_features=explainer.num_features, categorical_features=(), feature_values={})
+    cfg_empty = ExplainConfig(
+        executor=EmptyExec(),
+        num_features=explainer.num_features,
+        categorical_features=(),
+        feature_values={},
+    )
     plugin = InstanceParallelExplainPlugin()
 
     empty = plugin.execute(req_empty, cfg_empty, explainer)
@@ -807,7 +818,12 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         bins=None,
         features_to_ignore=np.array([], dtype=int),
     )
-    cfg = ExplainConfig(executor=exec_for_chunks, num_features=explainer.num_features, categorical_features=(), feature_values={})
+    cfg = ExplainConfig(
+        executor=exec_for_chunks,
+        num_features=explainer.num_features,
+        categorical_features=(),
+        feature_values={},
+    )
 
     combined = plugin.execute(req, cfg, explainer)
     # combined should contain the two explanations with indices 0 and 1
@@ -818,8 +834,10 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
 
 
 def test_slice_threshold_and_bins_variants(monkeypatch: pytest.MonkeyPatch) -> None:
-    module = __import__("calibrated_explanations.core.calibrated_explainer", fromlist=["safe_isinstance"]) 
-    expl = DummyLearner()
+    _module = __import__(
+        "calibrated_explanations.core.calibrated_explainer", fromlist=["safe_isinstance"]
+    )
+    _expl = DummyLearner()
     # scalar threshold remains scalar
     assert CalibratedExplainer._slice_threshold(None, 0, 1, 1) is None
     assert CalibratedExplainer._slice_threshold(0.5, 0, 1, 1) == 0.5
@@ -865,8 +883,26 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
     # create a small explainer instance for the plugin to attach results to
     explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
 
-    req = ExplainRequest(x=np.asarray([[1.0, 2.0]]), threshold=None, low_high_percentiles=None, bins=None, features_to_ignore=np.array([], dtype=int))
-    cfg = ExplainConfig(executor=type("E", (), {"config": type("C", (), {"enabled": True, "min_batch_size": 2}), "map": lambda *_a, **_k: []})(), num_features=2, categorical_features=(), feature_values={})
+    req = ExplainRequest(
+        x=np.asarray([[1.0, 2.0]]),
+        threshold=None,
+        low_high_percentiles=None,
+        bins=None,
+        features_to_ignore=np.array([], dtype=int),
+    )
+    cfg = ExplainConfig(
+        executor=type(
+            "E",
+            (),
+            {
+                "config": type("C", (), {"enabled": True, "min_batch_size": 2}),
+                "map": lambda *_a, **_k: [],
+            },
+        )(),
+        num_features=2,
+        categorical_features=(),
+        feature_values={},
+    )
 
     out = plugin.execute(req, cfg, explainer)
     # sequential plugin was invoked once for the single chunk
@@ -1018,9 +1054,16 @@ def test_compute_weight_delta_variants_and_merge_feature_result() -> None:
     predict_matrix = np.zeros((n_inst, n_feat))
     low_matrix = np.zeros((n_inst, n_feat))
     high_matrix = np.zeros((n_inst, n_feat))
-    rule_values = [dict() for _ in range(n_inst)]
+    rule_values = [{} for _ in range(n_inst)]
     instance_binned = [
-        {"predict": [None] * n_feat, "low": [None] * n_feat, "high": [None] * n_feat, "current_bin": [None] * n_feat, "counts": [None] * n_feat, "fractions": [None] * n_feat}
+        {
+            "predict": [None] * n_feat,
+            "low": [None] * n_feat,
+            "high": [None] * n_feat,
+            "current_bin": [None] * n_feat,
+            "counts": [None] * n_feat,
+            "fractions": [None] * n_feat,
+        }
         for _ in range(n_inst)
     ]
     rule_boundaries = np.zeros((n_inst, n_feat, 2))
@@ -1056,7 +1099,12 @@ def test_package_init_lazy_attributes_smoke() -> None:
     pkg = importlib.import_module("calibrated_explanations")
     assert hasattr(pkg, "__version__")
 
-    for name in ("transform_to_numeric", "CalibratedExplainer", "WrapCalibratedExplainer", "VennAbers"):
+    for name in (
+        "transform_to_numeric",
+        "CalibratedExplainer",
+        "WrapCalibratedExplainer",
+        "VennAbers",
+    ):
         try:
             getattr(pkg, name)
         except Exception:
@@ -1080,7 +1128,9 @@ def test_force_mark_lines_for_coverage() -> None:
     targets = [
         os.path.join(repo_root, "src", "calibrated_explanations", "plotting.py"),
         os.path.join(repo_root, "src", "calibrated_explanations", "core", "explain", "_helpers.py"),
-        os.path.join(repo_root, "src", "calibrated_explanations", "explanations", "explanations.py"),
+        os.path.join(
+            repo_root, "src", "calibrated_explanations", "explanations", "explanations.py"
+        ),
     ]
 
     # Generate a block of benign statements and exec them with the target

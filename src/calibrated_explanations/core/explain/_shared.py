@@ -6,10 +6,210 @@ and instance-parallel explain plugins per the plugin decomposition strategy.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass, field
+from time import time
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
+
+# Access to protected explainer internals is intentional in this module
+# Some names (e.g. dataclass fields) follow existing project API and are
+# intentionally short; suppress style warnings for those cases.
+# pylint: disable=protected-access,invalid-name
+
+
+def build_feature_tasks(
+    explainer,
+    x_input: np.ndarray,
+    perturbed_feature,
+    x_cal,
+    features_to_ignore_array: np.ndarray,
+    config: "ExplainConfig",
+    rule_boundaries: np.ndarray,
+    lesser_values: Mapping | Any,
+    greater_values: Mapping | Any,
+    covered_values: Mapping | Any,
+    predict: Any,
+    low: Any,
+    high: Any,
+    baseline_predict: Any,
+) -> List[Tuple[Any, ...]]:  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches
+    """Build the per-feature task tuples used by the explain plugins.
+
+    This consolidates the duplicate logic from sequential and feature-parallel
+    plugins so both can reuse a single, tested implementation.
+    """
+    perturbed_feature = np.asarray(perturbed_feature, dtype=object)
+    x_cal_np = np.asarray(x_cal)
+
+    # Build feature index map for quick lookup
+    if perturbed_feature.size:
+        feature_ids = perturbed_feature[:, 0].astype(int)
+        feature_index_lists: Dict[int, List[int]] = defaultdict(list)
+        for idx, fid in enumerate(feature_ids):
+            feature_index_lists[int(fid)].append(idx)
+        feature_index_map = {
+            fid: np.asarray(indices, dtype=int) for fid, indices in feature_index_lists.items()
+        }
+    else:
+        feature_index_map = {}
+
+    # Get calibration summaries for fast lookups
+    categorical_value_counts, numeric_sorted_cache = explainer._get_calibration_summaries(x_cal_np)
+
+    features_to_ignore_set = set(features_to_ignore_array.tolist())
+    features_to_ignore_tuple = tuple(int(f) for f in features_to_ignore_set)
+    categorical_features_tuple = tuple(int(f) for f in config.categorical_features)
+    feature_values_all = config.feature_values
+
+    # Build feature tasks
+    feature_tasks: List[Tuple[Any, ...]] = []
+
+    for feature_idx in range(config.num_features):
+        feature_indices = feature_index_map.get(feature_idx)
+        lower_boundary = np.array(rule_boundaries[:, feature_idx, 0], copy=True)
+        upper_boundary = np.array(rule_boundaries[:, feature_idx, 1], copy=True)
+
+        # Extract feature-specific value mappings
+        if isinstance(lesser_values, Mapping):
+            lesser_feature = lesser_values.get(feature_idx, {})
+        else:
+            try:
+                lesser_feature = lesser_values[feature_idx]
+            except (IndexError, KeyError, TypeError):
+                lesser_feature = {}
+
+        if isinstance(greater_values, Mapping):
+            greater_feature = greater_values.get(feature_idx, {})
+        else:
+            try:
+                greater_feature = greater_values[feature_idx]
+            except (IndexError, KeyError, TypeError):
+                greater_feature = {}
+
+        if isinstance(covered_values, Mapping):
+            covered_feature = covered_values.get(feature_idx, {})
+        else:
+            try:
+                covered_feature = covered_values[feature_idx]
+            except (IndexError, KeyError, TypeError):
+                covered_feature = {}
+
+        value_counts_cache = categorical_value_counts.get(int(feature_idx), {})
+        numeric_sorted_values = numeric_sorted_cache.get(feature_idx)
+
+        # Extract feature columns safely
+        if (
+            isinstance(x_cal_np, np.ndarray)
+            and x_cal_np.ndim >= 2
+            and x_cal_np.shape[0]
+            and feature_idx < x_cal_np.shape[1]
+        ):
+            x_cal_column = np.asarray(x_cal_np[:, feature_idx])
+        else:
+            x_cal_column = np.empty((0,))
+        x_column = np.asarray(x_input[:, feature_idx])
+
+        feature_tasks.append(
+            (
+                feature_idx,
+                x_column,
+                predict,
+                low,
+                high,
+                baseline_predict,
+                features_to_ignore_tuple,
+                categorical_features_tuple,
+                feature_values_all,
+                feature_indices,
+                perturbed_feature,
+                lower_boundary,
+                upper_boundary,
+                lesser_feature,
+                greater_feature,
+                covered_feature,
+                value_counts_cache,
+                numeric_sorted_values,
+                x_cal_column,
+            )
+        )
+
+    return feature_tasks
+
+
+def finalize_explanation(
+    explanation,
+    weights_predict,
+    weights_low,
+    weights_high,
+    predict_matrix,
+    low_matrix,
+    high_matrix,
+    rule_values,
+    instance_binned,
+    rule_boundaries,
+    prediction,
+    instance_start_time: float,
+    total_start_time: float,
+    explainer,
+):  # pylint: disable=too-many-arguments,too-many-locals
+    """Aggregate buffers into the final explanation and update explainer state.
+
+    Returns the finalized explanation object.
+    """
+    # Some callers pass rule_boundaries but this function does not use it;
+    # reference it to satisfy linters.
+    _ = rule_boundaries
+    n_instances = weights_predict.shape[0]
+
+    binned_predict: Dict[str, List[Any]] = {
+        "predict": [],
+        "low": [],
+        "high": [],
+        "current_bin": [],
+        "rule_values": [],
+        "counts": [],
+        "fractions": [],
+    }
+    feature_weights: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
+    feature_predict: Dict[str, List[np.ndarray]] = {"predict": [], "low": [], "high": []}
+
+    for i in range(n_instances):
+        binned_predict["predict"].append(instance_binned[i]["predict"])
+        binned_predict["low"].append(instance_binned[i]["low"])
+        binned_predict["high"].append(instance_binned[i]["high"])
+        binned_predict["current_bin"].append(instance_binned[i]["current_bin"])
+        binned_predict["rule_values"].append(rule_values[i])
+        binned_predict["counts"].append(instance_binned[i]["counts"])
+        binned_predict["fractions"].append(instance_binned[i]["fractions"])
+
+        feature_weights["predict"].append(weights_predict[i].copy())
+        feature_weights["low"].append(weights_low[i].copy())
+        feature_weights["high"].append(weights_high[i].copy())
+
+        feature_predict["predict"].append(predict_matrix[i].copy())
+        feature_predict["low"].append(low_matrix[i].copy())
+        feature_predict["high"].append(high_matrix[i].copy())
+
+    elapsed_time = time() - instance_start_time
+    list_instance_time = [elapsed_time / n_instances for _ in range(n_instances)]
+    total_time = time() - total_start_time
+
+    explanation = explanation.finalize(
+        binned_predict,
+        feature_weights,
+        feature_predict,
+        prediction,
+        instance_time=list_instance_time,
+        total_time=total_time,
+    )
+
+    # Update explainer state
+    explainer.latest_explanation = explanation
+    explainer._last_explanation_mode = explainer._infer_explanation_mode()
+
+    return explanation
 
 
 @dataclass(frozen=True)
@@ -157,4 +357,6 @@ __all__ = [
     "ExplainConfig",
     "ExplainRequest",
     "ExplainResponse",
+    "build_feature_tasks",
+    "finalize_explanation",
 ]
