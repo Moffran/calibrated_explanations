@@ -41,7 +41,7 @@ RNG_SEED: int = 41
 # Keep timings reasonably stable without making the benchmark prohibitively
 # slow.  Warm-up iterations help avoid start-up noise (especially for process
 # pools) while the repeat count smooths out fluctuations.
-TIMING_REPEAT: int = 5
+TIMING_REPEAT: int = 1
 TIMING_WARMUP: int = 1
 
 EXPLANATION_APIS: Tuple[str, ...] = ("explain_factual", "explore_alternatives")

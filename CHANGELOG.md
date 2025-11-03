@@ -5,6 +5,8 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...main)
 
+Note: Streaming-friendly, generator/chunked explanation exports were intentionally deferred for v0.9.0 and scheduled for follow-up in v0.9.1 — interim batching guidance and rationale are recorded in `improvement_docs/OSS_CE_scope_and_gaps.md` and `docs/foundations/how-to/export_explanations.md`.
+
 ## Highlights
 
 - **Plugin-based explain architecture.** All explain logic (sequential,
