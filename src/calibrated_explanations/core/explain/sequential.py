@@ -15,7 +15,7 @@ import numpy as np
 
 from ...explanations import CalibratedExplanations
 from ._base import BaseExplainPlugin
-from ._helpers import explain_predict_step, initialize_explanation
+from ._helpers import explain_predict_step, initialize_explanation, merge_feature_result
 from ._shared import ExplainConfig, ExplainRequest
 
 if TYPE_CHECKING:
@@ -231,7 +231,7 @@ class SequentialExplainPlugin(BaseExplainPlugin):
         # Step 4: Process features sequentially
         for task in feature_tasks:
             result = _feature_task(task)
-            explainer._merge_feature_result(
+            merge_feature_result(
                 result,
                 weights_predict,
                 weights_low,

@@ -739,15 +739,39 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
     y_cal = np.array([0, 1])
     explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
 
-    # Empty instances -> early return
-    empty = explainer._explain_parallel_instances(
-        np.zeros((0, explainer.num_features)),
+    # Use the instance-parallel plugin to exercise instance-chunk combining
+    from calibrated_explanations.core.explain.parallel_instance import (
+        InstanceParallelExplainPlugin,
+    )
+    from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
+
+    # create a simple explainer instance used by the fake sequential execute
+    explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
+
+    # Empty instances -> early return via plugin
+    req_empty = ExplainRequest(
+        x=np.zeros((0, explainer.num_features)),
         threshold=None,
         low_high_percentiles=None,
         bins=None,
-        features_to_ignore_array=np.array([], dtype=int),
-        executor=type("E", (), {"config": type("C", (), {"min_batch_size": 1}), "map": lambda *_args, **_k: []})(),
+        features_to_ignore=np.array([], dtype=int),
     )
+
+    class EmptyExec:
+        class Config:
+            enabled = True
+            min_batch_size = 1
+
+        def __init__(self):
+            self.config = self.Config()
+
+        def map(self, func, items, work_items=None):
+            return []
+
+    cfg_empty = ExplainConfig(executor=EmptyExec(), num_features=explainer.num_features, categorical_features=(), feature_values={})
+    plugin = InstanceParallelExplainPlugin()
+
+    empty = plugin.execute(req_empty, cfg_empty, explainer)
     assert isinstance(empty, CalibratedExplanations)
     assert explainer.latest_explanation is empty
 
@@ -756,6 +780,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
 
     class DummyExecutor:
         class Config:
+            enabled = True
             min_batch_size = 1
 
         def __init__(self, results):
@@ -763,7 +788,6 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
             self._results = results
 
         def map(self, func, tasks, work_items=None):
-            # ignore func and simply return our prepared results aligned with tasks
             return self._results
 
     # prepare two chunk results with one explanation each
@@ -774,17 +798,18 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         return (start, ce)
 
     results = [make_chunk(0, x[0:1]), make_chunk(1, x[1:3])]
-    executor = DummyExecutor(results)
+    exec_for_chunks = DummyExecutor(results)
 
-    combined = explainer._explain_parallel_instances(
-        x,
+    req = ExplainRequest(
+        x=x,
         threshold=None,
         low_high_percentiles=None,
         bins=None,
-        features_to_ignore_array=np.array([], dtype=int),
-        executor=executor,
+        features_to_ignore=np.array([], dtype=int),
     )
+    cfg = ExplainConfig(executor=exec_for_chunks, num_features=explainer.num_features, categorical_features=(), feature_values={})
 
+    combined = plugin.execute(req, cfg, explainer)
     # combined should contain the two explanations with indices 0 and 1
     assert isinstance(combined, CalibratedExplanations)
     assert len(combined.explanations) == 2
@@ -816,28 +841,37 @@ def test_slice_threshold_and_bins_variants(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Create a mock explainer whose explain returns a CalibratedExplanations with one stub
-    class E(CalibratedExplainer):
-        pass
+    # Verify instance-parallel plugin invokes per-chunk processing (sequential plugin)
+    from calibrated_explanations.core.explain.parallel_instance import (
+        InstanceParallelExplainPlugin,
+    )
+    from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
 
-    expl = E(DummyLearner(), np.ones((1, 1)), np.array([0]))
+    plugin = InstanceParallelExplainPlugin()
 
+    # Replace the internal sequential plugin execute with a fake that records calls
     called: list[tuple] = []
 
-    def fake_explain(self, subset, *args, **kwargs):
-        called.append((subset.shape[0], args, kwargs))
-        ce = CalibratedExplanations(expl, subset, None, None)
+    def fake_seq_execute(req, cfg, expl):
+        called.append((req.x.shape[0], req.threshold, req.bins))
+        ce = CalibratedExplanations(expl, req.x, None, None)
         stub = type("S", (), {})()
         ce.explanations.append(stub)
         return ce
 
-    monkeypatch.setattr(CalibratedExplainer, "explain", fake_explain)
+    plugin._sequential_plugin.execute = fake_seq_execute
 
-    task = (0, np.asarray([[1.0, 2.0]]), None, None)
-    start, result = expl._instance_parallel_task(task, low_high_percentiles=None, ignore_list=[])
-    assert start == 0
-    assert isinstance(result, CalibratedExplanations)
+    # Single chunk will delegate to sequential plugin via InstanceParallelExplainPlugin
+    # create a small explainer instance for the plugin to attach results to
+    explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
+
+    req = ExplainRequest(x=np.asarray([[1.0, 2.0]]), threshold=None, low_high_percentiles=None, bins=None, features_to_ignore=np.array([], dtype=int))
+    cfg = ExplainConfig(executor=type("E", (), {"config": type("C", (), {"enabled": True, "min_batch_size": 2}), "map": lambda *_a, **_k: []})(), num_features=2, categorical_features=(), feature_values={})
+
+    out = plugin.execute(req, cfg, explainer)
+    # sequential plugin was invoked once for the single chunk
     assert len(called) == 1
+    assert isinstance(out, CalibratedExplanations)
 
 
 def test_feature_task_numeric_branch_basic() -> None:

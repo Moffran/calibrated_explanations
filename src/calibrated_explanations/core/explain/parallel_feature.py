@@ -15,7 +15,7 @@ import numpy as np
 
 from ...explanations import CalibratedExplanations
 from ._base import BaseExplainPlugin
-from ._helpers import explain_predict_step, initialize_explanation
+from ._helpers import explain_predict_step, initialize_explanation, merge_feature_result
 from ._shared import ExplainConfig, ExplainRequest
 
 if TYPE_CHECKING:
@@ -242,7 +242,7 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
 
             # Merge results in sorted order to ensure determinism
             for result in sorted(results, key=lambda item: item[0]):
-                explainer._merge_feature_result(
+                merge_feature_result(
                     result,
                     weights_predict,
                     weights_low,
