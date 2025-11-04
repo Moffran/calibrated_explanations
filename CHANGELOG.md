@@ -9,6 +9,18 @@ Note: Streaming-friendly, generator/chunked explanation exports were intentional
 
 ## Highlights
 
+- **ADR alignment audit: Factual vs Alternative explanations.** Conducted comprehensive
+  review of all ADRs (ADR-005, ADR-008, ADR-013, ADR-015, ADR-021, ADR-026) to ensure
+  full alignment with paper-consistent semantics for factual and alternative explanations.
+  Added formal rule definitions to ADR-008, interval propagation contracts to ADR-013,
+  factual/alternative payload requirements to ADR-015, feature-level interval semantics
+  to ADR-021, and factual/alternative calibration contracts and validation criteria to
+  ADR-026. All ADRs now explicitly document that alternative explanations include a
+  reference calibrated prediction with uncertainty interval, feature weights in factual
+  rules have calibrated intervals, and all `[low, high]` pairs must satisfy the inclusive
+  bounds invariant. This audit ensures consistency across all explanation generation paths
+  and provides explicit guidance for plugin developers.【F:improvement_docs/adrs/ADR-008-explanation-domain-model-and-compat.md†L45-L75】【F:improvement_docs/adrs/ADR-013-interval-calibrator-plugin-strategy.md†L80-L110】【F:improvement_docs/adrs/ADR-015-explanation-plugin.md†L151-L210】【F:improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md†L120-L150】【F:improvement_docs/adrs/ADR-026-explanation-plugin-semantics.md†L84-L165】
+
 - **Plugin-based explain architecture.** All explain logic (sequential,
   feature-parallel, instance-parallel) now lives in dedicated plugins under
   `core/explain/`, replacing the monolithic branching in `CalibratedExplainer.explain`.

@@ -75,7 +75,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 
 - **Domain model not authoritative source** (severity 20, critical) → `v0.11.0 domain model & preprocessing finalisation`. Shift runtime flows to use domain objects natively and keep legacy dicts as adapters.
 - **Legacy-to-domain round-trip fails for conjunctive rules** (severity 12, high) → `v0.11.0 domain model & preprocessing finalisation`. Fix conversion helpers and add fixtures.
-- **Structured model/calibration metadata absent** (severity 12, high) → `v0.11.0 domain model & preprocessing finalisation`. Extend dataclasses with calibration/model metadata per ADR-008.
+- **Structured model/calibration metadata absent** (severity 12, high) → `v0.11.0 domain model & preprocessing finalisation`. Extend dataclasses with calibration/model metadata per ADR-008. *Status 2025-11-04: Factual/alternative payload structures clarified with formal definitions; implementation work remains.*
 - **Golden fixture parity tests missing** (severity 6, medium) → `v0.11.0 domain model & preprocessing finalisation`. Add byte-level fixtures for serialization/regression coverage.
 - **`_safe_pick` silently duplicates data** (severity 6, medium) → `v0.11.0 domain model & preprocessing finalisation`. Enforce invariant checks with targeted exceptions.
 
@@ -113,8 +113,8 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 
 - **Runtime skips protocol validation for calibrators** (severity 20, critical) → `v0.10.2 plugin trust & packaging compliance`. Enforce protocol validation before activation.
 - **FAST plugin returns non-protocol collections** (severity 15, critical) → `v0.10.2 plugin trust & packaging compliance`. Refactor FAST plugin outputs to protocol objects.
-- **Interval context remains mutable** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Supply frozen contexts and document immutability.
-- **Legacy default plugin rebuilds calibrators** (severity 9, high) → `v0.10.2 plugin trust & packaging compliance`. Return frozen instances per ADR guidance.
+- **Interval context remains mutable** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Supply frozen contexts and document immutability. *Status 2025-11-04: Read-only requirement clarified in ADR-013 interval propagation section.*
+- **Legacy default plugin rebuilds calibrators** (severity 9, high) → `v0.10.2 plugin trust & packaging compliance`. Return frozen instances per ADR guidance. *Status 2025-11-04: Frozen instance requirement clarified in ADR-013.*
 - **CLI interval validation commands missing** (severity 4, low) → `v0.10.2 plugin trust & packaging compliance`. Add CLI commands for validation and document usage.
 
 ### ADR-014 – Visualization Plugin Architecture
@@ -133,9 +133,9 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **In-tree FAST plugin missing** (severity 15, critical) → `v0.10.2 plugin trust & packaging compliance`. Provide default FAST plugin aligned with ADR.
 - **Collection reconstruction bypassed** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Ensure collections rebuild with canonical metadata.
 - **Trust enforcement during resolution lax** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Harden resolver trust checks.
-- **Predict bridge omits interval invariants** (severity 12, high) → `v0.10.0 runtime boundary realignment`. Enforce interval invariants inside prediction bridge.
+- **Predict bridge omits interval invariants** (severity 12, high) → `v0.10.0 runtime boundary realignment`. Enforce interval invariants inside prediction bridge. *Status 2025-11-04: Explicit payload structures and invariant contracts documented in ADR-015 subsections 2a/2b.*
 - **Environment variable names diverge** (severity 6, medium) → `v0.10.2 plugin trust & packaging compliance`. Align env var names and document them.
-- **Helper handles expose mutable explainer** (severity 6, medium) → `v0.10.2 plugin trust & packaging compliance`. Provide immutable handles to plugins.
+- **Helper handles expose mutable explainer** (severity 6, medium) → `v0.10.2 plugin trust & packaging compliance`. Provide immutable handles to plugins. *Status 2025-11-04: Plugin immutability requirement clarified in ADR-015.*
 
 ### ADR-016 – PlotSpec Separation and Schema
 
@@ -178,7 +178,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 
 ### ADR-021 – Calibrated Interval Semantics
 
-- **Interval invariants never enforced** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Enforce invariants in prediction bridges and serializers.
+- **Interval invariants never enforced** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Enforce invariants in prediction bridges and serializers. *Status 2025-11-04: Invariant contract clarified uniformly across three levels (prediction, feature-weight, scenario) in ADR-021 subsections 4a-4b; enforcement remains for v0.10.0.*
 - **FAST explanations drop probability cubes** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Extend FAST exports with probability metadata.
 - **JSON export stores live callables** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. Serialize immutable metadata instead of callables.
 
@@ -209,8 +209,8 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 
 ### ADR-026 – Explanation Plugin Semantics
 
-- **Predict bridge skips interval invariant checks** (severity 15, critical) → `v0.10.0 runtime boundary realignment`. Add invariant checks and tests.
-- **Explanation context exposes mutable dicts** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Return frozen contexts to plugins.
+- **Predict bridge skips interval invariant checks** (severity 15, critical) → `v0.10.0 runtime boundary realignment`. Add invariant checks and tests. *Status 2025-11-04: Calibration contract and validation requirements clarified in ADR-026 subsections 2a/2b/3a/3b.*
+- **Explanation context exposes mutable dicts** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Return frozen contexts to plugins. *Status 2025-11-04: Frozen context requirement clarified in ADR-026 subsection 1.*
 - **Telemetry omits interval dependency hints** (severity 6, medium) → `v0.10.2 plugin trust & packaging compliance`. Extend telemetry payloads with dependency hints.
 - **Mondrian bins left mutable in requests** (severity 4, low) → `v0.10.2 plugin trust & packaging compliance`. Freeze bins within request objects.
 

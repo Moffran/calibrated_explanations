@@ -44,6 +44,25 @@ implementations **must** preserve these semantics:
   feature-weight deltas are auxiliary metadata used for ranking but do not
   replace the prediction interval in the primary payload.
 
+### Formal Rule Definitions
+
+A **factual condition** is a predicate that captures a threshold condition (numeric) or
+exact value (categorical) of a feature instance. Examples:
+
+- "numeric_feature_x <= 0.5" (if value is equal to or below 0.5) or "numeric_feature_x > 0.5" (if value is above 0.5)
+- "nominal_feature_x = cat_y" (if value is equal to cat_y)
+
+An **alternative condition** is a predicate for a counterfactual or
+hypothetical feature value. Examples:
+
+- "numeric_feature_x <= 0.5" (if value is above 0.5) or "numeric_feature_x > 0.5" (if value is equal to or below 0.5)
+- "nominal_feature_x = cat_y" (if value is not cat_y)
+
+Each condition is paired with:
+
+- In factual rules: a calibrated feature weight + uncertainty interval
+- In alternative rules: a calibrated prediction + uncertainty interval
+
 Adapters that serialise to legacy dicts or JSON schemas must retain these
 invariants so downstream consumers continue to receive paper-consistent
 explanations.

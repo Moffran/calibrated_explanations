@@ -80,7 +80,36 @@ clear contract without duplicating the in-tree implementation details.
   discard the return value but must perform a calibrated call so telemetry and
   interval tracking remain consistent.【F:src/calibrated_explanations/plugins/builtins.py†L321-L348】
 
-### 3. Expected batch structure and collection materialisation
+### 2a. Factual Explanation Calibration Contract
+
+When a plugin generates factual explanations:
+
+* It must invoke the calibrated prediction bridge for the original instance.
+* The bridge call yields `(predict, low, high)` for the instance.
+* Subsequent feature perturbations are evaluated using the same interval calibrator.
+* Each perturbed feature value produces a calibrated feature weight + interval.
+* The batch must embed the original instance prediction interval.
+
+Plugins delegating to legacy code must ensure that `CalibratedExplainer`
+methods are called only once per explanation to avoid recalibration drift.
+
+### 2b. Alternative Explanation Calibration Contract
+
+When a plugin generates alternative explanations:
+
+* It must invoke the calibrated prediction bridge for the original instance
+  to establish the reference prediction.
+* For each alternative condition, it must invoke the bridge with the
+  alternative feature values.
+* Each bridge call yields `(predict, low, high)` for that scenario.
+* The batch must include:
+  * The reference prediction interval (from original instance)
+  * Per-rule scenario predictions + intervals (from alternative bridge calls)
+* Feature-weight deltas may be computed but must NOT replace the
+  scenario-level prediction interval in the rule.
+
+The bridge monitor ensures all calibrated calls are recorded; omitting
+either the reference or an alternative call is a configuration error.
 
 * `explain_batch` must return an `ExplanationBatch` whose `container_cls`
   inherits from `CalibratedExplanations`, whose `explanation_cls` derives from
@@ -101,6 +130,24 @@ clear contract without duplicating the in-tree implementation details.
   attributes (`prediction_interval`, `feature_names`, `class_labels`, cached
   predictions/probabilities, etc.) that the legacy `CalibratedExplanations`
   supplies, otherwise helpers and JSON/plot exports will diverge.【F:src/calibrated_explanations/explanations/explanations.py†L24-L249】
+
+### 3a. Validation of Factual Batches
+
+The validator must check:
+
+* Each rule includes `weight` and `weight_interval` (low/high bounds)
+* Each rule `condition` is tied to the instance's observed feature value
+* Batch includes the original calibrated prediction interval
+* All weight intervals satisfy `weight_low <= weight <= weight_high`
+
+### 3b. Validation of Alternative Batches
+
+The validator must check:
+
+* Batch includes `reference_prediction` with interval
+* Each rule includes `predicted_value` and `prediction_interval` (low/high)
+* No rule has a `predicted_value` outside its `[prediction_low, prediction_high]` bounds
+* All alternative conditions differ from the factual condition (validation optional but recommended)
 
 ### 4. Interaction with interval and plot plugins
 
