@@ -1,4 +1,3 @@
----
 # Plugin overview
 
 This page is an index for contributor-facing plugin documentation. The
