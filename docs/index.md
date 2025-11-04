@@ -102,4 +102,5 @@ foundations/index
 appendices/external_plugins
 appendices/changelog_links
 citing
+plugins
 ```
