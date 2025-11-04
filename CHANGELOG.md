@@ -29,6 +29,8 @@ Note: Streaming-friendly, generator/chunked explanation exports were intentional
 
 ### Release plan alignment
 
+- **Explanation schema v1 and ADR-005/008 compliance:** Updated explanation JSON schema v1 to include 
+  `explanation_type` field distinguishing factual and alternative explanations, aligned ADR-005 with paper-compliant semantics from ADR-008, and ensured all domain models, serialization, and adapters preserve the calibrated prediction baseline for both explanation types. This establishes stable round-trip serialization for instance-based explanations as defined in the CE papers.【F:docs/schema_v1.md†L1-L50】【F:improvement_docs/adrs/ADR-005-explanation-json-schema-versioning.md†L1-L80】【F:improvement_docs/adrs/ADR-008-explanation-domain-model-and-compat.md†L1-L60】【F:src/calibrated_explanations/schemas/explanation_schema_v1.json†L1-L40】
 - **Explain plugin decomposition (ADR-004 compliance):** Moved all explain execution
   strategies into a plugin system (`src/calibrated_explanations/core/explain/`)
   with three implementations: `SequentialExplainPlugin` (single-threaded fallback),
@@ -62,10 +64,7 @@ Note: Streaming-friendly, generator/chunked explanation exports were intentional
   `legacy/_interval_regressor.py`, `legacy/_venn_abers.py`, and `legacy/_plots*.py`),
   and tightened coverage thresholds to 88% alongside Codecov patch gates that focus
   on runtime and calibration modules.【F:.github/workflows/lint.yml†L38-L86】【F:src/calibrated_explanations/core/_legacy_explain.py†L1-L110】【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】【F:src/calibrated_explanations/legacy/__init__.py†L1-L6】
-- **Runtime performance polish (Task 11):** Added opt-in calibrator caching,
-  parallel execution controls, and refactored perturbation/discretisation
-  routines so explain latency improves without altering calibrated outputs.
-  Telemetry-ready factories encapsulate the new knobs for plugin authors.【F:src/calibrated_explanations/perf/__init__.py†L1-L52】【F:src/calibrated_explanations/perf/cache.py†L1-L120】【F:src/calibrated_explanations/core/calibrated_explainer.py†L199-L377】
+- **Runtime performance polish (Task 11):** Implemented opt-in calibrator cache with LRU eviction, multiprocessing toggle via ParallelExecutor facade, and vectorized perturbation handling. Added performance guidance for plugin authors in docs/contributor/plugin-contract.md. Cache and parallel primitives integrated into explain pipeline without altering calibration semantics.【F:src/calibrated_explanations/perf/__init__.py†L1-L52】【F:src/calibrated_explanations/perf/cache.py†L1-L120】【F:src/calibrated_explanations/core/calibrated_explainer.py†L199-L377】
 - **Documentation-first plugin governance (Task 12):** Expanded CLI and
   registry tests to surface denied identifiers, audit trusted plugins, and keep
   the governance narrative inline with the release checklist.【F:tests/plugins/test_cli.py†L74-L152】【F:docs/governance/release_checklist.md†L1-L92】【F:src/calibrated_explanations/plugins/registry.py†L84-L154】

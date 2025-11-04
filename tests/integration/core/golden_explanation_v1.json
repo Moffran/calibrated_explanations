@@ -1,8 +1,11 @@
 {
   "index": 0,
+  "explanation_type": "factual",
   "metadata": null,
   "prediction": {
-    "y": 1
+    "predict": 1,
+    "low": 0.9,
+    "high": 1.1
   },
   "provenance": null,
   "rules": [
@@ -12,13 +15,17 @@
       "feature_value": null,
       "instance_prediction": null,
       "is_conjunctive": false,
-      "prediction": {
-        "pred": 0.0
+      "rule_prediction": {
+        "predict": 0.0,
+        "low": -0.1,
+        "high": 0.1
       },
       "rule": "r1",
       "value_str": null,
-      "weight": {
-        "weight": 0.1
+      "rule_weight": {
+        "predict": 0.1,
+        "low": 0.05,
+        "high": 0.15
       }
     },
     {
@@ -27,13 +34,17 @@
       "feature_value": null,
       "instance_prediction": null,
       "is_conjunctive": false,
-      "prediction": {
-        "pred": 1.0
+      "rule_prediction": {
+        "predict": 1.0,
+        "low": 0.9,
+        "high": 1.1
       },
       "rule": "r2",
       "value_str": null,
-      "weight": {
-        "weight": 0.2
+      "rule_weight": {
+        "predict": 0.2,
+        "low": 0.15,
+        "high": 0.25
       }
     }
   ],

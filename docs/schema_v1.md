@@ -11,7 +11,8 @@ This page summarizes the stable JSON contract for serialized explanations in v0.
 - `schema_version` (string, optional; recommended): fixed `"1.0.0"`.
 - `task` (string): e.g., `classification` or `regression`.
 - `index` (integer): item index the explanation refers to.
-- `prediction` (object): calibrated prediction values, e.g., `{predict, low, high}`.
+- `explanation_type` (string): either `"factual"` or `"alternative"`.
+- `prediction` (object): calibrated prediction values from the underlying model, e.g., `{predict, low, high}` with uncertainty interval. This is always the factual calibrated prediction for reference.
 - `rules` (array of objects): feature rules composing the explanation.
 - `provenance` (object|null): optional metadata (library version, timestamp, etc.).
 - `metadata` (object|null): additional caller-provided info.
@@ -19,20 +20,13 @@ This page summarizes the stable JSON contract for serialized explanations in v0.
 ## Rule fields (per entry in `rules`)
 
 - `feature` (integer): feature index.
-- `rule` (string): human-readable rule string.
+- `rule` (string): human-readable rule string representing the condition (factual for factual explanations, alternative for alternative explanations).
 - `rule_weight` (object|null):
-  - **Factual explanations** – calibrated feature weight summary with
-    uncertainty bounds, always exposing `{predict, low, high}` to match the CE
-    paper definition.
-  - **Alternative explanations** – optional metadata. When present it captures the
-    delta from the factual baseline for ranking/metadata; consumers should rely
-    on the `prediction` field for decision making.
+  - **Factual explanations** – calibrated feature weight summary with uncertainty bounds, always exposing `{predict, low, high}` to match the CE paper definition. The rule represents a factual condition covering the feature’s instance value.
+  - **Alternative explanations** – optional metadata capturing the delta from the factual baseline for ranking/metadata; consumers should rely on the `rule_prediction` field for decision making.
 - `rule_prediction` (object|null):
-  - **Factual explanations** – optional metadata used in legacy exports. The
-    calibrated prediction for the instance lives at the top level.
-  - **Alternative explanations** – calibrated prediction estimate plus
-    uncertainty interval for the alternative condition. This is the primary
-    quantity mandated by the CE papers.
+  - **Factual explanations** – optional metadata used in legacy exports. The calibrated prediction for the instance lives at the top level.
+  - **Alternative explanations** – calibrated prediction estimate plus uncertainty interval for the alternative condition. This is the primary quantity mandated by the CE papers. The rule represents an alternative condition covering alternative instance values for the feature.
 - `instance_prediction` (object|null): instance-specific prediction (optional).
 - `feature_value` (any): the instance feature value (optional).
 - `is_conjunctive` (boolean): whether this rule is part of a conjunction.

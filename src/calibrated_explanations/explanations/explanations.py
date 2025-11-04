@@ -12,8 +12,6 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 
 import numpy as np
 
-from ..serialization import from_json as _explanation_from_json
-from ..serialization import to_json as _explanation_to_json
 from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
 from ..utils.helper import prepare_for_saving
 from .adapters import legacy_to_domain
@@ -210,6 +208,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             When ``True`` (default) the ``schema_version`` field is included on
             the top-level payload as well as on each explanation entry.
         """
+        from ..serialization import to_json as _explanation_to_json
         instances = []
         for exp in self.explanations:
             domain = legacy_to_domain(exp.index, self._legacy_payload(exp))
@@ -232,6 +231,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
         """Materialise domain explanations from a :meth:`to_json` payload."""
+        from ..serialization import from_json as _explanation_from_json
         explanations_blob = payload.get("explanations", []) or []
         domain: list[DomainExplanation] = []
         for item in explanations_blob:

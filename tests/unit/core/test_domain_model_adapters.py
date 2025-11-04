@@ -14,8 +14,8 @@ def _make_feature_rule(
     feature: Any,
     rule: str,
     *,
-    weight: Dict[str, Any] | None = None,
-    prediction: Dict[str, Any] | None = None,
+    rule_weight: Dict[str, Any] | None = None,
+    rule_prediction: Dict[str, Any] | None = None,
     **extras: Any,
 ) -> models.FeatureRule:
     """Small helper to build feature rules with sensible defaults for tests."""
@@ -31,8 +31,8 @@ def _make_feature_rule(
     return models.FeatureRule(
         feature=feature,
         rule=rule,
-        weight=weight or {},
-        prediction=prediction or {},
+        rule_weight=rule_weight or {},
+        rule_prediction=rule_prediction or {},
         **defaults,
     )
 
@@ -102,21 +102,22 @@ def test_domain_to_legacy_emits_parallel_arrays_with_multiple_rules() -> None:
     domain = models.Explanation(
         task="classification",
         index=2,
+        explanation_type="factual",
         prediction={"predict": [0.8], "alt": [0.2]},
         rules=[
             _make_feature_rule(
                 0,
                 "x0 <= 0.3",
-                weight={"predict": 0.11, "alt": 0.04},
-                prediction={"predict": 0.56, "alt": 0.33},
+                rule_weight={"predict": 0.11, "alt": 0.04},
+                rule_prediction={"predict": 0.56, "alt": 0.33},
                 feature_value=0.25,
                 value_str="<= 0.3",
             ),
             _make_feature_rule(
                 2,
                 "x2 > 1.0",
-                weight={"predict": 0.23, "alt": 0.09, "lift": 1.2},
-                prediction={"predict": 0.61, "alt": 0.18},
+                rule_weight={"predict": 0.23, "alt": 0.09, "lift": 1.2},
+                rule_prediction={"predict": 0.61, "alt": 0.18},
                 feature_value=1.7,
                 value_str="> 1.0",
             ),
@@ -140,7 +141,7 @@ def test_domain_to_legacy_emits_parallel_arrays_with_multiple_rules() -> None:
 
     # ensure arrays are decoupled from the domain model structures
     out["feature_weights"]["predict"][0] = 42
-    assert domain.rules[0].weight["predict"] == 0.11
+    assert domain.rules[0].rule_weight["predict"] == 0.11
 
 
 def test_legacy_to_domain_handles_conjunctive_rules_and_short_vectors() -> None:
@@ -176,8 +177,8 @@ def test_legacy_to_domain_handles_conjunctive_rules_and_short_vectors() -> None:
     assert third.feature == 2
     assert second.is_conjunctive is True
     assert third.is_conjunctive is True  # propagated from the final value
-    assert third.weight["predict"] == 0.24
-    assert third.weight["support"] is None
-    assert third.prediction["support"] == 0.52
+    assert third.rule_weight["predict"] == 0.24
+    assert third.rule_weight["support"] is None
+    assert third.rule_prediction["support"] == 0.52
     assert third.feature_value == "0.2"
     assert third.value_str == "> 3"

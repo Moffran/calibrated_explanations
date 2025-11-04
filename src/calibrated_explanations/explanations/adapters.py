@@ -66,11 +66,11 @@ def domain_to_legacy(exp: models.Explanation) -> Dict[str, Any]:
 
     for fr in exp.rules:
         rule_texts.append(fr.rule)
-        rule_features.append(int(fr.feature))
+        rule_features.append(fr.feature)
 
-        for k, v in fr.weight.items():
+        for k, v in fr.rule_weight.items():
             weights_acc.setdefault(k, []).append(v)
-        for k, v in fr.prediction.items():
+        for k, v in fr.rule_prediction.items():
             predicts_acc.setdefault(k, []).append(v)
 
     out["rules"] = {"rule": rule_texts, "feature": rule_features}
