@@ -8,6 +8,8 @@ explanation workflow without introducing mandatory dependencies.
   with privacy defaults and governance cross-links.
 - {doc}`../../foundations/how-to/tune_runtime_performance` – Parallelism,
   caching, and profiling guidance for high-throughput deployments.
+- {doc}`parallel_execution_playbook` – Heuristics for switching between
+  sequential, feature-, and instance-parallel explain strategies.
 - {doc}`../../foundations/how-to/plot_with_plotspec` – Optional PlotSpec and
   triangular plot tooling to visualise factual vs. alternative trade-offs.
 - {doc}`../../foundations/concepts/telemetry` – Conceptual framing for the
@@ -19,6 +21,7 @@ explanation workflow without introducing mandatory dependencies.
 
 ../../foundations/how-to/configure_telemetry
 ../../foundations/how-to/tune_runtime_performance
+parallel_execution_playbook
 ../../foundations/how-to/plot_with_plotspec
 ../../foundations/concepts/telemetry
 ```

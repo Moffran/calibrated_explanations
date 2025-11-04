@@ -34,6 +34,9 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Backend diverges from cachetools + pympler stack** (severity 9, high) → `v0.10.0 runtime boundary realignment`. Standardise on the mandated libraries or amend ADR-003 with rationale before RC.
 
 ### ADR-004 – Parallel Execution Framework
+
+> Tracking: [Parallel Execution Improvement Plan](parallel_execution_improvement_plan.md#release-plan-alignment) (Phases 0–5)
+
 - **Workload-aware auto strategy absent** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Implement `_auto_strategy` heuristics using task hints.
 - **Telemetry lacks timings and utilisation metrics** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Capture timings, worker utilisation, and cache interplay in telemetry payloads.
 - **Context management & cancellation missing** (severity 16, critical) → `v0.10.0 runtime boundary realignment`. Provide context manager support and cooperative cancellation APIs.
@@ -44,6 +47,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Documentation for strategies & troubleshooting lacking** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. Ship troubleshooting matrices and update ADR-004 status notes.
 
 ### ADR-005 – Explanation Envelope & Schema
+
 - **ADR-compliant envelope absent** (severity 20, critical) → `v0.10.1 schema & visualization contracts`. Replace flat payloads with envelope structure and migrate serializers/tests.
 - **Enumerated type registry missing** (severity 15, critical) → `v0.10.1 schema & visualization contracts`. Build discriminant registry and versioned schema files.
 - **Generator provenance (`parameters_hash`) missing** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Persist provenance metadata and document usage.
@@ -52,12 +56,14 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Documentation & fixtures out of date** (severity 6, medium) → `v0.10.1 schema & visualization contracts`. Refresh docs/tests and update ADR-005 with acceptance notes.
 
 ### ADR-006 – Plugin Trust Model
+
 - **Trust flag from third-party metadata auto-enables plugins** (severity 16, critical) → `v0.10.2 plugin trust & packaging compliance`. Require explicit operator approval before honouring third-party trust flags.
 - **Deny list not enforced during discovery** (severity 9, high) → `v0.10.2 plugin trust & packaging compliance`. Enforce `CE_DENY_PLUGIN` across discovery paths with tests.
 - **Untrusted entry-point metadata unavailable for diagnostics** (severity 6, medium) → `v0.10.2 plugin trust & packaging compliance`. Record skipped plugin metadata in telemetry/logging.
 - **“No sandbox” warning undocumented** (severity 4, low) → `v0.10.2 plugin trust & packaging compliance`. Document the warning prominently and add governance checklist entries.
 
 ### ADR-007 – PlotSpec Abstraction
+
 - **PlotSpec schema lacks kind/encoding/version fields** (severity 15, critical) → `v0.10.1 schema & visualization contracts`. Extend the dataclass so new plot families can express ADR-required structure.【F:improvement_docs/ADR-gap-analysis.md†L97-L102】
 - **Backend dispatcher & registry missing** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Introduce an extensible registry instead of hard-coding the matplotlib adapter.【F:improvement_docs/ADR-gap-analysis.md†L97-L102】
 - **Plugin extensibility hooks absent** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Provide registration hooks for kinds/default renderers per the ADR.【F:improvement_docs/ADR-gap-analysis.md†L97-L102】
@@ -66,6 +72,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Headless export support missing** (severity 4, low) → `v0.10.1 schema & visualization contracts`. Provide byte-based export path for remote rendering.【F:improvement_docs/ADR-gap-analysis.md†L101-L102】
 
 ### ADR-008 – Explanation Domain Model
+
 - **Domain model not authoritative source** (severity 20, critical) → `v0.11.0 domain model & preprocessing finalisation`. Shift runtime flows to use domain objects natively and keep legacy dicts as adapters.
 - **Legacy-to-domain round-trip fails for conjunctive rules** (severity 12, high) → `v0.11.0 domain model & preprocessing finalisation`. Fix conversion helpers and add fixtures.
 - **Structured model/calibration metadata absent** (severity 12, high) → `v0.11.0 domain model & preprocessing finalisation`. Extend dataclasses with calibration/model metadata per ADR-008.
@@ -73,12 +80,14 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **`_safe_pick` silently duplicates data** (severity 6, medium) → `v0.11.0 domain model & preprocessing finalisation`. Enforce invariant checks with targeted exceptions.
 
 ### ADR-009 – Preprocessing Pipeline
+
 - **Automatic encoding pathway unimplemented** (severity 20, critical) → `v0.11.0 domain model & preprocessing finalisation`. Implement the built-in encoder and integrate with pipeline defaults.
 - **Unseen-category policy ignored** (severity 12, high) → `v0.11.0 domain model & preprocessing finalisation`. Enforce unseen-category handling with tests and docs.
 - **DataFrame/dtype validation incomplete** (severity 9, high) → `v0.11.0 domain model & preprocessing finalisation`. Extend validators for categorical dtypes and add diagnostics.
 - **Telemetry docs mismatch emitted fields** (severity 4, low) → `v0.11.0 domain model & preprocessing finalisation`. Align docs and telemetry payloads.
 
 ### ADR-010 – Optional Dependency Split
+
 - **Core dependency list still heavy** (severity 20, critical) → `v0.10.2 plugin trust & packaging compliance`. Trim core dependencies and move extras-only libraries behind extras.
 - **Evaluation extra incomplete** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Complete `[eval]` extra with required packages and lockfiles.
 - **Visualization tests not auto-skipped without extras** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Mark viz tests with skip conditions tied to extras.
@@ -87,18 +96,21 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Contributor guidance on extras absent** (severity 4, low) → `v0.10.2 plugin trust & packaging compliance`. Update CONTRIBUTING with lean-core instructions.
 
 ### ADR-011 – Deprecation Policy
+
 - **Central `deprecate()` helper missing** (severity 15, critical) → `v0.9.1 governance & observability hardening`. Implement helper and ensure all callsites adopt it.
 - **Migration guide absent** (severity 15, critical) → `v0.9.1 governance & observability hardening`. Author the migration guide referenced in CHANGELOG.
 - **Release plan lacks status table** (severity 12, high) → `v0.9.1 governance & observability hardening`. Add the structured table (this document update) and keep it current per release.
 - **CI gates for deprecation policy missing** (severity 12, high) → `v0.9.1 governance & observability hardening`. Add automation enforcing the two-minor-release window and migration-note checks.
 
 ### ADR-012 – Documentation & Gallery Build Policy
+
 - **Notebooks never rendered in docs CI** (severity 20, critical) → `v0.9.1 governance & observability hardening`. Enable notebook execution in docs CI.
 - **Docs build ignores `[viz]`/`[notebooks]` extras** (severity 12, high) → `v0.9.1 governance & observability hardening`. Use project extras in workflows.
 - **Example runtime ceiling unenforced** (severity 9, high) → `v0.9.1 governance & observability hardening`. Add timing checks for tutorials/examples.
 - **Gallery tooling decision undocumented** (severity 4, low) → `v0.9.1 governance & observability hardening`. Record the chosen tooling in ADR updates.
 
 ### ADR-013 – Interval Calibrator Plugin Strategy
+
 - **Runtime skips protocol validation for calibrators** (severity 20, critical) → `v0.10.2 plugin trust & packaging compliance`. Enforce protocol validation before activation.
 - **FAST plugin returns non-protocol collections** (severity 15, critical) → `v0.10.2 plugin trust & packaging compliance`. Refactor FAST plugin outputs to protocol objects.
 - **Interval context remains mutable** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Supply frozen contexts and document immutability.
@@ -106,6 +118,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **CLI interval validation commands missing** (severity 4, low) → `v0.10.2 plugin trust & packaging compliance`. Add CLI commands for validation and document usage.
 
 ### ADR-014 – Visualization Plugin Architecture
+
 - **Legacy fallback builder/renderer inert** (severity 15, critical) → `v0.10.1 schema & visualization contracts`. Restore fallback path to produce guaranteed plots.
 - **Helper base classes missing** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Implement shared base classes and lifecycle docs.
 - **Metadata lacks `default_renderer`** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Populate metadata and ensure registry respects defaults.
@@ -116,6 +129,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Documentation for plot plugins lacking** (severity 4, low) → `v0.10.1 schema & visualization contracts`. Publish authoring guide updates.
 
 ### ADR-015 – Explanation Plugin Integration
+
 - **In-tree FAST plugin missing** (severity 15, critical) → `v0.10.2 plugin trust & packaging compliance`. Provide default FAST plugin aligned with ADR.
 - **Collection reconstruction bypassed** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Ensure collections rebuild with canonical metadata.
 - **Trust enforcement during resolution lax** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Harden resolver trust checks.
@@ -124,6 +138,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Helper handles expose mutable explainer** (severity 6, medium) → `v0.10.2 plugin trust & packaging compliance`. Provide immutable handles to plugins.
 
 ### ADR-016 – PlotSpec Separation and Schema
+
 - **PlotSpec dataclass lacks required fields** (severity 15, critical) → `v0.10.1 schema & visualization contracts`. Extend dataclass with `kind`, `mode`, and `feature_order`.
 - **Feature indices discarded during dict conversion** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Preserve indices in conversion helpers.
 - **Validator still enforces legacy envelope** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Update validators to new schema and mandate usage.
@@ -131,6 +146,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **`save_behavior` metadata unimplemented** (severity 6, medium) → `v0.10.1 schema & visualization contracts`. Implement metadata field and docs.
 
 ### ADR-017 – Nomenclature Standardization
+
 - **Double-underscore fields still mutated outside legacy** (severity 20, critical) → `v0.11.0 domain model & preprocessing finalisation`. Purge non-legacy double-underscore access and add lint enforcement.
 - **Naming guardrails lack automated enforcement** (severity 16, critical) → `v0.9.1 governance & observability hardening`. Turn Ruff/pre-commit checks into blockers and document process.
 - **Kitchen-sink `utils/helper.py` persists** (severity 9, high) → `v0.11.0 domain model & preprocessing finalisation`. Split helpers by topic and deprecate legacy names via ADR-011 gates.
@@ -138,6 +154,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Transitional shims remain first-class** (severity 6, medium) → `v0.11.0 domain model & preprocessing finalisation`. Confine shims to `legacy/` and stage removals per deprecation policy.
 
 ### ADR-018 – Documentation Standardisation
+
 - **Wrapper public APIs lack numpydoc blocks** (severity 12, high) → `v0.9.1 governance & observability hardening`. Author full numpydoc content for wrapper APIs.
 - **`IntervalRegressor.__init__` docstring outdated** (severity 8, medium) → `v0.9.1 governance & observability hardening`. Update docstring and add regression tests.
 - **`IntervalRegressor.bins` setter undocumented** (severity 6, medium) → `v0.9.1 governance & observability hardening`. Document setter semantics.
@@ -145,6 +162,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Nested combined-plot plugin classes undocumented** (severity 4, low) → `v0.10.1 schema & visualization contracts`. Document dynamically generated classes alongside plugin guide.
 
 ### ADR-019 – Test Coverage Standard
+
 - **Coverage floor still enforced at 88%** (severity 20, critical) → `v0.9.1 governance & observability hardening`. Raise thresholds to 90% and enforce in CI.
 - **Critical modules below 95% without gates** (severity 15, critical) → `v0.9.1 governance & observability hardening`. Add per-module gates for prediction, serialization, and registry modules.
 - **Codecov patch gate optional** (severity 16, critical) → `v0.9.1 governance & observability hardening`. Make patch gate blocking for ADR-covered areas.
@@ -152,44 +170,52 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Exemptions lack expiry metadata** (severity 6, medium) → `v0.9.1 governance & observability hardening`. Add expiry metadata to `.coveragerc` and release checklist.
 
 ### ADR-020 – Legacy User API Stability
+
 - **Release checklist omits legacy API gate** (severity 12, high) → `v0.9.1 governance & observability hardening`. Add checklist gate verifying legacy compatibility.
 - **Wrapper regression tests miss parity on key methods** (severity 12, high) → `v0.9.1 governance & observability hardening`. Add regression tests for `explain_factual`/`explore_alternatives`.
 - **Contributor workflow ignores contract document** (severity 9, high) → `v0.9.1 governance & observability hardening`. Update CONTRIBUTING to reference the contract.
 - **Notebook audit process undefined** (severity 6, medium) → `v0.9.1 governance & observability hardening`. Automate notebook audit scripts and integrate into release checklist.
 
 ### ADR-021 – Calibrated Interval Semantics
+
 - **Interval invariants never enforced** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Enforce invariants in prediction bridges and serializers.
 - **FAST explanations drop probability cubes** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Extend FAST exports with probability metadata.
 - **JSON export stores live callables** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. Serialize immutable metadata instead of callables.
 
 ### ADR-022 – Documentation Information Architecture
+
 - **Seven-section navigation not implemented** (severity 20, critical) → `v0.9.0 documentation realignment`. Complete navigation restructure per IA plan.
 - **“Extending the library” lane missing** (severity 12, high) → `v0.9.0 documentation realignment`. Ship contributor/extension lane in navigation.
 - **Telemetry concept page lacks substance** (severity 8, medium) → `v0.9.0 documentation realignment`. Flesh out telemetry concept content.
 
 ### ADR-023 – Matplotlib Coverage Exemption
+
 - **Visualization tests never run in CI** (severity 20, critical) → `v0.9.1 governance & observability hardening`. Add viz-only CI job.
 - **Pytest ignores block viz suite entirely** (severity 15, critical) → `v0.9.1 governance & observability hardening`. Remove ignores and mark tests appropriately.
 - **Coverage threshold messaging inconsistent** (severity 12, high) → `v0.9.1 governance & observability hardening`. Align docs/tooling messaging with final threshold.
 
 ### ADR-024 – Legacy Plot Input Contracts
+
 - **`_plot_global` ignores `show=False`** (severity 15, critical) → `v0.10.1 schema & visualization contracts`. Honour `show=False` across helpers.
 - **`_plot_global` lacks save parameters** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Implement save-path parameters.
 - **Save-path concatenation drift undocumented** (severity 4, low) → `v0.10.1 schema & visualization contracts`. Update docs to match behaviour or revert to ADR contract.
 
 ### ADR-025 – Legacy Plot Rendering Semantics
+
 - **Matplotlib guard allows silent skips** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Fail loudly or document fallback semantics.
 - **Regression axis not forced symmetric** (severity 12, high) → `v0.10.1 schema & visualization contracts`. Reinstate symmetric axis behaviour.
 - **Interval backdrop disabled** (severity 9, high) → `v0.10.1 schema & visualization contracts`. Restore backdrop shading with coverage.
 - **One-sided interval warning untested** (severity 6, medium) → `v0.10.1 schema & visualization contracts`. Add tests for warning emission.
 
 ### ADR-026 – Explanation Plugin Semantics
+
 - **Predict bridge skips interval invariant checks** (severity 15, critical) → `v0.10.0 runtime boundary realignment`. Add invariant checks and tests.
 - **Explanation context exposes mutable dicts** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Return frozen contexts to plugins.
 - **Telemetry omits interval dependency hints** (severity 6, medium) → `v0.10.2 plugin trust & packaging compliance`. Extend telemetry payloads with dependency hints.
 - **Mondrian bins left mutable in requests** (severity 4, low) → `v0.10.2 plugin trust & packaging compliance`. Freeze bins within request objects.
 
 ### ADR-027 – Documentation Standard (Audience Hubs)
+
 - **PR template lacks parity review gate** (severity 15, critical) → `v0.9.1 governance & observability hardening`. Update template/checklist with parity review.
 - **“Task API comparison” reference missing** (severity 9, high) → `v0.9.1 governance & observability hardening`. Restore comparison link in practitioner hub.
 - **Researcher future-work ledger absent** (severity 6, medium) → `v0.9.1 governance & observability hardening`. Publish roadmap ledger tied to literature references.
@@ -286,12 +312,13 @@ achieved via ADR-023 exemption.
      blocking for documentation CI.
 9. **Advance ADR-017 naming cleanup.** Prune deprecated shims scheduled for removal and ensure naming lint rules stay green on the release branch.【F:improvement_docs/nomenclature_standardization_plan.md†L25-L33】【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L28-L37】
 10. **Sustain ADR-019 coverage uplift.** Audit waiver inventory, retire expired exemptions, raise non-critical modules toward the 90% floor, enable `--cov-fail-under=88` in CI, and execute the module-level remediation sprints for interval regressors, registry/CLI, plotting, and explanation caching per the dedicated gap plan.【F:improvement_docs/test_coverage_gap_plan.md†L5-L120】
-11. **Scoped runtime polish for explain performance.** Deliver the opt-in calibrator cache, multiprocessing toggle, and vectorised perturbation handling per ADR-003/ADR-004 analysis so calibrated explanations stay responsive without compromising accuracy. Capture improvements and guidance for plugin authors.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】
+11. **Scoped runtime polish for explain performance.** Deliver the opt-in calibrator cache, multiprocessing toggle, and vectorised perturbation handling per ADR-003/ADR-004 analysis so calibrated explanations stay responsive without compromising accuracy. Capture improvements and guidance for plugin authors.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L1-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L64】【F:src/calibrated_explanations/core/calibrated_explainer.py†L1750-L2150】 See [Parallel Execution Improvement Plan – Phase 0](parallel_execution_improvement_plan.md#phase-0--foundations-week-01) and [Phase 1](parallel_execution_improvement_plan.md#phase-1--configuration-surface-week-24) for task breakdown and ownership.
 12. **Plugin CLI, discovery, and denylist parity (optional extras).** Extend trust toggles and entry-point discovery to interval/plot plugins, add the `CE_DENY_PLUGIN` registry control highlighted in the OSS scope review, and ship the whole surface as opt-in so calibrated explanations remain usable without telemetry/CLI adoption.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L68-L110】
 13. **External plugin distribution path.** Document and test an aggregated installation extra (e.g., `pip install calibrated-explanations[external-plugins]`) that installs all supported external plugins, outline curation criteria, and add placeholders in docs and README for community plugin listings.
-   - 2025-10-25 – Added a packaging regression test that inspects the
-     `external-plugins` extra metadata to guarantee the curated bundle stays
-     opt-in with the expected dependency pins.
+
+      - 2025-10-25 – Added a packaging regression test that inspects the
+         `external-plugins` extra metadata to guarantee the curated bundle stays
+         opt-in with the expected dependency pins.
 14. **Explanation export convenience.** Provide `to_json()`/`from_json()` helpers on explanation collections that wrap schema v1 utilities and document them as optional aids for integration teams.
 15. **Scope streaming-friendly explanation delivery.** Prototype generator or chunked export paths (or record a formal deferral) so memory-sensitive users know how large batches will be handled, capturing the outcome directly in the OSS scope inventory.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L86-L118】
 
@@ -314,7 +341,7 @@ Release gate: Deprecation dashboard live, docs CI runs with notebook execution, 
 1. Restructure packages to honour ADR-001—split calibration into its own package, eliminate cross-sibling imports, and formalise sanctioned namespaces with ADR addenda where necessary.【F:improvement_docs/ADR-gap-analysis.md†L33-L38】
 2. Deliver ADR-002 validation parity by replacing legacy exceptions with taxonomy classes, implementing shared validators, parameter guards, and consistent fit-state handling.【F:improvement_docs/ADR-gap-analysis.md†L44-L48】
 3. Complete ADR-003 caching deliverables: add invalidation/flush hooks, cache the mandated artefacts, emit telemetry, and align the backend with the cachetools+pympler stack or update the ADR rationale.【F:improvement_docs/ADR-gap-analysis.md†L54-L58】
-4. Implement ADR-004’s parallel execution backlog—auto strategy heuristics, telemetry with timings/utilisation, context management and cancellation, configuration surfaces, resource guardrails, fallback warnings, and automated benchmarking.【F:improvement_docs/ADR-gap-analysis.md†L64-L71】
+4. Implement ADR-004’s parallel execution backlog—auto strategy heuristics, telemetry with timings/utilisation, context management and cancellation, configuration surfaces, resource guardrails, fallback warnings, and automated benchmarking.【F:improvement_docs/ADR-gap-analysis.md†L64-L71】 Track deliverables in [Parallel Execution Improvement Plan – Phases 2–4](parallel_execution_improvement_plan.md#phase-2--executor--plugin-refactor-week-58).
 5. Enforce interval safety across bridges and exports to resolve ADR-021 and the ADR-015 predict-bridge gap, ensuring invariants, probability cubes, and serialization policies are honoured.【F:improvement_docs/ADR-gap-analysis.md†L239-L241】【F:improvement_docs/ADR-gap-analysis.md†L179-L182】
 6. Align runtime plugin semantics with ADR-026 by adding invariant checks, hardening contexts, and extending telemetry payloads.【F:improvement_docs/ADR-gap-analysis.md†L280-L282】
 
@@ -362,7 +389,7 @@ Release gate: Domain/preprocessing pipelines operate on ADR-compliant models wit
    ongoing maintenance workflow in the RC changelog section.【F:improvement_docs/documentation_standardization_plan.md†L29-L34】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L43-L62】
 5. Validate the new caching/parallel toggles in staging, document safe defaults
    for RC adopters, and ensure telemetry captures cache hits/misses and worker
-   utilisation metrics for release sign-off.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L28-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L25-L64】
+   utilisation metrics for release sign-off.【F:improvement_docs/adrs/ADR-003-caching-key-and-eviction.md†L28-L64】【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L25-L64】 See [Parallel Execution Improvement Plan – Phase 5](parallel_execution_improvement_plan.md#phase-5--rollout--documentation-week-15-16) for rollout and documentation activities.
 6. Institutionalise ADR-019 by baking coverage checks into release branch
    policies, publishing a health dashboard (Codecov badge + waiver log), and
    enforcing `--cov-fail-under=90` in CI.【F:improvement_docs/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:improvement_docs/test_coverage_standardization_plan.md†L21-L27】
