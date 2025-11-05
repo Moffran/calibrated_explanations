@@ -44,6 +44,10 @@ RNG_SEED: int = 41
 TIMING_REPEAT: int = 1
 TIMING_WARMUP: int = 1
 
+# When True, print simple progress messages showing the current task and
+# parallel variant before each evaluation iteration.
+VERBOSE: bool = True
+
 EXPLANATION_APIS: Tuple[str, ...] = ("explain_factual", "explore_alternatives")
 
 
@@ -109,64 +113,103 @@ class ScenarioSetup:
     x_test: np.ndarray
     kwargs: Dict[str, Any]
 
+COMPACT = DatasetSpec(
+    name="compact",
+    problem="both",
+    samples=600,
+    features=10,
+    informative=5,
+    redundant=2,
+    estimators=10,
+    calibration=150,
+    test=100,
+    noise=0
+)
+
+WIDE = DatasetSpec(
+    name="Wide",
+    problem="both",
+    samples=3500,
+    features=200,
+    informative=50,
+    redundant=30,
+    estimators=10,
+    calibration=1000,
+    test=500,
+    noise=0.3
+)
+
+BATCHES_PER_WORKER = 4
 
 DATASET_SPECS: Tuple[DatasetSpec, ...] = (
     DatasetSpec(
         name="classification_compact",
         problem="classification",
-        samples=600,
-        features=20,
-        informative=10,
-        redundant=2,
-        estimators=35,
-        calibration=160,
-        test=100,
+        samples=COMPACT.samples,
+        features=COMPACT.features,
+        informative=COMPACT.informative,
+        redundant=COMPACT.redundant,
+        estimators=COMPACT.estimators,
+        calibration=COMPACT.calibration,
+        test=COMPACT.test,
     ),
     DatasetSpec(
         name="classification_many_features",
         problem="classification",
-        samples=1100,
-        features=120,
-        informative=24,
-        redundant=12,
-        estimators=40,
-        calibration=260,
-        test=120,
+        samples=COMPACT.samples,
+        features=WIDE.features,
+        informative=WIDE.informative,
+        redundant=WIDE.redundant,
+        estimators=COMPACT.estimators,
+        calibration=COMPACT.calibration,
+        test=COMPACT.test,
     ),
     DatasetSpec(
         name="classification_many_instances",
         problem="classification",
-        samples=3500,
-        features=36,
-        informative=16,
-        redundant=4,
-        estimators=45,
-        calibration=620,
-        test=160,
+        samples=WIDE.samples,
+        features=COMPACT.features,
+        informative=COMPACT.informative,
+        redundant=COMPACT.redundant,
+        estimators=COMPACT.estimators,
+        calibration=WIDE.calibration,
+        test=WIDE.test,
     ),
     DatasetSpec(
         name="regression_compact",
         problem="regression",
-        samples=700,
-        features=24,
-        informative=18,
-        redundant=0,
-        estimators=40,
-        calibration=180,
-        test=100,
-        noise=0.15,
+        samples=COMPACT.samples,
+        features=COMPACT.features,
+        informative=COMPACT.informative,
+        redundant=COMPACT.redundant,
+        estimators=COMPACT.estimators,
+        calibration=COMPACT.calibration,
+        test=COMPACT.test,
+        noise=COMPACT.noise,
     ),
     DatasetSpec(
-        name="regression_wide",
+        name="regression_many_features",
         problem="regression",
-        samples=1200,
-        features=80,
-        informative=26,
-        redundant=0,
-        estimators=45,
-        calibration=280,
-        test=140,
-        noise=0.3,
+        samples=COMPACT.samples,
+        features=WIDE.features,
+        informative=WIDE.informative,
+        redundant=WIDE.redundant,
+        estimators=COMPACT.estimators,
+        calibration=COMPACT.calibration,
+        test=COMPACT.test,
+        noise=WIDE.noise,
+    ),
+    DatasetSpec(
+        name="regression_many_instances",
+        problem="regression",
+        samples=WIDE.samples,
+        features=COMPACT.features,
+        informative=COMPACT.informative,
+        redundant=COMPACT.redundant,
+        estimators=COMPACT.estimators,
+        calibration=WIDE.calibration,
+        test=WIDE.test,
+        noise=COMPACT.noise,
     ),
 )
 
@@ -244,102 +287,105 @@ class ParallelVariant:
 
 def _build_parallel_variants() -> Tuple[ParallelVariant, ...]:
     """Return the collection of parallel configurations to benchmark."""
+    # Detect CPU counts: prefer psutil for physical cores; fall back to os.cpu_count()
+    import os
 
-    variants: List[ParallelVariant] = [
+    try:  # pragma: no cover - optional dependency
+        import psutil  # type: ignore
+
+        physical_cores = psutil.cpu_count(logical=False) or os.cpu_count() or 1
+    except Exception:  # pragma: no cover - psutil optional
+        phy = os.cpu_count() or 1
+        # Heuristic: assume hyperthreading if even and > 1
+        physical_cores = phy // 2 if phy > 1 and phy % 2 == 0 else phy
+
+    logical_cores = os.cpu_count() or 1
+
+    variants: List[ParallelVariant] = []
+
+    # Baseline sequential
+    variants.append(
         ParallelVariant(
             name="sequential_baseline",
             config=ParallelConfig(enabled=False, strategy="sequential"),
             description="Modern implementation without parallel executor",
-        ),
-        ParallelVariant(
-            name="threads_default",
-            config=ParallelConfig(
-                enabled=True,
-                strategy="threads",
-                max_workers=6,
-                min_batch_size=4,
-                granularity="instance",
-            ),
-            description="Thread pool with six workers and instance granularity",
-        ),
-        ParallelVariant(
-            name="threads_many_workers",
-            config=ParallelConfig(
-                enabled=True,
-                strategy="threads",
-                max_workers=12,
-                min_batch_size=4,
-                granularity="instance",
-            ),
-            description="Thread pool scaled up to twelve workers",
-        ),
-        ParallelVariant(
-            name="threads_small_batches",
-            config=ParallelConfig(
-                enabled=True,
-                strategy="threads",
-                max_workers=6,
-                min_batch_size=1,
-                granularity="instance",
-            ),
-            description="Threads with aggressive batching to favour concurrency",
-        ),
-        ParallelVariant(
-            name="threads_feature_granularity",
-            config=ParallelConfig(
-                enabled=True,
-                strategy="threads",
-                max_workers=8,
-                min_batch_size=16,
-                granularity="feature",
-            ),
-            description="Thread pool operating at feature-level granularity",
-        ),
-        ParallelVariant(
-            name="processes_default",
-            config=ParallelConfig(
-                enabled=True,
-                strategy="processes",
-                max_workers=None,
-                min_batch_size=4,
-                granularity="instance",
-            ),
-            description="Process pool using the platform core count",
-        ),
-        ParallelVariant(
-            name="processes_limited",
-            config=ParallelConfig(
-                enabled=True,
-                strategy="processes",
-                max_workers=4,
-                min_batch_size=4,
-                granularity="instance",
-            ),
-            description="Process pool constrained to four workers",
-        ),
-        ParallelVariant(
-            name="processes_small_batches",
-            config=ParallelConfig(
-                enabled=True,
-                strategy="processes",
-                max_workers=None,
-                min_batch_size=1,
-                granularity="instance",
-            ),
-            description="Processes with tiny batches to explore scheduling overhead",
-        ),
-        ParallelVariant(
-            name="auto_backend",
-            config=ParallelConfig(
-                enabled=True,
-                strategy="auto",
-                max_workers=None,
-                min_batch_size=4,
-                granularity="instance",
-            ),
-            description="Automatic backend selection from runtime heuristics",
-        ),
-    ]
+        )
+    )
+
+    # Helper to add paired instance/feature variants for a strategy and worker count
+    def _add_pair(prefix: str, strategy: str, max_workers: int | None, instance_min: int, feature_min: int):
+        variants.append(
+            ParallelVariant(
+                name=f"{prefix}_instance",
+                config=ParallelConfig(
+                    enabled=True,
+                    strategy=strategy,
+                    max_workers=max_workers,
+                    min_batch_size=instance_min,
+                    granularity="instance",
+                ),
+                description=f"{strategy} pool with {max_workers!s} workers (instance granularity)",
+            )
+        )
+        variants.append(
+            ParallelVariant(
+                name=f"{prefix}_feature",
+                config=ParallelConfig(
+                    enabled=True,
+                    strategy=strategy,
+                    max_workers=max_workers,
+                    min_batch_size=feature_min,
+                    granularity="feature",
+                ),
+                description=f"{strategy} pool with {max_workers!s} workers (feature granularity)",
+            )
+        )
+
+    # Threads: evaluate both physical and logical worker counts equally
+    _add_pair(
+        "threads_physical_small",
+        "threads",
+        physical_cores,
+        instance_min=int(COMPACT.test/physical_cores/BATCHES_PER_WORKER),
+        feature_min=int(COMPACT.features/physical_cores)
+    )
+    _add_pair(
+        "threads_logical_small",
+        "threads",
+        logical_cores,
+        instance_min=int(COMPACT.test/logical_cores/BATCHES_PER_WORKER),
+        feature_min=int(COMPACT.features/logical_cores)
+    )
+    _add_pair(
+        "threads_physical_large",
+        "threads",
+        physical_cores,
+        instance_min=int(WIDE.test/physical_cores/BATCHES_PER_WORKER),
+        feature_min=int(WIDE.features/physical_cores)
+    )
+    _add_pair(
+        "threads_logical_large",
+        "threads",
+        logical_cores,
+        instance_min=int(WIDE.test/logical_cores/BATCHES_PER_WORKER),
+        feature_min=int(WIDE.features/logical_cores)
+    )
+
+    # Processes: prefer physical cores for process pools
+    _add_pair(
+        "processes_physical_small",
+        "processes",
+        physical_cores,
+        instance_min=int(COMPACT.test/physical_cores/BATCHES_PER_WORKER),
+        feature_min=int(COMPACT.features/physical_cores)
+    )
+    _add_pair(
+        "processes_physical_large",
+        "processes",
+        physical_cores,
+        instance_min=int(WIDE.test/physical_cores/BATCHES_PER_WORKER),
+        feature_min=int(WIDE.features/physical_cores)
+    )
 
     try:  # pragma: no cover - optional dependency
         import joblib  # noqa: F401
@@ -349,31 +395,21 @@ def _build_parallel_variants() -> Tuple[ParallelVariant, ...]:
         joblib_available = True
 
     if joblib_available:
-        variants.append(
-            ParallelVariant(
-                name="joblib_default",
-                config=ParallelConfig(
-                    enabled=True,
-                    strategy="joblib",
-                    max_workers=-1,
-                    min_batch_size=4,
-                    granularity="instance",
-                ),
-                description="Joblib backend saturating available cores",
-            )
+        # Provide both instance- and feature-oriented joblib variants to give equal
+        # weight to both granularities in the ablation.
+        _add_pair(
+            "joblib_small",
+            "joblib",
+            -1,
+            instance_min=int(COMPACT.test/logical_cores/BATCHES_PER_WORKER),
+            feature_min=int(COMPACT.features/logical_cores)
         )
-        variants.append(
-            ParallelVariant(
-                name="joblib_feature_granularity",
-                config=ParallelConfig(
-                    enabled=True,
-                    strategy="joblib",
-                    max_workers=-1,
-                    min_batch_size=16,
-                    granularity="feature",
-                ),
-                description="Joblib backend distributing work over features",
-            )
+        _add_pair(
+            "joblib_large",
+            "joblib",
+            -1,
+            instance_min=int(WIDE.test/logical_cores/BATCHES_PER_WORKER),
+            feature_min=int(WIDE.features/logical_cores)
         )
 
     return tuple(variants)
@@ -488,6 +524,10 @@ def _benchmark_scenario(setup: ScenarioSetup, operation: str) -> Mapping[str, An
 
     variant_entries: List[MutableMapping[str, Any]] = []
     for variant in PARALLEL_VARIANTS:
+        # Optionally announce the task/variant about to run
+        if VERBOSE:
+            print(f"Task: {setup.spec.name}.{operation}  Variant: {variant.name}")
+
         if variant is baseline_variant:
             entry = {
                 "name": variant.name,
