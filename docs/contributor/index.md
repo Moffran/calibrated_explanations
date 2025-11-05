@@ -9,11 +9,13 @@ CLI, configuration, and documentation updates.
 
 1. Review the {doc}`plugin-contract` to understand the surfaces that must remain
    calibrated-first across explanations, intervals, and PlotSpec outputs.
-2. Follow the {doc}`../foundations/governance/test_policy` so every Python
+2. Study the {doc}`extending/plugin-advanced-contract` for advanced plugin wiring
+   methods beyond basic parameter passing.
+3. Follow the {doc}`../foundations/governance/test_policy` so every Python
    example added to the docs or README gains a matching test in `tests/docs/`.
-3. Set up your environment using the workflow in {doc}`../foundations/governance/pr_guide` and run
+4. Set up your environment using the workflow in {doc}`../foundations/governance/pr_guide` and run
    the formatter, tests, and doc builds locally.
-4. Use the {doc}`extending/guides/index` collection when adding new plugins or
+5. Use the {doc}`extending/guides/index` collection when adding new plugins or
    command-line tooling.
 
 ## Advanced contributor tooling
@@ -27,6 +29,7 @@ back to governance requirements.
 :hidden:
 
 plugin-contract
+extending/plugin-advanced-contract
 extending/guides/index
 extending/advanced
 ```
