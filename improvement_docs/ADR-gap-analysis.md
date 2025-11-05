@@ -61,14 +61,15 @@ descending order of this product within each ADR.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Workload-aware auto strategy absent | 5 | 4 | 20 | `_auto_strategy` ignores task hints and payload size, preventing the promised intelligent backend selection. |
-| 2 | Telemetry lacks timings and utilisation metrics | 5 | 4 | 20 | Metrics record counts only, undermining ADR observability commitments and cache telemetry integration. |
-| 3 | Context management & cancellation missing | 4 | 4 | 16 | `ParallelExecutor` lacks context manager support and cancellation APIs, limiting safe lifecycle management. |
-| 4 | Configuration surface incomplete | 4 | 3 | 12 | `ParallelConfig` omits `task_size_hint_bytes`, `force_serial_on_failure`, and strategy injection hooks. |
-| 5 | Resource guardrails ignore cgroup/CI limits | 4 | 3 | 12 | Worker selection relies on CPU count without container-aware caps. |
-| 6 | Fallback warnings not emitted | 4 | 2 | 8 | Serial fallbacks occur silently, contrary to ADR guidance for structured warnings. |
-| 7 | Testing and benchmarking coverage limited | 3 | 3 | 9 | Spawn lifecycle and throughput benchmarks remain manual or untested. |
-| 8 | Documentation for strategies & troubleshooting lacking | 3 | 2 | 6 | No platform-specific matrices or plugin interoperability notes accompany the rollout. |
+| 1 | ParallelFacade (conservative chooser) missing | 4 | 3 | 12 | A small, conservative facade that centralizes selection heuristics and emits compact decision telemetry (v0.9.1 scope) has not been implemented. Implementing this facade is the recommended low-risk first step before a full strategy rollout. |
+| 2 | Workload-aware auto strategy absent | 5 | 4 | 20 | `_auto_strategy` (full automatic strategy) remains unimplemented and is deferred to v0.10; the facade will collect field evidence to inform whether the full `_auto_strategy` is justified. |
+| 3 | Telemetry lacks timings and utilisation metrics | 5 | 4 | 20 | Runtime timings and worker utilisation remain uninstrumented; v0.9.1 should require compact decision telemetry (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type) while full per-task metrics are deferred to v0.10. |
+| 4 | Context management & cancellation missing | 4 | 4 | 16 | `ParallelExecutor` lacks context manager support and cancellation APIs, limiting safe lifecycle management; cooperative cancellation is out of scope for the v0.9.1 facade and belongs to v0.10. |
+| 5 | Configuration surface incomplete | 4 | 3 | 12 | `ParallelConfig` omits `task_size_hint_bytes`, `force_serial_on_failure`, and strategy injection hooks. v0.9.1 should add a small conservative config surface (min_instances_for_parallel, min_features_for_parallel, task_size_hint_bytes). |
+| 6 | Resource guardrails ignore cgroup/CI limits | 4 | 3 | 12 | Worker selection relies on CPU count without container-aware caps; full cgroup/container detection is deferred to v0.10 but the facade should use conservative defaults to avoid oversubscription. |
+| 7 | Fallback warnings not emitted | 4 | 2 | 8 | Serial fallbacks occur silently; the facade should emit structured decision telemetry and a warning when it forces a serial fallback (v0.9.1). |
+| 8 | Testing and benchmarking coverage limited | 3 | 3 | 9 | Spawn lifecycle and throughput benchmarks remain manual or untested; v0.9.1 should add unit tests for the facade decision logic and a micro-benchmark harness to gather evidence. |
+| 9 | Documentation for strategies & troubleshooting lacking | 3 | 2 | 6 | No platform-specific matrices or plugin interoperability notes accompany the rollout; v0.9.1 should ship minimal guidance for the facade and record the v0.10 plan in ADR notes. |
 
 ## ADR-005 – Explanation Envelope & Schema
 

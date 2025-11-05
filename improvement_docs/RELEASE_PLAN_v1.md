@@ -37,14 +37,14 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 
 > Tracking: [Parallel Execution Improvement Plan](parallel_execution_improvement_plan.md#release-plan-alignment) (Phases 0–5)
 
-- **Workload-aware auto strategy absent** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Implement `_auto_strategy` heuristics using task hints.
-- **Telemetry lacks timings and utilisation metrics** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Capture timings, worker utilisation, and cache interplay in telemetry payloads.
-- **Context management & cancellation missing** (severity 16, critical) → `v0.10.0 runtime boundary realignment`. Provide context manager support and cooperative cancellation APIs.
-- **Configuration surface incomplete** (severity 12, high) → `v0.10.0 runtime boundary realignment`. Add `task_size_hint_bytes`, `force_serial_on_failure`, and injection hooks with documentation.
-- **Resource guardrails ignore cgroup/CI limits** (severity 12, high) → `v0.10.0 runtime boundary realignment`. Respect container quotas and expose overrides for CI/staging.
-- **Fallback warnings not emitted** (severity 8, medium) → `v0.10.0 runtime boundary realignment`. Emit structured warnings when falling back to serial execution.
-- **Testing and benchmarking coverage limited** (severity 9, high) → `v0.10.0 runtime boundary realignment`. Automate spawn lifecycle tests and benchmarking suites.
-- **Documentation for strategies & troubleshooting lacking** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. Ship troubleshooting matrices and update ADR-004 status notes.
+- **Workload-aware auto strategy absent** (severity 20, critical) → deferred to `v0.10.0 runtime boundary realignment`. The v0.9.1 plan introduces a conservative `ParallelFacade` to centralize selection heuristics and collect decision telemetry; the full `_auto_strategy` implementation will be revisited for v0.10 after field evidence is gathered.
+- **Telemetry lacks timings and utilisation metrics** (severity 20, critical) → phased: v0.9.1 will require compact decision telemetry (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type). Collection of per-task timings and worker utilisation is deferred to v0.10.
+- **Context management & cancellation missing** (severity 16, critical) → deferred to `v0.10.0 runtime boundary realignment`. v0.9.1 does not add cooperative cancellation but will document expectations.
+- **Configuration surface incomplete** (severity 12, high) → phased: add a small conservative config surface in v0.9.1 (min_features_for_parallel, min_instances_for_parallel, task_size_hint_bytes) exposed via the facade; richer flags like `force_serial_on_failure` and advanced injection hooks remain v0.10 scope.
+- **Resource guardrails ignore cgroup/CI limits** (severity 12, high) → deferred to `v0.10.0 runtime boundary realignment`. The facade will use conservative defaults to avoid oversubscription and expose overrides for CI/staging in v0.9.1.
+- **Fallback warnings not emitted** (severity 8, medium) → v0.9.1: the facade will emit structured decision telemetry and warn when it forces a serial fallback. Full structured warnings/telemetry integration will be extended in v0.10.
+- **Testing and benchmarking coverage limited** (severity 9, high) → v0.9.1: add unit tests for facade logic and a micro-benchmark harness (evaluation/parallel_ablation.py) for evidence-driven decisions; exhaustive lifecycle tests (spawn/fork/joblib) remain v0.10 work.
+- **Documentation for strategies & troubleshooting lacking** (severity 6, medium) → v0.9.1: ship minimal guidance for the facade (env var matrix, decision heuristics) and record the v0.10 plan in ADR notes.
 
 ### ADR-005 – Explanation Envelope & Schema
 
@@ -335,6 +335,7 @@ Release gate: Audience landing pages published with calibrated explanations/prob
 5. Reinforce ADR-020 legacy-API commitments with release checklist gates, regression tests for `explain_factual`/`explore_alternatives`, CONTRIBUTING guidance, and a scripted notebook audit workflow.【F:improvement_docs/ADR-gap-analysis.md†L230-L233】
 6. Restore visualization safety valves per ADR-023 by running the viz suite in CI, removing ignores, and aligning coverage messaging with the final thresholds.【F:improvement_docs/ADR-gap-analysis.md†L255-L257】
 7. Update governance collateral and hubs to satisfy ADR-027—embed the parity-review checklist in PR templates, reinstate the task API comparison, and publish the researcher future-work ledger.【F:improvement_docs/ADR-gap-analysis.md†L289-L291】
+8. Implement ADR-004 v0.9.1 scoped deliverable — ParallelFacade: create a conservative facade that centralizes executor selection heuristics, exposes a minimal config surface (min_instances_for_parallel, min_features_for_parallel, task_size_hint_bytes), honors `CE_PARALLEL` overrides, emits compact decision telemetry (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type), and includes unit tests plus a micro-benchmark harness. This is intentionally small and designed to collect field evidence before any full `ParallelExecutor` rollout in v0.10. 【F:improvement_docs/adrs/ADR-004-parallel-backend-abstraction.md†L1-L40】【F:improvement_docs/ADR-gap-analysis.md†L60-L72】
 
 Release gate: Deprecation dashboard live, docs CI runs with notebook execution, coverage/waiver gating enforced at ≥90%, legacy API and parity checklists signed, and visualization tests passing on the release branch.【F:improvement_docs/ADR-gap-analysis.md†L138-L257】【F:improvement_docs/ADR-gap-analysis.md†L289-L291】
 
