@@ -95,6 +95,9 @@ class CalibratedExplanation(ABC):
     """Abstract base class for storing and visualizing calibrated explanations.
 
     This class defines the interface and shared functionality for different types of calibrated explanations.
+
+    For detailed information about the internal data structures and attributes used by this class
+    and its subclasses, see docs/foundations/concepts/explanation_structures.md.
     """
 
     def __init__(
@@ -897,7 +900,8 @@ class CalibratedExplanation(ABC):
         )
         new_rule["value"].append(str(np.around(self.x_test[f], decimals=2)))
         new_rule["feature"].append(f)
-        new_rule["feature_value"].append(self.binned["rule_values"][f][0][0])
+        new_rule["sampled_values"].append(self.binned["rule_values"][f][0][0])
+        new_rule["feature_value"].append(self.x_test[f])
         new_rule["is_conjunctive"].append(False)
 
         new_rule["rule"].append(rule)
@@ -939,6 +943,9 @@ class FactualExplanation(CalibratedExplanation):
     invariant, so the internal representation and helper payloads **must** keep
     the prediction + interval pair alongside weight + interval information for
     every factual rule.
+
+    For detailed information about the internal data structures and rule generation
+    process, see docs/foundations/concepts/explanation_structures.md.
     """
 
     def __init__(
@@ -1186,6 +1193,7 @@ class FactualExplanation(CalibratedExplanation):
             "value": [],
             "rule": [],
             "feature": [],
+            "sampled_values": [],
             "feature_value": [],
             "is_conjunctive": [],
             "classes": self.prediction["classes"],
@@ -1216,7 +1224,8 @@ class FactualExplanation(CalibratedExplanation):
                 factual["value"].append(str(np.around(instance[f], decimals=2)))
             factual["rule"].append(rules[f])
             factual["feature"].append(f)
-            factual["feature_value"].append(self.binned["rule_values"][f][0][-1])
+            factual["sampled_values"].append(self.binned["rule_values"][f][0][-1])
+            factual["feature_value"].append(self.x_test[f])
             factual["is_conjunctive"].append(False)
         self.rules = factual
         self._has_rules = True
@@ -1292,9 +1301,9 @@ class FactualExplanation(CalibratedExplanation):
 
             for f1, _ in enumerate(factual["feature"]):
                 of1 = factual["feature"][f1]
-                feature_value1 = factual["feature_value"][f1]
+                sampled_values1 = factual["sampled_values"][f1]
                 rule_value1 = (
-                    feature_value1 if isinstance(feature_value1, np.ndarray) else [feature_value1]
+                    sampled_values1 if isinstance(sampled_values1, np.ndarray) else [sampled_values1]
                 )
 
                 for cf2 in top_conjunctives:
@@ -1308,16 +1317,16 @@ class FactualExplanation(CalibratedExplanation):
                         if of1 in of2:
                             continue
                         original_features.extend(int(v) for v in of2)
-                        rule_values.extend(list(conjunctive_state["feature_value"][cf2]))
+                        rule_values.extend(list(conjunctive_state["sampled_values"][cf2]))
                     else:
                         if of1 == of2:
                             continue
                         original_features.append(of2)
-                        feature_value2 = conjunctive_state["feature_value"][cf2]
+                        sampled_values2 = conjunctive_state["sampled_values"][cf2]
                         rule_values.append(
-                            feature_value2
-                            if isinstance(feature_value2, np.ndarray)
-                            else [feature_value2]
+                            sampled_values2
+                            if isinstance(sampled_values2, np.ndarray)
+                            else [sampled_values2]
                         )
 
                     combo_key = _normalise_features(original_features)
@@ -1348,7 +1357,8 @@ class FactualExplanation(CalibratedExplanation):
                         factual["value"][f1] + "\n" + conjunctive_state["value"][cf2]
                     )
                     conjunctive_state["feature"].append(list(original_features))
-                    conjunctive_state["feature_value"].append(list(rule_values))
+                    conjunctive_state["sampled_values"].append(list(rule_values))
+                    conjunctive_state["feature_value"].append(None)
                     conjunctive_state["rule"].append(
                         factual["rule"][f1] + " & \n" + conjunctive_state["rule"][cf2]
                     )
@@ -1527,6 +1537,9 @@ class AlternativeExplanation(CalibratedExplanation):
     for ranking and metadata, but the user-facing payload **must not** replace
     the prediction + interval pair with weights—the prediction interval is the
     authoritative quantity for each alternative rule.
+
+    For detailed information about the internal data structures and rule generation
+    process, see docs/foundations/concepts/explanation_structures.md.
     """
 
     def __init__(
@@ -1630,7 +1643,7 @@ class AlternativeExplanation(CalibratedExplanation):
             condition = self._build_condition_payload(
                 feature_index,
                 rules["rule"][idx],
-                rules["feature_value"][idx],
+                rules["sampled_values"][idx],
                 rules["value"][idx],
             )
             prediction_value = CalibratedExplanation._to_python_number(rules["predict"][idx])
@@ -1675,7 +1688,7 @@ class AlternativeExplanation(CalibratedExplanation):
                 "weight_uncertainty": weight_uncertainty,
                 "condition_text": rules["rule"][idx],
                 "instance_value": CalibratedExplanation._to_python_number(
-                    rules["feature_value"][idx]
+                    rules["sampled_values"][idx]
                 ),
                 "alternative_value": CalibratedExplanation._to_python_number(rules["value"][idx]),
             }
@@ -1765,7 +1778,8 @@ class AlternativeExplanation(CalibratedExplanation):
                     else:
                         alternative["value"].append(str(np.around(instance[f], decimals=2)))
                     alternative["feature"].append(f)
-                    alternative["feature_value"].append(value)
+                    alternative["sampled_values"].append(value)
+                    alternative["feature_value"].append(self.x_test[f])
                     if self._get_explainer().categorical_labels is not None:
                         self.labels[len(alternative["rule"])] = f
                         alternative["rule"].append(
@@ -1807,7 +1821,8 @@ class AlternativeExplanation(CalibratedExplanation):
                     )
                     alternative["value"].append(str(np.around(instance[f], decimals=2)))
                     alternative["feature"].append(f)
-                    alternative["feature_value"].append(self.binned["rule_values"][f][0][0])
+                    alternative["sampled_values"].append(self.binned["rule_values"][f][0][0])
+                    alternative["feature_value"].append(self.x_test[f])
                     alternative["rule"].append(
                         f"{self._get_explainer().feature_names[f]} < {lesser:.2f}"
                     )
@@ -1838,11 +1853,12 @@ class AlternativeExplanation(CalibratedExplanation):
                     )
                     alternative["value"].append(str(np.around(instance[f], decimals=2)))
                     alternative["feature"].append(f)
-                    alternative["feature_value"].append(
+                    alternative["sampled_values"].append(
                         self.binned["rule_values"][f][0][
                             1 if len(self.binned["rule_values"][f][0]) == 3 else 0
                         ]
                     )
+                    alternative["feature_value"].append(self.x_test[f])
                     alternative["rule"].append(
                         f"{self._get_explainer().feature_names[f]} > {greater:.2f}"
                     )
@@ -1867,6 +1883,7 @@ class AlternativeExplanation(CalibratedExplanation):
             "value": [],
             "rule": [],
             "feature": [],
+            "sampled_values": [],
             "feature_value": [],
             "is_conjunctive": [],
             "classes": self.prediction["classes"],
@@ -1960,7 +1977,7 @@ class AlternativeExplanation(CalibratedExplanation):
             new_rules["value"].append(rules["value"][rule])
             new_rules["rule"].append(rules["rule"][rule])
             new_rules["feature"].append(rules["feature"][rule])
-            new_rules["feature_value"].append(rules["feature_value"][rule])
+            new_rules["sampled_values"].append(rules["sampled_values"][rule])
             new_rules["is_conjunctive"].append(rules["is_conjunctive"][rule])
         new_rules["classes"] = rules["classes"]
 
@@ -2013,6 +2030,11 @@ class AlternativeExplanation(CalibratedExplanation):
         new_rules["feature"] = [
             value
             for i, value in enumerate(new_rules["feature"])
+            if not new_rules["is_conjunctive"][i]
+        ]
+        new_rules["sampled_values"] = [
+            value
+            for i, value in enumerate(new_rules["sampled_values"])
             if not new_rules["is_conjunctive"][i]
         ]
         new_rules["feature_value"] = [
@@ -2171,14 +2193,15 @@ class AlternativeExplanation(CalibratedExplanation):
 
             for f1, _ in enumerate(alternative["feature"]):
                 of1 = alternative["feature"][f1]
-                feature_value1 = alternative["feature_value"][f1]
+                sampled_values1 = alternative["sampled_values"][f1]
                 rule_value1 = (
-                    feature_value1 if isinstance(feature_value1, np.ndarray) else [feature_value1]
+                    sampled_values1 if isinstance(sampled_values1, np.ndarray) else [sampled_values1]
                 )
 
                 for cf2 in top_conjunctives:
                     rule_values = [rule_value1]
                     original_features = [of1]
+                    original_feature_values = [alternative["feature_value"][f1]]
                     of2 = conjunctive_state["feature"][cf2]
                     target_length = current_size - 1
                     if _feature_length(of2) != target_length:
@@ -2187,16 +2210,18 @@ class AlternativeExplanation(CalibratedExplanation):
                         if of1 in of2:
                             continue
                         original_features.extend(int(v) for v in of2)
-                        rule_values.extend(list(conjunctive_state["feature_value"][cf2]))
+                        rule_values.extend(list(conjunctive_state["sampled_values"][cf2]))
+                        original_feature_values.extend(conjunctive_state["feature_value"][cf2])
                     else:
                         if of1 == of2:
                             continue
                         original_features.append(of2)
-                        feature_value2 = conjunctive_state["feature_value"][cf2]
+                        original_feature_values.append(alternative["feature_value"][cf2])
+                        sampled_values2 = conjunctive_state["sampled_values"][cf2]
                         rule_values.append(
-                            feature_value2
-                            if isinstance(feature_value2, np.ndarray)
-                            else [feature_value2]
+                            sampled_values2
+                            if isinstance(sampled_values2, np.ndarray)
+                            else [sampled_values2]
                         )
 
                     combo_key = _normalise_features(original_features)
@@ -2227,7 +2252,8 @@ class AlternativeExplanation(CalibratedExplanation):
                         alternative["value"][f1] + "\n" + conjunctive_state["value"][cf2]
                     )
                     conjunctive_state["feature"].append(list(original_features))
-                    conjunctive_state["feature_value"].append(list(rule_values))
+                    conjunctive_state["sampled_values"].append(list(rule_values))
+                    conjunctive_state["feature_value"].append(list(original_feature_values))
                     conjunctive_state["rule"].append(
                         alternative["rule"][f1] + " & \n" + conjunctive_state["rule"][cf2]
                     )
@@ -2557,6 +2583,7 @@ class FastExplanation(CalibratedExplanation):
             "value": [],
             "rule": [],
             "feature": [],
+            "sampled_values": [],
             "feature_value": [],
             "is_conjunctive": [],
             "classes": self.prediction["classes"],
@@ -2585,6 +2612,7 @@ class FastExplanation(CalibratedExplanation):
                 fast["value"].append(str(np.around(instance[f], decimals=2)))
             fast["rule"].append(rules[f])
             fast["feature"].append(f)
+            fast["sampled_values"].append(None)
             fast["feature_value"].append(None)
             fast["is_conjunctive"].append(False)
         self.rules = fast

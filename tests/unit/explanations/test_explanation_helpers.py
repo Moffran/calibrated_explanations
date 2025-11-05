@@ -174,7 +174,8 @@ def _build_rules_fixture(explanation):
     return {
         "rule": ["f0 <= 0.2", "f1 > 0.3"],
         "feature": [0, 1],
-        "feature_value": [np.array([0.1]), np.array([0.4])],
+        "sampled_values": [np.array([0.1]), np.array([0.4])],
+        "feature_value": [0.1, 0.4],
         "value": ["0.10", "0.30"],
         "weight": [0.2, -0.1],
         "weight_low": [0.1, -0.2],
@@ -209,7 +210,8 @@ class StubAlternative(explanation_module.AlternativeExplanation):
             self._rules = {
                 "rule": ["f0 <= 0.2"],
                 "feature": [0],
-                "feature_value": [np.array([0.1, 0.2])],
+                "sampled_values": [np.array([0.1, 0.2])],
+                "feature_value": [0.1],
                 "value": ["0.10"],
                 "weight": [0.2],
                 "weight_low": [0.1],

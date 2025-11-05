@@ -16,6 +16,7 @@ guides.
 | [Alternatives & triangular plots](alternatives.md) | Explains how the triangular view pairs with rule tables for calibrated alternatives. |
 | [Architecture overview](architecture.md) | Connects runtime components, caching, and plugin guardrails. |
 | [Error handling](error_handling.md) | Summarises runtime safeguards and expected exceptions. |
+| [Explanation structures](explanation_structures.md) | Documents the internal data structures used by CalibratedExplanation classes. |
 
 ```{toctree}
 :maxdepth: 1
@@ -24,4 +25,5 @@ probabilistic_regression
 alternatives
 architecture
 error_handling
+explanation_structures
 ```
