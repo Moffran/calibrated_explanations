@@ -37,38 +37,36 @@ class TestNotebookSetup:
 
         # Load data
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        assert X.shape[0] > 0
+        assert x.shape[0] > 0
         assert y.shape[0] > 0
-        assert X.shape[0] == y.shape[0]
+        assert x.shape[0] == y.shape[0]
 
         # Split data (train/test, then train/calibration)
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, _ = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, _ = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         # Scale data
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
         # Verify sizes match expectations
-        assert X_train.shape[0] > 0
-        assert X_cal.shape[0] > 0
-        assert X_test.shape[0] > 0
-        assert X_train.shape[1] == 30  # Breast cancer has 30 features
+        assert x_train.shape[0] > 0
+        assert x_cal.shape[0] > 0
+        assert x_test.shape[0] > 0
+        assert x_train.shape[1] == 30  # Breast cancer has 30 features
 
         # Train a basic classifier
         model = RandomForestClassifier(random_state=42, n_estimators=10)
-        model.fit(X_train, y_train)
+        model.fit(x_train, y_train)
 
         # Model should be trainable and predictable
-        predictions = model.predict(X_test[:3])
+        predictions = model.predict(x_test[:3])
         assert predictions.shape[0] == 3
 
 
@@ -85,26 +83,24 @@ class TestNotebookMethodA:
 
         # Prepare data (same as notebook)
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
+        model, _ = get_classification_model("RF", x_train, y_train)
 
         # Method A: Explicit plot style parameter
         explainer_a = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
             plot_style="plot_spec.default",
         )
@@ -114,7 +110,7 @@ class TestNotebookMethodA:
         assert explainer_a._plot_style_override == "plot_spec.default"
 
         # Generate explanations
-        explanations = explainer_a.explain_factual(X_test[:3])
+        explanations = explainer_a.explain_factual(x_test[:3])
         assert explanations is not None
 
 
@@ -131,31 +127,29 @@ class TestNotebookMethodB:
 
         # Prepare data
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
+        model, _ = get_classification_model("RF", x_train, y_train)
 
         # Create explainer without explicit style
         explainer = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
         )
 
         # Generate explanations
-        explanations = explainer.explain_factual(X_test[:3])
+        explanations = explainer.explain_factual(x_test[:3])
 
         # Method B: Use style_override in plot() call
         # Verify the plot method accepts style_override parameter
@@ -186,26 +180,24 @@ class TestNotebookMethodC:
 
             # Prepare data
             data = load_breast_cancer()
-            X = data.data
+            x = data.data
             y = data.target
-            X_temp, X_test, y_temp, _ = train_test_split(
-                X, y, test_size=0.2, random_state=42
-            )
-            X_train, X_cal, y_train, y_cal = train_test_split(
-                X_temp, y_temp, test_size=0.4, random_state=42
+            x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+            x_train, x_cal, y_train, y_cal = train_test_split(
+                x_temp, y_temp, test_size=0.4, random_state=42
             )
 
             scaler = StandardScaler()
-            X_train = scaler.fit_transform(X_train)
-            X_cal = scaler.transform(X_cal)
-            X_test = scaler.transform(X_test)
+            x_train = scaler.fit_transform(x_train)
+            x_cal = scaler.transform(x_cal)
+            x_test = scaler.transform(x_test)
 
-            model, _ = get_classification_model("RF", X_train, y_train)
+            model, _ = get_classification_model("RF", x_train, y_train)
 
             # Create explainer (should use environment variable as fallback)
             explainer = CalibratedExplainer(
                 model,
-                X_cal,
+                x_cal,
                 y_cal,
             )
 
@@ -213,7 +205,7 @@ class TestNotebookMethodC:
             assert explainer is not None
 
             # Generate explanations
-            explanations = explainer.explain_factual(X_test[:3])
+            explanations = explainer.explain_factual(x_test[:3])
             assert explanations is not None
 
         finally:
@@ -280,32 +272,30 @@ class TestNotebookMethodE:
 
             # Prepare data
             data = load_breast_cancer()
-            X = data.data
+            x = data.data
             y = data.target
-            X_temp, X_test, y_temp, _ = train_test_split(
-                X, y, test_size=0.2, random_state=42
-            )
-            X_train, X_cal, y_train, y_cal = train_test_split(
-                X_temp, y_temp, test_size=0.4, random_state=42
+            x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+            x_train, x_cal, y_train, y_cal = train_test_split(
+                x_temp, y_temp, test_size=0.4, random_state=42
             )
 
             scaler = StandardScaler()
-            X_train = scaler.fit_transform(X_train)
-            X_cal = scaler.transform(X_cal)
-            X_test = scaler.transform(X_test)
+            x_train = scaler.fit_transform(x_train)
+            x_cal = scaler.transform(x_cal)
+            x_test = scaler.transform(x_test)
 
-            model, _ = get_classification_model("RF", X_train, y_train)
+            model, _ = get_classification_model("RF", x_train, y_train)
 
             # Use the registered plugin (Method E)
             explainer = CalibratedExplainer(
                 model,
-                X_cal,
+                x_cal,
                 y_cal,
                 factual_plugin=plugin_id,
             )
 
             # Generate explanations using the custom plugin
-            explanations = explainer.explain_factual(X_test[:3])
+            explanations = explainer.explain_factual(x_test[:3])
             assert explanations is not None
 
         finally:
@@ -361,26 +351,24 @@ class TestNotebookMethodE:
 
             # Prepare data
             data = load_breast_cancer()
-            X = data.data
+            x = data.data
             y = data.target
-            X_temp, X_test, y_temp, _ = train_test_split(
-                X, y, test_size=0.2, random_state=42
-            )
-            X_train, X_cal, y_train, y_cal = train_test_split(
-                X_temp, y_temp, test_size=0.4, random_state=42
+            x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+            x_train, x_cal, y_train, y_cal = train_test_split(
+                x_temp, y_temp, test_size=0.4, random_state=42
             )
 
             scaler = StandardScaler()
-            X_train = scaler.fit_transform(X_train)
-            X_cal = scaler.transform(X_cal)
-            X_test = scaler.transform(X_test)
+            x_train = scaler.fit_transform(x_train)
+            x_cal = scaler.transform(x_cal)
+            x_test = scaler.transform(x_test)
 
-            model, _ = get_classification_model("RF", X_train, y_train)
+            model, _ = get_classification_model("RF", x_train, y_train)
 
             # Create explainer with custom plugin
             explainer = CalibratedExplainer(
                 model,
-                X_cal,
+                x_cal,
                 y_cal,
                 factual_plugin=plugin_id,
             )
@@ -389,7 +377,7 @@ class TestNotebookMethodE:
             assert explainer._explanation_plugin_overrides["factual"] == plugin_id
 
             # Generate explanations
-            explanations = explainer.explain_factual(X_test[:3])
+            explanations = explainer.explain_factual(x_test[:3])
             assert explanations is not None
 
         finally:
@@ -410,30 +398,28 @@ class TestNotebookIntegration:
 
         # Prepare data (once for all methods)
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
+        model, _ = get_classification_model("RF", x_train, y_train)
 
         # Test Method A
         explainer_a = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
             plot_style="plot_spec.default",
         )
-        explanations_a = explainer_a.explain_factual(X_test[:3])
+        explanations_a = explainer_a.explain_factual(x_test[:3])
         assert explanations_a is not None
 
         # Test Method B (with Method A explainer - plot() uses style_override)
@@ -446,10 +432,10 @@ class TestNotebookIntegration:
             os.environ["CE_PLOT_STYLE"] = "legacy"
             explainer_c = CalibratedExplainer(
                 model,
-                X_cal,
+                x_cal,
                 y_cal,
             )
-            explanations_c = explainer_c.explain_factual(X_test[:3])
+            explanations_c = explainer_c.explain_factual(x_test[:3])
             assert explanations_c is not None
         finally:
             if old_env is not None:

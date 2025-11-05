@@ -1303,7 +1303,9 @@ class FactualExplanation(CalibratedExplanation):
                 of1 = factual["feature"][f1]
                 sampled_values1 = factual["sampled_values"][f1]
                 rule_value1 = (
-                    sampled_values1 if isinstance(sampled_values1, np.ndarray) else [sampled_values1]
+                    sampled_values1
+                    if isinstance(sampled_values1, np.ndarray)
+                    else [sampled_values1]
                 )
 
                 for cf2 in top_conjunctives:
@@ -2195,7 +2197,9 @@ class AlternativeExplanation(CalibratedExplanation):
                 of1 = alternative["feature"][f1]
                 sampled_values1 = alternative["sampled_values"][f1]
                 rule_value1 = (
-                    sampled_values1 if isinstance(sampled_values1, np.ndarray) else [sampled_values1]
+                    sampled_values1
+                    if isinstance(sampled_values1, np.ndarray)
+                    else [sampled_values1]
                 )
 
                 for cf2 in top_conjunctives:

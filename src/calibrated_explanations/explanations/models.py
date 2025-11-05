@@ -114,7 +114,7 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
         index=idx,
         explanation_type=explanation_type,
         prediction=prediction,
-        rules=rules_out
+        rules=rules_out,
     )
 
 

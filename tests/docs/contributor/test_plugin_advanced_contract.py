@@ -26,22 +26,20 @@ class TestMethodCEnvironmentVariables:
 
         # Prepare data and explainer
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
-        explainer = CalibratedExplainer(model, X_cal, y_cal)
+        model, _ = get_classification_model("RF", x_train, y_train)
+        explainer = CalibratedExplainer(model, x_cal, y_cal)
 
         # Test that CE_PLOT_STYLE is checked in the resolution chain
         old_value = os.environ.get("CE_PLOT_STYLE")
@@ -68,22 +66,20 @@ class TestMethodCEnvironmentVariables:
 
         # Prepare data and explainer
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
-        explainer = CalibratedExplainer(model, X_cal, y_cal)
+        model, _ = get_classification_model("RF", x_train, y_train)
+        explainer = CalibratedExplainer(model, x_cal, y_cal)
 
         old_fallbacks = os.environ.get("CE_PLOT_STYLE_FALLBACKS")
         try:
@@ -200,9 +196,9 @@ class TestMethodDConfigurationFile:
         for plot_id, plot_meta in plots_config.items():
             if isinstance(plot_meta, dict):
                 # Each plot should have builder and renderer
-                assert "builder_id" in plot_meta or "default" in str(
-                    plot_meta
-                ).lower(), f"Plot {plot_id} missing builder_id or default setting"
+                assert (
+                    "builder_id" in plot_meta or "default" in str(plot_meta).lower()
+                ), f"Plot {plot_id} missing builder_id or default setting"
 
 
 class TestMethodEPluginMetadata:
@@ -262,26 +258,24 @@ class TestMethodEPluginMetadata:
 
         # Prepare data
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
+        model, _ = get_classification_model("RF", x_train, y_train)
 
         # Create explainer using a core plugin
         explainer = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
             factual_plugin="core.explanation.factual",
         )
@@ -290,7 +284,7 @@ class TestMethodEPluginMetadata:
         assert explainer._explanation_plugin_overrides["factual"] == "core.explanation.factual"
 
         # Generate explanations
-        explanations = explainer.explain_factual(X_test[:3])
+        explanations = explainer.explain_factual(x_test[:3])
 
         # Verify explanations object was created successfully
         assert explanations is not None
@@ -310,26 +304,24 @@ class TestPriorityResolution:
 
         # Prepare data
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
+        model, _ = get_classification_model("RF", x_train, y_train)
 
         # Create explainer with Method A (highest priority)
         explainer = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
             plot_style="plot_spec.default",
         )
@@ -350,22 +342,20 @@ class TestPriorityResolution:
 
         # Prepare data and explainer
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
-        explainer = CalibratedExplainer(model, X_cal, y_cal)
+        model, _ = get_classification_model("RF", x_train, y_train)
+        explainer = CalibratedExplainer(model, x_cal, y_cal)
 
         # When no override is specified, chain should include multiple fallbacks
         chain = _resolve_plot_style_chain(explainer, explicit_style=None)

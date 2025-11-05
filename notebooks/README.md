@@ -4,21 +4,21 @@ This folder contains interactive notebooks demonstrating how to use calibrated-e
 
 Quick learning path (recommended order):
 
-1. quickstart_tiny.ipynb (2–5 minutes)  
+1. quickstart_tiny.ipynb (2–5 minutes)
    - Tiny, dependency-light notebook using scikit-learn toy data. Run this first if you want a fast local trial.
-2. quickstart.ipynb (5–10 minutes)  
+2. quickstart.ipynb (5–10 minutes)
    - Full quickstart covering classification and regression with plotting and uncertainty.
-3. quickstart_wrap.ipynb / quickstart_wrap_oob.ipynb (5–10 minutes)  
+3. quickstart_wrap.ipynb / quickstart_wrap_oob.ipynb (5–10 minutes)
    - Wrapper API examples and out-of-bag calibration variants.
-4. demo_binary_classification.ipynb (10–15 minutes)  
+4. demo_binary_classification.ipynb (10–15 minutes)
    - Binary classification practitioner examples (factual, alternatives, conjunctions).
-5. demo_multiclass*.ipynb (10–20 minutes)  
+5. demo_multiclass*.ipynb (10–20 minutes)
    - Multiclass demos and VennAbers examples.
-6. demo_regression.ipynb / demo_probabilistic_regression.ipynb (15–30 minutes)  
+6. demo_regression.ipynb / demo_probabilistic_regression.ipynb (15–30 minutes)
    - Interval and probabilistic regression, triangular plots, difficulty estimators.
-7. demo_conditional.ipynb (15–30 minutes)  
+7. demo_conditional.ipynb (15–30 minutes)
    - Conditional/normalized explanations and bins.
-8. demo_under_the_hood.ipynb (developer, 10–20 minutes)  
+8. demo_under_the_hood.ipynb (developer, 10–20 minutes)
    - Internals: `_get_rules()`, telemetry payloads, and programmatic access to explanation fields.
 
 Supplementary notebooks (additional_notebooks/)

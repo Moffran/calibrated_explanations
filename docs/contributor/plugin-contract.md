@@ -59,7 +59,7 @@ class HelloIntervalCalibratorPlugin(IntervalCalibratorPlugin):
     def create(self, context: IntervalCalibratorContext, **kwargs: Any) -> Any:
         """Return a list of calibrators for feature-wise and model-level intervals."""
         task = str(context.metadata.get("task") or context.metadata.get("mode") or "")
-        
+
         # For demonstration, return mock calibrators
         # In practice, fit calibrators on context.calibration_splits
         if "classification" in task:

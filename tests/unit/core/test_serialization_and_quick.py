@@ -36,7 +36,7 @@ def test_domain_json_round_trip_and_schema_validation():
         index=0,
         explanation_type="factual",
         prediction={"predict": 1},
-        rules=rules
+        rules=rules,
     )
     payload = to_json(exp)
     # Validate when jsonschema is available
@@ -158,7 +158,13 @@ def test_validate_payload_rejects_missing_required_fields():
             rule_prediction={"predict": 0.6, "low": 0.5, "high": 0.7},
         )
     ]
-    exp = Explanation(task="classification", index=0, explanation_type="factual", prediction={"predict": 1.0}, rules=rules)
+    exp = Explanation(
+        task="classification",
+        index=0,
+        explanation_type="factual",
+        prediction={"predict": 1.0},
+        rules=rules,
+    )
     payload = to_json(exp)
     payload.pop("prediction")
 

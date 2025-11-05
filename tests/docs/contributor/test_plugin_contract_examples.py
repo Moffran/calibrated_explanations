@@ -125,13 +125,17 @@ class TestHelloExplanationPlugin:
                 from calibrated_explanations.explanations import CalibratedExplanations
 
                 explanations = CalibratedExplanations(None, 0, x, {}, {}, {}, {})
-                return type("ExplanationBatch", (), {
-                    "explanations": explanations,
-                    "collection_metadata": {
-                        "mode": self.plugin_meta.get("modes", ("factual",))[0],
-                        "task": self.context.task,
+                return type(
+                    "ExplanationBatch",
+                    (),
+                    {
+                        "explanations": explanations,
+                        "collection_metadata": {
+                            "mode": self.plugin_meta.get("modes", ("factual",))[0],
+                            "task": self.context.task,
+                        },
                     },
-                })()
+                )()
 
         plugin = HelloExplanationPlugin()
         assert plugin.plugin_meta["name"] == "hello.explanation.plugin"
@@ -174,10 +178,14 @@ class TestHelloExplanationPlugin:
                 from calibrated_explanations.explanations import CalibratedExplanations
 
                 explanations = CalibratedExplanations(None, 0, x, {}, {}, {}, {})
-                return type("ExplanationBatch", (), {
-                    "explanations": explanations,
-                    "collection_metadata": {"mode": "factual", "task": "classification"},
-                })()
+                return type(
+                    "ExplanationBatch",
+                    (),
+                    {
+                        "explanations": explanations,
+                        "collection_metadata": {"mode": "factual", "task": "classification"},
+                    },
+                )()
 
         plugin = HelloExplanationPlugin()
         validate_plugin_meta(dict(plugin.plugin_meta))
@@ -247,6 +255,7 @@ class TestHelloPlotPlugin:
 
             def render(self, artifact, *, context):
                 from calibrated_explanations.plugins.plots import PlotRenderResult
+
                 return PlotRenderResult(
                     artifact=artifact,
                     figure=None,
@@ -349,7 +358,7 @@ class TestHelloPlotPlugin:
             _PLOT_STYLES.pop(style_id, None)
 
 
-class TestPluginWiringMethodsA_B:
+class TestPluginWiringMethodsAB:
     """Test the wiring examples from plugin-contract.md Methods A & B."""
 
     def test_method_a_explainer_parameter(self):
@@ -362,26 +371,24 @@ class TestPluginWiringMethodsA_B:
 
         # Prepare data
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
+        model, _ = get_classification_model("RF", x_train, y_train)
 
         # Test Method A: Parameter wiring
         explainer = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
             plot_style="plot_spec.default",
         )
@@ -401,30 +408,28 @@ class TestPluginWiringMethodsA_B:
 
         # Prepare data
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
+        model, _ = get_classification_model("RF", x_train, y_train)
 
         # Test Method B: Plot parameter wiring
         explainer = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
         )
 
-        explanations = explainer.explain_factual(X_test[:3])
+        explanations = explainer.explain_factual(x_test[:3])
 
         # Verify explanations object has plot method with style_override support
         assert hasattr(explanations, "plot")
@@ -449,32 +454,30 @@ class TestPluginDependencyPropagation:
 
         # Prepare data
         data = load_breast_cancer()
-        X = data.data
+        x = data.data
         y = data.target
-        X_temp, X_test, y_temp, _ = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        X_train, X_cal, y_train, y_cal = train_test_split(
-            X_temp, y_temp, test_size=0.4, random_state=42
+        x_temp, x_test, y_temp, _ = train_test_split(x, y, test_size=0.2, random_state=42)
+        x_train, x_cal, y_train, y_cal = train_test_split(
+            x_temp, y_temp, test_size=0.4, random_state=42
         )
 
         scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_cal = scaler.transform(X_cal)
-        X_test = scaler.transform(X_test)
+        x_train = scaler.fit_transform(x_train)
+        x_cal = scaler.transform(x_cal)
+        x_test = scaler.transform(x_test)
 
-        model, _ = get_classification_model("RF", X_train, y_train)
+        model, _ = get_classification_model("RF", x_train, y_train)
 
         # Create explainer with core plugins (which have declared dependencies)
         explainer = CalibratedExplainer(
             model,
-            X_cal,
+            x_cal,
             y_cal,
             factual_plugin="core.explanation.factual",
         )
 
         # Generate explanations
-        explanations = explainer.explain_factual(X_test[:3])
+        explanations = explainer.explain_factual(x_test[:3])
 
         # Verify metadata includes plot fallbacks from plugin dependencies
         assert hasattr(explanations, "telemetry")

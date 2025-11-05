@@ -209,6 +209,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             the top-level payload as well as on each explanation entry.
         """
         from ..serialization import to_json as _explanation_to_json
+
         instances = []
         for exp in self.explanations:
             domain = legacy_to_domain(exp.index, self._legacy_payload(exp))
@@ -232,6 +233,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
         """Materialise domain explanations from a :meth:`to_json` payload."""
         from ..serialization import from_json as _explanation_from_json
+
         explanations_blob = payload.get("explanations", []) or []
         domain: list[DomainExplanation] = []
         for item in explanations_blob:
