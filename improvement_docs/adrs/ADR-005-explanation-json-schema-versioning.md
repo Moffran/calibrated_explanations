@@ -21,13 +21,14 @@ Establish a versioned explanation envelope:
 {
   "schema_version": "1.0.0",
   "type": "feature_attribution",
+  "explanation_type": "factual",
   "generator": {
     "library_version": "0.6.0",
     "strategy": "...",
     "parameters_hash": "<blake2-short>"
   },
   "meta": {"dataset_hash": "...", "n_features": 42, "created_at": "ISO8601"},
-  "payload": { "values": [...], "feature_names": [...], "baseline": [...], "extra": {...} }
+  "payload": { "task": "classification", "index": 0, "prediction": {"predict": 0.8, "low": 0.7, "high": 0.9}, "rules": [...] }
 }
 ```
 
@@ -37,8 +38,9 @@ Rules:
 - Minor increments allow additive, backwards-compatible fields (consumers ignore unknown keys).
 - Major increments indicate breaking structural changes.
 - `type` enumerated (initial set): feature_attribution, interval, global_importance, calibration_diagnostics.
+- `explanation_type` (for type="feature_attribution"): "factual" or "alternative", indicating whether the explanation is factual or alternative as defined in ADR-008.
 - `generator.parameters_hash` ensures reproducibility trace.
-- `payload` structure type-dependent; each type documented in `docs/schema/`.
+- `payload` structure type-dependent; for feature_attribution, follows the schema_v1 structure with calibrated predictions and feature rules aligned with CE paper semantics.
 
 Validation:
 

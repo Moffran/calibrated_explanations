@@ -138,6 +138,7 @@ class VennAbers:
         warnings.filterwarnings("default", category=RuntimeWarning)
 
     def __predict_proba_with_difficulty(self, x, bins=None):
+        """Augment raw probabilities with optional difficulty adjustments."""
         if "bins" in self._predict_proba.__code__.co_varnames:
             probs = self._predict_proba(x, bins=bins)
         else:
@@ -213,10 +214,12 @@ class VennAbers:
                 tmp = high[:, c] / (1 - low[:, c] + high[:, c])
                 va_proba[:, c] = tmp
             # TODO: Surprisingly, probability normalization is needed, needs looking into
-            for i in range(va_proba.shape[0]):
-                low[i] = low[i] / np.sum(va_proba[i, :])
-                high[i] = high[i] / np.sum(va_proba[i, :])
-                va_proba[i, :] = va_proba[i, :] / np.sum(va_proba[i, :])
+            row_sums = va_proba.sum(axis=1, keepdims=True)
+            # Guard against divide-by-zero for degenerate rows.
+            safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
+            va_proba = va_proba / safe_row_sums
+            low = low / safe_row_sums
+            high = high / safe_row_sums
             if classes is not None:
                 if type(classes) not in (list, np.ndarray):
                     classes = [classes]

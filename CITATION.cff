@@ -40,12 +40,12 @@ identifiers:
       Uncertainty Information and Counterfactuals
 repository-code: 'https://github.com/Moffran/calibrated_explanations'
 abstract: >-
-  `calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both [classification](https://doi.org/10.1016/j.eswa.2024.123154) and [regression](https://arxiv.org/abs/2308.16245).
+  `calibrated-explanations` is a Python package for the local feature importance explanation method called Calibrated Explanations, supporting both [classification](https://doi.org/10.1016/j.eswa.2024.123154) and [regression](https://doi.org/10.1007/s10994-024-06642-8).
   The proposed method is based on Venn-Abers (classification & regression) and Conformal Predictive Systems (regression) and has the following characteristics:
   * Fast, reliable, stable and robust feature importance explanations for:
     - Binary classification models ([read paper](https://doi.org/10.1016/j.eswa.2024.123154))
     - Multi-class classification models ([read paper](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf))
-    - Regression models ([read paper](https://arxiv.org/abs/2308.16245))
+    - Regression models ([read paper](https://doi.org/10.1007/s10994-024-06642-8))
       * Including probabilistic explanations of the probability that the target exceeds a user-defined threshold
       * With difficulty adaptable explanations (conformal normalization)
   * Calibration of the underlying model to ensure that predictions reflect reality.

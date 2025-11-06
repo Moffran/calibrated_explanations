@@ -29,7 +29,8 @@ Adopt a layered coverage policy that couples numeric thresholds with risk-based 
   regression, serialization, and plugin registries by using `coverage report --fail-under` with
   per-path configuration.
 - **Change-based gating:** Add a `coverage xml` step and integrate the Codecov “patch coverage”
-  gate at **≥85%** for modified lines/files. Pull requests that lower patch coverage below the
+  gate at **≥88%** for modified lines/files (raised from 85% as part of the v0.9.0 release).
+  Pull requests that lower patch coverage below the
   threshold must justify waivers in the review checklist.
 - **Documented exemptions:** Generated code, visualization golden files, and deprecated
   shims can be excluded via `.coveragerc` with explicit comments that describe the rationale
@@ -94,8 +95,8 @@ Negative/Risks:
   becomes mandatory, and local tooling (`make test-cov`) mirrors the CI
   workflow.
 - v0.9.0 – Package-wide floor raised to ≥88%, waiver inventory trimmed,
-  and coverage enforcement is fully blocking on the release branch per
-  the milestone gate.
+  Codecov patch gating tightened to ≥88%, and coverage enforcement is
+  fully blocking on the release branch per the milestone gate.
 - v1.0.0-rc – CI enforces the final ≥90% package floor, coverage
   dashboards become part of the release checklist, and branch protection
   rules require green coverage jobs before freeze.

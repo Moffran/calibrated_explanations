@@ -49,7 +49,6 @@ if not _HAS_PYTEST_COV:
 
     def pytest_addoption(parser):  # pragma: no cover - exercised when pytest-cov absent
         """Register stub coverage options so pytest.ini remains compatible."""
-
         group = parser.getgroup("cov", "coverage reporting")
         group.addoption(
             "--cov",
@@ -97,7 +96,6 @@ _matplotlib = None
 
 def _matplotlib_available() -> bool:
     """Return True when matplotlib can be imported."""
-
     return _ensure_matplotlib() is not None
 
 
@@ -126,7 +124,6 @@ def _env_flag(name: str) -> bool:
 
 def _should_enforce_cov_threshold(config) -> bool:
     """Return True when coverage fail-under thresholds should be enforced."""
-
     try:
         args = tuple(config.args)
     except AttributeError:
@@ -236,6 +233,7 @@ def small_random_forest():
 
 @pytest.fixture(scope="session")
 def small_random_forest_classifier():
+    """Return a small RandomForestClassifier for reuse across tests."""
     from sklearn.ensemble import RandomForestClassifier
     import numpy as np
 
@@ -284,7 +282,6 @@ def patch_difficulty_estimator(monkeypatch):
 
 def pytest_addoption(parser):  # pragma: no cover - simple option registration
     """Provide coverage CLI flags when pytest-cov is unavailable."""
-
     if _HAS_PYTEST_COV:
         return
 
@@ -318,7 +315,6 @@ def pytest_addoption(parser):  # pragma: no cover - simple option registration
 
 def pytest_configure(config):  # pragma: no cover - integration glue
     """Start coverage measurement when the real pytest-cov plugin is unavailable."""
-
     enforce_fail_under = _should_enforce_cov_threshold(config)
     setattr(config, "_ce_cov_enforce_thresholds", enforce_fail_under)
 
@@ -366,7 +362,6 @@ def pytest_configure(config):  # pragma: no cover - integration glue
 
 def pytest_unconfigure(config):  # pragma: no cover - integration glue
     """Emit coverage reports for the stub coverage integration."""
-
     coverage_controller = getattr(config, "_ce_cov_controller", None)
     if coverage_controller is None:
         return
@@ -410,27 +405,22 @@ def pytest_collection_modifyitems(config, items):
 _MATPLOTLIB_OPTIONAL_FAIL_UNDER = 50.0
 
 _MATPLOTLIB_OPTIONAL_MODULES = {
-    "src/calibrated_explanations/_plots.py",
-    "src/calibrated_explanations/_plots_legacy.py",
     "src/calibrated_explanations/viz/matplotlib_adapter.py",
 }
 
 
 _MODULE_COVERAGE_THRESHOLDS = {
-    "src/calibrated_explanations/_interval_regressor.py": 85.0,
-    "src/calibrated_explanations/core/calibrated_explainer.py": 85.0,
-    "src/calibrated_explanations/plugins/registry.py": 85.0,
-    "src/calibrated_explanations/plugins/cli.py": 85.0,
-    "src/calibrated_explanations/api/config.py": 85.0,
-    "src/calibrated_explanations/utils/helper.py": 85.0,
-    "src/calibrated_explanations/utils/perturbation.py": 85.0,
-    "src/calibrated_explanations/_plots.py": 85.0,
-    "src/calibrated_explanations/_plots_legacy.py": 85.0,
-    "src/calibrated_explanations/viz/matplotlib_adapter.py": 85.0,
-    "src/calibrated_explanations/explanations/explanation.py": 85.0,
-    "src/calibrated_explanations/perf/cache.py": 85.0,
-    "src/calibrated_explanations/perf/parallel.py": 85.0,
-    "src/calibrated_explanations/perf/__init__.py": 85.0,
+    "src/calibrated_explanations/core/calibrated_explainer.py": 88.0,
+    "src/calibrated_explanations/plugins/registry.py": 88.0,
+    "src/calibrated_explanations/plugins/cli.py": 88.0,
+    "src/calibrated_explanations/api/config.py": 88.0,
+    "src/calibrated_explanations/utils/helper.py": 88.0,
+    "src/calibrated_explanations/utils/perturbation.py": 88.0,
+    "src/calibrated_explanations/viz/matplotlib_adapter.py": 88.0,
+    "src/calibrated_explanations/explanations/explanation.py": 88.0,
+    "src/calibrated_explanations/perf/cache.py": 88.0,
+    "src/calibrated_explanations/perf/parallel.py": 88.0,
+    "src/calibrated_explanations/perf/__init__.py": 88.0,
 }
 
 
@@ -447,6 +437,7 @@ def _get_active_coverage_controller(config):
 
 
 def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - exercised indirectly
+    """Enforce per-module coverage thresholds once tests complete."""
     if not getattr(session.config, "_ce_cov_enforce_thresholds", True):
         return
 
@@ -499,6 +490,7 @@ def pytest_sessionfinish(session, exitstatus):  # pragma: no cover - exercised i
 
 
 def pytest_sessionstart(session):  # pragma: no cover - simple configuration tweak
+    """Relax coverage thresholds for optional matplotlib runs."""
     option = getattr(session.config, "option", None)
     if option is None:
         return

@@ -25,6 +25,8 @@ except ImportError:
     print("numpy required for baseline script", file=sys.stderr)
     sys.exit(1)
 
+from calibrated_explanations.core._legacy_explain import explain as legacy_explain
+
 PACKAGE = "calibrated_explanations"
 
 
@@ -56,6 +58,15 @@ def _safe_len(obj: Any) -> int:
         return len(obj)
     except TypeError:
         return -1
+
+
+def _time_legacy_explain(explainer: Any | None, x: Any, *, discretizer: str) -> float:
+    if explainer is None:
+        raise RuntimeError("CalibratedExplainer expected to be initialized before timing legacy explain.")
+    explainer.set_discretizer(discretizer)
+    start = time.perf_counter()
+    legacy_explain(explainer, x)
+    return time.perf_counter() - start
 
 
 def collect_runtime_benchmarks() -> Dict[str, Any]:
@@ -92,6 +103,12 @@ def collect_runtime_benchmarks() -> Dict[str, Any]:
         "calibrate_time_s": calibrate_time,
         "predict_batch_time_s": infer_time,
         "batch_size": 50,
+        "explain_factual_time_s": _time_legacy_explain(
+            expl_clf.explainer, Xc[400:410], discretizer="binaryEntropy"
+        ),
+        "explore_alternatives_time_s": _time_legacy_explain(
+            expl_clf.explainer, Xc[400:410], discretizer="entropy"
+        ),
     }
 
     # Regression benchmark
@@ -118,6 +135,12 @@ def collect_runtime_benchmarks() -> Dict[str, Any]:
         "calibrate_time_s": calibrate_time,
         "predict_batch_time_s": infer_time,
         "batch_size": 50,
+        "explain_factual_time_s": _time_legacy_explain(
+            expl_reg.explainer, Xr[350:360], discretizer="binaryRegressor"
+        ),
+        "explore_alternatives_time_s": _time_legacy_explain(
+            expl_reg.explainer, Xr[350:360], discretizer="regressor"
+        ),
     }
 
     return results

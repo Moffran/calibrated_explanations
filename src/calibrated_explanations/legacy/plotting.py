@@ -1,10 +1,9 @@
-"""
-Module containing all plotting functionality.
-"""
+"""Module containing all plotting functionality."""
 
 import contextlib
 import math
 import warnings
+from pathlib import Path
 
 import numpy as np
 
@@ -37,6 +36,16 @@ def __require_matplotlib():
         raise RuntimeError(msg)
 
 
+def _compose_save_target(path, title: str, ext) -> str:
+    """Return a filesystem path for saving plot artefacts using OS separators."""
+    ext_str = str(ext)
+    base_str = str(path)
+    base_path = Path(path)
+    if base_str.endswith(("/", "\\")) or base_path.is_dir():
+        return str(base_path / f"{title}{ext_str}")
+    return f"{base_str}{title}{ext_str}"
+
+
 # pylint: disable=too-many-arguments, too-many-statements, too-many-branches, too-many-locals, too-many-positional-arguments
 def _plot_probabilistic(
     explanation,
@@ -53,7 +62,7 @@ def _plot_probabilistic(
     idx=None,
     save_ext=None,
 ):
-    """plots regular and uncertainty explanations"""
+    """Plot probabilistic explanations with optional uncertainty overlays."""
     # If caller does not want to show and matplotlib is not installed,
     # treat this as a no-op (useful for CI/core-only runs without viz extras).
     # Also treat as no-op if caller does not request saving (no path/title).
@@ -190,7 +199,7 @@ def _plot_probabilistic(
         ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
         ax_main_twin.set_ylabel("Instance values")
     for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
+        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
@@ -211,7 +220,7 @@ def _plot_regression(
     idx=None,
     save_ext=None,
 ):
-    """plots regular and uncertainty explanations"""
+    """Plot regression explanations with optional uncertainty overlays."""
     # Allow no-op in CI when plotting is not requested and matplotlib is absent
     # or when no saving is requested (no path/title provided).
     if not show and (plt is None or path is None or title is None):
@@ -310,7 +319,7 @@ def _plot_regression(
     ax_main_twin.set_ylim(-0.5, x[-1] + 0.5 if len(x) > 0 else 0.5)
     ax_main_twin.set_ylabel("Instance values")
     for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
+        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
@@ -328,7 +337,7 @@ def _plot_triangular(
     show,
     save_ext=None,
 ):
-    """plots triangular explanations"""
+    """Plot triangular explanations with uncertainty anchors."""
     # If user only requested no display (and no saving), avoid requiring matplotlib
     if not show and (plt is None or path is None or title is None):
         return
@@ -396,13 +405,14 @@ def _plot_triangular(
     plt.legend()
 
     for ext in save_ext:
-        plt.savefig(path + title + ext, bbox_inches="tight")
+        plt.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         plt.show()
 
 
 # `__plot_triangular`
 def __plot_proba_triangle():
+    """Draw the static probability triangle reference lines."""
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
     plt.plot(x, ((1 - x) / x), color="black")
@@ -426,7 +436,7 @@ def _plot_alternative(
     show,
     save_ext=None,
 ):
-    """plots alternative explanations"""
+    """Plot alternative explanations highlighting probability shifts."""
     # Allow lightweight no-op when plotting is not requested or when no save
     # path/title are provided (so nothing would be written).
     if not show and (plt is None or path is None or title is None):
@@ -557,18 +567,18 @@ def _plot_alternative(
     with contextlib.suppress(Exception):
         fig.tight_layout()
     for ext in save_ext:
-        fig.savefig(path + title + ext, bbox_inches="tight")
+        fig.savefig(_compose_save_target(path, title, ext), bbox_inches="tight")
     if show:
         fig.show()
 
 
 # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
 def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
-    """
-    Generates a global explanation plot for the given test data. This plot is based on the
-    probability distribution and the uncertainty quantification intervals.
-    The plot is only available for calibrated probabilistic learners (both classification and
-    thresholded regression).
+    """Plot a global explanation overview for the given test data.
+
+    This plot is based on the probability distribution and the uncertainty quantification
+    intervals. The plot is only available for calibrated probabilistic learners (both
+    classification and thresholded regression).
 
     Parameters
     ----------
@@ -739,6 +749,7 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
 
 
 def _plot_proba_triangle():
+    """Create a Matplotlib figure illustrating the probability triangle."""
     plt.figure()
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
@@ -751,6 +762,7 @@ def _plot_proba_triangle():
 
 # pylint: disable=invalid-name
 def __color_brew(n):
+    """Return ``n`` visually distinct colors using a HSV sweep."""
     color_list = []
 
     # Initialize saturation & value; calculate chroma & value shift
@@ -774,6 +786,7 @@ def __color_brew(n):
 
 
 def __get_fill_color(venn_abers, reduction=1):  # pylint: disable=unused-private-member
+    """Select fill color/alpha for a Venn-Abers region."""
     colors = __color_brew(2)
     winner_class = int(venn_abers["predict"] >= 0.5)
     color = colors[winner_class]

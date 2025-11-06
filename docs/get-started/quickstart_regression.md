@@ -1,7 +1,8 @@
 # Regression quickstart
 
-This guide walks through training a regression model, calibrating it, and
-inspecting probabilistic explanations.
+Calibrate regression models with probabilistic thresholds and interval guidance
+without enabling optional tooling. This quickstart mirrors the README flow and
+feeds the practitioner notebooks.
 
 ## Prerequisites
 
@@ -14,8 +15,7 @@ pip install calibrated-explanations scikit-learn
 
 Continuous integration runs this guide through
 ``pytest tests/docs/test_quickstarts.py::test_regression_quickstart`` on Linux
-with CPython 3.8–3.11. Align your environment with those versions to reproduce
-the validated setup.
+with CPython 3.8–3.11.
 ```
 
 ## 1. Prepare the dataset
@@ -51,56 +51,43 @@ explainer.calibrate(
 )
 ```
 
-## 3. Produce factual and probabilistic explanations
+## 3. Retrieve calibrated intervals and probabilities
 
 ```python
 factual = explainer.explain_factual(X_test[:3])
 print(f"Prediction interval: {factual.prediction_interval[0]}")
 
-probabilistic = explainer.explore_alternatives(
-    X_test[:3], threshold=2.5
+probabilities, probability_interval = explainer.predict_proba(
+    X_test[:1], threshold=150, uq_interval=True
 )
-print(probabilistic[0])
+print("Calibrated probability:", probabilities[0, 1])
 ```
 
-Both batches carry telemetry payloads that capture interval and probability
-sources:
+> 🎯 **Interval regression insight:** The prediction interval remains the
+> decision boundary for interval regression scenarios; probabilistic thresholds
+> complement rather than replace it.
+
+## 4. Explore calibrated alternatives
 
 ```python
-telemetry = getattr(probabilistic, "telemetry", {})
-print("Telemetry fields:", telemetry.keys())
-print("Probability source:", telemetry.get("proba_source"))
+alternatives = explainer.explore_alternatives(
+    X_test[:2], threshold=150
+)
 ```
 
-## 4. Plot with PlotSpec
+See the [Alternatives concept guide](../foundations/concepts/alternatives.md) for visual and
+interpretation walkthroughs.
 
-Install the `viz` extra to render calibrated bar charts:
+> 📘 **Deep dive:** The {doc}`../foundations/concepts/probabilistic_regression` guide explains
+> how calibrated probabilities and intervals stay aligned across regression
+> tasks.
 
-```bash
-pip install "calibrated_explanations[viz]"
-```
+> 📝 **Citing calibrated explanations:** When publishing regression or
+> probabilistic threshold results, use {doc}`../citing` to pick the appropriate
+> references.
 
-```python
-probabilistic.plot(interval=True, sort_by="abs")
-```
-
-PlotSpec fallbacks are tracked in telemetry so you can confirm whether the
-PlotSpec adapter or legacy renderer produced the chart.
-
-```{admonition} Learn how to interpret the outputs
-:class: seealso
-
-Visit {doc}`../how-to/interpret_explanations` to understand how calibrated
-intervals, threshold probabilities, alternative scenarios, and PlotSpec visuals
-translate into decisions, and how telemetry fields capture provenance.
-```
-
-## Troubleshooting tips
-
-- Regression quickstarts expect numeric arrays without NaNs. Use a
-  `SimpleImputer` in your preprocessing pipeline if your dataset contains
-  missing values.
-- If plotting raises an import error, confirm the `viz` extra is installed and
-  matplotlib is importable in the same environment.
-- Use `explainer.runtime_telemetry` to confirm which interval calibrator (fast
-  or default) executed for each batch.
+> 🔬 **Research hub:** Cross-check {doc}`../researcher/index` for detailed
+> replication notes on the Machine Learning (2025) regression study and the Fast
+> Calibrated Explanations (2024) performance paper catalogued in
+> {doc}`../researcher/advanced/theory_and_literature`—both reinforce the interval and
+> probabilistic workflows demonstrated here.

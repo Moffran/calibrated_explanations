@@ -9,8 +9,8 @@
 
 - **PlotSpec Default Routing:** `CalibratedExplanation.plot` now resolves
   through the new `calibrated_explanations.plotting` module. Legacy helpers
-  live under `legacy/plotting.py`; `viz/plots.py`/`legacy/_plots_legacy.py` emit
-  `DeprecationWarning` and proxy to the new modules. Import hygiene (tests,
+  live under `legacy/plotting.py`; earlier `viz/plots.py`/`legacy/_plots_legacy.py`
+  shims (now removed) emitted `DeprecationWarning` and proxied to the new modules. Import hygiene (tests,
   CLI, viz adapters) has been updated accordingly.
 - **Telemetry Guardrails:** Runtime telemetry and README/docs now showcase the
   PlotSpec-first path (`plot_source`, `plot_fallbacks`) plus the ADR-009

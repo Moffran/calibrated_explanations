@@ -27,7 +27,7 @@ Group files into batches that are small enough to review easily but large enough
 | B | `api/` and `core/` package | Public-facing entry points; improving these files ensures that the surface area users see first meets style expectations. |
 | C | `explanations/` and `perf/` packages | Mid-sized groups that are conceptually cohesive; tackle them after the high-visibility API pieces. |
 | D | `plugins/` package | Largest cluster (9 files); split further per plugin if needed. |
-| E | Visualization modules (`viz/`, `viz/plots.py`, `legacy/_plots_legacy.py`) | Visualization code often has long docstrings—tackle after gaining momentum with earlier batches. |
+| E | Visualization modules (`viz/`, `viz/plots.py`, `legacy/plotting.py`) | Visualization code often has long docstrings—tackle after gaining momentum with earlier batches. |
 | F | Serialization and compatibility shims (`serialization.py`, `core.py`) | Final cleanup once the main logic is compliant. |
 
 For each batch:

@@ -6,7 +6,6 @@ import numpy as np
 
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
 from calibrated_explanations.plugins.builtins import (
-    FastExplanationPlugin,
     LegacyAlternativeExplanationPlugin,
     LegacyFactualExplanationPlugin,
     LegacyPredictBridge,
@@ -15,6 +14,12 @@ from calibrated_explanations.plugins.explanations import (
     ExplanationContext,
     ExplanationRequest,
 )
+from external_plugins.fast_explanations import (
+    FastExplanationPlugin,
+    register as register_fast_plugins,
+)
+
+register_fast_plugins()
 
 
 def _make_context(explainer, mode: str) -> ExplanationContext:

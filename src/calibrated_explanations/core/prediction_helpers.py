@@ -32,16 +32,24 @@ ThresholdLike = Union[
 
 
 class _ExplainerProtocol(Protocol):
+    """Structural subset of ``CalibratedExplainer`` used by helper functions."""
+
     num_features: int
     mode: str
     x_cal: np.ndarray
     interval_learner: Any
 
-    def _is_mondrian(self) -> bool: ...
+    def _is_mondrian(self) -> bool:
+        """Return True when a Mondrian (per-bin) calibration is active."""
+        ...
 
-    def is_multiclass(self) -> bool: ...
+    def is_multiclass(self) -> bool:
+        """Return True when the underlying task involves more than two classes."""
+        ...
 
-    def is_fast(self) -> bool: ...
+    def is_fast(self) -> bool:
+        """Return True when the specialized fast explainer path is available."""
+        ...
 
     def _predict(
         self,
@@ -52,13 +60,21 @@ class _ExplainerProtocol(Protocol):
         classes: Optional[Sequence[int]] = ...,
         bins: Optional[np.ndarray] = ...,
         feature: Optional[int] = ...,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: ...
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Compute calibrated predictions and interval bounds."""
+        ...
 
-    def assign_threshold(self, threshold: Optional[ThresholdLike]) -> Any: ...
+    def assign_threshold(self, threshold: Optional[ThresholdLike]) -> Any:
+        """Broadcast or validate regression thresholds for perturbed inputs."""
+        ...
 
-    def _discretize(self, x: np.ndarray) -> np.ndarray: ...
+    def _discretize(self, x: np.ndarray) -> np.ndarray:
+        """Transform inputs into discretized representations when needed."""
+        ...
 
-    def rule_boundaries(self, x: np.ndarray, x_perturbed: np.ndarray) -> Any: ...
+    def rule_boundaries(self, x: np.ndarray, x_perturbed: np.ndarray) -> Any:
+        """Return rule boundary metadata for categorical perturbations."""
+        ...
 
 
 # NOTE: We intentionally avoid importing CalibratedExplainer for type-only usage to

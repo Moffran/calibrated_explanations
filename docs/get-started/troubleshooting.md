@@ -7,7 +7,7 @@ Use this checklist if the quickstarts fail or telemetry payloads look empty.
 | `NotFittedError` when explaining | `fit` or `calibrate` was skipped. | Call `fit` on the wrapper, then `calibrate` with calibration data. |
 | `ValidationError` about NaNs | Input arrays contain NaN/inf values. | Clean the data or add an imputer in the preprocessing pipeline. |
 | Missing `predict_proba` on classifier | Estimator lacks probability estimates. | Enable probability outputs (e.g., `probability=True` for SVC) or switch to an estimator with `predict_proba`. |
-| Empty telemetry dictionary | Old version or attribute stripped. | Upgrade to `calibrated-explanations>=0.8.0` and access `explainer.runtime_telemetry`. |
+| Empty telemetry dictionary | Old version or attribute stripped. | Upgrade to `calibrated-explanations>=0.9.0` and access `explainer.runtime_telemetry`. |
 | Plotting ImportError | `viz` extra not installed. | `pip install "calibrated_explanations[viz]"` in the same environment. |
 | CLI cannot find plugins | PATH not configured or package not installed in active env. | Run `python -m calibrated_explanations.plugins.cli list all` to bypass PATH resolution. |
 

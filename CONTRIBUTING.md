@@ -48,9 +48,9 @@ PR expectations:
 
 ## Testing and Code Coverage
 
-Pytest remains the primary regression harness. CI now enforces the ADR-019 coverage gate via `make test-cov`, which simply runs `pytest` with coverage flags supplied by `pytest.ini` (`--cov=src/calibrated_explanations --cov-config=.coveragerc --cov-report=term-missing --cov-report=xml --cov-fail-under=85`). The shared `.coveragerc` applies locally as well, so invoking `make test-cov` reproduces the CI behaviour (including generation of `coverage.xml` for Codecov uploads). Coverage results are uploaded to [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations) for historical tracking, and Codecov enforces ≥85% patch coverage on runtime/calibration paths per the v0.8.0 release plan.
+Pytest remains the primary regression harness. CI now enforces the ADR-019 coverage gate via `make test-cov`, which simply runs `pytest` with coverage flags supplied by `pytest.ini` (`--cov=src/calibrated_explanations --cov-config=.coveragerc --cov-report=term-missing --cov-report=xml --cov-fail-under=88`). The shared `.coveragerc` applies locally as well, so invoking `make test-cov` reproduces the CI behaviour (including generation of `coverage.xml` for Codecov uploads). Coverage results are uploaded to [Codecov](https://app.codecov.io/github/Moffran/calibrated_explanations) for historical tracking, and Codecov enforces ≥88% patch coverage on runtime/calibration paths per the v0.9.0 release plan.
 
-If a change cannot practically meet the 85% package-wide bar (for example, because it touches legacy shims slated for removal), request a coverage waiver:
+If a change cannot practically meet the 88% package-wide bar (for example, because it touches legacy shims slated for removal), request a coverage waiver:
 
 1. File an issue describing why the threshold cannot be met and outline the follow-up work required.
 2. Reference that issue in your pull request description and tick the waiver checkbox in the PR template.
@@ -62,7 +62,7 @@ Additional checks:
 
 - Linting via ruff (style and simple correctness rules).
 - Naming guardrails: run `ruff check --select N` locally to preview the CI naming warnings introduced for the v0.7.0 release gate (ADR-017).
-- Docstring guardrails: run `pydocstyle --convention=numpy src tests` to surface ADR-018 numpydoc issues; CI reports the same warnings in exit-zero mode so they stay visible without blocking merges.
+- Docstring guardrails: run `pydocstyle --convention=numpy src tests` to surface ADR-018 numpydoc issues; CI runs the same checks in blocking mode, so fix violations before opening a pull request.
 - Docstring coverage: `python scripts/check_docstring_coverage.py` prints the current module/class/function/method coverage mix and accepts `--fail-under` for teams that want to experiment with stricter thresholds.
 - Type checking via mypy. During Phase 1B, new core modules (e.g., `core/exceptions.py`, `core/validation.py`) are checked with stricter settings.
 - Performance guard: see `scripts/check_perf_regression.py` and `benchmarks/perf_thresholds.json`.

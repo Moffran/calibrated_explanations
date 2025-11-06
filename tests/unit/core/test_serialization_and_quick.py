@@ -21,17 +21,23 @@ def test_domain_json_round_trip_and_schema_validation():
         FeatureRule(
             feature=0,
             rule="x0 <= 0.5",
-            weight={"predict": 0.1, "low": 0.05, "high": 0.15},
-            prediction={"predict": 0.6, "low": 0.5, "high": 0.7},
+            rule_weight={"predict": 0.1, "low": 0.05, "high": 0.15},
+            rule_prediction={"predict": 0.6, "low": 0.5, "high": 0.7},
         ),
         FeatureRule(
             feature=2,
             rule="x2 > 1.2",
-            weight={"predict": 0.2, "low": 0.1, "high": 0.3},
-            prediction={"predict": 0.7, "low": 0.6, "high": 0.8},
+            rule_weight={"predict": 0.2, "low": 0.1, "high": 0.3},
+            rule_prediction={"predict": 0.7, "low": 0.6, "high": 0.8},
         ),
     ]
-    exp = Explanation(task="classification", index=0, prediction={"predict": 1}, rules=rules)
+    exp = Explanation(
+        task="classification",
+        index=0,
+        explanation_type="factual",
+        prediction={"predict": 1},
+        rules=rules,
+    )
     payload = to_json(exp)
     # Validate when jsonschema is available
     try:
@@ -49,8 +55,8 @@ def test_to_json_handles_optional_fields():
         FeatureRule(
             feature=5,
             rule="x5 > 2.4",
-            weight={"predict": 0.4},
-            prediction={"predict": 0.9},
+            rule_weight={"predict": 0.4},
+            rule_prediction={"predict": 0.9},
             instance_prediction={"predict": 0.8},
             feature_value=3.2,
             is_conjunctive=True,
@@ -61,6 +67,7 @@ def test_to_json_handles_optional_fields():
     exp = Explanation(
         task="classification",
         index=12,
+        explanation_type="factual",
         prediction={"predict": 0.91},
         rules=rules,
         provenance={"source": "unit-test"},
@@ -72,6 +79,7 @@ def test_to_json_handles_optional_fields():
     assert "schema_version" not in payload
     assert payload["task"] == "classification"
     assert payload["index"] == 12
+    assert payload["explanation_type"] == "factual"
     assert payload["provenance"] == {"source": "unit-test"}
     assert payload["metadata"] == {"note": "optional fields"}
 
@@ -79,8 +87,8 @@ def test_to_json_handles_optional_fields():
     assert rule_payload == {
         "feature": 5,
         "rule": "x5 > 2.4",
-        "weight": {"predict": 0.4},
-        "prediction": {"predict": 0.9},
+        "rule_weight": {"predict": 0.4},
+        "rule_prediction": {"predict": 0.9},
         "instance_prediction": {"predict": 0.8},
         "feature_value": 3.2,
         "is_conjunctive": True,
@@ -95,8 +103,8 @@ def test_from_json_populates_defaults_for_missing_fields():
             {
                 "feature": "5",
                 "rule": "x5 > 3",
-                "weight": {"predict": 0.5},
-                "prediction": {"predict": 0.75},
+                "rule_weight": {"predict": 0.5},
+                "rule_prediction": {"predict": 0.75},
                 "instance_prediction": {"predict": 0.7},
                 "feature_value": 4.1,
                 "is_conjunctive": 1,
@@ -113,13 +121,14 @@ def test_from_json_populates_defaults_for_missing_fields():
 
     assert exp.task == "unknown"
     assert exp.index == 0
+    assert exp.explanation_type == "factual"
     assert exp.prediction == {}
 
     first, second = exp.rules
     assert first.feature == 5
     assert first.rule == "x5 > 3"
-    assert first.weight == {"predict": 0.5}
-    assert first.prediction == {"predict": 0.75}
+    assert first.rule_weight == {"predict": 0.5}
+    assert first.rule_prediction == {"predict": 0.75}
     assert first.instance_prediction == {"predict": 0.7}
     assert first.feature_value == 4.1
     assert first.is_conjunctive is True
@@ -129,8 +138,8 @@ def test_from_json_populates_defaults_for_missing_fields():
     # Defaults should rely on enumeration index and empty structures.
     assert second.feature == 1
     assert second.rule == ""
-    assert second.weight == {}
-    assert second.prediction == {}
+    assert second.rule_weight == {}
+    assert second.rule_prediction == {}
     assert second.instance_prediction is None
     assert second.feature_value is None
     assert second.is_conjunctive is False
@@ -145,11 +154,17 @@ def test_validate_payload_rejects_missing_required_fields():
         FeatureRule(
             feature=0,
             rule="x0 <= 0.5",
-            weight={"predict": 0.1, "low": 0.05, "high": 0.15},
-            prediction={"predict": 0.6, "low": 0.5, "high": 0.7},
+            rule_weight={"predict": 0.1, "low": 0.05, "high": 0.15},
+            rule_prediction={"predict": 0.6, "low": 0.5, "high": 0.7},
         )
     ]
-    exp = Explanation(task="classification", index=0, prediction={"predict": 1.0}, rules=rules)
+    exp = Explanation(
+        task="classification",
+        index=0,
+        explanation_type="factual",
+        prediction={"predict": 1.0},
+        rules=rules,
+    )
     payload = to_json(exp)
     payload.pop("prediction")
 

@@ -1,7 +1,8 @@
 # Classification quickstart
 
-This walkthrough demonstrates how to train a classifier, calibrate it, and
-generate factual explanations with telemetry metadata.
+Run calibrated explanations for binary and multiclass classification without any
+optional telemetry or plugins. The flow mirrors the README snippet and powers
+the practitioner notebook set.
 
 ## Prerequisites
 
@@ -14,8 +15,7 @@ pip install calibrated-explanations scikit-learn
 
 The docs smoke suite executes this quickstart via
 ``pytest tests/docs/test_quickstarts.py::test_classification_quickstart`` on
-CPython 3.8–3.11 for Linux runners. Match those versions locally to mirror the
-validated environment.
+CPython 3.8–3.11 for Linux runners.
 ```
 
 ## 1. Load data and split sets
@@ -37,59 +37,61 @@ X_proper, X_cal, y_proper, y_cal = train_test_split(
 )
 ```
 
+> 🧪 **Multiclass variation:** Swap `load_breast_cancer` for `load_wine` to see
+> calibrated explanations across three classes. The remaining steps stay
+> identical.
+
 ## 2. Fit and calibrate the explainer
 
 ```python
 from sklearn.ensemble import RandomForestClassifier
-from calibrated_explanations import WrapCalibratedExplainer, __version__
-
-print(f"calibrated_explanations {__version__}")
+from calibrated_explanations import WrapCalibratedExplainer
 
 explainer = WrapCalibratedExplainer(RandomForestClassifier(random_state=0))
 explainer.fit(X_proper, y_proper)
 explainer.calibrate(X_cal, y_cal, feature_names=dataset.feature_names)
 ```
 
-## 3. Generate factual explanations
+## 3. Generate calibrated factual explanations
 
 ```python
-batch = explainer.explain_factual(X_test[:5])
-print(batch[0])  # first explanation with rule details
-
-telemetry = getattr(batch, "telemetry", {})
-print("Telemetry keys:", sorted(telemetry))
-print("Interval source:", telemetry.get("interval_source"))
+factual = explainer.explain_factual(X_test[:5])
+print(factual[0])  # first explanation with rule details
 ```
 
-The `telemetry` dictionary records which explanation, interval, and plot
-strategies executed, together with preprocessing metadata. This payload mirrors
-what `explainer.runtime_telemetry` returns.
+```{admonition} Sample output (truncated)
+:class: hint
 
-```{admonition} Learn how to interpret the outputs
-:class: seealso
-
-Once you have the payload, read {doc}`../how-to/interpret_explanations`, paying
-special attention to the sections on factual rule tables, alternative scenarios,
-and PlotSpec visuals. They explain exactly how to interpret the outputs printed
-above.
+```text
+Prediction [ Low ,  High]
+0.077 [0.000, 0.083]
+Value : Feature                                  Weight [ Low  ,  High ]
+0.07  : mean concave points > 0.05               -0.418 [-0.576, -0.256]
+0.15  : worst concave points > 0.12              -0.308 [-0.548,  0.077]
 ```
 
-## 4. Explore alternatives or fast explanations
+The first column shows the instance value, followed by the matching feature and
+its calibrated contribution with uncertainty bounds.
+```
 
-Switch modes by calling `explore_alternatives` or `explain_fast`:
+Use the [interpretation guide](../foundations/how-to/interpret_explanations.md) to understand
+how calibrated predictions, intervals, and rule tables translate into actions.
+
+## 4. Explore calibrated alternatives
 
 ```python
 alternatives = explainer.explore_alternatives(X_test[:2])
-fast = explainer.explain_fast(X_test[:2])
 ```
 
-Both payloads inherit telemetry and rule metadata so downstream services can
-track which plugins ran.
+See the [Alternatives concept guide](../foundations/concepts/alternatives.md) for visual and
+interpretation walkthroughs.
 
-## Troubleshooting tips
+> 📝 **Citing calibrated explanations:** Reference {doc}`../citing` when you
+> publish results using the binary, multiclass, probabilistic, or interval
+> regression workflows showcased here.
 
-- Ensure the dataset is numeric and finite before calibration. Apply an
-  imputer if you introduce NaNs during preprocessing.
-- A `NotFittedError` indicates either `fit` or `calibrate` was skipped.
-- Use `explainer.runtime_telemetry` to confirm fast explanations route through
-  the intended interval and probability plugins.
+> 🔬 **Research hub:** Visit {doc}`../researcher/index` for the flagship
+> {doc}`../researcher/advanced/theory_and_literature` papers—especially the Expert Systems
+> with Applications (2024) evaluation and the PMLR 230 (2024) multiclass
+> tutorial—that document the datasets and calibration proofs underpinning this
+> quickstart.

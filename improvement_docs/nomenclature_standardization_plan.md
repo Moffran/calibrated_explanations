@@ -15,7 +15,7 @@ This plan outlines sequential changes for aligning the internal codebase with AD
 3. Document the new naming policy inside `docs/architecture.md` and the developer guides so contributors can reference expectations.
 
 ## Phase 2 – Module renames (weeks 3–5)
-1. Rename CamelCase and underscored private modules (`core/venn_abers.py`, `_interval_regressor.py`, `viz/plots.py`, `legacy/_plots_legacy.py`) to descriptive snake_case equivalents. The canonical implementations now live in `core/venn_abers.py`, `core/interval_regressor.py`, and `viz/plots.py` with import shims housed under `legacy/` emitting `DeprecationWarning`. 【F:src/calibrated_explanations/core/venn_abers.py†L1-L120】【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】【F:src/calibrated_explanations/viz/plots.py†L1-L20】【F:src/calibrated_explanations/legacy/_interval_regressor.py†L1-L13】
+1. Rename CamelCase and underscored private modules (`core/venn_abers.py`, `_interval_regressor.py`, `viz/plots.py`) to descriptive snake_case equivalents. The canonical implementations now live in `core/venn_abers.py`, `core/interval_regressor.py`, and `viz/plots.py`; temporary import shims lived under `legacy/` until their scheduled v0.9.0 removal.【F:src/calibrated_explanations/core/venn_abers.py†L1-L120】【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】【F:src/calibrated_explanations/viz/plots.py†L1-L20】【F:src/calibrated_explanations/legacy/__init__.py†L1-L6】
 2. Move shim modules and other legacy helpers into a dedicated `legacy/` namespace to visually distinguish transitional code.
 3. Update internal imports, tests, and docs to reference the canonical module names and rely on the shims only for backwards compatibility.
 

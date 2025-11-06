@@ -324,6 +324,10 @@ def test_binary_fast_ce(binary_dataset):
     Args:
         binary_dataset (tuple): The binary classification dataset.
     """
+    # Skip if fast plugins are not available, and register them when present
+    fast_plugins = pytest.importorskip("external_plugins.fast_explanations")
+    fast_plugins.register()  # Register the fast plugins before creating explainer
+
     (
         x_prop_train,
         y_prop_train,

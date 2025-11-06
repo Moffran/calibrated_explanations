@@ -155,27 +155,22 @@ def test_regression_batches_publish_full_uncertainty_schema():
         )
 
         telemetry_rules = telemetry.get("rules")
-        assert telemetry_rules == batch[0].build_rules_payload()
+        expected_payload = batch[0].build_rules_payload()
+        assert telemetry_rules == expected_payload
 
-        first_rule = telemetry_rules[0]
-        if telemetry.get("mode") == "factual":
-            _assert_uncertainty_schema(
-                first_rule["prediction"],
-                representation,
-                expect_percentiles,
-                threshold_value,
+        metadata_rules = telemetry_rules["metadata"].get("feature_rules", [])
+        assert metadata_rules
+        first_metadata_rule = metadata_rules[0]
+        _assert_uncertainty_schema(
+            first_metadata_rule["prediction_uncertainty"],
+            representation,
+            expect_percentiles,
+            threshold_value,
+        )
+        if telemetry.get("mode") != "factual" and threshold_value is not None:
+            assert _extract_threshold_value(first_metadata_rule.get("threshold")) == pytest.approx(
+                threshold_value
             )
-        else:
-            _assert_uncertainty_schema(
-                first_rule["uncertainty"],
-                representation,
-                expect_percentiles,
-                threshold_value,
-            )
-            if threshold_value is not None:
-                assert _extract_threshold_value(first_rule.get("threshold")) == pytest.approx(
-                    threshold_value
-                )
 
 
 def test_build_rules_payload_covers_probabilistic_and_thresholded_alternatives():
@@ -183,16 +178,18 @@ def test_build_rules_payload_covers_probabilistic_and_thresholded_alternatives()
 
     class_explainer, class_test = _train_classification_explainer()
     class_batch = class_explainer.explore_alternatives(class_test[:1])
-    class_rule = class_batch[0].build_rules_payload()[0]
-    _assert_uncertainty_schema(class_rule["uncertainty"], "venn_abers", False, None)
-    feature_rule = class_rule["feature_rules"][0]
-    _assert_uncertainty_schema(feature_rule["uncertainty"], "venn_abers", False, None)
+    class_payload = class_batch[0].build_rules_payload()
+    class_metadata_rule = class_payload["metadata"]["feature_rules"][0]
+    _assert_uncertainty_schema(
+        class_metadata_rule["prediction_uncertainty"], "venn_abers", False, None
+    )
+    _assert_uncertainty_schema(class_metadata_rule["weight_uncertainty"], "venn_abers", False, None)
 
     reg_explainer, reg_test = _train_regression_explainer()
     reg_batch = reg_explainer.explore_alternatives(reg_test[:1], threshold=2.5)
-    reg_rule = reg_batch[0].build_rules_payload()[0]
-    _assert_uncertainty_schema(reg_rule["uncertainty"], "threshold", False, 2.5)
-    assert _extract_threshold_value(reg_rule.get("threshold")) == pytest.approx(2.5)
-    reg_feature_rule = reg_rule["feature_rules"][0]
+    reg_payload = reg_batch[0].build_rules_payload()
+    reg_metadata_rule = reg_payload["metadata"]["feature_rules"][0]
+    _assert_uncertainty_schema(reg_metadata_rule["prediction_uncertainty"], "threshold", False, 2.5)
+    assert _extract_threshold_value(reg_metadata_rule.get("threshold")) == pytest.approx(2.5)
     # Feature-level weights retain probabilistic uncertainty blocks for thresholds.
-    _assert_uncertainty_schema(reg_feature_rule["uncertainty"], "venn_abers", False, None)
+    _assert_uncertainty_schema(reg_metadata_rule["weight_uncertainty"], "venn_abers", False, None)

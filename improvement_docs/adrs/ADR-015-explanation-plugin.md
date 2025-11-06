@@ -8,7 +8,7 @@ Date: 2025-10-05
 
 Authors: Core maintainers
 
-Supersedes: ADR-015 — Explanation Plugin Interface (Code-Grounded)
+Supersedes: N/A
 
 Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-014-plot-plugin-strategy
 
@@ -147,6 +147,77 @@ ADR-013. Plugins must treat the context as read-only.
   is intentionally compatible with a future streaming or generator-based
   `instances` provider so that extremely large datasets can opt into lazy
   production without redesigning the protocol.
+
+#### 2a. Factual Explanation Requirements
+
+Explanation plugins generating factual batches must return an `ExplanationBatch` with
+instances conforming to the structure:
+
+```python
+{
+    "explanation": {
+        "task": "classification" | "regression",
+        "prediction": {
+            "predict": float,
+            "low": float,
+            "high": float
+        },
+        "rules": [
+            {
+                "feature_id": int,
+                "feature_name": str,
+                "condition": str,  # e.g. "age <= 65"
+                "weight": float,   # feature attribution
+                "weight_low": float,  # calibrated interval lower
+                "weight_high": float, # calibrated interval upper
+                "support": float | None,
+                "confidence": float | None,
+                ...
+            },
+            ...
+        ]
+    }
+}
+```
+
+The batch metadata must include the calibrated prediction interval. Each rule's condition must be tied to the observed feature value, and the feature weight must be accompanied by calibrated uncertainty intervals derived from the interval calibrator.
+
+#### 2b. Alternative Explanation Requirements
+
+Explanation plugins generating alternative batches must return an `ExplanationBatch` with
+instances conforming to the structure:
+
+```python
+{
+    "explanation": {
+        "task": "classification" | "regression",
+        "reference_prediction": {  # REQUIRED: original instance prediction
+            "predict": float,
+            "low": float,
+            "high": float
+        },
+        "rules": [
+            {
+                "feature_id": int,
+                "feature_name": str,
+                "alternative_condition": str,  # e.g. "age = 40"
+                "predicted_value": float,       # prediction for this scenario
+                "prediction_low": float,        # calibrated interval lower
+                "prediction_high": float,       # calibrated interval upper
+                "support": float | None,
+                "weight_delta": float | None,   # auxiliary metadata (not primary)
+                ...
+            },
+            ...
+        ]
+    }
+}
+```
+
+The batch metadata must include the reference prediction interval. Alternative rules
+pair each scenario with the calibrated prediction for that scenario. Feature-weight
+deltas may be included as auxiliary metadata but do NOT replace the scenario-level
+prediction interval in the primary payload.
 
 ### 3. Collection construction and metadata handling
 

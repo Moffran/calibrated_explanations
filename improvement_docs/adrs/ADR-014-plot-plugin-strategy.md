@@ -11,7 +11,7 @@ Superseded-by: None
 Related: ADR-006-plugin-registry-trust-model, ADR-007-visualization-abstraction-layer, ADR-016-plot-spec-separation
 
 ## Context
-Explanation objects expose `.plot()` methods that currently delegate to helpers in `src/calibrated_explanations/viz/plots.py`. The helpers can either call the legacy matplotlib routines (`legacy/_plots_legacy.py`) or build a PlotSpec and render it with the `viz` adapter stack. Demand for alternative renderers (Plotly, Altair, static SVG) keeps growing, but any plugin model must retain parity with the data contracts emitted by explanation classes and maintain backwards compatibility with the legacy visuals that many users depend on. The most recent refactor restored `_plots_legacy` as the default runtime path while optional PlotSpec rendering is only activated when `use_legacy=False` is passed.
+Explanation objects expose `.plot()` methods that currently delegate to helpers in `src/calibrated_explanations/viz/plots.py`. The helpers can either call the legacy matplotlib routines (`legacy/plotting.py`) or build a PlotSpec and render it with the `viz` adapter stack. Demand for alternative renderers (Plotly, Altair, static SVG) keeps growing, but any plugin model must retain parity with the data contracts emitted by explanation classes and maintain backwards compatibility with the legacy visuals that many users depend on. The most recent refactor restored the legacy plotting module as the default runtime path while optional PlotSpec rendering is only activated when `use_legacy=False` is passed.
 
 Earlier revisions of this ADR described high-level goals but did not provide actionable guidance for implementers or plugin authors. As a result, no registry integration, interfaces, or configuration mechanisms were built. This update makes the strategy concrete so that both the legacy pathway and future plot plugins can coexist.
 
@@ -21,7 +21,7 @@ Earlier revisions of this ADR described high-level goals but did not provide act
    - Define `class PlotBuilder(Protocol)` with a `build(self, context: PlotRenderContext) -> PlotArtifact` method. `PlotArtifact` is a `typing.Protocol` union allowing `PlotSpec`, `dict` payloads, or backend-specific handles.
    - Define `class PlotRenderer(Protocol)` with `render(self, artifact: PlotArtifact, *, context: PlotRenderContext) -> PlotRenderResult`. `PlotRenderResult` exposes optional handles (figure object, primitive trace, saved paths).
    - Provide helper base classes in `src/calibrated_explanations/viz/plugins.py` to ease implementation (default no-op lifecycle hooks, validation helpers).
-   - **Legacy builder/renderer pair lives inside the plugin system.** The builder bypasses PlotSpec entirely and simply delegates to `_plots_legacy`. The renderer is a thin wrapper that enforces the existing matplotlib dependency checks and save/show semantics. This is the default plugin registered under `core.plot.legacy`.
+   - **Legacy builder/renderer pair lives inside the plugin system.** The builder bypasses PlotSpec entirely and simply delegates to `legacy.plotting`. The renderer is a thin wrapper that enforces the existing matplotlib dependency checks and save/show semantics. This is the default plugin registered under `core.plot.legacy`.
 
 2. **Extend the plugin registry.**
    - Add registry namespaces for plots: `register_plot_builder(id, builder, metadata)`, `register_plot_renderer(id, renderer, metadata)`, `find_plot_builder(id)`, `find_plot_renderer(id)`.
@@ -37,7 +37,7 @@ Earlier revisions of this ADR described high-level goals but did not provide act
 
 4. **Legacy pathway as first-class plugin.**
    - Ship two built-in builder/renderer pairs:
-     * `legacy` builder + renderer wrap `_plots_legacy`. They accept the PlotRenderContext but bypass PlotSpec entirely. This pairing remains the default to avoid regressions.
+     * `legacy` builder + renderer wrap the functions in `legacy.plotting`. They accept the PlotRenderContext but bypass PlotSpec entirely. This pairing remains the default to avoid regressions.
      * `bars/matplotlib` builder uses `viz.builders` to emit PlotSpecs and delegates rendering to the matplotlib adapter. This pairing demonstrates the new architecture and is used when `use_legacy=False` is requested.
    - The legacy plugin may emit a warning if invoked in environments without matplotlib to match existing behaviour.
    - The legacy plugin exports the same public entry points that `viz/plots.py` already exposes so that third-party callers relying on the pre-existing module-level functions remain unaffected. Internally, `.plot()` translates those calls into `PlotRenderContext` and routes them through the registry, guaranteeing that the dynamic plugin layer does not introduce user-facing API breaks.

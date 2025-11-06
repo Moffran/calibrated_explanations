@@ -7,7 +7,7 @@ Date: 2025-10-12
 Deciders: Documentation Working Group
 Reviewers: Core maintainers
 Supersedes: None
-Superseded-by: None
+Superseded-by: ADR-027-documentation-standard
 
 ## Context
 

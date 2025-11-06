@@ -1,12 +1,15 @@
 # Citing calibrated-explanations
 
 If you use `calibrated-explanations` for a scientific publication, you are kindly requested to cite one of the following papers:
+
+For narrative summaries of the research program, benchmarks, and funding, visit the {doc}`research hub <researcher/index>` before diving into the detailed references below.
 ## Published papers
 - [Löfström, H](https://github.com/Moffran). (2023). [Trustworthy explanations: Improved decision support through well-calibrated uncertainty quantification](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1810440&dswid=6197) (Doctoral dissertation, Jönköping University, Jönköping International Business School).
-- [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and alternatives](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27. https://doi.org/10.1016/j.eswa.2024.123154
+- [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., Johansson, U., and Sönströd, C. (2024). [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154). Expert Systems with Applications, 1-27. https://doi.org/10.1016/j.eswa.2024.123154
 - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U., Sönströd, C., and [Matela, R](https://github.com/rudymatela). (2025). [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8). Machine Learning 114, 100. https://doi.org/10.1007/s10994-024-06642-8
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom). (2024). [Conditional Calibrated Explanations: Finding a Path Between Bias and Uncertainty](https://doi.org/10.1007/978-3-031-63787-2_17). In: Longo, L., Lapuschkin, S., Seifert, C. (eds) Explainable Artificial Intelligence. xAI 2024. Communications in Computer and Information Science, vol 2153. Springer, Cham. https://doi.org/10.1007/978-3-031-63787-2_17
 - [Löfström, T](https://github.com/tuvelofstrom)., [Löfström, H](https://github.com/Moffran)., Johansson, U. (2024). [Calibrated Explanations for Multi-class](https://raw.githubusercontent.com/mlresearch/v230/main/assets/lofstrom24a/lofstrom24a.pdf). <i>Proceedings of the Thirteenth Workshop on Conformal and Probabilistic Prediction and Applications</i>, in <i>Proceedings of Machine Learning Research</i>, PMLR 230:175-194.
+- [Löfström, T](https://github.com/tuvelofstrom)., [Rabia Yapicioglu, F](https://github.com/rabia174)., Stramiglio A., [Löfström, H](https://github.com/Moffran)., and Vitali F. (2024). [Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://link.springer.com/chapter/10.1007/978-3-032-08333-3_16). In: Guidotti, R., Schmid, U., Longo, L. (eds) Explainable Artificial Intelligence. xAI 2025. Communications in Computer and Information Science, vol 2580. Springer, Cham. https://doi.org/10.1007/978-3-032-08333-3_16.
 
 The paper that originated the idea of `calibrated-explanations` is:
 
@@ -14,7 +17,7 @@ The paper that originated the idea of `calibrated-explanations` is:
 
 ## Preprints:
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.
-- [Löfström, T](https://github.com/tuvelofstrom)., [Rabia Yapicioglu, F](https://github.com/rabia174)., Stramiglio A., [Löfström, H](https://github.com/Moffran)., and Vitali F. (2024). [Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models](https://arxiv.org/abs/2410.21129). arXiv preprint arXiv:2410.21129.
+
 
 # Bibtex Entries
 ## Published papers
@@ -44,7 +47,7 @@ Bibtex entry for the original paper:
 
 ```bibtex
 @article{lofstrom2024ce_classification,
-	title = 	{Calibrated explanations: With uncertainty information and alternatives},
+	title = 	{Calibrated Explanations: with Uncertainty Information and Counterfactuals},
 	journal = 	{Expert Systems with Applications},
 	pages = 	{123154},
 	year = 		{2024},
@@ -111,6 +114,29 @@ Bibtex for the multi-class paper:
 }
 ```
 
+Bibtex entry for the fast paper:
+
+```bibtex
+@InProceedings{10.1007/978-3-032-08333-3_16,
+	author=		"L{\"o}fstr{\"o}m, Tuwe
+				and Yapicioglu, Fatima Rabia
+				and Stramiglio, Alessandra
+				and L{\"o}fstr{\"o}m, Helena
+				and Vitali, Fabio",
+	editor=		"Guidotti, Riccardo
+				and Schmid, Ute
+				and Longo, Luca",
+	title=		"Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models",
+	booktitle=	"Explainable Artificial Intelligence",
+	year=		"2025",
+	publisher=	"Springer Nature Switzerland",
+	address=	"Cham",
+	pages=		"340--363",
+	abstract=	"This paper introduces Fast Calibrated Explanations, an extension of an existing explanation method, Calibrated Explanations, designed for generating rapid, uncertainty-aware explanations for machine learning models. By incorporating perturbation techniques from ConformaSight, a global explanation method, into the core elements of Calibrated Explanations, we achieved significant speedups. These core elements include local feature importance with calibrated predictions, both of which retain uncertainty quantification. While the extension sacrifices some degree of detail, it excels in computational efficiency, making it ideal for high-stakes, real-time applications. Fast Calibrated Explanations applies to probabilistic explanations in classification and thresholded regression tasks, providing the probability of a target being above or below a user-defined threshold. This approach maintains the versatility of Calibrated Explanations for both classification and thresholded regression, making it suitable for a range of predictive tasks where uncertainty quantification is crucial.",
+	isbn=		"978-3-032-08333-3"
+}
+```
+
 ## Preprints:
 
 Bibtex entry for the ensured paper:
@@ -126,20 +152,6 @@ Bibtex entry for the ensured paper:
 }
 ```
 
-Bibtex entry for the fast paper:
-
-```bibtex
-@misc{lofstrom2024ce_fast,
-	title=			{Fast Calibrated Explanations: Efficient and Uncertainty-Aware Explanations for Machine Learning Models},
-	author=			{Tuwe Löfström and Fatima Rabia Yapicioglu and Alessandra Stramiglio and Helena Löfström and Fabio Vitali},
-	year=			{2024},
-	eprint=			{2410.21129},
-	archivePrefix=	{arXiv},
-	primaryClass=	{cs.LG},
-	url=			{https://arxiv.org/abs/2410.21129},
-}
-```
-
 ## Software
 To cite this software, use the following bibtex entry:
 
@@ -149,8 +161,8 @@ To cite this software, use the following bibtex entry:
 	license = 	{BSD-3-Clause},
 	title = 	{Calibrated Explanations},
 	url = 		{https://github.com/Moffran/calibrated_explanations},
-	version = 	{v0.5.1},
-	month = 	{November},
-	year = 		{2024}
+	version = 	{v0.9.0},
+	month = 	{October},
+	year = 		{2025}
 }
 ```

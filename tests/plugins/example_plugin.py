@@ -11,6 +11,8 @@ from typing import Any
 
 
 class ExamplePlugin:
+    """Deterministic plugin implementation for registry tests."""
+
     plugin_meta = {
         "schema_version": 1,
         "capabilities": ["explain"],
@@ -22,12 +24,14 @@ class ExamplePlugin:
     }
 
     def supports(self, model: Any) -> bool:
+        """Return True when *model* matches the supported test sentinel."""
         # Support a simple sentinel model value or a dict marker for tests
         return model == "supported-model" or (
             isinstance(model, dict) and model.get("kind") == "example"
         )
 
     def explain(self, model: Any, x: Any, **kwargs: Any) -> dict[str, Any]:
+        """Produce a deterministic explanation payload for test assertions."""
         # Return a tiny deterministic payload for assertions
         return {"plugin": "example", "model": str(model), "n": (len(x) if x is not None else 0)}
 

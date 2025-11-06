@@ -36,15 +36,29 @@ class IntervalRegressor:
             values for the instances in the calibration set.
         """
         self.ce = calibrated_explainer
+        self._bins_storage = None
+        self._bins_size = 0
         self.bins = calibrated_explainer.bins
         self.model = self
-        self.y_cal_hat = (
-            self.ce.predict_calibration()
-        )  # can be calculated through calibrated_explainer
-        self.residual_cal = (
-            self.ce.y_cal - self.y_cal_hat
-        )  # can be calculated through calibrated_explainer
-        self.sigma_cal = self.ce._get_sigma_test(x=self.ce.x_cal)  # pylint: disable=protected-access
+
+        initial_y_cal_hat = np.asarray(self.ce.predict_calibration())
+        if initial_y_cal_hat.ndim != 1:
+            initial_y_cal_hat = initial_y_cal_hat.reshape(-1)
+        self._y_cal_hat_storage = np.array(initial_y_cal_hat, copy=True)
+        self._y_cal_hat_size = self._y_cal_hat_storage.shape[0]
+
+        initial_residuals = np.asarray(self.ce.y_cal)
+        if initial_residuals.ndim != 1:
+            initial_residuals = initial_residuals.reshape(-1)
+        initial_residuals = initial_residuals - self.y_cal_hat
+        self._residual_cal_storage = np.array(initial_residuals, copy=True)
+        self._residual_cal_size = self._residual_cal_storage.shape[0]
+
+        sigma_cal = np.asarray(self.ce._get_sigma_test(x=self.ce.x_cal))  # pylint: disable=protected-access
+        if sigma_cal.ndim != 1:
+            sigma_cal = sigma_cal.reshape(-1)
+        self._sigma_cal_storage = np.array(sigma_cal, copy=True)
+        self._sigma_cal_size = self._sigma_cal_storage.shape[0]
         cps = crepes.ConformalPredictiveSystem()
         if self.ce.difficulty_estimator is not None:
             cps.fit(
@@ -62,6 +76,60 @@ class IntervalRegressor:
         self.current_y_threshold = None
         self.split = {}
         self.pre_fit_for_probabilistic()
+
+    def _append_calibration_buffer(self, name, values):
+        """Append new calibration values to the dynamic storage backing ``name``."""
+        values = np.asarray(values)
+        if values.size == 0:
+            return
+        if values.ndim != 1:
+            values = values.reshape(-1)
+
+        storage_attr = f"_{name}_storage"
+        size_attr = f"_{name}_size"
+
+        storage = getattr(self, storage_attr)
+        size = getattr(self, size_attr)
+        values = values.astype(storage.dtype, copy=False)
+
+        storage = self._ensure_capacity(storage, size, values.size)
+        storage[size : size + values.size] = values
+
+        setattr(self, storage_attr, storage)
+        setattr(self, size_attr, size + values.size)
+
+    def _append_bins(self, values):
+        """Append Mondrian bin assignments while reusing allocated storage."""
+        values = np.asarray(values)
+        if values.size == 0:
+            return
+        if values.ndim != 1:
+            values = values.reshape(-1)
+
+        if self._bins_storage is None:
+            self._bins_storage = np.array(values, copy=True)
+            self._bins_size = values.size
+            return
+
+        values = values.astype(self._bins_storage.dtype, copy=False)
+        storage = self._ensure_capacity(self._bins_storage, self._bins_size, values.size)
+        storage[self._bins_size : self._bins_size + values.size] = values
+        self._bins_storage = storage
+        self._bins_size += values.size
+
+    @staticmethod
+    def _ensure_capacity(storage, size, additional):
+        """Grow ``storage`` so that ``size + additional`` entries fit without reallocation."""
+        required = size + additional
+        capacity = storage.shape[0]
+        if capacity >= required:
+            return storage
+
+        new_capacity = max(required, max(1, capacity * 2))
+        new_storage = np.empty(new_capacity, dtype=storage.dtype)
+        if size:
+            new_storage[:size] = storage[:size]
+        return new_storage
 
     # pylint: disable=too-many-locals
     def predict_probability(self, x, y_threshold, bins=None):
@@ -344,9 +412,9 @@ class IntervalRegressor:
         y_cal_hat = self.ce.predict_function(xs)
         residuals = ys - y_cal_hat
         sigmas = self.ce._get_sigma_test(x=xs)  # pylint: disable=protected-access
-        self.y_cal_hat = np.append(self.y_cal_hat, y_cal_hat)
-        self.residual_cal = np.append(self.residual_cal, residuals)
-        self.sigma_cal = np.append(self.sigma_cal, sigmas)
+        self._append_calibration_buffer("y_cal_hat", y_cal_hat)
+        self._append_calibration_buffer("residual_cal", residuals)
+        self._append_calibration_buffer("sigma_cal", sigmas)
 
         # Update bins
         if bins is not None:
@@ -354,7 +422,7 @@ class IntervalRegressor:
                 raise ValueError("Cannot mix calibration instances with and without bins.")
             if len(bins) != len(ys):
                 raise ValueError("The length of bins must match the number of added instances.")
-            self.bins = np.append(self.bins, bins)
+            self._append_bins(bins)
 
         if small_part == 0 or len(large_idx) > 0:  # add to cps calibration
             cps_idx = small_idx if small_part == 0 else large_idx
@@ -380,3 +448,38 @@ class IntervalRegressor:
                 alphas = self.cps.alphas[1][b]
                 indices = np.searchsorted(alphas, residuals[bins == b])
                 self.cps.alphas[1][b] = np.insert(alphas, indices, residuals[bins == b])
+
+    @property
+    def y_cal_hat(self):
+        """Predicted calibration targets."""
+        return self._y_cal_hat_storage[: self._y_cal_hat_size]
+
+    @property
+    def residual_cal(self):
+        """Calibration residuals reused by conformal updates."""
+        return self._residual_cal_storage[: self._residual_cal_size]
+
+    @property
+    def sigma_cal(self):
+        """Calibration difficulty estimates."""
+        return self._sigma_cal_storage[: self._sigma_cal_size]
+
+    @property
+    def bins(self):
+        """Return the Mondrian bins associated with the calibration data."""
+        if self._bins_storage is None:
+            return None
+        return self._bins_storage[: self._bins_size]
+
+    @bins.setter
+    def bins(self, value):
+        if value is None:
+            self._bins_storage = None
+            self._bins_size = 0
+            return
+
+        value = np.asarray(value)
+        if value.ndim != 1:
+            value = value.reshape(-1)
+        self._bins_storage = np.array(value, copy=True)
+        self._bins_size = self._bins_storage.shape[0]

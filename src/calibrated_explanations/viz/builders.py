@@ -24,7 +24,6 @@ _PROBABILITY_TOL = 1e-9
 
 def _looks_like_probability_values(*values: float) -> bool:
     """Return True when all provided values lie within [0, 1] (with tolerance)."""
-
     finite: list[float] = []
     for value in values:
         try:
@@ -48,7 +47,6 @@ def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index:
     requested via ``features_to_plot``. Raise ``ValueError`` with a descriptive
     message when a sequence is too short so tests can detect drift early.
     """
-
     if seq is None or max_index < 0:
         return
     try:
@@ -66,7 +64,6 @@ def _normalize_interval_bounds(
     y_minmax: tuple[float, float] | None,
 ) -> tuple[float, float, tuple[float, float] | None]:
     """Clamp non-finite interval bounds to ``y_minmax`` when available."""
-
     if y_minmax is None:
         return low, high, None
 
@@ -82,7 +79,6 @@ def _normalize_interval_bounds(
 
 def _legacy_color_brew(n: int) -> list[tuple[int, int, int]]:
     """Reproduce the legacy colour palette for probability fills."""
-
     color_list: list[tuple[int, int, int]] = []
     s, v = 0.75, 0.9
     c = s * v
@@ -112,7 +108,6 @@ def _legacy_color_brew(n: int) -> list[tuple[int, int, int]]:
 
 def _legacy_get_fill_color(probability: float, reduction: float = 1.0) -> str:
     """Mirror legacy ``__get_fill_color`` for probability intensities."""
-
     colors = _legacy_color_brew(2)
     winner_class = int(probability >= 0.5)
     color = colors[winner_class]
@@ -145,7 +140,6 @@ def _build_probability_segments(
     pivot: float | None,
 ) -> tuple[IntervalSegment, ...]:
     """Construct coloured segments for a probability interval."""
-
     lo = float(low)
     hi = float(high)
     if lo > hi:
@@ -317,7 +311,7 @@ def build_regression_bars_spec(
 
 
 def build_factual_probabilistic_spec(**kwargs) -> PlotSpec:
-    """Wrapper for factual probabilistic plot kind (ADR-016).
+    """Create a wrapper for the factual probabilistic plot kind (ADR-016).
 
     Currently delegates to `build_probabilistic_bars_spec`. This wrapper
     provides a stable name for future refactors and makes plot kinds explicit.
@@ -326,7 +320,7 @@ def build_factual_probabilistic_spec(**kwargs) -> PlotSpec:
 
 
 def build_factual_regression_spec(**kwargs) -> PlotSpec:
-    """Wrapper for factual regression plot kind (ADR-016)."""
+    """Create a wrapper for the factual regression plot kind (ADR-016)."""
     return build_regression_bars_spec(**kwargs)
 
 
@@ -353,7 +347,6 @@ def build_alternative_probabilistic_spec(
     xticks: Sequence[float] | None = None,
 ) -> PlotSpec:
     """Build an alternative probabilistic PlotSpec mirroring legacy visuals."""
-
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         _ensure_indexable_length(
@@ -542,7 +535,6 @@ def build_alternative_regression_spec(
     xticks: Sequence[float] | None = None,
 ) -> PlotSpec:
     """Build an alternative regression PlotSpec mirroring legacy visuals."""
-
     max_index = max(features_to_plot) if features_to_plot else -1
     if isinstance(feature_weights, dict):
         _ensure_indexable_length(

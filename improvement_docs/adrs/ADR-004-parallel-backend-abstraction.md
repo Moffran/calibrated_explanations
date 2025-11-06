@@ -15,41 +15,42 @@ Some calibration and explanation workflows run per-fold, per-bootstrap, or per-f
 
 ## Decision
 
-Provide a pluggable parallel execution facade `ParallelExecutor` with strategy implementations:
+The original ADR proposed a full pluggable `ParallelExecutor` with multiple strategy implementations (thread, process, joblib, serial) and an automatic selection algorithm. After review and a decision to pursue a pragmatic, low-risk rollout for v0.9.1, the ADR is amended to the following two-stage approach:
 
-- `ThreadPoolExecutorStrategy` (wraps `concurrent.futures.ThreadPoolExecutor`) for I/O bound or C-accelerated code paths.
-- `ProcessPoolExecutorStrategy` for CPU-bound pure Python loops when data is picklable.
-- `JoblibBackendStrategy` (optional) leveraging joblib if installed for advanced backends (loky, multiprocessing, threading) and batching.
-- `SerialStrategy` fallback to preserve determinism and simplify debugging.
+1) v0.9.1 Scoped Deliverable — ParallelFacade (conservative, low-risk)
 
-Selection algorithm:
+- Implement a small `ParallelFacade` (also referenced as "ParallelFacade" or "ParallelChooser") that centralizes conservative selection heuristics and telemetry hooks. The facade will:
+  - Accept the existing executor-like objects used by callers and expose a lightweight decision API (e.g., decide_use_parallel(...)).
+  - Apply conservative heuristics to prefer serial execution unless clear benefits exist (checks include executor enabled flag, granularity, explicit min thresholds for instances/features, platform heuristics for spawn cost, and an optional task_size_hint_bytes).
+  - Honor explicit operator overrides (env var `CE_PARALLEL=off|on|joblib`) and per-call hints.
+  - Emit a compact, structured telemetry decision record (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type) via a pluggable telemetry hook so the team can measure real-world benefits before broader rollout.
+  - Be intentionally small and conservative: it does not implement new strategy classes, cgroup detection, or fork-safety mechanics in v0.9.1.
 
-1. If user supplies explicit strategy object -> use it.
-2. Else if env var `CE_PARALLEL=off` -> Serial.
-3. Else inspect workload characteristics (estimated task cost, data size heuristics, n_tasks) and choose:
-   - Thread if tasks release GIL (detected by whitelist of known functions or user hint) and n_tasks >= 4.
-   - Process if CPU-bound and data payload size per task < threshold (configurable) else Serial (avoid fork storm / OOM).
-   - Joblib if installed and user sets `CE_PARALLEL=joblib`.
+  Rationale: this incremental approach reduces immediate engineering risk, provides measurable telemetry to inform further investment, and preserves the current, tested plugin execution paths while enabling safer opt-in parallelism.
 
-Unified API: `executor.map(func, iterable)` and context manager semantics. Provide cancellation & graceful shutdown.
+2) v0.10 (deferred) — Full ParallelExecutor Strategy Matrix (optional)
 
-Configuration surface via `ParallelConfig` (max_workers, preferred, task_size_hint_bytes, force_serial_on_failure=True).
+- The full `ParallelExecutor` with multiple strategy implementations, workload-aware `_auto_strategy` selection, deep cgroup/container awareness, fork-safety hooks, cooperative cancellation, and expanded telemetry (timings, worker utilisation, fallback counters) is deferred to a later decision point targeting v0.10. The v0.9.1 facade will collect the field evidence needed to determine whether the full ADR should be implemented, postponed, or called off entirely.
 
-Instrumentation: timing per task, queue wait time, worker utilization (approx), exported via metrics hooks.
+Selection algorithm and unified API for the full strategy (v0.10) remain as originally described in this ADR, but are explicitly out of scope for v0.9.1.
 
 ### Operational clarifications
 
-- **Opt-in default:** parallel execution stays disabled unless `ParallelConfig(enable=True)` is supplied or `CE_PARALLEL` is set to a non-`off` value. Document per-release guidance highlighting when to keep serial mode.
-- **API contract preservation:** strategy selection and configuration MUST remain optional
-  enhancements. `WrapCalibratedExplainer` public entry points (`fit`,
-  `calibrate`, `explain_factual`, `explore_alternatives`, `predict`,
-  `predict_proba`, and plotting/uncertainty helpers) keep their existing
-  signatures without deprecation warnings or behavioural breaking changes.
-- **Graceful degradation:** if a strategy raises during executor creation or task execution, automatically fall back to `SerialStrategy` and emit a structured warning; failures must not abort explanation flows.
-- **Compatibility with caching:** after `fork`/`spawn`, call the `forksafe_reset()` cache hook defined in ADR-003 so per-process caches do not leak stale references.
-- **Resource limits:** honour `max_workers` caps and expose heuristics for CPU count detection, respecting container cgroup quotas. Provide guardrails to avoid oversubscription in CI (detect via env flags, default to serial).
-- **Telemetry contract:** record aggregated metrics (`tasks_submitted`, `tasks_completed`, `worker_utilisation_pct`, `fallbacks_to_serial`) and ensure they flow through the same telemetry API used for caching metrics. Logging must be suppressible in production by honoring existing verbosity settings.
-- **Testing requirements:** add unit tests for each strategy path, fork/spawn lifecycle, telemetry emission, and failure fallback. Provide an integration benchmark demonstrating improved throughput on the Python fallback explain path.
+The following clarifications capture the phased approach and guardrails for the v0.9.1 facade and the deferred v0.10 work:
+
+- Opt-in default (unchanged): parallel execution stays disabled unless an executor or an enabling flag is supplied. The v0.9.1 facade will respect `executor.config.enabled`, `ParallelConfig` flags, and `CE_PARALLEL` overrides.
+
+- API contract preservation: strategy selection and configuration MUST remain optional enhancements. `WrapCalibratedExplainer` public entry points (`fit`, `calibrate`, `explain_factual`, `explore_alternatives`, `predict`, `predict_proba`, and plotting/uncertainty helpers) keep their existing signatures without deprecation warnings or behavioural breaking changes.
+
+- Graceful degradation (v0.9.1 minimum): the facade will detect basic executor errors (missing executor, disabled executor, platform hints indicating high spawn cost) and prefer serial; it will also surface a telemetry record when it forces a fallback to serial. Full automatic fallback-on-exception semantics for strategy construction remain part of the v0.10 scope.
+
+- Compatibility with caching (deferred): fork/spawn cache hygiene is a known issue and remains part of the v0.10 scope. The v0.9.1 facade will document the requirement and provide guidance but will not implement automated fork-safety hooks.
+
+- Resource limits: honour `max_workers` caps and expose heuristics for CPU count detection, respecting container cgroup quotas. Provide guardrails to avoid oversubscription in CI (detect via env flags, default to serial). The facade will include conservative defaults and expose overrides for CI/staging.
+
+- Telemetry contract (phased): v0.9.1 will require the facade to emit compact decision telemetry (as described above). The fuller set of runtime metrics (`tasks_submitted`, `tasks_completed`, `worker_utilisation_pct`, etc.) will be part of the v0.10 effort once the facade's field telemetry indicates sufficient benefit to justify the instrumentation cost.
+
+- Testing requirements (v0.9.1): add unit tests for the facade decision logic (env var overrides, thresholds, platform heuristics), and a micro-benchmark harness for evidence collection. More exhaustive lifecycle tests (fork/spawn, joblib backends) are deferred to v0.10.
 
 ### Documentation & rollout requirements
 
@@ -78,10 +79,18 @@ Negative / Risks:
 - Maintenance of strategy matrix as code evolves.
 - Added light abstraction layer overhead.
 
-## Implementation status (2025-10-07)
+### Implementation status (2025-11-05)
 
-- Parallel executor abstraction is scheduled for v0.9.0 delivery alongside the
-  caching controls, but no code has landed yet; configuration flags remain
-  placeholders pending implementation.【F:improvement_docs/RELEASE_PLAN_v1.md†L120-L176】
-- Telemetry and fallback wiring must be verified during the v1.0.0-rc staging
-  window before enabling broader defaults.【F:improvement_docs/RELEASE_PLAN_v1.md†L178-L197】
+- v0.9.1 decision: implement the conservative "ParallelFacade" scoped deliverable (see Decision above). The facade will centralize conservative selection heuristics, emit decision telemetry, and provide a safe opt-in path for the existing executor interface. This work is small, testable, and intended to ship in the v0.9.1 governance & observability hardening milestone.
+
+- v0.10: the full `ParallelExecutor` strategy matrix and deeper runtime instrumentation remain a candidate for v0.10; the team will decide to proceed, postpone, or cancel after analyzing the telemetry collected from the facade in v0.9.1.
+
+### Testing and rollout guidance (v0.9.1)
+
+- Add unit tests for the facade decision logic (respect env var overrides, minimum thresholds, platform heuristics).
+- Add a small micro-benchmark harness (evaluation/parallel_ablation.py) that records wall-clock improvements for canonical workloads and stores results in JSON so the v0.10 decision can be evidence-driven.
+- Ship the facade behind the existing executor opt-in flags; do not change the default behaviour for users.
+
+### Notes
+
+- This amendment aims to provide an incremental, low-risk path to gather data about when parallelism improves performance in realistic usage. If the telemetry shows limited benefit, the full ADR-004 work may be postponed or scoped smaller during v0.10 planning.

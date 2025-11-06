@@ -27,6 +27,7 @@ class CalibratedError(Exception):
     """Base class for library-specific errors."""
 
     def __init__(self, message: str, *, details: dict[str, Any] | None = None) -> None:
+        """Attach structured error details alongside the user-facing message."""
         super().__init__(message)
         self.details: dict[str, Any] | None = details
 

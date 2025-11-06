@@ -81,6 +81,32 @@ We therefore need a plugin model that lets external contributors add new interva
 - Metadata validation occurs during registration. Missing required fields keeps the plugin out of the registry, preventing accidental downgrades to unsafe implementations.
 - Runtime guards assert that calibrators return probabilities and intervals identical in structure to the built-in classes. Failures bubble up with actionable diagnostics so the system never silently downgrades calibration quality.
 
+## Interval Propagation to Explanation Rules
+
+### Factual Explanations
+
+Interval calibrators produce calibrated probabilities and intervals for
+the original instance prediction. These same intervals propagate to
+feature-level weights in factual rules:
+
+- When a factual feature rule is computed via perturbation, the weight
+  (feature attribution) is accompanied by an uncertainty interval derived
+  from the calibrated interval learner.
+- The feature weight interval semantics match the underlying calibrator
+  (Venn-Abers for classification, CPS for regression).
+
+### Alternative Explanations
+
+Each alternative scenario is evaluated with the same interval calibrator:
+
+- When an alternative condition is tested, the calibrated prediction for
+  that scenario includes both the point estimate and uncertainty interval.
+- The uncertainty interval for each alternative prediction is produced by
+  the interval calibrator, ensuring consistency with the original instance
+  prediction interval.
+- Feature-weight deltas may be computed but are auxiliary; the primary
+  payload is the calibrated prediction interval for the alternative scenario.
+
 ## Implementation status (2025-10-10)
 
 - `CalibratedExplainer` now resolves both legacy and FAST interval calibrators

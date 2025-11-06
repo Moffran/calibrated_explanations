@@ -4,7 +4,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+        exclude: \.ipynb$
       - id: ruff-format
+        exclude: \.ipynb$
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.9
@@ -28,7 +30,7 @@ repos:
     hooks:
       - id: codespell
         args: ["-L", "dataframe,nd", "-S", "*.lock,*.csv,*.txt,*.json,*.md,*.png,*.jpg,*.gif,*.zip"]
-        exclude: "(^data/|^benchmarks/|^build/|^dist/|^notebooks/|^evaluation/)"
+        exclude: "(^data/|^benchmarks/|^build/|^dist/|^notebooks/|^evaluation/|^docs/_build/|^docs_old/_build/)"
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0

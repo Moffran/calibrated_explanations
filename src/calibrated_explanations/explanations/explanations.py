@@ -1,25 +1,43 @@
 # pylint: disable=unknown-option-value, too-many-arguments
 # pylint: disable=too-many-lines, too-many-public-methods, invalid-name, too-many-positional-arguments, line-too-long
-"""
-Contains classes for storing and visualizing calibrated explanations.
+"""Containers for storing, exporting, and visualising calibrated explanations."""
 
-Classes
--------
-    - :class:`.CalibratedExplanations`
-    - :class:`.AlternativeExplanations`
-    - :class:`.FrozenCalibratedExplainer`
-"""
+from __future__ import annotations
 
 import warnings
-from copy import deepcopy
+from copy import copy, deepcopy
+from dataclasses import dataclass
 from time import time
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 
 from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
 from ..utils.helper import prepare_for_saving
+from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
+from .models import Explanation as DomainExplanation
+
+
+@dataclass(frozen=True)
+class ExportedExplanationCollection:
+    """Lightweight representation of exported explanations plus collection metadata."""
+
+    metadata: Mapping[str, Any]
+    explanations: Sequence[DomainExplanation]
+
+
+def _jsonify(value: Any) -> Any:
+    """Convert numpy objects and arrays into JSON-serialisable primitives."""
+    if isinstance(value, np.ndarray):
+        return [_jsonify(item) for item in value.tolist()]
+    if isinstance(value, (list, tuple, set)):
+        return [_jsonify(item) for item in value]
+    if isinstance(value, Mapping):
+        return {str(key): _jsonify(val) for key, val in value.items()}
+    if isinstance(value, np.generic):  # numpy scalars
+        return value.item()
+    return value
 
 
 class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
@@ -87,6 +105,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """Return the number of explanations."""
         return len(self.x_test[:, 0])
 
+    def build_rules_payload(self) -> List[Dict[str, Any]]:
+        """Delegate payload materialisation to each stored explanation."""
+        return [exp.build_rules_payload() for exp in self.explanations]
+
     def __getitem__(self, key: Union[int, slice, List[int], List[bool], np.ndarray]):
         """Return the explanation for the given key.
 
@@ -99,10 +121,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             # Handle single item access
             return self.explanations[key]
         if isinstance(key, (slice, list, np.ndarray)):
-            new_ = deepcopy(self)
+            new_ = copy(self)
             if isinstance(key, slice):
                 # Handle slicing
-                new_.explanations = self.explanations[key]
+                new_.explanations = list(self.explanations[key])
             if isinstance(key, (list, np.ndarray)):
                 if isinstance(key[0], (bool, np.bool_)):
                     # Handle boolean indexing
@@ -128,6 +150,13 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             else:
                 # assume list of tuples aligned with instances
                 new_.y_threshold = [self.y_threshold[e.index] for e in new_]
+            # Reset cached aggregates to avoid referencing stale state from the source
+            new_._feature_names_cache = None
+            new_._predictions_cache = None
+            new_._probabilities_cache = None
+            new_._lower_cache = None
+            new_._upper_cache = None
+            new_._class_labels_cache = None
             for i, e in enumerate(new_):
                 e.index = i
             return new_
@@ -161,6 +190,146 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if not isinstance(container, cls):
             raise TypeError("ExplanationBatch container metadata has unexpected type")
         return container
+
+    # ------------------------------------------------------------------
+    # JSON export helpers (schema v1 wrappers)
+    # ------------------------------------------------------------------
+
+    def to_json(self, *, include_version: bool = True) -> Mapping[str, Any]:
+        """Return a JSON-friendly payload describing this collection.
+
+        The payload wraps each explanation using the schema v1 helpers from
+        :mod:`calibrated_explanations.serialization` and adds collection-level
+        metadata (mode, thresholds, feature names, telemetry snapshot).
+
+        Parameters
+        ----------
+        include_version:
+            When ``True`` (default) the ``schema_version`` field is included on
+            the top-level payload as well as on each explanation entry.
+        """
+        from ..serialization import to_json as _explanation_to_json
+
+        instances = []
+        for exp in self.explanations:
+            domain = legacy_to_domain(exp.index, self._legacy_payload(exp))
+            provenance = getattr(exp, "provenance", None)
+            metadata = getattr(exp, "metadata", None)
+            if provenance is not None:
+                domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+            if metadata is not None:
+                domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata))
+            instances.append(_explanation_to_json(domain, include_version=include_version))
+
+        payload: dict[str, Any] = {
+            "collection": self._collection_metadata(),
+            "explanations": instances,
+        }
+        if include_version:
+            payload.setdefault("schema_version", "1.0.0")
+        return payload
+
+    @classmethod
+    def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
+        """Materialise domain explanations from a :meth:`to_json` payload."""
+        from ..serialization import from_json as _explanation_from_json
+
+        explanations_blob = payload.get("explanations", []) or []
+        domain: list[DomainExplanation] = []
+        for item in explanations_blob:
+            domain.append(_explanation_from_json(item))
+        metadata = payload.get("collection", {}) or {}
+        return ExportedExplanationCollection(
+            metadata=cast(Mapping[str, Any], _jsonify(metadata)),
+            explanations=tuple(domain),
+        )
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _legacy_payload(self, exp) -> Mapping[str, Any]:
+        """Build a legacy-shaped payload from an explanation instance."""
+        rules_blob = None
+        # prefer conjunctive rules when present and populated
+        if getattr(exp, "_has_conjunctive_rules", False):
+            rules_blob = getattr(exp, "conjunctive_rules", None)
+        if not rules_blob:
+            rules_blob = getattr(exp, "rules", None)
+        if not rules_blob and hasattr(exp, "_get_rules"):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                try:
+                    rules_blob = exp._get_rules()  # type: ignore[attr-defined]
+                except Exception:  # pragma: no cover - defensive
+                    rules_blob = {}
+
+        payload: dict[str, Any] = {
+            "task": getattr(
+                exp, "get_mode", lambda: getattr(self.calibrated_explainer, "mode", None)
+            )(),
+            "rules": _jsonify(rules_blob or {}),
+            "feature_weights": _jsonify(getattr(exp, "feature_weights", {})),
+            "feature_predict": _jsonify(getattr(exp, "feature_predict", {})),
+            "prediction": _jsonify(getattr(exp, "prediction", {})),
+        }
+        return payload
+
+    def _collection_metadata(self) -> Mapping[str, Any]:
+        """Collect calibration metadata required to interpret the payload."""
+        base = getattr(self, "calibrated_explainer", None)
+        underlying = getattr(base, "_explainer", None)
+
+        feature_names = None
+        try:
+            names = self.feature_names
+            if names is not None:
+                feature_names = list(names)
+        except Exception:  # pragma: no cover - defensive
+            feature_names = None
+
+        class_labels = None
+        if hasattr(base, "class_labels"):
+            try:
+                class_labels = _jsonify(base.class_labels)  # type: ignore[attr-defined]
+            except Exception:  # pragma: no cover - defensive
+                class_labels = None
+
+        sample_percentiles = None
+        if hasattr(base, "sample_percentiles"):
+            try:
+                sample_percentiles = _jsonify(base.sample_percentiles)  # type: ignore[attr-defined]
+            except Exception:  # pragma: no cover - defensive
+                sample_percentiles = None
+
+        assign_threshold = None
+        if hasattr(base, "assign_threshold"):
+            try:
+                assign_threshold = base.assign_threshold  # type: ignore[attr-defined]
+            except Exception:  # pragma: no cover - defensive
+                assign_threshold = None
+
+        runtime_telemetry = None
+        if underlying is not None:
+            try:
+                runtime_telemetry = getattr(underlying, "runtime_telemetry", None)
+                if callable(runtime_telemetry):
+                    runtime_telemetry = runtime_telemetry()
+            except Exception:  # pragma: no cover - defensive
+                runtime_telemetry = None
+
+        metadata = {
+            "size": len(self),
+            "mode": getattr(base, "mode", None),
+            "y_threshold": _jsonify(self.y_threshold),
+            "low_high_percentiles": _jsonify(self.low_high_percentiles),
+            "feature_names": _jsonify(feature_names),
+            "class_labels": class_labels,
+            "assign_threshold": _jsonify(assign_threshold),
+            "sample_percentiles": sample_percentiles,
+            "runtime_telemetry": _jsonify(runtime_telemetry),
+        }
+        return {k: v for k, v in metadata.items() if v is not None}
 
     @property
     def prediction_interval(self) -> List[Tuple[Optional[float], Optional[float]]]:
@@ -401,7 +570,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def __convert_to_alternative_explanations(self) -> "AlternativeExplanations":
         """Return an ``AlternativeExplanations`` view sharing this collection's backing data."""
-
         alternative_explanations = AlternativeExplanations.__new__(AlternativeExplanations)
         alternative_explanations.__dict__.update(self.__dict__)
         return alternative_explanations
@@ -453,12 +621,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def _get_explainer(self):
         """Return the underlying :class:`~calibrated_explanations.core.calibrated_explainer.CalibratedExplainer` instance."""
-
         return self.calibrated_explainer
 
     def _get_rules(self):
         """Return the materialised rule payload for each explanation in the collection."""
-
         return [
             # pylint: disable=protected-access
             explanation._get_rules()
@@ -485,7 +651,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             Returns a self reference, to allow for method chaining.
         """
         for explanation in self.explanations:
-            explanation.remove_conjunctions()
             explanation.add_conjunctions(n_top_features, max_rule_size)
         return self
 
@@ -533,7 +698,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def _is_alternative(self):
         """Return True when the collection represents an alternative explanation workflow."""
-
         return isinstance(
             self.calibrated_explainer.discretizer, (RegressorDiscretizer, EntropyDiscretizer)
         )

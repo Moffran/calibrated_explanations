@@ -32,7 +32,7 @@ ALIAS_MAP: dict[str, str] = {
 def canonicalize_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     """Return a copy of kwargs with known aliases mapped to canonical keys.
 
-    Rules
+    Notes
     -----
     - If an alias exists in ``kwargs`` and the canonical key is absent, copy the
       value to the canonical key.

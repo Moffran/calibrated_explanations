@@ -1,9 +1,9 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) on 2025-10-24 reached **86.0%** line coverage with `fail_under=85` satisfied. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2025-10-24):** Last edited 2025-10-24 · Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) on 2025-10-24 reached **88.4%** line coverage with `fail_under=88` satisfied. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
 # Coverage Gap Remediation Plan (2025-02)
 
 ## Baseline snapshot
-The latest repository-wide coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) reports **86.0%** line coverage (7,605 statements, 840 misses; branch coverage 78.1%), which keeps the package short of the 90% policy target even though the interim `fail_under=85` gate passes. The run terminated after the Windows-only legacy plotting assertion noted above; coverage artifacts (`.coverage`, `coverage.xml`) were still generated for triage.
+The baseline repository-wide coverage snapshot captured prior to the uplift (`pytest --cov=src/calibrated_explanations --cov-report=term`) reported **86.0%** line coverage (7,605 statements, 840 misses; branch coverage 78.1%), which kept the package short of the 90% policy target even though the interim `fail_under=85` gate passed. We retain the table below for historical context while the active gate now enforces `fail_under=88`.
 
 | Module | Stmts | Miss | Branch miss | Coverage |
 | --- | ---: | ---: | ---: | ---: |
@@ -23,13 +23,13 @@ The same run highlighted thin coverage across gateway modules such as `core/__in
 ## Gap analysis by subsystem
 
 ### 1. Plotting router and builder chain
-* `_plot_probabilistic` and `_plot_global` orchestrate style negotiation, interval guards, and fallback to legacy drawing, but current tests barely exercise the override matrix (`style_override`, `use_legacy`) or the defensive logging paths, leaving large sections uncovered.【F:src/calibrated_explanations/plotting.py†L601-L640】
+* `_plot_probabilistic` and `_plot_global` orchestrate style negotiation, interval guards, triangular alternative rendering, and fallback to legacy drawing, but current tests barely exercise the override matrix (`style_override`, `use_legacy`) or the defensive logging paths, leaving large sections uncovered—including the triangular plot path.【F:src/calibrated_explanations/plotting.py†L601-L640】
 * The modern rendering path through `viz/builders.py` constructs probability segments, pivot-aware colour roles, and ranking heuristics; coverage shows those branches are almost entirely cold, especially the uncertainty segment assembly near the bottom of the module.【F:src/calibrated_explanations/viz/builders.py†L431-L470】【F:src/calibrated_explanations/viz/builders.py†L838-L852】
 * Save-extension handling still behaves differently on Windows vs. POSIX (the failing assertion that expects `tmp_path / "defaultsvg"`), signalling that IO-related branches lack coverage and break parity across platforms.【F:tests/unit/legacy/test_plotting_module.py†L205-L209】
 
 **Remediation tactics**
 1. Parameterise new plotting tests to drive combinations of `style_override`, `use_legacy`, interval flags, and `save_ext` inputs, asserting both figure assembly and normalised paths (use `pathlib.Path` to abstract separators).
-2. Extract focused builder tests for `_build_probability_segments`, ranking heuristics, and pivot-aware colouring so the cold loops in `viz/builders.py` receive deterministic coverage without heavy matplotlib integration.
+2. Extract focused builder tests for `_build_probability_segments`, ranking heuristics, triangular plot assembly, and pivot-aware colouring so the cold loops in `viz/builders.py` receive deterministic coverage without heavy matplotlib integration.
 3. Restore the Windows assertion by adjusting implementation (or test) path handling, then assert the branch that converts extension lists to filenames so the cross-platform guard remains covered.
 
 ### 2. Explanation assembly and validation
@@ -46,11 +46,13 @@ The same run highlighted thin coverage across gateway modules such as `core/__in
 * Registry trust-management helpers (`mark_plot_renderer_trusted/untrusted`) mutate shared registries and metadata, but there are no assertions that the trust sets or propagated metadata stay consistent.【F:src/calibrated_explanations/plugins/registry.py†L1211-L1234】
 * Built-in plugins perform heavy payload normalisation—deriving feature indices, column names, and interval flags from heterogeneous payloads—yet coverage shows those branches are rarely executed.【F:src/calibrated_explanations/plugins/builtins.py†L661-L709】
 * CLI emitters rely on registry lookups and metadata formatting; failure paths for missing identifiers and trust filtering remain untested, leaving CLI ergonomics brittle.【F:src/calibrated_explanations/plugins/cli.py†L51-L90】
+* No coverage exists around the forthcoming `external_plugins` extras installer, leaving the aggregated installation path and folder bootstrap logic unverified.
 
 **Remediation tactics**
 1. Build registry tests that seed dummy descriptors, toggling trust flags to confirm `_PLOT_RENDERERS`, `_TRUSTED_PLOT_RENDERERS`, and metadata propagation stay in sync.
 2. Add unit tests for the probabilistic built-ins that feed mixed payloads (mapping vs. array) to cover feature-index derivation, logging branches, and auto-selection of `features_to_plot`.
 3. Exercise CLI commands via `CliRunner`, verifying that invalid identifiers raise the documented errors and that trusted/untrusted filters and JSON emitters behave as expected.
+4. Add tests for the aggregated `external-plugins` extras installer that validate dependency resolution, folder discovery (`external_plugins/`), and opt-in semantics.
 
 ### 4. Prediction helpers and package gateways
 * `core/prediction_helpers.initialize_explanation` hides several branch-heavy validation paths (Mondrian bins, regression thresholds, warning hooks) that remain untested, leaving subtle validation errors undetected.【F:src/calibrated_explanations/core/prediction_helpers.py†L82-L108】
@@ -63,7 +65,7 @@ The same run highlighted thin coverage across gateway modules such as `core/__in
 3. Drive the package-level lazy imports under test, asserting that repeated attribute access returns cached objects and that unsupported names raise `AttributeError` as expected.
 
 ### 5. Legacy compatibility surfaces
-* Legacy re-export modules (`legacy/_interval_regressor.py`, `legacy/_plots.py`, `_plots_legacy.py`) remain mostly uncovered; they primarily wrap legacy entry points but should either gain smoke tests or be explicitly excluded in `.coveragerc` to avoid perpetual red flags.【F:src/calibrated_explanations/legacy/_interval_regressor.py†L1-L16】【F:src/calibrated_explanations/legacy/_plots.py†L1-L18】
+* Deprecated re-export modules scheduled for removal have now been deleted (`legacy/_interval_regressor.py`, `legacy/_plots.py`, `_plots_legacy.py`), resolving the lingering coverage exceptions and leaving `legacy/plotting.py` as the sole supported legacy surface.【F:src/calibrated_explanations/legacy/__init__.py†L1-L6】【F:src/calibrated_explanations/legacy/plotting.py†L1-L120】
 * The Windows-only plotting test failure shows legacy plotting utilities still influence default behaviours, so on-going maintenance needs to ratify which legacy paths stay supported.
 
 **Remediation tactics**
@@ -77,7 +79,7 @@ The same run highlighted thin coverage across gateway modules such as `core/__in
 | Sprint 1 | Plotting router + builder hardening | `plotting`, `viz/builders`, legacy plotting save paths | Windows save-extension assertions restored; plotting router coverage ≥80%; builder uncertainty segments executed in tests. |
 | Sprint 2 | Explanation pipeline + wrappers | `core/calibrated_explainer`, `explanations/explanation`, `core/wrap_explainer` | Categorical init and caching branches covered; wrapper APIs exercised; module coverage ≥90%. |
 | Sprint 3 | Plugin registry + built-ins | `plugins/registry`, `plugins/builtins`, `plugins/cli` | Trust toggles round-trip metadata; CLI smoke tests capture error paths; plugin modules reach ≥88% coverage. |
-| Sprint 4 | Gateways + legacy surfaces | `core/prediction_helpers`, `core/__init__`, `calibrated_explanations/__init__`, `legacy/_interval_regressor.py`, `legacy/_plots.py` | Lazy import guards and Mondrian validation tested; decision logged for legacy re-exports (tests vs. `.coveragerc`); residual modules ≥85% or explicitly excluded. |
+| Sprint 4 | Gateways + legacy surfaces | `core/prediction_helpers`, `core/__init__`, `calibrated_explanations/__init__`, `legacy/plotting.py` | Lazy import guards and Mondrian validation tested; decision logged for the remaining legacy plotting surface (tests vs. `.coveragerc`); residual modules ≥88% or explicitly excluded. |
 
 ## Supporting actions
 1. Land shared fixtures in `tests/conftest.py` for synthetic calibration payloads, plugin descriptors, and plotting datasets so the new test suites stay concise.

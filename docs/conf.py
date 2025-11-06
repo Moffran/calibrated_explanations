@@ -8,6 +8,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 # Add project directories to sys.path
 # sys.path.insert(0, os.path.abspath('../..'))
@@ -24,10 +25,10 @@ copyright = "2023, Helena Löfström, Tuwe Löfström"
 author = "Helena Löfström, Tuwe Löfström"
 
 # The short X.Y version
-version = "0.8.0"
+version = "0.9.0"
 
 # The full version, including alpha/beta/rc tags
-release = "0.8.0"
+release = "0.9.0"
 
 # -- General configuration ---------------------------------------------------
 
@@ -75,7 +76,7 @@ templates_path = ["_templates"]
 language = "en"
 
 # Patterns to ignore when looking for source files
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_shared/**"]
 
 # Pygments style for syntax highlighting
 pygments_style = "sphinx"
@@ -85,6 +86,15 @@ myst_enable_extensions = [
     "colon_fence",
     "linkify",
 ]
+
+_SHARED_FRAGMENT_DIR = Path(__file__).parent / "_shared"
+
+
+def _load_shared_fragment(fragment_name: str) -> str:
+    fragment_path = _SHARED_FRAGMENT_DIR / fragment_name
+    with fragment_path.open(encoding="utf-8") as fragment_file:
+        return fragment_file.read().strip()
+
 
 # -- Options for HTML output -------------------------------------------------
 

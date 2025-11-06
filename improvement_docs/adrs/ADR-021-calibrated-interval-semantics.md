@@ -123,6 +123,30 @@ between the three paths.
   intervals and derived telemetry, because they inherit the same calibrated
   meaning from the underlying predictors.
 
+### 4a. Feature-Level Interval Propagation
+
+Feature-level intervals in explanation rules inherit directly from the
+calibrated interval learner:
+
+**Factual rules:** Feature weights include calibrated intervals that reflect
+the uncertainty in the feature's contribution. These intervals are produced
+by the same calibrator that generates prediction intervals.
+
+**Alternative rules:** Each alternative scenario's predicted value includes
+its own calibrated interval, ensuring that downstream consumers can reason
+about both the prediction and its confidence.
+
+### 4b. Invariant: Inclusive Bounds at All Levels
+
+The invariant `low <= predict <= high` applies uniformly:
+
+* At the prediction level (instance-level prediction)
+* At the feature-weight level (in factual rules)
+* At the alternative scenario level (per-scenario predictions)
+
+Any violation of this invariant—whether detected in the prediction bridge,
+plugin output, or downstream consumers—must raise a hard failure.
+
 ### 5. Implications for interval plugins
 
 ADR-013 defines the registry contracts that interval plugins must satisfy. This

@@ -9,7 +9,15 @@ from calibrated_explanations.viz.plotspec import (
 
 
 def test_lru_cache_eviction_and_get():
-    cache = LRUCache(max_items=3)
+    cache = LRUCache(
+        namespace="unit",
+        version="v1",
+        max_items=3,
+        max_bytes=None,
+        ttl_seconds=None,
+        telemetry=None,
+        size_estimator=lambda _: 1,
+    )
     cache.set("a", 1)
     cache.set("b", 2)
     cache.set("c", 3)
@@ -24,8 +32,8 @@ def test_lru_cache_eviction_and_get():
 
 
 def test_make_key_is_deterministic():
-    k1 = make_key([1, "a", 3])
-    k2 = make_key([1, "a", 3])
+    k1 = make_key("unit", "v1", [1, "a", 3])
+    k2 = make_key("unit", "v1", [1, "a", 3])
     assert k1 == k2
     assert isinstance(k1, tuple)
 

@@ -9,6 +9,7 @@ import numpy as np
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.integrations import LimeHelper, ShapHelper
 
 
 class _StubLearner:
@@ -88,16 +89,12 @@ def _make_stub_explainer() -> CalibratedExplainer:
     explainer.learner = _StubLearner()
     explainer.interval_learner = None
     explainer.latest_explanation = None
-    explainer.lime = None
-    explainer.lime_exp = None
-    explainer.shap = None
-    explainer.shap_exp = None
     explainer.feature_values = []
     explainer.categorical_features = []
     explainer.categorical_labels = {}
     explainer._CalibratedExplainer__initialized = True
-    explainer._CalibratedExplainer__lime_enabled = False
-    explainer._CalibratedExplainer__shap_enabled = False
+    explainer._lime_helper = LimeHelper(explainer)
+    explainer._shap_helper = ShapHelper(explainer)
 
     def _predict_stub(self, x, **_kwargs):
         x = np.asarray(x)

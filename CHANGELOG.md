@@ -5,6 +5,125 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...main)
 
+Note: Streaming-friendly, generator/chunked explanation exports were intentionally deferred for v0.9.0 and scheduled for follow-up in v0.9.1 — interim batching guidance and rationale are recorded in `improvement_docs/OSS_CE_scope_and_gaps.md` and `docs/foundations/how-to/export_explanations.md`.
+
+## Highlights
+
+- **ADR alignment audit: Factual vs Alternative explanations.** Conducted comprehensive
+  review of all ADRs (ADR-005, ADR-008, ADR-013, ADR-015, ADR-021, ADR-026) to ensure
+  full alignment with paper-consistent semantics for factual and alternative explanations.
+  Added formal rule definitions to ADR-008, interval propagation contracts to ADR-013,
+  factual/alternative payload requirements to ADR-015, feature-level interval semantics
+  to ADR-021, and factual/alternative calibration contracts and validation criteria to
+  ADR-026. All ADRs now explicitly document that alternative explanations include a
+  reference calibrated prediction with uncertainty interval, feature weights in factual
+  rules have calibrated intervals, and all `[low, high]` pairs must satisfy the inclusive
+  bounds invariant. This audit ensures consistency across all explanation generation paths
+  and provides explicit guidance for plugin developers.【F:improvement_docs/adrs/ADR-008-explanation-domain-model-and-compat.md†L45-L75】【F:improvement_docs/adrs/ADR-013-interval-calibrator-plugin-strategy.md†L80-L110】【F:improvement_docs/adrs/ADR-015-explanation-plugin.md†L151-L210】【F:improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md†L120-L150】【F:improvement_docs/adrs/ADR-026-explanation-plugin-semantics.md†L84-L165】
+
+- **Plugin-based explain architecture.** All explain logic (sequential,
+  feature-parallel, instance-parallel) now lives in dedicated plugins under
+  `core/explain/`, replacing the monolithic branching in `CalibratedExplainer.explain`.
+  This clean separation improves maintainability, testability, and sets the foundation
+  for future distributed execution strategies.
+- **Faster calibrated explanations.** Explore the latest latency benchmarks and
+  optimization notes in the [explain performance evaluation
+  report](evaluation/explain_performance.md).
+- **Revamped documentation experience.** Dive into the reorganised guides,
+  role-based hubs, and refreshed quickstarts starting at the
+  [documentation homepage](docs/index.md).
+- **Plugin governance guardrails.** Optional extras, telemetry governance, and
+  plugin trust workflows now ship with automated enforcement across docs and
+  CI.
+- **Expanded export tooling.** Persist and reload explanation collections via
+  the new `CalibratedExplanations.to_json`/`.from_json` helpers and refreshed
+  how-to guides.
+
+### Release plan alignment
+
+- **Explanation schema v1 and ADR-005/008 compliance:** Updated explanation JSON schema v1 to include
+  `explanation_type` field distinguishing factual and alternative explanations, aligned ADR-005 with paper-compliant semantics from ADR-008, and ensured all domain models, serialization, and adapters preserve the calibrated prediction baseline for both explanation types. This establishes stable round-trip serialization for instance-based explanations as defined in the CE papers.【F:docs/schema_v1.md†L1-L50】【F:improvement_docs/adrs/ADR-005-explanation-json-schema-versioning.md†L1-L80】【F:improvement_docs/adrs/ADR-008-explanation-domain-model-and-compat.md†L1-L60】【F:src/calibrated_explanations/schemas/explanation_schema_v1.json†L1-L40】
+- **Explain plugin decomposition (ADR-004 compliance):** Moved all explain execution
+  strategies into a plugin system (`src/calibrated_explanations/core/explain/`)
+  with three implementations: `SequentialExplainPlugin` (single-threaded fallback),
+  `FeatureParallelExplainPlugin` (executor-backed feature distribution), and
+  `InstanceParallelExplainPlugin` (instance-level chunking). `CalibratedExplainer.explain`
+  is now a thin 13-line delegator that selects and invokes the appropriate plugin
+  based on executor configuration. All legacy equivalence tests and instance-parallel
+  tests pass, confirming behavioral parity with the original implementation.
+  【F:src/calibrated_explanations/core/explain/__init__.py†L1-L175】
+  【F:src/calibrated_explanations/core/calibrated_explainer.py†L2299-L2351】
+- **Calibrated-explanations-first messaging (Tasks 1 & 5):** Rewrote the README,
+  overview landing page, and quickstarts so calibrated factual and alternative
+  flows lead every entry point, with telemetry, PlotSpec, and plugin extras
+  demoted into consistent "Optional extras" callouts and cross-linked research
+  hubs.【F:README.md†L1-L86】【F:docs/index.md†L1-L44】【F:docs/_shared/optional_extras_template.md†L1-L24】【F:docs/_shared/backed_by_research.md†L1-L20】
+- **Audience-specific hubs & triangular alternatives (Tasks 2 & 6):** Added
+  practitioner, researcher, and contributor landing pages that pair probabilistic
+  regression guidance with triangular alternative plot coaching so every
+  `explore_alternatives` mention narrates the calibrated decision boundary
+  story.【F:docs/practitioner/index.md†L1-L54】【F:docs/researcher/index.md†L1-L54】【F:docs/_shared/alternatives_triangular.md†L1-L14】【F:docs/get-started/quickstart_classification.md†L1-L84】
+- **Plugin extensibility & external distribution (Tasks 3, 12 & 13):** Reframed
+  `docs/plugins.md` around a calibration-preserving "hello plugin" example,
+  surfaced the `external_plugins/` namespace and curated installation extra, and
+  exposed `CE_DENY_PLUGIN` governance toggles across docs and CLI output so the
+  optional plugin lane remains discoverable yet clearly opt-in.【F:docs/plugins.md†L1-L200】【F:external_plugins/__init__.py†L1-L23】【F:README.md†L640-L686】【F:src/calibrated_explanations/plugins/cli.py†L74-L123】
+- **Research-forward storytelling (Task 5):** Maintained research hub call-outs
+  across README, overview, and concept guides so every onboarding path links to
+  `docs/research/` and `citing.md`, reinforcing the calibration pedigree.【F:README.md†L22-L60】【F:docs/overview/index.md†L1-L62】【F:docs/citing.md†L1-L140】
+- **ADR-018/017/019 enforcement (Tasks 8–10):** Elevated docstring coverage and
+  notebook lint to blocking status, retired transitional core/plot shims (removing
+  `legacy/_interval_regressor.py`, `legacy/_venn_abers.py`, and `legacy/_plots*.py`),
+  and tightened coverage thresholds to 88% alongside Codecov patch gates that focus
+  on runtime and calibration modules.【F:.github/workflows/lint.yml†L38-L86】【F:src/calibrated_explanations/core/_legacy_explain.py†L1-L110】【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】【F:src/calibrated_explanations/legacy/__init__.py†L1-L6】
+- **Runtime performance polish (Task 11):** Implemented opt-in calibrator cache with LRU eviction, multiprocessing toggle via ParallelExecutor facade, and vectorized perturbation handling. Added performance guidance for plugin authors in docs/contributor/plugin-contract.md. Cache and parallel primitives integrated into explain pipeline without altering calibration semantics.【F:src/calibrated_explanations/perf/__init__.py†L1-L52】【F:src/calibrated_explanations/perf/cache.py†L1-L120】【F:src/calibrated_explanations/core/calibrated_explainer.py†L199-L377】
+- **Documentation-first plugin governance (Task 12):** Expanded CLI and
+  registry tests to surface denied identifiers, audit trusted plugins, and keep
+  the governance narrative inline with the release checklist.【F:tests/plugins/test_cli.py†L74-L152】【F:docs/governance/release_checklist.md†L1-L92】【F:src/calibrated_explanations/plugins/registry.py†L84-L154】
+- **External plugin bundle verification (Task 13):** Shipped packaging tests and
+  documentation for the `external-plugins` extra so the curated FAST bundle
+  stays optional yet discoverable.【F:tests/plugins/test_external_plugins_extra.py†L1-L90】【F:external_plugins/fast_explanations/__init__.py†L1-L92】
+- **Explanation export helpers (Task 14):** Added `CalibratedExplanations.to_json`
+  and `.from_json` wrappers and refreshed the export how-to so integration teams
+  can persist schema v1 collections with calibrated metadata intact.【F:src/calibrated_explanations/explanations/explanations.py†L180-L247】【F:docs/how-to/export_explanations.md†L1-L86】
+- **Streaming-friendly delivery status (Task 15):** Recorded the deferral and
+  interim batching guidance in the OSS scope inventory, closing the release gate
+  while signalling follow-up expectations.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L1-L18】
+
+### Runtime
+
+- Accelerated categorical perturbations, discretisation, and prediction batching
+  for both factual and alternative explanations, backed by legacy parity helpers
+  preserved in `core/_legacy_explain.py` for regression testing.【F:src/calibrated_explanations/core/calibrated_explainer.py†L880-L1120】【F:src/calibrated_explanations/core/_legacy_explain.py†L1-L140】
+- Introduced calibration summary caching and telemetry-aware performance
+  factories so heavy workloads can reuse intermediate results without breaking
+  calibration guarantees.【F:src/calibrated_explanations/core/calibrated_explainer.py†L356-L416】【F:src/calibrated_explanations/perf/cache.py†L121-L320】
+
+### Documentation
+
+- Published practitioner/researcher/contributor hubs, refreshed quickstarts with
+  probabilistic regression walkthroughs, and rewrote plugins governance material
+  to foreground calibrated-explanations-first messaging while labelling extras
+  as optional.【F:docs/get-started/quickstart_regression.md†L1-L94】【F:docs/research/index.md†L1-L80】【F:docs/plugins.md†L200-L420】
+- Added runtime performance tuning, governance checklists, and optional telemetry
+  guides so compliance and SRE flows stay audience scoped.【F:docs/how-to/tune_runtime_performance.md†L1-L140】【F:docs/governance/release_checklist.md†L40-L92】
+
+### CI & QA
+
+- Hardened docs CI with the shared fragment checker, ensured Sphinx `-W`,
+  navigation smoke tests, and linkcheck remain blocking, and elevated docstring
+  coverage thresholds to 94% via lint automation.【F:.github/workflows/docs.yml†L19-L40】【F:.github/workflows/lint.yml†L38-L86】
+- Raised global coverage minimums to 88% and tightened Codecov calibration
+  patch targets so ADR-019 enforcement captures runtime changes.【F:pytest.ini†L1-L8】【F:codecov.yml†L1-L32】
+
+### Tests & Tooling
+
+- Expanded plugin registry, CLI, and builtin adapter suites, added dedicated
+  legacy plotting regression tests, and introduced performance benchmarks and
+  telemetry hooks to monitor the new runtime toggles.【F:tests/plugins/test_builtins_module.py†L1-L180】【F:tests/legacy/test_plotting.py†L1-L200】【F:evaluation/scripts/compare_explain_performance.py†L1-L200】
+- Refreshed reports documenting docstring coverage baselines and lint outputs to
+  back ADR-018's blocking rollout.【F:reports/docstring_coverage_20251025.txt†L1-L32】【F:reports/pydocstyle-baseline.txt†L1-L120】
+
 
 
 ## [v0.8.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.8.0) - 2025-10-24
@@ -33,8 +152,6 @@
 ### Fixed
 
 - Resolved pytest test suite failures caused by matplotlib lazy loading conflicts with pytest-cov instrumentation. matplotlib 3.8+ uses lazy `__getattr__` to delay submodule loading, which breaks when pytest-cov instruments code before matplotlib initializes. Solution: Skip viz tests that directly call `render()` during CI/CD (8 test modules ignored), exempt `matplotlib_adapter.py` and legacy shims from coverage. Tests achieve 86.19% coverage (target: 85%) with 586 tests passing.
-
-### Docs
 
 - Reorganised the documentation site to follow ADR-022's role-based navigation with refreshed quickstarts, telemetry concept guides, troubleshooting material, and section ownership guidance.
 - Updated the README Quick Start to highlight telemetry inspection workflows and PlotSpec defaults, aligning the repository's front door with the new documentation narrative.
@@ -124,8 +241,6 @@ and notebooks accordingly.【F:src/calibrated_explanations/explanations/explanat
 ## [v0.6.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.6.1) - 2025-10-05
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.6.0...v0.6.1)
-
-### Tests
 
 - Added runtime regression coverage to compare plugin-orchestrated factual, alternative, and fast explanations against the legacy `_use_plugin=False` code paths (`tests/integration/core/test_explanation_parity.py`).
 - Exercised schema v1 guardrails by asserting that payloads missing required keys are rejected when `jsonschema` is installed (`tests/unit/core/test_serialization_and_quick.py::test_validate_payload_rejects_missing_required_fields`).
@@ -265,7 +380,7 @@ Also added explicit credit files:
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.3.5...v0.4.0)
 ### Features
 - Paper updates:
-  - [Calibrated Explanations for Regression](https://arxiv.org/abs/2308.16245) has been accepted to Machine Learning. It is currently in press.
+  - [Calibrated Explanations for Regression](https://doi.org/10.1007/s10994-024-06642-8) has been accepted to Machine Learning. It is currently in press.
 - Code improvements:
   - __Substantial speedup__ achieved through the newly implemented `explain` method! This method implements the core algorithm while minimizing the number of calls to core._predict, substantially speeding up the code without altering the algorithmic logic of `calibrated_explanations`. The `explain` method is used exclusively from this version on when calling `explain_factual` or `explain_counterfactual`.
     - Re-ran the ablation study for classification, looking at the impact of calibration set size, number of percentile samplings for numeric features and the number of features.
@@ -432,7 +547,7 @@ Also added explicit credit files:
 ### Features
 - Updated to version 1.4.1 of venn_abers. Added `precision=4` to the fitting of the venn_abers model to increase speed.
 - Preparation for weighted categorical rules implemented but not yet activated.
-- Added a state-of-the-art comparison with scripts and notebooks for evaluating the performance of the method in comparison with `LIME` and `SHAP`: see [Classification_Experiment_sota.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_sota.py) and [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) for running and evaluating the experiment. Unzip [results_sota.zip](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/results_sota.zip) and run [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) to get the results used in the paper [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://arxiv.org/abs/2305.02305).
+- Added a state-of-the-art comparison with scripts and notebooks for evaluating the performance of the method in comparison with `LIME` and `SHAP`: see [Classification_Experiment_sota.py](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Experiment_sota.py) and [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) for running and evaluating the experiment. Unzip [results_sota.zip](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/results_sota.zip) and run [Classification_Analysis_sota.ipynb](https://github.com/Moffran/calibrated_explanations/blob/main/evaluation/Classification_Analysis_sota.ipynb) to get the results used in the paper [Calibrated Explanations: with Uncertainty Information and Counterfactuals](https://doi.org/10.1016/j.eswa.2024.123154).
 - Updated the parameters used by `plot_all` and `plot_explanation`.
 ### Fixes
 - Filtered out extreme target values in the quickstart notebook to make the regression examples more realistic.

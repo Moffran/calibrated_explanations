@@ -9,6 +9,9 @@ Reviewers: TBD
 Supersedes: None
 Superseded-by: None
 
+Updated: 2025-10-31
+Update Note: Added Paper-aligned semantics for clarification
+
 ## Context
 
 Issue reported: The current `explanations.py` stores explanation data in a dict with a mix of
@@ -24,6 +27,45 @@ Introduce an internal domain model with first-class rule objects:
 - Build `Explanation` internally from existing pipelines, but keep public APIs and serializers returning the legacy dict shape via an adapter until schema v1 is adopted.
 
 Rationale: improves clarity, enables easy filtering/transforms, and aligns with future schema and visualization work.
+
+### Paper-aligned semantics
+
+The CE classification and regression papers define the structure of factual and
+alternative explanations. The domain model, adapters, and any future
+implementations **must** preserve these semantics:
+
+- **Factual explanations** always emit the calibrated prediction with its
+  uncertainty interval plus factual feature rules. Each rule binds the observed
+  feature value to a condition and exposes the calibrated feature weight with
+  its own uncertainty interval.
+- **Alternative explanations** only surface collections of alternative feature
+  rules. Every rule pairs the alternative condition with the calibrated
+  prediction estimate and associated uncertainty interval for that scenario. Any
+  feature-weight deltas are auxiliary metadata used for ranking but do not
+  replace the prediction interval in the primary payload.
+
+### Formal Rule Definitions
+
+A **factual condition** is a predicate that captures a threshold condition (numeric) or
+exact value (categorical) of a feature instance. Examples:
+
+- "numeric_feature_x <= 0.5" (if value is equal to or below 0.5) or "numeric_feature_x > 0.5" (if value is above 0.5)
+- "nominal_feature_x = cat_y" (if value is equal to cat_y)
+
+An **alternative condition** is a predicate for a counterfactual or
+hypothetical feature value. Examples:
+
+- "numeric_feature_x <= 0.5" (if value is above 0.5) or "numeric_feature_x > 0.5" (if value is equal to or below 0.5)
+- "nominal_feature_x = cat_y" (if value is not cat_y)
+
+Each condition is paired with:
+
+- In factual rules: a calibrated feature weight + uncertainty interval
+- In alternative rules: a calibrated prediction + uncertainty interval
+
+Adapters that serialise to legacy dicts or JSON schemas must retain these
+invariants so downstream consumers continue to receive paper-consistent
+explanations.
 
 ## Consequences
 

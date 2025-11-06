@@ -1,4 +1,4 @@
-"""Legacy shims retained for backward compatibility."""
+"""Legacy plotting helpers retained for backward compatibility."""
 
 from . import plotting
 

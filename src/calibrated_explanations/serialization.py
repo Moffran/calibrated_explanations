@@ -19,6 +19,7 @@ from .explanations.models import Explanation, FeatureRule
 
 
 def _schema_json() -> dict[str, Any]:  # pragma: no cover - tiny IO
+    """Load the bundled explanation schema as a Python dictionary."""
     with resources.files("calibrated_explanations.schemas").joinpath(
         "explanation_schema_v1.json"
     ).open("r", encoding="utf-8") as f:
@@ -35,13 +36,14 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
     payload: dict[str, Any] = {
         "task": exp.task,
         "index": exp.index,
+        "explanation_type": exp.explanation_type,
         "prediction": dict(exp.prediction),
         "rules": [
             {
                 "feature": int(r.feature),
                 "rule": r.rule,
-                "weight": dict(r.weight),
-                "prediction": dict(r.prediction),
+                "rule_weight": dict(r.rule_weight),
+                "rule_prediction": dict(r.rule_prediction),
                 "instance_prediction": (
                     dict(r.instance_prediction) if r.instance_prediction else None
                 ),
@@ -66,8 +68,8 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
         FeatureRule(
             feature=int(r.get("feature", i)),
             rule=str(r.get("rule", "")),
-            weight=dict(r.get("weight", {})),
-            prediction=dict(r.get("prediction", {})),
+            rule_weight=dict(r.get("rule_weight", {})),
+            rule_prediction=dict(r.get("rule_prediction", {})),
             instance_prediction=r.get("instance_prediction"),
             feature_value=r.get("feature_value"),
             is_conjunctive=bool(r.get("is_conjunctive", False)),
@@ -79,6 +81,7 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
     return Explanation(
         task=str(obj.get("task", "unknown")),
         index=int(obj.get("index", 0)),
+        explanation_type=str(obj.get("explanation_type", "factual")),
         prediction=dict(obj.get("prediction", {})),
         rules=rules,
         provenance=obj.get("provenance"),

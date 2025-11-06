@@ -32,7 +32,7 @@ Adopt a layered guardrail strategy that freezes the documented legacy API:
    explanation collections to ensure required parameters (e.g.,
    `uq_interval`, `threshold`, `low_high_percentiles`, `filter_top`,
    `max_rule_size`, `n_top_features`) remain available. Tests also assert the
-   presence of lifecycle helpers such as `.set_difficulty_estimator` and
+   presence of lifecycle helpers such as `.set_difficulty_estimator` and core capabilities such as
    `.explore_alternatives` so accidental removals fail fast.【F:improvement_docs/legacy_user_api_contract.md†L15-L93】
 3. **Release checklist hook.** During release planning, changelog reviewers must
    confirm whether the legacy contract is affected. Any intentional API change

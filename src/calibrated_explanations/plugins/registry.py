@@ -80,6 +80,23 @@ def _env_trusted_names() -> set[str]:
     return set(names)
 
 
+def _env_denylist() -> set[str]:
+    """Return plugin identifiers blocked via ``CE_DENY_PLUGIN``."""
+    raw = os.getenv("CE_DENY_PLUGIN", "")
+    names: set[str] = set()
+    for chunk in raw.replace(";", ",").split(","):
+        name = chunk.strip()
+        if name:
+            names.add(name)
+    return names
+
+
+def is_identifier_denied(identifier: str) -> bool:
+    """Return ``True`` when *identifier* appears in the denylist environment toggle."""
+    denied = _env_denylist()
+    return identifier in denied
+
+
 def _should_trust(meta: Mapping[str, Any]) -> bool:
     """Return whether metadata demands trust by default."""
     declared = _normalise_trust(meta)
@@ -102,7 +119,6 @@ def _update_trust_keys(meta: Dict[str, Any], trusted: bool) -> None:
 
 def _propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
     """Best-effort propagation of trust metadata back onto *plugin*."""
-
     raw_meta = getattr(plugin, "plugin_meta", None)
     if raw_meta is None:
         return
@@ -1132,7 +1148,6 @@ def _refresh_interval_descriptor_trust(
     identifier: str, *, trusted: bool
 ) -> IntervalPluginDescriptor:
     """Return interval descriptor with updated trust state."""
-
     descriptor = find_interval_descriptor(identifier)
     if descriptor is None:
         raise KeyError(f"Interval plugin '{identifier}' is not registered")
@@ -1159,19 +1174,16 @@ def _refresh_interval_descriptor_trust(
 
 def mark_interval_trusted(identifier: str) -> IntervalPluginDescriptor:
     """Mark the interval plugin *identifier* as trusted."""
-
     return _refresh_interval_descriptor_trust(identifier, trusted=True)
 
 
 def mark_interval_untrusted(identifier: str) -> IntervalPluginDescriptor:
     """Remove the interval plugin *identifier* from the trusted set."""
-
     return _refresh_interval_descriptor_trust(identifier, trusted=False)
 
 
 def _refresh_plot_builder_trust(identifier: str, *, trusted: bool) -> PlotBuilderDescriptor:
     """Return builder descriptor with updated trust metadata."""
-
     descriptor = find_plot_builder_descriptor(identifier)
     if descriptor is None:
         raise KeyError(f"Plot builder '{identifier}' is not registered")
@@ -1198,19 +1210,16 @@ def _refresh_plot_builder_trust(identifier: str, *, trusted: bool) -> PlotBuilde
 
 def mark_plot_builder_trusted(identifier: str) -> PlotBuilderDescriptor:
     """Mark the plot builder *identifier* as trusted."""
-
     return _refresh_plot_builder_trust(identifier, trusted=True)
 
 
 def mark_plot_builder_untrusted(identifier: str) -> PlotBuilderDescriptor:
     """Remove the plot builder *identifier* from the trusted set."""
-
     return _refresh_plot_builder_trust(identifier, trusted=False)
 
 
 def _refresh_plot_renderer_trust(identifier: str, *, trusted: bool) -> PlotRendererDescriptor:
     """Return renderer descriptor with updated trust metadata."""
-
     descriptor = find_plot_renderer_descriptor(identifier)
     if descriptor is None:
         raise KeyError(f"Plot renderer '{identifier}' is not registered")
@@ -1237,13 +1246,11 @@ def _refresh_plot_renderer_trust(identifier: str, *, trusted: bool) -> PlotRende
 
 def mark_plot_renderer_trusted(identifier: str) -> PlotRendererDescriptor:
     """Mark the plot renderer *identifier* as trusted."""
-
     return _refresh_plot_renderer_trust(identifier, trusted=True)
 
 
 def mark_plot_renderer_untrusted(identifier: str) -> PlotRendererDescriptor:
     """Remove the plot renderer *identifier* from the trusted set."""
-
     return _refresh_plot_renderer_trust(identifier, trusted=False)
 
 
@@ -1400,6 +1407,7 @@ __all__ = [
     "clear_interval_plugins",
     "clear_plot_plugins",
     "ensure_builtin_plugins",
+    "is_identifier_denied",
     "register_explanation_plugin",
     "register_interval_plugin",
     "register_plot_builder",

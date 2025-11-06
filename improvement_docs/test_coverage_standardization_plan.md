@@ -18,12 +18,13 @@ backlog associated with the current coverage report.
    - `core.interval_regressor` happy-path predictions and error handling.【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】
    - Plugin CLI command smoke tests ensuring registry resolution works.
    - Discretizer utilities to cover edge cases around binning strategies.
+   - External plugin extras installer (`external_plugins` folder, packaging extras) so aggregated installs remain tested.
 2. Capture baseline coverage numbers and iterate until package-wide coverage stabilises above 90%.
 3. Add lightweight fixtures (e.g., small sklearn datasets) so interval regression tests remain fast.
 
 ## Phase 2 – CI gating (Weeks 5-6)
 1. Update `.github/workflows/test.yml` to run `pytest --cov=src/calibrated_explanations --cov-report=xml --cov-report=term --cov-fail-under=90` and upload the XML artifact for Codecov patch gating.【F:.github/workflows/test.yml†L33-L49】
-2. Enable Codecov’s “patch coverage must be ≥85%” status check and make it required.
+2. Enable Codecov’s “patch coverage must be ≥88%” status check and make it required.
 3. Document the waiver process in `CONTRIBUTING.md`, emphasising that waivers must link to follow-up issues.【F:CONTRIBUTING.md†L49-L58】
 
 ## Phase 3 – Continuous improvement (Ongoing)

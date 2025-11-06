@@ -70,12 +70,13 @@ def test_classification_quickstart() -> None:
     assert legacy_interval[0] == pytest.approx(uncertainty["lower_bound"])
     assert legacy_interval[1] == pytest.approx(uncertainty["upper_bound"])
 
-    rules = telemetry.get("rules")
+    rules_payload = telemetry.get("rules")
     expected_rules = first_instance.build_rules_payload()
-    assert rules == expected_rules
-    first_rule = rules[0]
-    assert first_rule["prediction"]["representation"] == "venn_abers"
-    assert _extract_threshold_value(first_rule["prediction"].get("threshold")) is None
+    assert rules_payload == expected_rules
+    first_rule_metadata = rules_payload["metadata"]["feature_rules"][0]
+    prediction_uncertainty = first_rule_metadata["prediction_uncertainty"]
+    assert prediction_uncertainty["representation"] == "venn_abers"
+    assert _extract_threshold_value(prediction_uncertainty.get("threshold")) is None
 
 
 def test_regression_quickstart() -> None:
@@ -124,9 +125,10 @@ def test_regression_quickstart() -> None:
     assert legacy_interval[0] == pytest.approx(uncertainty["lower_bound"])
     assert legacy_interval[1] == pytest.approx(uncertainty["upper_bound"])
 
-    rules = telemetry.get("rules")
+    rules_payload = telemetry.get("rules")
     expected_rules = first_instance.build_rules_payload()
-    assert rules == expected_rules
-    first_rule = rules[0]
-    assert first_rule["uncertainty"]["representation"] == "threshold"
-    assert _extract_threshold_value(first_rule.get("threshold")) == pytest.approx(2.5)
+    assert rules_payload == expected_rules
+    first_rule_metadata = rules_payload["metadata"]["feature_rules"][0]
+    prediction_uncertainty = first_rule_metadata["prediction_uncertainty"]
+    assert prediction_uncertainty["representation"] == "threshold"
+    assert _extract_threshold_value(first_rule_metadata.get("threshold")) == pytest.approx(2.5)

@@ -25,7 +25,6 @@ from .legacy import plotting as legacy
 
 def _derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
     """Return positive/negative labels summarising a regression threshold."""
-
     try:
         if (
             isinstance(threshold, Sequence)
@@ -70,7 +69,6 @@ else:
 
 def _read_plot_pyproject() -> Dict[str, Any]:
     """Return ``pyproject.toml`` plot configuration when available."""
-
     if _plot_tomllib is None:
         return {}
 
@@ -95,6 +93,7 @@ def _read_plot_pyproject() -> Dict[str, Any]:
 
 
 def _split_csv(value: Any) -> Sequence[str]:
+    """Normalize comma-separated labels into a tuple."""
     if not value:
         return ()
     if isinstance(value, str):
@@ -121,7 +120,6 @@ def _format_save_path(base_path: Any, filename: str) -> str:
 
 def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence[str]:
     """Determine the ordered style fallback chain for plot builders/renderers."""
-
     chain: List[str] = []
     if isinstance(explicit_style, str) and explicit_style:
         chain.append(explicit_style)
@@ -167,7 +165,6 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
 
 def _plot_config_path() -> Path:
     """Return the resolved path to the plot configuration file."""
-
     return Path(__file__).resolve().parent / "utils" / "configurations" / "plot_config.ini"
 
 
@@ -823,6 +820,7 @@ def _plot_triangular(
 
 # `__plot_triangular`
 def __plot_proba_triangle():
+    """Render the static probability triangle overlay."""
     x = np.arange(0, 1, 0.01)
     plt.plot((x / (1 + x)), x, color="black")
     plt.plot(x, ((1 - x) / x), color="black")
@@ -1420,6 +1418,7 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
 
 
 def _plot_proba_triangle():
+    """Build a Matplotlib figure showcasing the probability triangle layout."""
     __require_matplotlib()
     fig = plt.figure()
     x = np.arange(0, 1, 0.01)
