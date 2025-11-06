@@ -4,6 +4,7 @@ Reserve these references for teams that need optional telemetry, performance
 profiling, or PlotSpec visual narratives. Each topic extends the core
 explanation workflow without introducing mandatory dependencies.
 
+- {doc}`use_plugins` – Opt in to curated external plugins (e.g., FAST) and wire them safely.
 - {doc}`../../foundations/how-to/configure_telemetry` – Opt-in telemetry hooks
   with privacy defaults and governance cross-links.
 - {doc}`../../foundations/how-to/tune_runtime_performance` – Parallelism,
@@ -19,6 +20,7 @@ explanation workflow without introducing mandatory dependencies.
 :maxdepth: 1
 :hidden:
 
+use_plugins
 ../../foundations/how-to/configure_telemetry
 ../../foundations/how-to/tune_runtime_performance
 parallel_execution_playbook

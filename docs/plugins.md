@@ -1,16 +1,22 @@
-# Plugin overview
+# Plugins
 
-This page is an index for contributor-facing plugin documentation. The
-release plan references `docs/plugins.md`; the detailed guidance and examples
-live under the contributor and appendices sections. Use the links below as the
-canonical entry points.
+Calibrated Explanations supports an optional, extensible plugin system. By default,
+you don’t need plugins to run calibrated factual and alternative explanations.
+When you want speed-ups (e.g., FAST) or custom visualizations, install a curated
+external bundle and wire it in. If you’re extending the framework, follow the
+plugin contract to preserve calibration semantics.
 
-- Contributor plugin contract and "hello, calibrated plugin" example:
-  `docs/contributor/plugin-contract.md`
-- External plugin index and aggregated extra guidance:
-  `docs/appendices/external_plugins.md`
+Choose your path:
 
-If you are contributing a plugin, follow the guidance in the contributor
-document and register your entry point under the `calibrated_explanations.plugins`
-group. For optional speed-ups, the curated `external-plugins` bundle is
-described in the appendices.
+- For practitioners: Use external plugins to enable optional speed-ups and plots → {doc}`practitioner/advanced/use_plugins`
+- For contributors: Develop plugins that honor the CE contract → {doc}`contributor/plugin-contract`
+
+Community listings and the curated install extra live here: {doc}`appendices/external_plugins`.
+
+Notes
+
+- Plugins are optional and externally distributed. Core workflows work without them (ADR-027).
+- Wiring methods (priority order):
+  1) Explainer parameters; 2) Environment variables; 3) pyproject.toml; 4) Plugin-declared dependencies.
+- Trust/deny controls and discovery are available via the registry and CLI; see contributor docs for details.
+- For detailed wiring (env vars, pyproject, dependency seeding), see {doc}`contributor/extending/plugin-advanced-contract`.

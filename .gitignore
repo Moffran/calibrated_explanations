@@ -172,9 +172,3 @@ catboost_info/catboost_training.json
 catboost_info/time_left.tsv
 catboost_info/learn_error.tsv
 catboost_info/learn/events.out.tfevents
-improvement_docs/v0.9.0_TASK_COMPLETION_MATRIX.md
-improvement_docs/v0.9.0_RELEASE_GAP_ANALYSIS.md
-improvement_docs/RELEASE-PLAN-REVIEW-COMPLETION-SUMMARY.md
-improvement_docs/ADR-ALIGNMENT-AUDIT-FACTUAL-ALTERNATIVE.md
-improvement_docs/ADR-ALIGNMENT-IMPLEMENTATION-SUMMARY.md
-improvement_docs/v0.9.0_RELEASE_SUMMARY.md

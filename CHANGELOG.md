@@ -105,6 +105,12 @@ Note: Streaming-friendly, generator/chunked explanation exports were intentional
   probabilistic regression walkthroughs, and rewrote plugins governance material
   to foreground calibrated-explanations-first messaging while labelling extras
   as optional.【F:docs/get-started/quickstart_regression.md†L1-L94】【F:docs/research/index.md†L1-L80】【F:docs/plugins.md†L200-L420】
+- Consolidated plugin documentation into a single Plugins hub (`docs/plugins.md`),
+  introduced a practitioner guide for using external plugins
+  (`docs/practitioner/advanced/use_plugins.md`), and surfaced the curated
+  `external-plugins` install extra in installation docs. Cross-links to the
+  external plugin index were added to ensure a coherent, optional plugin story
+  aligned with ADR-027 and the plugin ADRs (ADR-006/014/026).【F:docs/plugins.md†L1-L80】【F:docs/practitioner/advanced/use_plugins.md†L1-L200】【F:docs/get-started/installation.md†L1-L120】【F:docs/appendices/external_plugins.md†L1-L160】
 - Added runtime performance tuning, governance checklists, and optional telemetry
   guides so compliance and SRE flows stay audience scoped.【F:docs/how-to/tune_runtime_performance.md†L1-L140】【F:docs/governance/release_checklist.md†L40-L92】
 
