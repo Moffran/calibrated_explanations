@@ -37,7 +37,7 @@ jobs:
         run: pytest tests/docs
 
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docs-html
           path: docs/_build/html
