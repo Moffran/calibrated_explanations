@@ -50,7 +50,7 @@ export CE_INTERVAL_PLUGIN_FALLBACKS="external.hello.interval,core.interval.legac
 
 ```python
 import os
-os.environ["CE_PLOT_STYLE"] = "plotly.interactive"
+os.environ["CE_PLOT_STYLE"] = "legacy"
 
 from calibrated_explanations import CalibratedExplainer
 
@@ -281,7 +281,7 @@ explainer = CalibratedExplainer(
 
 Refer to these decision records when designing advanced plugin configurations:
 
-- [ADR-006 – plugin registry](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-006-plugin-registry.md)
+- [ADR-006 – plugin registry](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-006-plugin-registry-trust-model.md)
   – Registry design and plugin lifecycle.
 - [ADR-013 – explanation plugin semantics](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-026-explanation-plugin-semantics.md)
   – Explanation plugin contracts and output format.
