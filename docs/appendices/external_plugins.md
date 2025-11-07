@@ -34,4 +34,4 @@ external plugin plus the pinned versions of ``numpy``, ``pandas``, and ``scikit-
 ### Optional: telemetry disclosure
 
 External plugins should clearly mark telemetry emission as opt-in and link back
-to :doc:`../foundations/governance/optional_telemetry` whenever instrumentation is enabled.
+to {doc}`../foundations/governance/optional_telemetry` whenever instrumentation is enabled.

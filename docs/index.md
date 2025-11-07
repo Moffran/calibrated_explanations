@@ -93,6 +93,7 @@ contributor/index
 :caption: Shared foundations
 
 foundations/index
+plugins
 ```
 
 ```{toctree}
@@ -102,5 +103,4 @@ foundations/index
 appendices/external_plugins
 appendices/changelog_links
 citing
-plugins
 ```

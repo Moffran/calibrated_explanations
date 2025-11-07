@@ -157,10 +157,11 @@ class TestMethodDConfigurationFile:
     def test_pyproject_toml_parsing(self):
         """Verify pyproject.toml configuration structure can be read."""
         from pathlib import Path
+
         try:
-            import tomllib # Python 3.11+ 
+            import tomllib  # Python 3.11+
         except ModuleNotFoundError:
-            import tomli as tomllib # backport (tomli) used as tomllib
+            import tomli as tomllib  # backport (tomli) used as tomllib
 
         # Locate pyproject.toml in current directory
         pyproject_path = Path(__file__).parents[3] / "pyproject.toml"
@@ -186,10 +187,11 @@ class TestMethodDConfigurationFile:
     def test_plot_configuration_structure(self):
         """Verify the structure of plot configuration in pyproject.toml."""
         from pathlib import Path
+
         try:
-            import tomllib # Python 3.11+ 
+            import tomllib  # Python 3.11+
         except ModuleNotFoundError:
-            import tomli as tomllib # backport (tomli) used as tomllib
+            import tomli as tomllib  # backport (tomli) used as tomllib
 
         pyproject_path = Path(__file__).parents[3] / "pyproject.toml"
         with open(pyproject_path, "rb") as f:
