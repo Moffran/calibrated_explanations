@@ -3,9 +3,13 @@
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.0...main)
 
 Note: Streaming-friendly, generator/chunked explanation exports were intentionally deferred for v0.9.0 and scheduled for follow-up in v0.9.1 — interim batching guidance and rationale are recorded in `improvement_docs/OSS_CE_scope_and_gaps.md` and `docs/foundations/how-to/export_explanations.md`.
+
+## [v0.9.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.0) - 2025-11-07
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.8.0...v0.9.0)
 
 ## Highlights
 
@@ -79,7 +83,7 @@ Note: Streaming-friendly, generator/chunked explanation exports were intentional
 - **Runtime performance polish (Task 11):** Implemented opt-in calibrator cache with LRU eviction, multiprocessing toggle via ParallelExecutor facade, and vectorized perturbation handling. Added performance guidance for plugin authors in docs/contributor/plugin-contract.md. Cache and parallel primitives integrated into explain pipeline without altering calibration semantics.【F:src/calibrated_explanations/perf/__init__.py†L1-L52】【F:src/calibrated_explanations/perf/cache.py†L1-L120】【F:src/calibrated_explanations/core/calibrated_explainer.py†L199-L377】
 - **Documentation-first plugin governance (Task 12):** Expanded CLI and
   registry tests to surface denied identifiers, audit trusted plugins, and keep
-  the governance narrative inline with the release checklist.【F:tests/plugins/test_cli.py†L74-L152】【F:docs/governance/release_checklist.md†L1-L92】【F:src/calibrated_explanations/plugins/registry.py†L84-L154】
+  the governance narrative inline with the release checklist.【F:tests/plugins/test_cli.py†L74-L152】【F:docs/foundations/governance/release_checklist.md†L1-L92】【F:src/calibrated_explanations/plugins/registry.py†L84-L154】
 - **External plugin bundle verification (Task 13):** Shipped packaging tests and
   documentation for the `external-plugins` extra so the curated FAST bundle
   stays optional yet discoverable.【F:tests/plugins/test_external_plugins_extra.py†L1-L90】【F:external_plugins/fast_explanations/__init__.py†L1-L92】

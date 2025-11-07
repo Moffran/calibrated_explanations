@@ -2,7 +2,10 @@
 
 # Release Plan to v1.0.0
 
-### Current released version: v0.8.0
+### Current released version: v0.9.0
+
+> Status: v0.9.0 shipped on 2025-11-07.
+
 
 Maintainers: Core team
 Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution.
