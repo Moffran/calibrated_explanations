@@ -57,9 +57,7 @@ before acting.
 
    factual = explainer.explain_factual(x_test[:1])
    alternatives = explainer.explore_alternatives(x_test[:1])
-   proba_matrix, probability_interval = explainer.predict_proba(
-   x_test[:1], uq_interval=True
-)
+   proba_matrix, probability_interval = explainer.predict_proba(x_test[:1], uq_interval=True)
    low, high = probability_interval
    print(f"Calibrated probability: {proba_matrix[0, 1]:.3f}")
    print(factual[0])
