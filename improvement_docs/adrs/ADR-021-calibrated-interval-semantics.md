@@ -118,6 +118,45 @@ between the three paths.
   within its bounds. Every runtime pathway—`PredictBridge`, interval plugins,
   explanation containers, and downstream helpers—**must** assert
   `low <= predict <= high`. Any output that violates this inclusive invariant is
+
+## Terminology: "Probabilistic Regression" vs. "Thresholded Regression"
+
+### Definition and Equivalence
+
+**"Probabilistic regression"** and **"thresholded regression"** are synonymous terms describing the same technical capability (Section 3 above). The distinction between them is purely one of audience and emphasis:
+
+* **"Probabilistic regression"** is the **canonical user-facing term**, used in:
+  * User-facing documentation (quickstarts, concept guides, README)
+  * Public API documentation
+  * Research papers and publications
+  * End-user notebooks and examples
+  
+  This term emphasizes the **output** (calibrated probabilities) rather than the mechanism, making it more intuitive for practitioners.
+
+* **"Thresholded regression"** is the **technical architecture term**, used in:
+  * Architecture decision records (this ADR and related documents)
+  * Implementation code comments and internal design discussions
+  * Technical design documents
+  * Contributor documentation
+  
+  This term emphasizes the **mechanism** (a threshold operation converts regression predictions into a binary classification event), clarifying the implementation for developers and maintainers.
+
+### Rationale for the Distinction
+
+The two names coexist because they serve different purposes:
+
+1. **Marketing and User Clarity:** Practitioners understand "probabilistic regression" immediately as "a regression model that outputs probabilities." This parallel with "probabilistic classification" is intuitive.
+
+2. **Technical Precision:** Implementers need to understand that the mechanism involves thresholding regression predictions to create binary classification targets, then calibrating with CPS + Venn-Abers. "Thresholded regression" makes this explicit.
+
+3. **Consistency with Publications:** Research papers use "probabilistic regression" to describe the capability. Aligning with publication terminology supports citations and literature discoverability.
+
+### Implementation Guidance
+
+* **Public API:** Use "probabilistic regression" in docstrings, parameter descriptions, and API documentation.
+* **Code Comments:** Prefer "probabilistic regression" in user-facing comments; use "thresholded regression" in internal implementation comments when describing the threshold mechanism.
+* **Method Names:** Prefer "probabilistic" in public method names (e.g., `predict_probabilistic_regression()`); "thresholded" may be used in internal helper methods where the technical mechanism is relevant.
+* **Tests:** Use "probabilistic regression" in test names and docstrings for user-level tests; use "thresholded regression" in implementation-level tests that directly test the threshold mechanism.
   treated as a failure rather than a recoverable warning. The rule applies to
   all `[low, high]` pairs emitted by the system, including feature-level weight
   intervals and derived telemetry, because they inherit the same calibrated

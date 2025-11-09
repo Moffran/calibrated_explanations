@@ -259,7 +259,7 @@ def test_probabilities_stack_vectors():
 
 def test_threshold_and_confidence_helpers(calibrated_collection):
     collection = calibrated_collection
-    assert collection._is_thresholded()
+    assert collection._is_probabilistic_regression()
     collection.low_high_percentiles = (np.inf, 95.0)
     assert collection._is_one_sided()
     assert collection.get_confidence() == 95.0

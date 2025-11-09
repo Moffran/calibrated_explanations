@@ -5,6 +5,17 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.0...main)
 
+### Terminology Standardization
+
+- **Standardized on "probabilistic regression" as the canonical user-facing term** for regression with threshold-based probability predictions. "Thresholded regression" is used in technical architecture documents (ADRs, design notes) to describe the implementation mechanism (CPS-based threshold calibration).
+  - Renamed internal method `_is_thresholded()` → `_is_probabilistic_regression()` in `CalibratedExplanations` class for consistency
+  - Updated ADR-021 with a "Terminology" section explaining the equivalence and usage guidance
+  - Added cross-reference in ADR-013 linking to ADR-021 terminology clarification
+  - Updated all docstrings to prefer "probabilistic regression" terminology
+  - Created migration guide: `docs/migration/v0.8-to-v0.9-terminology.md`
+  - See [Terminology Analysis](TERMINOLOGY_ANALYSIS_THRESHOLDED_VS_PROBABILISTIC_REGRESSION.md) for full context and rationale
+  - **No API changes**: public method `is_thresholded()` on `Explanation` objects remains unchanged; `threshold` parameter unchanged
+
 Note: Streaming-friendly, generator/chunked explanation exports were intentionally deferred for v0.9.0 and scheduled for follow-up in v0.9.1 — interim batching guidance and rationale are recorded in `improvement_docs/OSS_CE_scope_and_gaps.md` and `docs/foundations/how-to/export_explanations.md`.
 
 ## [v0.9.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.0) - 2025-11-07

@@ -1978,13 +1978,14 @@ class CalibratedExplainer:
 
         For regression:
         - Returns predictions and uncertainty intervals
-        - Can return probability predictions when threshold is provided
+        - Can return probability predictions when threshold is provided (probabilistic regression)
 
         Parameters
         ----------
         x : A set of test objects to predict
         threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic explanations for regression.
+            values for which p-values should be returned. Only used for probabilistic regression
+            (also called thresholded regression). Returns P(y <= threshold) probabilities.
         low_high_percentiles : a tuple of floats, default=(5, 95)
             The low and high percentile used to calculate the interval. Applicable to regression.
         classes : None or array-like of shape (n_samples,), default=None
@@ -3240,7 +3241,7 @@ class CalibratedExplainer:
             prediction - instance_predict
             if np.isscalar(prediction)
             else [prediction[i] - ip for i, ip in enumerate(instance_predict)]
-        )  # probabilistic regression
+        )  # used for probabilistic regression feature attribution
 
     def is_multiclass(self):
         """Test if it is a multiclass problem.
@@ -3708,10 +3709,13 @@ class CalibratedExplainer:
             Additional parameters to customize the explanation process. Supported parameters include:
 
             - threshold : float, int, or array-like of shape (n_samples,), optional, default=None
-                Specifies the threshold(s) to get a thresholded prediction for regression tasks (prediction labels such as ``y_hat <= threshold`` or ``y_hat > threshold``). This parameter is ignored for classification tasks.
+                Specifies the threshold for probabilistic regression. Returns calibrated probabilities 
+                P(y <= threshold) for regression tasks. This parameter is ignored for classification tasks.
 
             - low_high_percentiles : tuple of two floats, optional, default=(5, 95)
-                The lower and upper percentiles used to calculate the prediction interval for regression tasks. Determines the breadth of the interval based on the distribution of the predictions. This parameter is ignored for classification tasks.
+                The lower and upper percentiles used to calculate the prediction interval for regression tasks. 
+                Determines the breadth of the interval based on the distribution of the predictions. 
+                This parameter is ignored for classification tasks and when threshold is provided.
 
         Raises
         ------
@@ -3724,7 +3728,9 @@ class CalibratedExplainer:
         Returns
         -------
         calibrated_prediction : float or array-like, or str
-            The calibrated prediction. For regression tasks, this is the median of the conformal predictive system or a thresholded prediction if ``threshold`` is set. For classification tasks, it is the class label with the highest calibrated probability.
+            The calibrated prediction. For regression tasks without threshold, this is the median of the 
+            conformal predictive system. For probabilistic regression (with threshold), this is a probability 
+            P(y <= threshold). For classification tasks, it is the class label with the highest calibrated probability.
         interval : tuple of floats, optional
             A tuple (low, high) representing the lower and upper bounds of the uncertainty interval. This is returned only if ``uq_interval=True``.
 
