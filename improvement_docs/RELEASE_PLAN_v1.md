@@ -352,8 +352,9 @@ Release gate: Deprecation dashboard live, docs CI runs with notebook execution, 
 4. Implement ADR-004’s parallel execution backlog—auto strategy heuristics, telemetry with timings/utilisation, context management and cancellation, configuration surfaces, resource guardrails, fallback warnings, and automated benchmarking.【F:improvement_docs/ADR-gap-analysis.md†L64-L71】 Track deliverables in [Parallel Execution Improvement Plan – Phases 2–4](parallel_execution_improvement_plan.md#phase-2--executor--plugin-refactor-week-58).
 5. Enforce interval safety across bridges and exports to resolve ADR-021 and the ADR-015 predict-bridge gap, ensuring invariants, probability cubes, and serialization policies are honoured.【F:improvement_docs/ADR-gap-analysis.md†L239-L241】【F:improvement_docs/ADR-gap-analysis.md†L179-L182】
 6. Align runtime plugin semantics with ADR-026 by adding invariant checks, hardening contexts, and extending telemetry payloads.【F:improvement_docs/ADR-gap-analysis.md†L280-L282】
+7. Remove deprecated backward-compatibility alias `_is_thresholded()` from `CalibratedExplanations` class (superseded by `_is_probabilistic_regression()` in v0.9.0). Update any remaining external code or documentation that may reference the old method name. This completes the terminology standardization cycle from ADR-021.【F:improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md†L119-L159】【F:TERMINOLOGY_ANALYSIS_THRESHOLDED_VS_PROBABILISTIC_REGRESSION.md†L1-L720】
 
-Release gate: Package boundaries, validation/caching/parallel tests, and interval invariants all green with updated ADR status notes and telemetry dashboards verifying the new signals.【F:improvement_docs/ADR-gap-analysis.md†L33-L282】
+Release gate: Package boundaries, validation/caching/parallel tests, interval invariants, terminology cleanup, and updated ADR status notes all green with telemetry dashboards verifying the new signals.【F:improvement_docs/ADR-gap-analysis.md†L33-L282】
 
 ### v0.10.1 (schema & visualization contracts)
 

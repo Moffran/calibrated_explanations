@@ -443,9 +443,21 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 self._upper_cache = None
         return self._upper_cache
 
-    def _is_thresholded(self) -> bool:
-        """Check if the explanations are thresholded."""
+    def _is_probabilistic_regression(self) -> bool:
+        """Check if the explanations use probabilistic regression (thresholded).
+
+        Probabilistic regression and thresholded regression are synonymous terms.
+        See ADR-021 for terminology guidance.
+        """
         return self.y_threshold is not None
+
+    def _is_thresholded(self) -> bool:
+        """Use _is_probabilistic_regression() instead (deprecated).
+
+        Backward-compatible alias kept until v0.10.0.
+        This method is identical to _is_probabilistic_regression().
+        """
+        return self._is_probabilistic_regression()
 
     def _is_one_sided(self) -> bool:
         """Check if the explanations are one-sided."""

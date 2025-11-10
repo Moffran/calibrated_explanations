@@ -108,7 +108,7 @@ def test_explanation_functions_classification(binary_dataset):
     factual_explanations._get_rules()
     factual_explanations._is_alternative()
     factual_explanations._is_one_sided()
-    factual_explanations._is_thresholded()
+    factual_explanations._is_probabilistic_regression()
     # LIME is an optional dependency; skip this portion if not installed
     try:  # pragma: no cover - optional path
         import importlib
@@ -129,7 +129,7 @@ def test_explanation_functions_classification(binary_dataset):
     alternative_explanations._get_rules()
     alternative_explanations._is_alternative()
     alternative_explanations._is_one_sided()
-    alternative_explanations._is_thresholded()
+    alternative_explanations._is_probabilistic_regression()
 
     ce._preload_lime()
     # ce._preload_shap() # generates an insane number of warnings
@@ -151,7 +151,7 @@ def test_explanation_functions_regression(regression_dataset):
     factual_explanations._get_rules()
     factual_explanations._is_alternative()
     factual_explanations._is_one_sided()
-    factual_explanations._is_thresholded()
+    factual_explanations._is_probabilistic_regression()
     factual_explanations[0].is_multiclass()
     # factual_explanations.as_lime() # requires lime to be installed, which is optional
     # factual_explanations.as_shap() # generates an insane number of warnings
@@ -160,7 +160,7 @@ def test_explanation_functions_regression(regression_dataset):
     alternative_explanations._get_rules()
     alternative_explanations._is_alternative()
     alternative_explanations._is_one_sided()
-    alternative_explanations._is_thresholded()
+    alternative_explanations._is_probabilistic_regression()
 
     # ce._preload_lime() # requires lime to be installed, which is optional
     # ce._preload_shap() # generates an insane number of warnings

@@ -133,7 +133,12 @@ class IntervalRegressor:
 
     # pylint: disable=too-many-locals
     def predict_probability(self, x, y_threshold, bins=None):
-        """Predict the probabilities for each instance in the dataset being above the threshold(s), along with confidence intervals.
+        """Predict probabilistic regression probabilities with confidence intervals.
+
+        Probabilistic regression (also called thresholded regression in the architecture layer)
+        converts regression predictions into calibrated probabilities for a threshold event.
+        This method returns the calibrated probability that y <= y_threshold, along with
+        confidence intervals around that probability.
 
         Parameters
         ----------
@@ -141,9 +146,7 @@ class IntervalRegressor:
             x is a numpy.ndarray containing the instance objects for which we want to predict the
             probability.
         y_threshold
-            The `y_threshold` parameter is used to determine the probability of the true value being
-            below the threshold value. If the predicted probability of the positive class is smaller than or
-            equal to `y_threshold`, the instance is classified as positive; otherwise, it is classified as negative.
+            The threshold value to evaluate. Returns the probability P(y <= y_threshold).
         bins
             array-like of shape (n_samples,), default=None
             Mondrian categories
