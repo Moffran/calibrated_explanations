@@ -17,6 +17,8 @@ CLI, configuration, and documentation updates.
    the formatter, tests, and doc builds locally.
 5. Use the {doc}`extending/guides/index` collection when adding new plugins or
    command-line tooling.
+6. When upgrading between releases, consult the {doc}`../migration/index` for
+   terminology changes, breaking changes, and migration guidance.
 
 ## Advanced contributor tooling
 
@@ -32,4 +34,5 @@ plugin-contract
 extending/plugin-advanced-contract
 extending/guides/index
 extending/advanced
+../migration/index
 ```

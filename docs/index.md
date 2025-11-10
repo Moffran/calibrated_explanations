@@ -98,6 +98,13 @@ plugins
 
 ```{toctree}
 :maxdepth: 1
+:caption: Upgrade guides
+
+migration/index
+```
+
+```{toctree}
+:maxdepth: 1
 :caption: Appendices
 
 appendices/external_plugins

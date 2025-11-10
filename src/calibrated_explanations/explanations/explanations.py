@@ -451,6 +451,14 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
+    def _is_thresholded(self) -> bool:
+        """Deprecated: Use _is_probabilistic_regression() instead.
+        
+        Kept for backward compatibility until v0.10.0.
+        This method is identical to _is_probabilistic_regression().
+        """
+        return self._is_probabilistic_regression()
+
     def _is_one_sided(self) -> bool:
         """Check if the explanations are one-sided."""
         if self.low_high_percentiles is None:

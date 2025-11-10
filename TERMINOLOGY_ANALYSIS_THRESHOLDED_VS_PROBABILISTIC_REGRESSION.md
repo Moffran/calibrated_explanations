@@ -619,8 +619,10 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
   - Links to official terminology guidance
 
 - ✅ **Code Refactoring: Method Rename** (src/calibrated_explanations/explanations/explanations.py)
-  - Renamed `_is_thresholded()` → `_is_probabilistic_regression()`
-  - Updated 6 usages across test files:
+  - Renamed `_is_thresholded()` → `_is_probabilistic_regression()` (primary method)
+  - Added backward-compatible alias `_is_thresholded()` → delegates to `_is_probabilistic_regression()`
+  - Alias will be removed in v0.10.0 when v0.9.0 reaches end-of-life
+  - Updated 6 usages to call the new name directly:
     - tests/unit/test_explanations_collection.py (1)
     - tests/integration/core/test_framework.py (4)
     - src/calibrated_explanations/legacy/plotting.py (1, commented)
@@ -638,6 +640,10 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
   - Comprehensive guide explaining changes for different audiences (users, contributors, plugin developers, maintainers)
   - Migration path and timeline for deprecation
   - Rationale for the terminology choice
+  - **Indexed and discoverable:**
+    - Added to contributor hub (docs/contributor/index.md)
+    - Added to main documentation index (docs/index.md) under "Upgrade guides" section
+    - Created migration index (docs/migration/index.md) for future migration guides
 
 - ✅ **CHANGELOG Updated** (CHANGELOG.md)
   - Added "Terminology Standardization" section to Unreleased
@@ -646,10 +652,12 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 ### Verification Checklist
 
 - ✅ Internal method `_is_thresholded()` successfully renamed to `_is_probabilistic_regression()`
-- ✅ All usages of `_is_thresholded()` (internal) updated
-- ✅ Public method `is_thresholded()` on Explanation class **preserved** for backward compatibility
+- ✅ Backward compatibility alias `_is_thresholded()` added (delegates to new method)
+- ✅ All usages of `_is_thresholded()` in code updated to call new method directly
+- ✅ Public method `is_thresholded()` on Explanation class **preserved** and unchanged
 - ✅ `threshold` and `y_threshold` parameter names **preserved** (describe values, not modes)
-- ✅ No breaking changes to public API
+- ✅ **Zero breaking changes** to public API
+- ✅ Backward compatibility maintained for private methods (via delegation)
 - ✅ No behavior changes; terminology-only cleanup
 - ✅ ADRs updated with explicit guidance
 - ✅ Documentation and tests clarified
@@ -661,7 +669,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 |------|---------|
 | `improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md` | Added terminology section (lines 119-159) |
 | `improvement_docs/adrs/ADR-013-interval-calibrator-plugin-strategy.md` | Added cross-reference note |
-| `src/calibrated_explanations/explanations/explanations.py` | Renamed `_is_thresholded()` → `_is_probabilistic_regression()` (line 446) |
+| `src/calibrated_explanations/explanations/explanations.py` | Added `_is_probabilistic_regression()` method and backward-compatible `_is_thresholded()` alias (lines 446-459) |
 | `src/calibrated_explanations/core/interval_regressor.py` | Updated `predict_probability()` docstring |
 | `src/calibrated_explanations/core/calibrated_explainer.py` | Updated docstrings and comments (lines 1980-1995, 3243, 3725-3730) |
 | `tests/unit/test_explanations_collection.py` | Updated method call (line 262) |
@@ -669,20 +677,23 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 | `tests/integration/core/test_regression.py` | Enhanced test docstrings |
 | `src/calibrated_explanations/legacy/plotting.py` | Updated comment (line 348) |
 | `docs/migration/v0.8-to-v0.9-terminology.md` | **New file** - migration guide |
+| `docs/migration/index.md` | **New file** - migration guides index |
+| `docs/contributor/index.md` | Added migration reference to toctree |
+| `docs/index.md` | Added migration guides section to toctree |
 | `CHANGELOG.md` | Added "Terminology Standardization" section |
 
 ### Impact Assessment
 
-- **API Breaking:** None
-- **Behavior Breaking:** None
-- **Terminology Breaking:** Yes, but only for internal method names (`_is_thresholded()` → `_is_probabilistic_regression()`)
-  - Affects: Contributors and test code only (private method)
-  - Public API preserved for backward compatibility
+- **Public API Breaking:** None ✅
+- **Private API Breaking:** No (backward-compatible alias provided) ✅
+- **Behavior Changes:** None ✅
+- **Terminology Changes:** Internal method naming only
+  - Affects: Contributors and test code accessing `_is_thresholded()` (private method)
+  - Mitigation: Backward-compatible alias provided; existing code continues to work
+  - Deprecation: Alias will be removed in v0.10.0
   
-- **User Impact:** Minimal
-  - Documentation now consistent (minor improvement)
-  - API unchanged
-  - No migration required
+- **User Impact:** Minimal (documentation clarity improvement)
+- **Backward Compatibility:** ✅ 100% compatible with v0.9.0
 
 ### Next Steps (Future Releases)
 
