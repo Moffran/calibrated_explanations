@@ -6,6 +6,12 @@ threshold?") with calibrated intervals that describe where the numeric target is
 likely to fall. Use this guide alongside the practitioner quickstarts and
 notebooks to keep probabilistic and interval narratives aligned.
 
+> ℹ️ **Terminology note:** You may encounter both "probabilistic regression" and
+> "thresholded regression" in documentation and code. These terms are synonymous
+> and refer to the same feature: regression with calibrated probability predictions
+> and threshold-based decision boundaries. See [ADR-021](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md#terminology-probabilistic-regression-vs-thresholded-regression)
+> for terminology guidance.
+
 ## Calibrated probabilities and intervals
 
 1. Start with the {doc}`../../get-started/quickstart_regression` flow or the
