@@ -7,7 +7,7 @@ nbsphinx==0.9.4
 numpy >= 1.20
 numpydoc
 pytest
-pydata_sphinx_theme==0.15.4
+pydata_sphinx_theme==0.16.1
 furo==2024.8.6
 sphinxcontrib-mermaid==0.9.2
 linkify-it-py==2.0.2
