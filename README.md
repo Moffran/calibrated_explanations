@@ -148,7 +148,7 @@ underlying estimator and read the returned intervals.
 - Confirm ADR alignment via
   [improvement_docs/adrs/](https://github.com/Moffran/calibrated_explanations/tree/main/improvement_docs/adrs)
   and keep docs navigation synced with the
-  [IA crosswalk](https://calibrated-explanations.readthedocs.io/en/latest/governance/nav_crosswalk.html).
+  [IA crosswalk](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/nav_crosswalk.html).
 
 ---
 
