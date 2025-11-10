@@ -130,7 +130,7 @@ between the three paths.
   * Public API documentation
   * Research papers and publications
   * End-user notebooks and examples
-  
+
   This term emphasizes the **output** (calibrated probabilities) rather than the mechanism, making it more intuitive for practitioners.
 
 * **"Thresholded regression"** is the **technical architecture term**, used in:
@@ -138,7 +138,7 @@ between the three paths.
   * Implementation code comments and internal design discussions
   * Technical design documents
   * Contributor documentation
-  
+
   This term emphasizes the **mechanism** (a threshold operation converts regression predictions into a binary classification event), clarifying the implementation for developers and maintainers.
 
 ### Rationale for the Distinction

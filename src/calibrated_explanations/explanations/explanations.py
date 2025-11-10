@@ -445,7 +445,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def _is_probabilistic_regression(self) -> bool:
         """Check if the explanations use probabilistic regression (thresholded).
-        
+
         Probabilistic regression and thresholded regression are synonymous terms.
         See ADR-021 for terminology guidance.
         """
@@ -453,7 +453,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
     def _is_thresholded(self) -> bool:
         """Deprecated: Use _is_probabilistic_regression() instead.
-        
+
         Kept for backward compatibility until v0.10.0.
         This method is identical to _is_probabilistic_regression().
         """

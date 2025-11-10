@@ -134,10 +134,10 @@ class IntervalRegressor:
     # pylint: disable=too-many-locals
     def predict_probability(self, x, y_threshold, bins=None):
         """Predict probabilistic regression probabilities with confidence intervals.
-        
+
         Probabilistic regression (also called thresholded regression in the architecture layer)
         converts regression predictions into calibrated probabilities for a threshold event.
-        This method returns the calibrated probability that y <= y_threshold, along with 
+        This method returns the calibrated probability that y <= y_threshold, along with
         confidence intervals around that probability.
 
         Parameters

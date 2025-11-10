@@ -14,7 +14,7 @@
   - Updated ADR-021 with a "Terminology" section explaining the equivalence and usage guidance
   - Added cross-reference in ADR-013 linking to ADR-021 terminology clarification
   - Updated all docstrings to prefer "probabilistic regression" terminology
-  - Created migration guide: `docs/migration/v0.8-to-v0.9-terminology.md`
+  - Created migration guide: `docs/migration/v0.9-to-v0.10-terminology.md`
   - See [Terminology Analysis](TERMINOLOGY_ANALYSIS_THRESHOLDED_VS_PROBABILISTIC_REGRESSION.md) for full context and rationale
 
 Note: Streaming-friendly, generator/chunked explanation exports were intentionally deferred for v0.9.0 and scheduled for follow-up in v0.9.1 — interim batching guidance and rationale are recorded in `improvement_docs/OSS_CE_scope_and_gaps.md` and `docs/foundations/how-to/export_explanations.md`.

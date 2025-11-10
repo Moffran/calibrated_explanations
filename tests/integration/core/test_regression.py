@@ -213,11 +213,11 @@ def test_regression_reject_learner_custom_calibration(regression_dataset):
 @pytest.mark.viz
 def test_probabilistic_regression_ce(regression_dataset):
     """Test probabilistic regression with calibrated explanations.
-    
+
     Probabilistic regression (also called thresholded regression in architecture docs)
-    applies a threshold to convert regression predictions into calibrated probability 
+    applies a threshold to convert regression predictions into calibrated probability
     predictions. This test validates the full end-to-end workflow.
-    
+
     Args:
         regression_dataset (tuple): The regression dataset.
     """
@@ -261,9 +261,9 @@ def test_probabilistic_regression_ce(regression_dataset):
 @pytest.mark.viz
 def test_probabilistic_regression_int_threshold_ce(regression_dataset):
     """Test probabilistic regression with integer threshold.
-    
+
     Probabilistic regression (also called thresholded regression in architecture docs)
-    applies a threshold to convert regression predictions into calibrated probability 
+    applies a threshold to convert regression predictions into calibrated probability
     predictions P(y <= threshold). This test validates that integer thresholds are accepted.
     """
     (

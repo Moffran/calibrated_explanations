@@ -1,8 +1,8 @@
 # In-Depth Terminology Analysis: "Thresholded Regression" vs "Probabilistic Regression"
 
-**Analysis Date:** November 9, 2025  
-**Status:** Comprehensive analysis of terminology usage and definitions across documentation and codebase  
-**Scope:** All references in documentation (`.md` files), ADRs, design documents, and Python code  
+**Analysis Date:** November 9, 2025
+**Status:** Comprehensive analysis of terminology usage and definitions across documentation and codebase
+**Scope:** All references in documentation (`.md` files), ADRs, design documents, and Python code
 
 ---
 
@@ -205,7 +205,7 @@ def test_probabilistic_regression_fast_ce(regression_dataset)
 #### Test Files Using "Thresholded Regression":
 
 ```python
-    
+
 def test_probabilistic_regression_threshold(self):
 ```
 
@@ -358,10 +358,10 @@ def test_lime_plugin_probabilistic_regression():
 - Update `ADR-021` to include a "Terminology" section stating:
   ```markdown
   ### Terminology: "Probabilistic Regression" vs. "Thresholded Regression"
-  
-  These terms are synonymous. "Probabilistic regression" is the user-facing term 
-  emphasizing the output (calibrated probabilities). "Thresholded regression" is 
-  the technical term describing the implementation (a threshold operation converts 
+
+  These terms are synonymous. "Probabilistic regression" is the user-facing term
+  emphasizing the output (calibrated probabilities). "Thresholded regression" is
+  the technical term describing the implementation (a threshold operation converts
   regression predictions into a binary event, calibrated by CPS + Venn-Abers).
   ```
 - Add cross-references in `ADR-013` (interval plugin strategy)
@@ -381,9 +381,9 @@ def test_lime_plugin_probabilistic_regression():
 - Document the terminology standardization:
   ```
   ## Terminology Standardization
-  - Standardized on "probabilistic regression" as the canonical term for regression 
-    with threshold-based probability predictions. "Thresholded regression" remains 
-    used in technical documents (ADRs, architecture discussions) to describe the 
+  - Standardized on "probabilistic regression" as the canonical term for regression
+    with threshold-based probability predictions. "Thresholded regression" remains
+    used in technical documents (ADRs, architecture discussions) to describe the
     implementation mechanism (CPS-based threshold calibration).
   ```
 
@@ -477,10 +477,10 @@ def test_lime_plugin_probabilistic_regression():
   def test_probabilistic_regression_int_threshold_ce(regression_dataset):
       """
       Test probabilistic regression with integer threshold.
-      
-      Probabilistic regression (also called thresholded regression in the 
-      architecture layer) applies a threshold to convert regression predictions 
-      into calibrated probability predictions. This test validates that 
+
+      Probabilistic regression (also called thresholded regression in the
+      architecture layer) applies a threshold to convert regression predictions
+      into calibrated probability predictions. This test validates that
       integer thresholds are accepted.
       """
   ```
@@ -490,10 +490,10 @@ def test_lime_plugin_probabilistic_regression():
 ```markdown
 ## Terminology Standardization
 
-- **Breaking change (naming only):** Standardized terminology across documentation 
-  and code. "Probabilistic regression" is now the canonical user-facing term; 
+- **Breaking change (naming only):** Standardized terminology across documentation
+  and code. "Probabilistic regression" is now the canonical user-facing term;
   "thresholded regression" is used in technical architecture documents.
-  - `_is_thresholded()` renamed to `_is_probabilistic_regression()` 
+  - `_is_thresholded()` renamed to `_is_probabilistic_regression()`
   - `is_thresholded` parameter/property renamed where user-facing
   - All docstrings updated to prefer "probabilistic regression"
   - See ADR-021 and migration guide for details.
@@ -503,14 +503,14 @@ def test_lime_plugin_probabilistic_regression():
 
 ### Phase 5: Migration Guide
 
-**Create:** `docs/migration/v0.8-to-v0.9-terminology.md`
+**Create:** `docs/migration/v0.9-to-v0.10-terminology.md`
 
 ```markdown
 # v0.8 → v0.9 Terminology Changes
 
 ## Summary
 
-Terminology was standardized around "probabilistic regression" for user-facing 
+Terminology was standardized around "probabilistic regression" for user-facing
 documentation and "thresholded regression" for technical architecture docs.
 
 ## What Changed
@@ -528,7 +528,7 @@ documentation and "thresholded regression" for technical architecture docs.
 
 ## No Deprecation Policy
 
-This is a documentation and code naming cleanup with no runtime behavior changes. 
+This is a documentation and code naming cleanup with no runtime behavior changes.
 The deprecation alias for `_is_thresholded()` will be removed in v0.10.
 ```
 
@@ -560,7 +560,7 @@ The deprecation alias for `_is_thresholded()` will be removed in v0.10.
 - [ ] **Docstrings:** Update to prefer "probabilistic regression"
 - [ ] **Tests:** Update test docstrings for consistency
 - [ ] **CHANGELOG:** Document terminology standardization
-- [ ] **Migration guide:** Create `docs/migration/v0.8-to-v0.9-terminology.md`
+- [ ] **Migration guide:** Create `docs/migration/v0.9-to-v0.10-terminology.md`
 
 ---
 
@@ -599,7 +599,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 1. `src/calibrated_explanations/explanations/explanations.py` – Keep `is_thresholded()` as deprecated alias
 
 ### Create New:
-1. `docs/migration/v0.8-to-v0.9-terminology.md` – Migration guide
+1. `docs/migration/v0.9-to-v0.10-terminology.md` – Migration guide
 
 ---
 
@@ -636,7 +636,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
   - Enhanced test docstrings in `test_probabilistic_regression_ce()` and `test_probabilistic_regression_int_threshold_ce()`
   - Added explanations linking both terminology terms
 
-- ✅ **Migration Guide Created** (docs/migration/v0.8-to-v0.9-terminology.md)
+- ✅ **Migration Guide Created** (docs/migration/v0.9-to-v0.10-terminology.md)
   - Comprehensive guide explaining changes for different audiences (users, contributors, plugin developers, maintainers)
   - Migration path and timeline for deprecation
   - Rationale for the terminology choice
@@ -676,7 +676,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 | `tests/integration/core/test_framework.py` | Updated method calls (lines 111, 132, 154, 163) |
 | `tests/integration/core/test_regression.py` | Enhanced test docstrings |
 | `src/calibrated_explanations/legacy/plotting.py` | Updated comment (line 348) |
-| `docs/migration/v0.8-to-v0.9-terminology.md` | **New file** - migration guide |
+| `docs/migration/v0.9-to-v0.10-terminology.md` | **New file** - migration guide |
 | `docs/migration/index.md` | **New file** - migration guides index |
 | `docs/contributor/index.md` | Added migration reference to toctree |
 | `docs/index.md` | Added migration guides section to toctree |
@@ -691,7 +691,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
   - Affects: Contributors and test code accessing `_is_thresholded()` (private method)
   - Mitigation: Backward-compatible alias provided; existing code continues to work
   - Deprecation: Alias will be removed in v0.10.0
-  
+
 - **User Impact:** Minimal (documentation clarity improvement)
 - **Backward Compatibility:** ✅ 100% compatible with v0.9.0
 
@@ -703,6 +703,5 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 
 ---
 
-**Analysis completed:** November 9, 2025  
+**Analysis completed:** November 9, 2025
 **Implementation completed:** November 9, 2025
-
