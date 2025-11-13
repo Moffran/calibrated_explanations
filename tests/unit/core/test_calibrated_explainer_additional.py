@@ -114,7 +114,7 @@ def _make_explainer(
 def test_read_pyproject_section_handles_multiple_sources(
     monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]"
 ) -> None:
-    module = __import__("calibrated_explanations.core.calibrated_explainer", fromlist=["_tomllib"])
+    module = __import__("calibrated_explanations.core.config_helpers", fromlist=["_tomllib"])
     monkeypatch.chdir(tmp_path)
 
     # No TOML reader available -> early fallback

@@ -3,9 +3,9 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.core import calibrated_explainer as ce
-from calibrated_explanations.core.calibrated_explainer import _PredictBridgeMonitor
+from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.calibrated_explainer import ConfigurationError
+from calibrated_explanations.core.exceptions import ConfigurationError
 
 
 def test_split_and_coerce_string_tuple():
@@ -44,8 +44,9 @@ class DummyBridge:
 
 
 def test_predict_bridge_monitor_records_calls():
+    """Test that PredictBridgeMonitor records method calls."""
     bridge = DummyBridge()
-    monitor = _PredictBridgeMonitor(bridge)
+    monitor = PredictBridgeMonitor(bridge)
     assert not monitor.used
     _ = monitor.predict(np.array([1, 2, 3]), mode="m", task="t")
     assert "predict" in monitor.calls

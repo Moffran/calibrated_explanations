@@ -12,11 +12,11 @@ import pytest
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
     EXPLANATION_PROTOCOL_VERSION,
-    _PredictBridgeMonitor,
     _coerce_string_tuple,
     _read_pyproject_section,
     _split_csv,
 )
+from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 
@@ -77,8 +77,9 @@ def test_coerce_string_tuple_handles_iterables():
 
 
 def test_predict_bridge_monitor_tracks_usage():
+    """Test that PredictBridgeMonitor correctly tracks bridge method calls."""
     bridge = _DummyBridge()
-    monitor = _PredictBridgeMonitor(bridge)
+    monitor = PredictBridgeMonitor(bridge)
 
     predict_result = monitor.predict(np.array([[1.0]]), mode="factual", task="classification")
     interval_result = monitor.predict_interval(np.array([[1.0]]), task="classification")

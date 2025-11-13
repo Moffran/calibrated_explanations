@@ -81,54 +81,23 @@ from .exceptions import (
     NotFittedError,
 )
 from .explain._helpers import compute_feature_effects
+from .config_helpers import read_pyproject_section, split_csv, coerce_string_tuple
+from ..plugins.predict_monitor import PredictBridgeMonitor
 
 
 def _read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
     """Return a mapping from the requested ``pyproject.toml`` section."""
-    if _tomllib is None:
-        return {}
-
-    candidate = Path.cwd() / "pyproject.toml"
-    if not candidate.exists():
-        return {}
-    try:
-        with candidate.open("rb") as fh:  # type: ignore[arg-type]
-            data = _tomllib.load(fh)
-    except Exception:  # pragma: no cover - permissive fallback
-        return {}
-
-    cursor: Any = data
-    for key in path:
-        if isinstance(cursor, dict) and key in cursor:
-            cursor = cursor[key]
-        else:
-            return {}
-    if isinstance(cursor, dict):
-        return dict(cursor)
-    return {}
+    return read_pyproject_section(path)
 
 
 def _split_csv(value: str | None) -> Tuple[str, ...]:
     """Split a comma separated environment variable into a tuple."""
-    if not value:
-        return ()
-    entries = [item.strip() for item in value.split(",") if item.strip()]
-    return tuple(entries)
+    return split_csv(value)
 
 
 def _coerce_string_tuple(value: Any) -> Tuple[str, ...]:
     """Coerce a configuration value into a tuple of strings."""
-    if value is None:
-        return ()
-    if isinstance(value, str):
-        return (value,) if value else ()
-    if isinstance(value, Iterable):
-        result: List[str] = []
-        for item in value:
-            if isinstance(item, str) and item:
-                result.append(item)
-        return tuple(result)
-    return ()
+    return coerce_string_tuple(value)
 
 
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
@@ -635,56 +604,8 @@ _DEFAULT_EXPLANATION_IDENTIFIERS: Dict[str, str] = {
     "fast": "core.explanation.fast",
 }
 
-
-class _PredictBridgeMonitor(PredictBridge):
-    """Runtime guard ensuring plugins use the calibrated predict bridge."""
-
-    def __init__(self, bridge: PredictBridge) -> None:
-        """Wrap the active predict bridge and start recording usage."""
-        self._bridge = bridge
-        self._calls: List[str] = []
-
-    def reset_usage(self) -> None:
-        """Clear recorded bridge interactions."""
-        self._calls.clear()
-
-    def predict(
-        self,
-        x: Any,
-        *,
-        mode: str,
-        task: str,
-        bins: Any | None = None,
-    ) -> Mapping[str, Any]:
-        """Forward predict calls while tagging invocation history."""
-        self._calls.append("predict")
-        return self._bridge.predict(x, mode=mode, task=task, bins=bins)
-
-    def predict_interval(
-        self,
-        x: Any,
-        *,
-        task: str,
-        bins: Any | None = None,
-    ) -> Sequence[Any]:
-        """Proxy interval predictions and record the access."""
-        self._calls.append("predict_interval")
-        return self._bridge.predict_interval(x, task=task, bins=bins)
-
-    def predict_proba(self, x: Any, bins: Any | None = None) -> Sequence[Any]:
-        """Delegate ``predict_proba`` while tracking usage."""
-        self._calls.append("predict_proba")
-        return self._bridge.predict_proba(x, bins=bins)
-
-    @property
-    def calls(self) -> Tuple[str, ...]:
-        """Return a tuple describing which bridge methods were used."""
-        return tuple(self._calls)
-
-    @property
-    def used(self) -> bool:
-        """Return True when the monitor observed any bridge invocation."""
-        return bool(self._calls)
+# Backward compatibility: use PredictBridgeMonitor from plugins module
+_PredictBridgeMonitor = PredictBridgeMonitor
 
 
 class CalibratedExplainer:
