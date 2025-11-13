@@ -10,7 +10,7 @@ pytest
 pydata_sphinx_theme==0.15.4
 furo==2024.8.6
 sphinxcontrib-mermaid==0.9.2
-linkify-it-py==2.0.2
+linkify-it-py==2.0.3
 sphinx==7.4.7
 docutils==0.20.1
 sphinx_rtd_theme==2.0.0
