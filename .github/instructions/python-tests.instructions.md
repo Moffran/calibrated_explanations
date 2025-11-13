@@ -5,6 +5,7 @@ applyTo:
 priority: 120
 ---
 
+
 **Framework:** pytest (+pytest-mock if already present). Do not introduce new libraries.
 
 **Where to put tests**
@@ -20,6 +21,7 @@ priority: 120
 - Prefer `@pytest.mark.parametrize` over loops.
 - Use `freezegun`/time-freeze patterns if present; otherwise stub the clock.
 - No I/O, env, or network in unit tests—use monkeypatch/mocks.
+- Prefer testing behaviour over implementation details.
 
 **Fixtures**
 - Import shared fixtures from `conftest.py` or existing fixture modules; only create a new fixture file when SUT-specific and not reusable.
@@ -27,3 +29,16 @@ priority: 120
 **Examples**
 - If editing `pkg/module.py`, target `tests/unit/pkg/test_module.py`.
 - If adding a new integration around an HTTP client, target `tests/integration/http/test_client.py`.
+
+**You are generating or editing tests. Follow this policy strictly:**
+
+1. Prefer amending existing files over creating new ones.
+2. Only create a new file if **all** creation criteria in the repo policy are satisfied.
+3. Use the correct directory and naming mapping for the detected language.
+4. Reuse fixtures/helpers; do not duplicate them.
+5. Keep diffs minimal: focus the change on the SUT under edit.
+6. If a rule would be violated, output a short justification block for the PR and then proceed by **modifying an existing file instead**.
+
+
+**Snapshots**
+- Keep snapshots minimal and stable; prefer explicit assertions for logic.
