@@ -1,8 +1,8 @@
 # CalibratedExplainer Streamlining Plan
 
-**Status:** Phase 0-2 completed; Phase 3 completed; moved to v0.10.0 development cycle
-**Current metrics:** Reduced from 3947 to 3590 lines (357 lines removed via Phase 1a+1b); Phase 3 extracted PluginManager (~200 lines of state delegation)
-**Next step:** Phase 4 (Prediction Functionality Refactoring)
+**Status:** Phase 0-3 completed; Phase 4 completed; moved to Phase 5
+**Current metrics:** Reduced from 3947 to 3590 lines (357 lines removed via Phase 1a+1b); Phase 3 extracted PluginManager (~200 lines of state delegation); Phase 4 extracted PredictionOrchestrator & IntervalRegistry
+**Next step:** Phase 5 (Explain Logic Consolidation)
 **Goal:** Thin, delegating facade with clear separation of concerns
 **ADR Alignment:** ADR-001 (boundary realignment), ADR-004 (parallel execution), ADR-005 (schema/envelope)
 
