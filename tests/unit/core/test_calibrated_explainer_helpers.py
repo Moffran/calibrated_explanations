@@ -153,35 +153,45 @@ def test_check_explanation_runtime_metadata_various():
 
 
 def test_slice_threshold_and_bins():
-    inst = object.__new__(CalibratedExplainer)
+    """Test threshold and bins slicing behavior through explain helpers (Phase 5).
+    
+    Phase 5 consolidation: Tests should call explain module functions directly,
+    not private methods on CalibratedExplainer.
+    """
+    from calibrated_explanations.core.explain._helpers import slice_threshold, slice_bins
 
     # threshold None or scalar
-    assert inst._slice_threshold(None, 0, 1, 1) is None
-    assert inst._slice_threshold(0.5, 0, 1, 1) == 0.5
+    assert slice_threshold(None, 0, 1, 1) is None
+    assert slice_threshold(0.5, 0, 1, 1) == 0.5
 
     # list slicing
     th = [1, 2, 3, 4]
-    assert inst._slice_threshold(th, 1, 3, 4) == [2, 3]
+    assert slice_threshold(th, 1, 3, 4) == [2, 3]
 
     # numpy array slicing
     arr = np.array([10, 20, 30])
-    assert np.array_equal(inst._slice_threshold(arr, 0, 2, 3), np.array([10, 20]))
+    assert np.array_equal(slice_threshold(arr, 0, 2, 3), np.array([10, 20]))
 
     # bins None
-    assert inst._slice_bins(None, 0, 1) is None
+    assert slice_bins(None, 0, 1) is None
     bins = np.array([0, 1, 2])
-    assert np.array_equal(inst._slice_bins(bins, 1, 3), np.array([1, 2]))
+    assert np.array_equal(slice_bins(bins, 1, 3), np.array([1, 2]))
 
 
 def test_compute_weight_delta_basic():
-    inst = object.__new__(CalibratedExplainer)
+    """Test weight delta computation through explain helpers (Phase 5).
+    
+    Phase 5 consolidation: Tests should call explain module functions directly,
+    not private methods on CalibratedExplainer.
+    """
+    from calibrated_explanations.core.explain._helpers import compute_weight_delta
 
     # scalar baseline vs array perturbed
-    res = inst._compute_weight_delta(1.0, np.array([0.5, 1.5]))
+    res = compute_weight_delta(1.0, np.array([0.5, 1.5]))
     assert np.allclose(res, np.array([0.5, -0.5]))
 
     # matching shapes
     base = np.array([2.0, 3.0])
     pert = np.array([1.0, 5.0])
-    res = inst._compute_weight_delta(base, pert)
+    res = compute_weight_delta(base, pert)
     assert np.allclose(res, np.array([1.0, -2.0]))

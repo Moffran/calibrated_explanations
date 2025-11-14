@@ -111,28 +111,34 @@ def _make_minimal_explainer(num_features: int = 2) -> CalibratedExplainer:
 
 
 def test_slice_helpers_support_multiple_input_types(fake_pandas):
-    scalar = CalibratedExplainer._slice_threshold(3.14, 0, 1, 2)
+    """Test threshold and bins slicing with multiple input types (Phase 5).
+    
+    Phase 5 consolidation: Tests call explain module functions directly.
+    """
+    from calibrated_explanations.core.explain._helpers import slice_threshold, slice_bins
+
+    scalar = slice_threshold(3.14, 0, 1, 2)
     assert scalar == 3.14
 
     sequence = [1, 2, 3]
-    assert CalibratedExplainer._slice_threshold(sequence, 0, 2, 3) == [1, 2]
-    assert CalibratedExplainer._slice_threshold(sequence, 0, 1, 4) is sequence
+    assert slice_threshold(sequence, 0, 2, 3) == [1, 2]
+    assert slice_threshold(sequence, 0, 1, 4) is sequence
 
     array = np.array([4, 5, 6])
     np.testing.assert_array_equal(
-        CalibratedExplainer._slice_threshold(array, 1, 3, 3), np.array([5, 6])
+        slice_threshold(array, 1, 3, 3), np.array([5, 6])
     )
 
     series = fake_pandas.Series([7, 8, 9])
-    sliced_series = CalibratedExplainer._slice_threshold(series, 1, 3, 3)
+    sliced_series = slice_threshold(series, 1, 3, 3)
     np.testing.assert_array_equal(sliced_series.to_numpy(), np.array([8, 9]))
 
-    assert CalibratedExplainer._slice_bins(None, 0, 2) is None
+    assert slice_bins(None, 0, 2) is None
     bins = np.array([0.1, 0.2, 0.3])
-    np.testing.assert_array_equal(CalibratedExplainer._slice_bins(bins, 1, 3), np.array([0.2, 0.3]))
+    np.testing.assert_array_equal(slice_bins(bins, 1, 3), np.array([0.2, 0.3]))
     pandas_bins = fake_pandas.Series([10, 11, 12])
     np.testing.assert_array_equal(
-        CalibratedExplainer._slice_bins(pandas_bins, 0, 2), np.array([10, 11])
+        slice_bins(pandas_bins, 0, 2), np.array([10, 11])
     )
 
 

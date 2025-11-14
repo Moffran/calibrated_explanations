@@ -5,6 +5,17 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.0...main)
 
+### Phase 5: CalibratedExplainer Streamlining (Continued)
+
+- **Extracted core discretization and rule boundary computation to explain subpackage** to consolidate explanation logic and eliminate circular dependencies
+  - Created `explain._computation.discretize()` function: pure function extracting discretization logic from `CalibratedExplainer._discretize()`
+  - Created `explain._computation.rule_boundaries()` function: pure function extracting rule boundary extraction logic from `CalibratedExplainer.rule_boundaries()`
+  - Updated `CalibratedExplainer._discretize()` to delegate to extracted function (maintains backward compatibility)
+  - Updated `CalibratedExplainer.rule_boundaries()` to delegate to extracted function (maintains backward compatibility)
+  - Resolved circular dependency chain: `prediction_helpers.explain_predict_step()` now calls explainer methods that delegate to extracted functions instead of direct logic
+  - Both extracted functions exported in `explain._computation.__all__` for public use
+  - No breaking changes: all public and private APIs remain unchanged
+
 ### Terminology Standardization
 
 - **Standardized on "probabilistic regression" as the canonical user-facing term** for regression with threshold-based probability predictions. "Thresholded regression" is used in technical architecture documents (ADRs, design notes) to describe the implementation mechanism (CPS-based threshold calibration).

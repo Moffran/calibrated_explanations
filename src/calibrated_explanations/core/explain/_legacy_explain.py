@@ -19,8 +19,8 @@ from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from ..explanations import CalibratedExplanations
-from ..utils.helper import concatenate_thresholds, safe_mean
+from ...explanations import CalibratedExplanations
+from ...utils.helper import concatenate_thresholds, safe_mean
 
 
 def explain_predict_step(
@@ -38,7 +38,7 @@ def explain_predict_step(
     pre-refactor layout.  The implementation is intentionally verbose to
     minimise behavioural drift.
     """
-    from .prediction_helpers import explain_predict_step as _eps
+    from ._computation import explain_predict_step as _eps_comp  # pylint: disable=import-outside-toplevel
 
     (
         _base_predict,
@@ -55,7 +55,7 @@ def explain_predict_step(
         perturbed_bins,
         perturbed_x,
         perturbed_class,
-    ) = _eps(explainer, x, threshold, low_high_percentiles, bins, features_to_ignore)
+    ) = _eps_comp(explainer, x, threshold, low_high_percentiles, bins, features_to_ignore)
 
     for f in range(explainer.num_features):
         if f in features_to_ignore:

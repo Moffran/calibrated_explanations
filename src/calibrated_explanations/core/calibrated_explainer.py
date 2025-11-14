@@ -839,6 +839,8 @@ class CalibratedExplainer:
     ) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
+        This is a thin delegator that sets up the appropriate discretizer and delegates to the orchestrator.
+
         Parameters
         ----------
         x : array-like
@@ -850,26 +852,20 @@ class CalibratedExplainer:
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
 
-        Raises
-        ------
-        ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The threshold-parameter is only supported for mode='regression'.
-        ValueError: The length of the threshold parameter must be either a constant or the same as the number of
-            instances in x.
-
         Returns
         -------
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FactualExplanation` for each instance.
         """
+        # Phase 5: Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
-        self.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
-        return self.explain(
+        return self._explanation_orchestrator.invoke_factual(
             x,
             threshold,
             low_high_percentiles,
             bins,
             features_to_ignore,
+            discretizer=discretizer,
             _use_plugin=_use_plugin,
         )
 
@@ -912,6 +908,8 @@ class CalibratedExplainer:
     ) -> AlternativeExplanations:
         """Create a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
+        This is a thin delegator that sets up the appropriate discretizer and delegates to the orchestrator.
+
         Parameters
         ----------
         x : array-like
@@ -923,13 +921,6 @@ class CalibratedExplainer:
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
 
-        Raises
-        ------
-        ValueError: The number of features in the test data must be the same as in the calibration data.
-        Warning: The threshold-parameter is only supported for mode='regression'.
-        ValueError: The length of the threshold parameter must be either a constant or the same as the number of
-            instances in x.
-
         Returns
         -------
         AlternativeExplanations : :class:`.AlternativeExplanations`
@@ -939,16 +930,15 @@ class CalibratedExplainer:
         -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
         """
+        # Phase 5: Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "regressor" if "regression" in self.mode else "entropy"
-        self.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
-        # At runtime, explain() will return an AlternativeExplanations when an alternative discretizer is set.
-        # Help mypy with a narrow cast here without changing behavior.
-        return self.explain(
+        return self._explanation_orchestrator.invoke_alternative(
             x,
             threshold,
             low_high_percentiles,
             bins,
             features_to_ignore,
+            discretizer=discretizer,
             _use_plugin=_use_plugin,
         )  # type: ignore[return-value]
 
@@ -989,6 +979,8 @@ class CalibratedExplainer:
     ) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
 
+        This is a thin delegator that delegates to the explanation orchestrator.
+
         This method:
         1. Makes predictions on original test instances
         2. Creates perturbed versions by varying feature values
@@ -1005,31 +997,29 @@ class CalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
+        # Phase 5: Thin delegator to orchestrator
         if _use_plugin:
             mode = self._infer_explanation_mode()
-            return self._invoke_explanation_plugin(
+            return self._explanation_orchestrator.invoke(
                 mode,
                 x,
                 threshold,
                 low_high_percentiles,
                 bins,
                 features_to_ignore,
-                extras={"mode": mode},
+                extras={"mode": mode, "_skip_instance_parallel": _skip_instance_parallel},
             )
 
-        # Delegate to the new explain plugin system
-        # This replaces all sequential/parallel branching logic
-        from .explain import explain as plugin_explain
+        # Legacy path for backward compatibility and testing
+        from .explain._legacy_explain import explain as legacy_explain  # pylint: disable=import-outside-toplevel
 
-        return plugin_explain(
+        return legacy_explain(
             self,
             x,
             threshold=threshold,
             low_high_percentiles=low_high_percentiles,
             bins=bins,
             features_to_ignore=features_to_ignore,
-            _use_plugin=False,  # Already in plugin path
-            _skip_instance_parallel=_skip_instance_parallel,
         )
 
     # NOTE: Instance- and feature-parallel helpers have been moved into the
@@ -1045,415 +1035,56 @@ class CalibratedExplainer:
 
     @staticmethod
     def _slice_threshold(threshold, start: int, stop: int, total_len: int):
-        """Return the portion of *threshold* covering ``[start, stop)``."""
-        if threshold is None or np.isscalar(threshold):
-            return threshold
-        try:
-            length = len(threshold)
-        except TypeError:
-            return threshold
-        if length != total_len:
-            return threshold
-        if safe_isinstance(threshold, "pandas.core.series.Series"):
-            return threshold.iloc[start:stop]
-        sliced = threshold[start:stop]
-        if isinstance(threshold, np.ndarray):
-            return sliced
-        if isinstance(threshold, list):
-            return sliced
-        return sliced
+        """Delegate to explain._helpers (Phase 5).
+        
+        Return the portion of *threshold* covering ``[start, stop)``.
+        Moved to explain._helpers for consolidation.
+        """
+        from .explain._helpers import slice_threshold
+
+        return slice_threshold(threshold, start, stop, total_len)
 
     @staticmethod
     def _compute_weight_delta(baseline, perturbed):
-        """Return the contribution weight delta between baseline and perturbed.
-
+        """Delegate to explain._helpers (Phase 5).
+        
+        Return the contribution weight delta between baseline and perturbed.
         Compatibility wrapper for compute_weight_delta moved to explain._helpers.
         """
+        from .explain._helpers import compute_weight_delta
+
         return compute_weight_delta(baseline, perturbed)
 
     @staticmethod
     def _slice_bins(bins, start: int, stop: int):
-        """Return the subset of *bins* covering ``[start, stop)``."""
-        if bins is None:
-            return None
-        if safe_isinstance(bins, "pandas.core.series.Series"):
-            return bins.iloc[start:stop].to_numpy()
-        return bins[start:stop]
+        """Delegate to explain._helpers (Phase 5).
+        
+        Return the subset of *bins* covering ``[start, stop)``.
+        Moved to explain._helpers for consolidation.
+        """
+        from .explain._helpers import slice_bins
+
+        return slice_bins(bins, start, stop)
 
     def _validate_and_prepare_input(self, x):
-        """Delegate to extracted helper (Phase 1A)."""
-        from .prediction_helpers import validate_and_prepare_input as _vh
+        """Delegate to explain helpers (Phase 5).
+        
+        Validates and prepares input data for explanation generation.
+        Moved to explain._helpers to consolidate all explanation logic.
+        """
+        from .explain._helpers import validate_and_prepare_input as _vh
 
         return _vh(self, x)
 
     def _initialize_explanation(self, x, low_high_percentiles, threshold, bins, features_to_ignore):
-        """Delegate to extracted helper (Phase 1A)."""
-        from .prediction_helpers import initialize_explanation as _ih
+        """Delegate to explain computation (Phase 5).
+        
+        Initializes a CalibratedExplanations object with all metadata.
+        Moved to explain._computation to consolidate all explanation logic.
+        """
+        from .explain._computation import initialize_explanation as _ih
 
         return _ih(self, x, low_high_percentiles, threshold, bins, features_to_ignore)
-
-    def _explain_predict_step(self, x, threshold, low_high_percentiles, bins, features_to_ignore):
-        """Run the helper-assisted setup for an explanation request."""
-        # Phase 1A: delegate initial setup to prediction_helpers to lock behavior
-        from .prediction_helpers import explain_predict_step as _eps
-
-        (
-            _base_predict,
-            _base_low,
-            _base_high,
-            prediction,
-            perturbed_feature,
-            rule_boundaries,
-            lesser_values,
-            greater_values,
-            covered_values,
-            x_cal,
-            perturbed_threshold,
-            perturbed_bins,
-            perturbed_x,
-            perturbed_class,
-        ) = _eps(self, x, threshold, low_high_percentiles, bins, features_to_ignore)
-
-        predict_chunks: List[np.ndarray] = []
-        low_chunks: List[np.ndarray] = []
-        high_chunks: List[np.ndarray] = []
-        feature_chunks: List[np.ndarray] = []
-        bins_chunks: List[np.ndarray] = []
-        class_chunks: List[np.ndarray] = []
-        threshold_items: List[Any] = []
-
-        features_to_ignore_array = (
-            np.asarray(features_to_ignore, dtype=int)
-            if features_to_ignore is not None
-            else np.empty((0,), dtype=int)
-        )
-        features_to_ignore_set = {int(f) for f in features_to_ignore_array.tolist()}
-
-        base_feature = (
-            perturbed_feature.astype(object)
-            if perturbed_feature.size
-            else np.empty((0, 4), dtype=object)
-        )
-        if perturbed_x.size:
-            base_predict, base_low, base_high, _ = self._predict(
-                perturbed_x,
-                threshold=perturbed_threshold,
-                low_high_percentiles=low_high_percentiles,
-                classes=perturbed_class,
-                bins=perturbed_bins,
-            )
-            predict_chunks.append(np.asarray(base_predict))
-            low_chunks.append(np.asarray(base_low))
-            high_chunks.append(np.asarray(base_high))
-
-        # Sub-step 1.b: prepare and add the perturbed test instances (unchanged logic)
-        # pylint: disable=too-many-nested-blocks
-        for f in range(self.num_features):
-            if f in features_to_ignore_set:
-                continue
-            feature_x_parts: List[np.ndarray] = []
-            feature_feature_parts: List[np.ndarray] = []
-            feature_bins_parts: List[np.ndarray] = []
-            feature_class_parts: List[np.ndarray] = []
-            feature_threshold_parts: List[Any] = []
-            if f in self.categorical_features:
-                feature_values = np.asarray(self.feature_values[f])
-                if feature_values.size == 0:
-                    continue
-
-                num_instances = x.shape[0]
-                num_values = int(feature_values.size)
-
-                # Assemble the perturbations for this categorical feature in a single
-                # tiled matrix to avoid repeatedly copying the full feature matrix.
-                tiled_x = np.tile(x, (num_values, 1))
-                tiled_x[:, f] = np.repeat(feature_values, num_instances)
-                feature_x_parts.append(tiled_x)
-
-                feature_info = np.empty((num_instances * num_values, 4), dtype=object)
-                feature_info[:, 0] = f
-                feature_info[:, 1] = np.tile(np.arange(num_instances), num_values)
-                feature_info[:, 2] = np.repeat(feature_values, num_instances)
-                feature_info[:, 3] = None
-                feature_feature_parts.append(feature_info)
-
-                if bins is not None:
-                    bins_array = np.array(bins, copy=True)
-                    if bins_array.ndim == 0:
-                        feature_bins_parts.append(np.repeat(bins_array, num_values))
-                    else:
-                        tile_shape = (num_values,) + (1,) * (bins_array.ndim - 1)
-                        feature_bins_parts.append(np.tile(bins_array, tile_shape))
-
-                predict_array = np.array(prediction["predict"], copy=True)
-                if predict_array.ndim == 0:
-                    feature_class_parts.append(np.repeat(predict_array, num_values))
-                else:
-                    tile_shape = (num_values,) + (1,) * (predict_array.ndim - 1)
-                    feature_class_parts.append(np.tile(predict_array, tile_shape))
-
-                if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                    base_threshold = [threshold[i] for i in range(num_instances)]
-                    if base_threshold:
-                        if isinstance(base_threshold[0], tuple):
-                            feature_threshold_parts.append(base_threshold * num_values)
-                        else:
-                            feature_threshold_parts.append(
-                                np.tile(np.asarray(base_threshold), num_values)
-                            )
-            else:
-                feature_values = np.unique(np.array(x_cal[:, f]))
-                lower_boundary = np.array(rule_boundaries[:, f, 0], copy=True)
-                upper_boundary = np.array(rule_boundaries[:, f, 1], copy=True)
-
-                if feature_values.size:
-                    has_lesser = (
-                        feature_values[np.newaxis, :] < lower_boundary[:, np.newaxis]
-                    ).any(axis=1)
-                    has_greater = (
-                        feature_values[np.newaxis, :] > upper_boundary[:, np.newaxis]
-                    ).any(axis=1)
-                else:
-                    has_lesser = np.zeros(lower_boundary.shape[0], dtype=bool)
-                    has_greater = np.zeros(upper_boundary.shape[0], dtype=bool)
-                lower_boundary = np.where(has_lesser, lower_boundary, -np.inf)
-                upper_boundary = np.where(has_greater, upper_boundary, np.inf)
-                rule_boundaries[:, f, 0] = lower_boundary
-                rule_boundaries[:, f, 1] = upper_boundary
-
-                lesser_values[f] = {}
-                greater_values[f] = {}
-                covered_values[f] = {}
-                bins_array = np.asarray(bins) if bins is not None else None
-                classes_array = np.asarray(prediction["classes"])
-
-                for j, val in enumerate(np.unique(lower_boundary)):
-                    lesser_values[f][j] = (np.unique(self.__get_lesser_values(f, val)), val)
-                    indices = np.where(lower_boundary == val)[0]
-                    values = lesser_values[f][j][0]
-                    if values.size == 0 or indices.size == 0:
-                        continue
-
-                    base_slice = np.array(x[indices, :], copy=True)
-                    num_instances_subset = base_slice.shape[0]
-                    num_values = values.size
-
-                    tiled_x = np.tile(base_slice, (num_values, 1))
-                    tiled_x[:, f] = np.repeat(values, num_instances_subset)
-                    feature_x_parts.append(tiled_x)
-
-                    feature_info = np.empty((num_instances_subset * num_values, 4), dtype=object)
-                    feature_info[:, 0] = f
-                    feature_info[:, 1] = np.tile(indices, num_values)
-                    feature_info[:, 2] = j
-                    feature_info[:, 3] = True
-                    feature_feature_parts.append(feature_info)
-
-                    if bins_array is not None:
-                        bins_subset = np.array(bins_array[indices], copy=True)
-                        tile_shape = (num_values,) + (1,) * (bins_subset.ndim - 1)
-                        feature_bins_parts.append(np.tile(bins_subset, tile_shape))
-
-                    class_subset = np.array(classes_array[indices], copy=True)
-                    tile_shape = (num_values,) + (1,) * (class_subset.ndim - 1)
-                    feature_class_parts.append(np.tile(class_subset, tile_shape))
-
-                    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                        threshold_subset = [threshold[i] for i in indices]
-                        if threshold_subset:
-                            if isinstance(threshold_subset[0], tuple):
-                                feature_threshold_parts.append(threshold_subset * num_values)
-                            else:
-                                feature_threshold_parts.append(
-                                    np.tile(np.asarray(threshold_subset), num_values)
-                                )
-
-                for j, val in enumerate(np.unique(upper_boundary)):
-                    greater_values[f][j] = (np.unique(self.__get_greater_values(f, val)), val)
-                    indices = np.where(upper_boundary == val)[0]
-                    values = greater_values[f][j][0]
-                    if values.size == 0 or indices.size == 0:
-                        continue
-
-                    base_slice = np.array(x[indices, :], copy=True)
-                    num_instances_subset = base_slice.shape[0]
-                    num_values = values.size
-
-                    tiled_x = np.tile(base_slice, (num_values, 1))
-                    tiled_x[:, f] = np.repeat(values, num_instances_subset)
-                    feature_x_parts.append(tiled_x)
-
-                    feature_info = np.empty((num_instances_subset * num_values, 4), dtype=object)
-                    feature_info[:, 0] = f
-                    feature_info[:, 1] = np.tile(indices, num_values)
-                    feature_info[:, 2] = j
-                    feature_info[:, 3] = False
-                    feature_feature_parts.append(feature_info)
-
-                    if bins_array is not None:
-                        bins_subset = np.array(bins_array[indices], copy=True)
-                        tile_shape = (num_values,) + (1,) * (bins_subset.ndim - 1)
-                        feature_bins_parts.append(np.tile(bins_subset, tile_shape))
-
-                    class_subset = np.array(classes_array[indices], copy=True)
-                    tile_shape = (num_values,) + (1,) * (class_subset.ndim - 1)
-                    feature_class_parts.append(np.tile(class_subset, tile_shape))
-
-                    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                        threshold_subset = [threshold[i] for i in indices]
-                        if threshold_subset:
-                            if isinstance(threshold_subset[0], tuple):
-                                feature_threshold_parts.append(threshold_subset * num_values)
-                            else:
-                                feature_threshold_parts.append(
-                                    np.tile(np.asarray(threshold_subset), num_values)
-                                )
-                for i in range(len(x)):
-                    covered_values[f][i] = (
-                        self.__get_covered_values(f, lower_boundary[i], upper_boundary[i]),
-                        (lower_boundary[i], upper_boundary[i]),
-                    )
-                    if covered_values[f][i][0].size == 0:
-                        continue
-                    for value in covered_values[f][i][0]:
-                        x_local = np.array(x[i, :], copy=True)
-                        x_local[f] = value
-                        feature_x_parts.append(x_local[np.newaxis, :])
-                        feature_feature_parts.append(np.array([(f, i, i, None)], dtype=object))
-                        if bins is not None:
-                            feature_bins_parts.append(np.array([bins[i]]))
-                        feature_class_parts.append(np.array([prediction["classes"][i]], copy=True))
-                        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                            feature_threshold_parts.append(np.asarray([threshold[i]]))
-
-            if not feature_x_parts:
-                continue
-
-            feature_x = np.concatenate(feature_x_parts, axis=0)
-            feature_info = np.concatenate(feature_feature_parts, axis=0)
-            feature_chunks.append(feature_info)
-
-            feature_bins = None
-            if bins is not None and feature_bins_parts:
-                feature_bins = np.concatenate(feature_bins_parts, axis=0)
-                bins_chunks.append(feature_bins)
-
-            if feature_class_parts:
-                feature_classes = np.concatenate(feature_class_parts, axis=0)
-            else:
-                feature_classes = np.empty((feature_x.shape[0],), dtype=int)
-            class_chunks.append(feature_classes)
-
-            if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                threshold_part = []
-                use_numpy = True
-                for entry in feature_threshold_parts:
-                    if entry is None:
-                        continue
-                    if isinstance(entry, np.ndarray):
-                        threshold_part.append(entry)
-                    else:
-                        use_numpy = False
-                        threshold_part.append(entry)
-                feature_threshold = None
-                if threshold_part:
-                    if use_numpy:
-                        feature_threshold = np.concatenate(threshold_part, axis=0)
-                        threshold_items.extend(feature_threshold.tolist())
-                    else:
-                        feature_threshold = []
-                        for entry in threshold_part:
-                            if isinstance(entry, np.ndarray):
-                                feature_threshold.extend(entry.tolist())
-                            else:
-                                feature_threshold.extend(entry)
-                        threshold_items.extend(feature_threshold)
-                else:
-                    feature_threshold = np.empty((0,))
-            else:
-                feature_threshold = perturbed_threshold
-
-            chunk_predict, chunk_low, chunk_high, _ = self._predict(
-                feature_x,
-                threshold=feature_threshold,
-                low_high_percentiles=low_high_percentiles,
-                classes=feature_classes,
-                bins=feature_bins,
-            )
-            predict_chunks.append(np.asarray(chunk_predict))
-            low_chunks.append(np.asarray(chunk_low))
-            high_chunks.append(np.asarray(chunk_high))
-
-        if feature_chunks:
-            combined_features: List[np.ndarray] = []
-            if base_feature.size:
-                combined_features.append(base_feature)
-            combined_features.extend(feature_chunks)
-            perturbed_feature = np.concatenate(combined_features, axis=0)
-        else:
-            perturbed_feature = base_feature
-
-        if bins is not None:
-            combined_bins: List[np.ndarray] = []
-            if perturbed_bins is not None and perturbed_bins.size:
-                combined_bins.append(perturbed_bins)
-            if bins_chunks:
-                combined_bins.extend([chunk for chunk in bins_chunks if chunk.size])
-            if combined_bins:
-                perturbed_bins = np.concatenate(combined_bins, axis=0)
-            elif perturbed_bins is None and bins_chunks:
-                combined = [chunk for chunk in bins_chunks if chunk.size]
-                perturbed_bins = (
-                    np.concatenate(combined, axis=0) if combined else np.empty((0,), dtype=object)
-                )
-
-        combined_classes: List[np.ndarray] = []
-        if perturbed_class.size:
-            combined_classes.append(perturbed_class)
-        combined_classes.extend(class_chunks)
-        if combined_classes:
-            perturbed_class = np.concatenate(combined_classes, axis=0)
-
-        if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-            if isinstance(threshold[0], tuple):
-                base_items: List[Any] = (
-                    list(perturbed_threshold) if len(perturbed_threshold) else []
-                )
-                perturbed_threshold = base_items + threshold_items
-            else:
-                base_array = perturbed_threshold if len(perturbed_threshold) else np.empty((0,))
-                if threshold_items:
-                    perturbed_threshold = np.concatenate([base_array, np.asarray(threshold_items)])
-                else:
-                    perturbed_threshold = base_array
-        # Sub-step 1.c: Predict and convert to numpy arrays to allow boolean indexing
-        if (
-            threshold is not None
-            and isinstance(threshold, (list, np.ndarray))
-            and isinstance(threshold[0], tuple)
-        ):
-            perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
-        if predict_chunks:
-            predict = np.concatenate(predict_chunks, axis=0)
-            low = np.concatenate(low_chunks, axis=0)
-            high = np.concatenate(high_chunks, axis=0)
-        else:
-            predict = np.empty((0,))
-            low = np.empty((0,))
-            high = np.empty((0,))
-        # predicted_class = np.array(perturbed_class)
-        return (
-            predict,
-            low,
-            high,
-            prediction,
-            perturbed_feature,
-            rule_boundaries,
-            lesser_values,
-            greater_values,
-            covered_values,
-            x_cal,
-        )
 
     def explain_fast(
         self,
@@ -1593,7 +1224,25 @@ class CalibratedExplainer:
         return threshold
 
     def _assign_weight(self, instance_predict, prediction):
-        """Compute contribution weight as the delta from the global prediction."""
+        """Compute contribution weight as the delta from the global prediction.
+        
+        This method computes per-instance or per-class weight deltas for
+        probabilistic regression feature attribution. For scalar weight
+        computation, use calibrated_explanations.core.explain.feature_task.assign_weight_scalar
+        which is optimized for single-value inputs.
+        
+        Parameters
+        ----------
+        instance_predict : scalar or array-like
+            Baseline prediction(s).
+        prediction : scalar or array-like
+            Perturbed prediction(s).
+            
+        Returns
+        -------
+        scalar or list
+            Weight delta(s). Returns same type as inputs.
+        """
         return (
             prediction - instance_predict
             if np.isscalar(prediction)
@@ -1635,55 +1284,8 @@ class CalibratedExplainer:
         array-like
             Min and max values for each feature for each instance.
         """
-        # backwards compatibility
-        if len(instances.shape) == 1:
-            min_max = []
-            if perturbed_instances is None:
-                perturbed_instances = self._discretize(instances.reshape(1, -1))
-            for f in range(self.num_features):
-                if f not in self.discretizer.to_discretize:
-                    min_max.append([instances[f], instances[f]])
-                else:
-                    bins = np.concatenate(([-np.inf], self.discretizer.mins[f][1:], [np.inf]))
-                    min_max.append(
-                        [
-                            self.discretizer.mins[f][
-                                np.digitize(perturbed_instances[0, f], bins, right=True) - 1
-                            ],
-                            self.discretizer.maxs[f][
-                                np.digitize(perturbed_instances[0, f], bins, right=True) - 1
-                            ],
-                        ]
-                    )
-            return min_max
-        instances = np.array(instances)  # Ensure instances is a numpy array
-        if perturbed_instances is None:
-            perturbed_instances = self._discretize(instances)
-        else:
-            perturbed_instances = np.array(
-                perturbed_instances
-            )  # Ensure perturbed_instances is a numpy array
-
-        all_min_max = []
-        for instance, perturbed_instance in zip(instances, perturbed_instances):
-            min_max = []
-            for f in range(self.num_features):
-                if f not in self.discretizer.to_discretize:
-                    min_max.append([instance[f], instance[f]])
-                else:
-                    bins = np.concatenate(([-np.inf], self.discretizer.mins[f][1:], [np.inf]))
-                    min_max.append(
-                        [
-                            self.discretizer.mins[f][
-                                np.digitize(perturbed_instance[f], bins, right=True) - 1
-                            ],
-                            self.discretizer.maxs[f][
-                                np.digitize(perturbed_instance[f], bins, right=True) - 1
-                            ],
-                        ]
-                    )
-            all_min_max.append(min_max)
-        return np.array(all_min_max)
+        from .explain._computation import rule_boundaries as _rule_boundaries  # pylint: disable=import-outside-toplevel
+        return _rule_boundaries(self, instances, perturbed_instances)
 
     def __get_greater_values(self, f: int, greater: float):
         """Get sampled values above ``greater`` for numerical features.
@@ -1893,14 +1495,8 @@ class CalibratedExplainer:
         array-like
             The discretized data sample.
         """
-        x = np.array(x, copy=True)  # Ensure x is a numpy array
-        for f in self.discretizer.to_discretize:
-            bins = np.concatenate(([-np.inf], self.discretizer.mins[f][1:], [np.inf]))
-            bin_indices = np.digitize(x[:, f], bins, right=True) - 1
-            means = np.asarray(self.discretizer.means[f])
-            bin_indices = np.clip(bin_indices, 0, len(means) - 1)
-            x[:, f] = means[bin_indices]
-        return x
+        from .explain._computation import discretize  # pylint: disable=import-outside-toplevel
+        return discretize(self, x)
 
     # pylint: disable=too-many-branches
     def set_discretizer(self, discretizer, x_cal=None, y_cal=None, features_to_ignore=None) -> None:

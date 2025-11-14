@@ -6,11 +6,15 @@ and weight calculation used by all explain plugins.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
 from ...utils.helper import safe_mean
+
+if TYPE_CHECKING:
+    from ..calibrated_explainer import CalibratedExplainer
+    from ...explanations import CalibratedExplanations
 
 # Type alias for feature task results
 FeatureTaskResult = Tuple[
@@ -26,6 +30,293 @@ FeatureTaskResult = Tuple[
     Optional[np.ndarray],  # lower_update
     Optional[np.ndarray],  # upper_update
 ]
+
+# Type alias for explain_predict_step results
+ExplainPredictStepResult = Tuple[
+    np.ndarray,  # predict
+    np.ndarray,  # low
+    np.ndarray,  # high
+    Dict[str, Any],  # prediction
+    np.ndarray,  # perturbed_feature
+    Any,  # rule_boundaries
+    Dict[int, Any],  # lesser_values
+    Dict[int, Any],  # greater_values
+    Dict[int, Any],  # covered_values
+    np.ndarray,  # x_cal
+    Any,  # perturbed_threshold
+    Optional[np.ndarray],  # perturbed_bins
+    np.ndarray,  # perturbed_x
+    np.ndarray,  # perturbed_class
+]
+
+
+def discretize(explainer: CalibratedExplainer, data: np.ndarray) -> np.ndarray:
+    """Apply the discretizer to the data sample.
+
+    For new data samples and missing values, the nearest bin is used.
+    This function extracts the discretization logic from CalibratedExplainer._discretize()
+    to make it available to the explain subpackage without circular dependencies.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The explainer instance containing discretizer configuration.
+    data : np.ndarray
+        The data sample to discretize.
+
+    Returns
+    -------
+    np.ndarray
+        The discretized data sample.
+    """
+    # pylint: disable=invalid-name
+    data = np.array(data, copy=True)  # Ensure data is a numpy array
+    if explainer.discretizer is None:
+        return data
+    for f in explainer.discretizer.to_discretize:
+        bins = np.concatenate(([-np.inf], explainer.discretizer.mins[f][1:], [np.inf]))
+        bin_indices = np.digitize(data[:, f], bins, right=True) - 1
+        means = np.asarray(explainer.discretizer.means[f])
+        bin_indices = np.clip(bin_indices, 0, len(means) - 1)
+        data[:, f] = means[bin_indices]
+    return data
+
+
+def rule_boundaries(
+    explainer: CalibratedExplainer,
+    instances: np.ndarray,
+    perturbed_instances: Optional[np.ndarray] = None,
+) -> Any:
+    """Extract the rule boundaries for a set of instances.
+
+    This function extracts the rule boundary extraction logic from
+    CalibratedExplainer.rule_boundaries() to make it available to the explain
+    subpackage without circular dependencies.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The explainer instance containing discretizer configuration.
+    instances : array-like
+        The instances to extract boundaries for.
+    perturbed_instances : array-like, optional
+        Discretized versions of instances. Defaults to None.
+
+    Returns
+    -------
+    array-like
+        Min and max values for each feature for each instance.
+        Shape: (num_instances, num_features, 2) for multiple instances
+        or (num_features, 2) for a single instance (as list).
+    """
+    # pylint: disable=invalid-name
+    instances = np.array(instances)  # Ensure instances is a numpy array
+    
+    # If no discretizer, return trivial boundaries (min=max=original value)
+    if explainer.discretizer is None:
+        if len(instances.shape) == 1:
+            # Single instance: return array of shape (num_features, 2)
+            return np.array([[val, val] for val in instances])
+        else:
+            # Multiple instances: return array of shape (num_instances, num_features, 2)
+            return np.array([[[val, val] for val in instance] for instance in instances])
+    
+    # backwards compatibility
+    if len(instances.shape) == 1:
+        min_max = []
+        if perturbed_instances is None:
+            perturbed_instances = discretize(explainer, instances.reshape(1, -1))
+        for f in range(explainer.num_features):
+            if f not in explainer.discretizer.to_discretize:
+                min_max.append([instances[f], instances[f]])
+            else:
+                bins = np.concatenate(([-np.inf], explainer.discretizer.mins[f][1:], [np.inf]))
+                min_max.append(
+                    [
+                        explainer.discretizer.mins[f][
+                            np.digitize(perturbed_instances[0, f], bins, right=True) - 1
+                        ],
+                        explainer.discretizer.maxs[f][
+                            np.digitize(perturbed_instances[0, f], bins, right=True) - 1
+                        ],
+                    ]
+                )
+        return np.array(min_max)
+    
+    if perturbed_instances is None:
+        perturbed_instances = discretize(explainer, instances)
+    else:
+        perturbed_instances = np.array(
+            perturbed_instances
+        )  # Ensure perturbed_instances is a numpy array
+
+    all_min_max = []
+    for instance, perturbed_instance in zip(instances, perturbed_instances):
+        min_max = []
+        for f in range(explainer.num_features):
+            if f not in explainer.discretizer.to_discretize:
+                min_max.append([instance[f], instance[f]])
+            else:
+                bins = np.concatenate(([-np.inf], explainer.discretizer.mins[f][1:], [np.inf]))
+                min_max.append(
+                    [
+                        explainer.discretizer.mins[f][
+                            np.digitize(perturbed_instance[f], bins, right=True) - 1
+                        ],
+                        explainer.discretizer.maxs[f][
+                            np.digitize(perturbed_instance[f], bins, right=True) - 1
+                        ],
+                    ]
+                )
+        all_min_max.append(min_max)
+    return np.array(all_min_max)
+
+
+def initialize_explanation(
+    explainer: CalibratedExplainer,
+    x: np.ndarray,  # pylint: disable=invalid-name
+    low_high_percentiles: Tuple[int, int],
+    threshold: Any,
+    bins: Any,
+    features_to_ignore: Any,
+) -> "CalibratedExplanations":
+    """Initialize a CalibratedExplanations object for explanation.
+
+    Delegates to the prediction_helpers module which contains the
+    authoritative initialization logic.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The parent explainer instance.
+    x : np.ndarray
+        Input data to explain.
+    low_high_percentiles : tuple of int
+        Low and high percentiles for interval calibration.
+    threshold : Any
+        Optional threshold for regression explanations.
+    bins : Any
+        Optional binned representations.
+    features_to_ignore : Any
+        Feature indices to exclude from explanation.
+
+    Returns
+    -------
+    CalibratedExplanations
+        Initialized explanation object.
+    """
+    from ..prediction_helpers import initialize_explanation as _init_expl  # pylint: disable=import-outside-toplevel
+
+    return _init_expl(explainer, x, low_high_percentiles, threshold, bins, features_to_ignore)
+
+
+def explain_predict_step(
+    explainer: CalibratedExplainer,
+    x: np.ndarray,  # pylint: disable=invalid-name
+    threshold: Any,
+    low_high_percentiles: Tuple[int, int],
+    bins: Any,
+    features_to_ignore: Any,  # pylint: disable=unused-argument
+) -> ExplainPredictStepResult:
+    """Execute the baseline prediction and perturbation planning step.
+
+    This is the first phase of explanation generation that:
+    1. Predicts on original test instances
+    2. Determines rule boundaries for numerical features
+    3. Plans perturbation sets (lesser/greater/covered values)
+
+    This is the authoritative implementation consolidated from prediction_helpers.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The parent explainer instance.
+    x : np.ndarray
+        Input data (already validated, 2D array).
+    threshold : Any
+        Optional threshold for regression.
+    low_high_percentiles : tuple of int
+        Low and high percentiles for intervals.
+    bins : Any
+        Optional binned representations.
+    features_to_ignore : Any
+        Feature indices to exclude.
+
+    Returns
+    -------
+    ExplainPredictStepResult
+        Tuple containing predictions, perturbation metadata, and rule boundaries.
+    """
+    import logging  # pylint: disable=import-outside-toplevel
+    from ..prediction_helpers import assert_threshold  # pylint: disable=import-outside-toplevel
+
+    x_cal = explainer.x_cal
+    predict, low, high, predicted_class = explainer._predict(  # pylint: disable=protected-access
+        x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
+    )
+
+    prediction = {
+        "predict": predict,
+        "low": low,
+        "high": high,
+        "classes": (predicted_class if explainer.is_multiclass() else np.ones(predict.shape)),
+    }
+    if explainer.mode == "classification":  # store full calibrated probability matrix
+        try:  # pragma: no cover - defensive
+            if explainer.is_multiclass():
+                if explainer.is_fast():
+                    full_probs = explainer.interval_learner[  # pylint: disable=protected-access
+                        explainer.num_features
+                    ].predict_proba(x, bins=bins)
+                else:
+                    full_probs = explainer.interval_learner.predict_proba(  # pylint: disable=protected-access
+                        x, bins=bins
+                    )
+            else:  # binary
+                if explainer.is_fast():
+                    full_probs = explainer.interval_learner[  # pylint: disable=protected-access
+                        explainer.num_features
+                    ].predict_proba(x, bins=bins)
+                else:
+                    full_probs = explainer.interval_learner.predict_proba(  # pylint: disable=protected-access
+                        x, bins=bins
+                    )
+            prediction["__full_probabilities__"] = full_probs
+        except Exception as exc:  # pragma: no cover  # pylint: disable=broad-except
+            logging.getLogger("calibrated_explanations").debug(
+                "Failed to compute full calibrated probabilities: %s", exc
+            )
+
+    x.flags.writeable = False
+    assert_threshold(threshold, x)
+    perturbed_threshold = explainer.assign_threshold(threshold)
+    perturbed_bins = np.empty((0,)) if bins is not None else None
+    perturbed_x = np.empty((0, explainer.num_features))
+    perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
+    perturbed_class = np.empty((0,), dtype=int)
+    x_perturbed = discretize(explainer, x)
+    rule_boundaries_result = rule_boundaries(explainer, x, x_perturbed)
+
+    lesser_values: dict[int, Any] = {}
+    greater_values: dict[int, Any] = {}
+    covered_values: dict[int, Any] = {}
+
+    return (
+        predict,
+        low,
+        high,
+        prediction,
+        perturbed_feature,
+        rule_boundaries_result,
+        lesser_values,
+        greater_values,
+        covered_values,
+        x_cal,
+        perturbed_threshold,
+        perturbed_bins,
+        perturbed_x,
+        perturbed_class,
+    )
 
 
 def assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
@@ -577,7 +868,12 @@ def feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
 
 
 __all__ = [
+    "ExplainPredictStepResult",
     "FeatureTaskResult",
     "assign_weight_scalar",
+    "discretize",
+    "explain_predict_step",
     "feature_task",
+    "initialize_explanation",
+    "rule_boundaries",
 ]

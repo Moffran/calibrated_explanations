@@ -72,28 +72,40 @@ def test_build_plot_style_chain_inserts_before_legacy(monkeypatch):
 
 
 def test_slice_threshold_branches_exercised():
+    """Test threshold slicing behavior through explain helpers (Phase 5).
+    
+    Phase 5 consolidation: Tests should call explain module functions directly.
+    """
+    from calibrated_explanations.core.explain._helpers import slice_threshold
+
     sentinel = object()
-    assert CalibratedExplainer._slice_threshold(sentinel, 0, 1, 1) is sentinel
+    assert slice_threshold(sentinel, 0, 1, 1) is sentinel
 
     mismatched = [0.1, 0.2]
-    assert CalibratedExplainer._slice_threshold(mismatched, 0, 1, 3) is mismatched
+    assert slice_threshold(mismatched, 0, 1, 3) is mismatched
 
     data = [1, 2, 3, 4]
-    assert CalibratedExplainer._slice_threshold(data, 1, 3, len(data)) == [2, 3]
+    assert slice_threshold(data, 1, 3, len(data)) == [2, 3]
 
     array = np.arange(5)
-    result = CalibratedExplainer._slice_threshold(array, 1, 4, len(array))
+    result = slice_threshold(array, 1, 4, len(array))
     assert np.all(result == np.array([1, 2, 3]))
 
 
 def test_slice_bins_handles_collections():
-    assert CalibratedExplainer._slice_bins(None, 0, 1) is None
+    """Test bins slicing behavior through explain helpers (Phase 5).
+    
+    Phase 5 consolidation: Tests should call explain module functions directly.
+    """
+    from calibrated_explanations.core.explain._helpers import slice_bins
+
+    assert slice_bins(None, 0, 1) is None
 
     bins = ["a", "b", "c"]
-    assert CalibratedExplainer._slice_bins(bins, 1, 3) == ["b", "c"]
+    assert slice_bins(bins, 1, 3) == ["b", "c"]
 
     array_bins = np.array([[1, 2], [3, 4], [5, 6]])
-    sliced = CalibratedExplainer._slice_bins(array_bins, 0, 2)
+    sliced = slice_bins(array_bins, 0, 2)
     assert np.all(sliced == array_bins[:2])
 
 

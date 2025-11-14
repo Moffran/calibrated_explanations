@@ -353,6 +353,128 @@ class ExplanationOrchestrator:
 
         raise ConfigurationError("Explanation plugin returned a batch that cannot be materialised")
 
+    def invoke_factual(  # pylint: disable=invalid-name
+        self,
+        x: Any,  # pylint: disable=invalid-name
+        threshold: Any,
+        low_high_percentiles: Tuple[float, float] | None,
+        bins: Any,
+        features_to_ignore: Any,
+        discretizer: str | None = None,
+        _use_plugin: bool = True,
+    ) -> Any:
+        """Execute factual explanation with automatic discretizer setting (Phase 5).
+
+        This is a convenience delegator that sets up the appropriate discretizer
+        before invoking the explain pipeline.
+
+        Parameters
+        ----------
+        x : array-like
+            Test instances to explain.
+        threshold : Any
+            Threshold parameter for probabilistic explanations.
+        low_high_percentiles : tuple or None
+            Low and high percentiles for intervals.
+        bins : array-like or None
+            Mondrian categories.
+        features_to_ignore : sequence or None
+            Feature indices to exclude.
+        discretizer : str or None
+            Discretizer type to set (e.g., "binaryEntropy" for classification).
+        _use_plugin : bool, default=True
+            Whether to use the plugin system.
+
+        Returns
+        -------
+        CalibratedExplanations
+            Factual explanations.
+        """
+        if discretizer is not None:
+            self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
+        
+        # When _use_plugin=False, bypass plugin system and use legacy path directly
+        if not _use_plugin:
+            from ._legacy_explain import explain as legacy_explain  # pylint: disable=import-outside-toplevel
+            return legacy_explain(
+                self.explainer,
+                x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                bins=bins,
+                features_to_ignore=features_to_ignore,
+            )
+        
+        return self.invoke(
+            mode="factual",
+            x=x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins,
+            features_to_ignore=features_to_ignore,
+        )
+
+    def invoke_alternative(  # pylint: disable=invalid-name
+        self,
+        x: Any,  # pylint: disable=invalid-name
+        threshold: Any,
+        low_high_percentiles: Tuple[float, float] | None,
+        bins: Any,
+        features_to_ignore: Any,
+        discretizer: str | None = None,
+        _use_plugin: bool = True,
+    ) -> Any:
+        """Execute alternative explanation with automatic discretizer setting (Phase 5).
+
+        This is a convenience delegator that sets up the appropriate discretizer
+        before invoking the explain pipeline.
+
+        Parameters
+        ----------
+        x : array-like
+            Test instances to explain.
+        threshold : Any
+            Threshold parameter for probabilistic explanations.
+        low_high_percentiles : tuple or None
+            Low and high percentiles for intervals.
+        bins : array-like or None
+            Mondrian categories.
+        features_to_ignore : sequence or None
+            Feature indices to exclude.
+        discretizer : str or None
+            Discretizer type to set (e.g., "entropy" for classification).
+        _use_plugin : bool, default=True
+            Whether to use the plugin system.
+
+        Returns
+        -------
+        AlternativeExplanations
+            Alternative explanations.
+        """
+        if discretizer is not None:
+            self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
+        
+        # When _use_plugin=False, bypass plugin system and use legacy path directly
+        if not _use_plugin:
+            from ._legacy_explain import explain as legacy_explain  # pylint: disable=import-outside-toplevel
+            return legacy_explain(
+                self.explainer,
+                x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                bins=bins,
+                features_to_ignore=features_to_ignore,
+            )
+        
+        return self.invoke(
+            mode="alternative",
+            x=x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            bins=bins,
+            features_to_ignore=features_to_ignore,
+        )
+
     def _ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Return the plugin instance for *mode*, initialising on demand.
 

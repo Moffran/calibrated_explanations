@@ -14,7 +14,8 @@ import numpy as np
 
 from ...explanations import CalibratedExplanations
 from ._base import BaseExplainPlugin
-from ._helpers import explain_predict_step, initialize_explanation, merge_feature_result
+from ._computation import explain_predict_step
+from ._helpers import initialize_explanation, merge_feature_result
 from ._shared import (
     ExplainConfig,
     ExplainRequest,

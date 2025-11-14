@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 from calibrated_explanations.core import prediction_helpers as ph
+from calibrated_explanations.core.explain._computation import explain_predict_step
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import DataShapeError, ValidationError
 
@@ -31,7 +32,7 @@ def test_prediction_helpers_round_trip():
     # Need a discretizer assigned prior to predict step
     explainer.set_discretizer("binaryEntropy")
     # Predict step returns tuple; sanity check shape length invariants
-    predict, low, high, prediction, *_rest = ph.explain_predict_step(
+    predict, low, high, prediction, *_rest = explain_predict_step(
         explainer, x_valid, None, (5, 95), None, features_to_ignore=[]
     )
     # The internal predict step includes perturbed instances, so length should be >= original
@@ -73,6 +74,7 @@ class _StubExplainer:
         )
         self.assign_threshold_calls: list = []
         self.predict_calls: list = []
+        self.discretizer = None  # Required by explain_predict_step
 
     def _build_interval_learner(self):
         class _Learner:
@@ -288,7 +290,7 @@ def test_explain_predict_step_collects_probability_matrix():
     explainer = _StubExplainer(multiclass=False, fast=False)
     input_x = np.ones((2, explainer.num_features))
 
-    outputs = ph.explain_predict_step(
+    outputs = explain_predict_step(
         explainer,
         input_x,
         threshold=0.5,
@@ -312,7 +314,7 @@ def test_explain_predict_step_multiclass_fast_uses_indexed_interval_learner():
     explainer = _StubExplainer(multiclass=True, fast=True)
     input_x = np.ones((1, explainer.num_features))
 
-    ph.explain_predict_step(
+    explain_predict_step(
         explainer,
         input_x,
         threshold=None,
@@ -331,7 +333,7 @@ def test_explain_predict_step_fast_binary_uses_indexed_interval_learner():
     explainer = _StubExplainer(multiclass=False, fast=True)
     input_x = np.ones((1, explainer.num_features))
 
-    ph.explain_predict_step(
+    explain_predict_step(
         explainer,
         input_x,
         threshold=None,

@@ -429,6 +429,9 @@ Extract tests from `tests/unit/core/` into `tests/unit/core/prediction/`.
 
 **Current state:** The `explain/` subpackage exists but logic is scattered across `calibrated_explainer.py`.
 
+**Legacy preservation:**
+The legacy explain (the code that is executed when use_plugin=False) must be preserved and should be possible to call from the `ExplanationOrchestrator`. This will ensure that the legacy code is preserved and can be used as a fallback or for comparison purposes.
+
 **Target structure:**
 
 ```
@@ -444,6 +447,7 @@ core/explain/
   _computation.py
   _helpers.py
   _shared.py
+  _legacy_explain.py    # Legacy explain logic
 ```
 
 **Methods to move:**
