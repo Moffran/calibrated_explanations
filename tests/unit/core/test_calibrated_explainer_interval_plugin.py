@@ -80,8 +80,12 @@ def test_resolve_interval_plugin_fast_mode_enforces_metadata(monkeypatch):
         "find_interval_descriptor",
         lambda identifier: descriptor if identifier == "fast-plugin" else None,
     )
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
 
     with pytest.raises(ConfigurationError, match="not marked fast_compatible"):
         explainer._resolve_interval_plugin(fast=True)
@@ -115,7 +119,9 @@ def test_resolve_interval_plugin_accumulates_errors(monkeypatch):
         return descriptor_map.get(identifier)
 
     monkeypatch.setattr(prediction_orchestrator_module, "find_interval_descriptor", fake_descriptor)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
 
     def fake_find_trusted(identifier):
         if identifier in ("hinted", "second"):

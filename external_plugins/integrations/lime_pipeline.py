@@ -13,17 +13,17 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
+from calibrated_explanations.core.exceptions import (
+    ConfigurationError,
+    DataShapeError,
+    ValidationError,
+)
+from calibrated_explanations.explanations import CalibratedExplanations
+from calibrated_explanations.integrations.lime import LimeHelper
 from calibrated_explanations.utils.helper import (
     assert_threshold,
     safe_isinstance,
 )
-from calibrated_explanations.core.exceptions import (
-    ValidationError,
-    DataShapeError,
-    ConfigurationError,
-)
-from calibrated_explanations.explanations import CalibratedExplanations
-from calibrated_explanations.integrations.lime import LimeHelper
 
 if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
@@ -277,9 +277,7 @@ class LimePipeline:
                 res_struct["low"]["values"][feat_info[0]] = feat_info[1]
 
             for j, feat_info in enumerate(high_explanation.local_exp[1]):
-                res_struct["high"]["abs_rank"][feat_info[0]] = (
-                    high_explanation.local_exp[1][j][0]
-                )
+                res_struct["high"]["abs_rank"][feat_info[0]] = high_explanation.local_exp[1][j][0]
                 res_struct["high"]["values"][feat_info[0]] = feat_info[1]
 
             # Aggregate feature importances into weights

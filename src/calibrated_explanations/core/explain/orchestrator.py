@@ -16,8 +16,6 @@ import copy
 import os
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
-from ..config_helpers import coerce_string_tuple, split_csv
-from ..exceptions import ConfigurationError
 from ...plugins import ExplanationContext, ExplanationRequest, validate_explanation_batch
 from ...plugins.predict_monitor import PredictBridgeMonitor
 from ...plugins.registry import (
@@ -28,7 +26,8 @@ from ...plugins.registry import (
     is_identifier_denied,
 )
 from ...utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
-
+from ..config_helpers import coerce_string_tuple, split_csv
+from ..exceptions import ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -96,16 +95,14 @@ class ExplanationOrchestrator:
         # which is copied into each explainer instance
         for mode in ("factual", "alternative", "fast"):
             default_id = self.explainer._default_explanation_identifiers.get(mode, "")
-            self.explainer._explanation_plugin_fallbacks[mode] = (
-                self._build_explanation_chain(mode, default_id)
+            self.explainer._explanation_plugin_fallbacks[mode] = self._build_explanation_chain(
+                mode, default_id
             )
 
         # Build plot style fallback chain
         self.explainer._plot_plugin_fallbacks["default"] = self._build_plot_chain()
 
-    def _build_explanation_chain(
-        self, mode: str, default_identifier: str
-    ) -> Tuple[str, ...]:
+    def _build_explanation_chain(self, mode: str, default_identifier: str) -> Tuple[str, ...]:
         """Build the ordered explanation plugin fallback chain for a mode.
 
         Parameters
@@ -449,7 +446,7 @@ class ExplanationOrchestrator:
         if not chain and mode == "fast":
             msg = (
                 "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                'Install the external plugins extra with '
+                "Install the external plugins extra with "
                 '``pip install "calibrated-explanations[external-plugins]"`` '
                 "and call ``external_plugins.fast_explanations.register()`` or rerun "
                 "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
@@ -458,9 +455,7 @@ class ExplanationOrchestrator:
 
         errors: List[str] = []
         for identifier in chain:
-            is_preferred = (
-                preferred_identifier is not None and identifier == preferred_identifier
-            )
+            is_preferred = preferred_identifier is not None and identifier == preferred_identifier
             if is_identifier_denied(identifier):
                 message = f"{identifier}: denied via CE_DENY_PLUGIN"
                 if is_preferred:
@@ -522,7 +517,7 @@ class ExplanationOrchestrator:
         if mode == "fast" and "core.explanation.fast" in chain:
             msg = (
                 "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                'Install the external plugins extra with '
+                "Install the external plugins extra with "
                 '``pip install "calibrated-explanations[external-plugins]"`` '
                 "and call ``external_plugins.fast_explanations.register()`` or rerun "
                 "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
@@ -640,7 +635,10 @@ class ExplanationOrchestrator:
                 return prototype
 
     def _build_context(
-        self, mode: str, plugin: Any, identifier: str | None  # pylint: disable=unused-argument
+        self,
+        mode: str,
+        plugin: Any,
+        identifier: str | None,  # pylint: disable=unused-argument
     ) -> ExplanationContext:
         """Construct the immutable context passed to explanation plugins.
 
@@ -690,7 +688,9 @@ class ExplanationOrchestrator:
         return context
 
     def _derive_plot_chain(  # pylint: disable=invalid-name
-        self, mode: str, identifier: str | None  # pylint: disable=unused-argument
+        self,
+        mode: str,
+        identifier: str | None,  # pylint: disable=unused-argument
     ) -> Tuple[str, ...]:
         """Return plot fallback chain seeded by plugin metadata.
 

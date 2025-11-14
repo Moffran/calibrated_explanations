@@ -14,14 +14,11 @@ conformal predictive systems (regression).
 from __future__ import annotations
 
 import warnings as _warnings
-import os
-from pathlib import Path
 from collections import Counter
 from time import time
 
 import numpy as np
-import contextlib
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 try:
     import tomllib as _tomllib
@@ -47,11 +44,9 @@ from ..utils.discretizers import (
     RegressorDiscretizer,
 )
 from ..utils.helper import (
-    assert_threshold,
     check_is_fitted,
     convert_targets_to_numeric,
     immutable_array,
-    safe_mean,
     safe_isinstance,
 )
 from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
@@ -61,10 +56,8 @@ from ..plugins import (
 )
 from ..plugins.builtins import LegacyPredictBridge
 from ..plugins.registry import (
-    EXPLANATION_PROTOCOL_VERSION,
     ensure_builtin_plugins,
 )
-from ..plugins.predict import PredictBridge
 
 from .exceptions import (
     ValidationError,
@@ -72,11 +65,10 @@ from .exceptions import (
     ConfigurationError,
     NotFittedError,
 )
-from .explain._helpers import compute_feature_effects, compute_weight_delta
+from .explain._helpers import compute_weight_delta
 from .explain.orchestrator import ExplanationOrchestrator
-from .explain.feature_task import _feature_task as _execute_feature_task
 from .config_helpers import read_pyproject_section
-from ..plugins.predict_monitor import PredictBridgeMonitor
+from ..plugins.manager import PluginManager
 
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
 
@@ -266,44 +258,43 @@ class CalibratedExplainer:
         self.interval_learner: Any = None
         self._perf_cache: CalibratorCache[Any] | None = perf_cache
         self._perf_parallel: ParallelExecutor | None = perf_parallel
+
+        # Initialize plugin manager (Phase 3: Delegate Plugin Management)
+        self._plugin_manager = PluginManager(self)
+        self._plugin_manager.initialize_from_kwargs(kwargs)
+
+        # Cache pyproject.toml plugin configurations for orchestrator access
         self._pyproject_explanations = read_pyproject_section(
             ("tool", "calibrated_explanations", "explanations")
         )
         self._pyproject_intervals = read_pyproject_section(
             ("tool", "calibrated_explanations", "intervals")
         )
-        self._pyproject_plots = read_pyproject_section(
-            ("tool", "calibrated_explanations", "plots")
-        )
-        self._explanation_plugin_overrides: Dict[str, Any] = {
-            mode: kwargs.get(f"{mode}_plugin") for mode in _EXPLANATION_MODES
-        }
-        self._interval_plugin_override = kwargs.get("interval_plugin")
-        self._fast_interval_plugin_override = kwargs.get("fast_interval_plugin")
-        self._plot_style_override = kwargs.get("plot_style")
-        self._bridge_monitors: Dict[str, PredictBridgeMonitor] = {}
-        self._explanation_plugin_instances: Dict[str, Any] = {}
-        self._explanation_plugin_identifiers: Dict[str, str] = {}
-        self._explanation_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
-        self._plot_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
-        self._interval_plugin_hints: Dict[str, Tuple[str, ...]] = {}
-        self._interval_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
-        self._interval_plugin_identifiers: Dict[str, str | None] = {
-            "default": None,
-            "fast": None,
-        }
-        self._telemetry_interval_sources: Dict[str, str | None] = {
-            "default": None,
-            "fast": None,
-        }
-        self._interval_preferred_identifier: Dict[str, str | None] = {
-            "default": None,
-            "fast": None,
-        }
-        self._interval_context_metadata: Dict[str, Dict[str, Any]] = {
-            "default": {},
-            "fast": {},
-        }
+        self._pyproject_plots = read_pyproject_section(("tool", "calibrated_explanations", "plots"))
+
+        # Delegate plugin state to manager (backward compatibility)
+        # Plugin override configuration
+        self._explanation_plugin_overrides = self._plugin_manager._explanation_plugin_overrides
+        self._interval_plugin_override = self._plugin_manager._interval_plugin_override
+        self._fast_interval_plugin_override = self._plugin_manager._fast_interval_plugin_override
+        self._plot_style_override = self._plugin_manager._plot_style_override
+
+        # Plugin instance caching
+        self._bridge_monitors = self._plugin_manager._bridge_monitors
+        self._explanation_plugin_instances = self._plugin_manager._explanation_plugin_instances
+        self._explanation_plugin_identifiers = self._plugin_manager._explanation_plugin_identifiers
+
+        # Fallback chains for plugin resolution
+        self._explanation_plugin_fallbacks = self._plugin_manager._explanation_plugin_fallbacks
+        self._plot_plugin_fallbacks = self._plugin_manager._plot_plugin_fallbacks
+        self._interval_plugin_hints = self._plugin_manager._interval_plugin_hints
+        self._interval_plugin_fallbacks = self._plugin_manager._interval_plugin_fallbacks
+
+        # Interval plugin state
+        self._interval_plugin_identifiers = self._plugin_manager._interval_plugin_identifiers
+        self._telemetry_interval_sources = self._plugin_manager._telemetry_interval_sources
+        self._interval_preferred_identifier = self._plugin_manager._interval_preferred_identifier
+        self._interval_context_metadata = self._plugin_manager._interval_context_metadata
         self._plot_style_chain: Tuple[str, ...] | None = None
         self._explanation_contexts: Dict[str, ExplanationContext] = {}
         self._last_explanation_mode: str | None = None
@@ -321,6 +312,7 @@ class CalibratedExplainer:
         # The orchestrators will build and populate the fallback chains.
         self._explanation_orchestrator = ExplanationOrchestrator(self)
         from .prediction.orchestrator import PredictionOrchestrator
+
         self._prediction_orchestrator = PredictionOrchestrator(self)
 
         # Build explanation and plot fallback chains via orchestrator
@@ -331,8 +323,8 @@ class CalibratedExplainer:
 
         # Populate the plot_style_chain from the explanation orchestrator's work
         # (Note: plot chains are now managed by ExplanationOrchestrator.initialize_chains())
-        self._plot_style_chain = self._explanation_orchestrator.explainer._plot_plugin_fallbacks.get(
-            "default"
+        self._plot_style_chain = (
+            self._explanation_orchestrator.explainer._plot_plugin_fallbacks.get("default")
         )
 
         # Initialize interval runtime state via orchestrator
@@ -346,13 +338,20 @@ class CalibratedExplainer:
             self.initialize_reject_learner() if kwargs.get("reject", False) else None
         )
 
-
         self._predict_bridge = LegacyPredictBridge(self)
 
         self.init_time = time() - init_time
 
     def _coerce_plugin_override(self, override: Any) -> Any:
-        """Normalise a plugin override into an instance when possible."""
+        """Normalise a plugin override into an instance when possible.
+
+        Delegates to PluginManager (Phase 3: plugin management delegation).
+        """
+        # Handle case where PluginManager is not initialized (e.g., in tests)
+        if hasattr(self, "_plugin_manager") and self._plugin_manager is not None:
+            return self._plugin_manager.coerce_plugin_override(override)
+
+        # Fallback for direct coercion (for backward compatibility in tests)
         if override is None:
             return None
         if isinstance(override, str):
@@ -371,9 +370,10 @@ class CalibratedExplainer:
         """Infer the explanation mode from runtime state."""
         # Check discretizer type to infer mode
         discretizer = self.discretizer if hasattr(self, "discretizer") else None
-        if discretizer is not None:
-            if isinstance(discretizer, (EntropyDiscretizer, RegressorDiscretizer)):
-                return "alternative"
+        if discretizer is not None and isinstance(
+            discretizer, (EntropyDiscretizer, RegressorDiscretizer)
+        ):
+            return "alternative"
         # All other discretizers (Binary*, or None) indicate factual
         return "factual"
 
@@ -475,9 +475,7 @@ class CalibratedExplainer:
         metadata: Mapping[str, Any],
     ) -> IntervalCalibratorContext:
         """Delegate to PredictionOrchestrator."""
-        return self._prediction_orchestrator._build_interval_context(
-            fast=fast, metadata=metadata
-        )
+        return self._prediction_orchestrator._build_interval_context(fast=fast, metadata=metadata)
 
     def _obtain_interval_calibrator(
         self,
@@ -2200,7 +2198,7 @@ class CalibratedExplainer:
 
     def _is_lime_enabled(self, is_enabled=None) -> bool:
         """Return whether LIME export is enabled.
-        
+
         .. deprecated:: 0.10.0
             Access LIME state through LimePipeline instead.
         """
@@ -2208,12 +2206,13 @@ class CalibratedExplainer:
         if not hasattr(self, "_lime_pipeline"):
             # pylint: disable-next=import-outside-toplevel
             from external_plugins.integrations.lime_pipeline import LimePipeline
+
             self._lime_pipeline = LimePipeline(self)
         return self._lime_pipeline._is_lime_enabled(is_enabled)
 
     def _is_shap_enabled(self, is_enabled=None) -> bool:
         """Return whether SHAP export is enabled.
-        
+
         .. deprecated:: 0.10.0
             Access SHAP state through ShapPipeline instead.
         """
@@ -2221,12 +2220,13 @@ class CalibratedExplainer:
         if not hasattr(self, "_shap_pipeline"):
             # pylint: disable-next=import-outside-toplevel
             from external_plugins.integrations.shap_pipeline import ShapPipeline
+
             self._shap_pipeline = ShapPipeline(self)
         return self._shap_pipeline._is_shap_enabled(is_enabled)
 
     def _preload_lime(self, x_cal=None):
         """Materialize LIME explainer artifacts when the dependency is available.
-        
+
         .. deprecated:: 0.10.0
             Use LimePipeline._preload_lime instead.
         """
@@ -2234,12 +2234,13 @@ class CalibratedExplainer:
         if not hasattr(self, "_lime_pipeline"):
             # pylint: disable-next=import-outside-toplevel
             from external_plugins.integrations.lime_pipeline import LimePipeline
+
             self._lime_pipeline = LimePipeline(self)
         return self._lime_pipeline._preload_lime(x_cal=x_cal)
 
     def _preload_shap(self, num_test=None):
         """Eagerly compute SHAP explanations to amortize repeated requests.
-        
+
         .. deprecated:: 0.10.0
             Use ShapPipeline._preload_shap instead.
         """
@@ -2247,6 +2248,7 @@ class CalibratedExplainer:
         if not hasattr(self, "_shap_pipeline"):
             # pylint: disable-next=import-outside-toplevel
             from external_plugins.integrations.shap_pipeline import ShapPipeline
+
             self._shap_pipeline = ShapPipeline(self)
         return self._shap_pipeline._preload_shap(num_test=num_test)
 

@@ -96,9 +96,15 @@ def test_resolve_interval_plugin_collects_errors_before_success(monkeypatch):
     def fake_find_descriptor(identifier: str):
         return descriptors.get(identifier)
 
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_descriptor", fake_find_descriptor)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_descriptor", fake_find_descriptor
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
 
     plugin, identifier = explainer._resolve_interval_plugin(
         fast=False,
@@ -114,9 +120,15 @@ def test_resolve_interval_plugin_reports_aggregated_errors(monkeypatch):
     explainer = _make_explainer()
     explainer._interval_plugin_fallbacks["default"] = ("missing", "absent")
 
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_descriptor", lambda identifier: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_descriptor", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
 
     with pytest.raises(ConfigurationError) as excinfo:
         explainer._resolve_interval_plugin(fast=False)
@@ -160,9 +172,15 @@ def test_resolve_interval_plugin_fast_mode_requires_flag(monkeypatch):
     def fake_find_descriptor(identifier: str):
         return descriptors.get(identifier)
 
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_descriptor", fake_find_descriptor)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_descriptor", fake_find_descriptor
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
 
     plugin, identifier = explainer._resolve_interval_plugin(fast=True)
 
@@ -176,9 +194,15 @@ def test_resolve_interval_plugin_override_string_failure(monkeypatch):
     explainer._interval_plugin_override = "preferred.interval"
     explainer._interval_plugin_fallbacks["default"] = ("preferred.interval",)
 
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_descriptor", lambda identifier: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_descriptor", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
 
     with pytest.raises(ConfigurationError) as excinfo:
         explainer._resolve_interval_plugin(fast=False)
@@ -211,8 +235,12 @@ def test_resolve_interval_plugin_aggregates_metadata_errors(monkeypatch):
         "find_interval_descriptor",
         lambda identifier: descriptor if identifier == "needs-bins" else None,
     )
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
 
     with pytest.raises(ConfigurationError) as excinfo:
         explainer._resolve_interval_plugin(fast=False)

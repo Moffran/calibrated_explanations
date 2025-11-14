@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import sys
 import types
 
 import numpy as np
 import pytest
 
-from calibrated_explanations.core import calibrated_explainer as explainer_module
 from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
@@ -131,6 +129,7 @@ def test_build_explanation_chain_merges_overrides(monkeypatch):
 
     # Patch in the explain orchestrator module where the function is directly imported
     from calibrated_explanations.core.explain import orchestrator as explain_orchestrator_module
+
     monkeypatch.setattr(
         explain_orchestrator_module,
         "find_explanation_descriptor",
@@ -374,6 +373,7 @@ def test_instantiate_plugin_handles_multiple_paths(monkeypatch):
     sentinel = object()
     # Patch copy.deepcopy in the orchestrator module where it's imported
     from calibrated_explanations.core.explain import orchestrator as explain_orch
+
     monkeypatch.setattr(explain_orch.copy, "deepcopy", lambda value: sentinel)
     assert explainer._instantiate_plugin(broken) is sentinel
 
@@ -445,7 +445,9 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch):
         "find_interval_descriptor",
         lambda identifier: descriptor if identifier == "ok.plugin" else None,
     )
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
     monkeypatch.setattr(
         prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
     )

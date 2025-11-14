@@ -108,9 +108,7 @@ def test_check_explanation_runtime_metadata_various():
     # missing tasks
     good_schema = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
     meta_missing_tasks = dict(good_schema)
-    msg = orch._check_metadata(
-        meta_missing_tasks, identifier="id", mode="factual"
-    )
+    msg = orch._check_metadata(meta_missing_tasks, identifier="id", mode="factual")
     assert "missing tasks declaration" in msg
 
     # tasks incompatible
@@ -151,10 +149,7 @@ def test_check_explanation_runtime_metadata_various():
             "task:classification",
         ],
     }
-    assert (
-        orch._check_metadata(meta_valid, identifier="id", mode="factual")
-        is None
-    )
+    assert orch._check_metadata(meta_valid, identifier="id", mode="factual") is None
 
 
 def test_slice_threshold_and_bins():

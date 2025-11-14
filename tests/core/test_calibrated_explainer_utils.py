@@ -146,6 +146,7 @@ def test_build_explanation_chain_resolves_sources(monkeypatch):
 
     # Patch in the orchestrator module where the function is directly imported
     from calibrated_explanations.core.explain import orchestrator as explain_orch
+
     monkeypatch.setattr(explain_orch, "find_explanation_descriptor", fake_find_descriptor)
 
     chain = explainer._build_explanation_chain("factual")
@@ -188,6 +189,7 @@ def test_build_interval_chain_tracks_preferred_identifier(monkeypatch):
 
     # Patch the orchestrator module where find_interval_descriptor is used
     from calibrated_explanations.core.prediction import orchestrator as pred_orch
+
     monkeypatch.setattr(
         pred_orch,
         "find_interval_descriptor",

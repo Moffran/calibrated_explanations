@@ -231,10 +231,10 @@ def test_oob_predictions_regression_length_mismatch(monkeypatch: pytest.MonkeyPa
 
 def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that explanation chain includes all fallbacks from metadata descriptors.
-    
+
     This test verifies that the orchestrator correctly builds explanation chains
     by including fallbacks from plugin descriptors, sources, and pyproject configs.
-    
+
     NOTE: This test has been refactored from directly calling _build_explanation_chain()
     to verify the behavior through the orchestrator initialization that happens when
     the explainer is created via _make_explainer().
@@ -242,7 +242,7 @@ def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPa
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    
+
     # Set up all configuration BEFORE creating explainer so orchestrator picks it up
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "env.plugin")
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", "env.fb1, env.fb2")
@@ -263,6 +263,7 @@ def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPa
     }
     # Patch in the registry where the orchestrator imports it from
     from calibrated_explanations.plugins import registry
+
     monkeypatch.setattr(
         registry,
         "find_explanation_descriptor",
@@ -270,6 +271,7 @@ def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPa
     )
     # Also patch in the orchestrator module's direct import
     from calibrated_explanations.core.explain import orchestrator
+
     monkeypatch.setattr(
         orchestrator,
         "find_explanation_descriptor",
@@ -277,6 +279,7 @@ def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPa
     )
     # Also patch in the prediction orchestrator
     from calibrated_explanations.core.prediction import orchestrator as pred_orch
+
     monkeypatch.setattr(
         pred_orch,
         "find_interval_descriptor",
@@ -295,6 +298,7 @@ def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPa
 
     # Reinitialize orchestrator to rebuild chain with new configuration
     from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+
     explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
     explainer._explanation_orchestrator.initialize_chains()
 
@@ -657,10 +661,10 @@ def test_coerce_override_callable_raises(monkeypatch: pytest.MonkeyPatch) -> Non
 
 def test_build_plot_style_chain_respects_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that plot style chain respects all override sources.
-    
+
     This test verifies that the orchestrator correctly builds the plot style chain
     by respecting overrides, environment variables, and pyproject configs.
-    
+
     NOTE: This test has been refactored from directly calling _build_plot_style_chain()
     to verify the behavior through the orchestrator initialization that happens when
     the explainer is created via _make_explainer() and then reinitialized.
@@ -668,11 +672,11 @@ def test_build_plot_style_chain_respects_overrides(monkeypatch: pytest.MonkeyPat
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    
+
     # Set up environment BEFORE creating explainer
     monkeypatch.setenv("CE_PLOT_STYLE", "env-style")
     monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "env.fb1,env.fb2")
-    
+
     # Create explainer
     explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
 
@@ -682,6 +686,7 @@ def test_build_plot_style_chain_respects_overrides(monkeypatch: pytest.MonkeyPat
 
     # Reinitialize explanation orchestrator to rebuild plot chain with new configuration
     from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+
     explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
     explainer._explanation_orchestrator.initialize_chains()
 

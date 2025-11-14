@@ -4,7 +4,6 @@ import types
 
 import pytest
 
-from calibrated_explanations.core import calibrated_explainer as explainer_module
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
@@ -61,7 +60,9 @@ def test_resolve_interval_plugin_rejects_non_fast_metadata(monkeypatch):
     descriptor = types.SimpleNamespace(metadata=metadata, plugin=object(), trusted=True)
 
     monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_descriptor", lambda identifier: descriptor)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_descriptor", lambda identifier: descriptor
+    )
 
     with pytest.raises(ConfigurationError) as exc:
         explainer._resolve_interval_plugin(fast=True)
@@ -132,7 +133,9 @@ def test_resolve_interval_plugin_uses_hints_and_instantiates(monkeypatch):
         "find_interval_plugin_trusted",
         lambda identifier: prototype if identifier == "hinted" else None,
     )
-    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
 
     instantiated: list[object] = []
 

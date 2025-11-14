@@ -19,8 +19,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
 
 import numpy as np
 
-from ..config_helpers import coerce_string_tuple, split_csv
-from ..exceptions import ConfigurationError, ValidationError, NotFittedError, DataShapeError
 from ...plugins import IntervalCalibratorContext
 from ...plugins.registry import (
     ensure_builtin_plugins,
@@ -30,6 +28,8 @@ from ...plugins.registry import (
     is_identifier_denied,
 )
 from ...utils.helper import assert_threshold
+from ..config_helpers import coerce_string_tuple, split_csv
+from ..exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -88,9 +88,7 @@ class PredictionOrchestrator:
         self.explainer._interval_plugin_fallbacks["default"] = self._build_interval_chain(
             fast=False
         )
-        self.explainer._interval_plugin_fallbacks["fast"] = self._build_interval_chain(
-            fast=True
-        )
+        self.explainer._interval_plugin_fallbacks["fast"] = self._build_interval_chain(fast=True)
 
     def predict(
         self,
@@ -250,9 +248,9 @@ class PredictionOrchestrator:
         if self.explainer.mode == "classification":
             if self.explainer.is_multiclass():
                 if self.explainer.is_fast():
-                    predict, low, high, new_classes = self.explainer.interval_learner[feature].predict_proba(
-                        x, output_interval=True, classes=classes, bins=bins
-                    )
+                    predict, low, high, new_classes = self.explainer.interval_learner[
+                        feature
+                    ].predict_proba(x, output_interval=True, classes=classes, bins=bins)
                 else:
                     predict, low, high, new_classes = self.explainer.interval_learner.predict_proba(
                         x, output_interval=True, classes=classes, bins=bins
@@ -442,7 +440,9 @@ class PredictionOrchestrator:
 
         capabilities = set(coerce_string_tuple(metadata.get("capabilities")))
         required_cap = (
-            "interval:regression" if "regression" in self.explainer.mode else "interval:classification"
+            "interval:regression"
+            if "regression" in self.explainer.mode
+            else "interval:classification"
         )
         if required_cap not in capabilities:
             declared = ", ".join(sorted(capabilities)) or "<none>"
@@ -464,7 +464,9 @@ class PredictionOrchestrator:
         ensure_builtin_plugins()
 
         raw_override = (
-            self.explainer._fast_interval_plugin_override if fast else self.explainer._interval_plugin_override
+            self.explainer._fast_interval_plugin_override
+            if fast
+            else self.explainer._interval_plugin_override
         )
         override = self.explainer._coerce_plugin_override(raw_override)
         if override is not None and not isinstance(override, str):
@@ -476,7 +478,9 @@ class PredictionOrchestrator:
         else:
             key = "fast" if fast else "default"
             preferred_identifier = self.explainer._interval_preferred_identifier.get(key)
-        chain = list(self.explainer._interval_plugin_fallbacks.get("fast" if fast else "default", ()))
+        chain = list(
+            self.explainer._interval_plugin_fallbacks.get("fast" if fast else "default", ())
+        )
         if hints:
             ordered = []
             seen: set[str] = set()
@@ -555,10 +559,14 @@ class PredictionOrchestrator:
         enriched_metadata.update(metadata)
         enriched_metadata.setdefault("task", self.explainer.mode)
         enriched_metadata.setdefault("mode", self.explainer.mode)
-        enriched_metadata.setdefault("predict_function", getattr(self.explainer, "predict_function", None))
+        enriched_metadata.setdefault(
+            "predict_function", getattr(self.explainer, "predict_function", None)
+        )
         enriched_metadata.setdefault("difficulty_estimator", self.explainer.difficulty_estimator)
         enriched_metadata.setdefault("explainer", self.explainer)
-        enriched_metadata.setdefault("categorical_features", tuple(self.explainer.categorical_features))
+        enriched_metadata.setdefault(
+            "categorical_features", tuple(self.explainer.categorical_features)
+        )
         enriched_metadata.setdefault("num_features", self.explainer.num_features)
         enriched_metadata.setdefault(
             "noise_config",
@@ -595,7 +603,11 @@ class PredictionOrchestrator:
     def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
         """Return the ordered interval plugin chain for the requested mode."""
         entries: List[str] = []
-        override = self.explainer._fast_interval_plugin_override if fast else self.explainer._interval_plugin_override
+        override = (
+            self.explainer._fast_interval_plugin_override
+            if fast
+            else self.explainer._interval_plugin_override
+        )
         preferred_identifier: str | None = None
         if isinstance(override, str) and override:
             entries.append(override)

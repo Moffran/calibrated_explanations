@@ -14,17 +14,17 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
+from calibrated_explanations.core.exceptions import (
+    ConfigurationError,
+    DataShapeError,
+    ValidationError,
+)
+from calibrated_explanations.core.explain._helpers import compute_feature_effects
+from calibrated_explanations.explanations import CalibratedExplanations
 from calibrated_explanations.utils.helper import (
     assert_threshold,
     safe_isinstance,
 )
-from calibrated_explanations.core.exceptions import (
-    ValidationError,
-    DataShapeError,
-    ConfigurationError,
-)
-from calibrated_explanations.explanations import CalibratedExplanations
-from calibrated_explanations.core.explain._helpers import compute_feature_effects
 
 if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
@@ -95,10 +95,7 @@ class FastExplanationPipeline:
             try:
                 self.explainer._CalibratedExplainer__fast = True  # pylint: disable=protected-access
                 # pylint: disable-next=protected-access
-                init_method = (
-                    self.explainer
-                    ._CalibratedExplainer__initialize_interval_learner_for_fast_explainer
-                )
+                init_method = self.explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer
                 init_method()
             except Exception as exc:
                 self.explainer._CalibratedExplainer__fast = False  # pylint: disable=protected-access
@@ -192,9 +189,7 @@ class FastExplanationPipeline:
             "low": low,
             "high": high,
             "classes": (
-                predicted_class
-                if self.explainer.is_multiclass()
-                else np.ones(x_test.shape[0])
+                predicted_class if self.explainer.is_multiclass() else np.ones(x_test.shape[0])
             ),
         }
 
@@ -368,15 +363,11 @@ class FastExplanationPipeline:
                     min_max.append(
                         [
                             self.explainer.discretizer.mins[feature_idx][
-                                np.digitize(
-                                    perturbed_instances[0, feature_idx], bins, right=True
-                                )
+                                np.digitize(perturbed_instances[0, feature_idx], bins, right=True)
                                 - 1
                             ],
                             self.explainer.discretizer.maxs[feature_idx][
-                                np.digitize(
-                                    perturbed_instances[0, feature_idx], bins, right=True
-                                )
+                                np.digitize(perturbed_instances[0, feature_idx], bins, right=True)
                                 - 1
                             ],
                         ]
@@ -409,12 +400,10 @@ class FastExplanationPipeline:
                     min_max.append(
                         [
                             self.explainer.discretizer.mins[feature_idx][
-                                np.digitize(perturbed_instance[feature_idx], bins, right=True)
-                                - 1
+                                np.digitize(perturbed_instance[feature_idx], bins, right=True) - 1
                             ],
                             self.explainer.discretizer.maxs[feature_idx][
-                                np.digitize(perturbed_instance[feature_idx], bins, right=True)
-                                - 1
+                                np.digitize(perturbed_instance[feature_idx], bins, right=True) - 1
                             ],
                         ]
                     )

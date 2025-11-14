@@ -1,19 +1,19 @@
 # CalibratedExplainer Streamlining Plan
 
-**Status:** Phase 1b completed; Phase 2 completed; moved to v0.10.0 development cycle  
-**Current metrics:** Reduced from 3947 to 3590 lines (357 lines removed via Phase 1a+1b)
-**Next step:** Phase 3 (Plugin Management)
-**Goal:** Thin, delegating facade with clear separation of concerns  
+**Status:** Phase 0-2 completed; Phase 3 completed; moved to v0.10.0 development cycle
+**Current metrics:** Reduced from 3947 to 3590 lines (357 lines removed via Phase 1a+1b); Phase 3 extracted PluginManager (~200 lines of state delegation)
+**Next step:** Phase 4 (Prediction Functionality Refactoring)
+**Goal:** Thin, delegating facade with clear separation of concerns
 **ADR Alignment:** ADR-001 (boundary realignment), ADR-004 (parallel execution), ADR-005 (schema/envelope)
 
-**Implementation Policy** 
+**Implementation Policy**
 - Refactor `CalibratedExplainer` into a thin orchestrator delegating to specialized modules.
 - Relocate unrelated helpers and classes to appropriate modules.
 - Refactor explanation logic into an `ExplanationOrchestrator` class.
 - Refactor functional domains (explain, predict, calibrate, plugins) into separate packages with clear contracts.
 - Never keep functionality in calibrated_explainer.py that can logically belong elsewhere.
 - Never keep functionality in calibrated_explaominer.py just because tests are referencing it, change the tests
-- Tests should focus on behaviour, not implementation details. 
+- Tests should focus on behaviour, not implementation details.
 - Always move code incrementally with deprecation notices to maintain backward compatibility over v0.10.0–v0.11.0.
 
 ---
@@ -123,19 +123,19 @@ This class handles explanation workflow: plugin resolution, context building, an
 ```python
 class ExplanationOrchestrator:
     """Orchestrate explanation pipeline execution and plugin coordination."""
-    
+
     def __init__(self, explainer: "CalibratedExplainer", config: ExplanationConfig) -> None:
         """Initialize with back-reference to parent explainer."""
         ...
-    
+
     def resolve_plugin(self, mode: str) -> Tuple[Any, str | None]:
         """Find and instantiate the active explanation plugin."""
         ...
-    
+
     def build_context(self, x: Any, mode: str, ...) -> ExplanationContext:
         """Assemble the context for plugin execution."""
         ...
-    
+
     def invoke(self, x: Any, mode: str, ...) -> CalibratedExplanations:
         """Execute the full explanation pipeline."""
         ...
@@ -576,7 +576,7 @@ Add unit tests in `tests/unit/core/`.
 ```python
 class CalibratedExplainer:
     """Thin orchestrating facade for calibrated explanations and predictions."""
-    
+
     # ===== Lifecycle =====
     def __init__(self, learner, x_cal, y_cal, ...):
         """Initialize with calibration data and configuration."""
@@ -589,157 +589,157 @@ class CalibratedExplainer:
         #    - _plugin_manager = PluginManager(self, ...)
         # 5. Initialize helpers (LIME, SHAP)
         # 6. Mark as fitted
-    
+
     def reinitialize(self, ...):
         """Reinitialize with new learner/calibration data."""
         ...
-    
+
     def __repr__(self):
         """String representation."""
         ...
-    
+
     # ===== Public Prediction API =====
     def predict(self, x, uq_interval=False, calibrated=True, **kwargs):
         """Predict with optional uncertainty quantification."""
         return self._prediction_orchestrator.predict(x, ...)
-    
+
     def predict_proba(self, x, uq_interval=False, calibrated=True, **kwargs):
         """Probabilistic predictions with optional UQ."""
         return self._prediction_orchestrator.predict_proba(x, ...)
-    
+
     def predict_reject(self, x, bins=None, confidence=0.95):
         """Predict with rejection option."""
         ...  # Delegate to rejection module
-    
+
     def predict_calibration(self):
         """Return calibration metrics."""
         ...
-    
+
     def calibrated_confusion_matrix(self):
         """Compute calibrated confusion matrix."""
         ...
-    
+
     # ===== Public Explanation API =====
     def explain_factual(self, x, ...):
         """Explain using factual rules."""
         return self._explanation_orchestrator.invoke(x, mode="factual", ...)
-    
+
     def explain_counterfactual(self, x, ...):
         """Explain using counterfactuals."""
         return self._explanation_orchestrator.invoke(x, mode="alternative", ...)
-    
+
     def explore_alternatives(self, x, ...):
         """Explore alternative scenarios."""
         return self._explanation_orchestrator.invoke(x, mode="alternative", ...)
-    
+
     def explain_fast(self, x, ...):
         """Fast explanations (delegates to external plugin)."""
         from ..external_plugins.fast_explanations import FastExplanationPipeline
         return FastExplanationPipeline(self).explain(x, ...)
-    
+
     def explain_lime(self, x, ...):
         """LIME explanations (delegates to external plugin)."""
         from ..external_plugins.integrations import LimePipeline
         return LimePipeline(self).explain(x, ...)
-    
+
     def explain(self, x, ...):
         """Unified explain interface."""
         return self._explanation_orchestrator.invoke(x, ...)
-    
+
     def __call__(self, x, ...):
         """Shorthand for explain."""
         return self.explain(x, ...)
-    
+
     # ===== Configuration & Setup =====
     def set_seed(self, seed: int):
         """Set random seed."""
         ...
-    
+
     def set_difficulty_estimator(self, estimator, initialize=True):
         """Set difficulty estimator (regression)."""
         ...
-    
+
     def set_discretizer(self, discretizer, ...):
         """Set discretizer for binning."""
         ...
-    
+
     def assign_threshold(self, threshold):
         """Assign classification threshold."""
         ...
-    
+
     def initialize_reject_learner(self, ...):
         """Initialize rejection module."""
         ...
-    
+
     def append_cal(self, x, y):
         """Append calibration data."""
         ...
-    
+
     # ===== State & Introspection =====
     @property
     def x_cal(self):
         """Calibration features."""
         ...
-    
+
     @x_cal.setter
     def x_cal(self, value):
         """Set calibration features."""
         ...
-    
+
     @property
     def y_cal(self):
         """Calibration targets."""
         ...
-    
+
     @y_cal.setter
     def y_cal(self, value):
         """Set calibration targets."""
         ...
-    
+
     @property
     def num_features(self):
         """Number of features."""
         ...
-    
+
     @property
     def feature_names(self):
         """Feature names."""
         ...
-    
+
     @property
     def is_multiclass(self):
         """Is multiclass classification?"""
         ...
-    
+
     @property
     def is_fast(self):
         """Is fast mode enabled?"""
         ...
-    
+
     @property
     def interval_learner(self):
         """Interval calibrator (delegated to prediction orchestrator)."""
         return self._prediction_orchestrator.interval_learner
-    
+
     @interval_learner.setter
     def interval_learner(self, value):
         """Set interval calibrator."""
         self._prediction_orchestrator.interval_learner = value
-    
+
     @property
     def runtime_telemetry(self):
         """Runtime execution telemetry."""
         ...
-    
+
     @property
     def preprocessor_metadata(self):
         """Preprocessor metadata."""
         ...
-    
+
     def set_preprocessor_metadata(self, metadata):
         """Set preprocessor metadata."""
         ...
-    
+
     # ===== Plotting (Thin Delegator) =====
     def plot(self, x, y=None, threshold=None, **kwargs):
         """Plot explanation (delegates to plotting module)."""
@@ -831,7 +831,7 @@ explainer._read_pyproject_section(...)      # → config_helpers
 
 ### Unit Test Reorganization
 
-Current: `tests/unit/core/test_calibrated_explainer.py` (~2000+ lines)  
+Current: `tests/unit/core/test_calibrated_explainer.py` (~2000+ lines)
 Target: Split into focused modules:
 
 ```
@@ -922,6 +922,6 @@ tests/unit/core/
 
 ---
 
-**Last updated:** 2025-11-13  
-**Prepared by:** Copilot  
+**Last updated:** 2025-11-13
+**Prepared by:** Copilot
 **Status:** Ready for review & prioritization
