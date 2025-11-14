@@ -7,10 +7,13 @@ import pytest
 from calibrated_explanations.core import calibrated_explainer as explainer_module
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
+from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
+from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 
 def _make_explainer() -> CalibratedExplainer:
+    """Create a minimal explainer with initialized orchestrators for testing."""
     explainer = CalibratedExplainer.__new__(CalibratedExplainer)
     explainer.mode = "regression"
     explainer.bins = None
@@ -20,6 +23,9 @@ def _make_explainer() -> CalibratedExplainer:
     explainer._interval_plugin_hints = {}
     explainer._interval_preferred_identifier = {"default": None, "fast": None}
     explainer._telemetry_interval_sources = {"default": None, "fast": None}
+    # Initialize orchestrators so tests can call methods that delegate to them
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
     return explainer
 
 
@@ -160,12 +166,7 @@ def test_build_interval_chain_includes_pyproject_entries(monkeypatch):
         )
     }
 
-    monkeypatch.setattr(
-        explainer_module,
-        "find_interval_descriptor",
-        lambda identifier: descriptors.get(identifier),
-    )
-    # Also patch in the prediction orchestrator module
+    # Patch in the prediction orchestrator module where find_interval_descriptor is used
     monkeypatch.setattr(
         prediction_orchestrator_module,
         "find_interval_descriptor",

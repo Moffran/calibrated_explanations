@@ -9,6 +9,7 @@ from calibrated_explanations.core.calibrated_explainer import (
     ConfigurationError,
 )
 from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
+from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
 
 
 class DummyDescriptor:
@@ -21,6 +22,7 @@ class DummyDescriptor:
 
 
 def _make_explainer_stub() -> CalibratedExplainer:
+    """Create minimal explainer with initialized orchestrator for testing."""
     explainer = CalibratedExplainer.__new__(CalibratedExplainer)
     explainer.mode = "regression"
     explainer.bins = None
@@ -32,7 +34,8 @@ def _make_explainer_stub() -> CalibratedExplainer:
     explainer._telemetry_interval_sources = {"default": None, "fast": None}
     explainer._interval_preferred_identifier = {"default": None, "fast": None}
     explainer._interval_context_metadata = {"default": {}, "fast": {}}
-    explainer._instantiate_plugin = lambda plugin: plugin
+    # Initialize orchestrator so tests can call methods that delegate to it
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
     return explainer
 
 

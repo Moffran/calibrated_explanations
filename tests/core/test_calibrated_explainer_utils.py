@@ -18,6 +18,8 @@ from calibrated_explanations.core.config_helpers import (
     read_pyproject_section as _read_pyproject_section,
     split_csv as _split_csv,
 )
+from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
+from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.core.exceptions import ConfigurationError
 
@@ -109,6 +111,9 @@ def _make_explainer_stub() -> CalibratedExplainer:
     explainer._plot_style_override = None
     explainer.mode = "classification"
     explainer.bins = None
+    # Initialize orchestrators so tests can call delegation methods
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
     return explainer
 
 
@@ -139,11 +144,7 @@ def test_build_explanation_chain_resolves_sources(monkeypatch):
         identifier = identifier.strip()
         return descriptor_map.get(identifier)
 
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibrated_explainer.find_explanation_descriptor",
-        fake_find_descriptor,
-    )
-    # Also patch in the orchestrator module where the function is directly imported
+    # Patch in the orchestrator module where the function is directly imported
     from calibrated_explanations.core.explain import orchestrator as explain_orch
     monkeypatch.setattr(explain_orch, "find_explanation_descriptor", fake_find_descriptor)
 
@@ -185,11 +186,7 @@ def test_build_interval_chain_tracks_preferred_identifier(monkeypatch):
         "py.fast": _Descriptor({"fallbacks": ()}),
     }
 
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibrated_explainer.find_interval_descriptor",
-        lambda identifier: descriptor_map.get(identifier.strip()),
-    )
-    # Also patch in the prediction orchestrator module
+    # Patch the orchestrator module where find_interval_descriptor is used
     from calibrated_explanations.core.prediction import orchestrator as pred_orch
     monkeypatch.setattr(
         pred_orch,
@@ -209,10 +206,6 @@ def test_build_interval_chain_tracks_preferred_identifier(monkeypatch):
             return None
         return descriptor_map.get(identifier)
 
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibrated_explainer.find_interval_descriptor",
-        find_with_skip,
-    )
     monkeypatch.setattr(
         pred_orch,
         "find_interval_descriptor",

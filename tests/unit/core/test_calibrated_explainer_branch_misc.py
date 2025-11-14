@@ -9,6 +9,7 @@ import pytest
 
 from calibrated_explanations.core import calibrated_explainer as explainer_module
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.core.exceptions import (
     ConfigurationError,
     DataShapeError,
@@ -40,26 +41,30 @@ def _make_base_explainer() -> CalibratedExplainer:
     explainer.learner = object()
     explainer.difficulty_estimator = None
     explainer.predict_function = lambda x, **_: x  # type: ignore[assignment]
+    # Initialize orchestrator for tests that call its methods
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
     return explainer
 
 
 def test_build_plot_style_chain_adds_defaults(monkeypatch):
+    """Test that plot chain adds default when no overrides present."""
     explainer = _make_base_explainer()
     monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
     monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
 
-    chain = explainer._build_plot_style_chain()
+    chain = explainer._explanation_orchestrator._build_plot_chain()
 
     assert chain == ("plot_spec.default", "legacy")
 
 
 def test_build_plot_style_chain_inserts_before_legacy(monkeypatch):
+    """Test that plot style override is inserted before legacy."""
     explainer = _make_base_explainer()
     explainer._plot_style_override = "legacy"
     monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
     monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
 
-    chain = explainer._build_plot_style_chain()
+    chain = explainer._explanation_orchestrator._build_plot_chain()
 
     assert chain == ("plot_spec.default", "legacy")
 

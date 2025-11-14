@@ -63,12 +63,6 @@ from ..plugins.builtins import LegacyPredictBridge
 from ..plugins.registry import (
     EXPLANATION_PROTOCOL_VERSION,
     ensure_builtin_plugins,
-    find_explanation_descriptor,
-    find_explanation_plugin,
-    find_interval_descriptor,
-    find_interval_plugin,
-    find_interval_plugin_trusted,
-    is_identifier_denied,
 )
 from ..plugins.predict import PredictBridge
 
@@ -81,7 +75,7 @@ from .exceptions import (
 from .explain._helpers import compute_feature_effects, compute_weight_delta
 from .explain.orchestrator import ExplanationOrchestrator
 from .explain.feature_task import _feature_task as _execute_feature_task
-from .config_helpers import read_pyproject_section, split_csv, coerce_string_tuple
+from .config_helpers import read_pyproject_section
 from ..plugins.predict_monitor import PredictBridgeMonitor
 
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
@@ -287,7 +281,7 @@ class CalibratedExplainer:
         self._interval_plugin_override = kwargs.get("interval_plugin")
         self._fast_interval_plugin_override = kwargs.get("fast_interval_plugin")
         self._plot_style_override = kwargs.get("plot_style")
-        self._bridge_monitors: Dict[str, _PredictBridgeMonitor] = {}
+        self._bridge_monitors: Dict[str, PredictBridgeMonitor] = {}
         self._explanation_plugin_instances: Dict[str, Any] = {}
         self._explanation_plugin_identifiers: Dict[str, str] = {}
         self._explanation_plugin_fallbacks: Dict[str, Tuple[str, ...]] = {}
@@ -357,54 +351,6 @@ class CalibratedExplainer:
 
         self.init_time = time() - init_time
 
-    # ------------------------------------------------------------------
-    # Plugin resolution helpers (ADR-015)
-    # ------------------------------------------------------------------
-
-    def _build_explanation_chain(self, mode: str) -> Tuple[str, ...]:
-        """Delegate to ExplanationOrchestrator (Phase 1A).
-
-        Build the ordered explanation plugin fallback chain for the given mode.
-        This is marked for removal in v0.11.0; use orchestrator directly if needed.
-        """
-        if hasattr(self, "_explanation_orchestrator"):
-            # Use orchestrator's method
-            return self._explanation_orchestrator._build_explanation_chain(
-                mode, _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode, "")
-            )
-        # Fallback for tests using __new__()
-        from .explain.orchestrator import ExplanationOrchestrator
-        orch = ExplanationOrchestrator(self)
-        return orch._build_explanation_chain(
-            mode, _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode, "")
-        )
-
-    def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
-        """Delegate to PredictionOrchestrator (Phase 1B).
-
-        Build the ordered interval calibrator plugin fallback chain.
-        This is marked for removal in v0.11.0; use orchestrator directly if needed.
-        """
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._build_interval_chain(fast=fast)
-        # Fallback for tests using __new__()
-        from .prediction.orchestrator import PredictionOrchestrator
-        orch = PredictionOrchestrator(self)
-        return orch._build_interval_chain(fast=fast)
-
-    def _build_plot_style_chain(self) -> Tuple[str, ...]:
-        """Delegate to ExplanationOrchestrator (Phase 1A).
-
-        Build the ordered plot style fallback chain.
-        This is marked for removal in v0.11.0; use orchestrator directly if needed.
-        """
-        if hasattr(self, "_explanation_orchestrator"):
-            return self._explanation_orchestrator._build_plot_chain()
-        # Fallback for tests using __new__()
-        from .explain.orchestrator import ExplanationOrchestrator
-        orch = ExplanationOrchestrator(self)
-        return orch._build_plot_chain()
-
     def _coerce_plugin_override(self, override: Any) -> Any:
         """Normalise a plugin override into an instance when possible."""
         if override is None:
@@ -421,222 +367,6 @@ class CalibratedExplainer:
             return candidate
         return override
 
-    # ===================================================================
-    # Delegation stubs for orchestrator methods (Phase 1a/1b)
-    # ===================================================================
-    # These methods delegate to orchestrators for backward compatibility
-    # with tests and external code that call private methods directly.
-
-    def _ensure_interval_runtime_state(self) -> None:
-        """Delegate to PredictionOrchestrator (Phase 1B)."""
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._ensure_interval_runtime_state()
-        # Fallback for tests that manually create explainer instances
-        storage = self.__dict__
-        if "_interval_plugin_hints" not in storage:
-            storage["_interval_plugin_hints"] = {}
-        if "_interval_plugin_fallbacks" not in storage:
-            storage["_interval_plugin_fallbacks"] = {}
-        if "_interval_plugin_identifiers" not in storage:
-            storage["_interval_plugin_identifiers"] = {"default": None, "fast": None}
-        if "_telemetry_interval_sources" not in storage:
-            storage["_telemetry_interval_sources"] = {"default": None, "fast": None}
-        if "_interval_preferred_identifier" not in storage:
-            storage["_interval_preferred_identifier"] = {"default": None, "fast": None}
-        if "_interval_context_metadata" not in storage:
-            storage["_interval_context_metadata"] = {"default": {}, "fast": {}}
-
-    def _gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
-        """Delegate to PredictionOrchestrator (Phase 1B)."""
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._gather_interval_hints(fast=fast)
-        # Fallback for tests
-        if fast:
-            return self._interval_plugin_hints.get("fast", ())
-        ordered: List[str] = []
-        seen: set[str] = set()
-        for mode in ("factual", "alternative"):
-            for identifier in self._interval_plugin_hints.get(mode, ()):
-                if identifier not in seen:
-                    ordered.append(identifier)
-                    seen.add(identifier)
-        return tuple(ordered)
-
-    def _check_interval_runtime_metadata(
-        self,
-        metadata: Mapping[str, Any] | None,
-        *,
-        identifier: str | None,
-        fast: bool,
-    ) -> str | None:
-        """Delegate to PredictionOrchestrator (Phase 1B)."""
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._check_interval_runtime_metadata(
-                metadata, identifier=identifier, fast=fast
-            )
-        # Fallback for tests
-        prefix = identifier or str((metadata or {}).get("name") or "<anonymous>")
-        if metadata is None:
-            return f"{prefix}: interval metadata unavailable"
-
-        schema_version = metadata.get("schema_version")
-        if schema_version not in (None, 1):
-            return f"{prefix}: unsupported interval schema_version {schema_version}"
-
-        modes = coerce_string_tuple(metadata.get("modes"))
-        if not modes:
-            return f"{prefix}: plugin metadata missing modes declaration"
-        required_mode = "regression" if "regression" in self.mode else "classification"
-        if required_mode not in modes:
-            declared = ", ".join(modes)
-            return f"{prefix}: does not support mode '{required_mode}' (modes: {declared})"
-
-        capabilities = set(coerce_string_tuple(metadata.get("capabilities")))
-        required_cap = (
-            "interval:regression" if "regression" in self.mode else "interval:classification"
-        )
-        if required_cap not in capabilities:
-            declared = ", ".join(sorted(capabilities)) or "<none>"
-            return f"{prefix}: missing capability '{required_cap}' (capabilities: {declared})"
-
-        if fast and not bool(metadata.get("fast_compatible")):
-            return f"{prefix}: not marked fast_compatible"
-        if metadata.get("requires_bins") and self.bins is None:
-            return f"{prefix}: requires bins but explainer has none configured"
-        return None
-
-    def _resolve_interval_plugin(
-        self,
-        *,
-        fast: bool,
-        hints: Sequence[str] = (),
-    ) -> Tuple[Any, str | None]:
-        """Delegate to PredictionOrchestrator (Phase 1B)."""
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._resolve_interval_plugin(fast=fast, hints=hints)
-        # Fallback for tests - delegate to orchestrator initialization
-        from .prediction.orchestrator import PredictionOrchestrator
-        orch = PredictionOrchestrator(self)
-        return orch._resolve_interval_plugin(fast=fast, hints=hints)
-
-    def _build_interval_context(
-        self,
-        *,
-        fast: bool,
-        metadata: Mapping[str, Any],
-    ) -> IntervalCalibratorContext:
-        """Delegate to PredictionOrchestrator (Phase 1B)."""
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._build_interval_context(
-                fast=fast, metadata=metadata
-            )
-        # Fallback for tests
-        from .prediction.orchestrator import PredictionOrchestrator
-        orch = PredictionOrchestrator(self)
-        return orch._build_interval_context(fast=fast, metadata=metadata)
-
-    def _obtain_interval_calibrator(
-        self,
-        *,
-        fast: bool,
-        metadata: Mapping[str, Any],
-    ) -> Tuple[Any, str | None]:
-        """Delegate to PredictionOrchestrator (Phase 1B)."""
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._obtain_interval_calibrator(
-                fast=fast, metadata=metadata
-            )
-        # Fallback for tests
-        from .prediction.orchestrator import PredictionOrchestrator
-        orch = PredictionOrchestrator(self)
-        return orch._obtain_interval_calibrator(fast=fast, metadata=metadata)
-
-    def _check_explanation_runtime_metadata(
-        self,
-        metadata: Mapping[str, Any] | None,
-        *,
-        identifier: str | None,
-        mode: str,
-    ) -> str | None:
-        """Delegate to ExplanationOrchestrator (Phase 1A)."""
-        if hasattr(self, "_explanation_orchestrator"):
-            return self._explanation_orchestrator._check_metadata(
-                metadata, identifier=identifier, mode=mode
-            )
-        # Fallback for tests
-        from .explain.orchestrator import ExplanationOrchestrator
-        orch = ExplanationOrchestrator(self)
-        return orch._check_metadata(
-            metadata, identifier=identifier, mode=mode
-        )
-
-    def _instantiate_plugin(self, prototype: Any) -> Any:
-        """Delegate to ExplanationOrchestrator (Phase 1A)."""
-        if hasattr(self, "_explanation_orchestrator"):
-            return self._explanation_orchestrator._instantiate_plugin(prototype)
-        # Fallback for tests
-        from .explain.orchestrator import ExplanationOrchestrator
-        orch = ExplanationOrchestrator(self)
-        return orch._instantiate_plugin(prototype)
-
-    def _predict_impl(
-        self, x, threshold=None, low_high_percentiles=(5, 95), classes=None, bins=None, **kwargs
-    ):
-        """Delegate to PredictionOrchestrator (Phase 1B)."""
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._predict_impl(
-                x,
-                threshold=threshold,
-                low_high_percentiles=low_high_percentiles,
-                classes=classes,
-                bins=bins,
-                **kwargs,
-            )
-        # Fallback for tests
-        from .prediction.orchestrator import PredictionOrchestrator
-        orch = PredictionOrchestrator(self)
-        return orch._predict_impl(
-            x,
-            threshold=threshold,
-            low_high_percentiles=low_high_percentiles,
-            classes=classes,
-            bins=bins,
-            **kwargs,
-        )
-
-    def _capture_interval_calibrators(
-        self,
-        *,
-        context: IntervalCalibratorContext,
-        calibrator: Any,
-        fast: bool,
-    ) -> None:
-        """Delegate to PredictionOrchestrator (Phase 1B)."""
-        if hasattr(self, "_prediction_orchestrator"):
-            return self._prediction_orchestrator._capture_interval_calibrators(
-                context=context, calibrator=calibrator, fast=fast
-            )
-        # Fallback for tests - simple implementation
-        metadata = context.metadata
-        if not isinstance(metadata, dict):
-            return
-        if fast:
-            if isinstance(calibrator, Sequence) and not isinstance(calibrator, (str, bytes, bytearray)):
-                metadata.setdefault("fast_calibrators", tuple(calibrator))
-            elif calibrator is not None:
-                metadata.setdefault("fast_calibrators", (calibrator,))
-        else:
-            metadata.setdefault("calibrator", calibrator)
-
-    def _build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
-        """Delegate to ExplanationOrchestrator (Phase 1A)."""
-        if hasattr(self, "_explanation_orchestrator"):
-            return self._explanation_orchestrator._build_instance_telemetry_payload(explanations)
-        # Fallback for tests
-        from .explain.orchestrator import ExplanationOrchestrator
-        orch = ExplanationOrchestrator(self)
-        return orch._build_instance_telemetry_payload(explanations)
-
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode from runtime state."""
         # Check discretizer type to infer mode
@@ -646,6 +376,46 @@ class CalibratedExplainer:
                 return "alternative"
         # All other discretizers (Binary*, or None) indicate factual
         return "factual"
+
+    # ===================================================================
+    # Delegation methods for orchestrator operations
+    # ===================================================================
+    # These methods delegate to initialized orchestrators.
+    # Tests that call these directly MUST initialize orchestrators properly.
+
+    def _build_explanation_chain(self, mode: str) -> Tuple[str, ...]:
+        """Delegate to ExplanationOrchestrator."""
+        return self._explanation_orchestrator._build_explanation_chain(
+            mode, _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode, "")
+        )
+
+    def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._build_interval_chain(fast=fast)
+
+    def _build_plot_style_chain(self) -> Tuple[str, ...]:
+        """Delegate to ExplanationOrchestrator."""
+        return self._explanation_orchestrator._build_plot_chain()
+
+    def _check_explanation_runtime_metadata(
+        self,
+        metadata: Mapping[str, Any] | None,
+        *,
+        identifier: str | None,
+        mode: str,
+    ) -> str | None:
+        """Delegate to ExplanationOrchestrator."""
+        return self._explanation_orchestrator._check_metadata(
+            metadata, identifier=identifier, mode=mode
+        )
+
+    def _instantiate_plugin(self, prototype: Any) -> Any:
+        """Delegate to ExplanationOrchestrator."""
+        return self._explanation_orchestrator._instantiate_plugin(prototype)
+
+    def _build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
+        """Delegate to ExplanationOrchestrator."""
+        return self._explanation_orchestrator._build_instance_telemetry_payload(explanations)
 
     def _invoke_explanation_plugin(
         self,
@@ -658,21 +428,8 @@ class CalibratedExplainer:
         *,
         extras: Mapping[str, Any] | None = None,
     ) -> Any:
-        """Delegate to ExplanationOrchestrator (Phase 1A)."""
-        if hasattr(self, "_explanation_orchestrator"):
-            return self._explanation_orchestrator.invoke(
-                mode,
-                x,
-                threshold,
-                low_high_percentiles,
-                bins,
-                features_to_ignore,
-                extras=extras,
-            )
-        # Fallback for tests
-        from .explain.orchestrator import ExplanationOrchestrator
-        orch = ExplanationOrchestrator(self)
-        return orch.invoke(
+        """Delegate to ExplanationOrchestrator."""
+        return self._explanation_orchestrator.invoke(
             mode,
             x,
             threshold,
@@ -680,6 +437,82 @@ class CalibratedExplainer:
             bins,
             features_to_ignore,
             extras=extras,
+        )
+
+    def _ensure_interval_runtime_state(self) -> None:
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._ensure_interval_runtime_state()
+
+    def _gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._gather_interval_hints(fast=fast)
+
+    def _check_interval_runtime_metadata(
+        self,
+        metadata: Mapping[str, Any] | None,
+        *,
+        identifier: str | None,
+        fast: bool,
+    ) -> str | None:
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._check_interval_runtime_metadata(
+            metadata, identifier=identifier, fast=fast
+        )
+
+    def _resolve_interval_plugin(
+        self,
+        *,
+        fast: bool,
+        hints: Sequence[str] = (),
+    ) -> Tuple[Any, str | None]:
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._resolve_interval_plugin(fast=fast, hints=hints)
+
+    def _build_interval_context(
+        self,
+        *,
+        fast: bool,
+        metadata: Mapping[str, Any],
+    ) -> IntervalCalibratorContext:
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._build_interval_context(
+            fast=fast, metadata=metadata
+        )
+
+    def _obtain_interval_calibrator(
+        self,
+        *,
+        fast: bool,
+        metadata: Mapping[str, Any],
+    ) -> Tuple[Any, str | None]:
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._obtain_interval_calibrator(
+            fast=fast, metadata=metadata
+        )
+
+    def _capture_interval_calibrators(
+        self,
+        *,
+        context: IntervalCalibratorContext,
+        calibrator: Any,
+        fast: bool,
+    ) -> None:
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._capture_interval_calibrators(
+            context=context, calibrator=calibrator, fast=fast
+        )
+
+    def _predict_impl(
+        self, x, threshold=None, low_high_percentiles=(5, 95), classes=None, bins=None, **kwargs
+    ):
+        """Delegate to PredictionOrchestrator."""
+        return self._prediction_orchestrator._predict_impl(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            classes=classes,
+            bins=bins,
+            **kwargs,
         )
 
     @property

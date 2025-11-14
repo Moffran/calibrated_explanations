@@ -10,6 +10,8 @@ from calibrated_explanations.core.calibrated_explainer import (
     ConfigurationError,
 )
 from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
+from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
+from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 
 
 @dataclass
@@ -29,6 +31,9 @@ def _make_explainer(*, mode: str = "regression", bins=None) -> CalibratedExplain
     explainer._interval_preferred_identifier = {"default": None, "fast": None}
     explainer._interval_plugin_identifiers = {"default": None, "fast": None}
     explainer._interval_plugin_hints = {}
+    # Initialize orchestrators so tests can call delegation methods
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
     return explainer
 
 

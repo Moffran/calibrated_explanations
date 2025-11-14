@@ -12,6 +12,7 @@ from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
     EXPLANATION_PROTOCOL_VERSION,
 )
+from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 
@@ -89,22 +90,25 @@ def test_coerce_plugin_override_callable_and_errors():
 
 
 def test_check_explanation_runtime_metadata_various():
-    inst = object.__new__(CalibratedExplainer)
-    inst.mode = "classification"
+    """Test ExplanationOrchestrator metadata validation through delegating method."""
+    explainer = object.__new__(CalibratedExplainer)
+    explainer.mode = "classification"
+    # Initialize orchestrator
+    orch = ExplanationOrchestrator(explainer)
 
     # None metadata
-    msg = inst._check_explanation_runtime_metadata(None, identifier=None, mode="factual")
+    msg = orch._check_metadata(None, identifier=None, mode="factual")
     assert "metadata unavailable" in msg
 
     # bad schema
     bad_meta = {"schema_version": "bad"}
-    msg = inst._check_explanation_runtime_metadata(bad_meta, identifier=None, mode="factual")
+    msg = orch._check_metadata(bad_meta, identifier=None, mode="factual")
     assert "unsupported" in msg
 
     # missing tasks
     good_schema = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
     meta_missing_tasks = dict(good_schema)
-    msg = inst._check_explanation_runtime_metadata(
+    msg = orch._check_metadata(
         meta_missing_tasks, identifier="id", mode="factual"
     )
     assert "missing tasks declaration" in msg
@@ -112,12 +116,12 @@ def test_check_explanation_runtime_metadata_various():
     # tasks incompatible
     meta_tasks = dict(good_schema)
     meta_tasks["tasks"] = "regression"
-    msg = inst._check_explanation_runtime_metadata(meta_tasks, identifier="id", mode="factual")
+    msg = orch._check_metadata(meta_tasks, identifier="id", mode="factual")
     assert "does not support task" in msg
 
     # missing modes
     meta_tasks["tasks"] = "both"
-    msg = inst._check_explanation_runtime_metadata({**meta_tasks}, identifier="id", mode="factual")
+    msg = orch._check_metadata({**meta_tasks}, identifier="id", mode="factual")
     assert "missing modes declaration" in msg
 
     # modes not matching
@@ -126,13 +130,13 @@ def test_check_explanation_runtime_metadata_various():
         "tasks": "both",
         "modes": ("fast",),
     }
-    msg = inst._check_explanation_runtime_metadata(meta_ok, identifier="id", mode="factual")
+    msg = orch._check_metadata(meta_ok, identifier="id", mode="factual")
     assert "does not declare mode" in msg
 
     # missing capabilities
     meta_ok["modes"] = ("factual",)
     meta_ok["capabilities"] = []
-    msg = inst._check_explanation_runtime_metadata(meta_ok, identifier="id", mode="factual")
+    msg = orch._check_metadata(meta_ok, identifier="id", mode="factual")
     assert "missing required capabilities" in msg
 
     # valid metadata
@@ -148,7 +152,7 @@ def test_check_explanation_runtime_metadata_various():
         ],
     }
     assert (
-        inst._check_explanation_runtime_metadata(meta_valid, identifier="id", mode="factual")
+        orch._check_metadata(meta_valid, identifier="id", mode="factual")
         is None
     )
 

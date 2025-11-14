@@ -14,6 +14,8 @@ from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
     EXPLANATION_PROTOCOL_VERSION,
 )
+from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
+from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.plugins.predict_monitor import (
     PredictBridgeMonitor as _PredictBridgeMonitor,
 )
@@ -44,6 +46,9 @@ def _stub_explainer(mode: str = "classification") -> CalibratedExplainer:
     explainer._pyproject_plots = {}
     explainer._plot_style_override = None
     explainer._explanation_plugin_fallbacks = {}
+    # Initialize orchestrators so tests can call methods that delegate to them
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
     return explainer
 
 
@@ -124,12 +129,7 @@ def test_build_explanation_chain_merges_overrides(monkeypatch):
         ),
     }
 
-    monkeypatch.setattr(
-        explainer_module,
-        "find_explanation_descriptor",
-        lambda identifier: descriptors.get(identifier),
-    )
-    # Also patch in the explain orchestrator module
+    # Patch in the explain orchestrator module where the function is directly imported
     from calibrated_explanations.core.explain import orchestrator as explain_orchestrator_module
     monkeypatch.setattr(
         explain_orchestrator_module,
@@ -244,6 +244,9 @@ def test_check_interval_runtime_metadata_validates_requirements():
 
 def test_ensure_interval_runtime_state_populates_defaults():
     explainer = CalibratedExplainer.__new__(CalibratedExplainer)
+    # Initialize orchestrators so the delegation method works
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
     explainer._ensure_interval_runtime_state()
 
     assert explainer._interval_plugin_hints == {}
@@ -264,7 +267,6 @@ def test_build_interval_chain_merges_sources_and_metadata(monkeypatch):
 
     monkeypatch.setenv("CE_INTERVAL_PLUGIN", " env.direct ")
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FALLBACKS", "env.shared, env.extra")
-
     descriptors = {
         "tests.override": types.SimpleNamespace(metadata={"fallbacks": ("env.shared",)}),
         "env.direct": types.SimpleNamespace(metadata={"fallbacks": ()}),
@@ -273,12 +275,7 @@ def test_build_interval_chain_merges_sources_and_metadata(monkeypatch):
         ),
     }
 
-    monkeypatch.setattr(
-        explainer_module,
-        "find_interval_descriptor",
-        lambda identifier: descriptors.get(identifier),
-    )
-    # Also patch in the prediction orchestrator module
+    # Patch in the prediction orchestrator module where find_interval_descriptor is used
     monkeypatch.setattr(
         prediction_orchestrator_module,
         "find_interval_descriptor",
@@ -302,12 +299,7 @@ def test_build_interval_chain_fast_skips_missing_default(monkeypatch):
 
     descriptors = {"fast.direct": types.SimpleNamespace(metadata={"fallbacks": ()})}
 
-    monkeypatch.setattr(
-        explainer_module,
-        "find_interval_descriptor",
-        lambda identifier: descriptors.get(identifier),
-    )
-    # Also patch in the prediction orchestrator module
+    # Patch in the prediction orchestrator module where find_interval_descriptor is used
     monkeypatch.setattr(
         prediction_orchestrator_module,
         "find_interval_descriptor",

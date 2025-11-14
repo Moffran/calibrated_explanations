@@ -261,11 +261,7 @@ def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPa
         "meta.fb": Descriptor({}),
         "core.explanation.factual": Descriptor({}),
     }
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibrated_explainer.find_explanation_descriptor",
-        lambda identifier: descriptor_map.get(identifier),
-    )
-    # Also patch in the registry where the orchestrator imports it from
+    # Patch in the registry where the orchestrator imports it from
     from calibrated_explanations.plugins import registry
     monkeypatch.setattr(
         registry,
