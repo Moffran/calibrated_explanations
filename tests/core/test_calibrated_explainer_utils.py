@@ -12,9 +12,11 @@ import pytest
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
     EXPLANATION_PROTOCOL_VERSION,
-    _coerce_string_tuple,
-    _read_pyproject_section,
-    _split_csv,
+)
+from calibrated_explanations.core.config_helpers import (
+    coerce_string_tuple as _coerce_string_tuple,
+    read_pyproject_section as _read_pyproject_section,
+    split_csv as _split_csv,
 )
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.core.exceptions import ConfigurationError

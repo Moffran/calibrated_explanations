@@ -84,78 +84,13 @@ from .explain.feature_task import _feature_task as _execute_feature_task
 from .config_helpers import read_pyproject_section, split_csv, coerce_string_tuple
 from ..plugins.predict_monitor import PredictBridgeMonitor
 
-
-def _read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
-    """Return a mapping from the requested ``pyproject.toml`` section."""
-    return read_pyproject_section(path)
-
-
-def _split_csv(value: str | None) -> Tuple[str, ...]:
-    """Split a comma separated environment variable into a tuple."""
-    return split_csv(value)
-
-
-def _coerce_string_tuple(value: Any) -> Tuple[str, ...]:
-    """Coerce a configuration value into a tuple of strings."""
-    return coerce_string_tuple(value)
-
-
 _EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
-
-FeatureTaskResult = Tuple[
-    int,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    List[Any],
-    List[Any],
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-]
-
-
-def _assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
-    """Return the scalar delta between *prediction* and *instance_predict*."""
-    if np.isscalar(prediction):
-        try:
-            return float(prediction - instance_predict)
-        except TypeError:
-            return float(
-                np.asarray(prediction, dtype=float) - np.asarray(instance_predict, dtype=float)
-            )
-
-    base_arr = np.asarray(prediction)
-    inst_arr = np.asarray(instance_predict)
-    try:
-        diff = base_arr - inst_arr
-    except Exception:  # pragma: no cover - defensive fallback
-        diff = np.asarray(base_arr, dtype=float) - np.asarray(inst_arr, dtype=float)
-    flat = np.asarray(diff, dtype=float).reshape(-1)
-    if flat.size == 0:
-        return 0.0
-    return float(flat[0])
-
-def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
-    """Delegate to feature_task.py for per-feature aggregation logic.
-
-    This function has been moved to core.explain.feature_task._feature_task
-    to support parallel execution patterns. This wrapper maintains backward
-    compatibility with existing imports and test code.
-    """
-    return _execute_feature_task(args)
-
 
 _DEFAULT_EXPLANATION_IDENTIFIERS: Dict[str, str] = {
     "factual": "core.explanation.factual",
     "alternative": "core.explanation.alternative",
     "fast": "core.explanation.fast",
 }
-
-# Backward compatibility: use PredictBridgeMonitor from plugins module
-_PredictBridgeMonitor = PredictBridgeMonitor
 
 
 class CalibratedExplainer:
@@ -337,13 +272,13 @@ class CalibratedExplainer:
         self.interval_learner: Any = None
         self._perf_cache: CalibratorCache[Any] | None = perf_cache
         self._perf_parallel: ParallelExecutor | None = perf_parallel
-        self._pyproject_explanations = _read_pyproject_section(
+        self._pyproject_explanations = read_pyproject_section(
             ("tool", "calibrated_explanations", "explanations")
         )
-        self._pyproject_intervals = _read_pyproject_section(
+        self._pyproject_intervals = read_pyproject_section(
             ("tool", "calibrated_explanations", "intervals")
         )
-        self._pyproject_plots = _read_pyproject_section(
+        self._pyproject_plots = read_pyproject_section(
             ("tool", "calibrated_explanations", "plots")
         )
         self._explanation_plugin_overrides: Dict[str, Any] = {
@@ -548,7 +483,7 @@ class CalibratedExplainer:
         if schema_version not in (None, 1):
             return f"{prefix}: unsupported interval schema_version {schema_version}"
 
-        modes = _coerce_string_tuple(metadata.get("modes"))
+        modes = coerce_string_tuple(metadata.get("modes"))
         if not modes:
             return f"{prefix}: plugin metadata missing modes declaration"
         required_mode = "regression" if "regression" in self.mode else "classification"
@@ -556,7 +491,7 @@ class CalibratedExplainer:
             declared = ", ".join(modes)
             return f"{prefix}: does not support mode '{required_mode}' (modes: {declared})"
 
-        capabilities = set(_coerce_string_tuple(metadata.get("capabilities")))
+        capabilities = set(coerce_string_tuple(metadata.get("capabilities")))
         required_cap = (
             "interval:regression" if "regression" in self.mode else "interval:classification"
         )

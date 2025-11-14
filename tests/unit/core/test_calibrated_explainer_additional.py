@@ -8,13 +8,19 @@ from unittest.mock import create_autospec
 
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
-    _PredictBridgeMonitor,
-    _coerce_string_tuple,
-    _read_pyproject_section,
-    _split_csv,
-    _assign_weight_scalar,
-    _feature_task,
     ConfigurationError,
+)
+from calibrated_explanations.core.config_helpers import (
+    coerce_string_tuple as _coerce_string_tuple,
+    read_pyproject_section as _read_pyproject_section,
+    split_csv as _split_csv,
+)
+from calibrated_explanations.core.explain.feature_task import (
+    assign_weight_scalar as _assign_weight_scalar,
+    _feature_task,
+)
+from calibrated_explanations.plugins.predict_monitor import (
+    PredictBridgeMonitor as _PredictBridgeMonitor,
 )
 from calibrated_explanations.core.exceptions import DataShapeError
 from calibrated_explanations.plugins.predict import PredictBridge

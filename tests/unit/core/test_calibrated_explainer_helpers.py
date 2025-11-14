@@ -2,34 +2,41 @@ import numpy as np
 
 import pytest
 
-from calibrated_explanations.core import calibrated_explainer as ce
+from calibrated_explanations.core.config_helpers import (
+    split_csv,
+    coerce_string_tuple,
+)
+from calibrated_explanations.core.explain.feature_task import assign_weight_scalar
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.calibrated_explainer import (
+    CalibratedExplainer,
+    EXPLANATION_PROTOCOL_VERSION,
+)
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 
 def test_split_and_coerce_string_tuple():
-    assert ce._split_csv(None) == ()
-    assert ce._split_csv("") == ()
-    assert ce._split_csv("a,b, c") == ("a", "b", "c")
+    assert split_csv(None) == ()
+    assert split_csv("") == ()
+    assert split_csv("a,b, c") == ("a", "b", "c")
 
-    assert ce._coerce_string_tuple(None) == ()
-    assert ce._coerce_string_tuple("") == ()
-    assert ce._coerce_string_tuple("x") == ("x",)
-    assert ce._coerce_string_tuple(["a", "", 1]) == ("a",)
+    assert coerce_string_tuple(None) == ()
+    assert coerce_string_tuple("") == ()
+    assert coerce_string_tuple("x") == ("x",)
+    assert coerce_string_tuple(["a", "", 1]) == ("a",)
 
 
 def test_assign_weight_scalar_basic_and_arrays():
     # scalar
-    assert pytest.approx(ce._assign_weight_scalar(0.2, 0.8)) == 0.6
+    assert pytest.approx(assign_weight_scalar(0.2, 0.8)) == 0.6
 
     # numpy arrays -> returns first element of flattened diff
     a = np.array([0.1, 0.2])
     b = np.array([0.5, 0.6])
-    assert pytest.approx(ce._assign_weight_scalar(a, b)) == 0.4
+    assert pytest.approx(assign_weight_scalar(a, b)) == 0.4
 
     # empty arrays -> 0.0
-    assert ce._assign_weight_scalar([], []) == 0.0
+    assert assign_weight_scalar([], []) == 0.0
 
 
 class DummyBridge:
@@ -95,7 +102,7 @@ def test_check_explanation_runtime_metadata_various():
     assert "unsupported" in msg
 
     # missing tasks
-    good_schema = {"schema_version": ce.EXPLANATION_PROTOCOL_VERSION}
+    good_schema = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
     meta_missing_tasks = dict(good_schema)
     msg = inst._check_explanation_runtime_metadata(
         meta_missing_tasks, identifier="id", mode="factual"
@@ -115,7 +122,7 @@ def test_check_explanation_runtime_metadata_various():
 
     # modes not matching
     meta_ok = {
-        "schema_version": ce.EXPLANATION_PROTOCOL_VERSION,
+        "schema_version": EXPLANATION_PROTOCOL_VERSION,
         "tasks": "both",
         "modes": ("fast",),
     }
@@ -130,7 +137,7 @@ def test_check_explanation_runtime_metadata_various():
 
     # valid metadata
     meta_valid = {
-        "schema_version": ce.EXPLANATION_PROTOCOL_VERSION,
+        "schema_version": EXPLANATION_PROTOCOL_VERSION,
         "tasks": ("both",),
         "modes": ("factual", "alternative"),
         "capabilities": [

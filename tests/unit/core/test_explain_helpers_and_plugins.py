@@ -3,6 +3,7 @@ import numpy as np
 from calibrated_explanations.core.explain import _computation as comp
 from calibrated_explanations.core.explain import _helpers as helpers
 from calibrated_explanations.core.explain import sequential, parallel_feature, parallel_instance
+from calibrated_explanations.core.explain import feature_task as feature_task_module
 
 
 def test_assign_weight_scalar_variants():
@@ -380,8 +381,6 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
     )
 
     # Mock the internal _feature_task to produce deterministic per-feature tuples
-    import calibrated_explanations.core.calibrated_explainer as ce
-
     def fake_feature_task(task):
         f = int(task[0])
         n = int(len(task[1]))
@@ -421,7 +420,7 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
             upper_update,
         )
 
-    monkeypatch.setattr(ce, "_feature_task", fake_feature_task)
+    monkeypatch.setattr(feature_task_module, "_feature_task", fake_feature_task)
 
     # Setup request/config and a simple explainer stub
     req = ExplainRequest(

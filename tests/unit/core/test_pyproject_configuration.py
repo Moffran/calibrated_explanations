@@ -39,9 +39,10 @@ def test_pyproject_sections_seed_interval_and_plot_chains(monkeypatch):
             }
         return {}
 
+    # Patch read_pyproject_section in the calibrated_explainer module's namespace
     monkeypatch.setattr(
         explainer_module,
-        "_read_pyproject_section",
+        "read_pyproject_section",
         fake_read,
     )
 

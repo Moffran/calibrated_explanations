@@ -11,9 +11,11 @@ import pytest
 from calibrated_explanations.core import calibrated_explainer as explainer_module
 from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
 from calibrated_explanations.core.calibrated_explainer import (
-    _PredictBridgeMonitor,
     CalibratedExplainer,
     EXPLANATION_PROTOCOL_VERSION,
+)
+from calibrated_explanations.plugins.predict_monitor import (
+    PredictBridgeMonitor as _PredictBridgeMonitor,
 )
 from calibrated_explanations.core.exceptions import ConfigurationError
 
