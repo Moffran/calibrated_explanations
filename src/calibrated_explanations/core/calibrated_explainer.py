@@ -1488,6 +1488,35 @@ class CalibratedExplainer:
         pipeline = LimePipeline(self)
         return pipeline.explain(x, threshold, low_high_percentiles, bins)
 
+    def explain_shap(self, x, **kwargs):
+        """Create SHAP-based explanations for the test data.
+
+        Delegates to the external SHAP integration pipeline.
+
+        Parameters
+        ----------
+        x : array-like
+            A set with n_samples of test objects to explain.
+        **kwargs
+            Additional keyword arguments passed through to SHAP.
+
+        Returns
+        -------
+        Any
+            SHAP explanation object containing feature importance values.
+
+        Raises
+        ------
+        ConfigurationError
+            If SHAP is not properly installed or configured.
+        """
+        # Delegate to external plugin pipeline
+        # pylint: disable-next=import-outside-toplevel
+        from external_plugins.integrations.shap_pipeline import ShapPipeline
+
+        pipeline = ShapPipeline(self)
+        return pipeline.explain(x, **kwargs)
+
     def assign_threshold(self, threshold):
         """Assign the threshold for the explainer.
 
@@ -2170,36 +2199,56 @@ class CalibratedExplainer:
         return (proba, (low, high)) if uq_interval else proba
 
     def _is_lime_enabled(self, is_enabled=None) -> bool:
-        """Return whether LIME export is enabled."""
-        helper = getattr(self, "_lime_helper", None)
-        if helper is None:
-            helper = self._lime_helper = LimeHelper(self)
-        if is_enabled is not None:
-            helper.set_enabled(bool(is_enabled))
-        return helper.is_enabled()
+        """Return whether LIME export is enabled.
+        
+        .. deprecated:: 0.10.0
+            Access LIME state through LimePipeline instead.
+        """
+        # Delegate to LimePipeline for lazy initialization and caching
+        if not hasattr(self, "_lime_pipeline"):
+            # pylint: disable-next=import-outside-toplevel
+            from external_plugins.integrations.lime_pipeline import LimePipeline
+            self._lime_pipeline = LimePipeline(self)
+        return self._lime_pipeline._is_lime_enabled(is_enabled)
 
     def _is_shap_enabled(self, is_enabled=None) -> bool:
-        """Return whether SHAP export is enabled."""
-        helper = getattr(self, "_shap_helper", None)
-        if helper is None:
-            helper = self._shap_helper = ShapHelper(self)
-        if is_enabled is not None:
-            helper.set_enabled(bool(is_enabled))
-        return helper.is_enabled()
+        """Return whether SHAP export is enabled.
+        
+        .. deprecated:: 0.10.0
+            Access SHAP state through ShapPipeline instead.
+        """
+        # Delegate to ShapPipeline for lazy initialization and caching
+        if not hasattr(self, "_shap_pipeline"):
+            # pylint: disable-next=import-outside-toplevel
+            from external_plugins.integrations.shap_pipeline import ShapPipeline
+            self._shap_pipeline = ShapPipeline(self)
+        return self._shap_pipeline._is_shap_enabled(is_enabled)
 
     def _preload_lime(self, x_cal=None):
-        """Materialize LIME explainer artifacts when the dependency is available."""
-        helper = getattr(self, "_lime_helper", None)
-        if helper is None:
-            helper = self._lime_helper = LimeHelper(self)
-        return helper.preload(x_cal=x_cal)
+        """Materialize LIME explainer artifacts when the dependency is available.
+        
+        .. deprecated:: 0.10.0
+            Use LimePipeline._preload_lime instead.
+        """
+        # Delegate to LimePipeline for lazy initialization and caching
+        if not hasattr(self, "_lime_pipeline"):
+            # pylint: disable-next=import-outside-toplevel
+            from external_plugins.integrations.lime_pipeline import LimePipeline
+            self._lime_pipeline = LimePipeline(self)
+        return self._lime_pipeline._preload_lime(x_cal=x_cal)
 
     def _preload_shap(self, num_test=None):
-        """Eagerly compute SHAP explanations to amortize repeated requests."""
-        helper = getattr(self, "_shap_helper", None)
-        if helper is None:
-            helper = self._shap_helper = ShapHelper(self)
-        return helper.preload(num_test=num_test)
+        """Eagerly compute SHAP explanations to amortize repeated requests.
+        
+        .. deprecated:: 0.10.0
+            Use ShapPipeline._preload_shap instead.
+        """
+        # Delegate to ShapPipeline for lazy initialization and caching
+        if not hasattr(self, "_shap_pipeline"):
+            # pylint: disable-next=import-outside-toplevel
+            from external_plugins.integrations.shap_pipeline import ShapPipeline
+            self._shap_pipeline = ShapPipeline(self)
+        return self._shap_pipeline._preload_shap(num_test=num_test)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def plot(self, x, y=None, threshold=None, **kwargs):

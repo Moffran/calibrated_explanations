@@ -23,6 +23,7 @@ from calibrated_explanations.core.exceptions import (
     ConfigurationError,
 )
 from calibrated_explanations.explanations import CalibratedExplanations
+from calibrated_explanations.integrations.lime import LimeHelper
 
 if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
@@ -49,6 +50,45 @@ class LimePipeline:
             The parent explainer instance.
         """
         self.explainer = explainer
+        self._lime_helper: LimeHelper | None = None
+
+    def _is_lime_enabled(self, is_enabled: bool | None = None) -> bool:
+        """Return whether LIME export is enabled.
+
+        Parameters
+        ----------
+        is_enabled : bool, optional
+            If provided, set the enabled state.
+
+        Returns
+        -------
+        bool
+            Whether LIME is currently enabled.
+        """
+        if self._lime_helper is None:
+            self._lime_helper = LimeHelper(self.explainer)
+        if is_enabled is not None:
+            self._lime_helper.set_enabled(bool(is_enabled))
+        return self._lime_helper.is_enabled()
+
+    def _preload_lime(self, x_cal: Any = None) -> tuple[Any, Any]:
+        """Materialize LIME explainer artifacts when the dependency is available.
+
+        Parameters
+        ----------
+        x_cal : array-like, optional
+            Calibration data to use for LIME initialization. If not provided,
+            uses the explainer's calibration data.
+
+        Returns
+        -------
+        tuple
+            A tuple of (lime_explainer, reference_explanation) or (None, None)
+            if LIME is not available.
+        """
+        if self._lime_helper is None:
+            self._lime_helper = LimeHelper(self.explainer)
+        return self._lime_helper.preload(x_cal=x_cal)
 
     def explain(
         self,
@@ -88,8 +128,8 @@ class LimePipeline:
         ConfigurationError
             If LIME is not properly configured or dependencies are missing.
         """
-        # Preload LIME explainer
-        lime_explainer, _ = self.explainer._preload_lime()
+        # Preload LIME explainer using pipeline's helper
+        lime_explainer, _ = self._preload_lime()
 
         # Measure total execution time
         total_time = time()

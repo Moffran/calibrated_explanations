@@ -7,5 +7,6 @@ integrated with calibrated explanations.
 from __future__ import annotations
 
 from .lime_pipeline import LimePipeline
+from .shap_pipeline import ShapPipeline
 
-__all__ = ["LimePipeline"]
+__all__ = ["LimePipeline", "ShapPipeline"]

@@ -1,8 +1,8 @@
 # CalibratedExplainer Streamlining Plan
 
-**Status:** Phase 1b completed; moved to v0.10.0 development cycle  
+**Status:** Phase 1b completed; Phase 2 completed; moved to v0.10.0 development cycle  
 **Current metrics:** Reduced from 3947 to 3590 lines (357 lines removed via Phase 1a+1b)
-**Next step:** Phase 2 (Fast Explanation Pipeline)
+**Next step:** Phase 3 (Plugin Management)
 **Goal:** Thin, delegating facade with clear separation of concerns  
 **ADR Alignment:** ADR-001 (boundary realignment), ADR-004 (parallel execution), ADR-005 (schema/envelope)
 
