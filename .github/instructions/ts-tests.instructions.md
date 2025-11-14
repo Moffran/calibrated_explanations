@@ -22,7 +22,7 @@ priority: 120
 - Prefer `@pytest.mark.parametrize` over loops.
 - Use `freezegun`/time-freeze patterns if present; otherwise stub the clock.
 - No I/O, env, or network in unit tests—use monkeypatch/mocks.
-- Prefer testing behaviour over implementation details.
+- Tests should be testing the behavior, not calling private helper methods.
 
 **Fixtures**
 - Import shared fixtures from `conftest.py` or existing fixture modules; only create a new fixture file when SUT-specific and not reusable.
