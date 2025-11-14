@@ -10,8 +10,8 @@ import pytest
 from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
-    EXPLANATION_PROTOCOL_VERSION,
 )
+from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.plugins.predict_monitor import (

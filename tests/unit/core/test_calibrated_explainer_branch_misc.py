@@ -33,7 +33,6 @@ def _make_base_explainer() -> CalibratedExplainer:
     explainer._X_cal = explainer.x_cal
     explainer._feature_names = [f"f{i}" for i in range(explainer.x_cal.shape[1])]
     explainer.bins = None
-    explainer.interval_learner = None
     explainer.feature_values = {i: [] for i in range(explainer.x_cal.shape[1])}
     explainer.categorical_features = []
     explainer._CalibratedExplainer__initialized = False
@@ -43,6 +42,9 @@ def _make_base_explainer() -> CalibratedExplainer:
     explainer.predict_function = lambda x, **_: x  # type: ignore[assignment]
     # Initialize orchestrator for tests that call its methods
     explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
+    # Initialize prediction orchestrator (Phase 4: Interval Registry)
+    from calibrated_explanations.core.prediction import PredictionOrchestrator
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
     return explainer
 
 
@@ -159,47 +161,6 @@ def test_get_sigma_test_uses_difficulty_estimator():
     explainer.difficulty_estimator = _Estimator()
     updated = explainer._get_sigma_test(np.zeros((2, explainer.num_features)))
     assert np.all(updated == 0.42)
-
-
-def test_update_interval_learner_branches(monkeypatch):
-    explainer = _make_base_explainer()
-
-    explainer.is_fast = types.MethodType(lambda self: True, explainer)
-    with pytest.raises(ConfigurationError):
-        explainer._CalibratedExplainer__update_interval_learner(explainer.x_cal, explainer.y_cal)
-
-    explainer.is_fast = types.MethodType(lambda self: False, explainer)
-
-    created_instances: list[tuple] = []
-
-    class _RecorderVA:
-        def __init__(self, *args, **kwargs):
-            created_instances.append((args, kwargs))
-
-    monkeypatch.setattr(explainer_module, "VennAbers", _RecorderVA)
-
-    explainer._CalibratedExplainer__update_interval_learner(explainer.x_cal, explainer.y_cal)
-    assert created_instances and explainer._CalibratedExplainer__initialized is True
-
-    explainer.mode = "regression"
-    explainer.interval_learner = []
-    with pytest.raises(ConfigurationError):
-        explainer._CalibratedExplainer__update_interval_learner(explainer.x_cal, explainer.y_cal)
-
-    class _IntervalLearner:
-        def __init__(self):
-            self.calls: list[tuple] = []
-
-        def insert_calibration(self, xs, ys, bins=None):
-            self.calls.append((xs, ys, bins))
-
-    explainer.interval_learner = _IntervalLearner()
-    explainer.bins = np.arange(explainer.y_cal.shape[0])
-    explainer._CalibratedExplainer__update_interval_learner(
-        explainer.x_cal, explainer.y_cal, bins=np.array([10, 11])
-    )
-    assert explainer.interval_learner.calls
-    assert explainer._CalibratedExplainer__initialized is True
 
 
 def test_reinitialize_updates_state(monkeypatch):

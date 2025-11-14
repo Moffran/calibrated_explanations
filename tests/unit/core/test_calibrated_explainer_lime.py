@@ -87,7 +87,6 @@ def _make_stub_explainer() -> CalibratedExplainer:
     explainer._feature_names = ["f0", "f1"]
     explainer.bins = None
     explainer.learner = _StubLearner()
-    explainer.interval_learner = None
     explainer.latest_explanation = None
     explainer.feature_values = []
     explainer.categorical_features = []
@@ -95,6 +94,11 @@ def _make_stub_explainer() -> CalibratedExplainer:
     explainer._CalibratedExplainer__initialized = True
     explainer._lime_helper = LimeHelper(explainer)
     explainer._shap_helper = ShapHelper(explainer)
+    
+    # Initialize the prediction orchestrator (Phase 4: Interval Registry)
+    from calibrated_explanations.core.prediction import PredictionOrchestrator
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
+    explainer.interval_learner = None
 
     def _predict_stub(self, x, **_kwargs):
         x = np.asarray(x)

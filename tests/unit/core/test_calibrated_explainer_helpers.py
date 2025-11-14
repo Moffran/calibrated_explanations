@@ -10,8 +10,8 @@ from calibrated_explanations.core.explain.feature_task import assign_weight_scal
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
-    EXPLANATION_PROTOCOL_VERSION,
 )
+from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.core.exceptions import ConfigurationError
 

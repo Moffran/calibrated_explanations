@@ -71,6 +71,9 @@ class PredictionOrchestrator:
         - explainer._interval_preferred_identifier
         """
         self.explainer = explainer
+        # Initialize interval registry for managing interval learner lifecycle
+        from .interval_registry import IntervalRegistry
+        self._interval_registry = IntervalRegistry(explainer)
 
     def initialize_chains(self) -> None:
         """Build and cache the interval plugin fallback chains.

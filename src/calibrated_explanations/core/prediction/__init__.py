@@ -7,8 +7,10 @@ estimation, and uncertainty quantification.
 Part of Phase 1b: Delegate Prediction Orchestration (ADR-001, ADR-004).
 """
 
+from .interval_registry import IntervalRegistry
 from .orchestrator import PredictionOrchestrator
 
 __all__ = [
+    "IntervalRegistry",
     "PredictionOrchestrator",
 ]

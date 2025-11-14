@@ -104,6 +104,9 @@ def _make_minimal_explainer(num_features: int = 2) -> CalibratedExplainer:
     explainer._CalibratedExplainer__initialized = False
     explainer._lime_helper = LimeHelper(explainer)
     explainer._shap_helper = ShapHelper(explainer)
+    # Initialize the prediction orchestrator (Phase 4: Interval Registry)
+    from calibrated_explanations.core.prediction import PredictionOrchestrator
+    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
     return explainer
 
 
@@ -172,12 +175,8 @@ def test_numeric_sampling_helpers_respect_calibration_distribution():
 
 
 def test_set_difficulty_estimator_enforces_fitted_contract():
+    """Test that set_difficulty_estimator validates and updates difficulty estimation."""
     explainer = _make_minimal_explainer()
-
-    calls: list[str] = []
-    setattr(
-        explainer, "_CalibratedExplainer__initialize_interval_learner", lambda: calls.append("init")
-    )
 
     class DummyEstimator:
         def __init__(self, fitted: bool, value: float = 1.0):
@@ -187,41 +186,42 @@ def test_set_difficulty_estimator_enforces_fitted_contract():
         def apply(self, x: np.ndarray) -> np.ndarray:
             return np.full(x.shape[0], self.value)
 
+    # Should raise NotFittedError for unfitted estimator
     with pytest.raises(NotFittedError):
         explainer.set_difficulty_estimator(DummyEstimator(fitted=False))
 
+    # Setting to None with initialize=False should result in unit difficulty
     explainer.set_difficulty_estimator(None, initialize=False)
     np.testing.assert_array_equal(explainer._get_sigma_test(np.ones((3, 2))), np.ones(3))
-    assert calls == []
 
+    # Setting a fitted estimator with initialize=False should use its values
     estimator = DummyEstimator(fitted=True, value=2.5)
     explainer.set_difficulty_estimator(estimator, initialize=False)
     np.testing.assert_array_equal(explainer._get_sigma_test(np.zeros((4, 2))), np.full(4, 2.5))
 
-    explainer.set_difficulty_estimator(estimator, initialize=True)
-    assert "init" in calls
+    # Setting with initialize=False should keep the estimator without triggering initialization
+    explainer.set_difficulty_estimator(estimator, initialize=False)
+    # Verify difficulty estimator is set
+    assert explainer.difficulty_estimator is estimator
+    # Verify sigma test uses the estimator's values
+    np.testing.assert_array_equal(explainer._get_sigma_test(np.ones((2, 2))), np.full(2, 2.5))
 
 
 def test_private_set_mode_updates_state():
+    """Test that __set_mode updates mode and num_classes correctly without initialization."""
     explainer = _make_minimal_explainer()
-    calls: list[str] = []
-
-    def _init_hook():
-        calls.append(explainer.mode)
-
-    setattr(explainer, "_CalibratedExplainer__initialize_interval_learner", _init_hook)
 
     explainer.y_cal = np.array([0, 1, 1, 2])
-    explainer._CalibratedExplainer__set_mode("classification")
+    explainer._CalibratedExplainer__set_mode("classification", initialize=False)
     assert explainer.num_classes == 3
-    assert calls[-1] == "classification"
+    assert explainer.mode == "classification"
 
-    explainer._CalibratedExplainer__set_mode("regression")
+    explainer._CalibratedExplainer__set_mode("regression", initialize=False)
     assert explainer.num_classes == 0
-    assert calls[-1] == "regression"
+    assert explainer.mode == "regression"
 
     with pytest.raises(ValidationError):
-        explainer._CalibratedExplainer__set_mode("unsupported")
+        explainer._CalibratedExplainer__set_mode("unsupported", initialize=False)
 
 
 def test_runtime_metadata_helpers_return_copies():

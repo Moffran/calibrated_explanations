@@ -255,7 +255,6 @@ class CalibratedExplainer:
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.__set_mode(str.lower(mode), initialize=False)
 
-        self.interval_learner: Any = None
         self._perf_cache: CalibratorCache[Any] | None = perf_cache
         self._perf_parallel: ParallelExecutor | None = perf_parallel
 
@@ -678,6 +677,71 @@ class CalibratedExplainer:
             returns None.
         """
         return self._feature_names
+
+    @property
+    def interval_learner(self) -> Any:
+        """Access the interval learner managed by the prediction orchestrator.
+
+        Returns
+        -------
+        Any
+            The interval calibrator (e.g., VennAbers, IntervalRegressor, or list for fast mode).
+
+        Notes
+        -----
+        This is a backward-compatible property that delegates to the interval registry
+        managed by the PredictionOrchestrator. See ADR-001 and Phase 4 refactoring.
+        """
+        return self._prediction_orchestrator._interval_registry.interval_learner
+
+    @interval_learner.setter
+    def interval_learner(self, value: Any) -> None:
+        """Set the interval learner through the prediction orchestrator's registry.
+
+        Parameters
+        ----------
+        value : Any
+            The interval calibrator to set (e.g., VennAbers, IntervalRegressor).
+
+        Notes
+        -----
+        This is a backward-compatible setter that delegates to the interval registry
+        managed by the PredictionOrchestrator.
+        """
+        self._prediction_orchestrator._interval_registry.interval_learner = value
+
+    def _get_sigma_test(self, x: np.ndarray) -> np.ndarray:
+        """Return the difficulty (sigma) of the test instances.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Test instances for which to estimate difficulty.
+
+        Returns
+        -------
+        np.ndarray
+            Difficulty estimates (sigma values) for each test instance.
+
+        Notes
+        -----
+        This is a backward-compatible method that delegates to the interval registry
+        managed by the PredictionOrchestrator. See ADR-001 and Phase 4 refactoring.
+        """
+        return self._prediction_orchestrator._interval_registry.get_sigma_test(x)
+
+    def _CalibratedExplainer__initialize_interval_learner_for_fast_explainer(self) -> None:
+        """Backward-compatible wrapper for fast-mode interval learner initialization.
+
+        Notes
+        -----
+        This method delegates to the interval registry. It is kept for backward
+        compatibility with the external fast_explanations plugin and other
+        production code that calls this private method.
+        
+        See ADR-001 and Phase 4 refactoring.
+        """
+        self._prediction_orchestrator._interval_registry.initialize_for_fast_explainer()
 
     def reinitialize(self, learner, xs=None, ys=None, bins=None):
         """Reinitialize the explainer with a new learner.
@@ -1683,17 +1747,7 @@ class CalibratedExplainer:
         self.__initialized = False
         self.difficulty_estimator = difficulty_estimator
         if initialize:
-            self.__initialize_interval_learner()
-
-    def __constant_sigma(self, x: np.ndarray, learner=None, beta=None) -> np.ndarray:  # pylint: disable=unused-argument
-        """Return a unit difficulty vector when no estimator is configured."""
-        return np.ones(x.shape[0]) if isinstance(x, (np.ndarray, list, tuple)) else np.ones(1)
-
-    def _get_sigma_test(self, x: np.ndarray) -> np.ndarray:
-        """Return the difficulty (sigma) of the test instances."""
-        if self.difficulty_estimator is None:
-            return self.__constant_sigma(x)
-        return self.difficulty_estimator.apply(x)
+            self._prediction_orchestrator._interval_registry.initialize()  # type: ignore[attr-defined]
 
     def __set_mode(self, mode, initialize=True) -> None:
         """Assign the mode of the explainer. The mode can be either 'classification' or 'regression'.
@@ -1718,45 +1772,7 @@ class CalibratedExplainer:
             raise ValidationError("The mode must be either 'classification' or 'regression'.")
         self.mode = mode
         if initialize:
-            self.__initialize_interval_learner()
-
-    def __update_interval_learner(self, xs, ys, bins=None) -> None:  # pylint: disable=unused-argument
-        """Refresh the interval learner with new calibration data."""
-        if self.is_fast():
-            raise ConfigurationError("Fast explanations are not supported in this update path.")
-        if self.mode == "classification":
-            # pylint: disable=fixme
-            # TODO: change so that existing calibrators are extended with new calibration instances
-            self.interval_learner = VennAbers(
-                self.x_cal,
-                self.y_cal,
-                self.learner,
-                self.bins,
-                difficulty_estimator=self.difficulty_estimator,
-                predict_function=self.predict_function,
-            )
-        elif "regression" in self.mode:
-            if isinstance(self.interval_learner, list):
-                raise ConfigurationError("Fast explanations are not supported in this update path.")
-            # update the IntervalRegressor
-            self.interval_learner.insert_calibration(xs, ys, bins=bins)
-        self.__initialized = True
-
-    def __initialize_interval_learner(self) -> None:
-        """Create the interval learner backend using calibration helpers."""
-        # Thin delegator kept for backward-compatibility internal calls
-        from .calibration_helpers import initialize_interval_learner as _init_il
-
-        _init_il(self)
-
-    # pylint: disable=attribute-defined-outside-init
-    def __initialize_interval_learner_for_fast_explainer(self):
-        """Provision fast-path interval learners for Mondrian explanations."""
-        from .calibration_helpers import (
-            initialize_interval_learner_for_fast_explainer as _init_fast,
-        )
-
-        _init_fast(self)
+            self._prediction_orchestrator._interval_registry.initialize()  # type: ignore[attr-defined]
 
     def initialize_reject_learner(self, calibration_set=None, threshold=None):
         """Initialize the reject learner with a threshold value.
