@@ -141,6 +141,9 @@ def test_build_explanation_chain_resolves_sources(monkeypatch):
         "calibrated_explanations.core.calibrated_explainer.find_explanation_descriptor",
         fake_find_descriptor,
     )
+    # Also patch in the orchestrator module where the function is directly imported
+    from calibrated_explanations.core.explain import orchestrator as explain_orch
+    monkeypatch.setattr(explain_orch, "find_explanation_descriptor", fake_find_descriptor)
 
     chain = explainer._build_explanation_chain("factual")
 
@@ -184,6 +187,13 @@ def test_build_interval_chain_tracks_preferred_identifier(monkeypatch):
         "calibrated_explanations.core.calibrated_explainer.find_interval_descriptor",
         lambda identifier: descriptor_map.get(identifier.strip()),
     )
+    # Also patch in the prediction orchestrator module
+    from calibrated_explanations.core.prediction import orchestrator as pred_orch
+    monkeypatch.setattr(
+        pred_orch,
+        "find_interval_descriptor",
+        lambda identifier: descriptor_map.get(identifier.strip()),
+    )
 
     default_chain = explainer._build_interval_chain(fast=False)
     assert default_chain[0] == "override.interval"
@@ -191,11 +201,20 @@ def test_build_interval_chain_tracks_preferred_identifier(monkeypatch):
     assert default_chain[-1] == "core.interval.legacy"
 
     # For the fast chain simulate missing default descriptor to exercise the skip branch.
+    def find_with_skip(identifier: str):
+        identifier = identifier.strip()
+        if identifier == "core.interval.fast":
+            return None
+        return descriptor_map.get(identifier)
+
     monkeypatch.setattr(
         "calibrated_explanations.core.calibrated_explainer.find_interval_descriptor",
-        lambda identifier: None
-        if identifier.strip() == "core.interval.fast"
-        else descriptor_map.get(identifier.strip()),
+        find_with_skip,
+    )
+    monkeypatch.setattr(
+        pred_orch,
+        "find_interval_descriptor",
+        find_with_skip,
     )
 
     fast_chain = explainer._build_interval_chain(fast=True)

@@ -69,8 +69,8 @@ class SequentialExplainPlugin(BaseExplainPlugin):
         This implementation mirrors the original CalibratedExplainer.explain
         sequential path (lines 2365-2595) to ensure behavioral parity.
         """
-        # Import _feature_task from calibrated_explainer module (deferred to avoid circular import)
-        from ..calibrated_explainer import _feature_task  # pylint: disable=import-outside-toplevel
+        # Import _feature_task from feature_task module (deferred to avoid circular import)
+        from .feature_task import _feature_task  # pylint: disable=import-outside-toplevel
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore

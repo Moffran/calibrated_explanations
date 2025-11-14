@@ -57,9 +57,7 @@ from ..utils.helper import (
 from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
 from ..plugins import (
     ExplanationContext,
-    ExplanationRequest,
     IntervalCalibratorContext,
-    validate_explanation_batch,
 )
 from ..plugins.builtins import LegacyPredictBridge
 from ..plugins.registry import (
@@ -80,7 +78,9 @@ from .exceptions import (
     ConfigurationError,
     NotFittedError,
 )
-from .explain._helpers import compute_feature_effects
+from .explain._helpers import compute_feature_effects, compute_weight_delta
+from .explain.orchestrator import ExplanationOrchestrator
+from .explain.feature_task import _feature_task as _execute_feature_task
 from .config_helpers import read_pyproject_section, split_csv, coerce_string_tuple
 from ..plugins.predict_monitor import PredictBridgeMonitor
 
@@ -138,464 +138,14 @@ def _assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
         return 0.0
     return float(flat[0])
 
-
 def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
-    """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""
-    (
-        feature_index,
-        x_column,
-        predict,
-        low,
-        high,
-        baseline_predict,
-        features_to_ignore,
-        categorical_features,
-        feature_values,
-        feature_indices,
-        perturbed_feature,
-        lower_boundary,
-        upper_boundary,
-        lesser_feature,
-        greater_feature,
-        covered_feature,
-        value_counts_cache,
-        numeric_sorted_values,
-        x_cal_column,
-    ) = args
+    """Delegate to feature_task.py for per-feature aggregation logic.
 
-    n_instances = int(len(x_column))
-    weights_predict = np.zeros(n_instances, dtype=float)
-    weights_low = np.zeros(n_instances, dtype=float)
-    weights_high = np.zeros(n_instances, dtype=float)
-    predict_matrix = np.zeros(n_instances, dtype=float)
-    low_matrix = np.zeros(n_instances, dtype=float)
-    high_matrix = np.zeros(n_instances, dtype=float)
-    rule_values_result: List[Any] = [None] * n_instances
-    binned_result: List[Any] = [None] * n_instances
-    lower_update: Optional[np.ndarray] = None
-    upper_update: Optional[np.ndarray] = None
-
-    features_to_ignore_set: Set[int] = set(features_to_ignore)
-    categorical_features_set: Set[int] = set(categorical_features)
-
-    feature_values_list = feature_values[feature_index]
-    feature_values_list = (
-        feature_values_list
-        if isinstance(feature_values_list, (list, tuple, np.ndarray))
-        else list(feature_values_list)
-    )
-
-    if feature_index in features_to_ignore_set:
-        for i in range(n_instances):
-            rule_values_result[i] = (feature_values_list, x_column[i], x_column[i])
-            binned_result[i] = (
-                predict[i],
-                low[i],
-                high[i],
-                -1,
-                np.array([], dtype=float),
-                np.array([], dtype=float),
-            )
-        return (
-            feature_index,
-            weights_predict,
-            weights_low,
-            weights_high,
-            predict_matrix,
-            low_matrix,
-            high_matrix,
-            rule_values_result,
-            binned_result,
-            lower_update,
-            upper_update,
-        )
-
-    if feature_indices is None or len(feature_indices) == 0:
-        for i in range(n_instances):
-            rule_values_result[i] = (feature_values_list, x_column[i], x_column[i])
-            binned_result[i] = (
-                predict[i],
-                low[i],
-                high[i],
-                -1,
-                np.array([], dtype=float),
-                np.array([], dtype=float),
-            )
-        return (
-            feature_index,
-            weights_predict,
-            weights_low,
-            weights_high,
-            predict_matrix,
-            low_matrix,
-            high_matrix,
-            rule_values_result,
-            binned_result,
-            lower_update,
-            upper_update,
-        )
-
-    feature_slice = np.asarray(perturbed_feature[feature_indices])
-    feature_predict_local = np.asarray(predict[feature_indices])
-    feature_low_local = np.asarray(low[feature_indices])
-    feature_high_local = np.asarray(high[feature_indices])
-    feature_instances = feature_slice[:, 1].astype(int)
-    unique_instances = np.unique(feature_instances)
-
-    if feature_index in categorical_features_set:
-        feature_values_array = np.asarray(feature_values_list, dtype=object)
-        num_feature_values = int(feature_values_array.size)
-        value_counts_cache = value_counts_cache or {}
-        counts_template = (
-            np.array(
-                [value_counts_cache.get(val, 0) for val in feature_values_list],
-                dtype=float,
-            )
-            if num_feature_values
-            else np.zeros((0,), dtype=float)
-        )
-
-        if num_feature_values == 0:
-            for inst in unique_instances:
-                i = int(inst)
-                rule_values_result[i] = (feature_values_list, x_column[i], x_column[i])
-                binned_result[i] = (
-                    np.zeros((0,), dtype=float),
-                    np.zeros((0,), dtype=float),
-                    np.zeros((0,), dtype=float),
-                    -1,
-                    counts_template.copy(),
-                    np.zeros((0,), dtype=float),
-                )
-            for idx in range(n_instances):
-                if rule_values_result[idx] is None:
-                    rule_values_result[idx] = (feature_values_list, x_column[idx], x_column[idx])
-                if binned_result[idx] is None:
-                    binned_result[idx] = (
-                        np.zeros((0,), dtype=float),
-                        np.zeros((0,), dtype=float),
-                        np.zeros((0,), dtype=float),
-                        -1,
-                        counts_template.copy(),
-                        np.zeros((0,), dtype=float),
-                    )
-            return (
-                feature_index,
-                weights_predict,
-                weights_low,
-                weights_high,
-                predict_matrix,
-                low_matrix,
-                high_matrix,
-                rule_values_result,
-                binned_result,
-                lower_update,
-                upper_update,
-            )
-
-        value_to_index = {val: idx for idx, val in enumerate(feature_values_list)}
-        value_indices = np.array(
-            [value_to_index.get(row[2], -1) for row in feature_slice], dtype=int
-        )
-        valid_mask = value_indices >= 0
-        feature_instances_local = feature_instances
-
-        sums_shape = (n_instances, num_feature_values)
-        predict_sums = np.zeros(sums_shape, dtype=float)
-        low_sums = np.zeros(sums_shape, dtype=float)
-        high_sums = np.zeros(sums_shape, dtype=float)
-        combo_counts = np.zeros(sums_shape, dtype=float)
-
-        if np.any(valid_mask):
-            np.add.at(
-                predict_sums,
-                (feature_instances_local[valid_mask], value_indices[valid_mask]),
-                np.asarray(feature_predict_local[valid_mask], dtype=float),
-            )
-            np.add.at(
-                low_sums,
-                (feature_instances_local[valid_mask], value_indices[valid_mask]),
-                np.asarray(feature_low_local[valid_mask], dtype=float),
-            )
-            np.add.at(
-                high_sums,
-                (feature_instances_local[valid_mask], value_indices[valid_mask]),
-                np.asarray(feature_high_local[valid_mask], dtype=float),
-            )
-            np.add.at(
-                combo_counts,
-                (feature_instances_local[valid_mask], value_indices[valid_mask]),
-                1,
-            )
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            average_matrix = np.divide(
-                predict_sums,
-                combo_counts,
-                out=np.zeros_like(predict_sums),
-                where=combo_counts > 0,
-            )
-            low_matrix_local = np.divide(
-                low_sums,
-                combo_counts,
-                out=np.zeros_like(low_sums),
-                where=combo_counts > 0,
-            )
-            high_matrix_local = np.divide(
-                high_sums,
-                combo_counts,
-                out=np.zeros_like(high_sums),
-                where=combo_counts > 0,
-            )
-
-        current_bins = np.full(n_instances, -1, dtype=int)
-        if value_to_index:
-            current_bins = np.array(
-                [value_to_index.get(val, -1) for val in np.asarray(x_column)],
-                dtype=int,
-            )
-
-        for inst in unique_instances:
-            i = int(inst)
-            avg_row = np.array(average_matrix[i], copy=True)
-            low_row = np.array(low_matrix_local[i], copy=True)
-            high_row = np.array(high_matrix_local[i], copy=True)
-            current_bin = current_bins[i]
-            mask = np.ones(num_feature_values, dtype=bool)
-            if 0 <= current_bin < num_feature_values:
-                mask[current_bin] = False
-            uncovered = np.nonzero(mask)[0]
-            counts = counts_template.copy()
-            counts_uncovered = counts[mask]
-            total_counts = counts_uncovered.sum() if uncovered.size else 0
-            fractions = (
-                counts_uncovered / total_counts
-                if uncovered.size and total_counts
-                else np.zeros(uncovered.size, dtype=float)
-            )
-
-            rule_values_result[i] = (feature_values_list, x_column[i], x_column[i])
-            binned_result[i] = (
-                avg_row,
-                low_row,
-                high_row,
-                current_bin,
-                counts,
-                fractions,
-            )
-
-            if uncovered.size == 0:
-                continue
-
-            predict_matrix[i] = safe_mean(avg_row[mask])
-            low_matrix[i] = safe_mean(low_row[mask])
-            high_matrix[i] = safe_mean(high_row[mask])
-            base_val = baseline_predict[i]
-            weights_predict[i] = _assign_weight_scalar(predict_matrix[i], base_val)
-            tmp_low = _assign_weight_scalar(low_matrix[i], base_val)
-            tmp_high = _assign_weight_scalar(high_matrix[i], base_val)
-            weights_low[i] = np.min([tmp_low, tmp_high])
-            weights_high[i] = np.max([tmp_low, tmp_high])
-
-    else:
-        slice_bins = np.array(feature_slice[:, 2], dtype=int)
-        slice_flags = np.asarray(feature_slice[:, 3], dtype=object)
-        numeric_grouped: Dict[Tuple[int, int, Any], np.ndarray] = {}
-        for rel_idx, inst in enumerate(feature_instances):
-            key = (int(inst), int(slice_bins[rel_idx]), slice_flags[rel_idx])
-            numeric_grouped.setdefault(key, []).append(rel_idx)
-        for key, rel_list in list(numeric_grouped.items()):
-            numeric_grouped[key] = np.asarray(rel_list, dtype=int)
-
-        if numeric_sorted_values is None:
-            feature_values_numeric = np.unique(np.asarray(x_cal_column))
-            sorted_cal = np.sort(feature_values_numeric)
-        else:
-            sorted_cal = np.asarray(numeric_sorted_values)
-            feature_values_numeric = np.unique(sorted_cal)
-
-        lower_boundary = np.asarray(lower_boundary, dtype=float)
-        upper_boundary = np.asarray(upper_boundary, dtype=float)
-        if feature_values_numeric.size:
-            min_val = np.min(feature_values_numeric)
-            max_val = np.max(feature_values_numeric)
-            lower_boundary = np.where(min_val < lower_boundary, lower_boundary, -np.inf)
-            upper_boundary = np.where(max_val > upper_boundary, upper_boundary, np.inf)
-        lower_update = lower_boundary.copy()
-        upper_update = upper_boundary.copy()
-
-        avg_predict_map: Dict[int, np.ndarray] = {}
-        low_predict_map: Dict[int, np.ndarray] = {}
-        high_predict_map: Dict[int, np.ndarray] = {}
-        counts_map: Dict[int, np.ndarray] = {}
-        rule_value_map: Dict[int, List[np.ndarray]] = {}
-        for i in range(n_instances):
-            num_bins = 1 + (1 if lower_boundary[i] != -np.inf else 0)
-            num_bins += 1 if upper_boundary[i] != np.inf else 0
-            avg_predict_map[i] = np.zeros(num_bins)
-            low_predict_map[i] = np.zeros(num_bins)
-            high_predict_map[i] = np.zeros(num_bins)
-            counts_map[i] = np.zeros(num_bins)
-            rule_value_map[i] = []
-
-        bin_value = np.zeros(n_instances, dtype=int)
-        current_bin = -np.ones(n_instances, dtype=int)
-
-        unique_lower, lower_inverse = np.unique(lower_boundary, return_inverse=True)
-        unique_upper, upper_inverse = np.unique(upper_boundary, return_inverse=True)
-        lower_groups = {
-            idx: np.flatnonzero(lower_inverse == idx) for idx in range(unique_lower.size)
-        }
-        upper_groups = {
-            idx: np.flatnonzero(upper_inverse == idx) for idx in range(unique_upper.size)
-        }
-        lower_cache = {
-            val: 0 if val == -np.inf else int(np.searchsorted(sorted_cal, val, side="left"))
-            for val in unique_lower
-        }
-        upper_cache = {
-            val: 0
-            if val == np.inf
-            else int(sorted_cal.size - np.searchsorted(sorted_cal, val, side="right"))
-            for val in unique_upper
-        }
-        bounds_matrix = np.column_stack((lower_boundary, upper_boundary))
-        unique_bounds, bound_inverse = np.unique(bounds_matrix, axis=0, return_inverse=True)
-        between_cache: Dict[int, int] = {}
-        for idx_bound, (lb, ub) in enumerate(unique_bounds):
-            left = 0 if lb == -np.inf else int(np.searchsorted(sorted_cal, lb, side="left"))
-            right = (
-                sorted_cal.size
-                if ub == np.inf
-                else int(np.searchsorted(sorted_cal, ub, side="right"))
-            )
-            between_cache[idx_bound] = right - left
-
-        lesser_feature = lesser_feature or {}
-        greater_feature = greater_feature or {}
-        covered_feature = covered_feature or {}
-
-        for j, val in enumerate(unique_lower):
-            values_tuple = lesser_feature.get(j)
-            if not values_tuple or getattr(values_tuple[0], "size", 0) == 0:
-                continue
-            for idx in lower_groups.get(j, []):
-                inst = int(idx)
-                rel_indices = numeric_grouped.get((inst, j, True), np.empty((0,), dtype=int))
-                avg_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
-                )
-                low_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
-                )
-                high_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
-                )
-                counts_map[inst][bin_value[inst]] = lower_cache.get(val, 0)
-                rule_value_map[inst].append(values_tuple[0])
-                bin_value[inst] += 1
-
-        for j, val in enumerate(unique_upper):
-            values_tuple = greater_feature.get(j)
-            if not values_tuple or getattr(values_tuple[0], "size", 0) == 0:
-                continue
-            for idx in upper_groups.get(j, []):
-                inst = int(idx)
-                rel_indices = numeric_grouped.get((inst, j, False), np.empty((0,), dtype=int))
-                avg_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
-                )
-                low_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
-                )
-                high_predict_map[inst][bin_value[inst]] = (
-                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
-                )
-                counts_map[inst][bin_value[inst]] = upper_cache.get(val, 0)
-                rule_value_map[inst].append(values_tuple[0])
-                bin_value[inst] += 1
-
-        for inst in range(n_instances):
-            current_index = bin_value[inst]
-            for j in range(unique_bounds.shape[0]):
-                rel_indices = numeric_grouped.get((inst, j, None), np.empty((0,), dtype=int))
-                avg_predict_map[inst][current_index] = (
-                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
-                )
-                low_predict_map[inst][current_index] = (
-                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
-                )
-                high_predict_map[inst][current_index] = (
-                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
-                )
-                counts_map[inst][current_index] = between_cache.get(j, 0)
-                rule_entry = covered_feature.get(j)
-                if rule_entry is None:
-                    rule_entry = covered_feature.get(inst)
-                rule_value_map[inst].append(
-                    rule_entry[0] if rule_entry is not None else np.array([])
-                )
-                current_bin[inst] = current_index
-
-        for inst in range(n_instances):
-            rule_values_result[inst] = (rule_value_map[inst], x_column[inst], x_column[inst])
-            mask = np.ones_like(avg_predict_map[inst], dtype=bool)
-            if 0 <= current_bin[inst] < mask.size:
-                mask[current_bin[inst]] = False
-            uncovered = np.nonzero(mask)[0]
-            counts_uncovered = counts_map[inst][mask]
-            total_counts = counts_uncovered.sum() if uncovered.size else 0
-            fractions = (
-                counts_uncovered / total_counts
-                if uncovered.size and total_counts
-                else np.zeros(uncovered.size, dtype=float)
-            )
-            binned_result[inst] = (
-                avg_predict_map[inst],
-                low_predict_map[inst],
-                high_predict_map[inst],
-                current_bin[inst],
-                counts_map[inst],
-                fractions,
-            )
-            if uncovered.size == 0:
-                continue
-            predict_matrix[inst] = safe_mean(avg_predict_map[inst][mask])
-            low_matrix[inst] = safe_mean(low_predict_map[inst][mask])
-            high_matrix[inst] = safe_mean(high_predict_map[inst][mask])
-            base_val = baseline_predict[inst]
-            weights_predict[inst] = _assign_weight_scalar(predict_matrix[inst], base_val)
-            tmp_low = _assign_weight_scalar(low_matrix[inst], base_val)
-            tmp_high = _assign_weight_scalar(high_matrix[inst], base_val)
-            weights_low[inst] = np.min([tmp_low, tmp_high])
-            weights_high[inst] = np.max([tmp_low, tmp_high])
-
-    for idx in range(n_instances):
-        if rule_values_result[idx] is None:
-            rule_values_result[idx] = (feature_values_list, x_column[idx], x_column[idx])
-        if binned_result[idx] is None:
-            binned_result[idx] = (
-                np.zeros((0,), dtype=float),
-                np.zeros((0,), dtype=float),
-                np.zeros((0,), dtype=float),
-                -1,
-                np.array([], dtype=float),
-                np.array([], dtype=float),
-            )
-
-    return (
-        feature_index,
-        weights_predict,
-        weights_low,
-        weights_high,
-        predict_matrix,
-        low_matrix,
-        high_matrix,
-        rule_values_result,
-        binned_result,
-        lower_update,
-        upper_update,
-    )
+    This function has been moved to core.explain.feature_task._feature_task
+    to support parallel execution patterns. This wrapper maintains backward
+    compatibility with existing imports and test code.
+    """
+    return _execute_feature_task(args)
 
 
 _DEFAULT_EXPLANATION_IDENTIFIERS: Dict[str, str] = {
@@ -828,18 +378,36 @@ class CalibratedExplainer:
         self._plot_style_chain: Tuple[str, ...] | None = None
         self._explanation_contexts: Dict[str, ExplanationContext] = {}
         self._last_explanation_mode: str | None = None
+        # Store default identifiers as instance field to allow test patching
+        self._default_explanation_identifiers = dict(_DEFAULT_EXPLANATION_IDENTIFIERS)
         self._last_telemetry: Dict[str, Any] = {}
-        self._ensure_interval_runtime_state()
+
         # Ensure builtin plugins (including optional fast plugins) are registered
         # before we compute fallback chains. Without this, the initial chain
         # construction may miss identifiers that are subsequently required during
         # runtime resolution, causing ConfigurationError during explain_fast.
         ensure_builtin_plugins()
-        for mode in _EXPLANATION_MODES:
-            self._explanation_plugin_fallbacks[mode] = self._build_explanation_chain(mode)
-        self._interval_plugin_fallbacks["default"] = self._build_interval_chain(fast=False)
-        self._interval_plugin_fallbacks["fast"] = self._build_interval_chain(fast=True)
-        self._plot_style_chain = self._build_plot_style_chain()
+
+        # Phase 1: Initialize orchestrators BEFORE building chains.
+        # The orchestrators will build and populate the fallback chains.
+        self._explanation_orchestrator = ExplanationOrchestrator(self)
+        from .prediction.orchestrator import PredictionOrchestrator
+        self._prediction_orchestrator = PredictionOrchestrator(self)
+
+        # Build explanation and plot fallback chains via orchestrator
+        self._explanation_orchestrator.initialize_chains()
+
+        # Build interval fallback chains via orchestrator
+        self._prediction_orchestrator.initialize_chains()
+
+        # Populate the plot_style_chain from the explanation orchestrator's work
+        # (Note: plot chains are now managed by ExplanationOrchestrator.initialize_chains())
+        self._plot_style_chain = self._explanation_orchestrator.explainer._plot_plugin_fallbacks.get(
+            "default"
+        )
+
+        # Initialize interval runtime state via orchestrator
+        self._prediction_orchestrator._ensure_interval_runtime_state()
 
         # Phase 1A delegation: interval learner initialization via helper
         from .calibration_helpers import initialize_interval_learner as _init_il
@@ -848,6 +416,7 @@ class CalibratedExplainer:
         self.reject_learner = (
             self.initialize_reject_learner() if kwargs.get("reject", False) else None
         )
+
 
         self._predict_bridge = LegacyPredictBridge(self)
 
@@ -858,156 +427,48 @@ class CalibratedExplainer:
     # ------------------------------------------------------------------
 
     def _build_explanation_chain(self, mode: str) -> Tuple[str, ...]:
-        """Return the ordered identifier fallback chain for *mode*."""
-        entries: List[str] = []
+        """Delegate to ExplanationOrchestrator (Phase 1A).
 
-        override = self._explanation_plugin_overrides.get(mode)
-        if isinstance(override, str) and override:
-            entries.append(override)
-
-        env_key = f"CE_EXPLANATION_PLUGIN_{mode.upper()}"
-        env_value = os.environ.get(env_key)
-        if env_value:
-            entries.append(env_value.strip())
-        entries.extend(_split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
-
-        py_settings = self._pyproject_explanations or {}
-        py_value = py_settings.get(mode)
-        if isinstance(py_value, str) and py_value:
-            entries.append(py_value)
-        entries.extend(_coerce_string_tuple(py_settings.get(f"{mode}_fallbacks")))
-
-        # Deduplicate while maintaining order and extend using metadata fallbacks
-        seen: set[str] = set()
-        expanded: List[str] = []
-        for identifier in entries:
-            if not identifier or identifier in seen:
-                continue
-            expanded.append(identifier)
-            seen.add(identifier)
-            descriptor = find_explanation_descriptor(identifier)
-            if descriptor:
-                for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
-                    if fallback and fallback not in seen:
-                        expanded.append(fallback)
-                        seen.add(fallback)
-
-        default_identifier = _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode)
-        if default_identifier and default_identifier not in seen:
-            expanded.append(default_identifier)
-            seen.add(default_identifier)
-
-        if mode == "fast":
-            # Allow environments that only ship the external fast plugin to
-            # register under their own identifier while still preferring the
-            # core identifier when it becomes available at runtime.
-            ext_fast = "external.explanation.fast"
-            if ext_fast and ext_fast not in seen:
-                expanded.append(ext_fast)
-                seen.add(ext_fast)
-        return tuple(expanded)
+        Build the ordered explanation plugin fallback chain for the given mode.
+        This is marked for removal in v0.11.0; use orchestrator directly if needed.
+        """
+        if hasattr(self, "_explanation_orchestrator"):
+            # Use orchestrator's method
+            return self._explanation_orchestrator._build_explanation_chain(
+                mode, _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode, "")
+            )
+        # Fallback for tests using __new__()
+        from .explain.orchestrator import ExplanationOrchestrator
+        orch = ExplanationOrchestrator(self)
+        return orch._build_explanation_chain(
+            mode, _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode, "")
+        )
 
     def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
-        """Return the ordered interval plugin chain for the requested mode."""
-        entries: List[str] = []
-        override = self._fast_interval_plugin_override if fast else self._interval_plugin_override
-        preferred_identifier: str | None = None
-        if isinstance(override, str) and override:
-            entries.append(override)
-            preferred_identifier = override
+        """Delegate to PredictionOrchestrator (Phase 1B).
 
-        env_key = "CE_INTERVAL_PLUGIN_FAST" if fast else "CE_INTERVAL_PLUGIN"
-        env_value = os.environ.get(env_key)
-        if env_value:
-            entries.append(env_value.strip())
-            if preferred_identifier is None:
-                preferred_identifier = env_value.strip()
-        entries.extend(_split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
-
-        py_settings = self._pyproject_intervals or {}
-        py_key = "fast" if fast else "default"
-        py_value = py_settings.get(py_key)
-        if isinstance(py_value, str) and py_value:
-            entries.append(py_value)
-        entries.extend(_coerce_string_tuple(py_settings.get(f"{py_key}_fallbacks")))
-
-        default_identifier = "core.interval.fast" if fast else "core.interval.legacy"
-        seen: set[str] = set()
-        ordered: List[str] = []
-        for identifier in entries:
-            if identifier and identifier not in seen:
-                ordered.append(identifier)
-                seen.add(identifier)
-                descriptor = find_interval_descriptor(identifier)
-                if descriptor:
-                    for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
-                        if fallback and fallback not in seen:
-                            ordered.append(fallback)
-                            seen.add(fallback)
-        if default_identifier not in seen:
-            if fast:
-                # Prefer the core fast identifier when available; otherwise
-                # fall back to the external fast interval identifier if registered.
-                if find_interval_descriptor(default_identifier) is not None:
-                    ordered.append(default_identifier)
-                else:
-                    ext_fast = "external.interval.fast"
-                    if find_interval_descriptor(ext_fast) is not None:
-                        ordered.append(ext_fast)
-            else:
-                ordered.append(default_identifier)
-        key = "fast" if fast else "default"
-        self._interval_preferred_identifier[key] = preferred_identifier
-        return tuple(ordered)
+        Build the ordered interval calibrator plugin fallback chain.
+        This is marked for removal in v0.11.0; use orchestrator directly if needed.
+        """
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._build_interval_chain(fast=fast)
+        # Fallback for tests using __new__()
+        from .prediction.orchestrator import PredictionOrchestrator
+        orch = PredictionOrchestrator(self)
+        return orch._build_interval_chain(fast=fast)
 
     def _build_plot_style_chain(self) -> Tuple[str, ...]:
-        """Return the ordered plot style fallback chain."""
-        entries: List[str] = []
-        if isinstance(self._plot_style_override, str) and self._plot_style_override:
-            entries.append(self._plot_style_override)
+        """Delegate to ExplanationOrchestrator (Phase 1A).
 
-        env_value = os.environ.get("CE_PLOT_STYLE")
-        if env_value:
-            entries.append(env_value.strip())
-        entries.extend(_split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
-
-        py_settings = self._pyproject_plots or {}
-        py_value = py_settings.get("style")
-        if isinstance(py_value, str) and py_value:
-            entries.append(py_value)
-        entries.extend(_coerce_string_tuple(py_settings.get("style_fallbacks")))
-        entries.append("legacy")
-        seen: set[str] = set()
-        ordered: List[str] = []
-        for identifier in entries:
-            if identifier and identifier not in seen:
-                ordered.append(identifier)
-                seen.add(identifier)
-        if "plot_spec.default" not in seen:
-            if "legacy" in ordered:
-                legacy_index = ordered.index("legacy")
-                ordered.insert(legacy_index, "plot_spec.default")
-            else:
-                ordered.append("plot_spec.default")
-        if "legacy" not in ordered:
-            ordered.append("legacy")
-        return tuple(ordered)
-
-    def _ensure_interval_runtime_state(self) -> None:
-        """Ensure interval tracking members exist for legacy instances."""
-        storage = self.__dict__
-        if "_interval_plugin_hints" not in storage:
-            storage["_interval_plugin_hints"] = {}
-        if "_interval_plugin_fallbacks" not in storage:
-            storage["_interval_plugin_fallbacks"] = {}
-        if "_interval_plugin_identifiers" not in storage:
-            storage["_interval_plugin_identifiers"] = {"default": None, "fast": None}
-        if "_telemetry_interval_sources" not in storage:
-            storage["_telemetry_interval_sources"] = {"default": None, "fast": None}
-        if "_interval_preferred_identifier" not in storage:
-            storage["_interval_preferred_identifier"] = {"default": None, "fast": None}
-        if "_interval_context_metadata" not in storage:
-            storage["_interval_context_metadata"] = {"default": {}, "fast": {}}
+        Build the ordered plot style fallback chain.
+        This is marked for removal in v0.11.0; use orchestrator directly if needed.
+        """
+        if hasattr(self, "_explanation_orchestrator"):
+            return self._explanation_orchestrator._build_plot_chain()
+        # Fallback for tests using __new__()
+        from .explain.orchestrator import ExplanationOrchestrator
+        orch = ExplanationOrchestrator(self)
+        return orch._build_plot_chain()
 
     def _coerce_plugin_override(self, override: Any) -> Any:
         """Normalise a plugin override into an instance when possible."""
@@ -1025,87 +486,42 @@ class CalibratedExplainer:
             return candidate
         return override
 
-    def _check_explanation_runtime_metadata(
-        self,
-        metadata: Mapping[str, Any] | None,
-        *,
-        identifier: str | None,
-        mode: str,
-    ) -> str | None:
-        """Return an error message if *metadata* is incompatible at runtime."""
-        prefix = identifier or str((metadata or {}).get("name") or "<anonymous>")
-        if metadata is None:
-            return f"{prefix}: plugin metadata unavailable"
+    # ===================================================================
+    # Delegation stubs for orchestrator methods (Phase 1a/1b)
+    # ===================================================================
+    # These methods delegate to orchestrators for backward compatibility
+    # with tests and external code that call private methods directly.
 
-        schema_version = metadata.get("schema_version")
-        if schema_version != EXPLANATION_PROTOCOL_VERSION:
-            return (
-                f"{prefix}: explanation schema_version {schema_version} unsupported; "
-                f"expected {EXPLANATION_PROTOCOL_VERSION}"
-            )
-
-        tasks = _coerce_string_tuple(metadata.get("tasks"))
-        if not tasks:
-            return f"{prefix}: plugin metadata missing tasks declaration"
-        if "both" not in tasks and self.mode not in tasks:
-            declared = ", ".join(tasks)
-            return f"{prefix}: does not support task '{self.mode}' " f"(declared: {declared})"
-
-        modes = _coerce_string_tuple(metadata.get("modes"))
-        if not modes:
-            return f"{prefix}: plugin metadata missing modes declaration"
-        if mode not in modes:
-            declared = ", ".join(modes)
-            return f"{prefix}: does not declare mode '{mode}' (modes: {declared})"
-
-        capabilities = metadata.get("capabilities")
-        cap_set: set[str] = set()
-        if isinstance(capabilities, Iterable):
-            for capability in capabilities:
-                cap_set.add(str(capability))
-
-        missing: List[str] = []
-        if "explain" not in cap_set:
-            missing.append("explain")
-        mode_cap = f"explanation:{mode}"
-        if mode_cap not in cap_set:
-            alt_mode_cap = f"mode:{mode}"
-            if alt_mode_cap not in cap_set:
-                missing.append(mode_cap)
-        task_cap = f"task:{self.mode}"
-        if task_cap not in cap_set and "task:both" not in cap_set:
-            missing.append(task_cap)
-
-        if missing:
-            return f"{prefix}: missing required capabilities {', '.join(sorted(missing))}"
-
-        return None
-
-    def _instantiate_plugin(self, prototype: Any) -> Any:
-        """Best-effort instantiation that avoids sharing state across explainers."""
-        if prototype is None:
-            return None
-        if callable(prototype) and hasattr(prototype, "plugin_meta"):
-            return prototype
-        plugin_cls = type(prototype)
-        try:
-            return plugin_cls()
-        except Exception:
-            try:
-                import copy
-
-                return copy.deepcopy(prototype)
-            except Exception:  # pragma: no cover - defensive
-                return prototype
+    def _ensure_interval_runtime_state(self) -> None:
+        """Delegate to PredictionOrchestrator (Phase 1B)."""
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._ensure_interval_runtime_state()
+        # Fallback for tests that manually create explainer instances
+        storage = self.__dict__
+        if "_interval_plugin_hints" not in storage:
+            storage["_interval_plugin_hints"] = {}
+        if "_interval_plugin_fallbacks" not in storage:
+            storage["_interval_plugin_fallbacks"] = {}
+        if "_interval_plugin_identifiers" not in storage:
+            storage["_interval_plugin_identifiers"] = {"default": None, "fast": None}
+        if "_telemetry_interval_sources" not in storage:
+            storage["_telemetry_interval_sources"] = {"default": None, "fast": None}
+        if "_interval_preferred_identifier" not in storage:
+            storage["_interval_preferred_identifier"] = {"default": None, "fast": None}
+        if "_interval_context_metadata" not in storage:
+            storage["_interval_context_metadata"] = {"default": {}, "fast": {}}
 
     def _gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
-        """Return interval dependency hints collected from explanation plugins."""
+        """Delegate to PredictionOrchestrator (Phase 1B)."""
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._gather_interval_hints(fast=fast)
+        # Fallback for tests
         if fast:
             return self._interval_plugin_hints.get("fast", ())
         ordered: List[str] = []
         seen: set[str] = set()
         for mode in ("factual", "alternative"):
-            for identifier in self._interval_plugin_hints.get(mode, ()):  # noqa: B020
+            for identifier in self._interval_plugin_hints.get(mode, ()):
                 if identifier not in seen:
                     ordered.append(identifier)
                     seen.add(identifier)
@@ -1118,7 +534,12 @@ class CalibratedExplainer:
         identifier: str | None,
         fast: bool,
     ) -> str | None:
-        """Validate interval plugin metadata for the current execution."""
+        """Delegate to PredictionOrchestrator (Phase 1B)."""
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._check_interval_runtime_metadata(
+                metadata, identifier=identifier, fast=fast
+            )
+        # Fallback for tests
         prefix = identifier or str((metadata or {}).get("name") or "<anonymous>")
         if metadata is None:
             return f"{prefix}: interval metadata unavailable"
@@ -1155,82 +576,13 @@ class CalibratedExplainer:
         fast: bool,
         hints: Sequence[str] = (),
     ) -> Tuple[Any, str | None]:
-        """Resolve the interval plugin for the requested execution path."""
-        ensure_builtin_plugins()
-
-        raw_override = (
-            self._fast_interval_plugin_override if fast else self._interval_plugin_override
-        )
-        override = self._coerce_plugin_override(raw_override)
-        if override is not None and not isinstance(override, str):
-            identifier = getattr(override, "plugin_meta", {}).get("name")
-            return override, identifier
-
-        if isinstance(raw_override, str):
-            preferred_identifier = raw_override
-        else:
-            key = "fast" if fast else "default"
-            preferred_identifier = self._interval_preferred_identifier.get(key)
-        chain = list(self._interval_plugin_fallbacks.get("fast" if fast else "default", ()))
-        if hints:
-            ordered = []
-            seen: set[str] = set()
-            for identifier in tuple(hints) + tuple(chain):
-                if identifier and identifier not in seen:
-                    ordered.append(identifier)
-                    seen.add(identifier)
-            chain = ordered
-
-        errors: List[str] = []
-        for identifier in chain:
-            if is_identifier_denied(identifier):
-                message = f"{identifier}: denied via CE_DENY_PLUGIN"
-                if preferred_identifier == identifier:
-                    raise ConfigurationError("Interval plugin override failed: " + message)
-                errors.append(message)
-                continue
-            descriptor = find_interval_descriptor(identifier)
-            plugin = None
-            metadata: Mapping[str, Any] | None = None
-            preferred = preferred_identifier == identifier
-            if descriptor is not None:
-                metadata = descriptor.metadata
-                if descriptor.trusted or preferred:
-                    plugin = descriptor.plugin
-            if plugin is None:
-                if preferred:
-                    plugin = find_interval_plugin(identifier)
-                else:
-                    plugin = find_interval_plugin_trusted(identifier)
-            if plugin is None:
-                message = f"{identifier}: not registered"
-                if preferred_identifier == identifier:
-                    raise ConfigurationError("Interval plugin override failed: " + message)
-                errors.append(message)
-                continue
-
-            meta_source = metadata or getattr(plugin, "plugin_meta", None)
-            error = self._check_interval_runtime_metadata(
-                meta_source,
-                identifier=identifier,
-                fast=fast,
-            )
-            if error:
-                if preferred_identifier == identifier:
-                    raise ConfigurationError(error)
-                errors.append(error)
-                continue
-
-            plugin = self._instantiate_plugin(plugin)
-            return plugin, identifier
-
-        raise ConfigurationError(
-            "Unable to resolve interval plugin for "
-            + ("fast" if fast else "default")
-            + " mode. Tried: "
-            + ", ".join(chain or ("<none>",))
-            + ("; errors: " + "; ".join(errors) if errors else "")
-        )
+        """Delegate to PredictionOrchestrator (Phase 1B)."""
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._resolve_interval_plugin(fast=fast, hints=hints)
+        # Fallback for tests - delegate to orchestrator initialization
+        from .prediction.orchestrator import PredictionOrchestrator
+        orch = PredictionOrchestrator(self)
+        return orch._resolve_interval_plugin(fast=fast, hints=hints)
 
     def _build_interval_context(
         self,
@@ -1238,54 +590,15 @@ class CalibratedExplainer:
         fast: bool,
         metadata: Mapping[str, Any],
     ) -> IntervalCalibratorContext:
-        """Construct the frozen interval calibrator context."""
-        calibration_splits: Tuple[Any, ...] = ((self.x_cal, self.y_cal),)
-        bins = {"calibration": self.bins}
-        difficulty = {"estimator": self.difficulty_estimator}
-        fast_flags = {"fast": fast}
-        residuals: Mapping[str, Any] = {}
-        key = "fast" if fast else "default"
-        stored_metadata = dict(self._interval_context_metadata.get(key, {}))
-        enriched_metadata = stored_metadata
-        enriched_metadata.update(metadata)
-        enriched_metadata.setdefault("task", self.mode)
-        enriched_metadata.setdefault("mode", self.mode)
-        enriched_metadata.setdefault("predict_function", getattr(self, "predict_function", None))
-        enriched_metadata.setdefault("difficulty_estimator", self.difficulty_estimator)
-        enriched_metadata.setdefault("explainer", self)
-        enriched_metadata.setdefault("categorical_features", tuple(self.categorical_features))
-        enriched_metadata.setdefault("num_features", self.num_features)
-        enriched_metadata.setdefault(
-            "noise_config",
-            {
-                "noise_type": getattr(self, "_CalibratedExplainer__noise_type", None),
-                "scale_factor": getattr(self, "_CalibratedExplainer__scale_factor", None),
-                "severity": getattr(self, "_CalibratedExplainer__severity", None),
-                "seed": getattr(self, "seed", None),
-                "rng": getattr(self, "rng", None),
-            },
-        )
-        if fast:
-            existing_fast = enriched_metadata.get("existing_fast_calibrators")
-            if not existing_fast:
-                stored_fast = stored_metadata.get("fast_calibrators") or stored_metadata.get(
-                    "existing_fast_calibrators"
-                )
-                if stored_fast:
-                    existing_fast = stored_fast
-            if not existing_fast and isinstance(self.interval_learner, list):
-                existing_fast = tuple(self.interval_learner)
-            if existing_fast:
-                enriched_metadata["existing_fast_calibrators"] = tuple(existing_fast)
-        return IntervalCalibratorContext(
-            learner=self.learner,
-            calibration_splits=calibration_splits,
-            bins=bins,
-            residuals=residuals,
-            difficulty=difficulty,
-            metadata=enriched_metadata,
-            fast_flags=fast_flags,
-        )
+        """Delegate to PredictionOrchestrator (Phase 1B)."""
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._build_interval_context(
+                fast=fast, metadata=metadata
+            )
+        # Fallback for tests
+        from .prediction.orchestrator import PredictionOrchestrator
+        orch = PredictionOrchestrator(self)
+        return orch._build_interval_context(fast=fast, metadata=metadata)
 
     def _obtain_interval_calibrator(
         self,
@@ -1293,44 +606,68 @@ class CalibratedExplainer:
         fast: bool,
         metadata: Mapping[str, Any],
     ) -> Tuple[Any, str | None]:
-        """Resolve and instantiate the interval calibrator for the active mode."""
-        self._ensure_interval_runtime_state()
-        hints = self._gather_interval_hints(fast=fast)
-        plugin, identifier = self._resolve_interval_plugin(fast=fast, hints=hints)
-        context = self._build_interval_context(fast=fast, metadata=metadata)
-        try:
-            calibrator = plugin.create(context, fast=fast)
-        except Exception as exc:  # pragma: no cover - defensive guard
-            raise ConfigurationError(
-                f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
-            ) from exc
-        self._capture_interval_calibrators(
-            context=context,
-            calibrator=calibrator,
-            fast=fast,
+        """Delegate to PredictionOrchestrator (Phase 1B)."""
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._obtain_interval_calibrator(
+                fast=fast, metadata=metadata
+            )
+        # Fallback for tests
+        from .prediction.orchestrator import PredictionOrchestrator
+        orch = PredictionOrchestrator(self)
+        return orch._obtain_interval_calibrator(fast=fast, metadata=metadata)
+
+    def _check_explanation_runtime_metadata(
+        self,
+        metadata: Mapping[str, Any] | None,
+        *,
+        identifier: str | None,
+        mode: str,
+    ) -> str | None:
+        """Delegate to ExplanationOrchestrator (Phase 1A)."""
+        if hasattr(self, "_explanation_orchestrator"):
+            return self._explanation_orchestrator._check_metadata(
+                metadata, identifier=identifier, mode=mode
+            )
+        # Fallback for tests
+        from .explain.orchestrator import ExplanationOrchestrator
+        orch = ExplanationOrchestrator(self)
+        return orch._check_metadata(
+            metadata, identifier=identifier, mode=mode
         )
-        key = "fast" if fast else "default"
-        self._interval_plugin_identifiers[key] = identifier
-        self._telemetry_interval_sources[key] = identifier
-        metadata_dict: Dict[str, Any]
-        if isinstance(context.metadata, dict):
-            metadata_dict = context.metadata
-        else:
-            metadata_dict = dict(context.metadata)
-        if fast:
-            if isinstance(calibrator, Sequence) and not isinstance(calibrator, (str, bytes)):
-                calibrators_tuple = tuple(calibrator)
-            else:
-                calibrators_tuple = (calibrator,)
-            metadata_dict["fast_calibrators"] = calibrators_tuple
-            metadata_dict["existing_fast_calibrators"] = calibrators_tuple
-        else:
-            metadata_dict["calibrator"] = calibrator
-        # persist captured metadata for future invocations without sharing references
-        self._interval_context_metadata[key] = dict(metadata_dict)
-        if metadata_dict is not context.metadata and isinstance(context.metadata, dict):
-            context.metadata.update(metadata_dict)
-        return calibrator, identifier
+
+    def _instantiate_plugin(self, prototype: Any) -> Any:
+        """Delegate to ExplanationOrchestrator (Phase 1A)."""
+        if hasattr(self, "_explanation_orchestrator"):
+            return self._explanation_orchestrator._instantiate_plugin(prototype)
+        # Fallback for tests
+        from .explain.orchestrator import ExplanationOrchestrator
+        orch = ExplanationOrchestrator(self)
+        return orch._instantiate_plugin(prototype)
+
+    def _predict_impl(
+        self, x, threshold=None, low_high_percentiles=(5, 95), classes=None, bins=None, **kwargs
+    ):
+        """Delegate to PredictionOrchestrator (Phase 1B)."""
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._predict_impl(
+                x,
+                threshold=threshold,
+                low_high_percentiles=low_high_percentiles,
+                classes=classes,
+                bins=bins,
+                **kwargs,
+            )
+        # Fallback for tests
+        from .prediction.orchestrator import PredictionOrchestrator
+        orch = PredictionOrchestrator(self)
+        return orch._predict_impl(
+            x,
+            threshold=threshold,
+            low_high_percentiles=low_high_percentiles,
+            classes=classes,
+            bins=bins,
+            **kwargs,
+        )
 
     def _capture_interval_calibrators(
         self,
@@ -1339,317 +676,76 @@ class CalibratedExplainer:
         calibrator: Any,
         fast: bool,
     ) -> None:
-        """Record the returned calibrator inside the interval context metadata."""
+        """Delegate to PredictionOrchestrator (Phase 1B)."""
+        if hasattr(self, "_prediction_orchestrator"):
+            return self._prediction_orchestrator._capture_interval_calibrators(
+                context=context, calibrator=calibrator, fast=fast
+            )
+        # Fallback for tests - simple implementation
         metadata = context.metadata
         if not isinstance(metadata, dict):
             return
-
         if fast:
-            if isinstance(calibrator, Sequence) and not isinstance(
-                calibrator, (str, bytes, bytearray)
-            ):
+            if isinstance(calibrator, Sequence) and not isinstance(calibrator, (str, bytes, bytearray)):
                 metadata.setdefault("fast_calibrators", tuple(calibrator))
             elif calibrator is not None:
                 metadata.setdefault("fast_calibrators", (calibrator,))
         else:
             metadata.setdefault("calibrator", calibrator)
 
-    def _resolve_explanation_plugin(self, mode: str) -> Tuple[Any, str | None]:
-        """Resolve or instantiate the plugin handling *mode*."""
-        ensure_builtin_plugins()
-
-        raw_override = self._explanation_plugin_overrides.get(mode)
-        override = self._coerce_plugin_override(raw_override)
-        if override is not None and not isinstance(override, str):
-            plugin = override
-            identifier = getattr(plugin, "plugin_meta", {}).get("name")
-            return plugin, identifier
-
-        preferred_identifier = raw_override if isinstance(raw_override, str) else None
-        chain = self._explanation_plugin_fallbacks.get(mode, ())
-        if not chain and mode == "fast":
-            raise ConfigurationError(
-                "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                'Install the external plugins extra with ``pip install "calibrated-explanations[external-plugins]"`` '
-                "and call ``external_plugins.fast_explanations.register()`` or rerun "
-                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
-            )
-        errors: List[str] = []
-        for identifier in chain:
-            is_preferred = preferred_identifier is not None and identifier == preferred_identifier
-            if is_identifier_denied(identifier):
-                message = f"{identifier}: denied via CE_DENY_PLUGIN"
-                if is_preferred:
-                    raise ConfigurationError("Explanation plugin override failed: " + message)
-                errors.append(message)
-                continue
-            descriptor = find_explanation_descriptor(identifier)
-            metadata: Mapping[str, Any] | None = None
-            plugin = None
-            if descriptor is not None:
-                metadata = descriptor.metadata
-                if descriptor.trusted:
-                    plugin = descriptor.plugin
-            if plugin is None:
-                plugin = find_explanation_plugin(identifier)
-            if plugin is None:
-                message = f"{identifier}: not registered"
-                if is_preferred:
-                    raise ConfigurationError("Explanation plugin override failed: " + message)
-                errors.append(message)
-                continue
-
-            meta_source = metadata or getattr(plugin, "plugin_meta", None)
-            error = self._check_explanation_runtime_metadata(
-                meta_source,
-                identifier=identifier,
-                mode=mode,
-            )
-            if error:
-                if is_preferred:
-                    raise ConfigurationError(error)
-                errors.append(error)
-                continue
-
-            plugin = self._instantiate_plugin(plugin)
-            try:
-                supports = plugin.supports_mode
-            except AttributeError as exc:
-                errors.append(f"{identifier}: missing supports_mode ({exc})")
-                continue
-            try:
-                if not supports(mode, task=self.mode):
-                    errors.append(f"{identifier}: mode '{mode}' unsupported for task {self.mode}")
-                    continue
-            except Exception as exc:  # pragma: no cover - defensive
-                errors.append(f"{identifier}: error during supports_mode ({exc})")
-                continue
-            return plugin, identifier
-
-        if mode == "fast" and "core.explanation.fast" in chain:
-            raise ConfigurationError(
-                "Fast explanation plugin 'core.explanation.fast' is not registered. "
-                'Install the external plugins extra with ``pip install "calibrated-explanations[external-plugins]"`` '
-                "and call ``external_plugins.fast_explanations.register()`` or rerun "
-                "``explain_fast(..., _use_plugin=False)`` to fall back to the legacy path."
-            )
-
-        raise ConfigurationError(
-            "Unable to resolve explanation plugin for mode '"
-            + mode
-            + "'. Tried: "
-            + ", ".join(chain or ("<none>",))
-            + ("; errors: " + "; ".join(errors) if errors else "")
-        )
-
-    def _ensure_explanation_plugin(self, mode: str) -> Tuple[Any, str | None]:
-        """Return the plugin instance for *mode*, initialising on demand."""
-        if mode in self._explanation_plugin_instances:
-            return self._explanation_plugin_instances[
-                mode
-            ], self._explanation_plugin_identifiers.get(mode)
-
-        plugin, identifier = self._resolve_explanation_plugin(mode)
-        metadata: Mapping[str, Any] | None = None
-        if identifier:
-            descriptor = find_explanation_descriptor(identifier)
-            if descriptor:
-                metadata = descriptor.metadata
-                interval_dependency = metadata.get("interval_dependency")
-                hints = _coerce_string_tuple(interval_dependency)
-                if hints:
-                    self._interval_plugin_hints[mode] = hints
-            else:
-                metadata = getattr(plugin, "plugin_meta", None)
-        else:
-            metadata = getattr(plugin, "plugin_meta", None)
-
-        error = self._check_explanation_runtime_metadata(
-            metadata,
-            identifier=identifier,
-            mode=mode,
-        )
-        if error:
-            raise ConfigurationError(error)
-
-        if metadata is not None and not identifier:
-            hints = _coerce_string_tuple(metadata.get("interval_dependency"))
-            if hints:
-                self._interval_plugin_hints[mode] = hints
-        context = self._build_explanation_context(mode, plugin, identifier)
-        try:
-            plugin.initialize(context)
-        except Exception as exc:
-            raise ConfigurationError(
-                f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
-            ) from exc
-        self._explanation_plugin_instances[mode] = plugin
-        if identifier:
-            self._explanation_plugin_identifiers[mode] = identifier
-        self._explanation_contexts[mode] = context
-        return plugin, identifier
-
-    def _build_explanation_context(
-        self, mode: str, plugin: Any, identifier: str | None
-    ) -> ExplanationContext:
-        """Construct the immutable context passed to explanation plugins."""
-        helper_handles = {"explainer": self}
-        interval_settings = {
-            "dependencies": self._interval_plugin_hints.get(mode, ()),
-        }
-        plot_chain = self._derive_plot_chain(mode, identifier)
-        self._plot_plugin_fallbacks[mode] = plot_chain
-        plot_settings = {"fallbacks": plot_chain}
-
-        monitor = self._bridge_monitors.get(mode)
-        if monitor is None:
-            monitor = _PredictBridgeMonitor(self._predict_bridge)
-            self._bridge_monitors[mode] = monitor
-
-        context = ExplanationContext(
-            task=self.mode,
-            mode=mode,
-            feature_names=tuple(self.feature_names),
-            categorical_features=tuple(self.categorical_features),
-            categorical_labels=(
-                {k: dict(v) for k, v in (self.categorical_labels or {}).items()}
-                if self.categorical_labels
-                else {}
-            ),
-            discretizer=self.discretizer,
-            helper_handles=helper_handles,
-            predict_bridge=monitor,
-            interval_settings=interval_settings,
-            plot_settings=plot_settings,
-        )
-        return context
-
-    def _derive_plot_chain(self, mode: str, identifier: str | None) -> Tuple[str, ...]:
-        """Return plot fallback chain seeded by plugin metadata."""
-        preferred: List[str] = []
-        if identifier:
-            descriptor = find_explanation_descriptor(identifier)
-            if descriptor:
-                plot_dependency = descriptor.metadata.get("plot_dependency")
-                for hint in _coerce_string_tuple(plot_dependency):
-                    if hint:
-                        preferred.append(hint)
-        base_chain = self._plot_style_chain or ("legacy",)
-        seen: set[str] = set()
-        ordered: List[str] = []
-        for item in tuple(preferred) + base_chain:
-            if item and item not in seen:
-                ordered.append(item)
-                seen.add(item)
-        return tuple(ordered)
-
     def _build_instance_telemetry_payload(self, explanations: Any) -> Dict[str, Any]:
-        """Extract telemetry details from the first explanation instance, if present."""
-        try:
-            first_explanation = explanations[0]  # type: ignore[index]
-        except Exception:  # pragma: no cover - defensive: empty or non-indexable containers
-            return {}
-        builder = getattr(first_explanation, "to_telemetry", None)
-        if callable(builder):
-            payload = builder()
-            if isinstance(payload, dict):
-                return payload
-        return {}
+        """Delegate to ExplanationOrchestrator (Phase 1A)."""
+        if hasattr(self, "_explanation_orchestrator"):
+            return self._explanation_orchestrator._build_instance_telemetry_payload(explanations)
+        # Fallback for tests
+        from .explain.orchestrator import ExplanationOrchestrator
+        orch = ExplanationOrchestrator(self)
+        return orch._build_instance_telemetry_payload(explanations)
 
     def _infer_explanation_mode(self) -> str:
-        """Infer the explanation mode based on the active discretizer."""
-        if isinstance(self.discretizer, (EntropyDiscretizer, RegressorDiscretizer)):
-            return "alternative"
+        """Infer the explanation mode from runtime state."""
+        # Check discretizer type to infer mode
+        discretizer = self.discretizer if hasattr(self, "discretizer") else None
+        if discretizer is not None:
+            if isinstance(discretizer, (EntropyDiscretizer, RegressorDiscretizer)):
+                return "alternative"
+        # All other discretizers (Binary*, or None) indicate factual
         return "factual"
 
     def _invoke_explanation_plugin(
         self,
         mode: str,
-        x,
-        threshold,
-        low_high_percentiles,
-        bins,
-        features_to_ignore,
+        x: Any,
+        threshold: Any,
+        low_high_percentiles: Any,
+        bins: Any,
+        features_to_ignore: Any,
+        *,
         extras: Mapping[str, Any] | None = None,
-    ) -> CalibratedExplanations:
-        """Invoke the configured plugin for *mode* and materialise the batch."""
-        plugin, _identifier = self._ensure_explanation_plugin(mode)
-        request = ExplanationRequest(
-            threshold=threshold,
-            low_high_percentiles=tuple(low_high_percentiles)
-            if low_high_percentiles is not None
-            else None,
-            bins=bins,
-            features_to_ignore=tuple(features_to_ignore or []),
-            extras=dict(extras or {}),
-        )
-        monitor = self._bridge_monitors.get(mode)
-        if monitor is not None:
-            monitor.reset_usage()
-        try:
-            batch = plugin.explain_batch(x, request)
-        except Exception as exc:
-            raise ConfigurationError(
-                f"Explanation plugin execution failed for mode '{mode}': {exc}"
-            ) from exc
-        try:
-            validate_explanation_batch(
-                batch,
-                expected_mode=mode,
-                expected_task=self.mode,
+    ) -> Any:
+        """Delegate to ExplanationOrchestrator (Phase 1A)."""
+        if hasattr(self, "_explanation_orchestrator"):
+            return self._explanation_orchestrator.invoke(
+                mode,
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                extras=extras,
             )
-        except Exception as exc:
-            raise ConfigurationError(
-                f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
-            ) from exc
-        metadata = batch.collection_metadata
-        metadata.setdefault("task", self.mode)
-        interval_key = "fast" if mode == "fast" else "default"
-        interval_source = self._telemetry_interval_sources.get(interval_key)
-        if interval_source:
-            metadata["interval_source"] = interval_source
-            metadata.setdefault("proba_source", interval_source)
-        metadata.setdefault(
-            "interval_dependencies",
-            tuple(self._interval_plugin_hints.get(mode, ())),
+        # Fallback for tests
+        from .explain.orchestrator import ExplanationOrchestrator
+        orch = ExplanationOrchestrator(self)
+        return orch.invoke(
+            mode,
+            x,
+            threshold,
+            low_high_percentiles,
+            bins,
+            features_to_ignore,
+            extras=extras,
         )
-        preprocessor_meta = self.preprocessor_metadata
-        if preprocessor_meta:
-            metadata.setdefault("preprocessor", preprocessor_meta)
-        plot_chain = self._plot_plugin_fallbacks.get(mode)
-        if plot_chain:
-            metadata.setdefault("plot_fallbacks", tuple(plot_chain))
-            metadata.setdefault("plot_source", plot_chain[0])
-        telemetry_payload = {
-            "mode": mode,
-            "task": self.mode,
-            "interval_source": interval_source,
-            "proba_source": metadata.get("proba_source"),
-            "plot_source": metadata.get("plot_source"),
-            "plot_fallbacks": tuple(plot_chain or ()),
-        }
-        if preprocessor_meta:
-            telemetry_payload["preprocessor"] = preprocessor_meta
-        self._last_telemetry = dict(telemetry_payload)
-        if monitor is not None and not monitor.used:
-            raise ConfigurationError(
-                "Explanation plugin for mode '"
-                + mode
-                + "' did not use the calibrated predict bridge"
-            )
-        container_cls = batch.container_cls
-        if hasattr(container_cls, "from_batch"):
-            result = container_cls.from_batch(batch)
-            instance_payload = self._build_instance_telemetry_payload(result)
-            if instance_payload:
-                telemetry_payload.update(instance_payload)
-                self._last_telemetry.update(instance_payload)
-            with contextlib.suppress(Exception):
-                result.telemetry = dict(telemetry_payload)
-            self.latest_explanation = result
-            self._last_explanation_mode = mode
-            return result
-        raise ConfigurationError("Explanation plugin returned a batch that cannot be materialised")
 
     @property
     def runtime_telemetry(self) -> Mapping[str, Any]:
@@ -1880,182 +976,6 @@ class CalibratedExplainer:
                 disp_str += f"\n\tclass_labels={self.class_labels}"
         return disp_str
 
-    # pylint: disable=invalid-name, too-many-return-statements
-    def _predict_impl(
-        self,
-        x,
-        threshold=None,  # The same meaning as threshold has for cps in crepes.
-        low_high_percentiles=(5, 95),
-        classes=None,
-        bins=None,
-        feature=None,
-        **kwargs,
-    ):
-        """Execute the internal prediction method for classification and regression cases.
-
-        For classification:
-        - Returns probabilities and intervals for binary/multiclass
-        - Handles Mondrian categories via bins parameter
-
-        For regression:
-        - Returns predictions and uncertainty intervals
-        - Can return probability predictions when threshold is provided (probabilistic regression)
-
-        Parameters
-        ----------
-        x : A set of test objects to predict
-        threshold : float, int or array-like of shape (n_samples,), default=None
-            values for which p-values should be returned. Only used for probabilistic regression
-            (also called thresholded regression). Returns P(y <= threshold) probabilities.
-        low_high_percentiles : a tuple of floats, default=(5, 95)
-            The low and high percentile used to calculate the interval. Applicable to regression.
-        classes : None or array-like of shape (n_samples,), default=None
-            The classes predicted for the original instance. None if not multiclass or regression.
-
-        Raises
-        ------
-        ValueError: The length of the threshold-parameter must be either a constant or the same as the number of
-            instances in x.
-
-        Returns
-        -------
-        predict : ndarray of shape (n_samples,)
-            The prediction for the test data. For classification, this is the regularized probability
-            of the positive class, derived using the intervals from VennAbers. For regression, this is the
-            median prediction from the ConformalPredictiveSystem.
-        low : ndarray of shape (n_samples,)
-            The lower bound of the prediction interval. For classification, this is derived using
-            VennAbers. For regression, this is the lower percentile given as parameter, derived from the
-            ConformalPredictiveSystem.
-        high : ndarray of shape (n_samples,)
-            The upper bound of the prediction interval. For classification, this is derived using
-            VennAbers. For regression, this is the upper percentile given as parameter, derived from the
-            ConformalPredictiveSystem.
-        classes : ndarray of shape (n_samples,)
-            The classes predicted for the original instance. None if not multiclass or regression.
-        bins : array-like of shape (n_samples,), default=None
-            Mondrian categories
-        """
-        # strip plotting-only keys that callers may pass
-        kwargs.pop("show", None)
-        kwargs.pop("style_override", None)
-        if not self.__initialized:
-            raise NotFittedError("The learner must be initialized before calling predict.")
-        if feature is None and self.is_fast():
-            feature = self.num_features  # Use the calibrator defined using X_cal
-        if self.mode == "classification":
-            if self.is_multiclass():
-                if self.is_fast():
-                    predict, low, high, new_classes = self.interval_learner[feature].predict_proba(
-                        x, output_interval=True, classes=classes, bins=bins
-                    )
-                else:
-                    predict, low, high, new_classes = self.interval_learner.predict_proba(
-                        x, output_interval=True, classes=classes, bins=bins
-                    )
-                if classes is None:
-                    return (
-                        [predict[i, c] for i, c in enumerate(new_classes)],
-                        [low[i, c] for i, c in enumerate(new_classes)],
-                        [high[i, c] for i, c in enumerate(new_classes)],
-                        new_classes,
-                    )
-                if type(classes) not in (list, np.ndarray):
-                    classes = [classes]
-                return [predict[i, c] for i, c in enumerate(classes)], low, high, None
-
-            if self.is_fast():
-                predict, low, high = self.interval_learner[feature].predict_proba(
-                    x, output_interval=True, bins=bins
-                )
-            else:
-                predict, low, high = self.interval_learner.predict_proba(
-                    x, output_interval=True, bins=bins
-                )
-            return predict[:, 1], low, high, None
-        if "regression" in self.mode:
-            # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
-            if threshold is None:  # normal regression
-                if not (low_high_percentiles[0] <= low_high_percentiles[1]):
-                    raise ValidationError(
-                        "The low percentile must be smaller than (or equal to) the high percentile."
-                    )
-                if not (
-                    (
-                        (low_high_percentiles[0] > 0 and low_high_percentiles[0] <= 50)
-                        and (low_high_percentiles[1] >= 50 and low_high_percentiles[1] < 100)
-                    )
-                    or low_high_percentiles[0] == -np.inf
-                    or low_high_percentiles[1] == np.inf
-                    and not (
-                        low_high_percentiles[0] == -np.inf and low_high_percentiles[1] == np.inf
-                    )
-                ):
-                    raise ValidationError(
-                        "The percentiles must be between 0 and 100 (exclusive). \
-                            The lower percentile can be -np.inf and the higher percentile can \
-                            be np.inf (but not at the same time) to allow one-sided intervals."
-                    )
-                low = (
-                    [low_high_percentiles[0], 50]
-                    if low_high_percentiles[0] != -np.inf
-                    else [50, 50]
-                )
-                high = (
-                    [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
-                )
-
-                try:
-                    if self.is_fast():
-                        return self.interval_learner[feature].predict_uncertainty(
-                            x, low_high_percentiles, bins=bins
-                        )
-                    return self.interval_learner.predict_uncertainty(
-                        x, low_high_percentiles, bins=bins
-                    )
-                except Exception:  # typically crepes broadcasting/shape errors
-                    if self.suppress_crepes_errors:
-                        # Log and return placeholder arrays (caller should handle downstream)
-                        _warnings.warn(
-                            "crepes produced an unexpected result (likely too-small calibration set); returning zeros as a degraded fallback.",
-                            UserWarning,
-                            stacklevel=2,
-                        )
-                        n = x.shape[0]
-                        # produce zero-length or zero arrays consistent with expected shape
-                        return np.zeros(n), np.zeros(n), np.zeros(n), None
-                    # Preserve prior behavior: re-raise the original exception so callers/tests
-                    # see the original error (instead of converting it to DataShapeError).
-                    raise
-
-            # regression with threshold condition
-            assert_threshold(threshold, x)
-            try:
-                if self.is_fast():
-                    return self.interval_learner[feature].predict_probability(
-                        x, threshold, bins=bins
-                    )
-                # pylint: disable=unexpected-keyword-arg
-                return self.interval_learner.predict_probability(x, threshold, bins=bins)
-            except Exception as exc:
-                if self.suppress_crepes_errors:
-                    _warnings.warn(
-                        "crepes produced an unexpected result while computing probabilities; returning zeros as a degraded fallback.",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                    n = x.shape[0]
-                    return np.zeros(n), np.zeros(n), np.zeros(n), None
-                    # Re-raise as a clearer DataShapeError with guidance
-                    raise DataShapeError(
-                        "Error while computing prediction intervals from the underlying crepes library. "
-                        "This commonly occurs when the calibration set is too small for the requested percentiles. "
-                        "Consider using a larger calibration set, or instantiate the explainer with suppress_crepes_errors=True to return a degraded fallback. "
-                        f"(original error: {exc})"
-                    ) from exc
-
-        return None, None, None, None  # Should never happen
-
     def _predict(
         self,
         x,
@@ -2066,28 +986,8 @@ class CalibratedExplainer:
         feature=None,
         **kwargs,
     ):
-        """Cache-aware wrapper around :meth:`_predict_impl`."""
-        cache = getattr(self, "_perf_cache", None)
-        cache_enabled = getattr(cache, "enabled", False)
-        key_parts = None
-        if cache_enabled:
-            x_arr = np.asarray(x)
-            key_parts = (
-                ("mode", self.mode),
-                ("feature", feature),
-                ("shape", x_arr.shape),
-                ("x", x_arr),
-                ("threshold", np.asarray(threshold) if threshold is not None else None),
-                ("percentiles", tuple(low_high_percentiles)),
-                ("classes", np.asarray(classes) if classes is not None else None),
-                ("bins", np.asarray(bins) if bins is not None else None),
-                ("kwargs", dict(kwargs) if kwargs else {}),
-            )
-            cached = cache.get(stage="predict", parts=key_parts)
-            if cached is not None:
-                return cached
-
-        result = self._predict_impl(
+        """Cache-aware prediction wrapper. Delegated to PredictionOrchestrator."""
+        return self._prediction_orchestrator.predict(
             x,
             threshold=threshold,
             low_high_percentiles=low_high_percentiles,
@@ -2096,10 +996,6 @@ class CalibratedExplainer:
             feature=feature,
             **kwargs,
         )
-
-        if cache_enabled and key_parts is not None:
-            cache.set(stage="predict", parts=key_parts, value=result)
-        return result
 
     def explain_factual(
         self,
@@ -2317,30 +1213,6 @@ class CalibratedExplainer:
     # `calibrated_explanations.core.explain._helpers.merge_feature_result`.
     # Plugins and explain code should call that free-function directly.
 
-    def _compute_weight_delta(self, baseline, perturbed) -> np.ndarray:
-        """Return the contribution weight delta between *baseline* and *perturbed*."""
-        baseline_arr = np.asarray(baseline)
-        perturbed_arr = np.asarray(perturbed)
-
-        if baseline_arr.shape == ():
-            return np.asarray(baseline_arr - perturbed_arr, dtype=float)
-
-        if baseline_arr.shape != perturbed_arr.shape:
-            with contextlib.suppress(ValueError):
-                baseline_arr = np.broadcast_to(baseline_arr, perturbed_arr.shape)
-
-        try:
-            return np.asarray(baseline_arr - perturbed_arr, dtype=float)
-        except (TypeError, ValueError):
-            baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
-            perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
-            deltas = np.empty_like(perturbed_flat, dtype=float)
-            for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
-                delta_value = self._assign_weight(pert_value, base_value)
-                delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
-                deltas[idx] = float(delta_array[0])
-            return deltas.reshape(perturbed_arr.shape)
-
     @staticmethod
     def _slice_threshold(threshold, start: int, stop: int, total_len: int):
         """Return the portion of *threshold* covering ``[start, stop)``."""
@@ -2360,6 +1232,14 @@ class CalibratedExplainer:
         if isinstance(threshold, list):
             return sliced
         return sliced
+
+    @staticmethod
+    def _compute_weight_delta(baseline, perturbed):
+        """Return the contribution weight delta between baseline and perturbed.
+
+        Compatibility wrapper for compute_weight_delta moved to explain._helpers.
+        """
+        return compute_weight_delta(baseline, perturbed)
 
     @staticmethod
     def _slice_bins(bins, start: int, stop: int):

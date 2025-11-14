@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, List
 
 from ._base import BaseExplainPlugin
 from ._shared import ExplainConfig, ExplainRequest, ExplainResponse
+from .orchestrator import ExplanationOrchestrator
 from .parallel_feature import FeatureParallelExplainPlugin
 from .parallel_instance import InstanceParallelExplainPlugin
 from .sequential import SequentialExplainPlugin
@@ -166,6 +167,7 @@ __all__ = [
     "ExplainConfig",
     "ExplainRequest",
     "ExplainResponse",
+    "ExplanationOrchestrator",
     "FeatureParallelExplainPlugin",
     "InstanceParallelExplainPlugin",
     "SequentialExplainPlugin",

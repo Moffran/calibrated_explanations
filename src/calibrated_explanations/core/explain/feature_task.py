@@ -7,8 +7,11 @@ explanation execution.
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import numpy as np
-from typing import Any, List, Optional, Set, Tuple
+
+from ...utils.helper import safe_mean
 
 # Type alias for the aggregated result of processing a single feature
 FeatureTaskResult = Tuple[
@@ -73,64 +76,8 @@ def assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
     return float(flat[0])
 
 
-def execute_feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
-    """Execute the per-feature aggregation logic for explanation computation.
-
-    This is the core kernel for parallel feature-level explanation loops.
-    It processes one feature index across all test instances, computing:
-    - Weight deltas for predictions and uncertainty bounds
-    - Rule match counts and value distributions
-    - Binned result matrices for later aggregation
-
-    Parameters
-    ----------
-    args : Tuple[Any, ...]
-        Packed arguments containing:
-        - feature_index: int - Feature being processed
-        - x_column: array-like - Feature values for all instances
-        - predict: array-like - Base predictions
-        - low: array-like - Lower uncertainty bounds
-        - high: array-like - Upper uncertainty bounds
-        - baseline_predict: array-like - Reference predictions for delta
-        - features_to_ignore: Sequence[int] - Indices to skip
-        - categorical_features: Sequence[int] - Categorical feature indices
-        - feature_values: Dict - Possible values per feature
-        - feature_indices: Optional[np.ndarray] - Indices of perturbations
-        - perturbed_feature: np.ndarray - Perturbed feature matrix
-        - lower_boundary: np.ndarray - Rule boundary conditions
-        - upper_boundary: np.ndarray - Rule boundary conditions
-        - lesser_feature: np.ndarray - Lesser value boundaries
-        - greater_feature: np.ndarray - Greater value boundaries
-        - covered_feature: np.ndarray - Covered range boundaries
-        - value_counts_cache: Optional[Dict] - Cached value frequencies
-        - numeric_sorted_values: Optional[Dict] - Cached sorted values
-        - x_cal_column: array-like - Calibration feature values
-
-    Returns
-    -------
-    FeatureTaskResult
-        Tuple containing:
-        - feature_index: Feature processed
-        - weights_predict: Weight deltas for predictions
-        - weights_low: Weight deltas for lower bounds
-        - weights_high: Weight deltas for upper bounds
-        - predict_matrix: Aggregated prediction scores
-        - low_matrix: Aggregated lower bound scores
-        - high_matrix: Aggregated upper bound scores
-        - rule_values_result: Per-instance rule value info
-        - binned_result: Per-instance binned result tuples
-        - lower_update: Optional lower boundary update matrix
-        - upper_update: Optional upper boundary update matrix
-
-    Notes
-    -----
-    This function is designed for use with parallel executors (e.g.,
-    multiprocessing, joblib). It is stateless and accepts all required
-    context via the packed ``args`` tuple.
-
-    This function will be moved to an orchestrator in future refactors
-    as the explanation architecture evolves.
-    """
+def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
+    """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""
     (
         feature_index,
         x_column,
@@ -175,7 +122,6 @@ def execute_feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         else list(feature_values_list)
     )
 
-    # Early exit for ignored or unperturbed features
     if feature_index in features_to_ignore_set:
         for i in range(n_instances):
             rule_values_result[i] = (feature_values_list, x_column[i], x_column[i])
@@ -226,7 +172,6 @@ def execute_feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
             upper_update,
         )
 
-    # Process perturbations for this feature
     feature_slice = np.asarray(perturbed_feature[feature_indices])
     feature_predict_local = np.asarray(predict[feature_indices])
     feature_low_local = np.asarray(low[feature_indices])
@@ -259,6 +204,18 @@ def execute_feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
                     counts_template.copy(),
                     np.zeros((0,), dtype=float),
                 )
+            for idx in range(n_instances):
+                if rule_values_result[idx] is None:
+                    rule_values_result[idx] = (feature_values_list, x_column[idx], x_column[idx])
+                if binned_result[idx] is None:
+                    binned_result[idx] = (
+                        np.zeros((0,), dtype=float),
+                        np.zeros((0,), dtype=float),
+                        np.zeros((0,), dtype=float),
+                        -1,
+                        counts_template.copy(),
+                        np.zeros((0,), dtype=float),
+                    )
             return (
                 feature_index,
                 weights_predict,
@@ -273,37 +230,283 @@ def execute_feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
                 upper_update,
             )
 
-        # Placeholder: Categorical feature processing
-        # Full implementation continues in orchestrator refactor
-        for i in range(n_instances):
-            if rule_values_result[i] is None:
-                rule_values_result[i] = (feature_values_list, x_column[i], x_column[i])
-            if binned_result[i] is None:
-                binned_result[i] = (
-                    np.zeros((0,), dtype=float),
-                    np.zeros((0,), dtype=float),
-                    np.zeros((0,), dtype=float),
-                    -1,
-                    counts_template.copy() if num_feature_values > 0 else np.array([], dtype=float),
-                    np.zeros((0,), dtype=float),
-                )
+        value_to_index = {val: idx for idx, val in enumerate(feature_values_list)}
+        value_indices = np.array(
+            [value_to_index.get(row[2], -1) for row in feature_slice], dtype=int
+        )
+        valid_mask = value_indices >= 0
+        feature_instances_local = feature_instances
+
+        sums_shape = (n_instances, num_feature_values)
+        predict_sums = np.zeros(sums_shape, dtype=float)
+        low_sums = np.zeros(sums_shape, dtype=float)
+        high_sums = np.zeros(sums_shape, dtype=float)
+        combo_counts = np.zeros(sums_shape, dtype=float)
+
+        if np.any(valid_mask):
+            np.add.at(
+                predict_sums,
+                (feature_instances_local[valid_mask], value_indices[valid_mask]),
+                np.asarray(feature_predict_local[valid_mask], dtype=float),
+            )
+            np.add.at(
+                low_sums,
+                (feature_instances_local[valid_mask], value_indices[valid_mask]),
+                np.asarray(feature_low_local[valid_mask], dtype=float),
+            )
+            np.add.at(
+                high_sums,
+                (feature_instances_local[valid_mask], value_indices[valid_mask]),
+                np.asarray(feature_high_local[valid_mask], dtype=float),
+            )
+            np.add.at(
+                combo_counts,
+                (feature_instances_local[valid_mask], value_indices[valid_mask]),
+                1,
+            )
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            average_matrix = np.divide(
+                predict_sums,
+                combo_counts,
+                out=np.zeros_like(predict_sums),
+                where=combo_counts > 0,
+            )
+            low_matrix_local = np.divide(
+                low_sums,
+                combo_counts,
+                out=np.zeros_like(low_sums),
+                where=combo_counts > 0,
+            )
+            high_matrix_local = np.divide(
+                high_sums,
+                combo_counts,
+                out=np.zeros_like(high_sums),
+                where=combo_counts > 0,
+            )
+
+        current_bins = np.full(n_instances, -1, dtype=int)
+        if value_to_index:
+            current_bins = np.array(
+                [value_to_index.get(val, -1) for val in np.asarray(x_column)],
+                dtype=int,
+            )
+
+        for inst in unique_instances:
+            i = int(inst)
+            avg_row = np.array(average_matrix[i], copy=True)
+            low_row = np.array(low_matrix_local[i], copy=True)
+            high_row = np.array(high_matrix_local[i], copy=True)
+            current_bin = current_bins[i]
+            mask = np.ones(num_feature_values, dtype=bool)
+            if 0 <= current_bin < num_feature_values:
+                mask[current_bin] = False
+            uncovered = np.nonzero(mask)[0]
+            counts = counts_template.copy()
+            counts_uncovered = counts[mask]
+            total_counts = counts_uncovered.sum() if uncovered.size else 0
+            fractions = (
+                counts_uncovered / total_counts
+                if uncovered.size and total_counts
+                else np.zeros(uncovered.size, dtype=float)
+            )
+
+            rule_values_result[i] = (feature_values_list, x_column[i], x_column[i])
+            binned_result[i] = (
+                avg_row,
+                low_row,
+                high_row,
+                current_bin,
+                counts,
+                fractions,
+            )
+
+            if uncovered.size == 0:
+                continue
+
+            predict_matrix[i] = safe_mean(avg_row[mask])
+            low_matrix[i] = safe_mean(low_row[mask])
+            high_matrix[i] = safe_mean(high_row[mask])
+            base_val = baseline_predict[i]
+            weights_predict[i] = assign_weight_scalar(predict_matrix[i], base_val)
+            tmp_low = assign_weight_scalar(low_matrix[i], base_val)
+            tmp_high = assign_weight_scalar(high_matrix[i], base_val)
+            weights_low[i] = np.min([tmp_low, tmp_high])
+            weights_high[i] = np.max([tmp_low, tmp_high])
 
     else:
-        # Numeric feature processing - placeholder for orchestrator
-        for i in range(n_instances):
-            if rule_values_result[i] is None:
-                rule_values_result[i] = (feature_values_list, x_column[i], x_column[i])
-            if binned_result[i] is None:
-                binned_result[i] = (
-                    np.zeros((0,), dtype=float),
-                    np.zeros((0,), dtype=float),
-                    np.zeros((0,), dtype=float),
-                    -1,
-                    np.array([], dtype=float),
-                    np.array([], dtype=float),
-                )
+        slice_bins = np.array(feature_slice[:, 2], dtype=int)
+        slice_flags = np.asarray(feature_slice[:, 3], dtype=object)
+        numeric_grouped: Dict[Tuple[int, int, Any], np.ndarray] = {}
+        for rel_idx, inst in enumerate(feature_instances):
+            key = (int(inst), int(slice_bins[rel_idx]), slice_flags[rel_idx])
+            numeric_grouped.setdefault(key, []).append(rel_idx)
+        for key, rel_list in list(numeric_grouped.items()):
+            numeric_grouped[key] = np.asarray(rel_list, dtype=int)
 
-    # Finalize results
+        if numeric_sorted_values is None:
+            feature_values_numeric = np.unique(np.asarray(x_cal_column))
+            sorted_cal = np.sort(feature_values_numeric)
+        else:
+            sorted_cal = np.asarray(numeric_sorted_values)
+            feature_values_numeric = np.unique(sorted_cal)
+
+        lower_boundary = np.asarray(lower_boundary, dtype=float)
+        upper_boundary = np.asarray(upper_boundary, dtype=float)
+        if feature_values_numeric.size:
+            min_val = np.min(feature_values_numeric)
+            max_val = np.max(feature_values_numeric)
+            lower_boundary = np.where(min_val < lower_boundary, lower_boundary, -np.inf)
+            upper_boundary = np.where(max_val > upper_boundary, upper_boundary, np.inf)
+        lower_update = lower_boundary.copy()
+        upper_update = upper_boundary.copy()
+
+        avg_predict_map: Dict[int, np.ndarray] = {}
+        low_predict_map: Dict[int, np.ndarray] = {}
+        high_predict_map: Dict[int, np.ndarray] = {}
+        counts_map: Dict[int, np.ndarray] = {}
+        rule_value_map: Dict[int, List[np.ndarray]] = {}
+        for i in range(n_instances):
+            num_bins = 1 + (1 if lower_boundary[i] != -np.inf else 0)
+            num_bins += 1 if upper_boundary[i] != np.inf else 0
+            avg_predict_map[i] = np.zeros(num_bins)
+            low_predict_map[i] = np.zeros(num_bins)
+            high_predict_map[i] = np.zeros(num_bins)
+            counts_map[i] = np.zeros(num_bins)
+            rule_value_map[i] = []
+
+        bin_value = np.zeros(n_instances, dtype=int)
+        current_bin = -np.ones(n_instances, dtype=int)
+
+        unique_lower, lower_inverse = np.unique(lower_boundary, return_inverse=True)
+        unique_upper, upper_inverse = np.unique(upper_boundary, return_inverse=True)
+        lower_groups = {
+            idx: np.flatnonzero(lower_inverse == idx) for idx in range(unique_lower.size)
+        }
+        upper_groups = {
+            idx: np.flatnonzero(upper_inverse == idx) for idx in range(unique_upper.size)
+        }
+        lower_cache = {
+            val: 0 if val == -np.inf else int(np.searchsorted(sorted_cal, val, side="left"))
+            for val in unique_lower
+        }
+        upper_cache = {
+            val: 0
+            if val == np.inf
+            else int(sorted_cal.size - np.searchsorted(sorted_cal, val, side="right"))
+            for val in unique_upper
+        }
+        bounds_matrix = np.column_stack((lower_boundary, upper_boundary))
+        unique_bounds, bound_inverse = np.unique(bounds_matrix, axis=0, return_inverse=True)
+        between_cache: Dict[int, int] = {}
+        for idx_bound, (lb, ub) in enumerate(unique_bounds):
+            left = 0 if lb == -np.inf else int(np.searchsorted(sorted_cal, lb, side="left"))
+            right = (
+                sorted_cal.size
+                if ub == np.inf
+                else int(np.searchsorted(sorted_cal, ub, side="right"))
+            )
+            between_cache[idx_bound] = right - left
+
+        lesser_feature = lesser_feature or {}
+        greater_feature = greater_feature or {}
+        covered_feature = covered_feature or {}
+
+        for j, val in enumerate(unique_lower):
+            values_tuple = lesser_feature.get(j)
+            if not values_tuple or getattr(values_tuple[0], "size", 0) == 0:
+                continue
+            for idx in lower_groups.get(j, []):
+                inst = int(idx)
+                rel_indices = numeric_grouped.get((inst, j, True), np.empty((0,), dtype=int))
+                avg_predict_map[inst][bin_value[inst]] = (
+                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
+                )
+                low_predict_map[inst][bin_value[inst]] = (
+                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
+                )
+                high_predict_map[inst][bin_value[inst]] = (
+                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
+                )
+                counts_map[inst][bin_value[inst]] = lower_cache.get(val, 0)
+                rule_value_map[inst].append(values_tuple[0])
+                bin_value[inst] += 1
+
+        for j, val in enumerate(unique_upper):
+            values_tuple = greater_feature.get(j)
+            if not values_tuple or getattr(values_tuple[0], "size", 0) == 0:
+                continue
+            for idx in upper_groups.get(j, []):
+                inst = int(idx)
+                rel_indices = numeric_grouped.get((inst, j, False), np.empty((0,), dtype=int))
+                avg_predict_map[inst][bin_value[inst]] = (
+                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
+                )
+                low_predict_map[inst][bin_value[inst]] = (
+                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
+                )
+                high_predict_map[inst][bin_value[inst]] = (
+                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
+                )
+                counts_map[inst][bin_value[inst]] = upper_cache.get(val, 0)
+                rule_value_map[inst].append(values_tuple[0])
+                bin_value[inst] += 1
+
+        for inst in range(n_instances):
+            current_index = bin_value[inst]
+            for j in range(unique_bounds.shape[0]):
+                rel_indices = numeric_grouped.get((inst, j, None), np.empty((0,), dtype=int))
+                avg_predict_map[inst][current_index] = (
+                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
+                )
+                low_predict_map[inst][current_index] = (
+                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
+                )
+                high_predict_map[inst][current_index] = (
+                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
+                )
+                counts_map[inst][current_index] = between_cache.get(j, 0)
+                rule_entry = covered_feature.get(j)
+                if rule_entry is None:
+                    rule_entry = covered_feature.get(inst)
+                rule_value_map[inst].append(
+                    rule_entry[0] if rule_entry is not None else np.array([])
+                )
+                current_bin[inst] = current_index
+
+        for inst in range(n_instances):
+            rule_values_result[inst] = (rule_value_map[inst], x_column[inst], x_column[inst])
+            mask = np.ones_like(avg_predict_map[inst], dtype=bool)
+            if 0 <= current_bin[inst] < mask.size:
+                mask[current_bin[inst]] = False
+            uncovered = np.nonzero(mask)[0]
+            counts_uncovered = counts_map[inst][mask]
+            total_counts = counts_uncovered.sum() if uncovered.size else 0
+            fractions = (
+                counts_uncovered / total_counts
+                if uncovered.size and total_counts
+                else np.zeros(uncovered.size, dtype=float)
+            )
+            binned_result[inst] = (
+                avg_predict_map[inst],
+                low_predict_map[inst],
+                high_predict_map[inst],
+                current_bin[inst],
+                counts_map[inst],
+                fractions,
+            )
+            if uncovered.size == 0:
+                continue
+            predict_matrix[inst] = safe_mean(avg_predict_map[inst][mask])
+            low_matrix[inst] = safe_mean(low_predict_map[inst][mask])
+            high_matrix[inst] = safe_mean(high_predict_map[inst][mask])
+            base_val = baseline_predict[inst]
+            weights_predict[inst] = assign_weight_scalar(predict_matrix[inst], base_val)
+            tmp_low = assign_weight_scalar(low_matrix[inst], base_val)
+            tmp_high = assign_weight_scalar(high_matrix[inst], base_val)
+            weights_low[inst] = np.min([tmp_low, tmp_high])
+            weights_high[inst] = np.max([tmp_low, tmp_high])
+
     for idx in range(n_instances):
         if rule_values_result[idx] is None:
             rule_values_result[idx] = (feature_values_list, x_column[idx], x_column[idx])
@@ -330,3 +533,8 @@ def execute_feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         lower_update,
         upper_update,
     )
+
+
+
+# Alias for backward compatibility
+execute_feature_task = _feature_task

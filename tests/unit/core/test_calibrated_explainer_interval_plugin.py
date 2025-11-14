@@ -8,7 +8,7 @@ from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
     ConfigurationError,
 )
-import calibrated_explanations.core.calibrated_explainer as explainer_module
+from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
 
 
 class DummyDescriptor:
@@ -38,7 +38,7 @@ def _make_explainer_stub() -> CalibratedExplainer:
 
 @pytest.fixture(autouse=True)
 def _no_builtin_plugins(monkeypatch):
-    monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
 
 
 def test_resolve_interval_plugin_prefers_override_instance(monkeypatch):
@@ -73,12 +73,12 @@ def test_resolve_interval_plugin_fast_mode_enforces_metadata(monkeypatch):
     )
 
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "find_interval_descriptor",
         lambda identifier: descriptor if identifier == "fast-plugin" else None,
     )
-    monkeypatch.setattr(explainer_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(explainer_module, "find_interval_plugin_trusted", lambda identifier: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None)
 
     with pytest.raises(ConfigurationError, match="not marked fast_compatible"):
         explainer._resolve_interval_plugin(fast=True)
@@ -111,8 +111,8 @@ def test_resolve_interval_plugin_accumulates_errors(monkeypatch):
     def fake_descriptor(identifier):
         return descriptor_map.get(identifier)
 
-    monkeypatch.setattr(explainer_module, "find_interval_descriptor", fake_descriptor)
-    monkeypatch.setattr(explainer_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_descriptor", fake_descriptor)
+    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
 
     def fake_find_trusted(identifier):
         if identifier in ("hinted", "second"):
@@ -120,7 +120,7 @@ def test_resolve_interval_plugin_accumulates_errors(monkeypatch):
         return None
 
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "find_interval_plugin_trusted",
         fake_find_trusted,
     )

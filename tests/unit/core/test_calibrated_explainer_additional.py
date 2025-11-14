@@ -224,17 +224,20 @@ def test_oob_predictions_regression_length_mismatch(monkeypatch: pytest.MonkeyPa
 
 
 def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that explanation chain includes all fallbacks from metadata descriptors.
+    
+    This test verifies that the orchestrator correctly builds explanation chains
+    by including fallbacks from plugin descriptors, sources, and pyproject configs.
+    
+    NOTE: This test has been refactored from directly calling _build_explanation_chain()
+    to verify the behavior through the orchestrator initialization that happens when
+    the explainer is created via _make_explainer().
+    """
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    explainer._explanation_plugin_overrides["factual"] = "override.plugin"
-    explainer._pyproject_explanations = {
-        "factual": "py.plugin",
-        "factual_fallbacks": ("py.fb",),
-    }
-
+    
+    # Set up all configuration BEFORE creating explainer so orchestrator picks it up
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "env.plugin")
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", "env.fb1, env.fb2")
 
@@ -256,8 +259,45 @@ def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPa
         "calibrated_explanations.core.calibrated_explainer.find_explanation_descriptor",
         lambda identifier: descriptor_map.get(identifier),
     )
+    # Also patch in the registry where the orchestrator imports it from
+    from calibrated_explanations.plugins import registry
+    monkeypatch.setattr(
+        registry,
+        "find_explanation_descriptor",
+        lambda identifier: descriptor_map.get(identifier),
+    )
+    # Also patch in the orchestrator module's direct import
+    from calibrated_explanations.core.explain import orchestrator
+    monkeypatch.setattr(
+        orchestrator,
+        "find_explanation_descriptor",
+        lambda identifier: descriptor_map.get(identifier),
+    )
+    # Also patch in the prediction orchestrator
+    from calibrated_explanations.core.prediction import orchestrator as pred_orch
+    monkeypatch.setattr(
+        pred_orch,
+        "find_interval_descriptor",
+        lambda identifier: descriptor_map.get(identifier),
+    )
 
-    chain = explainer._build_explanation_chain("factual")
+    # Now create explainer - orchestrators will initialize and build chains with mocked descriptors
+    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+
+    # Set the override after explainer is created, then reinitialize orchestrator to rebuild chain
+    explainer._explanation_plugin_overrides["factual"] = "override.plugin"
+    explainer._pyproject_explanations = {
+        "factual": "py.plugin",
+        "factual_fallbacks": ("py.fb",),
+    }
+
+    # Reinitialize orchestrator to rebuild chain with new configuration
+    from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
+    explainer._explanation_orchestrator.initialize_chains()
+
+    # Verify the chain built by orchestrator
+    chain = explainer._explanation_plugin_fallbacks["factual"]
     assert chain[0] == "override.plugin"
     assert "meta.fb" in chain
     assert chain[-1] == "core.explanation.factual"
@@ -614,17 +654,37 @@ def test_coerce_override_callable_raises(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 def test_build_plot_style_chain_respects_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that plot style chain respects all override sources.
+    
+    This test verifies that the orchestrator correctly builds the plot style chain
+    by respecting overrides, environment variables, and pyproject configs.
+    
+    NOTE: This test has been refactored from directly calling _build_plot_style_chain()
+    to verify the behavior through the orchestrator initialization that happens when
+    the explainer is created via _make_explainer() and then reinitialized.
+    """
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
     y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    explainer._plot_style_override = "override-style"
+    
+    # Set up environment BEFORE creating explainer
     monkeypatch.setenv("CE_PLOT_STYLE", "env-style")
     monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "env.fb1,env.fb2")
+    
+    # Create explainer
+    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
+
+    # Set overrides and reinitialize orchestrator to rebuild chain with new config
+    explainer._plot_style_override = "override-style"
     explainer._pyproject_plots = {"style": "py-style", "style_fallbacks": ("py.fb",)}
 
-    chain = explainer._build_plot_style_chain()
+    # Reinitialize explanation orchestrator to rebuild plot chain with new configuration
+    from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
+    explainer._explanation_orchestrator.initialize_chains()
+
+    # Verify the built plot style chain
+    chain = explainer._plot_plugin_fallbacks["default"]
     assert chain[0] == "override-style"
     assert "env-style" in chain
     assert "py-style" in chain

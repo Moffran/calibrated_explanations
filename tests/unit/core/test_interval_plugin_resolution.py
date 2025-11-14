@@ -6,6 +6,7 @@ import pytest
 
 from calibrated_explanations.core import calibrated_explainer as explainer_module
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 
@@ -29,7 +30,7 @@ def test_resolve_interval_plugin_returns_direct_override(monkeypatch):
 
     ensure_calls: list[str] = []
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "ensure_builtin_plugins",
         lambda: ensure_calls.append("ensure"),
     )
@@ -53,8 +54,8 @@ def test_resolve_interval_plugin_rejects_non_fast_metadata(monkeypatch):
     }
     descriptor = types.SimpleNamespace(metadata=metadata, plugin=object(), trusted=True)
 
-    monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
-    monkeypatch.setattr(explainer_module, "find_interval_descriptor", lambda identifier: descriptor)
+    monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_descriptor", lambda identifier: descriptor)
 
     with pytest.raises(ConfigurationError) as exc:
         explainer._resolve_interval_plugin(fast=True)
@@ -76,14 +77,18 @@ def test_resolve_interval_plugin_reports_aggregated_errors(monkeypatch):
         "badmeta": types.SimpleNamespace(metadata=metadata, plugin=object(), trusted=True)
     }
 
-    monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "find_interval_descriptor",
         lambda identifier: descriptors.get(identifier),
     )
-    monkeypatch.setattr(explainer_module, "find_interval_plugin_trusted", lambda identifier: None)
-    monkeypatch.setattr(explainer_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None
+    )
 
     with pytest.raises(ConfigurationError) as exc:
         explainer._resolve_interval_plugin(fast=False)
@@ -110,18 +115,18 @@ def test_resolve_interval_plugin_uses_hints_and_instantiates(monkeypatch):
 
     prototype = object()
 
-    monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "find_interval_descriptor",
         lambda identifier: descriptors.get(identifier),
     )
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "find_interval_plugin_trusted",
         lambda identifier: prototype if identifier == "hinted" else None,
     )
-    monkeypatch.setattr(explainer_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
 
     instantiated: list[object] = []
 
@@ -157,6 +162,12 @@ def test_build_interval_chain_includes_pyproject_entries(monkeypatch):
 
     monkeypatch.setattr(
         explainer_module,
+        "find_interval_descriptor",
+        lambda identifier: descriptors.get(identifier),
+    )
+    # Also patch in the prediction orchestrator module
+    monkeypatch.setattr(
+        prediction_orchestrator_module,
         "find_interval_descriptor",
         lambda identifier: descriptors.get(identifier),
     )

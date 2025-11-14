@@ -72,8 +72,8 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
         This implementation mirrors the original sequential path but substitutes
         _explain_parallel_features for the sequential feature loop.
         """
-        # Import _feature_task from calibrated_explainer module
-        from ..calibrated_explainer import _feature_task  # pylint: disable=import-outside-toplevel
+        # Import _feature_task from feature_task module
+        from .feature_task import _feature_task  # pylint: disable=import-outside-toplevel
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore

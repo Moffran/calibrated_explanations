@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.core import calibrated_explainer as explainer_module
+from calibrated_explanations.core.prediction import orchestrator as prediction_orchestrator_module
 from calibrated_explanations.core.calibrated_explainer import (
     _PredictBridgeMonitor,
     CalibratedExplainer,
@@ -123,6 +124,13 @@ def test_build_explanation_chain_merges_overrides(monkeypatch):
 
     monkeypatch.setattr(
         explainer_module,
+        "find_explanation_descriptor",
+        lambda identifier: descriptors.get(identifier),
+    )
+    # Also patch in the explain orchestrator module
+    from calibrated_explanations.core.explain import orchestrator as explain_orchestrator_module
+    monkeypatch.setattr(
+        explain_orchestrator_module,
         "find_explanation_descriptor",
         lambda identifier: descriptors.get(identifier),
     )
@@ -268,6 +276,12 @@ def test_build_interval_chain_merges_sources_and_metadata(monkeypatch):
         "find_interval_descriptor",
         lambda identifier: descriptors.get(identifier),
     )
+    # Also patch in the prediction orchestrator module
+    monkeypatch.setattr(
+        prediction_orchestrator_module,
+        "find_interval_descriptor",
+        lambda identifier: descriptors.get(identifier),
+    )
 
     chain = explainer._build_interval_chain(fast=False)
 
@@ -288,6 +302,12 @@ def test_build_interval_chain_fast_skips_missing_default(monkeypatch):
 
     monkeypatch.setattr(
         explainer_module,
+        "find_interval_descriptor",
+        lambda identifier: descriptors.get(identifier),
+    )
+    # Also patch in the prediction orchestrator module
+    monkeypatch.setattr(
+        prediction_orchestrator_module,
         "find_interval_descriptor",
         lambda identifier: descriptors.get(identifier),
     )
@@ -358,14 +378,16 @@ def test_instantiate_plugin_handles_multiple_paths(monkeypatch):
 
     broken = BrokenPlugin.__new__(BrokenPlugin)
     sentinel = object()
-    fake_copy = types.SimpleNamespace(deepcopy=lambda value: sentinel)
-    monkeypatch.setitem(sys.modules, "copy", fake_copy)
+    # Patch copy.deepcopy in the orchestrator module where it's imported
+    from calibrated_explanations.core.explain import orchestrator as explain_orch
+    monkeypatch.setattr(explain_orch.copy, "deepcopy", lambda value: sentinel)
     assert explainer._instantiate_plugin(broken) is sentinel
 
+    # Test fallback when deepcopy itself fails
     def raising_deepcopy(value):
         raise RuntimeError("fail")
 
-    monkeypatch.setitem(sys.modules, "copy", types.SimpleNamespace(deepcopy=raising_deepcopy))
+    monkeypatch.setattr(explain_orch.copy, "deepcopy", raising_deepcopy)
     assert explainer._instantiate_plugin(broken) is broken
 
 
@@ -406,9 +428,9 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch):
     explainer._instantiate_plugin = lambda plugin: plugin
     explainer._check_interval_runtime_metadata = lambda metadata, **_: None
 
-    monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "is_identifier_denied",
         lambda identifier: identifier == "denied.plugin",
     )
@@ -425,12 +447,14 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch):
     )
 
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "find_interval_descriptor",
         lambda identifier: descriptor if identifier == "ok.plugin" else None,
     )
-    monkeypatch.setattr(explainer_module, "find_interval_plugin", lambda identifier: None)
-    monkeypatch.setattr(explainer_module, "find_interval_plugin_trusted", lambda identifier: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "find_interval_plugin", lambda identifier: None)
+    monkeypatch.setattr(
+        prediction_orchestrator_module, "find_interval_plugin_trusted", lambda identifier: None
+    )
 
     plugin, identifier = explainer._resolve_interval_plugin(fast=False)
 
@@ -443,9 +467,9 @@ def test_resolve_interval_plugin_denied_override_raises(monkeypatch):
     explainer._interval_plugin_override = "denied.plugin"
     explainer._interval_plugin_fallbacks = {"default": ("denied.plugin",), "fast": ()}
 
-    monkeypatch.setattr(explainer_module, "ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(prediction_orchestrator_module, "ensure_builtin_plugins", lambda: None)
     monkeypatch.setattr(
-        explainer_module,
+        prediction_orchestrator_module,
         "is_identifier_denied",
         lambda identifier: identifier == "denied.plugin",
     )

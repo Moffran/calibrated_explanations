@@ -1,9 +1,20 @@
 # CalibratedExplainer Streamlining Plan
 
-**Status:** Planning phase for v0.10.0 refactor  
-**Current metrics:** 4025 lines, ~85+ methods, 65+ responsibilities  
+**Status:** Phase 1b completed; moved to v0.10.0 development cycle  
+**Current metrics:** Reduced from 3947 to 3590 lines (357 lines removed via Phase 1a+1b)
+**Next step:** Phase 2 (Fast Explanation Pipeline)
 **Goal:** Thin, delegating facade with clear separation of concerns  
 **ADR Alignment:** ADR-001 (boundary realignment), ADR-004 (parallel execution), ADR-005 (schema/envelope)
+
+**Implementation Policy** 
+- Refactor `CalibratedExplainer` into a thin orchestrator delegating to specialized modules.
+- Relocate unrelated helpers and classes to appropriate modules.
+- Refactor explanation logic into an `ExplanationOrchestrator` class.
+- Refactor functional domains (explain, predict, calibrate, plugins) into separate packages with clear contracts.
+- Never keep functionality in calibrated_explainer.py that can logically belong elsewhere.
+- Never keep functionality in calibrated_explaominer.py just because tests are referencing it, change the tests
+- Tests should focus on behaviour, not implementation details. 
+- Always move code incrementally with deprecation notices to maintain backward compatibility over v0.10.0–v0.11.0.
 
 ---
 
