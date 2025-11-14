@@ -97,11 +97,11 @@ def _patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
         explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration_helpers.initialize_interval_learner",
+        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner",
         _initialize,
     )
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration_helpers.initialize_interval_learner_for_fast_explainer",
+        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner_for_fast_explainer",
         _initialize,
     )
 

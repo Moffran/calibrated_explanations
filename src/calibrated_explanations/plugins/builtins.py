@@ -177,14 +177,14 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         difficulty = context.difficulty.get("estimator")
         x_cal, y_cal = context.calibration_splits[0]
         if "regression" in task:
-            from ..core.interval_regressor import IntervalRegressor
+            from ..core.calibration.interval_regressor import IntervalRegressor
 
             explainer = context.metadata.get("explainer")
             if explainer is None:
                 raise RuntimeError("Legacy interval context missing 'explainer' handle")
             calibrator = IntervalRegressor(explainer)
         else:
-            from ..core.venn_abers import VennAbers
+            from ..core.calibration.venn_abers import VennAbers
 
             predict_function = context.metadata.get("predict_function")
             if predict_function is None:
@@ -769,7 +769,7 @@ def _register_builtin_fast_plugins() -> None:
                 calibrators: list[Any] = []
                 num_features = int(metadata.get("num_features", 0) or 0)
                 if "classification" in task:
-                    from ..core.venn_abers import VennAbers
+                    from ..core.calibration.venn_abers import VennAbers
 
                     for f in range(num_features):
                         fast_x_cal = explainer.scaled_x_cal.copy()
@@ -784,7 +784,7 @@ def _register_builtin_fast_plugins() -> None:
                             )
                         )
                 else:
-                    from ..core.interval_regressor import IntervalRegressor
+                    from ..core.calibration.interval_regressor import IntervalRegressor
 
                     for f in range(num_features):
                         fast_x_cal = explainer.scaled_x_cal.copy()
@@ -798,7 +798,7 @@ def _register_builtin_fast_plugins() -> None:
                 explainer.bins = original_bins
 
                 if "classification" in task:
-                    from ..core.venn_abers import VennAbers
+                    from ..core.calibration.venn_abers import VennAbers
 
                     calibrators.append(
                         VennAbers(
@@ -815,7 +815,7 @@ def _register_builtin_fast_plugins() -> None:
                         )
                     )
                 else:
-                    from ..core.interval_regressor import IntervalRegressor
+                    from ..core.calibration.interval_regressor import IntervalRegressor
 
                     calibrators.append(IntervalRegressor(explainer))
 

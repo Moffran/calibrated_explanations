@@ -9,7 +9,7 @@ def test_interval_regressor_lazy_import(monkeypatch):
 
     interval_regressor = ce.IntervalRegressor
 
-    from calibrated_explanations.core.interval_regressor import (
+    from calibrated_explanations.core.calibration.interval_regressor import (
         IntervalRegressor as IntervalRegressorImpl,
     )
 
@@ -22,7 +22,7 @@ def test_venn_abers_lazy_import(monkeypatch):
 
     venn_abers = ce.VennAbers
 
-    from calibrated_explanations.core.venn_abers import VennAbers as VennAbersImpl
+    from calibrated_explanations.core.calibration.venn_abers import VennAbers as VennAbersImpl
 
     assert venn_abers is VennAbersImpl
     assert ce.__dict__["VennAbers"] is VennAbersImpl

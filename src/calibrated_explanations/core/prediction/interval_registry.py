@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ...core.calibration_helpers import (
+from ...core.calibration.interval_learner import (
     initialize_interval_learner,
     initialize_interval_learner_for_fast_explainer,
 )
@@ -114,7 +114,7 @@ class IntervalRegistry:
             # pylint: disable=fixme
             # TODO: change so that existing calibrators are extended with new calibration instances
             # Import here to allow monkeypatching in tests
-            from ..venn_abers import VennAbers
+            from ..calibration.venn_abers import VennAbers
             self.interval_learner = VennAbers(
                 self.explainer.x_cal,
                 self.explainer.y_cal,

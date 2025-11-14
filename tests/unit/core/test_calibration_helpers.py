@@ -1,12 +1,18 @@
+"""Tests for calibration interval learner management functions.
+
+Tests verify the behavior of interval learner initialization, updates, and
+threshold assignment for both standard and fast explanation modes.
+"""
+
 import numpy as np
 import pytest
-
-from calibrated_explanations.core import calibration_helpers as ch
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ConfigurationError
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+
+from calibrated_explanations.core.calibration import interval_learner as ch
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.exceptions import ConfigurationError
 
 
 def test_calibration_helpers_round_trip():

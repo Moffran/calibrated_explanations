@@ -193,13 +193,14 @@ def test_reinitialize_updates_state(monkeypatch):
 
     monkeypatch.setattr(explainer_module, "check_is_fitted", fake_check_is_fitted)
 
+
     update_calls: list[tuple] = []
 
     def fake_update(self, xs, ys, bins=None):
         update_calls.append((self, xs, ys, bins))
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration_helpers.update_interval_learner",
+        "calibrated_explanations.core.calibration.interval_learner.update_interval_learner",
         fake_update,
     )
 
@@ -225,9 +226,10 @@ def test_reinitialize_updates_state(monkeypatch):
         init_calls.append((self,))
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration_helpers.initialize_interval_learner",
+        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner",
         fake_init,
     )
 
     explainer.reinitialize(learner)
     assert init_calls and init_calls[0][0] is explainer
+

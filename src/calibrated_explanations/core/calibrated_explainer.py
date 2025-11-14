@@ -34,7 +34,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 
 from ..perf import CalibratorCache, ParallelExecutor
 from ..plotting import _plot_global
-from .venn_abers import VennAbers
+from .calibration.venn_abers import VennAbers
 from ..explanations import AlternativeExplanations, CalibratedExplanations
 from ..integrations import LimeHelper, ShapHelper
 from ..utils.discretizers import (
@@ -330,7 +330,7 @@ class CalibratedExplainer:
         self._prediction_orchestrator._ensure_interval_runtime_state()
 
         # Phase 1A delegation: interval learner initialization via helper
-        from .calibration_helpers import initialize_interval_learner as _init_il
+        from .calibration.interval_learner import initialize_interval_learner as _init_il
 
         _init_il(self)
         self.reject_learner = (
@@ -540,7 +540,9 @@ class CalibratedExplainer:
         array-like
             The calibration input data.
         """
-        return self.__X_cal if isinstance(self._X_cal[0], dict) else self._X_cal
+        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+
+        return CalibrationState.get_x_cal(self)
 
     @x_cal.setter
     def x_cal(self, value):
@@ -556,17 +558,9 @@ class CalibratedExplainer:
         ValueError
             If the number of features in value does not match the existing calibration data.
         """
-        if safe_isinstance(value, "pandas.core.frame.DataFrame"):
-            value = value.values
+        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
-        if len(value.shape) == 1:
-            value = value.reshape(1, -1)
-
-        self._X_cal = value
-
-        if isinstance(self._X_cal[0], dict):
-            self.__X_cal = np.array([[x[f] for f in x] for x in self._X_cal])
-        self._invalidate_calibration_summaries()
+        CalibrationState.set_x_cal(self, value)
 
     @property
     def y_cal(self):
@@ -577,7 +571,9 @@ class CalibratedExplainer:
         array-like
             The calibration target data.
         """
-        return self._y_cal
+        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+
+        return CalibrationState.get_y_cal(self)
 
     @y_cal.setter
     def y_cal(self, value):
@@ -588,12 +584,9 @@ class CalibratedExplainer:
         value : array-like of shape (n_samples,)
             The new calibration target data.
         """
-        if safe_isinstance(value, "pandas.core.frame.DataFrame"):
-            self._y_cal = np.asarray(value.values)
-        else:
-            if len(value.shape) == 2 and value.shape[1] == 1:
-                value = value.ravel()
-            self._y_cal = np.asarray(value)
+        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+
+        CalibrationState.set_y_cal(self, value)
 
     def append_cal(self, x, y):
         """Append new calibration data.
@@ -605,50 +598,34 @@ class CalibratedExplainer:
         y : array-like of shape (n_samples,)
             The new calibration target data to append.
         """
-        if x.shape[1] != self.num_features:
-            raise DataShapeError("Number of features must match existing calibration data")
-        self.x_cal = np.vstack((self.x_cal, x))
-        self.y_cal = np.concatenate((self.y_cal, y))
+        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+
+        CalibrationState.append_calibration(self, x, y)
 
     def _invalidate_calibration_summaries(self) -> None:
-        """Drop cached calibration summaries used during explanation."""
-        self._categorical_value_counts_cache = None
-        self._numeric_sorted_cache = None
-        self._calibration_summary_shape = None
+        """Drop cached calibration summaries used during explanation.
+
+        Delegates to the calibration.summaries module which manages the cache.
+        """
+        from .calibration.summaries import (  # pylint: disable=import-outside-toplevel
+            invalidate_calibration_summaries as _invalidate,
+        )
+
+        _invalidate(self)
 
     def _get_calibration_summaries(
         self, x_cal_np: Optional[np.ndarray] = None
     ) -> Tuple[Dict[int, Dict[Any, int]], Dict[int, np.ndarray]]:
-        """Return cached categorical counts and sorted numeric calibration values."""
-        if x_cal_np is None:
-            x_cal_np = np.asarray(self.x_cal)
-        shape = getattr(x_cal_np, "shape", None)
-        if (
-            self._categorical_value_counts_cache is None
-            or self._numeric_sorted_cache is None
-            or self._calibration_summary_shape != shape
-        ):
-            categorical_value_counts: Dict[int, Dict[Any, int]] = {}
-            numeric_sorted_cache: Dict[int, np.ndarray] = {}
-            if x_cal_np.size:
-                categorical_features = tuple(int(f) for f in self.categorical_features)
-                for f_cat in categorical_features:
-                    unique_vals, unique_counts = np.unique(x_cal_np[:, f_cat], return_counts=True)
-                    categorical_value_counts[int(f_cat)] = {
-                        val: int(cnt)
-                        for val, cnt in zip(unique_vals.tolist(), unique_counts.tolist())
-                    }
-                numeric_features = [
-                    f for f in range(self.num_features) if f not in categorical_features
-                ]
-                for f_num in numeric_features:
-                    numeric_sorted_cache[f_num] = np.sort(np.asarray(x_cal_np[:, f_num]))
-            self._categorical_value_counts_cache = categorical_value_counts
-            self._numeric_sorted_cache = numeric_sorted_cache
-            self._calibration_summary_shape = shape
-        assert self._categorical_value_counts_cache is not None
-        assert self._numeric_sorted_cache is not None
-        return self._categorical_value_counts_cache, self._numeric_sorted_cache
+        """Return cached categorical counts and sorted numeric calibration values.
+
+        Delegates to the calibration.summaries module which manages caching of
+        statistical summaries used during explanation generation.
+        """
+        from .calibration.summaries import (  # pylint: disable=import-outside-toplevel
+            get_calibration_summaries as _get,
+        )
+
+        return _get(self, x_cal_np)
 
     @property
     def num_features(self):
@@ -776,11 +753,11 @@ class CalibratedExplainer:
                     )
                 self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
             # Phase 1A delegation: update interval learner via helper
-            from .calibration_helpers import update_interval_learner as _upd_il
+            from .calibration.interval_learner import update_interval_learner as _upd_il
 
             _upd_il(self, xs, ys, bins=bins)
         else:
-            from .calibration_helpers import initialize_interval_learner as _init_il
+            from .calibration.interval_learner import initialize_interval_learner as _init_il
 
             _init_il(self)
         self.__initialized = True
