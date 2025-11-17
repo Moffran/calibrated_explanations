@@ -5,7 +5,28 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.0...main)
 
-### Phase 5: CalibratedExplainer Streamlining (Continued)
+### Execution Strategy Plugins
+
+- **Introduced execution strategy wrapper plugins for user-configurable parallelism strategies**
+  - Created 6 new wrapper explanation plugins bridging explanation layer and execution layer:
+    - `core.explanation.factual.sequential` - Single-threaded sequential processing
+    - `core.explanation.factual.feature_parallel` - Parallel processing across features
+    - `core.explanation.factual.instance_parallel` - Parallel processing across instances
+    - `core.explanation.alternative.sequential` - Alternative mode sequential processing
+    - `core.explanation.alternative.feature_parallel` - Alternative mode feature parallelism
+    - `core.explanation.alternative.instance_parallel` - Alternative mode instance parallelism
+  - Implemented `_ExecutionExplanationPluginBase` class for consistent bridging behavior
+  - Each strategy declares automatic fallback chain for graceful degradation (instance_parallel → feature_parallel → sequential → legacy)
+  - Users can now select execution strategies via configuration:
+    - Keyword argument: `explainer.explain_factual(x, explanation_plugin="core.explanation.factual.feature_parallel")`
+    - Environment variable: `CE_EXPLANATION_PLUGIN_FACTUAL="core.explanation.factual.feature_parallel"`
+    - pyproject.toml: `[tool.calibrated_explanations.explanations]`
+  - All execution plugins registered as trusted and automatically available
+  - Maintains full backward compatibility - legacy plugins remain as ultimate fallback
+  - Updated ADR-015 with execution strategy plugin documentation
+  - Added comprehensive unit tests (25 test cases) covering registration, metadata, modes, and fallback chains
+
+### CalibratedExplainer Streamlining
 
 - **Extracted core discretization and rule boundary computation to explain subpackage** to consolidate explanation logic and eliminate circular dependencies
   - Created `explain._computation.discretize()` function: pure function extracting discretization logic from `CalibratedExplainer._discretize()`
