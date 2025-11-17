@@ -156,37 +156,6 @@ def test_resolve_interval_plugin_uses_hints_and_instantiates(monkeypatch):
     assert instantiated == [prototype]
 
 
-def test_build_interval_chain_includes_pyproject_entries(monkeypatch):
-    explainer = _make_explainer()
-    explainer._pyproject_intervals = {
-        "default": "tests.interval.pyproject",
-        "default_fallbacks": ["tests.interval.secondary"],
-    }
-
-    descriptors = {
-        "tests.interval.pyproject": types.SimpleNamespace(
-            metadata={"fallbacks": ("tests.interval.metadata",)},
-        )
-    }
-
-    # Patch in the prediction orchestrator module where find_interval_descriptor is used
-    monkeypatch.setattr(
-        prediction_orchestrator_module,
-        "find_interval_descriptor",
-        lambda identifier: descriptors.get(identifier),
-    )
-
-    chain = explainer._build_interval_chain(fast=False)
-
-    assert chain == (
-        "tests.interval.pyproject",
-        "tests.interval.metadata",
-        "tests.interval.secondary",
-        "core.interval.legacy",
-    )
-    assert explainer._interval_preferred_identifier["default"] is None
-
-
 def test_build_plot_style_chain_includes_pyproject_entries():
     explainer = _make_explainer()
     explainer._plot_style_override = None

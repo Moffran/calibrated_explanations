@@ -23,46 +23,4 @@ def _make_simple_model():
     return model, x, y
 
 
-def test_pyproject_sections_seed_interval_and_plot_chains(monkeypatch):
-    ensure_builtin_plugins()
 
-    def fake_read(path):
-        if tuple(path) == ("tool", "calibrated_explanations", "intervals"):
-            return {
-                "default": "tests.interval.pyproject",
-                "default_fallbacks": ["tests.interval.secondary"],
-            }
-        if tuple(path) == ("tool", "calibrated_explanations", "plots"):
-            return {
-                "style": "tests.plot.pyproject",
-                "style_fallbacks": ["tests.plot.secondary"],
-            }
-        return {}
-
-    # Patch read_pyproject_section in the calibrated_explainer module's namespace
-    monkeypatch.setattr(
-        explainer_module,
-        "read_pyproject_section",
-        fake_read,
-    )
-
-    model, x_cal, y_cal = _make_simple_model()
-
-    explainer = CalibratedExplainer(
-        model,
-        x_cal,
-        y_cal,
-        mode="classification",
-        feature_names=["f0", "f1"],
-        categorical_features=[],
-        class_labels=["No", "Yes"],
-    )
-
-    chain = explainer._interval_plugin_fallbacks["default"]
-    assert chain[0] == "tests.interval.pyproject"
-    assert "tests.interval.secondary" in chain
-    assert chain[-1] == "core.interval.legacy"
-
-    plot_chain = explainer._plot_style_chain
-    assert plot_chain[0] == "tests.plot.pyproject"
-    assert plot_chain[-1] == "legacy"

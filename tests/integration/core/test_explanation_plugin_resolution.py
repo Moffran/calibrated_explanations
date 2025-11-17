@@ -7,10 +7,10 @@ from typing import ClassVar, Optional, Tuple
 import numpy as np
 import pytest
 
-from calibrated_explanations.core import calibrated_explainer as ce_module
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
+from calibrated_explanations.plugins.manager import DEFAULT_EXPLANATION_IDENTIFIERS
 from calibrated_explanations.plugins.registry import (
     clear_explanation_plugins,
     ensure_builtin_plugins,
@@ -244,9 +244,11 @@ def test_future_schema_plugin_rejected(binary_dataset):
 
 
 def test_unknown_plugin_identifier_raises(monkeypatch, binary_dataset):
+    """Test that unknown plugin identifiers raise ConfigurationError."""
     ensure_builtin_plugins()
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "tests.missing.plugin")
-    monkeypatch.setitem(ce_module._DEFAULT_EXPLANATION_IDENTIFIERS, "factual", None)
+    # Patch the PluginManager's default identifiers instead of the old module-level constant
+    monkeypatch.setitem(DEFAULT_EXPLANATION_IDENTIFIERS, "factual", None)
 
     try:
         (

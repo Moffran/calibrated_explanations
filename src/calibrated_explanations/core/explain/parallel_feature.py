@@ -108,6 +108,10 @@ class FeatureParallelExplainExecutor(BaseExplainExecutor):
             greater_values,
             covered_values,
             x_cal,
+            perturbed_threshold,
+            perturbed_bins,
+            perturbed_x,
+            perturbed_class,
         ) = explain_predict_step(
             explainer,
             x_input,

@@ -95,7 +95,6 @@ def _make_minimal_explainer(num_features: int = 2) -> CalibratedExplainer:
     explainer._categorical_value_counts_cache = None
     explainer._numeric_sorted_cache = None
     explainer._calibration_summary_shape = None
-    explainer._last_telemetry = {"source": "initial"}
     explainer._preprocessor_metadata = {"scaler": "std"}
     explainer.seed = 0
     explainer.rng = np.random.default_rng(0)
@@ -104,9 +103,14 @@ def _make_minimal_explainer(num_features: int = 2) -> CalibratedExplainer:
     explainer._CalibratedExplainer__initialized = False
     explainer._lime_helper = LimeHelper(explainer)
     explainer._shap_helper = ShapHelper(explainer)
-    # Initialize the prediction orchestrator (Phase 4: Interval Registry)
+    # Initialize the orchestrators
     from calibrated_explanations.core.prediction import PredictionOrchestrator
+    from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+    from calibrated_explanations.plugins.manager import PluginManager
+    explainer._plugin_manager = PluginManager(explainer)
+    explainer._plugin_manager._last_telemetry = {"source": "initial"}
     explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
+    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
     return explainer
 
 

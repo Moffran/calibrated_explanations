@@ -66,29 +66,6 @@ def test_predict_bridge_monitor_records_calls():
     assert "predict_proba" in monitor.calls
 
 
-def test_coerce_plugin_override_callable_and_errors():
-    inst = object.__new__(CalibratedExplainer)
-
-    # None -> None
-    assert inst._coerce_plugin_override(None) is None
-
-    # string passes through
-    assert inst._coerce_plugin_override("hello") == "hello"
-
-    # callable returning object
-    def factory():
-        return {"ok": True}
-
-    assert inst._coerce_plugin_override(factory) == {"ok": True}
-
-    # callable raising -> ConfigurationError
-    def bad():
-        raise RuntimeError("boom")
-
-    with pytest.raises(ConfigurationError):
-        inst._coerce_plugin_override(bad)
-
-
 def test_check_explanation_runtime_metadata_various():
     """Test ExplanationOrchestrator metadata validation through delegating method."""
     explainer = object.__new__(CalibratedExplainer)

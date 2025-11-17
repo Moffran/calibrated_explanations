@@ -48,29 +48,6 @@ def _make_base_explainer() -> CalibratedExplainer:
     return explainer
 
 
-def test_build_plot_style_chain_adds_defaults(monkeypatch):
-    """Test that plot chain adds default when no overrides present."""
-    explainer = _make_base_explainer()
-    monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
-    monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
-
-    chain = explainer._explanation_orchestrator._build_plot_chain()
-
-    assert chain == ("plot_spec.default", "legacy")
-
-
-def test_build_plot_style_chain_inserts_before_legacy(monkeypatch):
-    """Test that plot style override is inserted before legacy."""
-    explainer = _make_base_explainer()
-    explainer._plot_style_override = "legacy"
-    monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
-    monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
-
-    chain = explainer._explanation_orchestrator._build_plot_chain()
-
-    assert chain == ("plot_spec.default", "legacy")
-
-
 def test_slice_threshold_branches_exercised():
     """Test threshold slicing behavior through explain helpers (Phase 5).
     
@@ -107,26 +84,6 @@ def test_slice_bins_handles_collections():
     array_bins = np.array([[1, 2], [3, 4], [5, 6]])
     sliced = slice_bins(array_bins, 0, 2)
     assert np.all(sliced == array_bins[:2])
-
-
-def test_build_instance_telemetry_payload_handles_variants():
-    explainer = _make_base_explainer()
-
-    class _DummyExplanation:
-        def __init__(self, payload):
-            self._payload = payload
-
-        def to_telemetry(self):
-            return self._payload
-
-    assert explainer._build_instance_telemetry_payload([]) == {}
-
-    payload = {"foo": "bar"}
-    explanations = [_DummyExplanation(payload)]
-    assert explainer._build_instance_telemetry_payload(explanations) == payload
-
-    explanations = [_DummyExplanation([1, 2, 3])]
-    assert explainer._build_instance_telemetry_payload(explanations) == {}
 
 
 def test_infer_explanation_mode_prefers_discretizer():

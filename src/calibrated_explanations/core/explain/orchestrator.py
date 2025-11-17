@@ -5,6 +5,9 @@ explanation pipeline execution, including plugin resolution, context building,
 invocation, and result telemetry collection.
 
 Part of Phase 1: Delegate Explanation Orchestration (ADR-001, ADR-004).
+
+Note: All plugin defaults, chaining, and fallback logic has been moved to
+PluginManager. This orchestrator delegates all chain-building to PluginManager.
 """
 
 # pylint: disable=protected-access, too-many-lines
@@ -13,7 +16,6 @@ from __future__ import annotations
 
 import contextlib
 import copy
-import os
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 from ...plugins import ExplanationContext, ExplanationRequest, validate_explanation_batch
@@ -25,19 +27,14 @@ from ...plugins.registry import (
     find_explanation_plugin,
     is_identifier_denied,
 )
+from ...core.config_helpers import coerce_string_tuple
 from ...utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
-from ..config_helpers import coerce_string_tuple, split_csv
 from ..exceptions import ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
 
-# Default explanation plugin identifiers per mode (fallback chain terminus)
-_DEFAULT_EXPLANATION_IDENTIFIERS = {
-    "factual": "core.explanation.factual",
-    "alternative": "core.explanation.alternative",
-    "fast": "core.explanation.fast",
-}
+_EXPLANATION_MODES: Tuple[str, ...] = ("factual", "alternative", "fast")
 
 
 class ExplanationOrchestrator:
@@ -78,145 +75,24 @@ class ExplanationOrchestrator:
         self.explainer = explainer
 
     def initialize_chains(self) -> None:
-        """Build and cache the explanation and plot plugin fallback chains.
+        """Delegate to PluginManager for chain initialization.
 
-        This method is called during explainer initialization to pre-compute the
-        plugin resolution chains for all explanation modes. It populates:
-        - explainer._explanation_plugin_fallbacks
-        - explainer._plot_plugin_fallbacks
+        PluginManager is now the single source of truth for all plugin
+        defaults, chains, and fallbacks. This method delegates to it.
 
         Notes
         -----
-        Must be called after explainer plugin configuration is set up but before
-        plugins are resolved. Assumes builtin plugins have been registered.
+        This method is called during explainer initialization to pre-compute the
+        plugin resolution chains for all explanation modes.
         """
-        # Use the default identifiers stored on the explainer instance
-        # This allows tests to patch them by modifying the module-level dictionary
-        # which is copied into each explainer instance
-        for mode in ("factual", "alternative", "fast"):
-            default_id = self.explainer._default_explanation_identifiers.get(mode, "")
-            self.explainer._explanation_plugin_fallbacks[mode] = self._build_explanation_chain(
-                mode, default_id
-            )
-
-        # Build plot style fallback chain
-        self.explainer._plot_plugin_fallbacks["default"] = self._build_plot_chain()
-
-    def _build_explanation_chain(self, mode: str, default_identifier: str) -> Tuple[str, ...]:
-        """Build the ordered explanation plugin fallback chain for a mode.
-
-        Parameters
-        ----------
-        mode : str
-            The explanation mode ("factual", "alternative", "fast").
-        default_identifier : str
-            The default/fallback identifier for this mode.
-
-        Returns
-        -------
-        tuple of str
-            Ordered list of plugin identifiers to try for this mode.
-        """
-        entries: List[str] = []
-
-        # 1. User override
-        override = self.explainer._explanation_plugin_overrides.get(mode)
-        if isinstance(override, str) and override:
-            entries.append(override)
-
-        # 2. Environment variables
-        env_key = f"CE_EXPLANATION_PLUGIN_{mode.upper()}"
-        env_value = os.environ.get(env_key)
-        if env_value:
-            entries.append(env_value.strip())
-        entries.extend(split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
-
-        # 3. pyproject.toml settings
-        py_settings = self.explainer._pyproject_explanations or {}
-        py_value = py_settings.get(mode)
-        if isinstance(py_value, str) and py_value:
-            entries.append(py_value)
-        entries.extend(coerce_string_tuple(py_settings.get(f"{mode}_fallbacks")))
-
-        # 4. Expand with descriptor fallbacks and deduplicate
-        seen: set[str] = set()
-        expanded: List[str] = []
-        for identifier in entries:
-            if not identifier or identifier in seen:
-                continue
-            expanded.append(identifier)
-            seen.add(identifier)
-            descriptor = find_explanation_descriptor(identifier)
-            if descriptor:
-                for fallback in coerce_string_tuple(descriptor.metadata.get("fallbacks")):
-                    if fallback and fallback not in seen:
-                        expanded.append(fallback)
-                        seen.add(fallback)
-
-        # 5. Add default and mode-specific fallbacks
-        if default_identifier and default_identifier not in seen:
-            expanded.append(default_identifier)
-            seen.add(default_identifier)
-
-        if mode == "fast":
-            # For fast mode, also try external fast plugin if registered
-            ext_fast = "external.explanation.fast"
-            if ext_fast and ext_fast not in seen:
-                expanded.append(ext_fast)
-                seen.add(ext_fast)
-
-        return tuple(expanded)
+        self.explainer._plugin_manager.initialize_chains()
 
     def _build_plot_chain(self) -> Tuple[str, ...]:
-        """Build the ordered plot style fallback chain.
-
-        Returns
-        -------
-        tuple of str
-            Ordered list of plot style identifiers to try.
-        """
-        entries: List[str] = []
-
-        # 1. User override
-        override = self.explainer._plot_style_override
-        if isinstance(override, str) and override:
-            entries.append(override)
-
-        # 2. Environment variables
-        env_value = os.environ.get("CE_PLOT_STYLE")
-        if env_value:
-            entries.append(env_value.strip())
-        entries.extend(split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
-
-        # 3. pyproject.toml settings
-        py_settings = self.explainer._pyproject_plots or {}
-        py_value = py_settings.get("style")
-        if isinstance(py_value, str) and py_value:
-            entries.append(py_value)
-        entries.extend(coerce_string_tuple(py_settings.get("style_fallbacks")))
-
-        entries.append("legacy")
-
-        # 4. Deduplicate while maintaining order
-        seen: set[str] = set()
-        ordered: List[str] = []
-        for identifier in entries:
-            if identifier and identifier not in seen:
-                ordered.append(identifier)
-                seen.add(identifier)
-
-        # 5. Ensure defaults are present
-        if "plot_spec.default" not in seen:
-            if "legacy" in ordered:
-                legacy_index = ordered.index("legacy")
-                ordered.insert(legacy_index, "plot_spec.default")
-            else:
-                ordered.append("plot_spec.default")
-
-        if "legacy" not in ordered:
-            ordered.append("legacy")
-
-        return tuple(ordered)
+        """Delegate to PluginManager for plot chain building."""
+        if hasattr(self.explainer, "_plugin_manager"):
+            return self.explainer._plugin_manager._build_plot_chain()
+        # Fallback for test stubs: return empty tuple
+        return ()
 
     def infer_mode(self) -> str:
         """Infer the explanation mode based on the active discretizer.
@@ -331,7 +207,14 @@ class ExplanationOrchestrator:
             telemetry_payload["preprocessor"] = preprocessor_meta
 
         self.explainer._last_telemetry = dict(telemetry_payload)
-        if monitor is not None and not monitor.used:
+        # Bridge monitor check: builtin plugins (starting with "core.") use internal
+        # execution pipeline and don't need the bridge. Other plugins must use it.
+        if (
+            monitor is not None
+            and not monitor.used
+            and _identifier is not None
+            and not _identifier.startswith("core.")
+        ):
             raise ConfigurationError(
                 "Explanation plugin for mode '"
                 + mode

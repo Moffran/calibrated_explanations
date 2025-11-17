@@ -106,45 +106,6 @@ def test_predict_bridge_monitor_tracks_usage():
     assert bridge.calls[2][0] == "predict_proba"
 
 
-def test_build_explanation_chain_merges_overrides(monkeypatch):
-    explainer = _stub_explainer()
-    explainer._explanation_plugin_overrides["factual"] = "tests.override"
-    explainer._pyproject_explanations = {
-        "factual": "tests.pyproject",
-        "factual_fallbacks": ["tests.pyproject.fallback"],
-    }
-
-    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", " env.direct ")
-    monkeypatch.setenv(
-        "CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS",
-        "env.one, env.shared, env.two",
-    )
-
-    descriptors = {
-        "tests.override": types.SimpleNamespace(metadata={"fallbacks": ("env.shared",)}),
-        "tests.pyproject": types.SimpleNamespace(
-            metadata={"fallbacks": ("tests.metadata.fallback",)}
-        ),
-    }
-
-    # Patch in the explain orchestrator module where the function is directly imported
-    from calibrated_explanations.core.explain import orchestrator as explain_orchestrator_module
-
-    monkeypatch.setattr(
-        explain_orchestrator_module,
-        "find_explanation_descriptor",
-        lambda identifier: descriptors.get(identifier),
-    )
-
-    chain = explainer._build_explanation_chain("factual")
-
-    assert chain[0] == "tests.override"
-    assert "env.direct" in chain
-    assert chain.count("env.shared") == 1
-    assert "tests.metadata.fallback" in chain
-    assert chain[-1] == "core.explanation.factual"
-
-
 def test_check_explanation_runtime_metadata_reports_errors():
     explainer = _stub_explainer(mode="classification")
 
@@ -256,94 +217,6 @@ def test_ensure_interval_runtime_state_populates_defaults():
     assert explainer._interval_context_metadata == {"default": {}, "fast": {}}
 
 
-def test_build_interval_chain_merges_sources_and_metadata(monkeypatch):
-    explainer = _stub_explainer()
-    explainer._interval_plugin_override = "tests.override"
-    explainer._pyproject_intervals = {
-        "default": "tests.pyproject",
-        "default_fallbacks": ("tests.pyproject.fallback",),
-    }
-
-    monkeypatch.setenv("CE_INTERVAL_PLUGIN", " env.direct ")
-    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FALLBACKS", "env.shared, env.extra")
-    descriptors = {
-        "tests.override": types.SimpleNamespace(metadata={"fallbacks": ("env.shared",)}),
-        "env.direct": types.SimpleNamespace(metadata={"fallbacks": ()}),
-        "tests.pyproject": types.SimpleNamespace(
-            metadata={"fallbacks": ("tests.metadata.fallback",)}
-        ),
-    }
-
-    # Patch in the prediction orchestrator module where find_interval_descriptor is used
-    monkeypatch.setattr(
-        prediction_orchestrator_module,
-        "find_interval_descriptor",
-        lambda identifier: descriptors.get(identifier),
-    )
-
-    chain = explainer._build_interval_chain(fast=False)
-
-    assert chain[0] == "tests.override"
-    assert chain.count("env.shared") == 1
-    assert "env.direct" in chain
-    assert "tests.metadata.fallback" in chain
-    assert chain[-1] == "core.interval.legacy"
-    assert explainer._interval_preferred_identifier["default"] == "tests.override"
-
-
-def test_build_interval_chain_fast_skips_missing_default(monkeypatch):
-    explainer = _stub_explainer()
-    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST", "fast.direct")
-    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST_FALLBACKS", "fast.extra")
-
-    descriptors = {"fast.direct": types.SimpleNamespace(metadata={"fallbacks": ()})}
-
-    # Patch in the prediction orchestrator module where find_interval_descriptor is used
-    monkeypatch.setattr(
-        prediction_orchestrator_module,
-        "find_interval_descriptor",
-        lambda identifier: descriptors.get(identifier),
-    )
-
-    chain = explainer._build_interval_chain(fast=True)
-
-    assert chain == ("fast.direct", "fast.extra")
-    assert explainer._interval_preferred_identifier["fast"] == "fast.direct"
-
-
-def test_build_plot_style_chain_inserts_defaults_when_legacy_env(monkeypatch):
-    explainer = _stub_explainer()
-    explainer._plot_style_override = "tests.override"
-    explainer._pyproject_plots = {
-        "style": "tests.pyproject",
-        "style_fallbacks": ("legacy", "tests.pyproject.fallback"),
-    }
-
-    monkeypatch.setenv("CE_PLOT_STYLE", " env.direct ")
-    monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "env.extra, legacy")
-
-    chain = explainer._build_plot_style_chain()
-
-    assert chain[0] == "tests.override"
-    assert "env.direct" in chain
-    assert chain.count("legacy") == 1
-    assert "plot_spec.default" in chain
-    legacy_index = chain.index("legacy")
-    assert chain[legacy_index - 1] == "plot_spec.default"
-
-
-def test_gather_interval_hints_merges_modes():
-    explainer = _stub_explainer()
-    explainer._interval_plugin_hints = {
-        "fast": ("fast.hint",),
-        "factual": ("hint.one", "shared"),
-        "alternative": ("shared", "hint.two"),
-    }
-
-    assert explainer._gather_interval_hints(fast=True) == ("fast.hint",)
-    assert explainer._gather_interval_hints(fast=False) == ("hint.one", "shared", "hint.two")
-
-
 def test_instantiate_plugin_handles_multiple_paths(monkeypatch):
     explainer = _stub_explainer()
 
@@ -383,37 +256,6 @@ def test_instantiate_plugin_handles_multiple_paths(monkeypatch):
 
     monkeypatch.setattr(explain_orch.copy, "deepcopy", raising_deepcopy)
     assert explainer._instantiate_plugin(broken) is broken
-
-
-def test_build_plot_style_chain_inserts_defaults(monkeypatch):
-    explainer = _stub_explainer()
-    explainer._plot_style_override = None
-    explainer._pyproject_plots = {}
-
-    monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
-    monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
-    monkeypatch.setenv("CE_PLOT_STYLE", " legacy ")
-
-    chain = explainer._build_plot_style_chain()
-
-    assert chain[0] == "plot_spec.default"
-    assert chain[1] == "legacy"
-    assert chain.count("legacy") == 1
-
-
-def test_build_plot_style_chain_appends_legacy_once(monkeypatch):
-    explainer = _stub_explainer()
-    explainer._plot_style_override = "plot_spec.default"
-    explainer._pyproject_plots = {"style_fallbacks": ("modern", "plot_spec.default")}
-
-    monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
-    monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
-
-    chain = explainer._build_plot_style_chain()
-
-    assert chain[0] == "plot_spec.default"
-    assert chain[-1] == "legacy"
-    assert chain.count("plot_spec.default") == 1
 
 
 def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch):

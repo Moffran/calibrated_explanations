@@ -5,6 +5,9 @@ prediction pipeline execution, including interval calibration, difficulty
 estimation, uncertainty quantification, and caching.
 
 Part of Phase 1b: Delegate Prediction Orchestration (ADR-001, ADR-004).
+
+Note: All plugin defaults, chaining, and fallback logic has been moved to
+PluginManager. This orchestrator delegates all chain-building to PluginManager.
 """
 
 # pylint: disable=protected-access, too-many-lines, invalid-name, import-outside-toplevel
@@ -13,9 +16,8 @@ Part of Phase 1b: Delegate Prediction Orchestration (ADR-001, ADR-004).
 from __future__ import annotations
 
 import contextlib
-import os
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Sequence, Tuple
 
 import numpy as np
 
@@ -27,8 +29,8 @@ from ...plugins.registry import (
     find_interval_plugin_trusted,
     is_identifier_denied,
 )
+from ...core.config_helpers import coerce_string_tuple
 from ...utils.helper import assert_threshold
-from ..config_helpers import coerce_string_tuple, split_csv
 from ..exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
 
 if TYPE_CHECKING:
@@ -76,22 +78,17 @@ class PredictionOrchestrator:
         self._interval_registry = IntervalRegistry(explainer)
 
     def initialize_chains(self) -> None:
-        """Build and cache the interval plugin fallback chains.
+        """Delegate to PluginManager for chain initialization.
 
-        This method is called during explainer initialization to pre-compute the
-        interval calibrator plugin resolution chains for default and fast modes.
-        It populates explainer._interval_plugin_fallbacks.
+        PluginManager is now the single source of truth for all plugin
+        defaults, chains, and fallbacks. This method delegates to it.
 
         Notes
         -----
-        Must be called after explainer plugin configuration is set up but before
-        plugins are resolved. Assumes builtin plugins have been registered.
+        This method is called during explainer initialization to pre-compute the
+        interval calibrator plugin resolution chains for default and fast modes.
         """
-        # Build interval fallback chains for default and fast modes
-        self.explainer._interval_plugin_fallbacks["default"] = self._build_interval_chain(
-            fast=False
-        )
-        self.explainer._interval_plugin_fallbacks["fast"] = self._build_interval_chain(fast=True)
+        self.explainer._plugin_manager.initialize_chains()
 
     def predict(
         self,
@@ -390,19 +387,18 @@ class PredictionOrchestrator:
 
     def _ensure_interval_runtime_state(self) -> None:
         """Ensure interval tracking members exist for legacy instances."""
-        storage = self.explainer.__dict__
-        if "_interval_plugin_hints" not in storage:
-            storage["_interval_plugin_hints"] = {}
-        if "_interval_plugin_fallbacks" not in storage:
-            storage["_interval_plugin_fallbacks"] = {}
-        if "_interval_plugin_identifiers" not in storage:
-            storage["_interval_plugin_identifiers"] = {"default": None, "fast": None}
-        if "_telemetry_interval_sources" not in storage:
-            storage["_telemetry_interval_sources"] = {"default": None, "fast": None}
-        if "_interval_preferred_identifier" not in storage:
-            storage["_interval_preferred_identifier"] = {"default": None, "fast": None}
-        if "_interval_context_metadata" not in storage:
-            storage["_interval_context_metadata"] = {"default": {}, "fast": {}}
+        if not self.explainer._interval_plugin_hints:
+            self.explainer._interval_plugin_hints = {}
+        if not self.explainer._interval_plugin_fallbacks:
+            self.explainer._interval_plugin_fallbacks = {}
+        if not self.explainer._interval_plugin_identifiers:
+            self.explainer._interval_plugin_identifiers = {"default": None, "fast": None}
+        if not self.explainer._telemetry_interval_sources:
+            self.explainer._telemetry_interval_sources = {"default": None, "fast": None}
+        if not self.explainer._interval_preferred_identifier:
+            self.explainer._interval_preferred_identifier = {"default": None, "fast": None}
+        if not self.explainer._interval_context_metadata:
+            self.explainer._interval_context_metadata = {"default": {}, "fast": {}}
 
     def _gather_interval_hints(self, *, fast: bool) -> Tuple[str, ...]:
         """Return interval dependency hints collected from explanation plugins."""
@@ -602,63 +598,6 @@ class PredictionOrchestrator:
             metadata=enriched_metadata,
             fast_flags=fast_flags,
         )
-
-    def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
-        """Return the ordered interval plugin chain for the requested mode."""
-        entries: List[str] = []
-        override = (
-            self.explainer._fast_interval_plugin_override
-            if fast
-            else self.explainer._interval_plugin_override
-        )
-        preferred_identifier: str | None = None
-        if isinstance(override, str) and override:
-            entries.append(override)
-            preferred_identifier = override
-
-        env_key = "CE_INTERVAL_PLUGIN_FAST" if fast else "CE_INTERVAL_PLUGIN"
-        env_value = os.environ.get(env_key)
-        if env_value:
-            entries.append(env_value.strip())
-            if preferred_identifier is None:
-                preferred_identifier = env_value.strip()
-        entries.extend(split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
-
-        py_settings = self.explainer._pyproject_intervals or {}
-        py_key = "fast" if fast else "default"
-        py_value = py_settings.get(py_key)
-        if isinstance(py_value, str) and py_value:
-            entries.append(py_value)
-        entries.extend(coerce_string_tuple(py_settings.get(f"{py_key}_fallbacks")))
-
-        default_identifier = "core.interval.fast" if fast else "core.interval.legacy"
-        seen: set[str] = set()
-        ordered: List[str] = []
-        for identifier in entries:
-            if identifier and identifier not in seen:
-                ordered.append(identifier)
-                seen.add(identifier)
-                descriptor = find_interval_descriptor(identifier)
-                if descriptor:
-                    for fallback in coerce_string_tuple(descriptor.metadata.get("fallbacks")):
-                        if fallback and fallback not in seen:
-                            ordered.append(fallback)
-                            seen.add(fallback)
-        if default_identifier not in seen:
-            if fast:
-                # Prefer the core fast identifier when available; otherwise
-                # fall back to the external fast interval identifier if registered.
-                if find_interval_descriptor(default_identifier) is not None:
-                    ordered.append(default_identifier)
-                else:
-                    ext_fast = "external.interval.fast"
-                    if find_interval_descriptor(ext_fast) is not None:
-                        ordered.append(ext_fast)
-            else:
-                ordered.append(default_identifier)
-        key = "fast" if fast else "default"
-        self.explainer._interval_preferred_identifier[key] = preferred_identifier
-        return tuple(ordered)
 
     def _obtain_interval_calibrator(
         self,

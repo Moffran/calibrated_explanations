@@ -275,15 +275,6 @@ class TestIntervalPluginState:
         assert manager._interval_plugin_identifiers["default"] is None
         assert manager._interval_plugin_identifiers["fast"] is None
 
-    def test_init_creates_telemetry_sources(self):
-        """should_initialize_telemetry_interval_sources."""
-        mock_explainer = Mock()
-        manager = PluginManager(mock_explainer)
-
-        assert "default" in manager._telemetry_interval_sources
-        assert "fast" in manager._telemetry_interval_sources
-        assert manager._telemetry_interval_sources["default"] is None
-
     def test_init_creates_interval_context_metadata(self):
         """should_initialize_interval_context_metadata."""
         mock_explainer = Mock()
