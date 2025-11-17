@@ -13,29 +13,29 @@ Created a dedicated package for explain execution plugins:
 ```
 src/calibrated_explanations/core/explain/
 ├── __init__.py           # Plugin registry and dispatcher
-├── _base.py              # BaseExplainPlugin abstract class
+├── _base.py              # BaseExplainExecutor abstract class
 ├── _shared.py            # ExplainRequest, ExplainResponse, ExplainConfig dataclasses
 ├── _helpers.py           # Shared utility functions
-├── sequential.py         # SequentialExplainPlugin
-├── parallel_feature.py   # FeatureParallelExplainPlugin
-└── parallel_instance.py  # InstanceParallelExplainPlugin
+├── sequential.py         # SequentialExplainExecutor
+├── parallel_feature.py   # FeatureParallelExplainExecutor
+└── parallel_instance.py  # InstanceParallelExplainExecutor
 ```
 
 ### 2. Plugin Implementations
 
-#### SequentialExplainPlugin (Priority: 10)
+#### SequentialExplainExecutor (Priority: 10)
 - Single-threaded, feature-by-feature processing
 - Universal fallback that always supports any request
 - 300 lines, faithfully reproducing original sequential logic
 
-#### FeatureParallelExplainPlugin (Priority: 20)
+#### FeatureParallelExplainExecutor (Priority: 20)
 - Distributes feature tasks across executor workers
 - Requires executor enabled with `granularity='feature'`
 - 310 lines, reusing sequential setup with parallel dispatch
 
-#### InstanceParallelExplainPlugin (Priority: 30)
+#### InstanceParallelExplainExecutor (Priority: 30)
 - Partitions instances into chunks for parallel processing
-- Each chunk delegates to SequentialExplainPlugin
+- Each chunk delegates to SequentialExplainExecutor
 - Requires executor enabled with `granularity='instance'`
 - 200 lines, includes chunk combination logic
 
@@ -72,7 +72,7 @@ def explain(self, x, threshold=None, low_high_percentiles=(5, 95),
         mode = self._infer_explanation_mode()
         return self._invoke_explanation_plugin(...)
 
-    # NEW: Delegate to explain plugin system
+    # NEW: Delegate to explain executor system
     from .explain import explain as plugin_explain
     return plugin_explain(self, x, threshold, low_high_percentiles,
                           bins, features_to_ignore,
@@ -85,7 +85,7 @@ The `select_plugin()` function in `core/explain/__init__.py`:
 1. Validates configuration (rejects conflicting granularity)
 2. Iterates plugins in priority order (30 → 20 → 10)
 3. Selects first plugin where `supports(request, config)` returns `True`
-4. Falls back to SequentialExplainPlugin (always supports)
+4. Falls back to SequentialExplainExecutor (always supports)
 
 ### 6. Behavioral Equivalence Verification
 
@@ -139,11 +139,11 @@ The `select_plugin()` function in `core/explain/__init__.py`:
 ### For Users
 - **No breaking changes**: Public API unchanged
 - `_use_plugin=True` still invokes existing explanation plugin registry
-- `_use_plugin=False` now uses new explain plugin system (behavioral equivalent)
+- `_use_plugin=False` now uses new explain executor system (behavioral equivalent)
 
 ### For Developers
 - Parallel execution strategies now live in `core/explain/` plugins
-- To add new execution strategies: implement `BaseExplainPlugin` interface
+- To add new execution strategies: implement `BaseExplainExecutor` interface
 - Helper methods remain in `core/prediction_helpers.py` and `core/calibrated_explainer.py`
 
 ## Performance Characteristics

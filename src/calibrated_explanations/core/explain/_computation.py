@@ -1,7 +1,7 @@
 """Computational functions for explain feature tasks.
 
 This module contains the core computation logic for per-feature aggregation
-and weight calculation used by all explain plugins.
+and weight calculation used by all explain executors.
 """
 
 from __future__ import annotations

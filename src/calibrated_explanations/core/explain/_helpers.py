@@ -1,4 +1,4 @@
-"""Shared helper functions for explain plugins.
+"""Shared helper functions for explain executors.
 
 This module extracts reusable utilities that are common across sequential,
 feature-parallel, and instance-parallel explain implementations.

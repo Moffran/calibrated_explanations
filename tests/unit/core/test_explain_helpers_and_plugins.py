@@ -185,7 +185,7 @@ def test_sequential_plugin_execute_minimal(monkeypatch):
         },
     )()
 
-    plugin = sequential.SequentialExplainPlugin()
+    plugin = sequential.SequentialExplainExecutor()
     out = plugin.execute(req, cfg, explainer)
     # expect an explanation object
     assert hasattr(out, "explanations")
@@ -233,7 +233,7 @@ def test_instance_parallel_plugin_empty_input(monkeypatch):
         },
     )()
 
-    plugin = parallel_instance.InstanceParallelExplainPlugin()
+    plugin = parallel_instance.InstanceParallelExplainExecutor()
     result = plugin.execute(req, cfg, explainer)
     assert hasattr(result, "explanations")
 
@@ -309,7 +309,7 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
         },
     )()
 
-    plugin = parallel_feature.FeatureParallelExplainPlugin()
+    plugin = parallel_feature.FeatureParallelExplainExecutor()
     assert plugin.supports(req, cfg)
     out = plugin.execute(req, cfg, explainer)
     assert hasattr(out, "explanations")
@@ -454,8 +454,8 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
         },
     )()
 
-    seq_plugin = sequential.SequentialExplainPlugin()
-    par_plugin = parallel_feature.FeatureParallelExplainPlugin()
+    seq_plugin = sequential.SequentialExplainExecutor()
+    par_plugin = parallel_feature.FeatureParallelExplainExecutor()
 
     out_seq = seq_plugin.execute(req, cfg_seq, explainer)
     out_par = par_plugin.execute(req, cfg_par, explainer)

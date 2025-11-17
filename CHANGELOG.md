@@ -70,11 +70,11 @@ Note: Streaming-friendly, generator/chunked explanation exports were intentional
 
 - **Explanation schema v1 and ADR-005/008 compliance:** Updated explanation JSON schema v1 to include
   `explanation_type` field distinguishing factual and alternative explanations, aligned ADR-005 with paper-compliant semantics from ADR-008, and ensured all domain models, serialization, and adapters preserve the calibrated prediction baseline for both explanation types. This establishes stable round-trip serialization for instance-based explanations as defined in the CE papers.【F:docs/schema_v1.md†L1-L50】【F:improvement_docs/adrs/ADR-005-explanation-json-schema-versioning.md†L1-L80】【F:improvement_docs/adrs/ADR-008-explanation-domain-model-and-compat.md†L1-L60】【F:src/calibrated_explanations/schemas/explanation_schema_v1.json†L1-L40】
-- **Explain plugin decomposition (ADR-004 compliance):** Moved all explain execution
+- **Explain executor decomposition (ADR-004 compliance):** Moved all explain execution
   strategies into a plugin system (`src/calibrated_explanations/core/explain/`)
-  with three implementations: `SequentialExplainPlugin` (single-threaded fallback),
-  `FeatureParallelExplainPlugin` (executor-backed feature distribution), and
-  `InstanceParallelExplainPlugin` (instance-level chunking). `CalibratedExplainer.explain`
+  with three implementations: `SequentialExplainExecutor` (single-threaded fallback),
+  `FeatureParallelExplainExecutor` (executor-backed feature distribution), and
+  `InstanceParallelExplainExecutor` (instance-level chunking). `CalibratedExplainer.explain`
   is now a thin 13-line delegator that selects and invokes the appropriate plugin
   based on executor configuration. All legacy equivalence tests and instance-parallel
   tests pass, confirming behavioral parity with the original implementation.

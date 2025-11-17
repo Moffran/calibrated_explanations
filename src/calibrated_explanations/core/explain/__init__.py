@@ -1,4 +1,4 @@
-"""Explain plugin system for calibrated explanations.
+"""Explain executor system for calibrated explanations.
 
 This package provides a plugin-based architecture for explain execution strategies:
 - Sequential: single-threaded feature-by-feature processing
@@ -13,24 +13,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from ._base import BaseExplainPlugin
+from ._base import BaseExplainExecutor
 from ._shared import ExplainConfig, ExplainRequest, ExplainResponse
 from .orchestrator import ExplanationOrchestrator
-from .parallel_feature import FeatureParallelExplainPlugin
-from .parallel_instance import InstanceParallelExplainPlugin
-from .sequential import SequentialExplainPlugin
+from .parallel_feature import FeatureParallelExplainExecutor
+from .parallel_instance import InstanceParallelExplainExecutor
+from .sequential import SequentialExplainExecutor
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
 
 
 __all__ = [
-    "BaseExplainPlugin",
+    "BaseExplainExecutor",
     "ExplainConfig",
     "ExplainRequest",
     "ExplainResponse",
     "ExplanationOrchestrator",
-    "FeatureParallelExplainPlugin",
-    "InstanceParallelExplainPlugin",
-    "SequentialExplainPlugin",
+    "FeatureParallelExplainExecutor",
+    "InstanceParallelExplainExecutor",
+    "SequentialExplainExecutor",
 ]

@@ -1,4 +1,4 @@
-"""Sequential explain plugin - single-threaded execution strategy.
+"""Sequential explain executor - single-threaded execution strategy.
 
 This plugin implements the traditional single-threaded explanation path,
 processing features sequentially without parallelism. It serves as the
@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 import numpy as np
 
 from ...explanations import CalibratedExplanations
-from ._base import BaseExplainPlugin
+from ._base import BaseExplainExecutor
 from ._computation import explain_predict_step
 from ._helpers import initialize_explanation, merge_feature_result
 from ._shared import (
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
 
 
-class SequentialExplainPlugin(BaseExplainPlugin):
+class SequentialExplainExecutor(BaseExplainExecutor):
     """Sequential explain execution strategy.
 
     Processes all test instances and features in a single thread.
@@ -190,4 +190,4 @@ class SequentialExplainPlugin(BaseExplainPlugin):
         )
 
 
-__all__ = ["SequentialExplainPlugin"]
+__all__ = ["SequentialExplainExecutor"]

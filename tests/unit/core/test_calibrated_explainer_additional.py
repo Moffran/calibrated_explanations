@@ -814,7 +814,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
 
     # Use the instance-parallel plugin to exercise instance-chunk combining
     from calibrated_explanations.core.explain.parallel_instance import (
-        InstanceParallelExplainPlugin,
+        InstanceParallelExplainExecutor,
     )
     from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
 
@@ -847,7 +847,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         categorical_features=(),
         feature_values={},
     )
-    plugin = InstanceParallelExplainPlugin()
+    plugin = InstanceParallelExplainExecutor()
 
     empty = plugin.execute(req_empty, cfg_empty, explainer)
     assert isinstance(empty, CalibratedExplanations)
@@ -928,11 +928,11 @@ def test_slice_threshold_and_bins_variants(monkeypatch: pytest.MonkeyPatch) -> N
 def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -> None:
     # Verify instance-parallel plugin invokes per-chunk processing (sequential plugin)
     from calibrated_explanations.core.explain.parallel_instance import (
-        InstanceParallelExplainPlugin,
+        InstanceParallelExplainExecutor,
     )
     from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
 
-    plugin = InstanceParallelExplainPlugin()
+    plugin = InstanceParallelExplainExecutor()
 
     # Replace the internal sequential plugin execute with a fake that records calls
     called: list[tuple] = []
@@ -946,7 +946,7 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
 
     plugin._sequential_plugin.execute = fake_seq_execute
 
-    # Single chunk will delegate to sequential plugin via InstanceParallelExplainPlugin
+    # Single chunk will delegate to sequential plugin via InstanceParallelExplainExecutor
     # create a small explainer instance for the plugin to attach results to
     explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
 

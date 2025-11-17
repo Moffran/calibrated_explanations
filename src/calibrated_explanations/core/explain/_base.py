@@ -1,6 +1,6 @@
 """Base plugin interface for explain execution strategies.
 
-This module defines the abstract protocol that all explain plugins
+This module defines the abstract protocol that all explain executors
 (sequential, feature-parallel, instance-parallel) must implement.
 """
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from ._shared import ExplainConfig, ExplainRequest
 
 
-class BaseExplainPlugin(ABC):
+class BaseExplainExecutor(ABC):
     """Abstract base for explain execution strategy plugins.
 
     Each plugin implements a specific execution strategy:
@@ -113,4 +113,4 @@ class BaseExplainPlugin(ABC):
         ...
 
 
-__all__ = ["BaseExplainPlugin"]
+__all__ = ["BaseExplainExecutor"]

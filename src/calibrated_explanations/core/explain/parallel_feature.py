@@ -1,4 +1,4 @@
-"""Feature-parallel explain plugin - parallel execution across features.
+"""Feature-parallel explain executor - parallel execution across features.
 
 This plugin implements feature-level parallelism, distributing feature
 perturbation tasks across worker processes or threads. It shares most logic
@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 import numpy as np
 
 from ...explanations import CalibratedExplanations
-from ._base import BaseExplainPlugin
+from ._base import BaseExplainExecutor
 from ._computation import explain_predict_step
 from ._helpers import initialize_explanation, merge_feature_result
 from ._shared import (
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
 
 
-class FeatureParallelExplainPlugin(BaseExplainPlugin):
+class FeatureParallelExplainExecutor(BaseExplainExecutor):
     """Feature-parallel explain execution strategy.
 
     Distributes feature perturbation tasks across an executor's workers,
@@ -199,4 +199,4 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
         )
 
 
-__all__ = ["FeatureParallelExplainPlugin"]
+__all__ = ["FeatureParallelExplainExecutor"]
