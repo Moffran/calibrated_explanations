@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
-from ...utils.helper import safe_mean
+from ...utils.helper import concatenate_thresholds, safe_mean
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -250,16 +250,19 @@ def explain_predict_step(
     import logging  # pylint: disable=import-outside-toplevel
     from ..prediction_helpers import assert_threshold  # pylint: disable=import-outside-toplevel
 
+    if features_to_ignore is None:
+        features_to_ignore = ()
+
     x_cal = explainer.x_cal
-    predict, low, high, predicted_class = explainer._predict(  # pylint: disable=protected-access
+    base_predict, base_low, base_high, predicted_class = explainer._predict(  # pylint: disable=protected-access
         x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
     )
 
     prediction = {
-        "predict": predict,
-        "low": low,
-        "high": high,
-        "classes": (predicted_class if explainer.is_multiclass() else np.ones(predict.shape)),
+        "predict": base_predict,
+        "low": base_low,
+        "high": base_high,
+        "classes": (predicted_class if explainer.is_multiclass() else np.ones(base_predict.shape)),
     }
     if explainer.mode == "classification":  # store full calibrated probability matrix
         try:  # pragma: no cover - defensive
@@ -301,6 +304,136 @@ def explain_predict_step(
     greater_values: dict[int, Any] = {}
     covered_values: dict[int, Any] = {}
 
+    categorical_features = set(getattr(explainer, "categorical_features", ()))
+
+    for f in range(explainer.num_features):
+        if f in features_to_ignore:
+            continue
+        if f in categorical_features:
+            feature_values = explainer.feature_values[f]
+            x_copy = np.array(x, copy=True)
+            for value in feature_values:
+                x_copy[:, f] = value
+                perturbed_x = np.concatenate((perturbed_x, np.array(x_copy)))
+                perturbed_feature = np.concatenate(
+                    (perturbed_feature, [(f, i, value, None) for i in range(x.shape[0])])
+                )
+                perturbed_bins = (
+                    np.concatenate((perturbed_bins, bins)) if bins is not None else None
+                )
+                perturbed_class = np.concatenate((perturbed_class, prediction["predict"]))
+                perturbed_threshold = concatenate_thresholds(
+                    perturbed_threshold, threshold, list(range(x.shape[0]))
+                )
+        else:
+            x_copy = np.array(x, copy=True)
+            feature_values = np.unique(np.array(x_cal[:, f]))
+            lower_boundary = rule_boundaries_result[:, f, 0]
+            upper_boundary = rule_boundaries_result[:, f, 1]
+            for i in range(len(x)):
+                lower_boundary[i] = (
+                    lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
+                )
+                upper_boundary[i] = (
+                    upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
+                )
+
+            lesser_values[f] = {}
+            greater_values[f] = {}
+            covered_values[f] = {}
+            for j, val in enumerate(np.unique(lower_boundary)):
+                lesser_values[f][j] = (
+                    np.unique(explainer._CalibratedExplainer__get_lesser_values(f, val)),  # pylint: disable=protected-access
+                    val,
+                )
+                indices = np.where(lower_boundary == val)[0]
+                for value in lesser_values[f][j][0]:
+                    x_local = x_copy[indices, :]
+                    x_local[:, f] = value
+                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
+                    perturbed_feature = np.concatenate(
+                        (perturbed_feature, [(f, i, j, True) for i in indices])
+                    )
+                    if bins is not None:
+                        perturbed_bins = np.concatenate(
+                            (
+                                perturbed_bins,
+                                bins[indices] if len(indices) > 1 else [bins[indices[0]]],
+                            )
+                        )
+                    perturbed_class = np.concatenate(
+                        (perturbed_class, prediction["classes"][indices])
+                    )
+                    perturbed_threshold = concatenate_thresholds(
+                        perturbed_threshold, threshold, indices
+                    )
+            for j, val in enumerate(np.unique(upper_boundary)):
+                greater_values[f][j] = (
+                    np.unique(explainer._CalibratedExplainer__get_greater_values(f, val)),  # pylint: disable=protected-access
+                    val,
+                )
+                indices = np.where(upper_boundary == val)[0]
+                for value in greater_values[f][j][0]:
+                    x_local = x_copy[indices, :]
+                    x_local[:, f] = value
+                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
+                    perturbed_feature = np.concatenate(
+                        (perturbed_feature, [(f, i, j, False) for i in indices])
+                    )
+                    if bins is not None:
+                        perturbed_bins = np.concatenate(
+                            (
+                                perturbed_bins,
+                                bins[indices] if len(indices) > 1 else [bins[indices[0]]],
+                            )
+                        )
+                    perturbed_class = np.concatenate(
+                        (perturbed_class, prediction["classes"][indices])
+                    )
+                    perturbed_threshold = concatenate_thresholds(
+                        perturbed_threshold, threshold, indices
+                    )
+            indices = range(len(x))
+            for i in indices:
+                covered_values[f][i] = (
+                    explainer._CalibratedExplainer__get_covered_values(  # pylint: disable=protected-access
+                        f, lower_boundary[i], upper_boundary[i]
+                    ),
+                    (lower_boundary[i], upper_boundary[i]),
+                )
+                for value in covered_values[f][i][0]:
+                    x_local = x_copy[i, :]
+                    x_local[f] = value
+                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local.reshape(1, -1))))
+                    perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
+                    if bins is not None:
+                        perturbed_bins = np.concatenate((perturbed_bins, [bins[i]]))
+                    perturbed_class = np.concatenate((perturbed_class, [prediction["classes"][i]]))
+                    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
+                        if isinstance(threshold[0], tuple) and len(perturbed_threshold) == 0:
+                            perturbed_threshold = [threshold[i]]
+                        else:
+                            perturbed_threshold = np.concatenate(
+                                (perturbed_threshold, [threshold[i]])
+                            )
+
+    if (
+        threshold is not None
+        and isinstance(threshold, (list, np.ndarray))
+        and len(threshold) > 0
+        and isinstance(threshold[0], tuple)
+    ):
+        perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
+    predict, low, high, _ = explainer._predict(  # pylint: disable=protected-access
+        perturbed_x,
+        threshold=perturbed_threshold,
+        low_high_percentiles=low_high_percentiles,
+        classes=perturbed_class,
+        bins=perturbed_bins,
+    )
+    predict = np.array(predict)
+    low = np.array(low)
+    high = np.array(high)
     return (
         predict,
         low,

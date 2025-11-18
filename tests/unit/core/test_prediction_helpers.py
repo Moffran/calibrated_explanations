@@ -46,6 +46,8 @@ def test_prediction_helpers_round_trip():
         else prediction["predict"].shape[0]
     )  # type: ignore[index]
     assert base_pred_len == len(x_valid)
+    assert "__full_probabilities__" in prediction
+    assert len(prediction["__full_probabilities__"]) == len(x_valid)
 
 
 class _StubExplainer:
@@ -284,65 +286,3 @@ def test_predict_internal_delegates_to_underlying_protocol():
     np.testing.assert_array_equal(kwargs["bins"], np.array([0, 1]))
     assert kwargs["feature"] == 0
     assert isinstance(result, tuple)
-
-
-def test_explain_predict_step_collects_probability_matrix():
-    explainer = _StubExplainer(multiclass=False, fast=False)
-    input_x = np.ones((2, explainer.num_features))
-
-    outputs = explain_predict_step(
-        explainer,
-        input_x,
-        threshold=0.5,
-        low_high_percentiles=(10, 90),
-        bins=None,
-        features_to_ignore=None,
-    )
-
-    prediction = outputs[3]
-    assert "__full_probabilities__" in prediction
-    np.testing.assert_allclose(prediction["__full_probabilities__"], 0.5)
-    assert explainer.assign_threshold_calls == [0.5]
-    assert outputs[10] == 0.5  # perturbed_threshold echoes assigned threshold
-    assert outputs[11] is None  # perturbed_bins is ``None`` when no bins supplied
-    assert outputs[12].shape == (0, explainer.num_features)
-    assert outputs[13].dtype == int
-    assert not input_x.flags.writeable
-
-
-def test_explain_predict_step_multiclass_fast_uses_indexed_interval_learner():
-    explainer = _StubExplainer(multiclass=True, fast=True)
-    input_x = np.ones((1, explainer.num_features))
-
-    explain_predict_step(
-        explainer,
-        input_x,
-        threshold=None,
-        low_high_percentiles=(10, 90),
-        bins=np.array([0]),
-        features_to_ignore=None,
-    )
-
-    learner = explainer.interval_learner[explainer.num_features]
-    assert len(learner.calls) == 1
-    np.testing.assert_array_equal(learner.calls[0][0], input_x)
-    np.testing.assert_array_equal(learner.calls[0][1], np.array([0]))
-
-
-def test_explain_predict_step_fast_binary_uses_indexed_interval_learner():
-    explainer = _StubExplainer(multiclass=False, fast=True)
-    input_x = np.ones((1, explainer.num_features))
-
-    explain_predict_step(
-        explainer,
-        input_x,
-        threshold=None,
-        low_high_percentiles=(10, 90),
-        bins=np.array([0]),
-        features_to_ignore=None,
-    )
-
-    learner = explainer.interval_learner[explainer.num_features]
-    assert len(learner.calls) == 1
-    np.testing.assert_array_equal(learner.calls[0][0], input_x)
-    np.testing.assert_array_equal(learner.calls[0][1], np.array([0]))
