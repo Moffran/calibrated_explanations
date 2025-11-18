@@ -138,6 +138,7 @@ class PluginManager:
         # Orchestrator instances (initialized by _initialize_orchestrators)
         self._explanation_orchestrator: Any = None
         self._prediction_orchestrator: Any = None
+        self._reject_orchestrator: Any = None
 
     def initialize_from_kwargs(self, kwargs: Dict[str, Any]) -> None:
         """Initialize plugin overrides from keyword arguments.
@@ -536,6 +537,7 @@ class PluginManager:
         from .registry import ensure_builtin_plugins  # pylint: disable=import-outside-toplevel
         from ..core.explain.orchestrator import ExplanationOrchestrator  # pylint: disable=import-outside-toplevel
         from ..core.prediction.orchestrator import PredictionOrchestrator  # pylint: disable=import-outside-toplevel
+        from ..core.reject.orchestrator import RejectOrchestrator  # pylint: disable=import-outside-toplevel
         from ..core.calibration.interval_learner import initialize_interval_learner  # pylint: disable=import-outside-toplevel
 
         # Ensure builtin plugins (including optional fast plugins) are registered
@@ -547,6 +549,7 @@ class PluginManager:
         # Initialize orchestrators
         self._explanation_orchestrator = ExplanationOrchestrator(self.explainer)
         self._prediction_orchestrator = PredictionOrchestrator(self.explainer)
+        self._reject_orchestrator = RejectOrchestrator(self.explainer)
 
         # Build all plugin fallback chains
         self.initialize_chains()

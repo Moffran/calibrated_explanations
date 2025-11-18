@@ -28,8 +28,6 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
         import tomli as _tomllib  # type: ignore[assignment]
     except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
         _tomllib = None  # type: ignore[assignment]
-from crepes import ConformalClassifier
-from crepes.extras import hinge
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import KFold, StratifiedKFold
 
@@ -350,6 +348,22 @@ class CalibratedExplainer:
         """Set ExplanationOrchestrator for test stubs."""
         # Store directly with a different name to avoid recursion
         self.__dict__["_explanation_orchestrator_stub"] = value
+
+    @property
+    def _reject_orchestrator(self) -> Any:
+        """Get RejectOrchestrator from PluginManager or test stub storage."""
+        if "__dict__" in dir(self) and "_reject_orchestrator_stub" in self.__dict__:
+            return self.__dict__["_reject_orchestrator_stub"]
+
+        if hasattr(self, "_plugin_manager") and hasattr(self._plugin_manager, "_reject_orchestrator"):
+            return self._plugin_manager._reject_orchestrator
+
+        raise AttributeError("'CalibratedExplainer' object has no attribute '_reject_orchestrator'")
+
+    @_reject_orchestrator.setter
+    def _reject_orchestrator(self, value: Any) -> None:
+        """Set RejectOrchestrator for test stubs."""
+        self.__dict__["_reject_orchestrator_stub"] = value
 
     def _build_explanation_chain(self, mode: str) -> Tuple[str, ...]:
         """Delegate to PluginManager for explanation chain building."""
@@ -1700,30 +1714,9 @@ class CalibratedExplainer:
         threshold : float, optional
             The threshold value. Defaults to None.
         """
-        if calibration_set is None:
-            x_cal, y_cal = self.x_cal, self.y_cal
-        elif calibration_set is tuple:
-            x_cal, y_cal = calibration_set
-        else:
-            x_cal, y_cal = calibration_set[0], calibration_set[1]
-        self.reject_threshold = None
-        if self.mode in "regression":
-            proba_1, _, _, _ = self.interval_learner.predict_probability(
-                x_cal, y_threshold=threshold, bins=self.bins
-            )
-            proba = np.array([[1 - proba_1[i], proba_1[i]] for i in range(len(proba_1))])
-            classes = (y_cal < threshold).astype(int)
-            self.reject_threshold = threshold
-        elif self.is_multiclass():  # pylint: disable=protected-access
-            proba, classes = self.interval_learner.predict_proba(x_cal, bins=self.bins)
-            proba = np.array([[1 - proba[i, c], proba[i, c]] for i, c in enumerate(classes)])
-            classes = (classes == y_cal).astype(int)
-        else:
-            proba = self.interval_learner.predict_proba(x_cal, bins=self.bins)
-            classes = y_cal
-        alphas_cal = hinge(proba, np.unique(classes), classes)
-        self.reject_learner = ConformalClassifier().fit(alphas=alphas_cal, bins=classes)
-        return self.reject_learner
+        return self._reject_orchestrator.initialize_reject_learner(
+            calibration_set=calibration_set, threshold=threshold
+        )
 
     def predict_reject(self, x, bins=None, confidence=0.95):
         """Predict whether to reject the explanations for the test data.
@@ -1744,43 +1737,7 @@ class CalibratedExplainer:
         array-like
             Returns rejection decisions and error/rejection rates.
         """
-        if self.mode in "regression":
-            if self.reject_threshold is None:
-                raise ValidationError(
-                    "The reject learner is only available for regression with a threshold."
-                )
-            proba_1, _, _, _ = self.interval_learner.predict_probability(
-                x, y_threshold=self.reject_threshold, bins=bins
-            )
-            proba = np.array([[1 - proba_1[i], proba_1[i]] for i in range(len(proba_1))])
-            classes = [0, 1]
-        elif self.is_multiclass():  # pylint: disable=protected-access
-            proba, classes = self.interval_learner.predict_proba(x, bins=bins)
-            proba = np.array([[1 - proba[i, c], proba[i, c]] for i, c in enumerate(classes)])
-            classes = [0, 1]
-        else:
-            proba = self.interval_learner.predict_proba(x, bins=bins)
-            classes = np.unique(self.y_cal)
-        alphas_test = hinge(proba)
-
-        prediction_set = np.array(
-            [
-                self.reject_learner.predict_set(
-                    alphas_test, np.full(len(alphas_test), classes[c]), confidence=confidence
-                )[:, c]
-                for c in range(len(classes))
-            ]
-        ).T
-        singleton = np.sum(np.sum(prediction_set, axis=1) == 1)
-        empty = np.sum(np.sum(prediction_set, axis=1) == 0)
-        n = len(x)
-
-        epsilon = 1 - confidence
-        error_rate = (n * epsilon - empty) / singleton
-        reject_rate = 1 - singleton / n
-
-        rejected = np.sum(prediction_set, axis=1) != 1
-        return rejected, error_rate, reject_rate
+        return self._reject_orchestrator.predict_reject(x, bins=bins, confidence=confidence)
 
     def _preprocess(self):
         """Identify constant calibration features that can be ignored downstream."""
