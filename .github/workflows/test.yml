@@ -101,3 +101,27 @@ jobs:
           BASELINE=$(ls benchmarks/micro_*.json | sort | tail -n 1)
           echo "Using baseline: $BASELINE"
           python scripts/check_perf_micro.py "$BASELINE" micro_current.json benchmarks/perf_thresholds.json
+
+  anti-pattern-audit:
+    name: Anti-pattern Audit
+    needs: test
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Run anti-pattern detector
+        run: |
+          python scripts/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
+
+      - name: Upload anti-pattern report
+        uses: actions/upload-artifact@v4
+        with:
+          name: anti-pattern-report
+          path: reports/test_anti_pattern_report.csv
