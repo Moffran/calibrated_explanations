@@ -1,4 +1,4 @@
-"""Unit tests for PredictionOrchestrator (Phase 4: Prediction Delegation).
+"""Unit tests for PredictionOrchestrator.
 
 Tests cover prediction workflow behavior, interval calibration, uncertainty quantification,
 and prediction caching - without testing implementation details or internal state.

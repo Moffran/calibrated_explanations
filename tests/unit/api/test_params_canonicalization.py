@@ -9,7 +9,7 @@ def test_alias_mapping_adds_canonical_when_missing():
     kwargs = {"alpha": (5, 95)}
     out = canonicalize_kwargs(kwargs)
     assert out["low_high_percentiles"] == (5, 95)
-    # Original alias is preserved in Phase 1B
+    # Original alias is preserved
     assert out["alpha"] == (5, 95)
 
 
@@ -29,7 +29,6 @@ def test_unknown_keys_preserved_and_validate_noop():
     # n_jobs alias mapped to parallel_workers
     assert out["parallel_workers"] == 4
 
-    # No-op in Phase 1B
     validate_param_combination(out)
 
 

@@ -158,7 +158,7 @@ def test_probabilistic_builder_unit_interval_with_custom_minmax():
     assert spec.header.pred == pytest.approx(0.6)
 
 
-# Tests for is_valid_probability_values public API (Phase 1 Task 1.1.A)
+# Tests for is_valid_probability_values public API
 
 
 def test_is_valid_probability_values_should_return_true_for_valid_probabilities():

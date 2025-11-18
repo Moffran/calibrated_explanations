@@ -276,7 +276,7 @@ class CalibratedExplainer:
     def _coerce_plugin_override(self, override: Any) -> Any:
         """Normalise a plugin override into an instance when possible.
 
-        Delegates to PluginManager (Phase 3: plugin management delegation).
+        Delegates to PluginManager.
         """
         # Handle case where PluginManager is not initialized (e.g., in tests)
         if hasattr(self, "_plugin_manager") and self._plugin_manager is not None:
@@ -990,7 +990,7 @@ class CalibratedExplainer:
         Notes
         -----
         This is a backward-compatible property that delegates to the interval registry
-        managed by the PredictionOrchestrator. See ADR-001 and Phase 4 refactoring.
+        managed by the PredictionOrchestrator. See ADR-001.
         """
         return self._prediction_orchestrator._interval_registry.interval_learner
 
@@ -1026,7 +1026,7 @@ class CalibratedExplainer:
         Notes
         -----
         This is a backward-compatible method that delegates to the interval registry
-        managed by the PredictionOrchestrator. See ADR-001 and Phase 4 refactoring.
+        managed by the PredictionOrchestrator. See ADR-001.
         """
         return self._prediction_orchestrator._interval_registry.get_sigma_test(x)
 
@@ -1039,7 +1039,7 @@ class CalibratedExplainer:
         compatibility with the external fast_explanations plugin and other
         production code that calls this private method.
 
-        See ADR-001 and Phase 4 refactoring.
+        See ADR-001.
         """
         self._prediction_orchestrator._interval_registry.initialize_for_fast_explainer()
 
@@ -1075,7 +1075,7 @@ class CalibratedExplainer:
                         "The length of bins must match the number of added instances."
                     )
                 self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
-            # Phase 1A delegation: update interval learner via helper
+            # update interval learner via helper
             from .calibration.interval_learner import update_interval_learner as _upd_il
 
             _upd_il(self, xs, ys, bins=bins)
@@ -1157,7 +1157,7 @@ class CalibratedExplainer:
         CalibratedExplanations : :class:`.CalibratedExplanations`
             A `CalibratedExplanations` containing one :class:`.FactualExplanation` for each instance.
         """
-        # Phase 5: Thin delegator that sets discretizer and delegates to orchestrator
+        # Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
         return self._explanation_orchestrator.invoke_factual(
             x,
@@ -1230,7 +1230,7 @@ class CalibratedExplainer:
         -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
         """
-        # Phase 5: Thin delegator that sets discretizer and delegates to orchestrator
+        # Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "regressor" if "regression" in self.mode else "entropy"
         return self._explanation_orchestrator.invoke_alternative(
             x,
@@ -1297,7 +1297,7 @@ class CalibratedExplainer:
         :meth:`.CalibratedExplainer.explain_factual` : Refer to the documentation for `explain_factual` for more details.
         :meth:`.CalibratedExplainer.explore_alternatives` : Refer to the documentation for `explore_alternatives` for more details.
         """
-        # Phase 5: Thin delegator to orchestrator
+        # Thin delegator to orchestrator
         if _use_plugin:
             mode = self._infer_explanation_mode()
             return self._explanation_orchestrator.invoke(
@@ -1335,7 +1335,7 @@ class CalibratedExplainer:
 
     @staticmethod
     def _slice_threshold(threshold, start: int, stop: int, total_len: int):
-        """Delegate to explain._helpers (Phase 5).
+        """Delegate to explain._helpers.
 
         Return the portion of *threshold* covering ``[start, stop)``.
         Moved to explain._helpers for consolidation.
@@ -1346,7 +1346,7 @@ class CalibratedExplainer:
 
     @staticmethod
     def _compute_weight_delta(baseline, perturbed):
-        """Delegate to explain._helpers (Phase 5).
+        """Delegate to explain._helpers.
 
         Return the contribution weight delta between baseline and perturbed.
         Compatibility wrapper for compute_weight_delta moved to explain._helpers.
@@ -1356,7 +1356,7 @@ class CalibratedExplainer:
 
     @staticmethod
     def _slice_bins(bins, start: int, stop: int):
-        """Delegate to explain._helpers (Phase 5).
+        """Delegate to explain._helpers.
 
         Return the subset of *bins* covering ``[start, stop)``.
         Moved to explain._helpers for consolidation.
@@ -1366,7 +1366,7 @@ class CalibratedExplainer:
         return slice_bins(bins, start, stop)
 
     def _validate_and_prepare_input(self, x):
-        """Delegate to explain helpers (Phase 5).
+        """Delegate to explain helpers.
 
         Validates and prepares input data for explanation generation.
         Moved to explain._helpers to consolidate all explanation logic.
@@ -1376,7 +1376,7 @@ class CalibratedExplainer:
         return _vh(self, x)
 
     def _initialize_explanation(self, x, low_high_percentiles, threshold, bins, features_to_ignore):
-        """Delegate to explain computation (Phase 5).
+        """Delegate to explain computation.
 
         Initializes a CalibratedExplanations object with all metadata.
         Moved to explain._computation to consolidate all explanation logic.
@@ -1967,7 +1967,7 @@ class CalibratedExplainer:
         -----
         The `threshold` and `low_high_percentiles` parameters are only used for regression tasks.
         """
-        # Phase 1B: emit deprecation warnings for aliases and normalize kwargs
+        # emit deprecation warnings for aliases and normalize kwargs
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)
@@ -2072,7 +2072,7 @@ class CalibratedExplainer:
         # strip plotting-only keys that callers may pass
         kwargs.pop("show", None)
         kwargs.pop("style_override", None)
-        # Phase 1B: emit deprecation warnings for aliases and normalize kwargs
+        # emit deprecation warnings for aliases and normalize kwargs
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
         validate_param_combination(kwargs)

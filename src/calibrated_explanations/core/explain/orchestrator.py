@@ -246,7 +246,7 @@ class ExplanationOrchestrator:
         discretizer: str | None = None,
         _use_plugin: bool = True,
     ) -> Any:
-        """Execute factual explanation with automatic discretizer setting (Phase 5).
+        """Execute factual explanation with automatic discretizer setting.
 
         This is a convenience delegator that sets up the appropriate discretizer
         before invoking the explain pipeline.
@@ -307,7 +307,7 @@ class ExplanationOrchestrator:
         discretizer: str | None = None,
         _use_plugin: bool = True,
     ) -> Any:
-        """Execute alternative explanation with automatic discretizer setting (Phase 5).
+        """Execute alternative explanation with automatic discretizer setting.
 
         This is a convenience delegator that sets up the appropriate discretizer
         before invoking the explain pipeline.

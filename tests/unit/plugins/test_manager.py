@@ -1,4 +1,4 @@
-"""Unit tests for PluginManager (Phase 3: Plugin Management Delegation).
+"""Unit tests for PluginManager.
 
 Tests for the PluginManager class which centralizes plugin state,
 override configuration, and instance caching.

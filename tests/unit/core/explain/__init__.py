@@ -1,1 +1,1 @@
-"""Tests for the explain subpackage - Phase 5 consolidation."""
+"""Tests for the explain subpackage"""

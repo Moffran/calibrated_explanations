@@ -42,16 +42,16 @@ def _make_base_explainer() -> CalibratedExplainer:
     explainer.predict_function = lambda x, **_: x  # type: ignore[assignment]
     # Initialize orchestrator for tests that call its methods
     explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
-    # Initialize prediction orchestrator (Phase 4: Interval Registry)
+    # Initialize prediction orchestrator
     from calibrated_explanations.core.prediction import PredictionOrchestrator
     explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
     return explainer
 
 
 def test_slice_threshold_branches_exercised():
-    """Test threshold slicing behavior through explain helpers (Phase 5).
+    """Test threshold slicing behavior through explain helpers.
     
-    Phase 5 consolidation: Tests should call explain module functions directly.
+    Tests should call explain module functions directly.
     """
     from calibrated_explanations.core.explain._helpers import slice_threshold
 
@@ -70,9 +70,9 @@ def test_slice_threshold_branches_exercised():
 
 
 def test_slice_bins_handles_collections():
-    """Test bins slicing behavior through explain helpers (Phase 5).
+    """Test bins slicing behavior through explain helpers.
     
-    Phase 5 consolidation: Tests should call explain module functions directly.
+    Tests should call explain module functions directly.
     """
     from calibrated_explanations.core.explain._helpers import slice_bins
 

@@ -1,6 +1,5 @@
 """Integration test for complete plugin workflow: register → discover → initialize.
 
-Phase 4 of TEST_IMPROVEMENT_ROADMAP.md: Mock-Heavy Tests + Integration Gaps
 Tests the end-to-end plugin lifecycle with real plugins, not mocks.
 
 Ref: ADR-013 (Plugin Protocol), ADR-014 (Plugin Registry), ADR-015 (Predict Bridge)

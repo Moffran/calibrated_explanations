@@ -1,4 +1,4 @@
-"""Tests for explain helpers module (Phase 5 consolidation).
+"""Tests for explain helpers module.
 
 This module tests the helper functions that were previously called as private
 methods on CalibratedExplainer. Tests are refactored to test behavior through

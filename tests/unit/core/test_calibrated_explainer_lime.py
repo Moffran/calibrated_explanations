@@ -95,7 +95,7 @@ def _make_stub_explainer() -> CalibratedExplainer:
     explainer._lime_helper = LimeHelper(explainer)
     explainer._shap_helper = ShapHelper(explainer)
     
-    # Initialize the prediction orchestrator (Phase 4: Interval Registry)
+    # Initialize the prediction orchestrator
     from calibrated_explanations.core.prediction import PredictionOrchestrator
     explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
     explainer.interval_learner = None

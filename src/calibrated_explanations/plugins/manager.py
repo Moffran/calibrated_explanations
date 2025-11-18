@@ -1,4 +1,4 @@
-"""Plugin Manager for orchestrating plugin state and resolution (Phase 3).
+"""Plugin Manager for orchestrating plugin state and resolution.
 
 This module centralizes plugin discovery, resolution, registry management, and
 instance caching that was previously scattered across CalibratedExplainer.

@@ -1,6 +1,5 @@
 """Integration test for plugin registry and plugin discovery.
 
-Phase 4 of TEST_IMPROVEMENT_ROADMAP.md: Mock-Heavy Tests + Integration Gaps
 Tests real plugin discovery and registration, paired with unit tests in test_protocols.py.
 
 Ref: ADR-006 (Plugin Trust Model), ADR-014 (Plugin Registry)

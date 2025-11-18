@@ -130,9 +130,9 @@ def test_check_explanation_runtime_metadata_various():
 
 
 def test_slice_threshold_and_bins():
-    """Test threshold and bins slicing behavior through explain helpers (Phase 5).
+    """Test threshold and bins slicing behavior through explain helpers.
     
-    Phase 5 consolidation: Tests should call explain module functions directly,
+    Tests should call explain module functions directly,
     not private methods on CalibratedExplainer.
     """
     from calibrated_explanations.core.explain._helpers import slice_threshold, slice_bins
@@ -156,9 +156,9 @@ def test_slice_threshold_and_bins():
 
 
 def test_compute_weight_delta_basic():
-    """Test weight delta computation through explain helpers (Phase 5).
+    """Test weight delta computation through explain helpers.
     
-    Phase 5 consolidation: Tests should call explain module functions directly,
+    Tests should call explain module functions directly,
     not private methods on CalibratedExplainer.
     """
     from calibrated_explanations.core.explain._helpers import compute_weight_delta

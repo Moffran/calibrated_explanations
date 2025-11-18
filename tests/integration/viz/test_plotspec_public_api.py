@@ -1,13 +1,11 @@
-"""Integration tests for PlotSpec public API - Phase 1 implementation.
+"""Integration tests for PlotSpec public API.
 
-This test module demonstrates Phase 1 of the Test Improvement Roadmap:
 Testing behavior through public APIs rather than private helpers.
 
 Instead of directly testing private functions like `_looks_like_probability_values()`,
 this module tests the public plotting APIs and verifies the desired behavior
 through observable outcomes.
 
-Ref: TEST_IMPROVEMENT_ROADMAP.md Phase 1 (Private Helper Tests)
 Ref: ADR-005 (Explanation Envelope)
 """
 
@@ -98,7 +96,7 @@ class TestPlotSpecIntervalSemantics:
         d_serialized = plotspec_to_dict(original)
         restored = plotspec_from_dict(d_serialized)
 
-        # Then semantic invariants still hold (this is what Phase 1 tests)
+        # Then semantic invariants still hold
         assert (
             restored.header.low
             <= restored.header.pred

@@ -115,9 +115,9 @@ def _make_minimal_explainer(num_features: int = 2) -> CalibratedExplainer:
 
 
 def test_slice_helpers_support_multiple_input_types(fake_pandas):
-    """Test threshold and bins slicing with multiple input types (Phase 5).
+    """Test threshold and bins slicing with multiple input types.
     
-    Phase 5 consolidation: Tests call explain module functions directly.
+    Tests call explain module functions directly.
     """
     from calibrated_explanations.core.explain._helpers import slice_threshold, slice_bins
 

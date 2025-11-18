@@ -1,13 +1,11 @@
 """Integration tests for plugin loading with safe_import utilities.
 
-This test module demonstrates Phase 1 of the Test Improvement Roadmap:
 Testing utility functions (safe_import, safe_isinstance) through real usage
 scenarios rather than in isolation.
 
 Instead of unit tests that directly call _private helpers without context,
 these tests show how safe_import is used in actual plugin loading workflows.
 
-Ref: TEST_IMPROVEMENT_ROADMAP.md Phase 1.1.C (Utility Functions)
 Ref: ADR-006 (Plugin Trust Model)
 """
 

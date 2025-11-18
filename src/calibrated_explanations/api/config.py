@@ -1,7 +1,7 @@
-"""Configuration primitives for calibrated_explanations (Phase 2 scaffolding).
+"""Configuration primitives for calibrated_explanations.
 
 This module introduces a light-weight configuration dataclass and a builder
-to simplify constructing explainers with validated options. In this phase,
+to simplify constructing explainers with validated options.
 no wiring to core classes is performed to avoid behavior changes; consumers
 may import and use these types for future-facing code.
 
@@ -24,7 +24,7 @@ class ExplainerConfig:
 
     Notes
     -----
-    - Fields included here are future-facing; not all are used in Phase 2 start.
+    - Fields included here are future-facing.
     - Keep defaults aligned with existing behavior to prevent drift when adopted.
     """
 
@@ -61,7 +61,6 @@ class ExplainerBuilder:
     """Fluent helper to assemble an :class:`ExplainerConfig`.
 
     In a later step this builder can produce a configured `WrapCalibratedExplainer`.
-    For now it only creates the config to avoid runtime changes in Phase 2 start.
     """
 
     def __init__(self, model: Any) -> None:

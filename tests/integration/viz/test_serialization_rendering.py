@@ -3,9 +3,6 @@
 Verifies that PlotSpecs can be serialized, deserialized, and rendered
 without errors. Tests semantic contracts: domain invariants are preserved,
 and output is valid and non-trivial.
-
-Ref: Phase 3 of TEST_IMPROVEMENT_ROADMAP.md - Snapshot/Roundtrip Tests
-+ Semantic Assertions
 """
 
 import numpy as np
