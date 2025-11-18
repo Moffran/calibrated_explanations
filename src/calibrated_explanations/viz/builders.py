@@ -22,8 +22,27 @@ from .plotspec import (
 _PROBABILITY_TOL = 1e-9
 
 
-def _looks_like_probability_values(*values: float) -> bool:
-    """Return True when all provided values lie within [0, 1] (with tolerance)."""
+def is_valid_probability_values(*values: float) -> bool:
+    """Check if all provided values are valid probabilities in [0, 1] (with tolerance).
+    
+    This function validates probability values used in visualization, checking that:
+    - All values can be converted to floats
+    - All values are finite
+    - All values lie within [0 - tolerance, 1 + tolerance]
+    
+    Used to auto-detect when predictions should be rendered as probabilities
+    vs generic scalar values (e.g., in build_probabilistic_bars_spec).
+    
+    Parameters
+    ----------
+    *values : float
+        One or more values to validate as probabilities.
+    
+    Returns
+    -------
+    bool
+        True if all values are valid probabilities, False otherwise.
+    """
     finite: list[float] = []
     for value in values:
         try:
@@ -37,6 +56,10 @@ def _looks_like_probability_values(*values: float) -> bool:
         return False
     tol = _PROBABILITY_TOL
     return all(-tol <= v <= 1.0 + tol for v in finite)
+
+
+# Backward compatibility alias for private naming
+_looks_like_probability_values = is_valid_probability_values
 
 
 def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index: int) -> None:
@@ -758,7 +781,7 @@ def build_probabilistic_bars_spec(
         low, high, xlim = _normalize_interval_bounds(low, high, y_minmax=y_minmax)
     else:
         xlim = (0.0, 1.0)
-    if _looks_like_probability_values(pred, low, high):
+    if is_valid_probability_values(pred, low, high):
         pred = float(min(max(pred, 0.0), 1.0))
         low = float(min(max(low, 0.0), 1.0))
         high = float(min(max(high, 0.0), 1.0))
