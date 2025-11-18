@@ -142,3 +142,51 @@ def test_update_interval_learner__should_insert_calibration_for_regression_inter
 
     assert explainer.interval_learner.calls == [((1.0, 2.0, 3.0), (0.1, 0.2, 0.3), {"count": 5})]
     assert explainer._CalibratedExplainer__initialized is True
+
+
+def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
+    """Accessing names from the deprecated `calibration_helpers` module should
+    emit a DeprecationWarning and delegate to the interval_learner implementation.
+
+    The test avoids importing the real `interval_learner` implementation (which
+    pulls in heavy runtime dependencies) by injecting a lightweight fake module
+    into `sys.modules` before attribute access.
+    """
+    import warnings
+    import sys
+    import types
+
+    from calibrated_explanations.core import calibration_helpers as ch_helpers
+
+    # Create a fake calibration package + interval_learner submodule
+    fake_interval = types.ModuleType("calibrated_explanations.core.calibration.interval_learner")
+
+    def fake_assign_threshold(explainer, t):
+        return "ok"
+
+    fake_interval.assign_threshold = fake_assign_threshold
+
+    fake_pkg = types.ModuleType("calibrated_explanations.core.calibration")
+    fake_pkg.interval_learner = fake_interval
+
+    monkeypatch.setitem(sys.modules, "calibrated_explanations.core.calibration", fake_pkg)
+    monkeypatch.setitem(
+        sys.modules, "calibrated_explanations.core.calibration.interval_learner", fake_interval
+    )
+
+    with warnings.catch_warnings(record=True) as rec:
+        warnings.simplefilter("always")
+        func = ch_helpers.assign_threshold
+
+    assert any(issubclass(w.category, DeprecationWarning) for w in rec), "expected DeprecationWarning"
+
+    # Calling the delegated function should return the fake result
+    res = func(object(), 0.5)
+    assert res == "ok"
+
+
+def test_calibration_helpers_unknown_attribute_raises():
+    from calibrated_explanations.core import calibration_helpers as ch_helpers
+
+    with pytest.raises(AttributeError):
+        _ = ch_helpers.this_attribute_does_not_exist
