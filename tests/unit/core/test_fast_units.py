@@ -69,11 +69,35 @@ def test_plugin_registry_register_and_find():
     assert p not in registry.list_plugins()
 
 
-def test_plotspec_dataclasses_roundtrip():
+def test_plotspec_dataclasses_roundtrip__should_preserve_structure_and_values():
+    """Verify that PlotSpec correctly assembles header, body, and metadata.
+    
+    Domain Invariants:
+    - Title must be preserved exactly (string identity)
+    - Header prediction must be within bounds (invariant: low ≤ pred ≤ high)
+    - Body bars must be indexed consistently
+    Ref: ADR-005 Explanation Envelope, ADR-007 PlotSpec Abstraction
+    """
     header = IntervalHeaderSpec(pred=0.5, low=0.1, high=0.9)
     bars = [BarItem(label="f1", value=0.2), BarItem(label="f2", value=-0.1)]
     body = BarHPanelSpec(bars=bars)
     spec = PlotSpec(title="t", header=header, body=body)
-    assert spec.title == "t"
+    
+    # Domain invariant: title is preserved exactly
+    assert spec.title == "t", "Title must be preserved as-is"
+    
+    # Domain invariants: header bounds ordering (low ≤ pred ≤ high)
     assert spec.header.pred == 0.5
-    assert len(spec.body.bars) == 2
+    assert spec.header.low <= spec.header.pred <= spec.header.high, (
+        f"Point estimate ({spec.header.pred}) must lie within "
+        f"bounds [{spec.header.low}, {spec.header.high}]"
+    )
+    
+    # Domain invariant: body contains correct number of bars
+    assert len(spec.body.bars) == 2, "Body must contain exactly 2 bars"
+    
+    # Domain invariants: each bar has required fields and valid structure
+    for bar_idx, item in enumerate(spec.body.bars):
+        assert item.label is not None, f"Bar {bar_idx} must have a label"
+        assert isinstance(item.value, (int, float)), \
+            f"Bar {bar_idx} value must be numeric"

@@ -230,7 +230,17 @@ def test_build_alternative_regression_spec_paths():
         assert hasattr(bar, "segments") and hasattr(bar, "line")
 
 
-def test_triangular_global_and_serialization_helpers():
+def test_triangular_global_and_serialization_helpers__should_produce_correct_plot_spec_dicts():
+    """Verify that builders produce valid plot_spec dicts with correct structure.
+    
+    Domain Invariants:
+    - Triangular plot spec must have 'kind' field = 'triangular'
+    - Triangular must preserve num_to_show setting
+    - Mode must be correctly set (regression, classification)
+    - Global spec must have 'kind' field = 'global_regression' (for regression mode)
+    - All returned dicts must have 'plot_spec' key (not dict key check, but semantic)
+    Ref: ADR-005 Explanation Envelope, ADR-007 PlotSpec Abstraction
+    """
     tri = builders.build_triangular_plotspec_dict(
         title="tri",  # unused but ensures signature parity
         proba=[0.2, 0.8],
@@ -240,9 +250,19 @@ def test_triangular_global_and_serialization_helpers():
         num_to_show=5,
         is_probabilistic=False,
     )
-    assert tri["plot_spec"]["kind"] == "triangular"
-    assert tri["plot_spec"]["triangular"]["num_to_show"] == 5
-    assert tri["plot_spec"]["mode"] == "regression"
+    # Domain invariant: triangular plot spec has correct kind
+    assert "plot_spec" in tri, "Result must be wrapped in plot_spec"
+    assert tri["plot_spec"]["kind"] == "triangular", \
+        "Triangular builder must produce 'triangular' kind"
+    
+    # Domain invariant: triangular settings preserved
+    assert "triangular" in tri["plot_spec"], "Triangular config must be present"
+    assert tri["plot_spec"]["triangular"]["num_to_show"] == 5, \
+        "num_to_show parameter must be preserved exactly"
+    
+    # Domain invariant: mode correctly set
+    assert tri["plot_spec"]["mode"] == "regression", \
+        "Mode must be 'regression' for non-probabilistic setup"
 
     global_spec = builders.build_global_plotspec_dict(
         title="global",
@@ -254,8 +274,16 @@ def test_triangular_global_and_serialization_helpers():
         y_test=[1, 0],
         is_regularized=False,
     )
-    assert global_spec["plot_spec"]["kind"] == "global_regression"
-    assert global_spec["plot_spec"]["axis_hints"]["xlim"][0] <= 0.1
+    # Domain invariant: global regression spec has correct kind
+    assert global_spec["plot_spec"]["kind"] == "global_regression", \
+        "Global builder must produce 'global_regression' kind"
+    
+    # Domain invariant: axis hints are sensible (xlim lower bound reasonable)
+    assert "axis_hints" in global_spec["plot_spec"], \
+        "Global spec must include axis_hints"
+    xlim = global_spec["plot_spec"]["axis_hints"]["xlim"]
+    assert xlim[0] <= 0.1, \
+        f"xlim lower bound should be <= 0.1, got {xlim[0]}"
 
     fallback = builders.build_global_plotspec_dict(
         title=None,
@@ -267,7 +295,14 @@ def test_triangular_global_and_serialization_helpers():
         y_test=None,
         is_regularized=True,
     )
-    assert fallback["plot_spec"]["axis_hints"] == {"xlim": [0.0, 1.0], "ylim": [0.0, 1.0]}
+    # Domain invariant: fallback should have default axis hints
+    assert "axis_hints" in fallback["plot_spec"]
+    axis_hints = fallback["plot_spec"]["axis_hints"]
+    # Default xlim and ylim should be [0, 1] for probabilistic bounds
+    assert axis_hints.get("xlim") == [0.0, 1.0], \
+        f"Default xlim should be [0.0, 1.0], got {axis_hints.get('xlim')}"
+    assert axis_hints.get("ylim") == [0.0, 1.0], \
+        f"Default ylim should be [0.0, 1.0], got {axis_hints.get('ylim')}"
 
     regression_spec = builders.build_regression_bars_spec(
         title="serialize",
@@ -286,8 +321,17 @@ def test_triangular_global_and_serialization_helpers():
         confidence=95.0,
     )
     regression_dict = builders.plotspec_to_dict(regression_spec)
-    assert regression_dict["plot_spec"]["uncertainty"] is True
-    assert regression_dict["plot_spec"]["feature_entries"][0]["name"] == "A"
+    # Domain invariant: uncertainty flag is set when confidence is provided
+    assert "plot_spec" in regression_dict
+    assert regression_dict["plot_spec"]["uncertainty"] is True, \
+        "Uncertainty must be True when confidence interval is enabled"
+    
+    # Domain invariant: feature entries preserve column names
+    assert "feature_entries" in regression_dict["plot_spec"]
+    feature_entries = regression_dict["plot_spec"]["feature_entries"]
+    assert len(feature_entries) >= 1, "Must have at least one feature entry"
+    assert feature_entries[0]["name"] == "A", \
+        "First feature entry must have name 'A' (from column_names)"
 
     factual = builders.build_factual_probabilistic_plotspec_dict(
         title="prob",
@@ -313,5 +357,11 @@ def test_triangular_global_and_serialization_helpers():
         neg_caption="neg caption",
         pos_caption="pos caption",
     )
-    assert factual["plot_spec"]["kind"] == "factual_probabilistic"
-    assert factual["plot_spec"]["uncertainty"] is True
+    # Domain invariant: factual probabilistic plot has correct kind
+    assert factual["plot_spec"]["kind"] == "factual_probabilistic", \
+        "Factual builder must produce 'factual_probabilistic' kind"
+    
+    # Domain invariant: uncertainty flag is set when interval is enabled
+    assert factual["plot_spec"]["uncertainty"] is True, \
+        "Uncertainty must be True when interval is enabled in factual plot"
+
