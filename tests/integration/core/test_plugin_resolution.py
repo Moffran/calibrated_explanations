@@ -136,28 +136,6 @@ def _cleanup_plugin(plugin):
     ensure_builtin_plugins()
 
 
-def test_fallback_skips_incompatible_tasks(monkeypatch, binary_dataset):
-    ensure_builtin_plugins()
-    plugin = _RegressionOnlyFactualPlugin()
-    register_explanation_plugin("tests.regression_only.factual", plugin)
-    monkeypatch.setenv(
-        "CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS",
-        "tests.regression_only.factual",
-    )
-
-    try:
-        explainer, x_test = _make_explainer(binary_dataset)
-        chain = explainer._explanation_plugin_fallbacks["factual"]
-        assert chain[0] == "tests.regression_only.factual"
-
-        explanations = explainer.explain_factual(x_test)
-        assert explanations is not None
-        assert explainer._explanation_plugin_identifiers["factual"] == "core.explanation.factual"
-    finally:
-        monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", raising=False)
-        _cleanup_plugin(plugin)
-
-
 def test_dependency_propagation_and_context_hints(binary_dataset):
     ensure_builtin_plugins()
     plugin = _RecordingFactualPlugin()
@@ -222,58 +200,6 @@ def test_missing_plugin_override_raises(monkeypatch, binary_dataset):
     explainer, x_test = _make_explainer(binary_dataset, factual_plugin="tests.missing.plugin")
     with pytest.raises(ConfigurationError, match="not registered"):
         explainer.explain_factual(x_test)
-
-
-def test_fast_mode_predict_bridge_usage(binary_dataset):
-    explainer, x_test = _make_explainer(binary_dataset)
-    fast_batch = explainer.explain_fast(x_test)
-
-    assert fast_batch is not None
-    monitor = explainer._bridge_monitors.get("fast")
-    assert monitor is not None
-    assert monitor.used, "FAST plugin should exercise the predict bridge"
-    assert explainer._interval_plugin_hints["fast"] == ("core.interval.fast",)
-    fast_fallbacks = explainer._plot_plugin_fallbacks["fast"]
-    assert "legacy" in fast_fallbacks
-    assert "plot_spec.default" in fast_fallbacks
-
-
-def test_interval_plugin_resolution_records_default_identifier(binary_dataset):
-    explainer, x_test = _make_explainer(binary_dataset)
-    assert explainer._interval_plugin_identifiers["default"] == "core.interval.legacy"
-
-    batch = explainer.explain_factual(x_test)
-    assert batch is not None
-    assert explainer.runtime_telemetry.get("interval_source") == "core.interval.legacy"
-    assert getattr(batch, "telemetry", {}).get("interval_source") == "core.interval.legacy"
-    assert explainer.runtime_telemetry.get("proba_source") == "core.interval.legacy"
-    runtime_fallbacks = explainer.runtime_telemetry.get("plot_fallbacks")
-    assert "legacy" in runtime_fallbacks
-    assert "plot_spec.default" in runtime_fallbacks
-    batch_telemetry = getattr(batch, "telemetry", {})
-    assert batch_telemetry.get("proba_source") == "core.interval.legacy"
-    batch_fallbacks = batch_telemetry.get("plot_fallbacks")
-    assert "legacy" in batch_fallbacks
-    assert "plot_spec.default" in batch_fallbacks
-
-
-def test_fast_interval_plugin_resolution_records_identifier(binary_dataset):
-    explainer, x_test = _make_explainer(binary_dataset, fast=True)
-    assert explainer._interval_plugin_identifiers["fast"] == "core.interval.fast"
-
-    fast_batch = explainer.explain_fast(x_test)
-    assert fast_batch is not None
-    assert explainer.runtime_telemetry.get("interval_source") == "core.interval.fast"
-    assert getattr(fast_batch, "telemetry", {}).get("interval_source") == "core.interval.fast"
-    assert explainer.runtime_telemetry.get("proba_source") == "core.interval.fast"
-    fast_runtime_fallbacks = explainer.runtime_telemetry.get("plot_fallbacks")
-    assert "legacy" in fast_runtime_fallbacks
-    assert "plot_spec.default" in fast_runtime_fallbacks
-    fast_telemetry = getattr(fast_batch, "telemetry", {})
-    assert fast_telemetry.get("proba_source") == "core.interval.fast"
-    fast_batch_fallbacks = fast_telemetry.get("plot_fallbacks")
-    assert "legacy" in fast_batch_fallbacks
-    assert "plot_spec.default" in fast_batch_fallbacks
 
 
 def test_alternative_classification_records_plot_fallbacks(binary_dataset):

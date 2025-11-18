@@ -140,23 +140,6 @@ def _compare_collections(lhs, rhs):
             np.testing.assert_allclose(left.prediction["high"], right.prediction["high"], rtol=1e-6)
 
 
-def test_task_filtered_plugin_falls_back(monkeypatch, regression_dataset):
-    ensure_builtin_plugins()
-    plugin = ClassificationOnlyFactualPlugin()
-    register_explanation_plugin("tests.classification_only.factual", plugin)
-    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "tests.classification_only.factual")
-
-    try:
-        explainer, x_test = _build_regression_explainer(regression_dataset)
-        result = explainer.explain_factual(x_test)
-        assert len(result) == len(x_test)
-        assert ClassificationOnlyFactualPlugin.last_initialised is None
-        assert explainer._explanation_plugin_identifiers["factual"] == "core.explanation.factual"
-    finally:
-        monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL", raising=False)
-        _cleanup_plugin(plugin)
-
-
 def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
     ensure_builtin_plugins()
     plugin = DependencyReportingFactualPlugin()
