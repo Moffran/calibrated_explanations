@@ -65,10 +65,6 @@ class _ExplainerProtocol(Protocol):
         """Compute calibrated predictions and interval bounds."""
         ...
 
-    def assign_threshold(self, threshold: Optional[ThresholdLike]) -> Any:
-        """Broadcast or validate regression thresholds for perturbed inputs."""
-        ...
-
     def _discretize(self, x: np.ndarray) -> np.ndarray:
         """Transform inputs into discretized representations when needed."""
         ...
@@ -153,4 +149,183 @@ __all__ = [
     "initialize_explanation",
     "predict_internal",
     "explain_predict_step",
+    "format_regression_prediction",
+    "format_classification_prediction",
+    "handle_uncalibrated_regression_prediction",
+    "handle_uncalibrated_classification_prediction",
 ]
+
+
+def format_regression_prediction(
+    predict: np.ndarray,
+    low: np.ndarray,
+    high: np.ndarray,
+    threshold: Optional[ThresholdLike] = None,
+    uq_interval: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]]:
+    """Format regression predictions with optional thresholds and intervals.
+
+    Parameters
+    ----------
+    predict : np.ndarray
+        The predicted values.
+    low : np.ndarray
+        Lower bounds of prediction intervals.
+    high : np.ndarray
+        Upper bounds of prediction intervals.
+    threshold : float, int, array-like, optional
+        Threshold for probabilistic regression. If provided, returns probabilities.
+    uq_interval : bool, default=False
+        Whether to return uncertainty intervals.
+
+    Returns
+    -------
+    predictions or (predictions, (low, high))
+        Formatted predictions with optional intervals.
+    """
+    if threshold is None:
+        return (predict, (low, high)) if uq_interval else predict
+
+    # Thresholded prediction - convert to probability labels
+    def get_label(prob_val, thresh):
+        if np.isscalar(thresh):
+            return f"y_hat <= {thresh}" if prob_val >= 0.5 else f"y_hat > {thresh}"
+        if isinstance(thresh, tuple):
+            return (
+                f"{thresh[0]} < y_hat <= {thresh[1]}"
+                if prob_val >= 0.5
+                else f"y_hat <= {thresh[0]} || y_hat > {thresh[1]}"
+            )
+        return "Error in format_regression_prediction.get_label()"
+
+    if np.isscalar(threshold) or isinstance(threshold, tuple):
+        new_classes = [get_label(predict[i], threshold) for i in range(len(predict))]
+    else:
+        new_classes = [get_label(predict[i], threshold[i]) for i in range(len(predict))]
+
+    return (new_classes, (low, high)) if uq_interval else new_classes
+
+
+def format_classification_prediction(
+    predict: np.ndarray,
+    low: np.ndarray,
+    high: np.ndarray,
+    new_classes: Optional[np.ndarray],
+    is_multiclass_val: bool,
+    label_map: Optional[dict] = None,
+    class_labels: Optional[np.ndarray] = None,
+    uq_interval: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]]:
+    """Format classification predictions with optional class label mapping and intervals.
+
+    Parameters
+    ----------
+    predict : np.ndarray
+        The predicted probabilities.
+    low : np.ndarray
+        Lower bounds of prediction intervals.
+    high : np.ndarray
+        Upper bounds of prediction intervals.
+    new_classes : np.ndarray or None
+        Predicted class indices or None.
+    is_multiclass_val : bool
+        Whether this is a multiclass problem.
+    label_map : dict, optional
+        Mapping from numeric class indices to labels.
+    class_labels : array-like, optional
+        Human-readable class labels.
+    uq_interval : bool, default=False
+        Whether to return uncertainty intervals.
+
+    Returns
+    -------
+    predictions or (predictions, (low, high))
+        Formatted predictions with optional intervals.
+    """
+    if new_classes is None:
+        new_classes = (predict >= 0.5).astype(int)
+
+    if label_map is not None or class_labels is not None:
+        new_classes = np.array([class_labels[c] for c in new_classes])
+
+    return (new_classes, (low, high)) if uq_interval else new_classes
+
+
+def handle_uncalibrated_regression_prediction(
+    learner,
+    x: np.ndarray,
+    threshold: Optional[ThresholdLike] = None,
+    uq_interval: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]]:
+    """Handle uncalibrated regression prediction.
+
+    Parameters
+    ----------
+    learner : object
+        The underlying predictive learner.
+    x : np.ndarray
+        Input data.
+    threshold : float, int, array-like, optional
+        Threshold for regression tasks (not allowed for uncalibrated).
+    uq_interval : bool, default=False
+        Whether to return uncertainty intervals.
+
+    Returns
+    -------
+    predictions or (predictions, (low, high))
+        Uncalibrated predictions.
+
+    Raises
+    ------
+    ValidationError
+        If threshold is provided.
+    """
+    if threshold is not None:
+        raise ValidationError(
+            "A thresholded prediction is not possible for uncalibrated predictions."
+        )
+
+    predict = learner.predict(x)
+    return (predict, (predict, predict)) if uq_interval else predict
+
+
+def handle_uncalibrated_classification_prediction(
+    learner,
+    x: np.ndarray,
+    threshold: Optional[ThresholdLike] = None,
+    uq_interval: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]]:
+    """Handle uncalibrated classification prediction.
+
+    Parameters
+    ----------
+    learner : object
+        The underlying predictive learner.
+    x : np.ndarray
+        Input data.
+    threshold : float, int, array-like, optional
+        Threshold (not allowed for classification).
+    uq_interval : bool, default=False
+        Whether to return uncertainty intervals.
+
+    Returns
+    -------
+    predictions or (predictions, (low, high))
+        Uncalibrated class predictions (not probabilities).
+
+    Raises
+    ------
+    ValidationError
+        If threshold is provided.
+    """
+    if threshold is not None:
+        raise ValidationError(
+            "A thresholded prediction is not possible for uncalibrated learners."
+        )
+
+    # Use learner.predict() to get class predictions, not probabilities
+    predictions = learner.predict(x)
+    if uq_interval:
+        # For intervals, use the same predictions as bounds (no uncertainty)
+        return predictions, (predictions, predictions)
+    return predictions

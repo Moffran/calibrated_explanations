@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..exceptions import ConfigurationError
+from ..explain.feature_task import assign_threshold as normalize_threshold
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -20,8 +21,8 @@ if TYPE_CHECKING:
 def assign_threshold(explainer: CalibratedExplainer, threshold) -> None:
     """Set the classification decision threshold.
 
-    This is a thin wrapper around ``CalibratedExplainer.assign_threshold``
-    exposed for consistency with other interval learner operations.
+    This is a thin wrapper kept for backward compatibility. Threshold
+    normalization is now handled entirely by ``feature_task.assign_threshold``.
 
     Parameters
     ----------
@@ -33,13 +34,10 @@ def assign_threshold(explainer: CalibratedExplainer, threshold) -> None:
     Returns
     -------
     None or array-like
-        The result from the explainer's assign_threshold method.
-
-    Notes
-    -----
-    This function delegates to the explainer instance to maintain state consistency.
+        Normalized threshold output from ``feature_task.assign_threshold``.
     """
-    return explainer.assign_threshold(threshold)
+    _ = explainer  # preserve signature; explainer no longer used
+    return normalize_threshold(threshold)
 
 
 def update_interval_learner(  # pylint: disable=invalid-name

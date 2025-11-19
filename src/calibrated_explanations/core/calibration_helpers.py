@@ -1,11 +1,8 @@
-"""Calibration helper delegators (DEPRECATED - use calibration.interval_learner instead).
+"""Calibration helper delegators and utilities.
 
-DEPRECATED in v0.10.0: This module is deprecated and will be removed in v1.0.0.
-Use ``calibrated_explanations.core.calibration.interval_learner`` instead.
-
-This module maintains backward compatibility by re-exporting functions that have been
-moved to the calibration subpackage. All new code should import from the calibration
-subpackage directly.
+This module provides:
+- Backward-compatible delegators (DEPRECATED - use calibration.interval_learner instead)
+- New calibration state and preprocessing utilities
 
 Part of Phase 6: Refactor Calibration Functionality (ADR-001).
 """
@@ -13,12 +10,14 @@ Part of Phase 6: Refactor Calibration Functionality (ADR-001).
 from __future__ import annotations
 
 import warnings
+import numpy as np
 
 __all__ = [
     "assign_threshold",
     "initialize_interval_learner",
     "initialize_interval_learner_for_fast_explainer",
     "update_interval_learner",
+    "identify_constant_features",
 ]
 
 
@@ -37,4 +36,24 @@ def __getattr__(name: str):
         return getattr(_il, name)
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def identify_constant_features(x_cal: np.ndarray) -> list:
+    """Identify constant (non-varying) columns in calibration data.
+
+    Parameters
+    ----------
+    x_cal : np.ndarray
+        Calibration input data of shape (n_samples, n_features).
+
+    Returns
+    -------
+    list
+        Indices of features that have constant values across all calibration samples.
+    """
+    constant_columns = [
+        f for f in range(x_cal.shape[1]) if np.all(x_cal[:, f] == x_cal[0, f])
+    ]
+    return constant_columns
+
 

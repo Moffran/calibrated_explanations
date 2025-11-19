@@ -76,6 +76,95 @@ def assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
     return float(flat[0])
 
 
+def assign_weight(
+    instance_predict: Any,
+    prediction: Any,
+) -> Any:
+    """Compute contribution weight as the delta from the global prediction.
+
+    This function computes per-instance or per-class weight deltas for
+    probabilistic regression feature attribution. Handles both scalar and
+    vector inputs by delegating to assign_weight_scalar for scalars and
+    computing element-wise deltas for arrays.
+
+    Parameters
+    ----------
+    instance_predict : scalar or array-like
+        Baseline prediction(s).
+    prediction : scalar or array-like
+        Perturbed prediction(s).
+
+    Returns
+    -------
+    scalar or list
+        Weight delta(s). Returns same type as inputs (scalar for scalar inputs,
+        list for array inputs).
+
+    Examples
+    --------
+    Scalar inputs (probabilistic regression single value):
+
+    >>> assign_weight(0.5, 0.7)
+    0.2
+
+    Vector inputs (multi-class or per-instance):
+
+    >>> assign_weight([0.5, 0.6], [0.7, 0.8])
+    [0.2, 0.2]
+    """
+    if np.isscalar(prediction):
+        return assign_weight_scalar(instance_predict, prediction)
+    # For array inputs, compute element-wise deltas
+    return [prediction[i] - ip for i, ip in enumerate(instance_predict)]
+
+
+def assign_threshold(threshold: Any) -> Any:
+    """Normalize regression threshold for prediction tasks.
+
+    Returns empty containers for list/array inputs to prevent
+    threshold broadcast errors. For scalar thresholds, returns the
+    value unchanged. Used in probabilistic regression to validate
+    and prepare thresholds before making predictions.
+
+    Parameters
+    ----------
+    threshold : scalar, list, array-like, or None
+        Optional threshold value for regression explanations.
+
+    Returns
+    -------
+    None, scalar, or empty array
+        For None: returns None.
+        For scalar: returns the scalar unchanged.
+        For list/array: returns empty array (no threshold broadcast).
+
+    Examples
+    --------
+    Scalar threshold (valid for single prediction):
+
+    >>> assign_threshold(5.0)
+    5.0
+
+    List/array threshold (invalid broadcast):
+
+    >>> assign_threshold([1, 2, 3])
+    array([], dtype=float64)
+
+    None threshold:
+
+    >>> assign_threshold(None)
+    None
+    """
+    if threshold is None:
+        return None
+    if isinstance(threshold, (list, np.ndarray)):
+        # Return empty array to signal invalid threshold list for broadcast
+        return (
+            np.empty((0,), dtype=tuple) if isinstance(threshold[0], tuple) else np.empty((0,))
+        )
+    return threshold
+
+
 def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""
     (

@@ -32,6 +32,7 @@ from ...plugins.registry import (
 from ...core.config_helpers import coerce_string_tuple
 from ...utils.helper import assert_threshold
 from ..exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
+from ..explain.feature_task import assign_weight
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -380,7 +381,7 @@ class PredictionOrchestrator:
             perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
             deltas = np.empty_like(perturbed_flat, dtype=float)
             for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
-                delta_value = self.explainer._assign_weight(pert_value, base_value)
+                delta_value = assign_weight(pert_value, base_value)
                 delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
                 deltas[idx] = float(delta_array[0])
             return deltas.reshape(perturbed_arr.shape)

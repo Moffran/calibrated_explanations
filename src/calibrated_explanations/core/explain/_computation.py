@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 
 from ...utils.helper import concatenate_thresholds, safe_mean
+from .feature_task import assign_threshold as normalize_threshold
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -172,6 +173,115 @@ def rule_boundaries(
     return np.array(all_min_max)
 
 
+def get_greater_values(
+    explainer: CalibratedExplainer,
+    feature_index: int,
+    threshold: float,
+) -> np.ndarray:
+    """Get sampled values above threshold for a numeric feature.
+
+    Samples percentiles from calibration data for values exceeding the threshold.
+    Used during perturbation planning to establish rule boundaries.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The parent explainer instance with calibration data.
+    feature_index : int
+        Index of the feature.
+    threshold : float
+        The threshold value.
+
+    Returns
+    -------
+    np.ndarray
+        Array of sampled percentile values above the threshold, or empty array
+        if no calibration samples exceed the threshold.
+    """
+    if not np.any(explainer.x_cal[:, feature_index] > threshold):
+        return np.array([])
+    candidates = np.percentile(
+        explainer.x_cal[explainer.x_cal[:, feature_index] > threshold, feature_index],
+        explainer.sample_percentiles,
+    )
+    return candidates
+
+
+def get_lesser_values(
+    explainer: CalibratedExplainer,
+    feature_index: int,
+    threshold: float,
+) -> np.ndarray:
+    """Get sampled values below threshold for a numeric feature.
+
+    Samples percentiles from calibration data for values below the threshold.
+    Used during perturbation planning to establish rule boundaries.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The parent explainer instance with calibration data.
+    feature_index : int
+        Index of the feature.
+    threshold : float
+        The threshold value.
+
+    Returns
+    -------
+    np.ndarray
+        Array of sampled percentile values below the threshold, or empty array
+        if no calibration samples are below the threshold.
+    """
+    if not np.any(explainer.x_cal[:, feature_index] < threshold):
+        return np.array([])
+    candidates = np.percentile(
+        explainer.x_cal[explainer.x_cal[:, feature_index] < threshold, feature_index],
+        explainer.sample_percentiles,
+    )
+    return candidates
+
+
+def get_covered_values(
+    explainer: CalibratedExplainer,
+    feature_index: int,
+    lower_threshold: float,
+    upper_threshold: float,
+) -> np.ndarray:
+    """Get sampled values within an interval for a numeric feature.
+
+    Samples percentiles from calibration data for values within the given interval.
+    Used during perturbation planning to establish rule boundaries.
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The parent explainer instance with calibration data.
+    feature_index : int
+        Index of the feature.
+    lower_threshold : float
+        The lower bound of the interval (inclusive).
+    upper_threshold : float
+        The upper bound of the interval (inclusive).
+
+    Returns
+    -------
+    np.ndarray
+        Array of sampled percentile values within the interval, or empty array
+        if no calibration samples fall in the interval.
+    """
+    covered = np.where(
+        (explainer.x_cal[:, feature_index] >= lower_threshold)
+        & (explainer.x_cal[:, feature_index] <= upper_threshold)
+    )[0]
+    if len(covered) == 0:
+        return np.array([])
+    candidates = np.percentile(
+        explainer.x_cal[covered, feature_index],
+        explainer.sample_percentiles,
+    )
+    return candidates
+
+
 def initialize_explanation(
     explainer: CalibratedExplainer,
     x: np.ndarray,  # pylint: disable=invalid-name
@@ -292,7 +402,7 @@ def explain_predict_step(
 
     x.flags.writeable = False
     assert_threshold(threshold, x)
-    perturbed_threshold = explainer.assign_threshold(threshold)
+    perturbed_threshold = normalize_threshold(threshold)
     perturbed_bins = np.empty((0,)) if bins is not None else None
     perturbed_x = np.empty((0, explainer.num_features))
     perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
@@ -343,7 +453,7 @@ def explain_predict_step(
             covered_values[f] = {}
             for j, val in enumerate(np.unique(lower_boundary)):
                 lesser_values[f][j] = (
-                    np.unique(explainer._CalibratedExplainer__get_lesser_values(f, val)),  # pylint: disable=protected-access
+                    np.unique(get_lesser_values(explainer, f, val)),
                     val,
                 )
                 indices = np.where(lower_boundary == val)[0]
@@ -369,7 +479,7 @@ def explain_predict_step(
                     )
             for j, val in enumerate(np.unique(upper_boundary)):
                 greater_values[f][j] = (
-                    np.unique(explainer._CalibratedExplainer__get_greater_values(f, val)),  # pylint: disable=protected-access
+                    np.unique(get_greater_values(explainer, f, val)),
                     val,
                 )
                 indices = np.where(upper_boundary == val)[0]
@@ -396,9 +506,7 @@ def explain_predict_step(
             indices = range(len(x))
             for i in indices:
                 covered_values[f][i] = (
-                    explainer._CalibratedExplainer__get_covered_values(  # pylint: disable=protected-access
-                        f, lower_boundary[i], upper_boundary[i]
-                    ),
+                    get_covered_values(explainer, f, lower_boundary[i], upper_boundary[i]),
                     (lower_boundary[i], upper_boundary[i]),
                 )
                 for value in covered_values[f][i][0]:
@@ -1007,6 +1115,9 @@ __all__ = [
     "discretize",
     "explain_predict_step",
     "feature_task",
+    "get_covered_values",
+    "get_greater_values",
+    "get_lesser_values",
     "initialize_explanation",
     "rule_boundaries",
 ]

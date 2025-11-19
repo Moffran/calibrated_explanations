@@ -392,6 +392,23 @@ class WrapCalibratedExplainer:
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         return self.explainer.explain_lime(x_local, **kwargs)
 
+    def explain_shap(self, x: Any, **kwargs: Any) -> Any:
+        """Generate SHAP explanations for the test data."""
+        assert (
+            self._assert_fitted(
+                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
+            .explainer
+            is not None
+        )
+        x_local = self._maybe_preprocess_for_inference(x)
+        kwargs = self._normalize_public_kwargs(kwargs)
+        validate_inputs_matrix(x_local, allow_nan=True)
+        validate_param_combination(kwargs)
+        kwargs["bins"] = self._get_bins(x_local, **kwargs)
+        return self.explainer.explain_shap(x_local, **kwargs)
+
     # pylint: disable=too-many-return-statements
     def predict(
         self,

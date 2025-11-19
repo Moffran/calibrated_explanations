@@ -38,6 +38,10 @@ def explain(
     The function mirrors the historical control flow to enable correctness
     comparisons with the optimised implementation.
     """
+    from ._helpers import validate_and_prepare_input  # pylint: disable=import-outside-toplevel
+    from ._computation import initialize_explanation  # pylint: disable=import-outside-toplevel
+    from .feature_task import assign_weight  # pylint: disable=import-outside-toplevel
+
     total_time = time()
 
     features_to_ignore = (
@@ -46,9 +50,9 @@ def explain(
         else np.union1d(explainer.features_to_ignore, features_to_ignore)
     )
 
-    x = explainer._validate_and_prepare_input(x)
-    explanation = explainer._initialize_explanation(
-        x, low_high_percentiles, threshold, bins, features_to_ignore
+    x = validate_and_prepare_input(explainer, x)
+    explanation = initialize_explanation(
+        explainer, x, low_high_percentiles, threshold, bins, features_to_ignore
     )
 
     instance_time = time()
@@ -182,13 +186,13 @@ def explain(
                     instance_predict[i]["low"][f] = safe_mean(low_predict[uncovered])
                     instance_predict[i]["high"][f] = safe_mean(high_predict[uncovered])
 
-                    instance_weights[i]["predict"][f] = explainer._assign_weight(
+                    instance_weights[i]["predict"][f] = assign_weight(
                         instance_predict[i]["predict"][f], prediction["predict"][i]
                     )
-                    tmp_low = explainer._assign_weight(
+                    tmp_low = assign_weight(
                         instance_predict[i]["low"][f], prediction["predict"][i]
                     )
-                    tmp_high = explainer._assign_weight(
+                    tmp_high = assign_weight(
                         instance_predict[i]["high"][f], prediction["predict"][i]
                     )
                     instance_weights[i]["low"][f] = np.min([tmp_low, tmp_high])
@@ -316,13 +320,13 @@ def explain(
                     instance_predict[i]["low"][f] = safe_mean(low_predict_map[i][uncovered])
                     instance_predict[i]["high"][f] = safe_mean(high_predict_map[i][uncovered])
 
-                    instance_weights[i]["predict"][f] = explainer._assign_weight(
+                    instance_weights[i]["predict"][f] = assign_weight(
                         instance_predict[i]["predict"][f], prediction["predict"][i]
                     )
-                    tmp_low = explainer._assign_weight(
+                    tmp_low = assign_weight(
                         instance_predict[i]["low"][f], prediction["predict"][i]
                     )
-                    tmp_high = explainer._assign_weight(
+                    tmp_high = assign_weight(
                         instance_predict[i]["high"][f], prediction["predict"][i]
                     )
                     instance_weights[i]["low"][f] = np.min([tmp_low, tmp_high])
