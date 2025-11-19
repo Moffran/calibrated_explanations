@@ -9,7 +9,7 @@ Part of Phase 6: Refactor Calibration Functionality (ADR-001).
 
 from __future__ import annotations
 
-import warnings
+ 
 import numpy as np
 
 __all__ = [
@@ -24,13 +24,14 @@ __all__ = [
 def __getattr__(name: str):
     """Lazy-load functions from calibration.interval_learner with deprecation warning."""
     if name in __all__:
-        warnings.warn(
-            f"Importing {name} from calibrated_explanations.core.calibration_helpers is deprecated "
-            "and will be removed in v1.0.0. "
-            f"Import from calibrated_explanations.core.calibration.interval_learner instead.",
-            DeprecationWarning,
-            stacklevel=2,
+        from ..utils.deprecations import deprecate
+
+        msg = (
+            f"Importing {name} from calibration_helpers is deprecated."
+            " This alias will be removed in v1.0.0."
+            " Import from calibrated_explanations.core.calibration.interval_learner instead."
         )
+        deprecate(msg, key=f"calibration_helpers:{name}", stacklevel=3)
         from .calibration import interval_learner as _il  # pylint: disable=import-outside-toplevel
 
         return getattr(_il, name)

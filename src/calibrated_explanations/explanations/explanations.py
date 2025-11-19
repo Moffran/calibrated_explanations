@@ -687,10 +687,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
-        warnings.warn(
+        from ..utils.deprecations import deprecate
+
+        deprecate(
             "This method is deprecated and may be removed in future versions. Use indexing instead.",
-            DeprecationWarning,
-            stacklevel=2,
+            key="CalibratedExplanations.get_explanation",
+            stacklevel=3,
         )
         if not isinstance(index, int):
             raise TypeError("index must be an integer")

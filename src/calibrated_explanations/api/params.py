@@ -15,10 +15,9 @@ See ADR-002 for context.
 
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
-# Minimal, conservative alias map. 
+# Minimal, conservative alias map.
 ALIAS_MAP: dict[str, str] = {
     # Example: users sometimes pass statistical alpha(s) instead of percentiles.
     # Mapping stays syntactic only in 1B; no semantic conversion performed.
@@ -67,13 +66,11 @@ def warn_on_aliases(kwargs: dict[str, Any]) -> None:
     -----
     - No behavior change; only a `DeprecationWarning` to guide users.
     """
+    from ..utils.deprecations import deprecate_alias
+
     for alias, canonical in ALIAS_MAP.items():
         if alias in kwargs:
-            warnings.warn(
-                f"Parameter '{alias}' is deprecated; use '{canonical}' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
+            deprecate_alias(alias, canonical, stacklevel=3)
 
 
 __all__.append("warn_on_aliases")

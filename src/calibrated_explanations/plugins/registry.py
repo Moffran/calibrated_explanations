@@ -342,13 +342,15 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
     raw_modes = _ensure_sequence(meta, "modes", allowed=allowed_modes)
     normalised_modes: List[str] = []
     seen: set[str] = set()
+    from ..utils.deprecations import deprecate
+
     for mode in raw_modes:
         canonical = _EXPLANATION_MODE_ALIASES.get(mode, mode)
         if mode in _EXPLANATION_MODE_ALIASES:
-            warnings.warn(
+            deprecate(
                 "explanation mode alias '" + mode + "' is deprecated; use '" + canonical + "'",
-                DeprecationWarning,
-                stacklevel=2,
+                key=f"mode_alias:{mode}",
+                stacklevel=3,
             )
         if canonical not in _EXPLANATION_VALID_MODES:
             raise ValueError(f"plugin_meta['modes'] has unsupported values: {canonical}")
@@ -1057,10 +1059,12 @@ def register_plot_plugin(
     metadata: Mapping[str, Any] | None = None,
 ) -> PlotBuilderDescriptor:
     """Compatibility shim registering *plugin* as both builder and renderer."""
-    warnings.warn(
+    from ..utils.deprecations import deprecate
+
+    deprecate(
         "register_plot_plugin is deprecated; use register_plot_builder/register_plot_renderer",
-        DeprecationWarning,
-        stacklevel=2,
+        key="register_plot_plugin",
+        stacklevel=3,
     )
     descriptor = register_plot_builder(identifier, plugin, metadata=metadata)
     register_plot_renderer(identifier, plugin, metadata=metadata)

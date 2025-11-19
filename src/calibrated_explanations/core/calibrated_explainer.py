@@ -1138,10 +1138,12 @@ class CalibratedExplainer:
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.
         """
-        _warnings.warn(
+        from ..utils.deprecations import deprecate
+
+        deprecate(
             "The `explain_counterfactual` method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.",
-            DeprecationWarning,
-            stacklevel=2,
+            key="CalibratedExplainer.explain_counterfactual",
+            stacklevel=3,
         )
         return self.explore_alternatives(
             x, threshold, low_high_percentiles, bins, features_to_ignore

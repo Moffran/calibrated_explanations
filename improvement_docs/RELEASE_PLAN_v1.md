@@ -105,6 +105,24 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 - **Release plan lacks status table** (severity 12, high) → `v0.9.1 governance & observability hardening`. Add the structured table (this document update) and keep it current per release.
 - **CI gates for deprecation policy missing** (severity 12, high) → `v0.9.1 governance & observability hardening`. Add automation enforcing the two-minor-release window and migration-note checks.
 
+**Status (2025-11-19):**
+
+- **Central `deprecate()` helper implemented:** Done. The helper is available at `src/calibrated_explanations/utils/deprecations.py` and has been adopted in representative callsites across the codebase. Remaining callsites identified as runtime warnings (non-deprecation) were intentionally left unchanged.
+- **Migration guide authored:** Done. See `docs/migration/deprecations.md` for migration steps, example edits, and a deprecation status table.
+- **Structured status table added to this plan:** Done (this section updated). The status table below summarises progress and next actions.
+- **CI gates for deprecation policy:** In progress. Unit tests for the deprecation helper were added (`tests/unit/test_utils_deprecations.py`) and a docs smoke test was added. Full CI automation enforcing the two-minor-release window requires CI workflow updates and will be scheduled as a follow-up task.
+
+**ADR-011 Status Table (deprecation items)**
+
+| Item | Target | Status | Notes |
+|---|---:|---|---|
+| Central `deprecate()` helper | v0.9.1 | ✅ Done | Implemented at `src/.../utils/deprecations.py`; once-per-key semantics and env override `CE_DEPRECATIONS` supported.
+| Migration guide (user-facing) | v0.9.1 | ✅ Done | `docs/migration/deprecations.md` provides migration steps and a matrix of deprecated symbols.
+| Repository-wide sweep of callsites | v0.9.1 | ✅ Representative | Representative callsites converted; remaining `warnings.warn` messages are runtime notices not deprecations.
+| Unit tests for helper | v0.9.1 | ✅ Done | `tests/unit/test_utils_deprecations.py` validates emission and error-mode behaviour.
+| Docs smoke/link check | v0.9.1 | ✅ Added | `tests/doc/test_deprecations_doc_smoke.py` validates the migration doc is present and basic links parse.
+| CI gating automation (two-minor-release enforcement) | v0.9.1 | ⏳ In progress | Requires CI workflow change; recommended follow-up PR to add workflow changes and governance hooks.
+
 ### ADR-012 – Documentation & Gallery Build Policy
 
 - **Notebooks never rendered in docs CI** (severity 20, critical) → `v0.9.1 governance & observability hardening`. Enable notebook execution in docs CI.
