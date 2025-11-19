@@ -7,9 +7,7 @@ import types
 
 import numpy as np
 
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
-from calibrated_explanations.integrations import LimeHelper, ShapHelper
 
 
 class _StubLearner:
@@ -77,8 +75,8 @@ def _register_stub_libraries(monkeypatch):
     monkeypatch.setitem(sys.modules, "shap", shap_module)
 
 
-def _make_stub_explainer() -> CalibratedExplainer:
-    explainer = CalibratedExplainer.__new__(CalibratedExplainer)
+def _make_stub_explainer(explainer_factory):
+    explainer = explainer_factory()
     explainer.mode = "classification"
     x_cal = np.array([[0.1, 0.9], [0.3, 0.7], [0.5, 0.5]], dtype=float)
     y_cal = np.array([0.0, 1.0, 0.5], dtype=float)
@@ -92,14 +90,6 @@ def _make_stub_explainer() -> CalibratedExplainer:
     explainer.categorical_features = []
     explainer.categorical_labels = {}
     explainer._CalibratedExplainer__initialized = True
-    explainer._lime_helper = LimeHelper(explainer)
-    explainer._shap_helper = ShapHelper(explainer)
-    
-    # Initialize the prediction orchestrator
-    from calibrated_explanations.core.prediction import PredictionOrchestrator
-    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
-    explainer.interval_learner = None
-
     def _predict_stub(self, x, **_kwargs):
         x = np.asarray(x)
         n = x.shape[0]
@@ -119,9 +109,9 @@ def _make_stub_explainer() -> CalibratedExplainer:
     return explainer
 
 
-def test_explain_lime_populates_fast_collection(monkeypatch):
+def test_explain_lime_populates_fast_collection(monkeypatch, explainer_factory):
     _register_stub_libraries(monkeypatch)
-    explainer = _make_stub_explainer()
+    explainer = _make_stub_explainer(explainer_factory)
 
     x_test = np.array([[0.2, 0.8], [0.4, 0.6]], dtype=float)
 
@@ -141,10 +131,10 @@ def test_explain_lime_populates_fast_collection(monkeypatch):
         assert explanation.explain_time is not None
 
 
-def test_preload_shap_refreshes_when_shape_changes(monkeypatch):
+def test_preload_shap_refreshes_when_shape_changes(monkeypatch, explainer_factory):
     _register_stub_libraries(monkeypatch)
     _RecordingShapExplainer.instances.clear()
-    explainer = _make_stub_explainer()
+    explainer = _make_stub_explainer(explainer_factory)
 
     shap_1, shap_exp_1 = explainer._preload_shap()
 

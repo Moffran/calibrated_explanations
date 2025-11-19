@@ -8,11 +8,7 @@ from calibrated_explanations.core.config_helpers import (
 )
 from calibrated_explanations.core.explain.feature_task import assign_weight_scalar
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
-from calibrated_explanations.core.calibrated_explainer import (
-    CalibratedExplainer,
-)
 from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
-from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 
@@ -66,12 +62,9 @@ def test_predict_bridge_monitor_records_calls():
     assert "predict_proba" in monitor.calls
 
 
-def test_check_explanation_runtime_metadata_various():
+def test_check_explanation_runtime_metadata_various(explainer_factory):
     """Test ExplanationOrchestrator metadata validation through delegating method."""
-    explainer = object.__new__(CalibratedExplainer)
-    explainer.mode = "classification"
-    # Initialize orchestrator
-    orch = ExplanationOrchestrator(explainer)
+    orch = explainer_factory()._explanation_orchestrator
 
     # None metadata
     msg = orch._check_metadata(None, identifier=None, mode="factual")

@@ -74,7 +74,6 @@ class _StubExplainer:
             if isinstance(self.interval_learner, list)
             else self.interval_learner
         )
-        self.assign_threshold_calls: list = []
         self.predict_calls: list = []
         self.discretizer = None  # Required by explain_predict_step
 
@@ -114,10 +113,6 @@ class _StubExplainer:
             np.full((size,), 0.2),
             classes,
         )
-
-    def assign_threshold(self, threshold):  # noqa: D401 - protocol implementation
-        self.assign_threshold_calls.append(threshold)
-        return threshold
 
     def _discretize(self, x):  # noqa: D401 - protocol implementation
         return np.asarray(x) + 1

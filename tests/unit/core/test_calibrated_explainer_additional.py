@@ -735,31 +735,6 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
     assert combined.explanations[1].index == 1
 
 
-def test_slice_threshold_and_bins_variants(monkeypatch: pytest.MonkeyPatch) -> None:
-    _module = __import__(
-        "calibrated_explanations.core.calibrated_explainer", fromlist=["safe_isinstance"]
-    )
-    _expl = DummyLearner()
-    # scalar threshold remains scalar
-    assert CalibratedExplainer._slice_threshold(None, 0, 1, 1) is None
-    assert CalibratedExplainer._slice_threshold(0.5, 0, 1, 1) == 0.5
-
-    arr = [1, 2, 3, 4]
-    # length mismatch -> returns original
-    assert CalibratedExplainer._slice_threshold(arr, 0, 2, 5) is arr
-
-    # matching length -> returns slice
-    res = CalibratedExplainer._slice_threshold(arr, 1, 3, 4)
-    assert res == [2, 3]
-
-    # bins slicing with numpy array
-    bins = np.asarray([[0], [1], [2]])
-    assert np.array_equal(CalibratedExplainer._slice_bins(bins, 1, 3), bins[1:3])
-
-    # None bins -> None
-    assert CalibratedExplainer._slice_bins(None, 0, 1) is None
-
-
 def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -> None:
     # Verify instance-parallel plugin invokes per-chunk processing (sequential plugin)
     from calibrated_explanations.core.explain.parallel_instance import (

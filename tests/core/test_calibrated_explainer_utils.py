@@ -4,23 +4,15 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-
 import numpy as np
-
 import pytest
 
-from calibrated_explanations.core.calibrated_explainer import (
-    CalibratedExplainer,
-)
-from calibrated_explanations.plugins.manager import PluginManager
 from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.core.config_helpers import (
     coerce_string_tuple as _coerce_string_tuple,
     read_pyproject_section as _read_pyproject_section,
     split_csv as _split_csv,
 )
-from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
-from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.core.exceptions import ConfigurationError
 
@@ -98,29 +90,8 @@ def test_predict_bridge_monitor_tracks_usage():
     assert proba_result[0] is bridge.predictions["predict_proba"]
 
 
-def _make_explainer_stub() -> CalibratedExplainer:
-    explainer = CalibratedExplainer.__new__(CalibratedExplainer)
-    explainer._plugin_manager = PluginManager(explainer)
-    explainer._explanation_plugin_overrides = {
-        mode: None for mode in ("factual", "alternative", "fast")
-    }
-    explainer._pyproject_explanations = {}
-    explainer._pyproject_intervals = {}
-    explainer._pyproject_plots = {}
-    explainer._interval_plugin_override = None
-    explainer._fast_interval_plugin_override = None
-    explainer._interval_preferred_identifier = {"default": None, "fast": None}
-    explainer._plot_style_override = None
-    explainer.mode = "classification"
-    explainer.bins = None
-    # Initialize orchestrators so tests can call delegation methods
-    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
-    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
-    return explainer
-
-
-def test_check_explanation_runtime_metadata_validations():
-    explainer = _make_explainer_stub()
+def test_check_explanation_runtime_metadata_validations(explainer_factory):
+    explainer = explainer_factory()
 
     assert (
         explainer._check_explanation_runtime_metadata(None, identifier="plugin", mode="factual")
@@ -157,8 +128,8 @@ def test_check_explanation_runtime_metadata_validations():
     )
 
 
-def test_check_explanation_runtime_metadata_capabilities():
-    explainer = _make_explainer_stub()
+def test_check_explanation_runtime_metadata_capabilities(explainer_factory):
+    explainer = explainer_factory()
     metadata = {
         "schema_version": EXPLANATION_PROTOCOL_VERSION,
         "tasks": ["classification"],
@@ -171,8 +142,8 @@ def test_check_explanation_runtime_metadata_capabilities():
     assert "missing required capabilities" in message
 
 
-def test_instantiate_plugin_prefers_fresh_instances():
-    explainer = _make_explainer_stub()
+def test_instantiate_plugin_prefers_fresh_instances(explainer_factory):
+    explainer = explainer_factory()
 
     class Proto:
         plugin_meta = {}
@@ -196,8 +167,8 @@ def test_instantiate_plugin_prefers_fresh_instances():
 
 
 
-def test_check_interval_runtime_metadata_validations():
-    explainer = _make_explainer_stub()
+def test_check_interval_runtime_metadata_validations(explainer_factory):
+    explainer = explainer_factory()
 
     assert (
         explainer._check_interval_runtime_metadata(None, identifier="interval", fast=False)

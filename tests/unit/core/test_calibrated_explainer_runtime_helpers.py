@@ -12,19 +12,16 @@ from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
 )
 from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
-from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
-from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
 from calibrated_explanations.plugins.predict_monitor import (
     PredictBridgeMonitor as _PredictBridgeMonitor,
 )
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 
-def _stub_explainer(mode: str = "classification") -> CalibratedExplainer:
-    """Construct a lightweight explainer instance for unit tests."""
+def _stub_explainer(explainer_factory, mode: str = "classification") -> CalibratedExplainer:
+    """Construct a fully initialized explainer instance for unit tests."""
 
-    explainer = CalibratedExplainer.__new__(CalibratedExplainer)
-    explainer.mode = mode
+    explainer = explainer_factory(mode=mode)
     explainer.bins = None
     explainer._plot_style_override = None
     explainer._interval_plugin_override = None
@@ -34,24 +31,20 @@ def _stub_explainer(mode: str = "classification") -> CalibratedExplainer:
     explainer._interval_preferred_identifier = {"default": None, "fast": None}
     explainer._telemetry_interval_sources = {"default": None, "fast": None}
     explainer._interval_context_metadata = {"default": {}, "fast": {}}
-    explainer._interval_plugin_override = None
-    explainer._fast_interval_plugin_override = None
     explainer._explanation_plugin_overrides = {
-        mode: None for mode in ("factual", "alternative", "fast")
+        key: None for key in ("factual", "alternative", "fast")
     }
     explainer._pyproject_explanations = {}
     explainer._pyproject_intervals = {}
     explainer._pyproject_plots = {}
     explainer._plot_style_override = None
     explainer._explanation_plugin_fallbacks = {}
-    # Initialize orchestrators so tests can call methods that delegate to them
-    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
-    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
     return explainer
 
 
-def test_coerce_plugin_override_supports_multiple_sources():
-    explainer = _stub_explainer()
+def test_coerce_plugin_override_supports_multiple_sources(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    explainer._plugin_manager = None
 
     assert explainer._coerce_plugin_override(None) is None
     assert explainer._coerce_plugin_override("tests.override") == "tests.override"
@@ -106,8 +99,8 @@ def test_predict_bridge_monitor_tracks_usage():
     assert bridge.calls[2][0] == "predict_proba"
 
 
-def test_check_explanation_runtime_metadata_reports_errors():
-    explainer = _stub_explainer(mode="classification")
+def test_check_explanation_runtime_metadata_reports_errors(explainer_factory):
+    explainer = _stub_explainer(explainer_factory, mode="classification")
 
     assert (
         explainer._check_explanation_runtime_metadata(None, identifier="missing", mode="factual")
@@ -152,8 +145,8 @@ def test_check_explanation_runtime_metadata_reports_errors():
     )
 
 
-def test_check_interval_runtime_metadata_validates_requirements():
-    explainer = _stub_explainer(mode="regression")
+def test_check_interval_runtime_metadata_validates_requirements(explainer_factory):
+    explainer = _stub_explainer(explainer_factory, mode="regression")
 
     assert (
         explainer._check_interval_runtime_metadata(None, identifier="missing", fast=False)
@@ -202,11 +195,14 @@ def test_check_interval_runtime_metadata_validates_requirements():
     assert explainer._check_interval_runtime_metadata(base, identifier="id", fast=True) is None
 
 
-def test_ensure_interval_runtime_state_populates_defaults():
-    explainer = CalibratedExplainer.__new__(CalibratedExplainer)
-    # Initialize orchestrators so the delegation method works
-    explainer._prediction_orchestrator = PredictionOrchestrator(explainer)
-    explainer._explanation_orchestrator = ExplanationOrchestrator(explainer)
+def test_ensure_interval_runtime_state_populates_defaults(explainer_factory):
+    explainer = explainer_factory()
+    explainer._interval_plugin_hints = {}
+    explainer._interval_plugin_fallbacks = {}
+    explainer._interval_plugin_identifiers = {}
+    explainer._telemetry_interval_sources = {}
+    explainer._interval_preferred_identifier = {}
+    explainer._interval_context_metadata = {}
     explainer._ensure_interval_runtime_state()
 
     assert explainer._interval_plugin_hints == {}
@@ -217,8 +213,8 @@ def test_ensure_interval_runtime_state_populates_defaults():
     assert explainer._interval_context_metadata == {"default": {}, "fast": {}}
 
 
-def test_instantiate_plugin_handles_multiple_paths(monkeypatch):
-    explainer = _stub_explainer()
+def test_instantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
 
     class CallableWithMeta:
         plugin_meta = {}
@@ -258,8 +254,8 @@ def test_instantiate_plugin_handles_multiple_paths(monkeypatch):
     assert explainer._instantiate_plugin(broken) is broken
 
 
-def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch):
-    explainer = _stub_explainer(mode="regression")
+def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explainer_factory):
+    explainer = _stub_explainer(explainer_factory, mode="regression")
     explainer._interval_plugin_fallbacks = {"default": ("denied.plugin", "ok.plugin"), "fast": ()}
     explainer._instantiate_plugin = lambda plugin: plugin
     explainer._check_interval_runtime_metadata = lambda metadata, **_: None
@@ -300,8 +296,8 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch):
     assert plugin is descriptor.plugin
 
 
-def test_resolve_interval_plugin_denied_override_raises(monkeypatch):
-    explainer = _stub_explainer(mode="regression")
+def test_resolve_interval_plugin_denied_override_raises(monkeypatch, explainer_factory):
+    explainer = _stub_explainer(explainer_factory, mode="regression")
     explainer._interval_plugin_override = "denied.plugin"
     explainer._interval_plugin_fallbacks = {"default": ("denied.plugin",), "fast": ()}
 
@@ -318,8 +314,8 @@ def test_resolve_interval_plugin_denied_override_raises(monkeypatch):
     assert "denied via CE_DENY_PLUGIN" in str(excinfo.value)
 
 
-def test_build_interval_context_enriches_metadata():
-    explainer = _stub_explainer(mode="regression")
+def test_build_interval_context_enriches_metadata(explainer_factory):
+    explainer = _stub_explainer(explainer_factory, mode="regression")
     explainer.x_cal = np.asarray([[1.0, 2.0]])
     explainer.y_cal = np.asarray([1.5])
     explainer._X_cal = explainer.x_cal
@@ -346,8 +342,8 @@ def test_build_interval_context_enriches_metadata():
     assert context.metadata["noise_config"]["noise_type"] == "gaussian"
 
 
-def test_get_calibration_summaries_caches_results():
-    explainer = _stub_explainer()
+def test_get_calibration_summaries_caches_results(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
     explainer.x_cal = np.asarray([[0, "a"], [1, "b"], [0, "a"]], dtype=object)
     explainer._X_cal = explainer.x_cal
     explainer.categorical_features = [1]
@@ -375,8 +371,8 @@ class _RaisingInterval:
         raise RuntimeError("boom")
 
 
-def test_predict_impl_returns_degraded_arrays_when_suppressed():
-    explainer = _stub_explainer(mode="regression")
+def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory):
+    explainer = _stub_explainer(explainer_factory, mode="regression")
     explainer._CalibratedExplainer__initialized = True
     explainer._CalibratedExplainer__fast = False
     explainer.interval_learner = _RaisingInterval()

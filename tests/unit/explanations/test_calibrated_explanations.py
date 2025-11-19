@@ -30,7 +30,6 @@ class _DummyOriginalExplainer:
         self.categorical_features: List[int] = []
         self.categorical_labels: dict[int, Sequence[str]] = {}
         self.feature_values: List[Sequence[str]] = [() for _ in self.feature_names]
-        self.assign_threshold = 0.5
         self.sample_percentiles = (5.0, 95.0)
         self.is_multiclass = True
         self.discretizer = object()

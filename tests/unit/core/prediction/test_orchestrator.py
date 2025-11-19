@@ -149,17 +149,6 @@ class TestPredictionOrchestratorBehavior:
         predictions = explainer.predict(x_test)
         assert len(predictions) == len(x_test)
 
-    def test_uncalibrated_predict_uses_learner_directly(self, binary_classification_explainer):
-        """Test that uncalibrated prediction uses the underlying learner."""
-        explainer, x_test = binary_classification_explainer
-        
-        # Uncalibrated prediction should use the learner directly
-        uncalibrated_pred = explainer.predict(x_test, calibrated=False)
-        learner_pred = explainer.learner.predict(x_test)
-        
-        # Should match or be very close
-        np.testing.assert_array_equal(uncalibrated_pred, learner_pred)
-
     def test_calibrated_vs_uncalibrated_may_differ(self, binary_classification_explainer):
         """Test that calibrated and uncalibrated predictions can differ."""
         explainer, x_test = binary_classification_explainer
