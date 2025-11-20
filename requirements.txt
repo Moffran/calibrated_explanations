@@ -5,3 +5,5 @@ matplotlib >= 3.4
 numpy >= 1.20, < 2.3
 venn-abers >= 1.4.1
 psutil>=5.9
+pyyaml
+openpyxl

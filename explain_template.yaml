@@ -1,0 +1,249 @@
+narrative_templates:
+  binary_classification:
+    factual:
+      beginner: |
+        Prediction: {label}
+        Calibrated Probability: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing Calibrated Probability:
+        * {feature_name} ({feature_actual_value}) {condition},
+
+        Factors decreasing Calibrated Probability:
+        * {feature_name} ({feature_actual_value}) {condition},
+      
+      intermediate: |
+        Prediction: {label}
+        Calibrated Probability: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing Calibrated Probability:
+        * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
+
+        Factors decreasing Calibrated Probability:
+        * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
+      
+      advanced: |
+        Prediction: {label}
+        Calibrated Probability: {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing Calibrated Probability:
+        {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}],
+
+        Factors decreasing Calibrated Probability:
+        {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}],
+    
+    alternative:
+      beginner: |
+        Prediction: {label}
+        Calibrated probability: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the calibrated probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
+
+        Alternatives to decrease the calibrated probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
+      
+      intermediate: |
+        Prediction: {label}
+        Calibrated probability: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the calibrated probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
+
+        Alternatives to decrease the calibrated probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
+      
+      advanced: |
+        Prediction: {label}
+        Calibrated probability: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the calibrated probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
+
+        Alternatives to decrease the calibrated probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
+
+  multiclass_classification:
+    factual:
+      beginner: |
+        Calibrated Probability for class {label}: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Runner-up Class: {runner_up_class} (margin {margin_value})
+
+        Factors increasing Calibrated Probability for class {label}:
+        * {feature_name} ({feature_actual_value}) {condition},
+
+        Factors decreasing Calibrated Probability for class {label}:
+        * {feature_name} ({feature_actual_value}) {condition},
+      
+      intermediate: |
+        Calibrated Probability for class {label}: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Runner-up Class: {runner_up_class} (margin {margin_value})
+
+        Factors increasing Calibrated Probability for class {label}:
+        * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
+
+        Factors decreasing Calibrated Probability for class {label}:
+        * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
+      
+      advanced: |
+        Calibrated Probability for class {label}: {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+        Runner-up Class: {runner_up_class} (margin {margin_value})
+
+        Factors increasing Calibrated Probability for class {label}:
+        {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}],
+
+        Factors decreasing Calibrated Probability for class {label}:
+        {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}],
+    
+    alternative:
+      beginner: |
+        Calibrated probability for class {label}: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Runner-up Class: {runner_up_class} (margin {margin_value})
+
+        Alternatives to increase the calibrated probability for class {label}:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
+
+        Alternatives to decrease the calibrated probability for class {label}:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
+      
+      intermediate: |
+        Calibrated probability for class {label}: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Runner-up Class: {runner_up_class} (margin {margin_value})
+
+        Alternatives to increase the calibrated probability for class {label}:
+        - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
+
+        Alternatives to decrease the calibrated probability for class {label}:
+        - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
+      
+      advanced: |
+        Calibrated probability for class {label}: {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+        Runner-up Class: {runner_up_class} (margin {margin_value})
+
+        Alternatives to increase the calibrated probability for class {label}:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
+
+        Alternatives to decrease the calibrated probability for class {label}:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
+
+  regression:
+    factual:
+      beginner: |
+        Calibrated Prediction: {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing the Calibrated Prediction:
+        * {feature_name} ({feature_actual_value}) {condition},
+
+        Factors decreasing the Calibrated Prediction:
+        * {feature_name} ({feature_actual_value}) {condition},
+      
+      intermediate: |
+        Calibrated Prediction: {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing the Calibrated Prediction:
+        * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
+
+        Factors decreasing the Calibrated Prediction:
+        * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
+      
+      advanced: |
+        Calibrated Prediction: {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing the Calibrated Prediction:
+        {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}],
+
+        Factors decreasing the Calibrated Prediction:
+        {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}],
+    
+    alternative:
+      beginner: |
+        Calibrated Prediction: {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the Calibrated Prediction:
+        - If {feature_name} {condition} then Calibrated Prediction {predict} [{predict_low}, {predict_high}]
+
+        Alternatives to decrease the Calibrated Prediction:
+        - If {feature_name} {condition} then Calibrated Prediction {predict} [{predict_low}, {predict_high}]
+      
+      intermediate: |
+        Calibrated Prediction: {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the Calibrated Prediction:
+        - If {feature_name} {condition} then Calibrated Prediction {predict}; weight ≈ {feature_weight}
+
+        Alternatives to decrease the Calibrated Prediction:
+        - If {feature_name} {condition} then Calibrated Prediction {predict}; weight ≈ {feature_weight}
+      
+      advanced: |
+        Calibrated Prediction: {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the Calibrated Prediction:
+        - If {feature_name} {condition} then Calibrated Prediction {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
+
+        Alternatives to decrease the Calibrated Prediction:
+        - If {feature_name} {condition} then Calibrated Prediction {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
+
+  probabilistic_regression:
+    factual:
+      beginner: |
+        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing Calibrated Probability:
+        * {feature_name} ({feature_actual_value}) {condition},
+
+        Factors decreasing Calibrated Probability:
+        * {feature_name} ({feature_actual_value}) {condition},
+      
+      intermediate: |
+        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing Calibrated Probability:
+        * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
+
+        Factors decreasing Calibrated Probability:
+        * {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight},
+      
+      advanced: |
+        Calibrated Probability (prediction > {threshold}): {calibrated_pred}
+        Prediction Interval: [{pred_interval_lower}, {pred_interval_upper}]
+
+        Factors increasing Calibrated Probability:
+        {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}],
+
+        Factors decreasing Calibrated Probability:
+        {feature_name} ({feature_actual_value}) {condition} — weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}],
+    
+    alternative:
+      beginner: |
+        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the Calibrated Probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
+
+        Alternatives to decrease the Calibrated Probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]
+      
+      intermediate: |
+        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the Calibrated Probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
+
+        Alternatives to decrease the Calibrated Probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict}; weight ≈ {feature_weight}
+      
+      advanced: |
+        Calibrated Probability (prediction > {threshold}): {calibrated_pred} [{pred_interval_lower}, {pred_interval_upper}]
+
+        Alternatives to increase the Calibrated Probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
+
+        Alternatives to decrease the Calibrated Probability:
+        - If {feature_name} {condition} then Calibrated Probability {predict} [{predict_low}, {predict_high}]; weight ≈ {feature_weight} [{feature_weight_low}, {feature_weight_high}]
