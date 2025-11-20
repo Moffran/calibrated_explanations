@@ -386,7 +386,7 @@ class WrapCalibratedExplainer:
         x : array-like
             Test instances to explain.
         template_path : str, optional
-            Path to narrative template file (.yaml or .json). If None, looks for ``exp.yaml``.
+            Path to narrative template file (.yaml or .json). If None, looks for ``explain_template.yaml``.
         expertise_level : {"beginner", "intermediate", "advanced"}, default="advanced"
             Controls narrative complexity.
         return_dataframe : bool, default=True

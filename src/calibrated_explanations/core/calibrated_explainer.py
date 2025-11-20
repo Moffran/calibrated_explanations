@@ -968,7 +968,7 @@ class CalibratedExplainer:
             Features to exclude from explanation
         template_path : str, optional
             Path to narrative template file (.yaml or .json)
-            If None, looks for 'exp.yaml' in current directory
+            If None, looks for 'explain_template.yaml' in current directory
         expertise_level : str or tuple, default=("beginner", "intermediate", "advanced")
             Either a single level string or tuple of levels.
             Each level can be: "beginner", "intermediate", or "advanced"
@@ -1042,7 +1042,7 @@ class CalibratedExplainer:
         
         # Load narrative generator
         if template_path is None:
-            template_path = "exp.yaml"
+            template_path = "explain_template.yaml"
         
         if not Path(template_path).exists():
             raise FileNotFoundError(
