@@ -9,9 +9,8 @@ become aware without flooding logs.
 
 import os
 import sys
-from warnings import warn as _warn
-from ..utils.deprecations import deprecate
 
+from ..utils.deprecations import deprecate
 from .calibrated_explainer import CalibratedExplainer  # noqa: F401
 from .wrap_explainer import WrapCalibratedExplainer  # noqa: F401
 

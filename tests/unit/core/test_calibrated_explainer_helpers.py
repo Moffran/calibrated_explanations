@@ -9,7 +9,6 @@ from calibrated_explanations.core.config_helpers import (
 from calibrated_explanations.core.explain.feature_task import assign_weight_scalar
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
-from calibrated_explanations.core.exceptions import ConfigurationError
 
 
 def test_split_and_coerce_string_tuple():
@@ -124,7 +123,7 @@ def test_check_explanation_runtime_metadata_various(explainer_factory):
 
 def test_slice_threshold_and_bins():
     """Test threshold and bins slicing behavior through explain helpers.
-    
+
     Tests should call explain module functions directly,
     not private methods on CalibratedExplainer.
     """
@@ -150,7 +149,7 @@ def test_slice_threshold_and_bins():
 
 def test_compute_weight_delta_basic():
     """Test weight delta computation through explain helpers.
-    
+
     Tests should call explain module functions directly,
     not private methods on CalibratedExplainer.
     """

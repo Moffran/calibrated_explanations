@@ -26,10 +26,7 @@ def test_plotspec_roundtrip_and_validate__should_preserve_semantics():
     Ref: ADR-005 Explanation Envelope
     """
     header = IntervalHeaderSpec(pred=0.3, low=0.1, high=0.9)
-    bars = [
-        BarItem(label="a", value=0.1),
-        BarItem(label="b", value=0.2)
-    ]
+    bars = [BarItem(label="a", value=0.1), BarItem(label="b", value=0.2)]
     body = BarHPanelSpec(bars=bars)
     spec = PlotSpec(title="t", header=header, body=body)
 
@@ -43,19 +40,17 @@ def test_plotspec_roundtrip_and_validate__should_preserve_semantics():
     assert restored == spec, "Roundtrip should preserve exact equality"
 
     # Semantic assertions: interval invariant
-    assert restored.header.low <= restored.header.pred <= \
-           restored.header.high, \
-        f"Interval violated: {restored.header.low} ≤ " \
+    assert restored.header.low <= restored.header.pred <= restored.header.high, (
+        f"Interval violated: {restored.header.low} ≤ "
         f"{restored.header.pred} ≤ {restored.header.high}"
+    )
 
     # Semantic assertions: bar integrity
     assert restored.title == "t", "Title should be preserved"
     assert len(restored.body.bars) == 2, "Bar count should match"
     for idx, bar_item in enumerate(restored.body.bars):
-        assert bar_item.label is not None, \
-            f"Bar {idx} label is mandatory"
-        assert bar_item.value is not None, \
-            f"Bar {idx} value is mandatory"
+        assert bar_item.label is not None, f"Bar {idx} label is mandatory"
+        assert bar_item.value is not None, f"Bar {idx} value is mandatory"
 
 
 def test_validate_rejects_bad_payload():
@@ -65,13 +60,9 @@ def test_validate_rejects_bad_payload():
     with pytest.raises(ValueError):
         validate_plotspec({})
     with pytest.raises(ValueError):
-        validate_plotspec(
-            {"plotspec_version": "1.0.0", "body": {"bars": "notalist"}}
-        )
+        validate_plotspec({"plotspec_version": "1.0.0", "body": {"bars": "notalist"}})
     with pytest.raises(ValueError):
-        validate_plotspec(
-            {"plotspec_version": "1.0.0", "title": "missing body"}
-        )
+        validate_plotspec({"plotspec_version": "1.0.0", "title": "missing body"})
     with pytest.raises(ValueError):
         validate_plotspec(
             {
@@ -102,7 +93,7 @@ def test_interval_header_spec_optional_fields():
     assert header.xlabel == "prediction"
     assert header.neg_label == "negative"
     assert header.uncertainty_alpha == 0.75
-    
+
     # Domain invariant: bounds ordering
     assert header.low <= header.pred <= header.high
 
@@ -135,9 +126,9 @@ def test_bar_item_and_panel_configuration():
     # Semantic assertion: bar invariants
     bar0 = panel.bars[0]
     if bar0.interval_low is not None and bar0.interval_high is not None:
-        assert bar0.interval_low <= bar0.value <= bar0.interval_high, \
-            f"Bar interval violated: {bar0.interval_low} ≤ " \
-            f"{bar0.value} ≤ {bar0.interval_high}"
+        assert bar0.interval_low <= bar0.value <= bar0.interval_high, (
+            f"Bar interval violated: {bar0.interval_low} ≤ " f"{bar0.value} ≤ {bar0.interval_high}"
+        )
 
 
 def test_plotspec_all_fields():
@@ -154,7 +145,7 @@ def test_plotspec_all_fields():
     # Semantic assertions: all fields present and valid
     assert spec.figure_size == (6.0, 4.0)
     assert spec.body.bars[0].label == "feat"
-    
+
     # Domain invariant: interval bounds
     assert spec.header.low <= spec.header.pred <= spec.header.high
 
@@ -183,12 +174,7 @@ def test_plotspec_to_dict_with_optional_fields():
         xlabel="xlabel",
         ylabel="ylabel",
     )
-    spec = PlotSpec(
-        title="Example",
-        figure_size=(8, 3),
-        header=header,
-        body=body
-    )
+    spec = PlotSpec(title="Example", figure_size=(8, 3), header=header, body=body)
 
     serialized = plotspec_to_dict(spec)
 
@@ -197,7 +183,7 @@ def test_plotspec_to_dict_with_optional_fields():
     assert serialized["header"]["xlim"] == (-1.0, 1.0)
     assert serialized["body"]["bars"][0]["interval_high"] == 0.5
     assert serialized["body"]["bars"][0]["instance_value"] == {"foo": "bar"}
-    
+
     # Semantic assertion: verify roundtrip preserves values
     restored = plotspec_from_dict(serialized)
     assert restored.header.xlim == (-1.0, 1.0)
@@ -251,14 +237,14 @@ def test_plotspec_from_dict_casts_values():
     assert spec.body.bars[1].interval_low is None
 
     # Semantic assertion: interval invariants hold after coercion
-    assert spec.header.low <= spec.header.pred <= spec.header.high, \
-        f"Bounds violated after coercion: {spec.header.low} ≤ " \
+    assert spec.header.low <= spec.header.pred <= spec.header.high, (
+        f"Bounds violated after coercion: {spec.header.low} ≤ "
         f"{spec.header.pred} ≤ {spec.header.high}"
+    )
 
     # Semantic assertion: bar intervals valid
     bar0 = spec.body.bars[0]
     if bar0.interval_low is not None and bar0.interval_high is not None:
-        assert bar0.interval_low <= bar0.value <= bar0.interval_high, \
-            f"Bar interval violated: {bar0.interval_low} ≤ " \
-            f"{bar0.value} ≤ {bar0.interval_high}"
-
+        assert bar0.interval_low <= bar0.value <= bar0.interval_high, (
+            f"Bar interval violated: {bar0.interval_low} ≤ " f"{bar0.value} ≤ {bar0.interval_high}"
+        )

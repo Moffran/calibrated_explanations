@@ -8,7 +8,6 @@ from unittest.mock import create_autospec
 
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
-    ConfigurationError,
 )
 from calibrated_explanations.core.config_helpers import (
     coerce_string_tuple as _coerce_string_tuple,

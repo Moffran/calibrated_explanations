@@ -17,10 +17,11 @@ from __future__ import annotations
 
 import contextlib
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
 
 import numpy as np
 
+from ...core.config_helpers import coerce_string_tuple
 from ...plugins import IntervalCalibratorContext
 from ...plugins.registry import (
     ensure_builtin_plugins,
@@ -29,7 +30,6 @@ from ...plugins.registry import (
     find_interval_plugin_trusted,
     is_identifier_denied,
 )
-from ...core.config_helpers import coerce_string_tuple
 from ...utils.helper import assert_threshold
 from ..exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
 from ..explain.feature_task import assign_weight
@@ -76,6 +76,7 @@ class PredictionOrchestrator:
         self.explainer = explainer
         # Initialize interval registry for managing interval learner lifecycle
         from .interval_registry import IntervalRegistry
+
         self._interval_registry = IntervalRegistry(explainer)
 
     def initialize_chains(self) -> None:

@@ -18,6 +18,7 @@ import contextlib
 import copy
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
+from ...core.config_helpers import coerce_string_tuple
 from ...plugins import ExplanationContext, ExplanationRequest, validate_explanation_batch
 from ...plugins.predict_monitor import PredictBridgeMonitor
 from ...plugins.registry import (
@@ -27,7 +28,6 @@ from ...plugins.registry import (
     find_explanation_plugin,
     is_identifier_denied,
 )
-from ...core.config_helpers import coerce_string_tuple
 from ...utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
 from ..exceptions import ConfigurationError
 
@@ -275,10 +275,13 @@ class ExplanationOrchestrator:
         """
         if discretizer is not None:
             self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
-        
+
         # When _use_plugin=False, bypass plugin system and use legacy path directly
         if not _use_plugin:
-            from ._legacy_explain import explain as legacy_explain  # pylint: disable=import-outside-toplevel
+            from ._legacy_explain import (
+                explain as legacy_explain,  # pylint: disable=import-outside-toplevel
+            )
+
             return legacy_explain(
                 self.explainer,
                 x,
@@ -287,7 +290,7 @@ class ExplanationOrchestrator:
                 bins=bins,
                 features_to_ignore=features_to_ignore,
             )
-        
+
         return self.invoke(
             mode="factual",
             x=x,
@@ -336,10 +339,13 @@ class ExplanationOrchestrator:
         """
         if discretizer is not None:
             self.explainer.set_discretizer(discretizer, features_to_ignore=features_to_ignore)
-        
+
         # When _use_plugin=False, bypass plugin system and use legacy path directly
         if not _use_plugin:
-            from ._legacy_explain import explain as legacy_explain  # pylint: disable=import-outside-toplevel
+            from ._legacy_explain import (
+                explain as legacy_explain,  # pylint: disable=import-outside-toplevel
+            )
+
             return legacy_explain(
                 self.explainer,
                 x,
@@ -348,7 +354,7 @@ class ExplanationOrchestrator:
                 bins=bins,
                 features_to_ignore=features_to_ignore,
             )
-        
+
         return self.invoke(
             mode="alternative",
             x=x,

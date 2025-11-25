@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import inspect
 from typing import Any, Mapping
 

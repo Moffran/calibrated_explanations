@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 
 import pytest
 
@@ -47,7 +46,3 @@ def test_split_csv_normalises_and_filters_values(value, expected):
     """``_split_csv`` should normalise whitespace and ignore non-string values."""
 
     assert plotting._split_csv(value) == expected
-
-
-
-

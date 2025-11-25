@@ -9,8 +9,17 @@ Part of Phase 6: Refactor Calibration Functionality (ADR-001).
 
 from __future__ import annotations
 
- 
+from typing import TYPE_CHECKING
+
 import numpy as np
+
+if TYPE_CHECKING:
+    from .calibration.interval_learner import (
+        assign_threshold,
+        initialize_interval_learner,
+        initialize_interval_learner_for_fast_explainer,
+        update_interval_learner,
+    )
 
 __all__ = [
     "assign_threshold",
@@ -52,9 +61,5 @@ def identify_constant_features(x_cal: np.ndarray) -> list:
     list
         Indices of features that have constant values across all calibration samples.
     """
-    constant_columns = [
-        f for f in range(x_cal.shape[1]) if np.all(x_cal[:, f] == x_cal[0, f])
-    ]
+    constant_columns = [f for f in range(x_cal.shape[1]) if np.all(x_cal[:, f] == x_cal[0, f])]
     return constant_columns
-
-

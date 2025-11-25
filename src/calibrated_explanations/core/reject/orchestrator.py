@@ -40,9 +40,7 @@ class RejectOrchestrator:
             proba = np.array([[1 - proba[i, c], proba[i, c]] for i, c in enumerate(classes)])
             classes = (classes == y_cal).astype(int)
         else:
-            proba = self.explainer.interval_learner.predict_proba(
-                x_cal, bins=self.explainer.bins
-            )
+            proba = self.explainer.interval_learner.predict_proba(x_cal, bins=self.explainer.bins)
             classes = y_cal
         alphas_cal = hinge(proba, np.unique(classes), classes)
         self.explainer.reject_learner = ConformalClassifier().fit(alphas=alphas_cal, bins=classes)

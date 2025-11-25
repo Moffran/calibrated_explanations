@@ -177,7 +177,9 @@ def test_interval_calibrator_create_for_regression(monkeypatch):
         def __init__(self, explainer):
             created_with["explainer"] = explainer
 
-    interval_module = types.ModuleType("calibrated_explanations.core.calibration.interval_regressor")
+    interval_module = types.ModuleType(
+        "calibrated_explanations.core.calibration.interval_regressor"
+    )
     interval_module.IntervalRegressor = DummyIntervalRegressor
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
@@ -230,7 +232,9 @@ def test_interval_calibrator_requires_predict_function(monkeypatch):
 
 
 def test_interval_calibrator_requires_explainer_for_regression(monkeypatch):
-    interval_module = types.ModuleType("calibrated_explanations.core.calibration.interval_regressor")
+    interval_module = types.ModuleType(
+        "calibrated_explanations.core.calibration.interval_regressor"
+    )
     interval_module.IntervalRegressor = object
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 

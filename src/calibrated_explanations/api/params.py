@@ -49,9 +49,7 @@ def canonicalize_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_param_combination(kwargs: dict[str, Any]) -> None:
-    """Perform basic consistency checks for parameter combinations.
-
-    """
+    """Perform basic consistency checks for parameter combinations."""
     # Example placeholder: keep for future expansion. No-op for now.
     return None
 

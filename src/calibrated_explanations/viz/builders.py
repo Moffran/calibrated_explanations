@@ -24,20 +24,20 @@ _PROBABILITY_TOL = 1e-9
 
 def is_valid_probability_values(*values: float) -> bool:
     """Check if all provided values are valid probabilities in [0, 1] (with tolerance).
-    
+
     This function validates probability values used in visualization, checking that:
     - All values can be converted to floats
     - All values are finite
     - All values lie within [0 - tolerance, 1 + tolerance]
-    
+
     Used to auto-detect when predictions should be rendered as probabilities
     vs generic scalar values (e.g., in build_probabilistic_bars_spec).
-    
+
     Parameters
     ----------
     *values : float
         One or more values to validate as probabilities.
-    
+
     Returns
     -------
     bool

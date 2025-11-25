@@ -32,4 +32,3 @@ __all__ = [
     "invalidate_calibration_summaries",
     "update_interval_learner",
 ]
-

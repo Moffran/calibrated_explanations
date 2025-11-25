@@ -41,7 +41,10 @@ def assign_threshold(explainer: CalibratedExplainer, threshold) -> None:
 
 
 def update_interval_learner(  # pylint: disable=invalid-name
-    explainer: CalibratedExplainer, xs, ys, bins=None  # pylint: disable=invalid-name
+    explainer: CalibratedExplainer,
+    xs,
+    ys,
+    bins=None,  # pylint: disable=invalid-name
 ) -> None:
     """Update the interval learner with new calibration data.
 

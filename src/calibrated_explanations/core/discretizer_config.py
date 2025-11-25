@@ -137,12 +137,12 @@ def setup_discretized_data(
     dict
         Dictionary mapping feature index to (values, frequencies) tuple.
     """
-    discretized_X_cal = _discretize_func(explainer_instance, immutable_array(x_cal))
+    discretized_x_cal = _discretize_func(explainer_instance, immutable_array(x_cal))
 
     feature_data = {}
     for feature in range(num_features):
-        assert discretized_X_cal is not None
-        column = discretized_X_cal[:, feature]
+        assert discretized_x_cal is not None
+        column = discretized_x_cal[:, feature]
         feature_count: Dict[Any, int] = {}
         for item in column:
             feature_count[item] = feature_count.get(item, 0) + 1
@@ -153,7 +153,7 @@ def setup_discretized_data(
             "frequencies": np.array(frequencies) / float(sum(frequencies)),
         }
 
-    return feature_data, discretized_X_cal
+    return feature_data, discretized_x_cal
 
 
 __all__ = [

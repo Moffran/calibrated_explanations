@@ -39,8 +39,9 @@ def test_deprecate_alias_convenience(monkeypatch):
         dep_mod.deprecate_alias("__test_alias_xyz__", "canonical_param_xyz", stacklevel=2)
 
     assert len(rec) == 1
-    assert "Parameter or alias '__test_alias_xyz__' is deprecated; use 'canonical_param_xyz'" in str(
-        rec[0].message
+    assert (
+        "Parameter or alias '__test_alias_xyz__' is deprecated; use 'canonical_param_xyz'"
+        in str(rec[0].message)
     )
     # The helper should mark the alias key as emitted. When running under
     # pytest we record emitted keys in the per-test map to avoid polluting

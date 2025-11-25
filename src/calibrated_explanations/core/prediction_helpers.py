@@ -8,9 +8,8 @@ exercise these wrappers to lock in semantics before moving logic bodies.
 
 from __future__ import annotations
 
-import logging
 import warnings as _warnings
-from typing import Any, Dict, Optional, Protocol, Sequence, Tuple, Union, cast
+from typing import Any, Optional, Protocol, Sequence, Tuple, Union, cast
 
 import numpy as np
 
@@ -319,9 +318,7 @@ def handle_uncalibrated_classification_prediction(
         If threshold is provided.
     """
     if threshold is not None:
-        raise ValidationError(
-            "A thresholded prediction is not possible for uncalibrated learners."
-        )
+        raise ValidationError("A thresholded prediction is not possible for uncalibrated learners.")
 
     # Use learner.predict() to get class predictions, not probabilities
     predictions = learner.predict(x)

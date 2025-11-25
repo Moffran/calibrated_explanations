@@ -18,6 +18,3 @@ with warnings.catch_warnings():
     from .calibration.interval_regressor import IntervalRegressor
 
 __all__ = ["IntervalRegressor"]
-
-
-

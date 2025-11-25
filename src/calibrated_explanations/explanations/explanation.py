@@ -28,6 +28,10 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from pandas import Categorical
 
+from calibrated_explanations.core.explain.feature_task import (
+    assign_threshold as normalize_threshold,
+)
+
 from ..plotting import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 from ..utils.discretizers import (
     BinaryEntropyDiscretizer,
@@ -36,7 +40,6 @@ from ..utils.discretizers import (
     RegressorDiscretizer,
 )
 from ..utils.helper import calculate_metrics, prepare_for_saving, safe_first_element, safe_mean
-from calibrated_explanations.core.explain.feature_task import assign_threshold as normalize_threshold
 
 # @dataclass
 # class PredictionInterval:

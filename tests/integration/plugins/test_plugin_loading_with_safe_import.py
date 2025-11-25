@@ -67,8 +67,9 @@ class TestSafeImportInPluginLoading:
 
         error_message = str(exc_info.value)
         assert "nonexistent_module_xyz" in error_message, "Error should mention the module name"
-        assert "not installed" in error_message or "not found" in error_message.lower(), \
-            "Error should explain why it failed"
+        assert (
+            "not installed" in error_message or "not found" in error_message.lower()
+        ), "Error should explain why it failed"
 
     def test_safe_import_missing_class_raises_informative_error(self):
         """Verify that safe_import provides helpful errors for missing classes."""
@@ -86,7 +87,7 @@ class TestSafeImportInPluginLoading:
         """
         # Simulate plugin loading that depends on optional package
         try:
-            sklearn_module = safe_import("sklearn")
+            safe_import("sklearn")
             sklearn_available = True
         except ImportError:
             sklearn_available = False
@@ -116,7 +117,6 @@ class TestSafeIsInstanceInTypeChecking:
     def test_safe_isinstance_rejects_wrong_type(self):
         """Verify that safe_isinstance correctly rejects non-matching types."""
         from sklearn.ensemble import RandomForestRegressor
-        from sklearn.linear_model import LinearRegression
 
         model = RandomForestRegressor()
 

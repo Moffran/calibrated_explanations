@@ -14,7 +14,6 @@ from calibrated_explanations.core.config_helpers import (
     split_csv as _split_csv,
 )
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
-from calibrated_explanations.core.exceptions import ConfigurationError
 
 
 class _DummyBridge:
@@ -164,7 +163,6 @@ def test_instantiate_plugin_prefers_fresh_instances(explainer_factory):
     assert isinstance(cloned, RequiresArgs)
     assert cloned is not original
     assert cloned.value == 3
-
 
 
 def test_check_interval_runtime_metadata_validations(explainer_factory):

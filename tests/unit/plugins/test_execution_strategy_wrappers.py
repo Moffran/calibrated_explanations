@@ -9,7 +9,6 @@ Tests verify that:
 
 from __future__ import annotations
 
-import pytest
 
 from calibrated_explanations.plugins import registry
 from calibrated_explanations.plugins.builtins import (

@@ -9,7 +9,6 @@ import pytest
 
 from calibrated_explanations.core import calibrated_explainer as explainer_module
 from calibrated_explanations.core.exceptions import (
-    ConfigurationError,
     DataShapeError,
     ValidationError,
 )
@@ -18,7 +17,7 @@ from calibrated_explanations.utils.discretizers import RegressorDiscretizer
 
 def test_slice_threshold_branches_exercised():
     """Test threshold slicing behavior through explain helpers.
-    
+
     Tests should call explain module functions directly.
     """
     from calibrated_explanations.core.explain._helpers import slice_threshold
@@ -39,7 +38,7 @@ def test_slice_threshold_branches_exercised():
 
 def test_slice_bins_handles_collections():
     """Test bins slicing behavior through explain helpers.
-    
+
     Tests should call explain module functions directly.
     """
     from calibrated_explanations.core.explain._helpers import slice_bins
@@ -118,7 +117,6 @@ def test_reinitialize_updates_state(monkeypatch, explainer_factory):
 
     monkeypatch.setattr(explainer_module, "check_is_fitted", fake_check_is_fitted)
 
-
     update_calls: list[tuple] = []
 
     def fake_update(self, xs, ys, bins=None):
@@ -157,4 +155,3 @@ def test_reinitialize_updates_state(monkeypatch, explainer_factory):
 
     explainer.reinitialize(learner)
     assert init_calls and init_calls[0][0] is explainer
-

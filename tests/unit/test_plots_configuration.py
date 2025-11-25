@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 import pytest
 
 from calibrated_explanations.viz import plots as plotting

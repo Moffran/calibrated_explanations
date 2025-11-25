@@ -156,9 +156,8 @@ def test_factual_explanations_match_legacy(binary_dataset):
 
 def test_sequential_factual_explanations_match_legacy(binary_dataset):
     explainer, x_test = _make_explainer(
-            binary_dataset, 
-            factual_plugin="core.explanation.factual.sequential"
-        )
+        binary_dataset, factual_plugin="core.explanation.factual.sequential"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -167,9 +166,8 @@ def test_sequential_factual_explanations_match_legacy(binary_dataset):
 
 def test_instance_parallel_factual_explanations_match_legacy(binary_dataset):
     explainer, x_test = _make_explainer(
-            binary_dataset, 
-            factual_plugin="core.explanation.factual.instance_parallel"
-        )
+        binary_dataset, factual_plugin="core.explanation.factual.instance_parallel"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -178,9 +176,8 @@ def test_instance_parallel_factual_explanations_match_legacy(binary_dataset):
 
 def test_feature_parallel_factual_explanations_match_legacy(binary_dataset):
     explainer, x_test = _make_explainer(
-            binary_dataset, 
-            factual_plugin="core.explanation.factual.feature_parallel"
-        )
+        binary_dataset, factual_plugin="core.explanation.factual.feature_parallel"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -197,9 +194,8 @@ def test_alternative_explanations_match_legacy(binary_dataset):
 
 def test_sequential_alternative_explanations_match_legacy(binary_dataset):
     explainer, x_test = _make_explainer(
-            binary_dataset, 
-            alternative_plugin="core.explanation.alternative.sequential"
-        )
+        binary_dataset, alternative_plugin="core.explanation.alternative.sequential"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -208,9 +204,8 @@ def test_sequential_alternative_explanations_match_legacy(binary_dataset):
 
 def test_instance_parallel_alternative_explanations_match_legacy(binary_dataset):
     explainer, x_test = _make_explainer(
-            binary_dataset, 
-            alternative_plugin="core.explanation.alternative.instance_parallel"
-        )
+        binary_dataset, alternative_plugin="core.explanation.alternative.instance_parallel"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -219,9 +214,8 @@ def test_instance_parallel_alternative_explanations_match_legacy(binary_dataset)
 
 def test_feature_parallel_alternative_explanations_match_legacy(binary_dataset):
     explainer, x_test = _make_explainer(
-            binary_dataset, 
-            alternative_plugin="core.explanation.alternative.feature_parallel"
-        )
+        binary_dataset, alternative_plugin="core.explanation.alternative.feature_parallel"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -275,9 +269,8 @@ def test_multiclass_factual_explanations_match_legacy(multiclass_dataset):
 
 def test_multiclass_sequential_factual_explanations_match_legacy(multiclass_dataset):
     explainer, x_test = _make_multiclass_explainer(
-            multiclass_dataset, 
-            factual_plugin="core.explanation.factual.sequential"
-        )
+        multiclass_dataset, factual_plugin="core.explanation.factual.sequential"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -286,9 +279,8 @@ def test_multiclass_sequential_factual_explanations_match_legacy(multiclass_data
 
 def test_multiclass_instance_parallel_factual_explanations_match_legacy(multiclass_dataset):
     explainer, x_test = _make_multiclass_explainer(
-            multiclass_dataset, 
-            factual_plugin="core.explanation.factual.instance_parallel"
-        )
+        multiclass_dataset, factual_plugin="core.explanation.factual.instance_parallel"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -297,9 +289,8 @@ def test_multiclass_instance_parallel_factual_explanations_match_legacy(multicla
 
 def test_multiclass_feature_parallel_factual_explanations_match_legacy(multiclass_dataset):
     explainer, x_test = _make_multiclass_explainer(
-            multiclass_dataset, 
-            factual_plugin="core.explanation.factual.feature_parallel"
-        )
+        multiclass_dataset, factual_plugin="core.explanation.factual.feature_parallel"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -316,9 +307,8 @@ def test_multiclass_alternative_explanations_match_legacy(multiclass_dataset):
 
 def test_multiclass_sequential_alternative_explanations_match_legacy(multiclass_dataset):
     explainer, x_test = _make_multiclass_explainer(
-            multiclass_dataset, 
-            alternative_plugin="core.explanation.alternative.sequential"
-        )
+        multiclass_dataset, alternative_plugin="core.explanation.alternative.sequential"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -327,9 +317,8 @@ def test_multiclass_sequential_alternative_explanations_match_legacy(multiclass_
 
 def test_multiclass_instance_parallel_alternative_explanations_match_legacy(multiclass_dataset):
     explainer, x_test = _make_multiclass_explainer(
-            multiclass_dataset, 
-            alternative_plugin="core.explanation.alternative.instance_parallel"
-        )
+        multiclass_dataset, alternative_plugin="core.explanation.alternative.instance_parallel"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -338,9 +327,8 @@ def test_multiclass_instance_parallel_alternative_explanations_match_legacy(mult
 
 def test_multiclass_feature_parallel_alternative_explanations_match_legacy(multiclass_dataset):
     explainer, x_test = _make_multiclass_explainer(
-            multiclass_dataset, 
-            alternative_plugin="core.explanation.alternative.feature_parallel"
-        )
+        multiclass_dataset, alternative_plugin="core.explanation.alternative.feature_parallel"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -390,9 +378,8 @@ def test_regression_factual_explanations_match_legacy(regression_dataset):
 
 def test_regression_sequential_factual_explanations_match_legacy(regression_dataset):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            factual_plugin="core.explanation.factual.sequential"
-        )
+        regression_dataset, factual_plugin="core.explanation.factual.sequential"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -401,9 +388,8 @@ def test_regression_sequential_factual_explanations_match_legacy(regression_data
 
 def test_regression_instance_parallel_factual_explanations_match_legacy(regression_dataset):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            factual_plugin="core.explanation.factual.instance_parallel"
-        )
+        regression_dataset, factual_plugin="core.explanation.factual.instance_parallel"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -412,9 +398,8 @@ def test_regression_instance_parallel_factual_explanations_match_legacy(regressi
 
 def test_regression_feature_parallel_factual_explanations_match_legacy(regression_dataset):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            factual_plugin="core.explanation.factual.feature_parallel"
-        )
+        regression_dataset, factual_plugin="core.explanation.factual.feature_parallel"
+    )
     legacy = explainer.explain_factual(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3])
 
@@ -431,9 +416,8 @@ def test_regression_alternative_explanations_match_legacy(regression_dataset):
 
 def test_regression_sequential_alternative_explanations_match_legacy(regression_dataset):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            alternative_plugin="core.explanation.alternative.sequential"
-        )
+        regression_dataset, alternative_plugin="core.explanation.alternative.sequential"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -442,9 +426,8 @@ def test_regression_sequential_alternative_explanations_match_legacy(regression_
 
 def test_regression_instance_parallel_alternative_explanations_match_legacy(regression_dataset):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            alternative_plugin="core.explanation.alternative.instance_parallel"
-        )
+        regression_dataset, alternative_plugin="core.explanation.alternative.instance_parallel"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -453,9 +436,8 @@ def test_regression_instance_parallel_alternative_explanations_match_legacy(regr
 
 def test_regression_feature_parallel_alternative_explanations_match_legacy(regression_dataset):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            alternative_plugin="core.explanation.alternative.feature_parallel"
-        )
+        regression_dataset, alternative_plugin="core.explanation.alternative.feature_parallel"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
@@ -477,31 +459,32 @@ def test_probabilistic_regression_factual_explanations_match_legacy(regression_d
 
 def test_probabilistic_regression_sequential_factual_explanations_match_legacy(regression_dataset):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            factual_plugin="core.explanation.factual.sequential"
-        )
+        regression_dataset, factual_plugin="core.explanation.factual.sequential"
+    )
     legacy = explainer.explain_factual(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3], threshold=0.5)
 
     _assert_collections_equal(plugin_result, legacy)
 
 
-def test_probabilistic_regression_instance_parallel_factual_explanations_match_legacy(regression_dataset):
+def test_probabilistic_regression_instance_parallel_factual_explanations_match_legacy(
+    regression_dataset,
+):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            factual_plugin="core.explanation.factual.instance_parallel"
-        )
+        regression_dataset, factual_plugin="core.explanation.factual.instance_parallel"
+    )
     legacy = explainer.explain_factual(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3], threshold=0.5)
 
     _assert_collections_equal(plugin_result, legacy)
 
 
-def test_probabilistic_regression_feature_parallel_factual_explanations_match_legacy(regression_dataset):
+def test_probabilistic_regression_feature_parallel_factual_explanations_match_legacy(
+    regression_dataset,
+):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            factual_plugin="core.explanation.factual.feature_parallel"
-        )
+        regression_dataset, factual_plugin="core.explanation.factual.feature_parallel"
+    )
     legacy = explainer.explain_factual(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explain_factual(x_test[:3], threshold=0.5)
 
@@ -516,33 +499,36 @@ def test_probabilistic_regression_alternative_explanations_match_legacy(regressi
     _assert_collections_equal(plugin_result, legacy)
 
 
-def test_probabilistic_regression_sequential_alternative_explanations_match_legacy(regression_dataset):
+def test_probabilistic_regression_sequential_alternative_explanations_match_legacy(
+    regression_dataset,
+):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            alternative_plugin="core.explanation.alternative.sequential"
-        )
+        regression_dataset, alternative_plugin="core.explanation.alternative.sequential"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3], threshold=0.5)
 
     _assert_collections_equal(plugin_result, legacy)
 
 
-def test_probabilistic_regression_instance_parallel_alternative_explanations_match_legacy(regression_dataset):
+def test_probabilistic_regression_instance_parallel_alternative_explanations_match_legacy(
+    regression_dataset,
+):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            alternative_plugin="core.explanation.alternative.instance_parallel"
-        )
+        regression_dataset, alternative_plugin="core.explanation.alternative.instance_parallel"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3], threshold=0.5)
 
     _assert_collections_equal(plugin_result, legacy)
 
 
-def test_probabilistic_regression_feature_parallel_alternative_explanations_match_legacy(regression_dataset):
+def test_probabilistic_regression_feature_parallel_alternative_explanations_match_legacy(
+    regression_dataset,
+):
     explainer, x_test = _make_regression_explainer(
-            regression_dataset, 
-            alternative_plugin="core.explanation.alternative.feature_parallel"
-        )
+        regression_dataset, alternative_plugin="core.explanation.alternative.feature_parallel"
+    )
     legacy = explainer.explore_alternatives(x_test[:3], threshold=0.5, _use_plugin=False)
     plugin_result = explainer.explore_alternatives(x_test[:3], threshold=0.5)
 

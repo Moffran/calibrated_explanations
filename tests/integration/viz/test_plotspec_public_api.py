@@ -63,9 +63,7 @@ class TestPlotSpecIntervalSemantics:
         low_val = spec.header.low
         pred_val = spec.header.pred
         high_val = spec.header.high
-        assert (
-            low_val <= pred_val <= high_val
-        ), f"Bounds: {low_val} <= {pred_val} <= {high_val}"
+        assert low_val <= pred_val <= high_val, f"Bounds: {low_val} <= {pred_val} <= {high_val}"
 
     def test_roundtrip_preserves_interval_semantics(self):
         """Verify that interval semantics survive serialization roundtrip.
@@ -98,9 +96,7 @@ class TestPlotSpecIntervalSemantics:
 
         # Then semantic invariants still hold
         assert (
-            restored.header.low
-            <= restored.header.pred
-            <= restored.header.high
+            restored.header.low <= restored.header.pred <= restored.header.high
         ), "Interval invariant violated after roundtrip"
         assert isinstance(restored.header.pred, (int, float))
         assert len(restored.body.bars) > 0, "Must have at least one bar"

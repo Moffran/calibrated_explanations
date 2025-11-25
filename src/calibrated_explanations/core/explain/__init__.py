@@ -11,18 +11,12 @@ providing clean separation between orchestration and execution strategies.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
-
 from ._base import BaseExplainExecutor
 from ._shared import ExplainConfig, ExplainRequest, ExplainResponse
 from .orchestrator import ExplanationOrchestrator
 from .parallel_feature import FeatureParallelExplainExecutor
 from .parallel_instance import InstanceParallelExplainExecutor
 from .sequential import SequentialExplainExecutor
-
-if TYPE_CHECKING:
-    from ..calibrated_explainer import CalibratedExplainer
-
 
 __all__ = [
     "BaseExplainExecutor",

@@ -38,8 +38,8 @@ def explain(
     The function mirrors the historical control flow to enable correctness
     comparisons with the optimised implementation.
     """
-    from ._helpers import validate_and_prepare_input  # pylint: disable=import-outside-toplevel
     from ._computation import initialize_explanation  # pylint: disable=import-outside-toplevel
+    from ._helpers import validate_and_prepare_input  # pylint: disable=import-outside-toplevel
     from .feature_task import assign_weight  # pylint: disable=import-outside-toplevel
 
     total_time = time()
@@ -189,9 +189,7 @@ def explain(
                     instance_weights[i]["predict"][f] = assign_weight(
                         instance_predict[i]["predict"][f], prediction["predict"][i]
                     )
-                    tmp_low = assign_weight(
-                        instance_predict[i]["low"][f], prediction["predict"][i]
-                    )
+                    tmp_low = assign_weight(instance_predict[i]["low"][f], prediction["predict"][i])
                     tmp_high = assign_weight(
                         instance_predict[i]["high"][f], prediction["predict"][i]
                     )
@@ -323,9 +321,7 @@ def explain(
                     instance_weights[i]["predict"][f] = assign_weight(
                         instance_predict[i]["predict"][f], prediction["predict"][i]
                     )
-                    tmp_low = assign_weight(
-                        instance_predict[i]["low"][f], prediction["predict"][i]
-                    )
+                    tmp_low = assign_weight(instance_predict[i]["low"][f], prediction["predict"][i])
                     tmp_high = assign_weight(
                         instance_predict[i]["high"][f], prediction["predict"][i]
                     )

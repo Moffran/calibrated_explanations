@@ -22,6 +22,3 @@ with warnings.catch_warnings():
     from .calibration.venn_abers import VennAbers, exponent_scaling_list
 
 __all__ = ["VennAbers", "exponent_scaling_list", "va"]
-
-
-

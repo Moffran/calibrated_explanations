@@ -6,12 +6,12 @@ This helper centralises deprecation emission. Behaviour:
 - Outside pytest, deprecations are emitted once-per-session by default.
 - Set `CE_DEPRECATIONS=error` to elevate deprecations to exceptions (CI).
 """
+
 from __future__ import annotations
 
 import os
 import warnings
 from typing import Dict, Set
-
 
 # Keys emitted for the whole interpreter session (non-test runs)
 _EMITTED: Set[str] = set()
@@ -36,15 +36,12 @@ def _should_raise() -> bool:
     # behave deterministically for developers who may have
     # `CE_DEPRECATIONS` set in their shell. Allow raising in CI where
     # `CI` or `GITHUB_ACTIONS` is set.
-    if os.getenv("PYTEST_CURRENT_TEST") and not (
-        os.getenv("CI") or os.getenv("GITHUB_ACTIONS")
+    if (
+        os.getenv("PYTEST_CURRENT_TEST")
+        and not (os.getenv("CI") or os.getenv("GITHUB_ACTIONS"))
+        and _CE_DEPRECATIONS_AT_START is not None
     ):
-        # If the env var was present at process start, treat it as a
-        # developer-level setting and do not raise during local pytest runs.
-        # If it was not present at start (e.g. the test set it via monkeypatch),
-        # allow the raise to occur so tests can verify raise semantics.
-        if _CE_DEPRECATIONS_AT_START is not None:
-            return False
+        return False
     return raw.lower() in {"1", "true", "error", "raise"}
 
 

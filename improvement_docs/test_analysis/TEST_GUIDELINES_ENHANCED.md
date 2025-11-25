@@ -1,7 +1,7 @@
 # Enhanced Test Guidelines
 
-**Status:** Proposed Additions to `.github/instructions/tests.instructions.md`  
-**Date:** November 18, 2025  
+**Status:** Proposed Additions to `.github/instructions/tests.instructions.md`
+**Date:** November 18, 2025
 **Scope:** Detailed decision trees, examples, and patterns for writing behavior-focused tests
 
 ---
@@ -72,16 +72,16 @@ def test_plotspec_roundtrip__should_preserve_interval_invariants():
         title="My Plot",
         body=BarHPanelSpec(bars=[...])
     )
-    
+
     # Roundtrip
     d = plotspec_to_dict(original)
     restored = plotspec_from_dict(d)
-    
+
     # Q1: User-facing outcome: "restored spec is valid"
     # Q2: Stays true if we change serialization format (JSON, Protobuf, etc.)
     # Q3: Business rule: "Interval bounds must satisfy low ≤ pred ≤ high"
     # Q4: No I/O beyond serialization; local test
-    
+
     # Assertions on behavior (domain invariants)
     assert restored.header.low <= restored.header.pred, "Interval invariant violated"
     assert restored.header.pred <= restored.header.high, "Interval invariant violated"
@@ -154,7 +154,7 @@ def test_probability_helper_utilities_and_segments():
 # src/calibrated_explanations/viz/builders.py
 def is_valid_probability_values(*values: Any) -> bool:
     """Check if all values are valid probabilities in [0, 1].
-    
+
     Raises:
         ValueError: If any value cannot be converted to float.
     """
@@ -204,7 +204,7 @@ def test_build_regression_bars_spec__should_construct_valid_spec_with_valid_boun
         y_minmax=(0.0, 1.0),
         interval=True,
     )
-    
+
     # Semantic assertions (not dict keys)
     assert spec.header.low <= spec.header.pred <= spec.header.high
     assert spec.body is not None
@@ -260,7 +260,7 @@ tests/unit/viz/test_plotspec_dataclasses.py
 def test_plotspec_header_has_all_required_fields():
     spec = PlotSpec(header=IntervalHeaderSpec(pred=0.5, low=0.2, high=0.8))
     d = plotspec_to_dict(spec)
-    
+
     assert "pred" in d["header"]  # Implementation detail!
     assert "low" in d["header"]
     assert "high" in d["header"]
@@ -271,7 +271,7 @@ def test_plotspec_header_has_all_required_fields():
 ```python
 def test_interval_header__should_satisfy_ordering_invariant():
     """Verify that interval bounds satisfy low ≤ pred ≤ high.
-    
+
     Domain Rule: Intervals represent prediction with uncertainty bounds.
     Invariant: The point estimate must lie within the interval.
     Ref: ADR-005 Explanation Envelope
@@ -281,13 +281,13 @@ def test_interval_header__should_satisfy_ordering_invariant():
     )
     d = plotspec_to_dict(spec)
     restored = plotspec_from_dict(d)
-    
+
     # Semantic assertions (domain invariants)
     header = restored.header
     assert header.low is not None, "Lower bound is mandatory"
     assert header.pred is not None, "Point estimate is mandatory"
     assert header.high is not None, "Upper bound is mandatory"
-    
+
     # The core invariant: ordering
     assert header.low <= header.pred, \
         f"Lower bound ({header.low}) should not exceed prediction ({header.pred})"
@@ -349,14 +349,14 @@ def test_plotspec_roundtrip__should_preserve_serialization_and_semantics():
         title="My Plot",
         body=BarHPanelSpec(bars=[BarItem(label="f1", value=0.1)])
     )
-    
+
     # Roundtrip
     d = plotspec_to_dict(original)
     restored = plotspec_from_dict(d)
-    
+
     # Snapshot check (structure preservation)
     assert restored == original, "Roundtrip should preserve structure"
-    
+
     # Semantic checks (domain invariants)
     # ← ADD THESE
     assert restored.header is not None, "Header is mandatory"
@@ -378,9 +378,9 @@ def test_plotspec_roundtrip__should_preserve_serialization_and_semantics():
 def test_plotspec_roundtrip_with_edge_case_intervals(header):
     """Verify roundtrip handles edge cases."""
     spec = PlotSpec(header=header, body=BarHPanelSpec(bars=[BarItem(label="x", value=0.1)]))
-    
+
     restored = plotspec_from_dict(plotspec_to_dict(spec))
-    
+
     # Invariant holds at all edges
     assert restored.header.low <= restored.header.pred <= restored.header.high
 ```
@@ -442,19 +442,19 @@ def test_explanation_plugin_runtime_checks():
 def test_explanation_plugin__should_implement_required_interface():
     """Verify plugin structure and basic contract."""
     plugin = _DummyPlugin()
-    
+
     # Protocol check
     assert isinstance(plugin, ExplanationPlugin)
-    
+
     # Outcome assertions (what should the plugin do?)
     ctx = ExplanationContext(...)
     plugin.initialize(ctx)  # Should not raise
-    
+
     batch = plugin.explain_batch(
         x=np.array([[0.1, 0.2]]),
         request=ExplanationRequest(threshold=0.5)
     )
-    
+
     # Verify output structure and semantics
     assert isinstance(batch, ExplanationBatch)
     assert len(batch.instances) > 0, "Should produce explanations"
@@ -469,14 +469,14 @@ def test_plugin_registration_discovery_explain_workflow():
     plugin = SimpleExplainerPlugin()  # ← NOT a mock!
     registry.clear()
     registry.register(plugin)
-    
+
     # 2. Discover plugin
     model = RandomForestClassifier()
     model.fit([[0, 0], [1, 1]], [0, 1])
-    
+
     found = registry.find_for(model)
     assert plugin in found, "Plugin should be discoverable"
-    
+
     # 3. Initialize plugin
     ctx = ExplanationContext(
         task="classification",
@@ -487,17 +487,17 @@ def test_plugin_registration_discovery_explain_workflow():
         ...
     )
     plugin.initialize(ctx)
-    
+
     # 4. Generate explanations
     x_test = np.array([[0.5, 0.5]])
     request = ExplanationRequest(threshold=0.5)
     batch = plugin.explain_batch(x=x_test, request=request)
-    
+
     # 5. Verify output is sensible
     assert isinstance(batch, ExplanationBatch)
     assert len(batch.instances) == len(x_test), "One explanation per instance"
     assert batch.container_cls is not None, "Container class should be defined"
-    
+
     # 6. Verify batch can be collected and plotted
     collection = batch.container_cls(batch.instances)
     collection.plot(show=False)  # Should not raise
@@ -539,7 +539,7 @@ Immutability Testing Pattern:
 def test_explanation_context_is_frozen() -> None:
     ctx = ExplanationContext(...)
     assert dataclasses.is_dataclass(ctx)  # ← Implementation detail!
-    
+
     with pytest.raises(dataclasses.FrozenInstanceError):  # ← Tied to dataclass
         ctx.mode = "alternative"
 ```
@@ -548,10 +548,10 @@ def test_explanation_context_is_frozen() -> None:
 ```python
 def test_explanation_context__should_be_immutable_after_construction() -> None:
     """Verify that context objects cannot be modified after construction.
-    
+
     Contract: ExplanationContext is immutable to prevent accidental mutations
     during the explanation pipeline.
-    
+
     Note: Implementation uses @dataclass(frozen=True), but the test verifies
     the contract (immutability), not the mechanism (FrozenInstanceError).
     If implementation changes (e.g., to __slots__), this test remains valid.
@@ -562,9 +562,9 @@ def test_explanation_context__should_be_immutable_after_construction() -> None:
         feature_names=("f0", "f1"),
         ...
     )
-    
+
     original_mode = ctx.mode
-    
+
     # Attempt to modify (generic exception catching)
     try:
         ctx.mode = "alternative"
@@ -576,7 +576,7 @@ def test_explanation_context__should_be_immutable_after_construction() -> None:
         # ← Generic exception types; not tied to dataclass implementation
         # Expected: the context should be immutable
         pass
-    
+
     # Verify context still has original state
     assert ctx.mode == original_mode
     assert ctx.feature_names == ("f0", "f1")
@@ -592,16 +592,16 @@ def test_explanation_context__should_be_immutable_after_construction() -> None:
 def test_calibrated_explainer__should_require_fit_before_explain():
     """Verify that unfitted explainers cannot generate explanations."""
     explainer = WrapCalibratedExplainer(RandomForestClassifier())
-    
+
     # Not yet fitted
     with pytest.raises(ValueError, match="not fitted"):
         explainer.explain_factual(np.array([[0.1, 0.2]]))
-    
+
     # After fitting, should work
     x_train = np.array([[0, 0], [1, 1]])
     y_train = np.array([0, 1])
     explainer.fit(x_train, y_train)
-    
+
     explanation = explainer.explain_factual(np.array([[0.5, 0.5]]))
     assert explanation is not None
 ```
@@ -627,15 +627,15 @@ def test_explainer__should_infer_task_from_model(task, n_classes):
         model = LogisticRegression() if n_classes == 2 else OneVsRestClassifier(LogisticRegression())
         explainer = WrapCalibratedExplainer(model)
         explainer.fit(X_train_clf, y_train_clf)
-        
+
         assert explainer.task == "classification"
         assert explainer.is_multiclass == (n_classes > 2)
-    
+
     elif task == "regression":
         model = LinearRegression()
         explainer = WrapCalibratedExplainer(model)
         explainer.fit(X_train_reg, y_train_reg)
-        
+
         assert explainer.task == "regression"
         assert explainer.is_multiclass == False
 ```
@@ -652,20 +652,20 @@ def test_explainer__should_infer_task_from_model(task, n_classes):
 ```python
 def test_classification_workflow_with_custom_calibrator(tmp_path):
     """Verify end-to-end classification with custom interval calibrator.
-    
+
     Scenario: User wants to use a custom calibrator instead of default.
     Expectation: System should respect custom calibrator and produce valid explanations.
     """
     # 1. Prepare data
     x_train, x_cal, x_test = make_classification_data()
     y_train, y_cal, y_test = make_classification_labels()
-    
+
     # 2. Train model and calibrator
     model = RandomForestClassifier()
     model.fit(x_train, y_train)
-    
+
     custom_calibrator = CustomIntervalCalibrator()
-    
+
     # 3. Create explainer with custom calibrator
     explainer = WrapCalibratedExplainer(
         model,
@@ -673,20 +673,20 @@ def test_classification_workflow_with_custom_calibrator(tmp_path):
     )
     explainer.fit(x_train, y_train)
     explainer.calibrate(x_cal, y_cal)
-    
+
     # 4. Generate explanation
     explanation = explainer.explain_factual(x_test[0:1])
-    
+
     # 5. Verify explanation uses custom calibrator
     assert explanation is not None
     assert explanation.calibrator_name == "CustomIntervalCalibrator"
-    
+
     # 6. Verify explanation can be plotted and saved
     plot_path = tmp_path / "explanation.png"
     explanation.plot(save_path=str(plot_path), show=False)
     assert plot_path.exists(), "Plot should be saved"
     assert plot_path.stat().st_size > 1000, "Plot should not be trivial"
-    
+
     # 7. Verify explanation is serializable
     serialized = explanation.to_dict()
     assert "prediction" in serialized
@@ -753,20 +753,20 @@ def test_classification_workflow_with_custom_calibrator(tmp_path):
 def mock_filesystem(monkeypatch):
     """Mock filesystem operations to avoid actual file creation."""
     saved_files = {}
-    
+
     def mock_save(path, data):
         saved_files[path] = data
-    
+
     monkeypatch.setattr("builtins.open", mock_save)
     return saved_files
 
 def test_explanation_saves_to_file(mock_filesystem):
     """Verify that explanations can be saved without actual I/O."""
     explanation = create_dummy_explanation()
-    
+
     # Save to (mocked) file
     explanation.save("/tmp/exp.json")
-    
+
     # Outcome assertion: file was saved with correct data
     assert "/tmp/exp.json" in mock_filesystem
     assert mock_filesystem["/tmp/exp.json"]["prediction"] == explanation.prediction
@@ -775,10 +775,10 @@ def test_explanation_saves_to_file(mock_filesystem):
 def test_explanation_save_workflow_with_real_filesystem(tmp_path):
     """Integration test: verify save works with real filesystem."""
     explanation = create_dummy_explanation()
-    
+
     save_path = tmp_path / "explanation.json"
     explanation.save(str(save_path))
-    
+
     # Outcome assertion: file exists and is readable
     assert save_path.exists()
     with open(save_path) as f:
@@ -803,10 +803,10 @@ def test_explanation_save_workflow_with_real_filesystem(tmp_path):
 def test_explanation_serialization_snapshot():
     """Verify serialization format is stable (snapshot + semantics)."""
     explanation = create_explanation(pred=0.5, low=0.2, high=0.8)
-    
+
     # Serialize
     data = explanation.to_dict()
-    
+
     # Snapshot: the structure is stable
     assert data == {
         "prediction": 0.5,
@@ -814,7 +814,7 @@ def test_explanation_serialization_snapshot():
         "feature_weights": [...],
         "metadata": {...},
     }
-    
+
     # Semantic checks: the data is correct
     assert data["intervals"]["low"] <= data["prediction"] <= data["intervals"]["high"]
     assert all("label" in feat for feat in data["feature_weights"])
@@ -869,7 +869,7 @@ Use this checklist when deciding to add an integration test:
 @pytest.mark.integration
 def test_<workflow>_with_<scenario>():
     """Comprehensive test of a user-facing workflow.
-    
+
     Scenario: <Describe the user's intent>
     Steps:
     1. Prepare data
@@ -879,13 +879,13 @@ def test_<workflow>_with_<scenario>():
     """
     # 1. Prepare
     data = prepare_test_data()
-    
+
     # 2. Setup
     model = train_model(data)
-    
+
     # 3. Execute
     result = execute_workflow(model, data)
-    
+
     # 4. Verify
     assert workflow_is_correct(result)
 ```
@@ -965,6 +965,6 @@ def test_plot__should_save_to_specified_path(): ...
 
 ---
 
-**Last Updated:** 2025-11-18  
-**Status:** Proposed for Integration into `.github/instructions/tests.instructions.md`  
+**Last Updated:** 2025-11-18
+**Status:** Proposed for Integration into `.github/instructions/tests.instructions.md`
 **Review:** See `TEST_QUALITY_ANALYSIS.md` for findings and justification

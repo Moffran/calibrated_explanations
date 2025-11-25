@@ -28,7 +28,7 @@ def run_benchmark(
 ) -> Dict[str, Any]:
     """Run benchmark for a specific mode and return results."""
     print(f"Running {mode} benchmark (n_samples={n_samples}, n_features={n_features})...")
-    
+
     if strategies is None:
         strategies = ["sequential", "threads", "processes"]
         # Try to include joblib if available
@@ -58,16 +58,16 @@ def run_benchmark(
         print(f"  Testing strategy: {strategy}")
         # Set env var to force strategy
         os.environ["CE_PARALLEL"] = f"enable,strategy={strategy}"
-        
+
         # Initialize explainer (wraps learner)
         # We re-initialize to ensure fresh cache/executor state if any
         start_time = time.time()
         explainer = WrapCalibratedExplainer(learner)
         explainer.calibrate(X_cal, y_cal)
-        
+
         # Explain
         _ = explainer.explain_factual(X_test)
-        
+
         duration = time.time() - start_time
         results[strategy] = duration
         print(f"    Duration: {duration:.4f}s")

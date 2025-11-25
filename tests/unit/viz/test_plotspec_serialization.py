@@ -45,12 +45,10 @@ def test_plotspec_round_trip_minimal__should_preserve_structure_and_values():
 
     # Semantic assertions (domain invariants)
     # Invariant 1: Title is preserved exactly
-    assert spec2.title == spec.title, \
-        "Title should be preserved through roundtrip"
+    assert spec2.title == spec.title, "Title should be preserved through roundtrip"
 
     # Invariant 2: Bar structure matches
-    assert len(spec2.body.bars) == len(spec.body.bars), \
-        "Bar count should match"
+    assert len(spec2.body.bars) == len(spec.body.bars), "Bar count should match"
 
     # Invariant 3: Header bounds satisfy ordering (low ≤ pred ≤ high)
     # Ref: ADR-005 Explanation Envelope
@@ -58,16 +56,15 @@ def test_plotspec_round_trip_minimal__should_preserve_structure_and_values():
     assert spec2.header.low is not None, "Lower bound is mandatory"
     assert spec2.header.pred is not None, "Point estimate is mandatory"
     assert spec2.header.high is not None, "Upper bound is mandatory"
-    assert spec2.header.low <= spec2.header.pred <= spec2.header.high, \
-        f"Bounds violated: {spec2.header.low} ≤ {spec2.header.pred} ≤ " \
-        f"{spec2.header.high}"
+    assert spec2.header.low <= spec2.header.pred <= spec2.header.high, (
+        f"Bounds violated: {spec2.header.low} ≤ {spec2.header.pred} ≤ " f"{spec2.header.high}"
+    )
 
     # Invariant 4: Each bar has required fields
     for idx, bar_item in enumerate(spec2.body.bars):
         assert bar_item.label is not None, f"Bar {idx} label is mandatory"
         assert bar_item.value is not None, f"Bar {idx} value is mandatory"
-        assert isinstance(bar_item.value, (int, float)), \
-            f"Bar {idx} value must be numeric"
+        assert isinstance(bar_item.value, (int, float)), f"Bar {idx} value must be numeric"
 
 
 def test_plotspec_roundtrip__should_preserve_interval_semantics():
@@ -100,33 +97,26 @@ def test_plotspec_roundtrip__should_preserve_interval_semantics():
     # Semantic assertions: interval invariants (core invariants, not
     # exact equality which may be affected by default values)
     header = restored.header
-    assert header.low <= header.pred <= header.high, \
-        f"Header interval violated: {header.low} ≤ {header.pred} ≤ " \
-        f"{header.high}"
+    assert header.low <= header.pred <= header.high, (
+        f"Header interval violated: {header.low} ≤ {header.pred} ≤ " f"{header.high}"
+    )
 
     # Semantic assertions: title and structure preserved
     assert restored.title == spec.title, "Title should be preserved"
-    assert len(restored.body.bars) == len(spec.body.bars), \
-        "Bar count should match"
+    assert len(restored.body.bars) == len(spec.body.bars), "Bar count should match"
 
     # Semantic assertions: bar-level invariants
-    for idx, (original_bar, restored_bar) in enumerate(
-        zip(spec.body.bars, restored.body.bars)
-    ):
+    for idx, (original_bar, restored_bar) in enumerate(zip(spec.body.bars, restored.body.bars)):
         # Values preserved
-        assert restored_bar.label == original_bar.label, \
-            f"Bar {idx} label mismatch"
-        assert restored_bar.value == original_bar.value, \
-            f"Bar {idx} value mismatch"
+        assert restored_bar.label == original_bar.label, f"Bar {idx} label mismatch"
+        assert restored_bar.value == original_bar.value, f"Bar {idx} value mismatch"
 
         # If intervals exist, they must satisfy ordering
-        if restored_bar.interval_low is not None and \
-           restored_bar.interval_high is not None:
+        if restored_bar.interval_low is not None and restored_bar.interval_high is not None:
             low = restored_bar.interval_low
             val = restored_bar.value
             high = restored_bar.interval_high
-            assert low <= val <= high, \
-                f"Bar {idx} interval violated: {low} ≤ {val} ≤ {high}"
+            assert low <= val <= high, f"Bar {idx} interval violated: {low} ≤ {val} ≤ {high}"
 
 
 def test_plotspec_roundtrip__should_handle_zero_width_interval():
@@ -153,10 +143,10 @@ def test_plotspec_roundtrip__should_handle_zero_width_interval():
 
     # Semantic assertion: edge case handling
     header = restored.header
-    assert header.low == header.pred == header.high, \
-        "Zero-width interval should have equal bounds"
-    assert header.low <= header.pred <= header.high, \
-        "Even at boundary, ordering invariant must hold"
+    assert header.low == header.pred == header.high, "Zero-width interval should have equal bounds"
+    assert (
+        header.low <= header.pred <= header.high
+    ), "Even at boundary, ordering invariant must hold"
 
 
 def test_plotspec_roundtrip__should_preserve_optional_fields():
@@ -182,15 +172,14 @@ def test_plotspec_roundtrip__should_preserve_optional_fields():
     restored = plotspec_from_dict(spec_dict)
 
     # Semantic assertions: optional fields preserved
-    assert restored.header.xlim is not None, \
-        "xlim should be computed from y_minmax"
-    assert restored.header.xlim[0] <= restored.header.xlim[1], \
-        f"xlim range violated: {restored.header.xlim}"
+    assert restored.header.xlim is not None, "xlim should be computed from y_minmax"
+    assert (
+        restored.header.xlim[0] <= restored.header.xlim[1]
+    ), f"xlim range violated: {restored.header.xlim}"
 
     # If original has custom labels, they're preserved
     if spec.header.xlabel is not None:
         assert restored.header.xlabel == spec.header.xlabel
-
 
 
 def test_validate_plotspec_missing_body_raises():

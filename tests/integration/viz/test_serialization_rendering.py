@@ -50,14 +50,12 @@ class TestSerializationRenderingRoundtrip:
         # Semantic assertions: invariants preserved
         # (not checking exact equality due to default value handling)
         assert restored_spec.title == original_spec.title
-        assert len(restored_spec.body.bars) == \
-               len(original_spec.body.bars)
+        assert len(restored_spec.body.bars) == len(original_spec.body.bars)
 
-        assert restored_spec.header.low <= \
-               restored_spec.header.pred <= \
-               restored_spec.header.high, \
-            f"Interval violated: {restored_spec.header.low} ≤ " \
+        assert restored_spec.header.low <= restored_spec.header.pred <= restored_spec.header.high, (
+            f"Interval violated: {restored_spec.header.low} ≤ "
             f"{restored_spec.header.pred} ≤ {restored_spec.header.high}"
+        )
 
     def test_plotspec_serialization_preserves_bar_intervals(self):
         """Verify that bar-level intervals survive roundtrip.
@@ -85,20 +83,16 @@ class TestSerializationRenderingRoundtrip:
         restored = plotspec_from_dict(spec_dict)
 
         # Semantic assertion: bar interval invariants
-        for idx, (orig_bar, rest_bar) in enumerate(
-            zip(spec.body.bars, restored.body.bars)
-        ):
+        for idx, (orig_bar, rest_bar) in enumerate(zip(spec.body.bars, restored.body.bars)):
             # Values match
-            assert rest_bar.value == orig_bar.value, \
-                f"Bar {idx} value should match"
+            assert rest_bar.value == orig_bar.value, f"Bar {idx} value should match"
 
             # If intervals exist, they satisfy ordering
-            if rest_bar.interval_low is not None and \
-               rest_bar.interval_high is not None:
-                assert rest_bar.interval_low <= rest_bar.value <= \
-                       rest_bar.interval_high, \
-                    f"Bar {idx}: {rest_bar.interval_low} ≤ " \
+            if rest_bar.interval_low is not None and rest_bar.interval_high is not None:
+                assert rest_bar.interval_low <= rest_bar.value <= rest_bar.interval_high, (
+                    f"Bar {idx}: {rest_bar.interval_low} ≤ "
                     f"{rest_bar.value} ≤ {rest_bar.interval_high}"
+                )
 
     def test_plotspec_edge_case_single_feature(self):
         """Verify roundtrip handles edge case: single feature.
@@ -125,8 +119,7 @@ class TestSerializationRenderingRoundtrip:
         restored = plotspec_from_dict(spec_dict)
 
         # Semantic assertions
-        assert restored.header.low <= restored.header.pred <= \
-               restored.header.high
+        assert restored.header.low <= restored.header.pred <= restored.header.high
         assert len(restored.body.bars) == 1
         assert restored.body.bars[0].label == "only_feature"
 
@@ -144,9 +137,9 @@ class TestSerializationRenderingRoundtrip:
                 "high": 0.7,
             },
             feature_weights={
-                "predict": np.random.randn(n_features) * 0.1,
-                "low": np.random.randn(n_features) * 0.1 - 0.05,
-                "high": np.random.randn(n_features) * 0.1 + 0.05,
+                "predict": np.random.default_rng().standard_normal(n_features) * 0.1,
+                "low": np.random.default_rng().standard_normal(n_features) * 0.1 - 0.05,
+                "high": np.random.default_rng().standard_normal(n_features) * 0.1 + 0.05,
             },
             features_to_plot=list(range(n_features)),
             column_names=[f"feat_{i}" for i in range(n_features)],
@@ -161,15 +154,12 @@ class TestSerializationRenderingRoundtrip:
 
         # Semantic assertions
         assert len(restored.body.bars) == n_features
-        assert restored.header.low <= restored.header.pred <= \
-               restored.header.high
+        assert restored.header.low <= restored.header.pred <= restored.header.high
 
         # All bars have required fields
         for idx, bar_item in enumerate(restored.body.bars):
-            assert bar_item.label is not None, \
-                f"Bar {idx} label is mandatory"
-            assert bar_item.value is not None, \
-                f"Bar {idx} value is mandatory"
+            assert bar_item.label is not None, f"Bar {idx} label is mandatory"
+            assert bar_item.value is not None, f"Bar {idx} value is mandatory"
 
     def test_plotspec_edge_case_zero_width_interval_roundtrip(self):
         """Verify zero-width intervals (pred = low = high) survive roundtrip."""
@@ -194,8 +184,9 @@ class TestSerializationRenderingRoundtrip:
 
         # Semantic assertions: zero-width is valid
         header = restored.header
-        assert header.low == header.pred == header.high, \
-            "Zero-width interval should have equal bounds"
+        assert (
+            header.low == header.pred == header.high
+        ), "Zero-width interval should have equal bounds"
         assert header.low <= header.pred <= header.high
 
     def test_plotspec_with_custom_colors_and_labels_roundtrip(self):
@@ -224,14 +215,13 @@ class TestSerializationRenderingRoundtrip:
         restored = plotspec_from_dict(spec_dict)
 
         # Semantic assertions: optional fields preserved
-        assert restored.header.xlim is not None, \
-            "xlim should be computed"
-        assert restored.header.xlim[0] <= restored.header.xlim[1], \
-            f"xlim range invalid: {restored.header.xlim}"
+        assert restored.header.xlim is not None, "xlim should be computed"
+        assert (
+            restored.header.xlim[0] <= restored.header.xlim[1]
+        ), f"xlim range invalid: {restored.header.xlim}"
 
         # Verify interval invariant
-        assert restored.header.low <= restored.header.pred <= \
-               restored.header.high
+        assert restored.header.low <= restored.header.pred <= restored.header.high
 
     def test_plotspec_roundtrip_type_preservation(self):
         """Verify that numeric types are correctly restored from dict.
@@ -259,17 +249,12 @@ class TestSerializationRenderingRoundtrip:
         restored = plotspec_from_dict(spec_dict)
 
         # Semantic assertions: types are correct
-        assert isinstance(restored.header.pred, (int, float)), \
-            "Pred must be numeric"
-        assert isinstance(restored.header.low, (int, float)), \
-            "Low must be numeric"
-        assert isinstance(restored.header.high, (int, float)), \
-            "High must be numeric"
+        assert isinstance(restored.header.pred, (int, float)), "Pred must be numeric"
+        assert isinstance(restored.header.low, (int, float)), "Low must be numeric"
+        assert isinstance(restored.header.high, (int, float)), "High must be numeric"
 
         for idx, bar_item in enumerate(restored.body.bars):
-            assert isinstance(bar_item.value, (int, float)), \
-                f"Bar {idx} value must be numeric"
+            assert isinstance(bar_item.value, (int, float)), f"Bar {idx} value must be numeric"
 
         # Verify invariant still holds
-        assert restored.header.low <= restored.header.pred <= \
-               restored.header.high
+        assert restored.header.low <= restored.header.pred <= restored.header.high

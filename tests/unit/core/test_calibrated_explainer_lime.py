@@ -90,6 +90,7 @@ def _make_stub_explainer(explainer_factory):
     explainer.categorical_features = []
     explainer.categorical_labels = {}
     explainer._CalibratedExplainer__initialized = True
+
     def _predict_stub(self, x, **_kwargs):
         x = np.asarray(x)
         n = x.shape[0]

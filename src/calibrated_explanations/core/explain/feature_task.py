@@ -159,9 +159,7 @@ def assign_threshold(threshold: Any) -> Any:
         return None
     if isinstance(threshold, (list, np.ndarray)):
         # Return empty array to signal invalid threshold list for broadcast
-        return (
-            np.empty((0,), dtype=tuple) if isinstance(threshold[0], tuple) else np.empty((0,))
-        )
+        return np.empty((0,), dtype=tuple) if isinstance(threshold[0], tuple) else np.empty((0,))
     return threshold
 
 

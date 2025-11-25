@@ -13,8 +13,6 @@ conformal predictive systems (regression).
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
-import warnings as _warnings
-import logging as _logging
 from time import time
 
 import numpy as np
@@ -30,40 +28,28 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 
 from ..perf import CalibratorCache, ParallelExecutor
 from ..plotting import _plot_global
-from .calibration.venn_abers import VennAbers
 from ..explanations import AlternativeExplanations, CalibratedExplanations
 from ..integrations import LimeHelper, ShapHelper
 from ..utils.discretizers import (
-    BinaryEntropyDiscretizer,
-    BinaryRegressorDiscretizer,
     EntropyDiscretizer,
     RegressorDiscretizer,
 )
 from ..utils.helper import (
     check_is_fitted,
     convert_targets_to_numeric,
-    immutable_array,
     safe_isinstance,
 )
 from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
 from ..plugins import (
-    ExplanationContext,
     IntervalCalibratorContext,
 )
 from ..plugins.builtins import LegacyPredictBridge
-from ..plugins.registry import (
-    ensure_builtin_plugins,
-)
 
 from .exceptions import (
     ValidationError,
     DataShapeError,
     ConfigurationError,
-    NotFittedError,
 )
-from .explain._helpers import compute_weight_delta
-from .explain.orchestrator import ExplanationOrchestrator
-from .config_helpers import read_pyproject_section
 from ..plugins.manager import PluginManager
 
 
@@ -182,10 +168,11 @@ class CalibratedExplainer:
 
         # Initialize RNG with seed
         from ..utils.rng import set_rng_seed  # pylint: disable=import-outside-toplevel
+
         seed = kwargs.get("seed", 42)
         self.seed = seed
         self.rng = set_rng_seed(seed)
-        
+
         self.sample_percentiles = kwargs.get("sample_percentiles", [25, 50, 75])
         self.verbose = kwargs.get("verbose", False)
         self.bins = bins
@@ -205,9 +192,10 @@ class CalibratedExplainer:
         self.categorical_features = list(categorical_features)
         self._invalidate_calibration_summaries()
         self.features_to_ignore = kwargs.get("features_to_ignore", [])
-        
+
         # Identify constant calibration features that can be ignored downstream
         from .calibration_helpers import identify_constant_features  # pylint: disable=import-outside-toplevel
+
         self.features_to_ignore = identify_constant_features(self.x_cal)
 
         if feature_names is None:
@@ -355,20 +343,20 @@ class CalibratedExplainer:
         """Delegate to PluginManager for explanation chain building."""
         if not hasattr(self, "_plugin_manager"):
             # Fallback for tests that create minimal stubs
-            return tuple()
+            return ()
         default_id = self._plugin_manager._default_explanation_identifiers.get(mode, "")
         return self._plugin_manager._build_explanation_chain(mode, default_id)
 
     def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
         """Delegate to PluginManager for interval chain building."""
         if not hasattr(self, "_plugin_manager"):
-            return tuple()
+            return ()
         return self._plugin_manager._build_interval_chain(fast=fast)
 
     def _build_plot_style_chain(self) -> Tuple[str, ...]:
         """Delegate to PluginManager for plot style chain building."""
         if not hasattr(self, "_plugin_manager"):
-            return tuple()
+            return ()
         return self._plugin_manager._build_plot_chain()
 
     def _check_explanation_runtime_metadata(
@@ -1417,7 +1405,6 @@ class CalibratedExplainer:
         pipeline = ShapPipeline(self)
         return pipeline.explain(x, **kwargs)
 
-
     def is_multiclass(self) -> bool:
         """Test if it is a multiclass problem.
 
@@ -1483,7 +1470,6 @@ class CalibratedExplainer:
         from .explain._computation import rule_boundaries as _rule_boundaries  # pylint: disable=import-outside-toplevel
 
         return _rule_boundaries(self, instances, perturbed_instances)
-
 
     def set_difficulty_estimator(self, difficulty_estimator, initialize=True) -> None:
         """Assign or update the difficulty estimator.
@@ -1610,7 +1596,13 @@ class CalibratedExplainer:
 
         # Instantiate the discretizer (may return cached instance if type matches)
         self.discretizer = instantiate_discretizer(
-            discretizer, x_cal, not_to_discretize, self.feature_names, y_cal, self.seed, old_discretizer
+            discretizer,
+            x_cal,
+            not_to_discretize,
+            self.feature_names,
+            y_cal,
+            self.seed,
+            old_discretizer,
         )
 
         # If discretizer is unchanged, skip recomputation

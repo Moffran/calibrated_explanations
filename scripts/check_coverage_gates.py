@@ -22,28 +22,28 @@ def parse_coverage(xml_path: str) -> Dict[str, float]:
     """Parse coverage.xml and return a map of filename -> coverage percentage."""
     tree = ET.parse(xml_path)
     root = tree.getroot()
-    
+
     coverage_map = {}
-    
+
     # Iterate over all class elements (files)
     for cls in root.findall(".//class"):
         filename = cls.get("filename")
         if not filename:
             continue
-            
+
         # Normalize path separators to forward slashes for consistency
         filename = filename.replace("\\", "/")
-        
+
         line_rate = float(cls.get("line-rate", 0.0))
         coverage_map[filename] = line_rate * 100.0
-        
+
     return coverage_map
 
 
 def check_gates(coverage_map: Dict[str, float]) -> Tuple[bool, List[str]]:
     """Check if coverage meets defined gates."""
     failures = []
-    
+
     for target_suffix, threshold in GATES.items():
         # Find matching file in coverage map
         # We match by suffix because coverage.xml might have relative paths
@@ -52,7 +52,7 @@ def check_gates(coverage_map: Dict[str, float]) -> Tuple[bool, List[str]]:
             if filename.endswith(target_suffix):
                 matched_file = filename
                 break
-        
+
         if matched_file:
             current = coverage_map[matched_file]
             if current < threshold:
@@ -83,15 +83,15 @@ def main():
 
     print(f"Checking coverage gates against {xml_path}...")
     coverage_map = parse_coverage(xml_path)
-    
+
     success, failures = check_gates(coverage_map)
-    
+
     if not success:
         print("\nCoverage Gate Failures:")
         for failure in failures:
             print(f"  {failure}")
         sys.exit(1)
-        
+
     print("\nAll coverage gates passed!")
 
 
