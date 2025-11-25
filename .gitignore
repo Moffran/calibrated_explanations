@@ -10,6 +10,7 @@ pickle/
 results/
 doc/
 evaluation/secret/
+evaluation/guards/ablation/mlruns/
 prof/
 debug/
 src/debug/
