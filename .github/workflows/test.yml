@@ -49,6 +49,9 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
 
+      - name: Check per-module coverage gates
+        run: python scripts/check_coverage_gates.py coverage.xml
+
   core-only:
     runs-on: ubuntu-latest
     steps:
