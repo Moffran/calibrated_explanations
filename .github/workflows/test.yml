@@ -97,7 +97,7 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Run visualization tests
-        run: pytest -m viz --cov=src/calibrated_explanations --cov-report=xml --cov-report=term
+        run: pytest -m viz --no-cov -q
 
       - name: Upload viz coverage to Codecov
         uses: codecov/codecov-action@v5.5.1

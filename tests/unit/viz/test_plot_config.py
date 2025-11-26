@@ -5,9 +5,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from sklearn.ensemble import RandomForestClassifier
+
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from calibrated_explanations.viz import plots as plotting
-from sklearn.ensemble import RandomForestClassifier
 
 # Skip this test module entirely if matplotlib is not available (optional extra)
 pytest.importorskip("matplotlib")
@@ -41,10 +42,13 @@ def test_default_plot_config():
     assert config["fonts"]["family"] == "sans-serif"
 
 
-def test_plot_config_reads_and_writes_expected_file():
+def test_plot_config_reads_and_writes_expected_file(monkeypatch, tmp_path):
     """Ensure configuration helpers target the packaged configuration file."""
 
-    config_path = (
+    # Create a temporary config file to avoid modifying the packaged file
+    temp_config_path = tmp_path / "plot_config.ini"
+    
+    original_config_path = (
         Path(__file__).resolve().parents[3]
         / "src"
         / "calibrated_explanations"
@@ -52,26 +56,30 @@ def test_plot_config_reads_and_writes_expected_file():
         / "configurations"
         / "plot_config.ini"
     )
-    assert config_path.exists(), "Expected packaged plot_config.ini to exist"
+    assert original_config_path.exists(), "Expected packaged plot_config.ini to exist"
 
-    original_contents = config_path.read_text(encoding="utf-8")
+    # Copy the original config to temp location
+    original_contents = original_config_path.read_text(encoding="utf-8")
+    temp_config_path.write_text(original_contents, encoding="utf-8")
+
+    # Patch the _plot_config_path function to return our temp path
+    monkeypatch.setattr(plotting, "_plot_config_path", lambda: temp_config_path)
+
+    # Test reading modified config
     parser = configparser.ConfigParser()
     parser.read_string(original_contents)
-
     parser["style"]["base"] = "test-read-style"
 
-    try:
-        with config_path.open("w", encoding="utf-8") as file_handle:
-            parser.write(file_handle)
+    with temp_config_path.open("w", encoding="utf-8") as file_handle:
+        parser.write(file_handle)
 
-        config = plotting.load_plot_config()
-        assert config["style"]["base"] == "test-read-style"
+    config = plotting.load_plot_config()
+    assert config["style"]["base"] == "test-read-style"
 
-        plotting.update_plot_config({"style": {"base": "test-write-style"}})
-        updated_text = config_path.read_text(encoding="utf-8")
-        assert "test-write-style" in updated_text
-    finally:
-        config_path.write_text(original_contents, encoding="utf-8")
+    # Test writing config
+    plotting.update_plot_config({"style": {"base": "test-write-style"}})
+    updated_text = temp_config_path.read_text(encoding="utf-8")
+    assert "test-write-style" in updated_text
 
 
 def test_plotting_update_plot_config():
