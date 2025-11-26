@@ -18,22 +18,22 @@ class IntervalRegressor:
     """Estimate predictive intervals using calibrated explanations."""
 
     def __init__(self, calibrated_explainer):
-        """Initialize an object with various attributes used for calibration and explanation extraction.
+        """Initialize the interval regressor with a calibrated explainer.
 
         Parameters
         ----------
-        calibrated_explainer
-            An object of the class `CalibratedExplainer` which is used to extract explanations. It is
-            assumed that this object has been initialized and contains the necessary methods and attributes.
-        model
-            The `model` parameter is an object that represents a fitted regression model. It should have a
-            `predict` method that can be used to make predictions on new instances.
-        X_cal
-            A numpy array containing the instance objects used for calibration. These are the input
-            features for the model.
-        y_cal
-            The instance targets used for calibration. It is a numpy array that contains the true target
-            values for the instances in the calibration set.
+        calibrated_explainer : CalibratedExplainer
+            A fitted and calibrated explainer instance. The regressor extracts calibration
+            data (features, targets, predictions, bins) from this explainer and builds
+            conformal predictive systems for interval and probability estimation.
+
+        Notes
+        -----
+        This initializer:
+        - Extracts calibration predictions and computes residuals
+        - Fits a conformal predictive system using the calibration data
+        - Pre-splits calibration data for probabilistic (thresholded) regression
+        - Initializes Venn-Abers calibrator for probability refinement
         """
         self.ce = calibrated_explainer
         self._bins_storage = None
@@ -476,6 +476,14 @@ class IntervalRegressor:
 
     @bins.setter
     def bins(self, value):
+        """Assign Mondrian bin categories to the calibration data.
+
+        Parameters
+        ----------
+        value : array-like or None
+            Mondrian categories for each calibration instance. If None, clears bin assignments.
+            Otherwise, must be a 1D array matching the number of calibration instances.
+        """
         if value is None:
             self._bins_storage = None
             self._bins_size = 0

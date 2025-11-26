@@ -44,6 +44,8 @@ PR expectations:
 - Quality gates should pass: ruff lint/format, pytest, and mypy. New modules may be subject to stricter mypy settings (see `pyproject.toml`).
 - If touching performance-sensitive paths, run or reference the perf guard and baseline scripts in `benchmarks/` and `scripts/`.
 - For architectural/public changes, include/modify an ADR in `improvement_docs/adrs/` and link it in the PR.
+- **Legacy API compatibility**: Changes to `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods must preserve the documented contract in `improvement_docs/legacy_user_api_contract.md`. The PR template includes a parity review checkpoint; regression tests in `tests/unit/api/test_legacy_user_api_contract.py` enforce this guardrail (ADR-020).
+
 
 
 ## Testing and Code Coverage

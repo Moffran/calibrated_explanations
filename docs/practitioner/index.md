@@ -12,7 +12,9 @@ telemetry or performance tooling once your core checks pass.
    explanations across classification and regression.
 2. Apply the {doc}`../foundations/how-to/interpret_explanations` checklist to
    review factual and alternative narratives before deployment.
-3. When integrating with existing systems, follow the
+3. Consult the {doc}`task_api_comparison` to choose between the wrapper API
+   and direct CalibratedExplainer API for your use case.
+4. When integrating with existing systems, follow the
    {doc}`playbooks/index` playbooks to keep exports and governance aligned.
 
 ## Advanced lane
@@ -26,6 +28,7 @@ stakeholders who only need the core explanations.
 :maxdepth: 1
 :hidden:
 
+task_api_comparison
 playbooks/index
 advanced/index
 ```

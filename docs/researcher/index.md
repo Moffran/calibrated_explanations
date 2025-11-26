@@ -19,10 +19,14 @@ When curating new benchmarks or extending telemetry experiments, jump to the
 for future research artefacts, all linked back to the same shared foundations as
 the practitioner and contributor hubs.
 
+Consult the {doc}`future_work` ledger to explore open research questions and
+potential enhancements to the calibrated explanations framework.
+
 ```{toctree}
 :maxdepth: 1
 :hidden:
 
+future_work
 replication/index
 advanced/index
 ```
