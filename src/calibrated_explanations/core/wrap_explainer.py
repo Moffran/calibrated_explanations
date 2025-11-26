@@ -630,8 +630,23 @@ class WrapCalibratedExplainer:
         return self.explainer.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-    def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> None:
+    def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> Any:
         """Generate plots for the test data.
+        
+        Parameters
+        ----------
+        x : array-like
+            Test instances to plot explanations for.
+        y : array-like, optional
+            True labels for the test instances.
+        threshold : float, optional
+            Threshold for probabilistic regression.
+        **kwargs : dict
+            Additional keyword arguments passed to the plot method.
+        
+        Returns
+        -------
+        None
 
         See Also
         --------
@@ -645,6 +660,7 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
+        
         # Apply config defaults when available and not explicitly provided
         cfg = getattr(self, "_cfg", None)
         if cfg is not None:

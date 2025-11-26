@@ -179,8 +179,29 @@ class NarrativeGenerator:
         bh = _first_or_none(rules_dict.get("base_predict_high"))
         
         # Build context dictionary
+        # Try to get the predicted class/label
+        predicted_class = rules_dict.get("classes")
+        if predicted_class is not None:
+            # For classification, get the class label
+            if hasattr(explanation, 'get_class_labels'):
+                class_labels = explanation.get_class_labels()
+                if class_labels is not None and isinstance(class_labels, dict):
+                    label = str(class_labels.get(predicted_class, predicted_class))
+                else:
+                    label = str(predicted_class)
+            else:
+                label = str(predicted_class)
+        else:
+            # Fallback: try to infer from prediction
+            if bp is not None and bp > 0.5:
+                label = "1"
+            elif bp is not None:
+                label = "0"
+            else:
+                label = ""
+        
         context = {
-            "label": str(rules_dict.get("predicted_class", "")),
+            "label": label,
             "calibrated_pred": fmt_float(bp),
             "pred_interval_lower": fmt_float(bl),
             "pred_interval_upper": fmt_float(bh),
