@@ -75,7 +75,7 @@ jobs:
           pip install numpy pandas scikit-learn "crepes>=0.7.1,<0.9" "venn-abers>=1.4.1" matplotlib pytest pytest-cov
 
       - name: Run core test subset (skip viz)
-        run: pytest -q -k "not viz"
+        run: pytest -q -k "not viz" --no-cov
 
   viz-only:
     runs-on: ubuntu-latest
