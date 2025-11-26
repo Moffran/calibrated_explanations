@@ -89,4 +89,4 @@ wrapper = WrapCalibratedExplainer(existing_explainer)
 explainer = wrapper.explainer
 ```
 
-See the [legacy API contract](../../improvement_docs/legacy_user_api_contract.md) for the complete stable API surface.
+See the [legacy API contract](../foundations/reference/api.md) for the complete stable API surface.

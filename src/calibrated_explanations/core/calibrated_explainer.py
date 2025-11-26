@@ -592,7 +592,7 @@ class CalibratedExplainer:
 
     @_interval_plugin_hints.deleter
     def _interval_plugin_hints(self) -> None:
-        """Deleter for backward compatibility."""
+        """Backward compatibility deleter."""
         manager = getattr(self, "_plugin_manager", None)
         if manager is not None:
             del manager._interval_plugin_hints
@@ -609,7 +609,7 @@ class CalibratedExplainer:
 
     @_interval_plugin_fallbacks.deleter
     def _interval_plugin_fallbacks(self) -> None:
-        """Deleter for backward compatibility."""
+        """Backward compatibility deleter."""
         manager = getattr(self, "_plugin_manager", None)
         if manager is not None:
             del manager._interval_plugin_fallbacks
@@ -626,7 +626,7 @@ class CalibratedExplainer:
 
     @_interval_plugin_identifiers.deleter
     def _interval_plugin_identifiers(self) -> None:
-        """Deleter for backward compatibility."""
+        """Backward compatibility deleter."""
         manager = getattr(self, "_plugin_manager", None)
         if manager is not None:
             del manager._interval_plugin_identifiers
@@ -643,7 +643,7 @@ class CalibratedExplainer:
 
     @_telemetry_interval_sources.deleter
     def _telemetry_interval_sources(self) -> None:
-        """Deleter for backward compatibility."""
+        """Backward compatibility deleter."""
         manager = getattr(self, "_plugin_manager", None)
         if manager is not None:
             del manager._telemetry_interval_sources
@@ -660,7 +660,7 @@ class CalibratedExplainer:
 
     @_interval_preferred_identifier.deleter
     def _interval_preferred_identifier(self) -> None:
-        """Deleter for backward compatibility."""
+        """Backward compatibility deleter."""
         manager = getattr(self, "_plugin_manager", None)
         if manager is not None:
             del manager._interval_preferred_identifier
@@ -677,7 +677,7 @@ class CalibratedExplainer:
 
     @_interval_context_metadata.deleter
     def _interval_context_metadata(self) -> None:
-        """Deleter for backward compatibility."""
+        """Backward compatibility deleter."""
         manager = getattr(self, "_plugin_manager", None)
         if manager is not None:
             del manager._interval_context_metadata

@@ -1,1 +1,1 @@
-"""Tests for the explain subpackage"""
+"""Tests for the explain subpackage."""

@@ -99,7 +99,7 @@ def deprecate(message: str, *, key: str | None = None, stacklevel: int = 2) -> N
 
 
 def deprecate_alias(alias: str, canonical: str, *, stacklevel: int = 3) -> None:
-    """Convenience helper for deprecated parameter/module aliases.
+    """Provide convenience helper for deprecated parameter/module aliases.
 
     Emits a concise message using a stable key derived from the alias.
     """
