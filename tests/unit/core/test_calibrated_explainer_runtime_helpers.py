@@ -66,6 +66,23 @@ def test_coerce_plugin_override_supports_multiple_sources(explainer_factory):
         explainer._coerce_plugin_override(bad_factory)
 
 
+def test_require_plugin_manager_raises_when_missing(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    explainer._plugin_manager = None
+
+    with pytest.raises(RuntimeError, match="PluginManager is not initialized"):
+        explainer._require_plugin_manager()
+
+
+def test_build_chains_fall_back_without_plugin_manager(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    delattr(explainer, "_plugin_manager")
+
+    assert explainer._build_explanation_chain("factual") == ()
+    assert explainer._build_interval_chain(fast=False) == ()
+    assert explainer._build_plot_style_chain() == ()
+
+
 def test_predict_bridge_monitor_tracks_usage():
     class DummyBridge:
         def __init__(self) -> None:
@@ -195,6 +212,31 @@ def test_check_interval_runtime_metadata_validates_requirements(explainer_factor
     assert explainer._check_interval_runtime_metadata(base, identifier="id", fast=True) is None
 
 
+def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_factory):
+    explainer = explainer_factory(mode="regression")
+    sentinel = object()
+
+    class StubIntervalRegistry:
+        def __init__(self) -> None:
+            self.calls: list[object] = []
+
+        def initialize_for_fast_explainer(self) -> None:
+            self.calls.append(sentinel)
+
+    registry = StubIntervalRegistry()
+
+    class StubPredictionOrchestrator:
+        def __init__(self, interval_registry: StubIntervalRegistry) -> None:
+            self._interval_registry = interval_registry
+            self._prediction_orchestrator = self
+
+    stub_manager = StubPredictionOrchestrator(registry)
+    monkeypatch.setattr(explainer, "_require_plugin_manager", lambda: stub_manager)
+    explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
+
+    assert registry.calls == [sentinel]
+
+
 def test_ensure_interval_runtime_state_populates_defaults(explainer_factory):
     explainer = explainer_factory()
     explainer._interval_plugin_hints = {}
@@ -211,6 +253,23 @@ def test_ensure_interval_runtime_state_populates_defaults(explainer_factory):
     assert explainer._telemetry_interval_sources == {"default": None, "fast": None}
     assert explainer._interval_preferred_identifier == {"default": None, "fast": None}
     assert explainer._interval_context_metadata == {"default": {}, "fast": {}}
+
+
+def test_verbose_repr_includes_metadata(explainer_factory):
+    explainer = explainer_factory()
+    explainer.verbose = True
+    explainer._feature_names = ["f1", "f2"]  # noqa: SLF001 - testing repr content
+    explainer.categorical_features = [0]
+    explainer.categorical_labels = {0: {0: "no", 1: "yes"}}
+    explainer.class_labels = {0: "neg", 1: "pos"}
+
+    result = repr(explainer)
+
+    assert "CalibratedExplainer" in result
+    assert "feature_names=['f1', 'f2']" in result
+    assert "categorical_features=[0]" in result
+    assert "categorical_labels={0: {0: 'no', 1: 'yes'}}" in result
+    assert "class_labels={0: 'neg', 1: 'pos'}" in result
 
 
 def test_instantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
@@ -395,3 +454,187 @@ def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory)
     assert np.all(low_t == 0)
     assert np.all(high_t == 0)
     assert classes_t is None
+
+
+def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
+    """_infer_explanation_mode should detect alternative mode when EntropyDiscretizer is set."""
+    from calibrated_explanations.utils.discretizers import EntropyDiscretizer
+
+    explainer = _stub_explainer(explainer_factory)
+    x_cal = np.asarray([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    y_cal = np.asarray([0, 1, 0])
+    explainer.discretizer = EntropyDiscretizer(
+        x_cal,
+        categorical_features={},
+        feature_names=["f0", "f1"],
+        labels=y_cal,
+        random_state=0,
+    )
+
+    assert explainer._infer_explanation_mode() == "alternative"
+
+
+def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory):
+    """_infer_explanation_mode should detect alternative mode when RegressorDiscretizer is set."""
+    from calibrated_explanations.utils.discretizers import RegressorDiscretizer
+
+    explainer = _stub_explainer(explainer_factory, mode="regression")
+    x_cal = np.asarray([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    y_cal = np.asarray([1.0, 2.0, 3.0])
+    explainer.discretizer = RegressorDiscretizer(
+        x_cal,
+        categorical_features={},
+        feature_names=["f0", "f1"],
+        labels=y_cal,
+        random_state=0,
+    )
+
+    assert explainer._infer_explanation_mode() == "alternative"
+
+
+def test_infer_explanation_mode_defaults_to_factual(explainer_factory):
+    """_infer_explanation_mode should return 'factual' for None or other discretizers."""
+    explainer = _stub_explainer(explainer_factory)
+    assert explainer._infer_explanation_mode() == "factual"
+
+
+def test_preprocessor_metadata_round_trip(explainer_factory):
+    """preprocessor_metadata property should preserve and return metadata dict."""
+    explainer = _stub_explainer(explainer_factory)
+
+    metadata = {"scaling": "StandardScaler", "features": 10}
+    explainer.set_preprocessor_metadata(metadata)
+
+    assert explainer.preprocessor_metadata == metadata
+    assert explainer.preprocessor_metadata is not metadata  # Should be a copy
+
+
+def test_preprocessor_metadata_none_handling(explainer_factory):
+    """set_preprocessor_metadata(None) should clear metadata."""
+    explainer = _stub_explainer(explainer_factory)
+    explainer.set_preprocessor_metadata({"key": "value"})
+    explainer.set_preprocessor_metadata(None)
+
+    assert explainer.preprocessor_metadata is None
+
+
+def test_coerce_plugin_override_factory_error_handling(explainer_factory):
+    """_coerce_plugin_override should convert factory exceptions to ConfigurationError."""
+    explainer = _stub_explainer(explainer_factory)
+    explainer._plugin_manager = None
+
+    def failing_factory():
+        raise ValueError("Factory failed")
+
+    from calibrated_explanations.core.exceptions import ConfigurationError
+
+    with pytest.raises(ConfigurationError, match="Callable explanation plugin override raised"):
+        explainer._coerce_plugin_override(failing_factory)
+
+
+def test_prediction_orchestrator_raises_when_missing_attribute(explainer_factory):
+    """_prediction_orchestrator should raise when manager lacks the attribute."""
+    explainer = _stub_explainer(explainer_factory)
+
+    class BrokenManager:
+        pass
+
+    explainer._plugin_manager = BrokenManager()
+
+    with pytest.raises(
+        AttributeError, match="PluginManager has no '_prediction_orchestrator'"
+    ):
+        _ = explainer._prediction_orchestrator
+
+
+def test_explanation_orchestrator_raises_when_missing_attribute(explainer_factory):
+    """_explanation_orchestrator should raise when manager lacks the attribute."""
+    explainer = _stub_explainer(explainer_factory)
+
+    class BrokenManager:
+        pass
+
+    explainer._plugin_manager = BrokenManager()
+
+    with pytest.raises(
+        AttributeError, match="PluginManager has no '_explanation_orchestrator'"
+    ):
+        _ = explainer._explanation_orchestrator
+
+
+def test_reject_orchestrator_raises_when_missing_attribute(explainer_factory):
+    """_reject_orchestrator should raise when manager lacks the attribute."""
+    explainer = _stub_explainer(explainer_factory)
+
+    class BrokenManager:
+        pass
+
+    explainer._plugin_manager = BrokenManager()
+
+    with pytest.raises(AttributeError, match="PluginManager has no '_reject_orchestrator'"):
+        _ = explainer._reject_orchestrator
+
+
+def test_explanation_plugin_instances_empty_without_manager(explainer_factory):
+    """_explanation_plugin_instances should return empty dict without manager."""
+    explainer = _stub_explainer(explainer_factory)
+    delattr(explainer, "_plugin_manager")
+
+    assert explainer._explanation_plugin_instances == {}
+
+
+def test_explanation_plugin_identifiers_empty_without_manager(explainer_factory):
+    """_explanation_plugin_identifiers should return empty dict without manager."""
+    explainer = _stub_explainer(explainer_factory)
+    delattr(explainer, "_plugin_manager")
+
+    assert explainer._explanation_plugin_identifiers == {}
+
+
+def test_interval_plugin_hints_property_operations(explainer_factory):
+    """_interval_plugin_hints property should get/set via manager."""
+    explainer = _stub_explainer(explainer_factory)
+
+    # Create a mock manager
+    class MockManager:
+        def __init__(self):
+            self._interval_plugin_hints = {"default": ("hint1", "hint2")}
+
+    explainer._plugin_manager = MockManager()
+
+    assert explainer._interval_plugin_hints == {"default": ("hint1", "hint2")}
+
+    explainer._interval_plugin_hints = {"fast": ("fast_hint",)}
+    assert explainer._plugin_manager._interval_plugin_hints == {"fast": ("fast_hint",)}
+
+
+def test_explanation_plugin_fallbacks_property_operations(explainer_factory):
+    """_explanation_plugin_fallbacks property should get/set via manager."""
+    explainer = _stub_explainer(explainer_factory)
+
+    class MockManager:
+        def __init__(self):
+            self._explanation_plugin_fallbacks = {"factual": ("a", "b")}
+
+    explainer._plugin_manager = MockManager()
+
+    assert explainer._explanation_plugin_fallbacks == {"factual": ("a", "b")}
+
+    explainer._explanation_plugin_fallbacks = {"alternative": ("c",)}
+    assert explainer._plugin_manager._explanation_plugin_fallbacks == {"alternative": ("c",)}
+
+
+def test_plot_plugin_fallbacks_property_operations(explainer_factory):
+    """_plot_plugin_fallbacks property should get/set via manager."""
+    explainer = _stub_explainer(explainer_factory)
+
+    class MockManager:
+        def __init__(self):
+            self._plot_plugin_fallbacks = {"default": ("plot_a",)}
+
+    explainer._plugin_manager = MockManager()
+
+    assert explainer._plot_plugin_fallbacks == {"default": ("plot_a",)}
+
+    explainer._plot_plugin_fallbacks = {"alt": ("plot_b",)}
+    assert explainer._plugin_manager._plot_plugin_fallbacks == {"alt": ("plot_b",)}

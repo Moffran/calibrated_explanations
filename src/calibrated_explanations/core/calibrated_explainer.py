@@ -1125,6 +1125,13 @@ class CalibratedExplainer:
         Warnings
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.
+
+        Notes
+        -----
+        **DELETION COUPLING:** When removing this method, also remove the corresponding test:
+        - `tests/unit/core/test_calibrated_explainer_additional.py::test_explain_counterfactual_deprecated`
+
+        Both the deprecated method and its test must be removed together to avoid orphaned tests.
         """
         from ..utils.deprecations import deprecate
 
@@ -1837,6 +1844,14 @@ class CalibratedExplainer:
 
         .. deprecated:: 0.10.0
             Access LIME state through LimePipeline instead.
+
+        Notes
+        -----
+        **DELETION COUPLING:** When removing this method, also remove:
+        - Corresponding test in `tests/unit/core/test_calibrated_explainer_additional.py`
+        - Related internal state management (`_lime_pipeline`)
+
+        Both the method and test must be deleted together to avoid orphaned tests.
         """
         # Delegate to LimePipeline for lazy initialization and caching
         if not hasattr(self, "_lime_pipeline"):
@@ -1851,6 +1866,14 @@ class CalibratedExplainer:
 
         .. deprecated:: 0.10.0
             Access SHAP state through ShapPipeline instead.
+
+        Notes
+        -----
+        **DELETION COUPLING:** When removing this method, also remove:
+        - Corresponding test in `tests/unit/core/test_calibrated_explainer_additional.py`
+        - Related internal state management (`_shap_pipeline`)
+
+        Both the method and test must be deleted together to avoid orphaned tests.
         """
         # Delegate to ShapPipeline for lazy initialization and caching
         if not hasattr(self, "_shap_pipeline"):
@@ -1865,6 +1888,14 @@ class CalibratedExplainer:
 
         .. deprecated:: 0.10.0
             Use LimePipeline._preload_lime instead.
+
+        Notes
+        -----
+        **DELETION COUPLING:** When removing this method, also remove:
+        - Corresponding test in `tests/unit/core/test_calibrated_explainer_additional.py`
+        - Related internal state management (`_lime_pipeline`)
+
+        Both the method and test must be deleted together to avoid orphaned tests.
         """
         # Delegate to LimePipeline for lazy initialization and caching
         if not hasattr(self, "_lime_pipeline"):
@@ -1879,6 +1910,14 @@ class CalibratedExplainer:
 
         .. deprecated:: 0.10.0
             Use ShapPipeline._preload_shap instead.
+
+        Notes
+        -----
+        **DELETION COUPLING:** When removing this method, also remove:
+        - Corresponding test in `tests/unit/core/test_calibrated_explainer_additional.py`
+        - Related internal state management (`_shap_pipeline`)
+
+        Both the method and test must be deleted together to avoid orphaned tests.
         """
         # Delegate to ShapPipeline for lazy initialization and caching
         if not hasattr(self, "_shap_pipeline"):

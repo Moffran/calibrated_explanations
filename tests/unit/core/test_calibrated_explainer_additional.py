@@ -1,3 +1,24 @@
+"""Additional comprehensive unit tests for CalibratedExplainer.
+
+This module contains tests for various functionality of CalibratedExplainer,
+including deprecated methods. Tests for deprecated methods are strongly coupled
+with their implementations and MUST be deleted together with the deprecated
+method to avoid orphaned tests.
+
+**DELETION COUPLING REQUIREMENTS:**
+When removing deprecated methods from calibrated_explainer.py (e.g., _is_lime_enabled,
+_is_shap_enabled, _preload_lime, _preload_shap, explain_counterfactual), the
+corresponding tests in this file MUST be removed at the same time:
+
+- Removing CalibratedExplainer._is_lime_enabled → Remove any test_*lime* tests
+- Removing CalibratedExplainer._is_shap_enabled → Remove any test_*shap* tests
+- Removing CalibratedExplainer._preload_lime → Remove any test_*preload_lime* tests
+- Removing CalibratedExplainer._preload_shap → Remove any test_*preload_shap* tests
+- Removing CalibratedExplainer.explain_counterfactual → Remove test_explain_counterfactual* tests
+
+See calibrated_explainer.py docstrings for specific test locations.
+"""
+
 import os
 from typing import Any, Optional
 
