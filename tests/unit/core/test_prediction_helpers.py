@@ -148,7 +148,10 @@ def test_initialize_explanation_requires_bins_for_mondrian(monkeypatch):
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
-    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+    # Patch the import inside the initialize_explanation function
+    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
+
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
 
     with pytest.raises(ValidationError):
         ph.initialize_explanation(
@@ -169,7 +172,9 @@ def test_initialize_explanation_validates_bin_length(monkeypatch):
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
-    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
+
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
 
     with pytest.raises(DataShapeError):
         ph.initialize_explanation(
@@ -190,7 +195,9 @@ def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
-    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
+
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
 
     with pytest.raises(ValidationError):
         ph.initialize_explanation(
@@ -219,7 +226,9 @@ def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
-    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
+
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
     monkeypatch.setattr(ph, "assert_threshold", _fake_assert)
 
     with pytest.warns(UserWarning, match="list of interval thresholds"):
@@ -244,7 +253,9 @@ def test_initialize_explanation_sets_percentiles_without_threshold(monkeypatch):
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
-    monkeypatch.setattr(ph, "CalibratedExplanations", _Collection)
+    import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
+
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
 
     explanation = ph.initialize_explanation(
         explainer,

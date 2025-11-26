@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
-from ...explanations import CalibratedExplanations
 from ._base import BaseExplainExecutor
 from ._helpers import initialize_explanation, merge_feature_result
 from ._legacy_explain import explain_predict_step
@@ -24,7 +23,10 @@ from ._shared import (
 )
 
 if TYPE_CHECKING:
+    from ...explanations import CalibratedExplanations
     from ..calibrated_explainer import CalibratedExplainer
+else:
+    CalibratedExplainer = object
 
 
 class FeatureParallelExplainExecutor(BaseExplainExecutor):

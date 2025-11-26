@@ -12,14 +12,16 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
 
-from ...explanations import CalibratedExplanations
 from ._base import BaseExplainExecutor
 from ._helpers import initialize_explanation, slice_bins, slice_threshold
 from ._shared import ExplainConfig, ExplainRequest
 from .sequential import SequentialExplainExecutor
 
 if TYPE_CHECKING:
+    from ...explanations import CalibratedExplanations
     from ..calibrated_explainer import CalibratedExplainer
+else:
+    CalibratedExplainer = object
 
 
 class InstanceParallelExplainExecutor(BaseExplainExecutor):

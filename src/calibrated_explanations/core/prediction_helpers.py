@@ -9,11 +9,13 @@ exercise these wrappers to lock in semantics before moving logic bodies.
 from __future__ import annotations
 
 import warnings as _warnings
-from typing import Any, Optional, Protocol, Sequence, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Sequence, Tuple, Union, cast
 
 import numpy as np
 
-from ..explanations import CalibratedExplanations
+if TYPE_CHECKING:
+    from ..explanations import CalibratedExplanations
+
 from .exceptions import (
     ValidationError,
     DataShapeError,
@@ -100,6 +102,8 @@ def initialize_explanation(
     features_to_ignore: Optional[Sequence[int]],
 ) -> CalibratedExplanations:
     """Initialize explanation object (extracted logic)."""
+    from ..explanations import CalibratedExplanations  # pylint: disable=import-outside-toplevel
+
     if explainer._is_mondrian():  # noqa: SLF001
         if bins is None:
             raise ValidationError("Bins required for Mondrian explanations")

@@ -15,13 +15,15 @@ same way as the original methods.
 from __future__ import annotations
 
 from time import time
-from typing import Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from ...explanations import CalibratedExplanations
 from ...utils.helper import safe_mean
 from ._computation import explain_predict_step
+
+if TYPE_CHECKING:
+    pass
 
 
 def explain(
@@ -361,4 +363,4 @@ def explain(
     return explanation
 
 
-__all__ = ["explain", "explain_predict_step", "CalibratedExplanations"]
+__all__ = ["explain", "explain_predict_step"]

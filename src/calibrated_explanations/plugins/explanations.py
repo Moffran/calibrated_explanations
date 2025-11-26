@@ -7,6 +7,7 @@ from collections.abc import MutableMapping as MutableMappingABC
 from collections.abc import Sequence as SequenceABC
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     Any,
     Mapping,
     MutableMapping,
@@ -18,10 +19,10 @@ from typing import (
     runtime_checkable,
 )
 
-from ..explanations.explanation import (
-    CalibratedExplanation as AbstractCalibratedExplanation,
-)
-from ..explanations.explanations import CalibratedExplanations
+if TYPE_CHECKING:
+    from ..explanations.explanations import CalibratedExplanations as CalibratedExplanationsType
+else:
+    CalibratedExplanationsType = object
 from .base import ExplainerPlugin, PluginMeta
 from .predict import PredictBridge
 
@@ -57,8 +58,8 @@ class ExplanationRequest:
 class ExplanationBatch:
     """Batch payload returned by ``ExplanationPlugin.explain_batch``."""
 
-    container_cls: Type[CalibratedExplanations]
-    explanation_cls: Type[AbstractCalibratedExplanation]
+    container_cls: Type[CalibratedExplanationsType]
+    explanation_cls: Type  # CalibratedExplanation (deferred import to avoid circular dependency)
     instances: Sequence[Mapping[str, Any]]
     collection_metadata: MutableMapping[str, Any]
 
@@ -105,10 +106,14 @@ def validate_explanation_batch(
 
     def _inherits_calibrated_explanations(cls: type) -> bool:
         try:
+            from ..explanations.explanations import (
+                CalibratedExplanations,  # pylint: disable=import-outside-toplevel
+            )
+
             if issubclass(cls, CalibratedExplanations):
                 return True
-        except TypeError:
-            return False
+        except (ImportError, TypeError):
+            pass
         # Fall back to name-based check in case multiple module copies exist (e.g. notebooks)
         for base in getattr(cls, "__mro__", ()):
             if base is cls:
@@ -123,7 +128,27 @@ def validate_explanation_batch(
     explanation_cls = batch.explanation_cls
     if not isinstance(explanation_cls, type):
         raise TypeError("batch.explanation_cls must be a class")
-    if not issubclass(explanation_cls, AbstractCalibratedExplanation):
+
+    def _inherits_calibrated_explanation(cls: type) -> bool:
+        try:
+            # Attempt direct import-based check (may fail due to circular imports)
+            from ..explanations.explanation import (
+                CalibratedExplanation,
+            )
+
+            if issubclass(cls, CalibratedExplanation):
+                return True
+        except (ImportError, TypeError):
+            pass
+        # Fall back to name-based check in case of circular imports or multiple module copies
+        for base in getattr(cls, "__mro__", ()):
+            if base is cls:
+                continue
+            if base.__name__ == "CalibratedExplanation":
+                return True
+        return False
+
+    if not _inherits_calibrated_explanation(explanation_cls):
         raise TypeError("batch.explanation_cls must inherit from CalibratedExplanation")
 
     instances = batch.instances
