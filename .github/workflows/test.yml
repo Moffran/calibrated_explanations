@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install .
+          pip install -e .
           pip install pytest pytest-cov xgboost lime shap setuptools psutil
 
       - name: Run tests with coverage
@@ -98,13 +98,6 @@ jobs:
 
       - name: Run visualization tests
         run: pytest -m viz --no-cov -q
-
-      - name: Upload viz coverage to Codecov
-        uses: codecov/codecov-action@v5.5.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          flags: viz
 
   perf-guard:
     if: ${{ github.ref == 'refs/heads/main' }}
