@@ -368,7 +368,66 @@ class WrapCalibratedExplainer:
         validate_inputs_matrix(x_local, allow_nan=True)
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
+        assert self.explainer is not None
         return self.explainer.explain_fast(x_local, **kwargs)
+
+    def explain_with_narrative(
+        self,
+        x: Any,
+        template_path: str | None = None,
+        expertise_level: str = "advanced",
+        return_dataframe: bool = True,
+        **kwargs: Any,
+    ) -> Any:
+        """Generate explanations with human-readable narratives.
+
+        Parameters
+        ----------
+        x : array-like
+            Test instances to explain.
+        template_path : str, optional
+            Path to narrative template file (.yaml or .json). If None, looks for ``explain_template.yaml``.
+        expertise_level : {"beginner", "intermediate", "advanced"}, default="advanced"
+            Controls narrative complexity.
+        return_dataframe : bool, default=True
+            When True, returns a pandas DataFrame if available.
+        **kwargs : Any
+            Additional parameters (threshold, low_high_percentiles, bins, features_to_ignore, etc.).
+
+        Returns
+        -------
+        DataFrame or dict
+            Explanations with narratives. Falls back to a dictionary when pandas is unavailable and
+            ``return_dataframe`` is True.
+        """
+        if not self.fitted:
+            raise NotFittedError(
+                "The WrapCalibratedExplainer must be fitted and calibrated before generating narratives."
+            )
+        if not self.calibrated:
+            raise NotFittedError(
+                "The WrapCalibratedExplainer must be calibrated before generating narratives."
+            )
+
+        x_local = self._maybe_preprocess_for_inference(x)
+        kwargs = self._normalize_public_kwargs(kwargs)
+        cfg = getattr(self, "_cfg", None)
+        if cfg is not None:
+            kwargs.setdefault("threshold", cfg.threshold)
+            kwargs.setdefault("low_high_percentiles", cfg.low_high_percentiles)
+
+        validate_inputs_matrix(x_local, allow_nan=True)
+        validate_param_combination(kwargs)
+        kwargs["bins"] = self._get_bins(x_local, **kwargs)
+
+        assert self.explainer is not None
+        return self.explainer.explain_with_narrative(
+            x_local,
+            template_path=template_path,
+            expertise_level=expertise_level,
+            return_dataframe=return_dataframe,
+            **kwargs,
+        )
 
     def explain_lime(self, x: Any, **kwargs: Any) -> Any:
         """Generate lime explanations for the test data.
@@ -588,8 +647,23 @@ class WrapCalibratedExplainer:
         return self.explainer.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
-    def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> None:
+    def plot(self, x: Any, y: Any = None, threshold: float | None = None, **kwargs: Any) -> Any:
         """Generate plots for the test data.
+        
+        Parameters
+        ----------
+        x : array-like
+            Test instances to plot explanations for.
+        y : array-like, optional
+            True labels for the test instances.
+        threshold : float, optional
+            Threshold for probabilistic regression.
+        **kwargs : dict
+            Additional keyword arguments passed to the plot method.
+        
+        Returns
+        -------
+        None
 
         See Also
         --------
@@ -603,6 +677,7 @@ class WrapCalibratedExplainer:
             .explainer
             is not None
         )
+        
         # Apply config defaults when available and not explicitly provided
         cfg = getattr(self, "_cfg", None)
         if cfg is not None:

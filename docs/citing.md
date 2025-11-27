@@ -15,6 +15,9 @@ The paper that originated the idea of `calibrated-explanations` is:
 
 - [Löfström, H.](https://github.com/Moffran), [Löfström, T.](https://github.com/tuvelofstrom), Johansson, U., & Sönströd, C. (2023). [Investigating the impact of calibration on the quality of explanations](https://link.springer.com/article/10.1007/s10472-023-09837-2). Annals of Mathematics and Artificial Intelligence, 1-18. [Code and results](https://github.com/tuvelofstrom/calibrating-explanations).
 
+## Master Theses
+-  [Ayham Hanna](https://github.com/Aiham00) (2025) [Explainable AI for Multi-Class Machine Failure Prediction: A Focus on Calibrated Explainability and Model Uncertainty](https://urn.kb.se/resolve?urn=urn:nbn:se:hj:diva-68422)
+
 ## Preprints:
 - [Löfström, H](https://github.com/Moffran)., [Löfström, T](https://github.com/tuvelofstrom)., and [Hallberg Szabadvary, J](https://github.com/egonmedhatten). (2024). [Ensured: Explanations for Decreasing the Epistemic Uncertainty in Predictions](https://arxiv.org/abs/2410.05479). arXiv preprint arXiv:2410.05479.
 

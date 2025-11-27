@@ -344,6 +344,106 @@ class CalibratedExplanation(ABC):
         :meth:`.FastExplanation.plot` : Refer to the docstring for plot in FastExplanation for details.
         """
 
+    def to_narrative(
+        self,
+        template_path="exp.yaml",
+        expertise_level=("beginner", "advanced"),
+        output_format="dataframe",
+        **kwargs
+    ):
+        """
+        Generate narrative explanation for this single instance.
+
+        This method provides a clean API for generating human-readable narratives
+        from a single calibrated explanation using customizable templates.
+
+        Parameters
+        ----------
+        template_path : str, default="exp.yaml"
+            Path to the narrative template file (YAML or JSON).
+            If the file doesn't exist, the default template will be used.
+        expertise_level : str or tuple of str, default=("beginner", "advanced")
+            The expertise level(s) for narrative generation. Can be a single
+            level or a tuple of levels. Valid values: "beginner", "intermediate", "advanced".
+        output_format : str, default="dataframe"
+            Output format. Valid values: "dataframe", "text", "html", "dict".
+        **kwargs : dict
+            Additional keyword arguments passed to the narrative plugin.
+
+        Returns
+        -------
+        pd.DataFrame or str or dict
+            The generated narrative in the requested format:
+            - "dataframe": pandas DataFrame with one row
+            - "text": formatted text string
+            - "html": HTML table with one row
+            - "dict": dictionary with narrative fields
+
+        Raises
+        ------
+        FileNotFoundError
+            If the template file is not found and no default is available.
+        ValueError
+            If an invalid expertise level or output format is specified.
+        ImportError
+            If pandas is not available and output_format="dataframe" is requested.
+
+        Examples
+        --------
+        >>> from calibrated_explanations import CalibratedExplainer
+        >>> explainer = CalibratedExplainer(model, X_train, y_train)
+        >>> explanations = explainer.explain_factual(X_test)
+        >>> single_explanation = explanations[0]
+        >>> narrative = single_explanation.to_narrative(
+        ...     template_path="exp.yaml",
+        ...     expertise_level=("beginner", "advanced"),
+        ...     output_format="dataframe"
+        ... )
+        >>> print(narrative)
+
+        See Also
+        --------
+        :meth:`.CalibratedExplanations.to_narrative` : Generate narratives for a collection of explanations.
+        :meth:`.plot` : Plot explanations with various visual styles.
+        """
+        from ..viz.narrative_plugin import NarrativePlotPlugin
+        
+        # Create a temporary collection with just this explanation
+        # We need to wrap this single explanation in a collection-like object
+        # to use the narrative plugin
+        
+        # Create plugin instance
+        plugin = NarrativePlotPlugin(template_path=template_path)
+        
+        # Create a minimal wrapper that looks like a collection
+        class SingleExplanationWrapper:
+            def __init__(self, explanation):
+                self.explanations = [explanation]
+                self.calibrated_explainer = explanation.calibrated_explanations.calibrated_explainer
+                self.y_threshold = explanation.y_threshold
+                
+        wrapper = SingleExplanationWrapper(self)
+        
+        # Generate narrative using the plugin
+        result = plugin.plot(
+            wrapper,
+            template_path=template_path,
+            expertise_level=expertise_level,
+            output=output_format,
+            **kwargs
+        )
+        
+        # For single explanations, extract the first row/item if it's a collection
+        if output_format == "dataframe":
+            # Return the DataFrame (will have one row)
+            return result
+        elif output_format == "dict":
+            # Return the first (and only) dictionary
+            return result[0] if result else {}
+        else:
+            # For text and html, return as is
+            return result
+
     @abstractmethod
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """
@@ -1405,11 +1505,14 @@ class FactualExplanation(CalibratedExplanation):
                 The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
 
                 * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
+                * 'narrative' - generate human-readable narrative explanations
             rnk_metric : str, default='feature_weight'
                 The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
+        
+
         # Ensure style_override gets passed through
         style_override = kwargs.get("style_override")
         plot_use_legacy = kwargs.get("use_legacy")
@@ -1521,12 +1624,16 @@ class FactualExplanation(CalibratedExplanation):
                     style_override=style_override,
                     use_legacy=plot_use_legacy,
                 )
-        except RuntimeError as exc:  # pragma: no cover - optional dependency path
-            # Missing matplotlib or other plotting dependency: warn and no-op so
-            # core-only test runs do not fail when visualization extras are
+        except RuntimeError as e:
+            if "Agg" in str(e):
+                raise RuntimeError(
+                    "Matplotlib backend 'Agg' does not support show(). "
+                    "Either set show=False or switch to a different backend."
+                ) from e
+            raise# core-only test runs do not fail when visualization extras are
             # unavailable. Tests that require viz should use pytest.importorskip.
             warnings.warn(
-                f"Plotting unavailable: {exc}",
+                f"Plotting unavailable: {e}",
                 RuntimeWarning,
                 stacklevel=2,
             )

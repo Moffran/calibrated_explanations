@@ -720,6 +720,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         rnk_metric=None,
         rnk_weight=0.5,
         style_override=None,
+        **kwargs
     ):
         """
         Plot explanations for a given instance, with the option to show or save the plots.
@@ -745,12 +746,18 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         rnk_weight : float, default=0.5
             The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
 
+        Returns
+        -------
+        None
+
         See Also
         --------
         :meth:`.FactualExplanation.plot` : Refer to the docstring for plot in FactualExplanation for details on default ranking ('feature_weight').
         :meth:`.AlternativeExplanation.plot` : Refer to the docstring for plot in AlternativeExplanation for details on default ranking ('ensured').
         :meth:`.FastExplanation.plot` : Refer to the docstring for plot in FastExplanation for details on default ranking ('feature_weight').
         """
+        
+
         if len(filename) > 0:
             path, filename, title, ext = prepare_for_saving(filename)
 
@@ -781,6 +788,80 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     rnk_weight=rnk_weight,
                     style_override=style_override,
                 )
+
+    def to_narrative(
+        self,
+        template_path="exp.yaml",
+        expertise_level=("beginner", "advanced"),
+        output_format="dataframe",
+        **kwargs
+    ):
+        """
+        Generate narrative explanations for the collection.
+
+        This method provides a clean API for generating human-readable narratives
+        from calibrated explanations using customizable templates.
+
+        Parameters
+        ----------
+        template_path : str, default="exp.yaml"
+            Path to the narrative template file (YAML or JSON).
+            If the file doesn't exist, the default template will be used.
+        expertise_level : str or tuple of str, default=("beginner", "advanced")
+            The expertise level(s) for narrative generation. Can be a single
+            level or a tuple of levels. Valid values: "beginner", "intermediate", "advanced".
+        output_format : str, default="dataframe"
+            Output format. Valid values: "dataframe", "text", "html", "dict".
+        **kwargs : dict
+            Additional keyword arguments passed to the narrative plugin.
+
+        Returns
+        -------
+        pd.DataFrame or str or list of dict
+            The generated narratives in the requested format:
+            - "dataframe": pandas DataFrame with columns for each expertise level
+            - "text": formatted text string with all narratives
+            - "html": HTML table with all narratives
+            - "dict": list of dictionaries, one per instance
+
+        Raises
+        ------
+        FileNotFoundError
+            If the template file is not found and no default is available.
+        ValueError
+            If an invalid expertise level or output format is specified.
+        ImportError
+            If pandas is not available and output_format="dataframe" is requested.
+
+        Examples
+        --------
+        >>> from calibrated_explanations import CalibratedExplainer
+        >>> explainer = CalibratedExplainer(model, X_train, y_train)
+        >>> explanations = explainer.explain_factual(X_test)
+        >>> narratives = explanations.to_narrative(
+        ...     template_path="exp.yaml",
+        ...     expertise_level=("beginner", "advanced"),
+        ...     output_format="dataframe"
+        ... )
+        >>> print(narratives)
+
+        See Also
+        --------
+        :meth:`.plot` : Plot explanations with various visual styles.
+        """
+        from ..viz.narrative_plugin import NarrativePlotPlugin
+        
+        # Create plugin instance
+        plugin = NarrativePlotPlugin(template_path=template_path)
+        
+        # Generate narratives using the plugin
+        return plugin.plot(
+            self,
+            template_path=template_path,
+            expertise_level=expertise_level,
+            output=output_format,
+            **kwargs
+        )
 
     # pylint: disable=protected-access
     def as_lime(self, num_features_to_show=None):

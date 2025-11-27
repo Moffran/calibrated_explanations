@@ -3,17 +3,16 @@ ipython
 scikit-learn
 matplotlib >= 3.4
 myst_parser==3.0.1
-nbsphinx==0.9.4
+nbsphinx==0.9.7
 numpy >= 1.20
 numpydoc
 pytest
-pytest-cov
-pydata_sphinx_theme==0.15.4
-furo==2024.8.6
-sphinxcontrib-mermaid==0.9.2
-linkify-it-py==2.0.2
+pydata_sphinx_theme==0.16.1
+furo==2025.9.25
+sphinxcontrib-mermaid==1.2.2
+linkify-it-py==2.0.3
 sphinx==7.4.7
 docutils==0.20.1
-sphinx_rtd_theme==2.0.0
+sphinx_rtd_theme==3.0.2
 venn-abers
 roman

@@ -15,6 +15,10 @@ from __future__ import annotations
 
 from time import time
 
+import pandas as pd
+from .narrative_generator import NarrativeGenerator
+
+
 import numpy as np
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
@@ -264,8 +268,348 @@ class CalibratedExplainer:
 
         self.init_time = time() - init_time
 
-    def _coerce_plugin_override(self, override: Any) -> Any:
-        """Normalise a plugin override into an instance when possible.
+    # ------------------------------------------------------------------
+    # Plugin resolution helpers (ADR-015)
+    # ------------------------------------------------------------------
+
+    def explain_with_narrative(
+        self,
+        x,
+        threshold=None,
+        low_high_percentiles=(5, 95),
+        bins=None,
+        features_to_ignore=None,
+        template_path: Optional[str] = None,
+        expertise_level=("beginner", "intermediate", "advanced"),
+        return_dataframe: bool = True,
+    ) -> Any:
+        """
+        Generate explanations with human-readable narratives.
+        
+        Parameters
+        ----------
+        x : array-like
+            Test instances to explain
+        threshold : float, optional
+            Threshold for probabilistic regression
+        low_high_percentiles : tuple, default=(5, 95)
+            Percentiles for prediction intervals
+        bins : array-like, optional
+            Mondrian categories
+        features_to_ignore : list, optional
+            Features to exclude from explanation
+        template_path : str, optional
+            Path to narrative template file (.yaml or .json)
+            If None, looks for 'explain_template.yaml' in current directory
+        expertise_level : str or tuple, default=("beginner", "intermediate", "advanced")
+            Either a single level string or tuple of levels.
+            Each level can be: "beginner", "intermediate", or "advanced"
+        return_dataframe : bool, default=True
+            If True, returns pandas DataFrame with narratives
+            
+        Returns
+        -------
+        DataFrame or dict
+            Explanations with narratives. DataFrame contains:
+            - instance_index: Index of the explained instance
+            - factual_explanation_beginner: Beginner-level factual narrative (if requested)
+            - factual_explanation_intermediate: Intermediate-level factual narrative (if requested)
+            - factual_explanation_advanced: Advanced-level factual narrative (if requested)
+            - alternative_explanation_beginner: Beginner-level alternative narrative (if requested)
+            - alternative_explanation_intermediate: Intermediate-level alternative narrative (if requested)
+            - alternative_explanation_advanced: Advanced-level alternative narrative (if requested)
+            - expertise_level: Tuple of requested levels
+            - problem_type: Type of problem (regression, classification, etc.)
+            
+        Examples
+        --------
+        Generate narratives for all expertise levels:
+        
+        .. code-block:: python
+        
+            ce = CalibratedExplainer(model, X_cal, y_cal, mode='regression')
+            explanations_df = ce.explain_with_narrative(X_test[:5])
+            
+        Generate for a single expertise level:
+        
+        .. code-block:: python
+        
+            explanations_df = ce.explain_with_narrative(
+                X_test[:5],
+                expertise_level="advanced"
+            )
+            
+        Generate for specific levels only:
+        
+        .. code-block:: python
+        
+            explanations_df = ce.explain_with_narrative(
+                X_test[:5],
+                expertise_level=("beginner", "advanced")
+            )
+        """
+        try:
+            import pandas as pd
+            _PANDAS_AVAILABLE = True
+        except ImportError:
+            _PANDAS_AVAILABLE = False
+            pd = None
+        
+        if not _PANDAS_AVAILABLE and return_dataframe:
+            import warnings
+            warnings.warn(
+                "pandas not available, returning dict instead of DataFrame",
+                UserWarning,
+                stacklevel=2
+            )
+            return_dataframe = False
+        
+        # Handle pandas DataFrame input - convert to numpy array
+        if _PANDAS_AVAILABLE and hasattr(x, 'values'):
+            x = x.values
+        
+        # Ensure x is a numpy array
+        if not isinstance(x, np.ndarray):
+            x = np.asarray(x)
+        
+        # Load narrative generator
+        if template_path is None:
+            template_path = "explain_template.yaml"
+        
+        if not Path(template_path).exists():
+            raise FileNotFoundError(
+                f"Template file not found: {template_path}. "
+                "Please provide a valid template file path."
+            )
+        
+        narrator = NarrativeGenerator(template_path)
+        
+        # Determine problem type
+        problem_type = self._infer_problem_type(threshold)
+        
+        # Get feature names from explainer
+        feature_names = self.feature_names if hasattr(self, 'feature_names') else None
+        
+        # Normalize expertise_level to a tuple
+        if isinstance(expertise_level, str):
+            levels_to_generate = (expertise_level,)
+        else:
+            levels_to_generate = tuple(expertise_level)
+        
+        # Validate expertise levels
+        valid_levels = {"beginner", "intermediate", "advanced"}
+        for level in levels_to_generate:
+            if level not in valid_levels:
+                raise ValueError(
+                    f"Invalid expertise level '{level}'. "
+                    f"Must be one of: {', '.join(valid_levels)}"
+                )
+        
+        # Generate factual explanations
+        factual_explanations = self.explain_factual(
+            x, threshold, low_high_percentiles, bins, features_to_ignore
+        )
+        
+        # Generate alternative explanations
+        alternative_explanations = self.explore_alternatives(
+            x, threshold, low_high_percentiles, bins, features_to_ignore
+        )
+        
+        # Build results
+        results = []
+        n_instances = len(x) if hasattr(x, '__len__') else 1
+        
+        for i in range(n_instances):
+            factual_exp = factual_explanations.get_explanation(i)
+            alternative_exp = alternative_explanations.get_explanation(i)
+            
+            # Build result dict for this instance
+            result = {
+                "instance_index": i,
+            }
+            
+            # Generate narratives for each requested expertise level
+            for level in levels_to_generate:
+                # Factual narrative
+                factual_narrative = narrator.generate_narrative(
+                    factual_exp,
+                    problem_type=problem_type,
+                    explanation_type="factual",
+                    expertise_level=level,
+                    threshold=threshold,
+                    feature_names=feature_names,
+                )
+                result[f"factual_explanation_{level}"] = factual_narrative
+                
+                # Alternative narrative
+                alternative_narrative = narrator.generate_narrative(
+                    alternative_exp,
+                    problem_type=problem_type,
+                    explanation_type="alternative",
+                    expertise_level=level,
+                    threshold=threshold,
+                    feature_names=feature_names,
+                )
+                result[f"alternative_explanation_{level}"] = alternative_narrative
+            
+            # Add metadata
+            result["expertise_level"] = levels_to_generate
+            result["problem_type"] = problem_type
+            
+            results.append(result)
+        
+        if return_dataframe:
+            return pd.DataFrame(results)
+        return results
+
+    def _infer_problem_type(self, threshold: Optional[float] = None) -> str:
+        """Infer problem type for narrative generation."""
+        if self.mode == "classification":
+            if self.is_multiclass():
+                return "multiclass_classification"
+            return "binary_classification"
+        elif "regression" in self.mode:
+            if threshold is not None:
+                return "probabilistic_regression"
+            return "regression"
+        return "binary_classification"  # fallback
+    
+
+    def _build_explanation_chain(self, mode: str) -> Tuple[str, ...]:
+        """Return the ordered identifier fallback chain for *mode*."""
+        entries: List[str] = []
+
+        override = self._explanation_plugin_overrides.get(mode)
+        if isinstance(override, str) and override:
+            entries.append(override)
+
+        env_key = f"CE_EXPLANATION_PLUGIN_{mode.upper()}"
+        env_value = os.environ.get(env_key)
+        if env_value:
+            entries.append(env_value.strip())
+        entries.extend(_split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
+
+        py_settings = self._pyproject_explanations or {}
+        py_value = py_settings.get(mode)
+        if isinstance(py_value, str) and py_value:
+            entries.append(py_value)
+        entries.extend(_coerce_string_tuple(py_settings.get(f"{mode}_fallbacks")))
+
+        # Deduplicate while maintaining order and extend using metadata fallbacks
+        seen: set[str] = set()
+        expanded: List[str] = []
+        for identifier in entries:
+            if not identifier or identifier in seen:
+                continue
+            expanded.append(identifier)
+            seen.add(identifier)
+            descriptor = find_explanation_descriptor(identifier)
+            if descriptor:
+                for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
+                    if fallback and fallback not in seen:
+                        expanded.append(fallback)
+                        seen.add(fallback)
+
+        default_identifier = _DEFAULT_EXPLANATION_IDENTIFIERS.get(mode)
+        if default_identifier and default_identifier not in seen:
+            expanded.append(default_identifier)
+            seen.add(default_identifier)
+
+        if mode == "fast":
+            # Allow environments that only ship the external fast plugin to
+            # register under their own identifier while still preferring the
+            # core identifier when it becomes available at runtime.
+            ext_fast = "external.explanation.fast"
+            if ext_fast and ext_fast not in seen:
+                expanded.append(ext_fast)
+                seen.add(ext_fast)
+        return tuple(expanded)
+
+    def _build_interval_chain(self, *, fast: bool) -> Tuple[str, ...]:
+        """Return the ordered interval plugin chain for the requested mode."""
+        entries: List[str] = []
+        override = self._fast_interval_plugin_override if fast else self._interval_plugin_override
+        preferred_identifier: str | None = None
+        if isinstance(override, str) and override:
+            entries.append(override)
+            preferred_identifier = override
+
+        env_key = "CE_INTERVAL_PLUGIN_FAST" if fast else "CE_INTERVAL_PLUGIN"
+        env_value = os.environ.get(env_key)
+        if env_value:
+            entries.append(env_value.strip())
+            if preferred_identifier is None:
+                preferred_identifier = env_value.strip()
+        entries.extend(_split_csv(os.environ.get(f"{env_key}_FALLBACKS")))
+
+        py_settings = self._pyproject_intervals or {}
+        py_key = "fast" if fast else "default"
+        py_value = py_settings.get(py_key)
+        if isinstance(py_value, str) and py_value:
+            entries.append(py_value)
+        entries.extend(_coerce_string_tuple(py_settings.get(f"{py_key}_fallbacks")))
+
+        default_identifier = "core.interval.fast" if fast else "core.interval.legacy"
+        seen: set[str] = set()
+        ordered: List[str] = []
+        for identifier in entries:
+            if identifier and identifier not in seen:
+                ordered.append(identifier)
+                seen.add(identifier)
+                descriptor = find_interval_descriptor(identifier)
+                if descriptor:
+                    for fallback in _coerce_string_tuple(descriptor.metadata.get("fallbacks")):
+                        if fallback and fallback not in seen:
+                            ordered.append(fallback)
+                            seen.add(fallback)
+        if default_identifier not in seen:
+            if fast:
+                # Prefer the core fast identifier when available; otherwise
+                # fall back to the external fast interval identifier if registered.
+                if find_interval_descriptor(default_identifier) is not None:
+                    ordered.append(default_identifier)
+                else:
+                    ext_fast = "external.interval.fast"
+                    if find_interval_descriptor(ext_fast) is not None:
+                        ordered.append(ext_fast)
+            else:
+                ordered.append(default_identifier)
+        key = "fast" if fast else "default"
+        self._interval_preferred_identifier[key] = preferred_identifier
+        return tuple(ordered)
+
+    def _build_plot_style_chain(self) -> Tuple[str, ...]:
+        """Return the ordered plot style fallback chain."""
+        entries: List[str] = []
+        if isinstance(self._plot_style_override, str) and self._plot_style_override:
+            entries.append(self._plot_style_override)
+
+        env_value = os.environ.get("CE_PLOT_STYLE")
+        if env_value:
+            entries.append(env_value.strip())
+        entries.extend(_split_csv(os.environ.get("CE_PLOT_STYLE_FALLBACKS")))
+
+        py_settings = self._pyproject_plots or {}
+        py_value = py_settings.get("style")
+        if isinstance(py_value, str) and py_value:
+            entries.append(py_value)
+        entries.extend(_coerce_string_tuple(py_settings.get("style_fallbacks")))
+        entries.append("legacy")
+        seen: set[str] = set()
+        ordered: List[str] = []
+        for identifier in entries:
+            if identifier and identifier not in seen:
+                ordered.append(identifier)
+                seen.add(identifier)
+        if "plot_spec.default" not in seen:
+            if "legacy" in ordered:
+                legacy_index = ordered.index("legacy")
+                ordered.insert(legacy_index, "plot_spec.default")
+            else:
+                ordered.append("plot_spec.default")
+        if "legacy" not in ordered:
+            ordered.append("legacy")
+        return tuple(ordered)
 
         Delegates to PluginManager.
         """
