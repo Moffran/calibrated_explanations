@@ -81,12 +81,12 @@ def __getattr__(name: str):
         globals()[name] = WrapCalibratedExplainer
         return WrapCalibratedExplainer
     if name == "IntervalRegressor":
-        from .core.interval_regressor import IntervalRegressor
+        from .core.calibration.interval_regressor import IntervalRegressor
 
         globals()[name] = IntervalRegressor
         return IntervalRegressor
     if name == "VennAbers":
-        from .core.venn_abers import VennAbers
+        from .core.calibration.venn_abers import VennAbers
 
         globals()[name] = VennAbers
         return VennAbers

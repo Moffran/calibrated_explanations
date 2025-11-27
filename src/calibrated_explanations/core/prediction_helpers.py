@@ -8,18 +8,20 @@ exercise these wrappers to lock in semantics before moving logic bodies.
 
 from __future__ import annotations
 
-import logging
 import warnings as _warnings
-from typing import Any, Dict, Optional, Protocol, Sequence, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Sequence, Tuple, Union, cast
 
 import numpy as np
 
-from ..explanations import CalibratedExplanations
+if TYPE_CHECKING:
+    from ..explanations import CalibratedExplanations
+
 from .exceptions import (
     ValidationError,
     DataShapeError,
 )
 from ..utils.helper import assert_threshold, safe_isinstance
+from .explain._computation import explain_predict_step
 
 # Local typing protocol to avoid importing CalibratedExplainer and creating cycles.
 # Captures just the members used by these helpers.
@@ -64,10 +66,6 @@ class _ExplainerProtocol(Protocol):
         """Compute calibrated predictions and interval bounds."""
         ...
 
-    def assign_threshold(self, threshold: Optional[ThresholdLike]) -> Any:
-        """Broadcast or validate regression thresholds for perturbed inputs."""
-        ...
-
     def _discretize(self, x: np.ndarray) -> np.ndarray:
         """Transform inputs into discretized representations when needed."""
         ...
@@ -104,6 +102,8 @@ def initialize_explanation(
     features_to_ignore: Optional[Sequence[int]],
 ) -> CalibratedExplanations:
     """Initialize explanation object (extracted logic)."""
+    from ..explanations import CalibratedExplanations  # pylint: disable=import-outside-toplevel
+
     if explainer._is_mondrian():  # noqa: SLF001
         if bins is None:
             raise ValidationError("Bins required for Mondrian explanations")
@@ -147,102 +147,186 @@ def predict_internal(
     )
 
 
-def explain_predict_step(
-    explainer: _ExplainerProtocol,
-    x: np.ndarray,
-    threshold: Optional[ThresholdLike],
-    low_high_percentiles: Tuple[int, int],
-    bins: Optional[np.ndarray],
-    features_to_ignore: Optional[Sequence[int]],
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    np.ndarray,
-    Dict[str, Any],
-    np.ndarray,
-    Any,
-    Dict[int, Any],
-    Dict[int, Any],
-    Dict[int, Any],
-    np.ndarray,
-    Any,
-    Optional[np.ndarray],
-    np.ndarray,
-    np.ndarray,
-]:
-    """Execute the initial prediction step for explanation (mechanically moved)."""
-    x_cal = explainer.x_cal
-    predict, low, high, predicted_class = explainer._predict(  # noqa: SLF001
-        x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
-    )
-
-    prediction = {
-        "predict": predict,
-        "low": low,
-        "high": high,
-        "classes": (predicted_class if explainer.is_multiclass() else np.ones(predict.shape)),
-    }
-    if explainer.mode == "classification":  # store full calibrated probability matrix
-        try:  # pragma: no cover - defensive
-            if explainer.is_multiclass():
-                if explainer.is_fast():
-                    full_probs = explainer.interval_learner[  # noqa: SLF001
-                        explainer.num_features
-                    ].predict_proba(x, bins=bins)
-                else:
-                    full_probs = explainer.interval_learner.predict_proba(  # noqa: SLF001
-                        x, bins=bins
-                    )
-            else:  # binary
-                if explainer.is_fast():
-                    full_probs = explainer.interval_learner[  # noqa: SLF001
-                        explainer.num_features
-                    ].predict_proba(x, bins=bins)
-                else:
-                    full_probs = explainer.interval_learner.predict_proba(  # noqa: SLF001
-                        x, bins=bins
-                    )
-            prediction["__full_probabilities__"] = full_probs
-        except Exception as exc:  # pragma: no cover
-            logging.getLogger("calibrated_explanations").debug(
-                "Failed to compute full calibrated probabilities: %s", exc
-            )
-
-    x.flags.writeable = False
-    assert_threshold(threshold, x)
-    perturbed_threshold = explainer.assign_threshold(threshold)
-    perturbed_bins = np.empty((0,)) if bins is not None else None
-    perturbed_x = np.empty((0, explainer.num_features))
-    perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
-    perturbed_class = np.empty((0,), dtype=int)
-    x_perturbed = explainer._discretize(x)  # noqa: SLF001
-    rule_boundaries = explainer.rule_boundaries(x, x_perturbed)  # noqa: SLF001
-
-    lesser_values: dict[int, Any] = {}
-    greater_values: dict[int, Any] = {}
-    covered_values: dict[int, Any] = {}
-
-    return (
-        predict,
-        low,
-        high,
-        prediction,
-        perturbed_feature,
-        rule_boundaries,
-        lesser_values,
-        greater_values,
-        covered_values,
-        x_cal,
-        perturbed_threshold,
-        perturbed_bins,
-        perturbed_x,
-        perturbed_class,
-    )
-
-
 __all__ = [
     "validate_and_prepare_input",
     "initialize_explanation",
     "predict_internal",
     "explain_predict_step",
+    "format_regression_prediction",
+    "format_classification_prediction",
+    "handle_uncalibrated_regression_prediction",
+    "handle_uncalibrated_classification_prediction",
 ]
+
+
+def format_regression_prediction(
+    predict: np.ndarray,
+    low: np.ndarray,
+    high: np.ndarray,
+    threshold: Optional[ThresholdLike] = None,
+    uq_interval: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]]:
+    """Format regression predictions with optional thresholds and intervals.
+
+    Parameters
+    ----------
+    predict : np.ndarray
+        The predicted values.
+    low : np.ndarray
+        Lower bounds of prediction intervals.
+    high : np.ndarray
+        Upper bounds of prediction intervals.
+    threshold : float, int, array-like, optional
+        Threshold for probabilistic regression. If provided, returns probabilities.
+    uq_interval : bool, default=False
+        Whether to return uncertainty intervals.
+
+    Returns
+    -------
+    predictions or (predictions, (low, high))
+        Formatted predictions with optional intervals.
+    """
+    if threshold is None:
+        return (predict, (low, high)) if uq_interval else predict
+
+    # Thresholded prediction - convert to probability labels
+    def get_label(prob_val, thresh):
+        if np.isscalar(thresh):
+            return f"y_hat <= {thresh}" if prob_val >= 0.5 else f"y_hat > {thresh}"
+        if isinstance(thresh, tuple):
+            return (
+                f"{thresh[0]} < y_hat <= {thresh[1]}"
+                if prob_val >= 0.5
+                else f"y_hat <= {thresh[0]} || y_hat > {thresh[1]}"
+            )
+        return "Error in format_regression_prediction.get_label()"
+
+    if np.isscalar(threshold) or isinstance(threshold, tuple):
+        new_classes = [get_label(predict[i], threshold) for i in range(len(predict))]
+    else:
+        new_classes = [get_label(predict[i], threshold[i]) for i in range(len(predict))]
+
+    return (new_classes, (low, high)) if uq_interval else new_classes
+
+
+def format_classification_prediction(
+    predict: np.ndarray,
+    low: np.ndarray,
+    high: np.ndarray,
+    new_classes: Optional[np.ndarray],
+    is_multiclass_val: bool,
+    label_map: Optional[dict] = None,
+    class_labels: Optional[np.ndarray] = None,
+    uq_interval: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]]:
+    """Format classification predictions with optional class label mapping and intervals.
+
+    Parameters
+    ----------
+    predict : np.ndarray
+        The predicted probabilities.
+    low : np.ndarray
+        Lower bounds of prediction intervals.
+    high : np.ndarray
+        Upper bounds of prediction intervals.
+    new_classes : np.ndarray or None
+        Predicted class indices or None.
+    is_multiclass_val : bool
+        Whether this is a multiclass problem.
+    label_map : dict, optional
+        Mapping from numeric class indices to labels.
+    class_labels : array-like, optional
+        Human-readable class labels.
+    uq_interval : bool, default=False
+        Whether to return uncertainty intervals.
+
+    Returns
+    -------
+    predictions or (predictions, (low, high))
+        Formatted predictions with optional intervals.
+    """
+    if new_classes is None:
+        new_classes = (predict >= 0.5).astype(int)
+
+    if label_map is not None or class_labels is not None:
+        new_classes = np.array([class_labels[c] for c in new_classes])
+
+    return (new_classes, (low, high)) if uq_interval else new_classes
+
+
+def handle_uncalibrated_regression_prediction(
+    learner,
+    x: np.ndarray,
+    threshold: Optional[ThresholdLike] = None,
+    uq_interval: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]]:
+    """Handle uncalibrated regression prediction.
+
+    Parameters
+    ----------
+    learner : object
+        The underlying predictive learner.
+    x : np.ndarray
+        Input data.
+    threshold : float, int, array-like, optional
+        Threshold for regression tasks (not allowed for uncalibrated).
+    uq_interval : bool, default=False
+        Whether to return uncertainty intervals.
+
+    Returns
+    -------
+    predictions or (predictions, (low, high))
+        Uncalibrated predictions.
+
+    Raises
+    ------
+    ValidationError
+        If threshold is provided.
+    """
+    if threshold is not None:
+        raise ValidationError(
+            "A thresholded prediction is not possible for uncalibrated predictions."
+        )
+
+    predict = learner.predict(x)
+    return (predict, (predict, predict)) if uq_interval else predict
+
+
+def handle_uncalibrated_classification_prediction(
+    learner,
+    x: np.ndarray,
+    threshold: Optional[ThresholdLike] = None,
+    uq_interval: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[np.ndarray, np.ndarray]]]:
+    """Handle uncalibrated classification prediction.
+
+    Parameters
+    ----------
+    learner : object
+        The underlying predictive learner.
+    x : np.ndarray
+        Input data.
+    threshold : float, int, array-like, optional
+        Threshold (not allowed for classification).
+    uq_interval : bool, default=False
+        Whether to return uncertainty intervals.
+
+    Returns
+    -------
+    predictions or (predictions, (low, high))
+        Uncalibrated class predictions (not probabilities).
+
+    Raises
+    ------
+    ValidationError
+        If threshold is provided.
+    """
+    if threshold is not None:
+        raise ValidationError("A thresholded prediction is not possible for uncalibrated learners.")
+
+    # Use learner.predict() to get class predictions, not probabilities
+    predictions = learner.predict(x)
+    if uq_interval:
+        # For intervals, use the same predictions as bounds (no uncertainty)
+        return predictions, (predictions, predictions)
+    return predictions

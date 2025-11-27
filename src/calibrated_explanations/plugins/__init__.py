@@ -23,6 +23,7 @@ from .intervals import (  # noqa: F401
     IntervalCalibratorPlugin,
     RegressionIntervalCalibrator,
 )
+from .manager import PluginManager  # noqa: F401
 from .plots import (  # noqa: F401
     PlotArtifact,
     PlotBuilder,
@@ -56,6 +57,7 @@ __all__ = [
     "PlotRenderResult",
     "PlotRenderer",
     "PluginMeta",
+    "PluginManager",
     "PredictBridge",
     "validate_plugin_meta",
     "registry",

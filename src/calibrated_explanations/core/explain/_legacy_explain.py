@@ -15,187 +15,15 @@ same way as the original methods.
 from __future__ import annotations
 
 from time import time
-from typing import Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from ..explanations import CalibratedExplanations
-from ..utils.helper import concatenate_thresholds, safe_mean
+from ...utils.helper import safe_mean
+from ._computation import explain_predict_step
 
-
-def explain_predict_step(
-    explainer,
-    x,
-    threshold,
-    low_high_percentiles,
-    bins,
-    features_to_ignore,
-):
-    """Legacy implementation of ``CalibratedExplainer._explain_predict_step``.
-
-    Parameters mirror the modern helper and the body closely follows the
-    historical version so the resulting perturbation tables match the
-    pre-refactor layout.  The implementation is intentionally verbose to
-    minimise behavioural drift.
-    """
-    from .prediction_helpers import explain_predict_step as _eps
-
-    (
-        _base_predict,
-        _base_low,
-        _base_high,
-        prediction,
-        perturbed_feature,
-        rule_boundaries,
-        lesser_values,
-        greater_values,
-        covered_values,
-        x_cal,
-        perturbed_threshold,
-        perturbed_bins,
-        perturbed_x,
-        perturbed_class,
-    ) = _eps(explainer, x, threshold, low_high_percentiles, bins, features_to_ignore)
-
-    for f in range(explainer.num_features):
-        if f in features_to_ignore:
-            continue
-        if f in explainer.categorical_features:
-            feature_values = explainer.feature_values[f]
-            x_copy = np.array(x, copy=True)
-            for value in feature_values:
-                x_copy[:, f] = value
-                perturbed_x = np.concatenate((perturbed_x, np.array(x_copy)))
-                perturbed_feature = np.concatenate(
-                    (perturbed_feature, [(f, i, value, None) for i in range(x.shape[0])])
-                )
-                perturbed_bins = (
-                    np.concatenate((perturbed_bins, bins)) if bins is not None else None
-                )
-                perturbed_class = np.concatenate((perturbed_class, prediction["predict"]))
-                perturbed_threshold = concatenate_thresholds(
-                    perturbed_threshold, threshold, list(range(x.shape[0]))
-                )
-        else:
-            x_copy = np.array(x, copy=True)
-            feature_values = np.unique(np.array(x_cal[:, f]))
-            lower_boundary = rule_boundaries[:, f, 0]
-            upper_boundary = rule_boundaries[:, f, 1]
-            for i in range(len(x)):
-                lower_boundary[i] = (
-                    lower_boundary[i] if np.any(feature_values < lower_boundary[i]) else -np.inf
-                )
-                upper_boundary[i] = (
-                    upper_boundary[i] if np.any(feature_values > upper_boundary[i]) else np.inf
-                )
-
-            lesser_values[f] = {}
-            greater_values[f] = {}
-            covered_values[f] = {}
-            for j, val in enumerate(np.unique(lower_boundary)):
-                lesser_values[f][j] = (
-                    np.unique(explainer._CalibratedExplainer__get_lesser_values(f, val)),
-                    val,
-                )
-                indices = np.where(lower_boundary == val)[0]
-                for value in lesser_values[f][j][0]:
-                    x_local = x_copy[indices, :]
-                    x_local[:, f] = value
-                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
-                    perturbed_feature = np.concatenate(
-                        (perturbed_feature, [(f, i, j, True) for i in indices])
-                    )
-                    if bins is not None:
-                        perturbed_bins = np.concatenate(
-                            (
-                                perturbed_bins,
-                                bins[indices] if len(indices) > 1 else [bins[indices[0]]],
-                            )
-                        )
-                    perturbed_class = np.concatenate(
-                        (perturbed_class, prediction["classes"][indices])
-                    )
-                    perturbed_threshold = concatenate_thresholds(
-                        perturbed_threshold, threshold, indices
-                    )
-            for j, val in enumerate(np.unique(upper_boundary)):
-                greater_values[f][j] = (
-                    np.unique(explainer._CalibratedExplainer__get_greater_values(f, val)),
-                    val,
-                )
-                indices = np.where(upper_boundary == val)[0]
-                for value in greater_values[f][j][0]:
-                    x_local = x_copy[indices, :]
-                    x_local[:, f] = value
-                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
-                    perturbed_feature = np.concatenate(
-                        (perturbed_feature, [(f, i, j, False) for i in indices])
-                    )
-                    if bins is not None:
-                        perturbed_bins = np.concatenate(
-                            (
-                                perturbed_bins,
-                                bins[indices] if len(indices) > 1 else [bins[indices[0]]],
-                            )
-                        )
-                    perturbed_class = np.concatenate(
-                        (perturbed_class, prediction["classes"][indices])
-                    )
-                    perturbed_threshold = concatenate_thresholds(
-                        perturbed_threshold, threshold, indices
-                    )
-            indices = range(len(x))
-            for i in indices:
-                covered_values[f][i] = (
-                    explainer._CalibratedExplainer__get_covered_values(
-                        f, lower_boundary[i], upper_boundary[i]
-                    ),
-                    (lower_boundary[i], upper_boundary[i]),
-                )
-                for value in covered_values[f][i][0]:
-                    x_local = x_copy[i, :]
-                    x_local[f] = value
-                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local.reshape(1, -1))))
-                    perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
-                    if bins is not None:
-                        perturbed_bins = np.concatenate((perturbed_bins, [bins[i]]))
-                    perturbed_class = np.concatenate((perturbed_class, [prediction["classes"][i]]))
-                    if threshold is not None and isinstance(threshold, (list, np.ndarray)):
-                        if isinstance(threshold[0], tuple) and len(perturbed_threshold) == 0:
-                            perturbed_threshold = [threshold[i]]
-                        else:
-                            perturbed_threshold = np.concatenate(
-                                (perturbed_threshold, [threshold[i]])
-                            )
-
-    if (
-        threshold is not None
-        and isinstance(threshold, (list, np.ndarray))
-        and isinstance(threshold[0], tuple)
-    ):
-        perturbed_threshold = [tuple(pair) for pair in perturbed_threshold]
-    predict, low, high, _ = explainer._predict(
-        perturbed_x,
-        threshold=perturbed_threshold,
-        low_high_percentiles=low_high_percentiles,
-        classes=perturbed_class,
-        bins=perturbed_bins,
-    )
-    predict = np.array(predict)
-    low = np.array(low)
-    high = np.array(high)
-    return (
-        predict,
-        low,
-        high,
-        prediction,
-        perturbed_feature,
-        rule_boundaries,
-        lesser_values,
-        greater_values,
-        covered_values,
-        x_cal,
-    )
+if TYPE_CHECKING:
+    pass
 
 
 def explain(
@@ -212,6 +40,10 @@ def explain(
     The function mirrors the historical control flow to enable correctness
     comparisons with the optimised implementation.
     """
+    from ._computation import initialize_explanation  # pylint: disable=import-outside-toplevel
+    from ._helpers import validate_and_prepare_input  # pylint: disable=import-outside-toplevel
+    from .feature_task import assign_weight  # pylint: disable=import-outside-toplevel
+
     total_time = time()
 
     features_to_ignore = (
@@ -220,9 +52,9 @@ def explain(
         else np.union1d(explainer.features_to_ignore, features_to_ignore)
     )
 
-    x = explainer._validate_and_prepare_input(x)
-    explanation = explainer._initialize_explanation(
-        x, low_high_percentiles, threshold, bins, features_to_ignore
+    x = validate_and_prepare_input(explainer, x)
+    explanation = initialize_explanation(
+        explainer, x, low_high_percentiles, threshold, bins, features_to_ignore
     )
 
     instance_time = time()
@@ -238,6 +70,10 @@ def explain(
         greater_values,
         covered_values,
         x_cal,
+        perturbed_threshold,
+        perturbed_bins,
+        perturbed_x,
+        perturbed_class,
     ) = explain_predict_step(
         explainer,
         x,
@@ -352,13 +188,11 @@ def explain(
                     instance_predict[i]["low"][f] = safe_mean(low_predict[uncovered])
                     instance_predict[i]["high"][f] = safe_mean(high_predict[uncovered])
 
-                    instance_weights[i]["predict"][f] = explainer._assign_weight(
+                    instance_weights[i]["predict"][f] = assign_weight(
                         instance_predict[i]["predict"][f], prediction["predict"][i]
                     )
-                    tmp_low = explainer._assign_weight(
-                        instance_predict[i]["low"][f], prediction["predict"][i]
-                    )
-                    tmp_high = explainer._assign_weight(
+                    tmp_low = assign_weight(instance_predict[i]["low"][f], prediction["predict"][i])
+                    tmp_high = assign_weight(
                         instance_predict[i]["high"][f], prediction["predict"][i]
                     )
                     instance_weights[i]["low"][f] = np.min([tmp_low, tmp_high])
@@ -486,13 +320,11 @@ def explain(
                     instance_predict[i]["low"][f] = safe_mean(low_predict_map[i][uncovered])
                     instance_predict[i]["high"][f] = safe_mean(high_predict_map[i][uncovered])
 
-                    instance_weights[i]["predict"][f] = explainer._assign_weight(
+                    instance_weights[i]["predict"][f] = assign_weight(
                         instance_predict[i]["predict"][f], prediction["predict"][i]
                     )
-                    tmp_low = explainer._assign_weight(
-                        instance_predict[i]["low"][f], prediction["predict"][i]
-                    )
-                    tmp_high = explainer._assign_weight(
+                    tmp_low = assign_weight(instance_predict[i]["low"][f], prediction["predict"][i])
+                    tmp_high = assign_weight(
                         instance_predict[i]["high"][f], prediction["predict"][i]
                     )
                     instance_weights[i]["low"][f] = np.min([tmp_low, tmp_high])
@@ -531,4 +363,4 @@ def explain(
     return explanation
 
 
-__all__ = ["explain", "explain_predict_step", "CalibratedExplanations"]
+__all__ = ["explain", "explain_predict_step"]

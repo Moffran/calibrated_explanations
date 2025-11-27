@@ -46,7 +46,6 @@ class DummyCalibratedExplainer:
         self.categorical_features = []
         self.categorical_labels = []
         self.feature_values = []
-        self.assign_threshold = 0.5
         self.sample_percentiles = [5.0, 95.0]
         self.is_multiclass = False
         self.discretizer = object()
@@ -517,7 +516,7 @@ def test_frozen_explainer_read_only():
     assert frozen.feature_values == dummy.feature_values
     assert frozen.feature_names == dummy.feature_names
     assert frozen.class_labels == dummy.class_labels
-    assert frozen.assign_threshold == dummy.assign_threshold
+    assert not hasattr(frozen, "assign_threshold")
     assert frozen.sample_percentiles == dummy.sample_percentiles
     assert frozen.mode == dummy.mode
     assert frozen.is_multiclass == dummy.is_multiclass

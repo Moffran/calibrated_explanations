@@ -20,4 +20,7 @@ When asked to "proceed according to plan" or to determine the next development s
 4. **Document rationale**:
    - When proposing or generating code for a next step, briefly reference the relevant section(s) of the plan and ADR(s) that justify your choice.
 
+5. **Test instructions**:
+   - Make sure to follow the instructions in `.github/instructions/tests.instructions.md` when generating or modifying tests.
+
 **Never** proceed with a step that is not supported by both the current plan and the ADRs. If ambiguity exists, request clarification or escalate for ADR or plan update before proceeding.

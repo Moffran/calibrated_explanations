@@ -4,6 +4,7 @@ import pytest
 from calibrated_explanations.viz.builders import (
     build_regression_bars_spec,
     build_probabilistic_bars_spec,
+    is_valid_probability_values,
 )
 
 
@@ -155,3 +156,64 @@ def test_probabilistic_builder_unit_interval_with_custom_minmax():
     assert spec.header.low == pytest.approx(0.45)
     assert spec.header.high == pytest.approx(0.7)
     assert spec.header.pred == pytest.approx(0.6)
+
+
+# Tests for is_valid_probability_values public API
+
+
+def test_is_valid_probability_values_should_return_true_for_valid_probabilities():
+    """Verify is_valid_probability_values accepts valid probabilities in [0, 1]."""
+    assert is_valid_probability_values(0.0)
+    assert is_valid_probability_values(0.5)
+    assert is_valid_probability_values(1.0)
+    assert is_valid_probability_values(0.0, 0.5, 1.0)
+    assert is_valid_probability_values(0.25, 0.75)
+
+
+def test_is_valid_probability_values_should_accept_string_probabilities():
+    """Verify is_valid_probability_values accepts string values coercible to probabilities."""
+    assert is_valid_probability_values("0.0")
+    assert is_valid_probability_values("0.5")
+    assert is_valid_probability_values("1.0")
+    assert is_valid_probability_values("0.0", "0.5", "1.0")
+
+
+def test_is_valid_probability_values_should_accept_with_tolerance():
+    """Verify is_valid_probability_values allows small tolerance beyond [0, 1]."""
+    # _PROBABILITY_TOL is typically 1e-9
+    assert is_valid_probability_values(-1e-10)  # slightly below 0, within tolerance
+    assert is_valid_probability_values(1.0 + 1e-10)  # slightly above 1, within tolerance
+
+
+def test_is_valid_probability_values_should_reject_out_of_range_values():
+    """Verify is_valid_probability_values rejects values outside [0, 1] beyond tolerance."""
+    assert not is_valid_probability_values(-0.1)
+    assert not is_valid_probability_values(1.1)
+    assert not is_valid_probability_values(-1.0)
+    assert not is_valid_probability_values(2.0)
+
+
+def test_is_valid_probability_values_should_reject_non_finite_values():
+    """Verify is_valid_probability_values rejects non-finite values."""
+    assert not is_valid_probability_values(float("inf"))
+    assert not is_valid_probability_values(float("-inf"))
+    assert not is_valid_probability_values(float("nan"))
+
+
+def test_is_valid_probability_values_should_reject_non_numeric_strings():
+    """Verify is_valid_probability_values rejects strings that can't convert to float."""
+    assert not is_valid_probability_values("abc")
+    assert not is_valid_probability_values("1.0.0")
+    assert not is_valid_probability_values("not_a_number")
+
+
+def test_is_valid_probability_values_should_reject_empty_input():
+    """Verify is_valid_probability_values requires at least one value."""
+    assert not is_valid_probability_values()
+
+
+def test_is_valid_probability_values_should_reject_mixed_invalid_values():
+    """Verify is_valid_probability_values rejects when any value is invalid."""
+    assert not is_valid_probability_values(0.5, 1.5)  # 1.5 out of range
+    assert not is_valid_probability_values(0.5, float("nan"))  # nan present
+    assert not is_valid_probability_values(0.0, "abc", 1.0)  # invalid string

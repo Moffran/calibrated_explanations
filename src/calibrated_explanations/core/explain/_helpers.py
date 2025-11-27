@@ -1,4 +1,4 @@
-"""Shared helper functions for explain plugins.
+"""Shared helper functions for explain executors.
 
 This module extracts reusable utilities that are common across sequential,
 feature-parallel, and instance-parallel explain implementations.
@@ -16,10 +16,41 @@ import numpy as np
 
 from ...utils.helper import safe_isinstance
 from ..prediction_helpers import initialize_explanation as _ih
-from ._computation import FeatureTaskResult
+from ._computation import explain_predict_step  # Re-export for backward compatibility
+from .feature_task import FeatureTaskResult
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
+
+
+def validate_and_prepare_input(explainer: CalibratedExplainer, x: Any) -> np.ndarray:
+    """Validate and prepare input data for explanation.
+
+    Ensures that input is in the correct shape and format:
+    - Converts pandas DataFrames to arrays
+    - Reshapes 1D arrays to 2D
+    - Validates feature count matches calibration data
+
+    Parameters
+    ----------
+    explainer : CalibratedExplainer
+        The parent explainer instance.
+    x : array-like
+        Input data, either 1D (single instance) or 2D (batch).
+
+    Returns
+    -------
+    np.ndarray
+        Validated input as 2D array (n_samples, n_features).
+
+    Raises
+    ------
+    DataShapeError
+        If number of features doesn't match calibration data.
+    """
+    from ..prediction_helpers import validate_and_prepare_input as _vapi
+
+    return _vapi(explainer, x)
 
 
 def slice_threshold(threshold: Any, start: int, stop: int, total_len: int) -> Any:
@@ -85,35 +116,6 @@ def initialize_explanation(
     authoritative initialization logic.
     """
     return _ih(explainer, x, low_high_percentiles, threshold, bins, features_to_ignore)
-
-
-def explain_predict_step(
-    explainer: CalibratedExplainer,
-    x: np.ndarray,
-    threshold: Any,
-    low_high_percentiles: Tuple[float, float],
-    bins: Any,
-    features_to_ignore: np.ndarray,
-) -> Tuple:
-    """Execute the baseline prediction and perturbation planning step.
-
-    This is the first phase of explanation generation that:
-    1. Predicts on original test instances
-    2. Determines rule boundaries for numerical features
-    3. Plans perturbation sets (lesser/greater/covered values)
-
-    Delegates to explainer._explain_predict_step which orchestrates
-    the prediction_helpers logic.
-
-    Returns
-    -------
-    tuple
-        (predict, low, high, prediction, perturbed_feature, rule_boundaries,
-         lesser_values, greater_values, covered_values, x_cal)
-    """
-    return explainer._explain_predict_step(
-        x, threshold, low_high_percentiles, bins, features_to_ignore
-    )
 
 
 def compute_feature_effects(
@@ -288,4 +290,5 @@ __all__ = [
     "merge_ignore_features",
     "slice_bins",
     "slice_threshold",
+    "validate_and_prepare_input",
 ]

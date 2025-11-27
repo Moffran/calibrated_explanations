@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 import pytest
 
 from calibrated_explanations.viz import plots as plotting
@@ -41,43 +39,6 @@ def test_split_csv_handles_strings_sequences_and_invalid_values():
     assert plotting._split_csv(["first", "", "second", 3]) == ("first", "second")
     assert plotting._split_csv(None) == ()
     assert plotting._split_csv(False) == ()
-
-
-def test_resolve_plot_style_chain_orders_sources(monkeypatch):
-    monkeypatch.setenv("CE_PLOT_STYLE", "env-style")
-    monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "fallback-1, fallback-2")
-    monkeypatch.setattr(
-        plotting,
-        "_read_plot_pyproject",
-        lambda: {"style": "py-style", "fallbacks": ("py-fallback", "legacy")},
-    )
-
-    explainer = SimpleNamespace(
-        _last_explanation_mode="prob", _plot_plugin_fallbacks={"prob": ("plugin", "legacy")}
-    )
-
-    chain = plotting._resolve_plot_style_chain(explainer, "explicit")
-
-    assert chain == (
-        "explicit",
-        "env-style",
-        "fallback-1",
-        "fallback-2",
-        "py-style",
-        "py-fallback",
-        "plot_spec.default",
-        "legacy",
-        "plugin",
-    )
-
-
-def test_resolve_plot_style_chain_defaults_to_legacy(monkeypatch):
-    monkeypatch.setattr(plotting, "_read_plot_pyproject", lambda: {})
-    explainer = SimpleNamespace(_plot_plugin_fallbacks=SimpleNamespace())
-
-    chain = plotting._resolve_plot_style_chain(explainer, None)
-
-    assert chain == ("plot_spec.default", "legacy")
 
 
 def test_require_matplotlib_raises_helpful_error(monkeypatch):

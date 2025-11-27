@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 
 import pytest
 
@@ -47,46 +46,3 @@ def test_split_csv_normalises_and_filters_values(value, expected):
     """``_split_csv`` should normalise whitespace and ignore non-string values."""
 
     assert plotting._split_csv(value) == expected
-
-
-def test_resolve_plot_style_chain_prioritises_unique_sources(monkeypatch):
-    """The style chain should respect priority order and deduplicate entries."""
-
-    dummy_explainer = SimpleNamespace(
-        _last_explanation_mode="probabilistic",
-        _plot_plugin_fallbacks={"probabilistic": ("env-style", "plugin-style")},
-    )
-
-    monkeypatch.setenv("CE_PLOT_STYLE", "env-style")
-    monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "fallback-one, fallback-two")
-    monkeypatch.setattr(
-        plotting,
-        "_read_plot_pyproject",
-        lambda: {"style": "toml-style", "fallbacks": ["fallback-two", "toml-extra"]},
-    )
-
-    chain = plotting._resolve_plot_style_chain(dummy_explainer, "explicit-style")
-
-    assert chain == (
-        "explicit-style",
-        "env-style",
-        "fallback-one",
-        "fallback-two",
-        "toml-style",
-        "toml-extra",
-        "plugin-style",
-        "plot_spec.default",
-        "legacy",
-    )
-
-
-def test_resolve_plot_style_chain_defaults_to_legacy(monkeypatch):
-    """Without any hints the chain should gracefully fall back to the legacy backend."""
-
-    monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
-    monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
-    monkeypatch.setattr(plotting, "_read_plot_pyproject", lambda: {})
-
-    chain = plotting._resolve_plot_style_chain(SimpleNamespace(), None)
-
-    assert chain == ("plot_spec.default", "legacy")

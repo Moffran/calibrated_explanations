@@ -1,7 +1,7 @@
-"""Shared data structures for explain plugin system.
+"""Shared data structures for explain executor system.
 
 This module defines request/response contracts used by sequential, feature-parallel,
-and instance-parallel explain plugins per the plugin decomposition strategy.
+and instance-parallel explain executors per the plugin decomposition strategy.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ def build_feature_tasks(
     high: Any,
     baseline_predict: Any,
 ) -> List[Tuple[Any, ...]]:  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches
-    """Build the per-feature task tuples used by the explain plugins.
+    """Build the per-feature task tuples used by the explain executors.
 
     This consolidates the duplicate logic from sequential and feature-parallel
     plugins so both can reuse a single, tested implementation.
@@ -216,7 +216,7 @@ def finalize_explanation(
 class ExplainRequest:
     """Immutable request context for explain operations.
 
-    Contains all input data and configuration needed by explain plugins.
+    Contains all input data and configuration needed by explain executors.
     Designed to be passed uniformly across sequential and parallel implementations.
     """
 
@@ -318,7 +318,7 @@ class ExplainResponse:
 
 @dataclass
 class ExplainConfig:
-    """Configuration context for explain plugin selection and execution.
+    """Configuration context for explain executor selection and execution.
 
     Encapsulates executor settings, parallelism granularity, and explainer state
     needed for plugin dispatch logic.

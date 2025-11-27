@@ -7,7 +7,7 @@ import pytest
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
-from calibrated_explanations.core._legacy_explain import explain as legacy_explain
+from calibrated_explanations.core.explain._legacy_explain import explain as legacy_explain
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
 

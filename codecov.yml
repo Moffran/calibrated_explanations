@@ -5,7 +5,8 @@ coverage:
   status:
     patch:
       default:
-        informational: true
+        target: '88%'
+        threshold: '0%'
       runtime-calibration:
         target: '88%'
         threshold: '0%'

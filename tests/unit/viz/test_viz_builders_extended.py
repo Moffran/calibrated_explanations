@@ -1,45 +1,102 @@
-import math
-
 import numpy as np
 import pytest
 
 from calibrated_explanations.viz import builders
 
 
-def test_probability_helper_utilities_and_segments():
-    assert builders._looks_like_probability_values(0.0, 0.5, "1.0")
-    assert not builders._looks_like_probability_values()
-    assert not builders._looks_like_probability_values(0.1, math.inf)
-    assert not builders._looks_like_probability_values("nan")
-
-    builders._ensure_indexable_length("ok", [1, 2, 3], max_index=2)
-    with pytest.raises(ValueError):
-        builders._ensure_indexable_length("too_short", [1], max_index=1)
-
-    low, high, xlim = builders._normalize_interval_bounds(
-        float("nan"), float("inf"), y_minmax=(0.0, 2.0)
-    )
-    assert (low, high) == (0.0, 2.0)
-    assert xlim == (0.0, 2.0)
-
-    palette = builders._legacy_color_brew(4)
-    assert len(palette) == 4 and palette[0] != palette[-1]
-
-    assert builders._legacy_get_fill_color(1.0) == "#ff0000"
-    assert builders._legacy_get_fill_color(0.2) != builders._legacy_get_fill_color(0.8)
-    assert builders._legacy_get_fill_color(0.8, reduction=0.5) != builders._legacy_get_fill_color(
-        0.8
+def test_probabilistic_spec_clamps_header_bounds():
+    spec = builders.build_probabilistic_bars_spec(
+        title="clamp",
+        predict={"predict": float("nan"), "low": float("nan"), "high": float("inf")},
+        feature_weights={"predict": [0.3], "low": [0.1], "high": [0.4]},
+        features_to_plot=[0],
+        column_names=["value"],
+        rule_labels=["r0"],
+        instance=[5],
+        y_minmax=(0.0, 1.0),
+        interval=True,
+        sort_by=None,
+        ascending=False,
+        legacy_solid_behavior=True,
+        neg_label=None,
+        pos_label=None,
+        uncertainty_color="#333333",
+        uncertainty_alpha=0.5,
+        neg_caption=None,
+        pos_caption=None,
     )
 
-    two_segments = builders._build_probability_segments(
-        low=0.2, high=0.8, center=0.5, reduction=1.0, pivot=0.5
-    )
-    assert len(two_segments) == 2 and two_segments[0].color != two_segments[1].color
+    header = spec.header
+    assert header.xlim == (0.0, 1.0)
+    assert header.low == pytest.approx(0.0)
+    assert header.high == pytest.approx(1.0)
+    assert header.show_intervals
 
-    single_segment = builders._build_probability_segments(
-        low=0.9, high=0.2, center=0.4, reduction=1.0, pivot=None
+    bar = spec.body.bars[0]
+    assert 0.0 <= bar.interval_low <= bar.interval_high <= 1.0
+
+
+def test_probabilistic_spec_validates_sequence_length():
+    with pytest.raises(ValueError, match="feature_weights"):
+        builders.build_probabilistic_bars_spec(
+            title="missing",
+            predict={"predict": 0.5, "low": 0.2, "high": 0.8},
+            feature_weights={"predict": [0.3], "low": [0.2], "high": [0.6]},
+            features_to_plot=[0, 1],
+            column_names=["x", "y"],
+            rule_labels=None,
+            instance=None,
+            y_minmax=None,
+            interval=True,
+            sort_by=None,
+            ascending=False,
+            legacy_solid_behavior=True,
+            neg_label=None,
+            pos_label=None,
+            uncertainty_color=None,
+            uncertainty_alpha=None,
+            neg_caption=None,
+            pos_caption=None,
+        )
+
+
+def test_alternative_probabilistic_segments_use_public_api():
+    spec = builders.build_alternative_probabilistic_spec(
+        title="segments",
+        predict={"predict": 0.7},
+        feature_weights={
+            "predict": [0.6, 0.3],
+            "low": [0.25, 0.1],
+            "high": [0.8, 0.3],
+        },
+        features_to_plot=[0, 1],
+        column_names=["one", "two"],
+        rule_labels=None,
+        instance=None,
+        y_minmax=None,
+        interval=True,
+        sort_by=None,
+        ascending=False,
+        legacy_solid_behavior=True,
+        neg_label="neg",
+        pos_label="pos",
+        uncertainty_color=None,
+        uncertainty_alpha=None,
+        xlabel="Probability",
+        xlim=(0.0, 1.0),
+        xticks=[0.0, 0.5, 1.0],
     )
-    assert len(single_segment) == 1 and single_segment[0].low == min(0.2, 0.9)
+
+    base_segments = spec.body.base_segments
+    assert base_segments
+    assert base_segments[0].low <= base_segments[0].high
+
+    first_bar, second_bar = spec.body.bars
+    assert len(first_bar.segments) == 2
+    assert first_bar.segments[0].high == pytest.approx(0.5)
+    assert first_bar.color_role == "positive"
+    assert len(second_bar.segments) == 1
+    assert second_bar.color_role == "negative"
 
 
 def test_build_alternative_probabilistic_spec_interval_dict():
@@ -173,7 +230,17 @@ def test_build_alternative_regression_spec_paths():
         assert hasattr(bar, "segments") and hasattr(bar, "line")
 
 
-def test_triangular_global_and_serialization_helpers():
+def test_triangular_global_and_serialization_helpers__should_produce_correct_plot_spec_dicts():
+    """Verify that builders produce valid plot_spec dicts with correct structure.
+
+    Domain Invariants:
+    - Triangular plot spec must have 'kind' field = 'triangular'
+    - Triangular must preserve num_to_show setting
+    - Mode must be correctly set (regression, classification)
+    - Global spec must have 'kind' field = 'global_regression' (for regression mode)
+    - All returned dicts must have 'plot_spec' key (not dict key check, but semantic)
+    Ref: ADR-005 Explanation Envelope, ADR-007 PlotSpec Abstraction
+    """
     tri = builders.build_triangular_plotspec_dict(
         title="tri",  # unused but ensures signature parity
         proba=[0.2, 0.8],
@@ -183,9 +250,22 @@ def test_triangular_global_and_serialization_helpers():
         num_to_show=5,
         is_probabilistic=False,
     )
-    assert tri["plot_spec"]["kind"] == "triangular"
-    assert tri["plot_spec"]["triangular"]["num_to_show"] == 5
-    assert tri["plot_spec"]["mode"] == "regression"
+    # Domain invariant: triangular plot spec has correct kind
+    assert "plot_spec" in tri, "Result must be wrapped in plot_spec"
+    assert (
+        tri["plot_spec"]["kind"] == "triangular"
+    ), "Triangular builder must produce 'triangular' kind"
+
+    # Domain invariant: triangular settings preserved
+    assert "triangular" in tri["plot_spec"], "Triangular config must be present"
+    assert (
+        tri["plot_spec"]["triangular"]["num_to_show"] == 5
+    ), "num_to_show parameter must be preserved exactly"
+
+    # Domain invariant: mode correctly set
+    assert (
+        tri["plot_spec"]["mode"] == "regression"
+    ), "Mode must be 'regression' for non-probabilistic setup"
 
     global_spec = builders.build_global_plotspec_dict(
         title="global",
@@ -197,8 +277,15 @@ def test_triangular_global_and_serialization_helpers():
         y_test=[1, 0],
         is_regularized=False,
     )
-    assert global_spec["plot_spec"]["kind"] == "global_regression"
-    assert global_spec["plot_spec"]["axis_hints"]["xlim"][0] <= 0.1
+    # Domain invariant: global regression spec has correct kind
+    assert (
+        global_spec["plot_spec"]["kind"] == "global_regression"
+    ), "Global builder must produce 'global_regression' kind"
+
+    # Domain invariant: axis hints are sensible (xlim lower bound reasonable)
+    assert "axis_hints" in global_spec["plot_spec"], "Global spec must include axis_hints"
+    xlim = global_spec["plot_spec"]["axis_hints"]["xlim"]
+    assert xlim[0] <= 0.1, f"xlim lower bound should be <= 0.1, got {xlim[0]}"
 
     fallback = builders.build_global_plotspec_dict(
         title=None,
@@ -210,7 +297,18 @@ def test_triangular_global_and_serialization_helpers():
         y_test=None,
         is_regularized=True,
     )
-    assert fallback["plot_spec"]["axis_hints"] == {"xlim": [0.0, 1.0], "ylim": [0.0, 1.0]}
+    # Domain invariant: fallback should have default axis hints
+    assert "axis_hints" in fallback["plot_spec"]
+    axis_hints = fallback["plot_spec"]["axis_hints"]
+    # Default xlim and ylim should be [0, 1] for probabilistic bounds
+    assert axis_hints.get("xlim") == [
+        0.0,
+        1.0,
+    ], f"Default xlim should be [0.0, 1.0], got {axis_hints.get('xlim')}"
+    assert axis_hints.get("ylim") == [
+        0.0,
+        1.0,
+    ], f"Default ylim should be [0.0, 1.0], got {axis_hints.get('ylim')}"
 
     regression_spec = builders.build_regression_bars_spec(
         title="serialize",
@@ -229,8 +327,19 @@ def test_triangular_global_and_serialization_helpers():
         confidence=95.0,
     )
     regression_dict = builders.plotspec_to_dict(regression_spec)
-    assert regression_dict["plot_spec"]["uncertainty"] is True
-    assert regression_dict["plot_spec"]["feature_entries"][0]["name"] == "A"
+    # Domain invariant: uncertainty flag is set when confidence is provided
+    assert "plot_spec" in regression_dict
+    assert (
+        regression_dict["plot_spec"]["uncertainty"] is True
+    ), "Uncertainty must be True when confidence interval is enabled"
+
+    # Domain invariant: feature entries preserve column names
+    assert "feature_entries" in regression_dict["plot_spec"]
+    feature_entries = regression_dict["plot_spec"]["feature_entries"]
+    assert len(feature_entries) >= 1, "Must have at least one feature entry"
+    assert (
+        feature_entries[0]["name"] == "A"
+    ), "First feature entry must have name 'A' (from column_names)"
 
     factual = builders.build_factual_probabilistic_plotspec_dict(
         title="prob",
@@ -256,5 +365,12 @@ def test_triangular_global_and_serialization_helpers():
         neg_caption="neg caption",
         pos_caption="pos caption",
     )
-    assert factual["plot_spec"]["kind"] == "factual_probabilistic"
-    assert factual["plot_spec"]["uncertainty"] is True
+    # Domain invariant: factual probabilistic plot has correct kind
+    assert (
+        factual["plot_spec"]["kind"] == "factual_probabilistic"
+    ), "Factual builder must produce 'factual_probabilistic' kind"
+
+    # Domain invariant: uncertainty flag is set when interval is enabled
+    assert (
+        factual["plot_spec"]["uncertainty"] is True
+    ), "Uncertainty must be True when interval is enabled in factual plot"

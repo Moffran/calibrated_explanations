@@ -1,4 +1,4 @@
-"""Sequential explain plugin - single-threaded execution strategy.
+"""Sequential explain executor - single-threaded execution strategy.
 
 This plugin implements the traditional single-threaded explanation path,
 processing features sequentially without parallelism. It serves as the
@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
-from ...explanations import CalibratedExplanations
-from ._base import BaseExplainPlugin
-from ._helpers import explain_predict_step, initialize_explanation, merge_feature_result
+from ._base import BaseExplainExecutor
+from ._helpers import initialize_explanation, merge_feature_result
+from ._legacy_explain import explain_predict_step
 from ._shared import (
     ExplainConfig,
     ExplainRequest,
@@ -23,10 +23,13 @@ from ._shared import (
 )
 
 if TYPE_CHECKING:
+    from ...explanations import CalibratedExplanations
     from ..calibrated_explainer import CalibratedExplainer
+else:
+    CalibratedExplainer = object
 
 
-class SequentialExplainPlugin(BaseExplainPlugin):
+class SequentialExplainExecutor(BaseExplainExecutor):
     """Sequential explain execution strategy.
 
     Processes all test instances and features in a single thread.
@@ -69,8 +72,8 @@ class SequentialExplainPlugin(BaseExplainPlugin):
         This implementation mirrors the original CalibratedExplainer.explain
         sequential path (lines 2365-2595) to ensure behavioral parity.
         """
-        # Import _feature_task from calibrated_explainer module (deferred to avoid circular import)
-        from ..calibrated_explainer import _feature_task  # pylint: disable=import-outside-toplevel
+        # Import _feature_task from feature_task module (deferred to avoid circular import)
+        from .feature_task import _feature_task  # pylint: disable=import-outside-toplevel
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
@@ -102,6 +105,10 @@ class SequentialExplainPlugin(BaseExplainPlugin):
             greater_values,
             covered_values,
             x_cal,
+            perturbed_threshold,
+            perturbed_bins,
+            perturbed_x,
+            perturbed_class,
         ) = explain_predict_step(
             explainer,
             x_input,
@@ -189,4 +196,4 @@ class SequentialExplainPlugin(BaseExplainPlugin):
         )
 
 
-__all__ = ["SequentialExplainPlugin"]
+__all__ = ["SequentialExplainExecutor"]

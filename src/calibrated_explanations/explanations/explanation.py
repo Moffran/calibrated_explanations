@@ -28,6 +28,10 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from pandas import Categorical
 
+from calibrated_explanations.core.explain.feature_task import (
+    assign_threshold as normalize_threshold,
+)
+
 from ..plotting import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 from ..utils.discretizers import (
     BinaryEntropyDiscretizer,
@@ -892,7 +896,7 @@ class CalibratedExplanation(ABC):
             return self
 
         threshold = self.y_threshold
-        perturbed_threshold = self._get_explainer().assign_threshold(threshold)
+        perturbed_threshold = normalize_threshold(threshold)
         perturbed_bins = np.empty((0,)) if self.bin is not None else None
         perturbed_x = np.empty((0, self._get_explainer().num_features))
         perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)

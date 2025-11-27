@@ -27,13 +27,13 @@ small workloads, especially on Windows.
 
 ## Strategy checkpoints
 
-### Sequential (`SequentialExplainPlugin`)
+### Sequential (`SequentialExplainExecutor`)
 
 Sequential execution remains the reference path. It wins by default on small or
 medium datasets and whenever ``CE_PARALLEL`` stays disabled. Use it to validate
 correctness before enabling any executor.
 
-### Instance-parallel (`InstanceParallelExplainPlugin`)
+### Instance-parallel (`InstanceParallelExplainExecutor`)
 
 Best for wide batches of instances with relatively few features.
 
@@ -46,7 +46,7 @@ Best for wide batches of instances with relatively few features.
 - **Fallback** – switch back to sequential when chunk sizes shrink below 128 or
   when feature counts top 128 (feature-parallel usually performs better there).
 
-### Feature-parallel (`FeatureParallelExplainPlugin`)
+### Feature-parallel (`FeatureParallelExplainExecutor`)
 
 Ideal for feature-dense explain workloads with modest instance counts.
 

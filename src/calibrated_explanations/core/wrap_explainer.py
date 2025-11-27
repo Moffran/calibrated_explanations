@@ -1,4 +1,4 @@
-"""Mechanical extraction of WrapCalibratedExplainer (Phase 1A)."""
+"""Mechanical extraction of WrapCalibratedExplainer."""
 
 # pylint: disable=unknown-option-value
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
@@ -50,7 +50,7 @@ class WrapCalibratedExplainer:
         """
         self.mc: Callable[[Any], Any] | MondrianCategorizer | None = None
         self._logger: _logging.Logger = _logging.getLogger(__name__)
-        # Optional preprocessing (Phase 2 controlled wiring)
+        # Optional preprocessing
         self._preprocessor: Any | None = None
         self._pre_fitted: bool = False
         self._auto_encode: bool | str = "auto"
@@ -90,14 +90,14 @@ class WrapCalibratedExplainer:
             return f"WrapCalibratedExplainer(learner={self.learner}, fitted=True, calibrated=False)"
         return f"WrapCalibratedExplainer(learner={self.learner}, fitted=False, calibrated=False)"
 
-    # Phase 2: internal wiring for config
+    # internal wiring for config
     @classmethod
     def _from_config(cls, cfg: ExplainerConfig) -> WrapCalibratedExplainer:
         """Construct a wrapper from an :class:`ExplainerConfig`.
 
         Notes
         -----
-        - Intentionally minimal in Phase 2 start: only uses the provided model.
+        - Intentionally minimal and only uses the provided model.
         - Further wiring of preprocessing and knobs will be added later.
         - Private API to avoid public snapshot changes.
         """
@@ -450,6 +450,23 @@ class WrapCalibratedExplainer:
         validate_param_combination(kwargs)
         kwargs["bins"] = self._get_bins(x_local, **kwargs)
         return self.explainer.explain_lime(x_local, **kwargs)
+
+    def explain_shap(self, x: Any, **kwargs: Any) -> Any:
+        """Generate SHAP explanations for the test data."""
+        assert (
+            self._assert_fitted(
+                "The WrapCalibratedExplainer must be fitted and calibrated before explaining."
+            )
+            ._assert_calibrated("The WrapCalibratedExplainer must be calibrated before explaining.")
+            .explainer
+            is not None
+        )
+        x_local = self._maybe_preprocess_for_inference(x)
+        kwargs = self._normalize_public_kwargs(kwargs)
+        validate_inputs_matrix(x_local, allow_nan=True)
+        validate_param_combination(kwargs)
+        kwargs["bins"] = self._get_bins(x_local, **kwargs)
+        return self.explainer.explain_shap(x_local, **kwargs)
 
     # pylint: disable=too-many-return-statements
     def predict(
@@ -844,7 +861,7 @@ class WrapCalibratedExplainer:
     def _pre_fit_preprocess(self, x: Any) -> Any:
         """Fit the configured preprocessor and return transformed x.
 
-        Controlled Phase 2 wiring: if a user-supplied preprocessor exposes
+        if a user-supplied preprocessor exposes
         fit/transform, we use it. No built-in auto encoding is activated here.
         """
         try:

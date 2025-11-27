@@ -102,7 +102,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                     )
                 )
         else:
-            from calibrated_explanations.core.interval_regressor import (
+            from calibrated_explanations.core.calibration.interval_regressor import (
                 IntervalRegressor,
             )  # local import to avoid circular dependency
 
@@ -137,7 +137,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                 )
             )
         else:
-            from calibrated_explanations.core.interval_regressor import (
+            from calibrated_explanations.core.calibration.interval_regressor import (
                 IntervalRegressor,
             )  # local import to avoid circular dependency
 

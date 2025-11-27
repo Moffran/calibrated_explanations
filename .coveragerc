@@ -14,8 +14,10 @@ omit =
     setup.py
     # Exclude viz adapter from coverage due to matplotlib lazy loading conflicts
     # with pytest-cov instrumentation. See ADR-023 for rationale.
+    # Expiry: Review in v1.0.0 (alternatively isolate matplotlib via plugin)
     src/calibrated_explanations/viz/matplotlib_adapter.py
     # Exclude legacy compatibility shims - deprecated modules that just re-export
+    # Expiry: Remove in v1.0.0 per ADR-011 two-release deprecation policy
     src/calibrated_explanations/_interval_regressor.py
     src/calibrated_explanations/_plots.py
     src/calibrated_explanations/_plots_legacy.py
@@ -28,7 +30,7 @@ calibrated_explanations =
     */site-packages/calibrated_explanations
 
 [report]
-fail_under = 88
+fail_under = 90
 show_missing = True
 skip_covered = False
 precision = 1

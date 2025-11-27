@@ -25,7 +25,7 @@ except ImportError:
     print("numpy required for baseline script", file=sys.stderr)
     sys.exit(1)
 
-from calibrated_explanations.core._legacy_explain import explain as legacy_explain
+from calibrated_explanations.core.explain._legacy_explain import explain as legacy_explain
 
 PACKAGE = "calibrated_explanations"
 

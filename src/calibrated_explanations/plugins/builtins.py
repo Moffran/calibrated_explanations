@@ -177,14 +177,14 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         difficulty = context.difficulty.get("estimator")
         x_cal, y_cal = context.calibration_splits[0]
         if "regression" in task:
-            from ..core.interval_regressor import IntervalRegressor
+            from ..core.calibration.interval_regressor import IntervalRegressor
 
             explainer = context.metadata.get("explainer")
             if explainer is None:
                 raise RuntimeError("Legacy interval context missing 'explainer' handle")
             calibrator = IntervalRegressor(explainer)
         else:
-            from ..core.venn_abers import VennAbers
+            from ..core.calibration.venn_abers import VennAbers
 
             predict_function = context.metadata.get("predict_function")
             if predict_function is None:
@@ -328,6 +328,339 @@ class LegacyAlternativeExplanationPlugin(_LegacyExplanationBase):
 
     def __init__(self) -> None:
         """Configure the plugin to proxy alternative explanation calls."""
+        super().__init__(
+            _mode="alternative",
+            _explanation_attr="explore_alternatives",
+            _expected_cls=AlternativeExplanation,
+            plugin_meta=self.plugin_meta,
+        )
+
+
+class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
+    """Base class for wrappers that delegate to execution plugins.
+
+    This class bridges the explanation plugin layer (high-level user API)
+    with the execution plugin layer (low-level algorithm selection).
+    It handles conversion between ExplanationRequest and ExplainRequest APIs,
+    and provides graceful fallback to legacy implementation if execution fails.
+    """
+
+    _execution_plugin_class: type | None = None
+
+    def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
+        """Execute the explanation call with fallback to legacy.
+
+        Attempts to use the execution plugin class, then falls back to the
+        legacy explanation path if the executor is unavailable or execution fails.
+        """
+        if self._context is None or self._bridge is None or self._explainer is None:
+            raise RuntimeError("Plugin must be initialised before use")
+
+        if self._execution_plugin_class is None:
+            raise RuntimeError("Execution plugin class not configured")
+
+        try:
+            # Import here to avoid circular imports
+            from ..core.explain._shared import ExplainConfig
+            from ..core.explain._shared import ExplainRequest as _ExplainRequest
+
+            # Build the execute request from the explanation request
+            explain_request = _ExplainRequest(
+                x=x,
+                threshold=request.threshold,
+                low_high_percentiles=request.low_high_percentiles or (5, 95),
+                bins=request.bins,
+                features_to_ignore=np.asarray(request.features_to_ignore or []),
+                use_plugin=False,
+                skip_instance_parallel=False,
+            )
+
+            # Build execution config from explainer state
+            calibration_data = {}
+            if hasattr(self._explainer, "_get_calibration_summaries"):
+                calibration_data = self._explainer._get_calibration_summaries()[1]
+
+            explain_config = ExplainConfig(
+                executor=getattr(self._explainer, "executor", None),
+                granularity=getattr(self._explainer, "granularity", "feature"),
+                num_features=self._explainer.num_features,
+                categorical_features=self._explainer.categorical_features or (),
+                feature_values=calibration_data,
+                mode=self._context.task,
+            )
+
+            # Instantiate and execute the plugin
+            plugin = self._execution_plugin_class()
+            collection = plugin.execute(explain_request, explain_config, self._explainer)
+
+        except Exception as exc:
+            # Fallback to legacy implementation with warning
+            _logger = logging.getLogger(__name__)
+            _logger.warning(
+                "Execution plugin failed for mode '%s': %s; falling back to legacy",
+                self._mode,
+                exc,
+            )
+            explanation_callable = getattr(self._explainer, self._explanation_attr)
+            kwargs = {
+                "threshold": request.threshold,
+                "low_high_percentiles": request.low_high_percentiles,
+                "bins": request.bins,
+            }
+            if self._mode != "fast":
+                kwargs["features_to_ignore"] = request.features_to_ignore
+            kwargs["_use_plugin"] = False
+            collection = explanation_callable(x, **kwargs)
+
+        return _collection_to_batch(collection)
+
+
+class SequentialExplanationPlugin(_ExecutionExplanationPluginBase):
+    """Wrapper for sequential execution strategy (factual mode).
+
+    Enables users to explicitly select single-threaded sequential processing
+    through the plugin configuration system.
+    """
+
+    plugin_meta = {
+        "name": "core.explanation.factual.sequential",
+        "schema_version": 1,
+        "version": package_version,
+        "provider": "calibrated_explanations",
+        "capabilities": [
+            "explain",
+            "explanation:factual",
+            "task:classification",
+            "task:regression",
+        ],
+        "modes": ("factual",),
+        "tasks": ("classification", "regression"),
+        "dependencies": ("core.interval.legacy", "legacy"),
+        "interval_dependency": "core.interval.legacy",
+        "plot_dependency": "plot_spec.default",
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fallbacks": ("core.explanation.factual",),
+    }
+
+    def __init__(self) -> None:
+        """Configure the plugin to use sequential execution."""
+        from ..core.explain.sequential import SequentialExplainExecutor
+
+        self._execution_plugin_class = SequentialExplainExecutor
+        super().__init__(
+            _mode="factual",
+            _explanation_attr="explain_factual",
+            _expected_cls=FactualExplanation,
+            plugin_meta=self.plugin_meta,
+        )
+
+
+class FeatureParallelExplanationPlugin(_ExecutionExplanationPluginBase):
+    """Wrapper for feature-parallel execution strategy (factual mode).
+
+    Enables users to select feature-level parallelism through the plugin
+    configuration system. Falls back to sequential if executor unavailable.
+    """
+
+    plugin_meta = {
+        "name": "core.explanation.factual.feature_parallel",
+        "schema_version": 1,
+        "version": package_version,
+        "provider": "calibrated_explanations",
+        "capabilities": [
+            "explain",
+            "explanation:factual",
+            "task:classification",
+            "task:regression",
+        ],
+        "modes": ("factual",),
+        "tasks": ("classification", "regression"),
+        "dependencies": ("core.interval.legacy", "legacy"),
+        "interval_dependency": "core.interval.legacy",
+        "plot_dependency": "plot_spec.default",
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fallbacks": ("core.explanation.factual.sequential", "core.explanation.factual"),
+    }
+
+    def __init__(self) -> None:
+        """Configure the plugin to use feature-parallel execution."""
+        from ..core.explain.parallel_feature import FeatureParallelExplainExecutor
+
+        self._execution_plugin_class = FeatureParallelExplainExecutor
+        super().__init__(
+            _mode="factual",
+            _explanation_attr="explain_factual",
+            _expected_cls=FactualExplanation,
+            plugin_meta=self.plugin_meta,
+        )
+
+
+class InstanceParallelExplanationPlugin(_ExecutionExplanationPluginBase):
+    """Wrapper for instance-parallel execution strategy (factual mode).
+
+    Enables users to select instance-level parallelism through the plugin
+    configuration system. Falls back to feature-parallel if executor unavailable.
+    """
+
+    plugin_meta = {
+        "name": "core.explanation.factual.instance_parallel",
+        "schema_version": 1,
+        "version": package_version,
+        "provider": "calibrated_explanations",
+        "capabilities": [
+            "explain",
+            "explanation:factual",
+            "task:classification",
+            "task:regression",
+        ],
+        "modes": ("factual",),
+        "tasks": ("classification", "regression"),
+        "dependencies": ("core.interval.legacy", "legacy"),
+        "interval_dependency": "core.interval.legacy",
+        "plot_dependency": "plot_spec.default",
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fallbacks": (
+            "core.explanation.factual.feature_parallel",
+            "core.explanation.factual.sequential",
+            "core.explanation.factual",
+        ),
+    }
+
+    def __init__(self) -> None:
+        """Configure the plugin to use instance-parallel execution."""
+        from ..core.explain.parallel_instance import InstanceParallelExplainExecutor
+
+        self._execution_plugin_class = InstanceParallelExplainExecutor
+        super().__init__(
+            _mode="factual",
+            _explanation_attr="explain_factual",
+            _expected_cls=FactualExplanation,
+            plugin_meta=self.plugin_meta,
+        )
+
+
+class SequentialAlternativeExplanationPlugin(_ExecutionExplanationPluginBase):
+    """Wrapper for sequential execution strategy (alternative mode).
+
+    Enables users to explicitly select single-threaded sequential processing
+    for alternative explanations through the plugin configuration system.
+    """
+
+    plugin_meta = {
+        "name": "core.explanation.alternative.sequential",
+        "schema_version": 1,
+        "version": package_version,
+        "provider": "calibrated_explanations",
+        "capabilities": [
+            "explain",
+            "explanation:alternative",
+            "task:classification",
+            "task:regression",
+        ],
+        "modes": ("alternative",),
+        "tasks": ("classification", "regression"),
+        "dependencies": ("core.interval.legacy", "legacy"),
+        "interval_dependency": "core.interval.legacy",
+        "plot_dependency": "plot_spec.default",
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fallbacks": ("core.explanation.alternative",),
+    }
+
+    def __init__(self) -> None:
+        """Configure the plugin to use sequential execution."""
+        from ..core.explain.sequential import SequentialExplainExecutor
+
+        self._execution_plugin_class = SequentialExplainExecutor
+        super().__init__(
+            _mode="alternative",
+            _explanation_attr="explore_alternatives",
+            _expected_cls=AlternativeExplanation,
+            plugin_meta=self.plugin_meta,
+        )
+
+
+class FeatureParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBase):
+    """Wrapper for feature-parallel execution strategy (alternative mode).
+
+    Enables users to select feature-level parallelism for alternative explanations
+    through the plugin configuration system. Falls back to sequential if executor unavailable.
+    """
+
+    plugin_meta = {
+        "name": "core.explanation.alternative.feature_parallel",
+        "schema_version": 1,
+        "version": package_version,
+        "provider": "calibrated_explanations",
+        "capabilities": [
+            "explain",
+            "explanation:alternative",
+            "task:classification",
+            "task:regression",
+        ],
+        "modes": ("alternative",),
+        "tasks": ("classification", "regression"),
+        "dependencies": ("core.interval.legacy", "legacy"),
+        "interval_dependency": "core.interval.legacy",
+        "plot_dependency": "plot_spec.default",
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fallbacks": ("core.explanation.alternative.sequential", "core.explanation.alternative"),
+    }
+
+    def __init__(self) -> None:
+        """Configure the plugin to use feature-parallel execution."""
+        from ..core.explain.parallel_feature import FeatureParallelExplainExecutor
+
+        self._execution_plugin_class = FeatureParallelExplainExecutor
+        super().__init__(
+            _mode="alternative",
+            _explanation_attr="explore_alternatives",
+            _expected_cls=AlternativeExplanation,
+            plugin_meta=self.plugin_meta,
+        )
+
+
+class InstanceParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBase):
+    """Wrapper for instance-parallel execution strategy (alternative mode).
+
+    Enables users to select instance-level parallelism for alternative explanations
+    through the plugin configuration system. Falls back to feature-parallel if executor unavailable.
+    """
+
+    plugin_meta = {
+        "name": "core.explanation.alternative.instance_parallel",
+        "schema_version": 1,
+        "version": package_version,
+        "provider": "calibrated_explanations",
+        "capabilities": [
+            "explain",
+            "explanation:alternative",
+            "task:classification",
+            "task:regression",
+        ],
+        "modes": ("alternative",),
+        "tasks": ("classification", "regression"),
+        "dependencies": ("core.interval.legacy", "legacy"),
+        "interval_dependency": "core.interval.legacy",
+        "plot_dependency": "plot_spec.default",
+        "trusted": True,
+        "trust": {"trusted": True},
+        "fallbacks": (
+            "core.explanation.alternative.feature_parallel",
+            "core.explanation.alternative.sequential",
+            "core.explanation.alternative",
+        ),
+    }
+
+    def __init__(self) -> None:
+        """Configure the plugin to use instance-parallel execution."""
+        from ..core.explain.parallel_instance import InstanceParallelExplainExecutor
+
+        self._execution_plugin_class = InstanceParallelExplainExecutor
         super().__init__(
             _mode="alternative",
             _explanation_attr="explore_alternatives",
@@ -769,7 +1102,7 @@ def _register_builtin_fast_plugins() -> None:
                 calibrators: list[Any] = []
                 num_features = int(metadata.get("num_features", 0) or 0)
                 if "classification" in task:
-                    from ..core.venn_abers import VennAbers
+                    from ..core.calibration.venn_abers import VennAbers
 
                     for f in range(num_features):
                         fast_x_cal = explainer.scaled_x_cal.copy()
@@ -784,7 +1117,7 @@ def _register_builtin_fast_plugins() -> None:
                             )
                         )
                 else:
-                    from ..core.interval_regressor import IntervalRegressor
+                    from ..core.calibration.interval_regressor import IntervalRegressor
 
                     for f in range(num_features):
                         fast_x_cal = explainer.scaled_x_cal.copy()
@@ -798,7 +1131,7 @@ def _register_builtin_fast_plugins() -> None:
                 explainer.bins = original_bins
 
                 if "classification" in task:
-                    from ..core.venn_abers import VennAbers
+                    from ..core.calibration.venn_abers import VennAbers
 
                     calibrators.append(
                         VennAbers(
@@ -815,7 +1148,7 @@ def _register_builtin_fast_plugins() -> None:
                         )
                     )
                 else:
-                    from ..core.interval_regressor import IntervalRegressor
+                    from ..core.calibration.interval_regressor import IntervalRegressor
 
                     calibrators.append(IntervalRegressor(explainer))
 
@@ -865,6 +1198,30 @@ def _register_builtins() -> None:
     """Register in-tree plugins with the shared registry."""
     register_interval_plugin("core.interval.legacy", LegacyIntervalCalibratorPlugin())
 
+    # Register execution strategy wrappers first (with higher priority in fallback chain)
+    register_explanation_plugin(
+        "core.explanation.factual.sequential", SequentialExplanationPlugin()
+    )
+    register_explanation_plugin(
+        "core.explanation.factual.feature_parallel", FeatureParallelExplanationPlugin()
+    )
+    register_explanation_plugin(
+        "core.explanation.factual.instance_parallel", InstanceParallelExplanationPlugin()
+    )
+
+    register_explanation_plugin(
+        "core.explanation.alternative.sequential", SequentialAlternativeExplanationPlugin()
+    )
+    register_explanation_plugin(
+        "core.explanation.alternative.feature_parallel",
+        FeatureParallelAlternativeExplanationPlugin(),
+    )
+    register_explanation_plugin(
+        "core.explanation.alternative.instance_parallel",
+        InstanceParallelAlternativeExplanationPlugin(),
+    )
+
+    # Register legacy plugins as fallback defaults
     register_explanation_plugin("core.explanation.factual", LegacyFactualExplanationPlugin())
     register_explanation_plugin(
         "core.explanation.alternative", LegacyAlternativeExplanationPlugin()
@@ -921,6 +1278,12 @@ __all__ = [
     "LegacyIntervalCalibratorPlugin",
     "LegacyFactualExplanationPlugin",
     "LegacyAlternativeExplanationPlugin",
+    "SequentialExplanationPlugin",
+    "FeatureParallelExplanationPlugin",
+    "InstanceParallelExplanationPlugin",
+    "SequentialAlternativeExplanationPlugin",
+    "FeatureParallelAlternativeExplanationPlugin",
+    "InstanceParallelAlternativeExplanationPlugin",
     "LegacyPlotBuilder",
     "LegacyPlotRenderer",
     "PlotSpecDefaultBuilder",

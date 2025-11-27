@@ -93,7 +93,7 @@ def _time_explain(
         wrapper, sample = _prepare_regression()
 
     if backend == "legacy":
-        from calibrated_explanations.core._legacy_explain import (
+        from calibrated_explanations.core.explain._legacy_explain import (
             explain as legacy_explain,
         )
 

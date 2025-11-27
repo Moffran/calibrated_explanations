@@ -3,6 +3,7 @@ import numpy as np
 from calibrated_explanations.core.explain import _computation as comp
 from calibrated_explanations.core.explain import _helpers as helpers
 from calibrated_explanations.core.explain import sequential, parallel_feature, parallel_instance
+from calibrated_explanations.core.explain import feature_task as feature_task_module
 
 
 def test_assign_weight_scalar_variants():
@@ -123,6 +124,10 @@ def test_sequential_plugin_execute_minimal(monkeypatch):
         greater_values = {}
         covered_values = {}
         x_cal = np.zeros((n, 1))
+        perturbed_threshold = None
+        perturbed_bins = None
+        perturbed_x = np.empty((0, x.shape[1]))
+        perturbed_class = np.empty((0,), dtype=int)
         return (
             predict,
             low,
@@ -134,6 +139,10 @@ def test_sequential_plugin_execute_minimal(monkeypatch):
             greater_values,
             covered_values,
             x_cal,
+            perturbed_threshold,
+            perturbed_bins,
+            perturbed_x,
+            perturbed_class,
         )
 
     class SimpleExplanation:
@@ -184,7 +193,7 @@ def test_sequential_plugin_execute_minimal(monkeypatch):
         },
     )()
 
-    plugin = sequential.SequentialExplainPlugin()
+    plugin = sequential.SequentialExplainExecutor()
     out = plugin.execute(req, cfg, explainer)
     # expect an explanation object
     assert hasattr(out, "explanations")
@@ -232,7 +241,7 @@ def test_instance_parallel_plugin_empty_input(monkeypatch):
         },
     )()
 
-    plugin = parallel_instance.InstanceParallelExplainPlugin()
+    plugin = parallel_instance.InstanceParallelExplainExecutor()
     result = plugin.execute(req, cfg, explainer)
     assert hasattr(result, "explanations")
 
@@ -266,6 +275,10 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
         greater_values = {}
         covered_values = {}
         x_cal = np.zeros((n, 1))
+        perturbed_threshold = None
+        perturbed_bins = None
+        perturbed_x = np.empty((0, args[1].shape[1]))
+        perturbed_class = np.empty((0,), dtype=int)
         return (
             predict,
             low,
@@ -277,6 +290,10 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
             greater_values,
             covered_values,
             x_cal,
+            perturbed_threshold,
+            perturbed_bins,
+            perturbed_x,
+            perturbed_class,
         )
 
     class SimpleExplanation:
@@ -308,7 +325,7 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
         },
     )()
 
-    plugin = parallel_feature.FeatureParallelExplainPlugin()
+    plugin = parallel_feature.FeatureParallelExplainExecutor()
     assert plugin.supports(req, cfg)
     out = plugin.execute(req, cfg, explainer)
     assert hasattr(out, "explanations")
@@ -338,6 +355,10 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
         greater_values = {}
         covered_values = {}
         x_cal = np.zeros((n, num_features))
+        perturbed_threshold = None
+        perturbed_bins = None
+        perturbed_x = np.empty((0, num_features))
+        perturbed_class = np.empty((0,), dtype=int)
         return (
             predict,
             low,
@@ -349,6 +370,10 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
             greater_values,
             covered_values,
             x_cal,
+            perturbed_threshold,
+            perturbed_bins,
+            perturbed_x,
+            perturbed_class,
         )
 
     class SimpleExplanation:
@@ -380,8 +405,6 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
     )
 
     # Mock the internal _feature_task to produce deterministic per-feature tuples
-    import calibrated_explanations.core.calibrated_explainer as ce
-
     def fake_feature_task(task):
         f = int(task[0])
         n = int(len(task[1]))
@@ -421,7 +444,7 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
             upper_update,
         )
 
-    monkeypatch.setattr(ce, "_feature_task", fake_feature_task)
+    monkeypatch.setattr(feature_task_module, "_feature_task", fake_feature_task)
 
     # Setup request/config and a simple explainer stub
     req = ExplainRequest(
@@ -455,8 +478,8 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
         },
     )()
 
-    seq_plugin = sequential.SequentialExplainPlugin()
-    par_plugin = parallel_feature.FeatureParallelExplainPlugin()
+    seq_plugin = sequential.SequentialExplainExecutor()
+    par_plugin = parallel_feature.FeatureParallelExplainExecutor()
 
     out_seq = seq_plugin.execute(req, cfg_seq, explainer)
     out_par = par_plugin.execute(req, cfg_par, explainer)

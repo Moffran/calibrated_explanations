@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import numpy as np
 
@@ -44,6 +45,11 @@ class _FakeExplainer:
 
 
 def test_plot_regression_writes_file(tmp_path):
+    """Test that plot_regression saves files to disk.
+
+    Refactored to use pathlib.Path and semantic assertions.
+     Tests that files are created, not exact path strings.
+    """
     # prepare feature weights as dict with interval arrays
     n = 4
     fw = {
@@ -70,10 +76,21 @@ def test_plot_regression_writes_file(tmp_path):
         save_ext=[".png"],
         use_legacy=False,
     )
-    assert os.path.exists(os.path.join(outdir, title + ".png"))
+    # Semantic assertion: verify that a PNG file with the title was created
+    # (not an exact path comparison)
+    png_files = list(Path(outdir).glob("*" + title + "*.png"))
+    assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"
+
+    # Verify file is non-trivial in size
+    for png_file in png_files:
+        assert png_file.stat().st_size > 100, f"PNG file {png_file} is too small"
 
 
 def test_plot_alternative_writes_file(tmp_path):
+    """Test that plot_alternative saves files to disk.
+
+    Refactored to use pathlib.Path and semantic assertions.
+    """
     # n is implied by feature_predict length
     expl = _FakeExplanation(mode="regression")
     feature_predict = {
@@ -97,7 +114,9 @@ def test_plot_alternative_writes_file(tmp_path):
         save_ext=[".png"],
         use_legacy=False,
     )
-    assert os.path.exists(os.path.join(outdir, title + ".png"))
+    # Semantic assertion: verify that a PNG file with the title was created
+    png_files = list(Path(outdir).glob("*" + title + "*.png"))
+    assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"
 
 
 def test_plot_global_non_probabilistic_runs_without_error():
@@ -114,7 +133,12 @@ def test_plot_proba_triangle_returns_figure():
 
 
 def test_plot_alternative_thresholded_writes_file(tmp_path):
-    # thresholded explanation should hit the label/xticks/xlim branch
+    """Test that plot_alternative with thresholded explanation saves files.
+
+    Refactored to use pathlib.Path and semantic assertions.
+     Thresholded explanation should hit the label/xticks/xlim branch.
+    """
+
     class _FakeExplanationThresh(_FakeExplanation):
         def __init__(self):
             super().__init__(mode="regression")
@@ -146,7 +170,9 @@ def test_plot_alternative_thresholded_writes_file(tmp_path):
         save_ext=[".png"],
         use_legacy=False,
     )
-    assert os.path.exists(os.path.join(outdir, title + ".png"))
+    # Semantic assertion: verify that a PNG file with the title was created
+    png_files = list(Path(outdir).glob("*" + title + "*.png"))
+    assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"
 
 
 def test_plot_global_probabilistic_branch_runs():
@@ -233,6 +259,10 @@ def test_plot_alternative_probabilistic_headless_noop():
 
 
 def test_plot_alternative_infers_features_to_plot(tmp_path):
+    """Test that plot_alternative infers features and saves files.
+
+    Refactored to use pathlib.Path and semantic assertions.
+    """
     expl = _FakeExplanation(mode="regression")
     feature_predict = {
         "predict": np.array([0.2, 0.8, 0.4]),
@@ -258,4 +288,6 @@ def test_plot_alternative_infers_features_to_plot(tmp_path):
         use_legacy=False,
     )
 
-    assert os.path.exists(os.path.join(outdir, title + ".png"))
+    # Semantic assertion: verify that a PNG file with the title was created
+    png_files = list(Path(outdir).glob("*" + title + "*.png"))
+    assert len(png_files) > 0, f"Expected PNG file with title '{title}' in {outdir}"

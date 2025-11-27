@@ -6,6 +6,7 @@ Guides for upgrading between major releases and understanding breaking changes o
 :maxdepth: 2
 
 v0.9-to-v0.10-terminology
+deprecations
 ```
 
 ## Quick navigation

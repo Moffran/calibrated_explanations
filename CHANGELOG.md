@@ -5,7 +5,49 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.0...main)
 
-### Terminology Standardization
+### Release Plan Alignment (v0.9.1)
+
+- **Governance & observability hardening (ADR-017/018/019/020).** Added a per-module coverage gate script with suffix-aware path matching so ADR-019 thresholds are enforced in CI, tightened the `test` workflow to keep the core-only matrix from uploading coverage while still running the full gate on the main job, and switched editable installs for local test runs to reduce dependency skew. An accompanying notebook API auditor tracks use of the documented legacy surface (ADR-020) to keep examples in lockstep with the contract.【F:scripts/check_coverage_gates.py†L1-L102】【F:.github/workflows/test.yml†L33-L99】【F:scripts/audit_notebook_api.py†L1-L144】
+- **Runtime safety and regression coverage:** Added focused CalibratedExplainer regression tests that assert out-of-bag errors propagate, categorical features infer from label mappings, plugin override coercion handles callables/objects, and plugin manager requirements raise clear errors, strengthening the runtime guardrails promised for v0.9.1.【F:tests/unit/core/test_calibrated_explainer_runtime_helpers.py†L1-L220】
+- **Plugin fallback and serialization reliability:** Covered deprecated CalibratedExplainer surfaces with deletion-coupling notes and new tests for plugin fallback chains, interval regressors, and JSON round-trips so the v0.9.1 release ships with explicit removal guidance and resilient persistence paths.【F:src/calibrated_explanations/core/calibrated_explainer.py†L1125-L1914】【F:tests/unit/core/test_calibrated_explainer_additional.py†L1-L200】【F:tests/unit/core/test_calibrated_explainer_plugin_fallbacks.py†L1-L200】【F:tests/unit/core/test_interval_regressor.py†L1-L260】【F:tests/unit/test_serialization.py†L1-L220】
+- **Documentation standardisation.** Expanded the practitioner hub with an explicit wrapper-vs-direct API comparison so parity requirements from the governance plan remain visible, and published a researcher "future work" ledger to keep calibration and interval-regression research directions discoverable alongside the quickstarts.【F:docs/practitioner/index.md†L1-L34】【F:docs/practitioner/task_api_comparison.md†L1-L92】【F:docs/researcher/future_work.md†L1-L109】
+- **Interval regression hardening.** Improved interval regression storage and probabilistic threshold handling so calibration buffers resize safely, aligned with the practitioner/researcher documentation updates that now cross-link interval workflows with the existing probabilistic regression guidance.【F:src/calibrated_explanations/core/calibration/interval_regressor.py†L1-L200】【F:docs/practitioner/index.md†L1-L20】【F:docs/researcher/future_work.md†L1-L32】
+
+### Additional changes
+
+#### Execution Strategy Plugins
+
+- **Introduced execution strategy wrapper plugins for user-configurable parallelism strategies**
+  - Created 6 new wrapper explanation plugins bridging explanation layer and execution layer:
+    - `core.explanation.factual.sequential` - Single-threaded sequential processing
+    - `core.explanation.factual.feature_parallel` - Parallel processing across features
+    - `core.explanation.factual.instance_parallel` - Parallel processing across instances
+    - `core.explanation.alternative.sequential` - Alternative mode sequential processing
+    - `core.explanation.alternative.feature_parallel` - Alternative mode feature parallelism
+    - `core.explanation.alternative.instance_parallel` - Alternative mode instance parallelism
+  - Implemented `_ExecutionExplanationPluginBase` class for consistent bridging behavior
+  - Each strategy declares automatic fallback chain for graceful degradation (instance_parallel → feature_parallel → sequential → legacy)
+  - Users can now select execution strategies via configuration:
+    - Keyword argument: `explainer.explain_factual(x, explanation_plugin="core.explanation.factual.feature_parallel")`
+    - Environment variable: `CE_EXPLANATION_PLUGIN_FACTUAL="core.explanation.factual.feature_parallel"`
+    - pyproject.toml: `[tool.calibrated_explanations.explanations]`
+  - All execution plugins registered as trusted and automatically available
+  - Maintains full backward compatibility - legacy plugins remain as ultimate fallback
+  - Updated ADR-015 with execution strategy plugin documentation
+  - Added comprehensive unit tests (25 test cases) covering registration, metadata, modes, and fallback chains
+
+#### CalibratedExplainer Streamlining
+
+- **Extracted core discretization and rule boundary computation to explain subpackage** to consolidate explanation logic and eliminate circular dependencies
+  - Created `explain._computation.discretize()` function: pure function extracting discretization logic from `CalibratedExplainer._discretize()`
+  - Created `explain._computation.rule_boundaries()` function: pure function extracting rule boundary extraction logic from `CalibratedExplainer.rule_boundaries()`
+  - Updated `CalibratedExplainer._discretize()` to delegate to extracted function (maintains backward compatibility)
+  - Updated `CalibratedExplainer.rule_boundaries()` to delegate to extracted function (maintains backward compatibility)
+  - Resolved circular dependency chain: `prediction_helpers.explain_predict_step()` now calls explainer methods that delegate to extracted functions instead of direct logic
+  - Both extracted functions exported in `explain._computation.__all__` for public use
+  - No breaking changes: all public and private APIs remain unchanged
+
+#### Terminology Standardization
 
 - **Standardized on "probabilistic regression" as the canonical user-facing term** for regression with threshold-based probability predictions. "Thresholded regression" is used in technical architecture documents (ADRs, design notes) to describe the implementation mechanism (CPS-based threshold calibration).
   - Renamed internal method `_is_thresholded()` → `_is_probabilistic_regression()` in `CalibratedExplanations` class for consistency
@@ -17,7 +59,13 @@
   - Created migration guide: `docs/migration/v0.9-to-v0.10-terminology.md`
   - See [Terminology Analysis](TERMINOLOGY_ANALYSIS_THRESHOLDED_VS_PROBABILISTIC_REGRESSION.md) for full context and rationale
 
-Note: Streaming-friendly, generator/chunked explanation exports were intentionally deferred for v0.9.0 and scheduled for follow-up in v0.9.1 — interim batching guidance and rationale are recorded in `improvement_docs/OSS_CE_scope_and_gaps.md` and `docs/foundations/how-to/export_explanations.md`.
+#### Additional minor changes
+
+- **CalibratedExplainer and plugin guards.** Refined plugin manager delegation and prediction bridge imports to avoid circular
+  dependencies, and extended explanation plugin validation to cope with deferred imports while preserving ADR-015 invariants on
+  batch payloads.【F:src/calibrated_explanations/core/calibrated_explainer.py†L232-L320】【F:src/calibrated_explanations/plugins/explanations.py†L1-L189】
+- **Runtime helper coverage.** Added extensive CalibratedExplainer runtime helper tests covering exception propagation, categorical
+  defaults, plugin override coercion, and telemetry delegation to improve reliability ahead of v0.9.1 gating.【F:tests/unit/core/test_calibrated_explainer_runtime_helpers.py†L1-L120】
 
 ## [v0.9.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.0) - 2025-11-07
 
@@ -59,11 +107,11 @@ Note: Streaming-friendly, generator/chunked explanation exports were intentional
 
 - **Explanation schema v1 and ADR-005/008 compliance:** Updated explanation JSON schema v1 to include
   `explanation_type` field distinguishing factual and alternative explanations, aligned ADR-005 with paper-compliant semantics from ADR-008, and ensured all domain models, serialization, and adapters preserve the calibrated prediction baseline for both explanation types. This establishes stable round-trip serialization for instance-based explanations as defined in the CE papers.【F:docs/schema_v1.md†L1-L50】【F:improvement_docs/adrs/ADR-005-explanation-json-schema-versioning.md†L1-L80】【F:improvement_docs/adrs/ADR-008-explanation-domain-model-and-compat.md†L1-L60】【F:src/calibrated_explanations/schemas/explanation_schema_v1.json†L1-L40】
-- **Explain plugin decomposition (ADR-004 compliance):** Moved all explain execution
+- **Explain executor decomposition (ADR-004 compliance):** Moved all explain execution
   strategies into a plugin system (`src/calibrated_explanations/core/explain/`)
-  with three implementations: `SequentialExplainPlugin` (single-threaded fallback),
-  `FeatureParallelExplainPlugin` (executor-backed feature distribution), and
-  `InstanceParallelExplainPlugin` (instance-level chunking). `CalibratedExplainer.explain`
+  with three implementations: `SequentialExplainExecutor` (single-threaded fallback),
+  `FeatureParallelExplainExecutor` (executor-backed feature distribution), and
+  `InstanceParallelExplainExecutor` (instance-level chunking). `CalibratedExplainer.explain`
   is now a thin 13-line delegator that selects and invokes the appropriate plugin
   based on executor configuration. All legacy equivalence tests and instance-parallel
   tests pass, confirming behavioral parity with the original implementation.

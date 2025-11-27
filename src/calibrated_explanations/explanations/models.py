@@ -1,4 +1,4 @@
-"""Internal domain models for explanations (Phase 2 groundwork).
+"""Internal domain models for explanations.
 
 These dataclasses model Explanation and FeatureRule for clearer internal
 reasoning. Public APIs continue to emit legacy dicts; adapters ensure

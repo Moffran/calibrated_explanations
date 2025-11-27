@@ -26,7 +26,7 @@ except Exception as _exc:  # pragma: no cover - optional dependency path
     ) from _exc
 
 from . import matplotlib_adapter, plots
-from .builders import build_regression_bars_spec
+from .builders import build_regression_bars_spec, is_valid_probability_values
 from .plotspec import BarHPanelSpec, BarItem, IntervalHeaderSpec, PlotSpec
 from .serializers import PLOTSPEC_VERSION, plotspec_from_dict, plotspec_to_dict, validate_plotspec
 
@@ -36,6 +36,7 @@ __all__ = [
     "BarHPanelSpec",
     "BarItem",
     "build_regression_bars_spec",
+    "is_valid_probability_values",
     "matplotlib_adapter",
     "plotspec_to_dict",
     "plotspec_from_dict",

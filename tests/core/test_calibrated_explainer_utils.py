@@ -4,20 +4,16 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-
 import numpy as np
-
 import pytest
 
-from calibrated_explanations.core.calibrated_explainer import (
-    CalibratedExplainer,
-    EXPLANATION_PROTOCOL_VERSION,
-    _PredictBridgeMonitor,
-    _coerce_string_tuple,
-    _read_pyproject_section,
-    _split_csv,
+from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
+from calibrated_explanations.core.config_helpers import (
+    coerce_string_tuple as _coerce_string_tuple,
+    read_pyproject_section as _read_pyproject_section,
+    split_csv as _split_csv,
 )
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 
 
 class _DummyBridge:
@@ -77,8 +73,9 @@ def test_coerce_string_tuple_handles_iterables():
 
 
 def test_predict_bridge_monitor_tracks_usage():
+    """Test that PredictBridgeMonitor correctly tracks bridge method calls."""
     bridge = _DummyBridge()
-    monitor = _PredictBridgeMonitor(bridge)
+    monitor = PredictBridgeMonitor(bridge)
 
     predict_result = monitor.predict(np.array([[1.0]]), mode="factual", task="classification")
     interval_result = monitor.predict_interval(np.array([[1.0]]), task="classification")
@@ -92,161 +89,8 @@ def test_predict_bridge_monitor_tracks_usage():
     assert proba_result[0] is bridge.predictions["predict_proba"]
 
 
-def _make_explainer_stub() -> CalibratedExplainer:
-    explainer = CalibratedExplainer.__new__(CalibratedExplainer)
-    explainer._explanation_plugin_overrides = {
-        mode: None for mode in ("factual", "alternative", "fast")
-    }
-    explainer._pyproject_explanations = {}
-    explainer._pyproject_intervals = {}
-    explainer._pyproject_plots = {}
-    explainer._interval_plugin_override = None
-    explainer._fast_interval_plugin_override = None
-    explainer._interval_preferred_identifier = {"default": None, "fast": None}
-    explainer._plot_style_override = None
-    explainer.mode = "classification"
-    explainer.bins = None
-    return explainer
-
-
-def test_build_explanation_chain_resolves_sources(monkeypatch):
-    explainer = _make_explainer_stub()
-    explainer._explanation_plugin_overrides["factual"] = "override.id"
-    explainer._pyproject_explanations = {
-        "factual": "py.identifier",
-        "factual_fallbacks": ("py.fb1", "py.fb2"),
-    }
-
-    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", " env.identifier ")
-    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", "env.fb1, env.fb2")
-
-    class _Descriptor:
-        def __init__(self, metadata: Dict[str, Any]):
-            self.metadata = metadata
-
-    descriptor_map = {
-        "override.id": _Descriptor({"fallbacks": ("env.fb1", "override.fb")}),
-        "env.identifier": _Descriptor({"fallbacks": ()}),
-        "env.fb1": _Descriptor({"fallbacks": ("env.fb1.extra",)}),
-        "py.identifier": _Descriptor({"fallbacks": ("py.fb3",)}),
-    }
-
-    def fake_find_descriptor(identifier: str):
-        # Normalise whitespace to match production lookup behaviour.
-        identifier = identifier.strip()
-        return descriptor_map.get(identifier)
-
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibrated_explainer.find_explanation_descriptor",
-        fake_find_descriptor,
-    )
-
-    chain = explainer._build_explanation_chain("factual")
-
-    assert chain[0] == "override.id"
-    # Deduplicated fallbacks should appear only once in order of discovery.
-    assert "env.fb1" in chain and chain.count("env.fb1") == 1
-    # The metadata fallback appended during override processing should be present.
-    assert "override.fb" in chain
-    # Default identifier is always appended when available.
-    assert chain[-1] == "core.explanation.factual"
-
-
-def test_build_interval_chain_tracks_preferred_identifier(monkeypatch):
-    explainer = _make_explainer_stub()
-    explainer._interval_plugin_override = "override.interval"
-    explainer._pyproject_intervals = {
-        "default": "py.interval",
-        "default_fallbacks": ("py.ifb1",),
-        "fast": "py.fast",
-        "fast_fallbacks": ("py.fast.fb",),
-    }
-
-    monkeypatch.setenv("CE_INTERVAL_PLUGIN", " env.interval ")
-    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FALLBACKS", "env.ifb1")
-    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST", "fast.interval")
-
-    class _Descriptor:
-        def __init__(self, metadata: Dict[str, Any]):
-            self.metadata = metadata
-
-    descriptor_map = {
-        "override.interval": _Descriptor({"fallbacks": ("override.ifb",)}),
-        "env.interval": _Descriptor({"fallbacks": ()}),
-        "env.ifb1": _Descriptor({"fallbacks": ()}),
-        "py.interval": _Descriptor({"fallbacks": ("py.ifb2",)}),
-        "fast.interval": _Descriptor({"fallbacks": ()}),
-        "py.fast": _Descriptor({"fallbacks": ()}),
-    }
-
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibrated_explainer.find_interval_descriptor",
-        lambda identifier: descriptor_map.get(identifier.strip()),
-    )
-
-    default_chain = explainer._build_interval_chain(fast=False)
-    assert default_chain[0] == "override.interval"
-    assert explainer._interval_preferred_identifier["default"] == "override.interval"
-    assert default_chain[-1] == "core.interval.legacy"
-
-    # For the fast chain simulate missing default descriptor to exercise the skip branch.
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibrated_explainer.find_interval_descriptor",
-        lambda identifier: None
-        if identifier.strip() == "core.interval.fast"
-        else descriptor_map.get(identifier.strip()),
-    )
-
-    fast_chain = explainer._build_interval_chain(fast=True)
-    assert fast_chain[0] == "fast.interval"
-    assert explainer._interval_preferred_identifier["fast"] == "fast.interval"
-    assert "core.interval.fast" not in fast_chain
-
-
-def test_build_plot_style_chain_merges_sources(monkeypatch):
-    explainer = _make_explainer_stub()
-    explainer._plot_style_override = "override.style"
-    explainer._pyproject_plots = {
-        "style": "py.style",
-        "style_fallbacks": ("py.fallback", "override.style"),
-    }
-
-    monkeypatch.setenv("CE_PLOT_STYLE", " env.style ")
-    monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "env.fallback")
-
-    chain = explainer._build_plot_style_chain()
-
-    assert chain[0] == "override.style"
-    # The default plot_spec.default should appear before the legacy entry.
-    assert chain.index("plot_spec.default") < chain.index("legacy")
-    # Deduplication should prevent duplicates when override repeats in fallbacks.
-    assert chain.count("override.style") == 1
-
-
-def test_coerce_plugin_override_instantiates_callable():
-    explainer = _make_explainer_stub()
-
-    class DummyPlugin:
-        pass
-
-    def factory():
-        return DummyPlugin()
-
-    assert explainer._coerce_plugin_override(None) is None
-    assert explainer._coerce_plugin_override("identifier") == "identifier"
-    plugin = explainer._coerce_plugin_override(factory)
-    assert isinstance(plugin, DummyPlugin)
-
-    class Exploding:
-        def __call__(self):
-            raise RuntimeError("boom")
-
-    with pytest.raises(ConfigurationError):
-        explainer._coerce_plugin_override(Exploding())
-
-
-def test_check_explanation_runtime_metadata_validations():
-    explainer = _make_explainer_stub()
+def test_check_explanation_runtime_metadata_validations(explainer_factory):
+    explainer = explainer_factory()
 
     assert (
         explainer._check_explanation_runtime_metadata(None, identifier="plugin", mode="factual")
@@ -283,8 +127,8 @@ def test_check_explanation_runtime_metadata_validations():
     )
 
 
-def test_check_explanation_runtime_metadata_capabilities():
-    explainer = _make_explainer_stub()
+def test_check_explanation_runtime_metadata_capabilities(explainer_factory):
+    explainer = explainer_factory()
     metadata = {
         "schema_version": EXPLANATION_PROTOCOL_VERSION,
         "tasks": ["classification"],
@@ -297,27 +141,8 @@ def test_check_explanation_runtime_metadata_capabilities():
     assert "missing required capabilities" in message
 
 
-def test_ensure_interval_runtime_state_creates_defaults():
-    explainer = _make_explainer_stub()
-    explainer.__dict__.pop("_interval_plugin_hints", None)
-    explainer.__dict__.pop("_interval_plugin_fallbacks", None)
-    explainer.__dict__.pop("_interval_plugin_identifiers", None)
-    explainer.__dict__.pop("_telemetry_interval_sources", None)
-    explainer.__dict__.pop("_interval_preferred_identifier", None)
-    explainer.__dict__.pop("_interval_context_metadata", None)
-
-    explainer._ensure_interval_runtime_state()
-
-    assert explainer._interval_plugin_hints == {}
-    assert explainer._interval_plugin_fallbacks == {}
-    assert explainer._interval_plugin_identifiers == {"default": None, "fast": None}
-    assert explainer._telemetry_interval_sources == {"default": None, "fast": None}
-    assert explainer._interval_preferred_identifier == {"default": None, "fast": None}
-    assert explainer._interval_context_metadata == {"default": {}, "fast": {}}
-
-
-def test_instantiate_plugin_prefers_fresh_instances():
-    explainer = _make_explainer_stub()
+def test_instantiate_plugin_prefers_fresh_instances(explainer_factory):
+    explainer = explainer_factory()
 
     class Proto:
         plugin_meta = {}
@@ -340,23 +165,8 @@ def test_instantiate_plugin_prefers_fresh_instances():
     assert cloned.value == 3
 
 
-def test_gather_interval_hints_merges_modes():
-    explainer = _make_explainer_stub()
-    explainer._interval_plugin_hints = {
-        "factual": ("a", "b"),
-        "alternative": ("b", "c"),
-        "fast": ("fast-only",),
-    }
-
-    default_hints = explainer._gather_interval_hints(fast=False)
-    fast_hints = explainer._gather_interval_hints(fast=True)
-
-    assert default_hints == ("a", "b", "c")
-    assert fast_hints == ("fast-only",)
-
-
-def test_check_interval_runtime_metadata_validations():
-    explainer = _make_explainer_stub()
+def test_check_interval_runtime_metadata_validations(explainer_factory):
+    explainer = explainer_factory()
 
     assert (
         explainer._check_interval_runtime_metadata(None, identifier="interval", fast=False)

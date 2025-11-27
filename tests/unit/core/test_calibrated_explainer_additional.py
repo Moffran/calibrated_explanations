@@ -1,3 +1,24 @@
+"""Additional comprehensive unit tests for CalibratedExplainer.
+
+This module contains tests for various functionality of CalibratedExplainer,
+including deprecated methods. Tests for deprecated methods are strongly coupled
+with their implementations and MUST be deleted together with the deprecated
+method to avoid orphaned tests.
+
+**DELETION COUPLING REQUIREMENTS:**
+When removing deprecated methods from calibrated_explainer.py (e.g., _is_lime_enabled,
+_is_shap_enabled, _preload_lime, _preload_shap, explain_counterfactual), the
+corresponding tests in this file MUST be removed at the same time:
+
+- Removing CalibratedExplainer._is_lime_enabled → Remove any test_*lime* tests
+- Removing CalibratedExplainer._is_shap_enabled → Remove any test_*shap* tests
+- Removing CalibratedExplainer._preload_lime → Remove any test_*preload_lime* tests
+- Removing CalibratedExplainer._preload_shap → Remove any test_*preload_shap* tests
+- Removing CalibratedExplainer.explain_counterfactual → Remove test_explain_counterfactual* tests
+
+See calibrated_explainer.py docstrings for specific test locations.
+"""
+
 import os
 from typing import Any, Optional
 
@@ -8,13 +29,18 @@ from unittest.mock import create_autospec
 
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
-    _PredictBridgeMonitor,
-    _coerce_string_tuple,
-    _read_pyproject_section,
-    _split_csv,
-    _assign_weight_scalar,
+)
+from calibrated_explanations.core.config_helpers import (
+    coerce_string_tuple as _coerce_string_tuple,
+    read_pyproject_section as _read_pyproject_section,
+    split_csv as _split_csv,
+)
+from calibrated_explanations.core.explain.feature_task import (
+    assign_weight_scalar as _assign_weight_scalar,
     _feature_task,
-    ConfigurationError,
+)
+from calibrated_explanations.plugins.predict_monitor import (
+    PredictBridgeMonitor as _PredictBridgeMonitor,
 )
 from calibrated_explanations.core.exceptions import DataShapeError
 from calibrated_explanations.plugins.predict import PredictBridge
@@ -91,11 +117,11 @@ def _patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
         explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration_helpers.initialize_interval_learner",
+        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner",
         _initialize,
     )
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration_helpers.initialize_interval_learner_for_fast_explainer",
+        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner_for_fast_explainer",
         _initialize,
     )
 
@@ -114,7 +140,7 @@ def _make_explainer(
 def test_read_pyproject_section_handles_multiple_sources(
     monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]"
 ) -> None:
-    module = __import__("calibrated_explanations.core.calibrated_explainer", fromlist=["_tomllib"])
+    module = __import__("calibrated_explanations.core.config_helpers", fromlist=["_tomllib"])
     monkeypatch.chdir(tmp_path)
 
     # No TOML reader available -> early fallback
@@ -221,46 +247,6 @@ def test_oob_predictions_regression_length_mismatch(monkeypatch: pytest.MonkeyPa
 
     with pytest.raises(DataShapeError):
         _make_explainer(monkeypatch, learner, x_cal, y_cal, mode="regression", oob=True)
-
-
-def test_build_explanation_chain_includes_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    explainer._explanation_plugin_overrides["factual"] = "override.plugin"
-    explainer._pyproject_explanations = {
-        "factual": "py.plugin",
-        "factual_fallbacks": ("py.fb",),
-    }
-
-    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "env.plugin")
-    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", "env.fb1, env.fb2")
-
-    class Descriptor:
-        def __init__(self, metadata: dict[str, Any]) -> None:
-            self.metadata = metadata
-
-    descriptor_map = {
-        "override.plugin": Descriptor({"fallbacks": ("meta.fb",)}),
-        "env.plugin": Descriptor({}),
-        "env.fb1": Descriptor({}),
-        "env.fb2": Descriptor({}),
-        "py.plugin": Descriptor({}),
-        "py.fb": Descriptor({}),
-        "meta.fb": Descriptor({}),
-        "core.explanation.factual": Descriptor({}),
-    }
-    monkeypatch.setattr(
-        "calibrated_explanations.core.calibrated_explainer.find_explanation_descriptor",
-        lambda identifier: descriptor_map.get(identifier),
-    )
-
-    chain = explainer._build_explanation_chain("factual")
-    assert chain[0] == "override.plugin"
-    assert "meta.fb" in chain
-    assert chain[-1] == "core.explanation.factual"
 
 
 def test_explanation_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -404,28 +390,6 @@ def test_capture_interval_calibrators_records_sequences(monkeypatch: pytest.Monk
     assert context.metadata["fast_calibrators"] == ("first", "second")
 
 
-def test_build_instance_telemetry_payload_variants(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    class Explanation:
-        def __init__(self, payload: dict[str, Any]) -> None:
-            self._payload = payload
-
-        def to_telemetry(self) -> dict[str, Any]:
-            return dict(self._payload)
-
-    telemetry = explainer._build_instance_telemetry_payload([Explanation({"foo": "bar"})])
-    assert telemetry == {"foo": "bar"}
-
-    assert explainer._build_instance_telemetry_payload(object()) == {}
-
-    explainer.set_preprocessor_metadata(None)
-    assert explainer.preprocessor_metadata is None
-
-
 def test_x_y_cal_setters_and_append(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
@@ -465,15 +429,6 @@ def test_ensure_interval_state_and_coerce_override(monkeypatch: pytest.MonkeyPat
 
     explainer._ensure_interval_runtime_state()
     assert "default" in explainer._interval_plugin_identifiers
-
-    assert explainer._coerce_plugin_override(None) is None
-    assert explainer._coerce_plugin_override("plugin") == "plugin"
-
-    def factory() -> str:
-        return "plugin"
-
-    override = explainer._coerce_plugin_override(factory)
-    assert override == "plugin"
 
 
 def test_interval_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -600,39 +555,6 @@ def test_feature_task_ignored_and_no_indices() -> None:
     assert rule_values_result[0][0] == [1, 2]
 
 
-def test_coerce_override_callable_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    def bad_factory() -> None:
-        raise RuntimeError("boom")
-
-    with pytest.raises(ConfigurationError):
-        explainer._coerce_plugin_override(bad_factory)
-
-
-def test_build_plot_style_chain_respects_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    explainer._plot_style_override = "override-style"
-    monkeypatch.setenv("CE_PLOT_STYLE", "env-style")
-    monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "env.fb1,env.fb2")
-    explainer._pyproject_plots = {"style": "py-style", "style_fallbacks": ("py.fb",)}
-
-    chain = explainer._build_plot_style_chain()
-    assert chain[0] == "override-style"
-    assert "env-style" in chain
-    assert "py-style" in chain
-    # Ensure plot_spec.default is present and legacy is at the end
-    assert "plot_spec.default" in chain
-    assert chain[-1] == "legacy"
-
-
 def test_feature_task_categorical_no_values() -> None:
     # categorical feature with zero declared values -> exercise early return
     feature_index = 0
@@ -747,7 +669,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
 
     # Use the instance-parallel plugin to exercise instance-chunk combining
     from calibrated_explanations.core.explain.parallel_instance import (
-        InstanceParallelExplainPlugin,
+        InstanceParallelExplainExecutor,
     )
     from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
 
@@ -780,7 +702,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         categorical_features=(),
         feature_values={},
     )
-    plugin = InstanceParallelExplainPlugin()
+    plugin = InstanceParallelExplainExecutor()
 
     empty = plugin.execute(req_empty, cfg_empty, explainer)
     assert isinstance(empty, CalibratedExplanations)
@@ -833,39 +755,14 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
     assert combined.explanations[1].index == 1
 
 
-def test_slice_threshold_and_bins_variants(monkeypatch: pytest.MonkeyPatch) -> None:
-    _module = __import__(
-        "calibrated_explanations.core.calibrated_explainer", fromlist=["safe_isinstance"]
-    )
-    _expl = DummyLearner()
-    # scalar threshold remains scalar
-    assert CalibratedExplainer._slice_threshold(None, 0, 1, 1) is None
-    assert CalibratedExplainer._slice_threshold(0.5, 0, 1, 1) == 0.5
-
-    arr = [1, 2, 3, 4]
-    # length mismatch -> returns original
-    assert CalibratedExplainer._slice_threshold(arr, 0, 2, 5) is arr
-
-    # matching length -> returns slice
-    res = CalibratedExplainer._slice_threshold(arr, 1, 3, 4)
-    assert res == [2, 3]
-
-    # bins slicing with numpy array
-    bins = np.asarray([[0], [1], [2]])
-    assert np.array_equal(CalibratedExplainer._slice_bins(bins, 1, 3), bins[1:3])
-
-    # None bins -> None
-    assert CalibratedExplainer._slice_bins(None, 0, 1) is None
-
-
 def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -> None:
     # Verify instance-parallel plugin invokes per-chunk processing (sequential plugin)
     from calibrated_explanations.core.explain.parallel_instance import (
-        InstanceParallelExplainPlugin,
+        InstanceParallelExplainExecutor,
     )
     from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
 
-    plugin = InstanceParallelExplainPlugin()
+    plugin = InstanceParallelExplainExecutor()
 
     # Replace the internal sequential plugin execute with a fake that records calls
     called: list[tuple] = []
@@ -879,7 +776,7 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
 
     plugin._sequential_plugin.execute = fake_seq_execute
 
-    # Single chunk will delegate to sequential plugin via InstanceParallelExplainPlugin
+    # Single chunk will delegate to sequential plugin via InstanceParallelExplainExecutor
     # create a small explainer instance for the plugin to attach results to
     explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))
 

@@ -1,77 +1,65 @@
-"""Phase 1A calibration/interval-learner helper delegators.
+"""Calibration helper delegators and utilities.
 
-This module contains thin wrapper functions that encapsulate calibration-related
-logic from ``CalibratedExplainer`` without changing behavior. The explainer
-instance is passed in and used directly to avoid re-wiring state.
+This module provides:
+- Backward-compatible delegators (DEPRECATED - use calibration.interval_learner instead)
+- New calibration state and preprocessing utilities
+
+Part of Phase 6: Refactor Calibration Functionality (ADR-001).
 """
 
 from __future__ import annotations
 
-from .exceptions import ConfigurationError
+from typing import TYPE_CHECKING
 
+import numpy as np
 
-def assign_threshold(explainer, threshold):
-    """Thin wrapper around ``CalibratedExplainer.assign_threshold``.
-
-    Exposed as a helper for tests and future extraction stages.
-    """
-    return explainer.assign_threshold(threshold)
-
-
-def update_interval_learner(explainer, xs, ys, bins=None) -> None:
-    """Mechanical move of ``CalibratedExplainer.__update_interval_learner``.
-
-    Mirrors original semantics and exceptions exactly.
-    """
-    if explainer.is_fast():
-        raise ConfigurationError("Fast explanations are not supported in this update path.")
-    if explainer.mode == "classification":
-        interval, _identifier = explainer._obtain_interval_calibrator(
-            fast=False,
-            metadata={"operation": "update"},
-        )
-        explainer.interval_learner = interval
-    elif "regression" in explainer.mode:
-        if isinstance(explainer.interval_learner, list):
-            raise ConfigurationError("Fast explanations are not supported in this update path.")
-        # update the IntervalRegressor
-        explainer.interval_learner.insert_calibration(xs, ys, bins=bins)
-    explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
-
-
-def initialize_interval_learner(explainer) -> None:
-    """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner``."""
-    ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
-    if callable(ensure_state):
-        ensure_state()
-
-    if explainer.is_fast():
-        initialize_interval_learner_for_fast_explainer(explainer)
-    elif explainer.mode == "classification" or "regression" in explainer.mode:
-        interval, _identifier = explainer._obtain_interval_calibrator(
-            fast=False,
-            metadata={"operation": "initialize"},
-        )
-        explainer.interval_learner = interval
-    explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
-
-
-def initialize_interval_learner_for_fast_explainer(explainer) -> None:
-    """Mechanical move of ``CalibratedExplainer.__initialize_interval_learner_for_fast_explainer``."""
-    ensure_state = getattr(explainer, "_ensure_interval_runtime_state", None)
-    if callable(ensure_state):
-        ensure_state()
-
-    interval, _identifier = explainer._obtain_interval_calibrator(
-        fast=True,
-        metadata={"operation": "initialize_fast"},
+if TYPE_CHECKING:
+    from .calibration.interval_learner import (
+        assign_threshold,
+        initialize_interval_learner,
+        initialize_interval_learner_for_fast_explainer,
+        update_interval_learner,
     )
-    explainer.interval_learner = interval
-
 
 __all__ = [
     "assign_threshold",
     "initialize_interval_learner",
     "initialize_interval_learner_for_fast_explainer",
     "update_interval_learner",
+    "identify_constant_features",
 ]
+
+
+def __getattr__(name: str):
+    """Lazy-load functions from calibration.interval_learner with deprecation warning."""
+    if name in __all__:
+        from ..utils.deprecations import deprecate
+
+        msg = (
+            f"Importing {name} from calibration_helpers is deprecated."
+            " This alias will be removed in v1.0.0."
+            " Import from calibrated_explanations.core.calibration.interval_learner instead."
+        )
+        deprecate(msg, key=f"calibration_helpers:{name}", stacklevel=3)
+        from .calibration import interval_learner as _il  # pylint: disable=import-outside-toplevel
+
+        return getattr(_il, name)
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def identify_constant_features(x_cal: np.ndarray) -> list:
+    """Identify constant (non-varying) columns in calibration data.
+
+    Parameters
+    ----------
+    x_cal : np.ndarray
+        Calibration input data of shape (n_samples, n_features).
+
+    Returns
+    -------
+    list
+        Indices of features that have constant values across all calibration samples.
+    """
+    constant_columns = [f for f in range(x_cal.shape[1]) if np.all(x_cal[:, f] == x_cal[0, f])]
+    return constant_columns

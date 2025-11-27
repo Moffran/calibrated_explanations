@@ -2,8 +2,7 @@
 """Snapshot the current public API surface of calibrated_explanations.
 
 Creates a timestamped text file in benchmarks/ listing exported symbols from the
-package root plus selected key modules. Intended for Phase 1A mechanical refactor
-regression checking.
+package root plus selected key modules.
 """
 
 from __future__ import annotations

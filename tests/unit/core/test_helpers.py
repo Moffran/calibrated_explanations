@@ -13,17 +13,21 @@ Test cases include:
 - Handling cases where the class module is not imported.
 """
 
+import sys
+import types
+
 import numpy as np
 import pytest
+from sklearn.base import BaseEstimator
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+
 from calibrated_explanations.utils.helper import (
     calculate_metrics,
     check_is_fitted,
     safe_import,
     safe_isinstance,
 )
-from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
 
 
 class MockEstimator(BaseEstimator):
@@ -107,6 +111,48 @@ def test_safe_isinstance_class_not_exist():
     """Test safe_isinstance when the class does not exist in the module."""
     model = RandomForestRegressor()
     assert safe_isinstance(model, "sklearn.ensemble.NonexistentClass") is False
+
+
+def test_safe_import_and_safe_isinstance_plugin_integration():
+    """Integration-style coverage showing plugin resolution and fallback."""
+
+    module_name = "tests.unit.core._fake_plugin"
+    plugin_name = "Plugin"
+
+    class DefaultPlugin:
+        def run(self):
+            return "fallback"
+
+    plugin_module = types.ModuleType(module_name)
+
+    class Plugin:
+        def __init__(self):
+            self.state = "active"
+
+        def run(self):
+            return "plugin"
+
+    plugin_module.Plugin = Plugin
+    sys.modules[module_name] = plugin_module
+
+    try:
+        loaded_module = safe_import(module_name)
+        loaded_class = safe_import(module_name, plugin_name)
+        assert loaded_module is plugin_module
+        instance = loaded_class()
+        assert instance.run() == "plugin"
+        assert safe_isinstance(instance, f"{module_name}.{plugin_name}") is True
+
+        def resolve_plugin(name):
+            try:
+                return safe_import(name, plugin_name)
+            except ImportError:
+                return DefaultPlugin
+
+        assert resolve_plugin(module_name) is Plugin
+        assert resolve_plugin("nonexistent.module") is DefaultPlugin
+    finally:
+        sys.modules.pop(module_name, None)
 
 
 def test_check_is_fitted_with_fitted_estimator():

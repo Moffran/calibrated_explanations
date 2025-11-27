@@ -302,13 +302,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             except Exception:  # pragma: no cover - defensive
                 sample_percentiles = None
 
-        assign_threshold = None
-        if hasattr(base, "assign_threshold"):
-            try:
-                assign_threshold = base.assign_threshold  # type: ignore[attr-defined]
-            except Exception:  # pragma: no cover - defensive
-                assign_threshold = None
-
         runtime_telemetry = None
         if underlying is not None:
             try:
@@ -325,7 +318,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             "low_high_percentiles": _jsonify(self.low_high_percentiles),
             "feature_names": _jsonify(feature_names),
             "class_labels": class_labels,
-            "assign_threshold": _jsonify(assign_threshold),
             "sample_percentiles": sample_percentiles,
             "runtime_telemetry": _jsonify(runtime_telemetry),
         }
@@ -695,10 +687,12 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
-        warnings.warn(
+        from ..utils.deprecations import deprecate
+
+        deprecate(
             "This method is deprecated and may be removed in future versions. Use indexing instead.",
-            DeprecationWarning,
-            stacklevel=2,
+            key="CalibratedExplanations.get_explanation",
+            stacklevel=3,
         )
         if not isinstance(index, int):
             raise TypeError("index must be an integer")
@@ -1156,19 +1150,6 @@ class FrozenCalibratedExplainer:
             list: The labels for the classes.
         """
         return self._explainer.class_labels
-
-    @property
-    def assign_threshold(self):
-        """
-        Retrieves the threshold for assigning class labels from the underlying explainer.
-
-        This property provides access to the threshold used for assigning class labels in the explainer, allowing users to understand the data being analyzed.
-
-        Returns
-        -------
-            float: The threshold for assigning class labels.
-        """
-        return self._explainer.assign_threshold
 
     @property
     def sample_percentiles(self):

@@ -1,4 +1,4 @@
-"""Minimal tests for the config builder scaffolding (Phase 2).
+"""Minimal tests for the config builder scaffolding.
 
 These tests intentionally avoid changing public APIs by exercising only
 the internal/private `_from_config` helper and the fluent builder.

@@ -74,11 +74,9 @@ Negative/Risks:
 
 ## Open Questions
 
-- What cadence should we use to review and prune `.coveragerc` exemptions?
-- Do we require subpackage-specific thresholds (e.g., `viz` vs `core`), or is the
-  critical-path list sufficient?
-- Should we combine coverage gating with mutation testing for calibration modules in a
-  future phase?
+- **Cadence:** Review and prune `.coveragerc` exemptions during the planning phase of each minor release (e.g., v0.10.0, v0.11.0).
+- **Subpackage Thresholds:** The critical-path list defined in the Decision section is sufficient for v1.0.0. Subpackage-specific thresholds are deferred to avoid excessive configuration maintenance.
+- **Mutation Testing:** Defer to v0.11+ or later. While valuable, it is not a blocking requirement for v1.0.0 stability.
 
 ## Implementation Status
 

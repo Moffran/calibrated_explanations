@@ -1,0 +1,38 @@
+name: Deprecation Check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  deprecation-check:
+    name: Deprecation-sensitive tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run deprecation-sensitive tests
+        env:
+          CE_DEPRECATIONS: error
+        run: |
+          # Run unit tests quickly in deprecation-error mode to catch any
+          # newly-introduced deprecations without running the full coverage
+          # gated suite here.
+          pytest tests/unit -q --maxfail=1 --no-cov

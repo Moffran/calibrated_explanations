@@ -39,7 +39,7 @@ Deliver the runtime polish and ADR-004 remediation items called out in Release P
 
 - **Task P1.1 – Decouple chunk size knobs**
   - Deliverables: proposal + implementation plan to introduce `instance_chunk_size` and optional `feature_chunk_size` while keeping `min_batch_size` as the gating threshold.
-  - Dependencies: unit tests covering `InstanceParallelExplainPlugin` chunk assembly.
+  - Dependencies: unit tests covering `InstanceParallelExplainExecutor` chunk assembly.
   - Success metric: design approved; backlog ticket created with acceptance criteria (chunk-size override, backward compatibility, feature batching optional).
 - **Task P1.2 – Extend `ParallelConfig` options**
   - Deliverables: specification for `task_size_hint_bytes`, `force_serial_on_failure`, backend preference flags (per ADR-004).

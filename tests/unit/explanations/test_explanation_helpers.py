@@ -35,9 +35,6 @@ class ExplainerStub:
         self.x_cal = np.array([[0.1, 0.3], [0.2, 0.4]])
         self.rule_boundaries = lambda _instance: []
 
-    def assign_threshold(self, threshold):  # pragma: no cover - passthrough for tests
-        return threshold
-
     def is_multiclass(self):  # pragma: no cover - not exercised here
         return False
 

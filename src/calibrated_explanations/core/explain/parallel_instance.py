@@ -1,4 +1,4 @@
-"""Instance-parallel explain plugin - parallel execution across instances.
+"""Instance-parallel explain executor - parallel execution across instances.
 
 This plugin implements instance-level parallelism, partitioning the input
 instances into chunks and processing them in parallel. Each chunk is explained
@@ -12,17 +12,19 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 
 import numpy as np
 
-from ...explanations import CalibratedExplanations
-from ._base import BaseExplainPlugin
+from ._base import BaseExplainExecutor
 from ._helpers import initialize_explanation, slice_bins, slice_threshold
 from ._shared import ExplainConfig, ExplainRequest
-from .sequential import SequentialExplainPlugin
+from .sequential import SequentialExplainExecutor
 
 if TYPE_CHECKING:
+    from ...explanations import CalibratedExplanations
     from ..calibrated_explainer import CalibratedExplainer
+else:
+    CalibratedExplainer = object
 
 
-class InstanceParallelExplainPlugin(BaseExplainPlugin):
+class InstanceParallelExplainExecutor(BaseExplainExecutor):
     """Instance-parallel explain execution strategy.
 
     Partitions test instances into chunks and processes them in parallel,
@@ -32,7 +34,7 @@ class InstanceParallelExplainPlugin(BaseExplainPlugin):
 
     def __init__(self):
         """Initialize the plugin with a sequential plugin for chunk processing."""
-        self._sequential_plugin = SequentialExplainPlugin()
+        self._sequential_plugin = SequentialExplainExecutor()
 
     @property
     def name(self) -> str:
@@ -191,4 +193,4 @@ class InstanceParallelExplainPlugin(BaseExplainPlugin):
         return combined
 
 
-__all__ = ["InstanceParallelExplainPlugin"]
+__all__ = ["InstanceParallelExplainExecutor"]

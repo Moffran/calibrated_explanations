@@ -1,4 +1,4 @@
-"""Feature-parallel explain plugin - parallel execution across features.
+"""Feature-parallel explain executor - parallel execution across features.
 
 This plugin implements feature-level parallelism, distributing feature
 perturbation tasks across worker processes or threads. It shares most logic
@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
-from ...explanations import CalibratedExplanations
-from ._base import BaseExplainPlugin
-from ._helpers import explain_predict_step, initialize_explanation, merge_feature_result
+from ._base import BaseExplainExecutor
+from ._helpers import initialize_explanation, merge_feature_result
+from ._legacy_explain import explain_predict_step
 from ._shared import (
     ExplainConfig,
     ExplainRequest,
@@ -23,10 +23,13 @@ from ._shared import (
 )
 
 if TYPE_CHECKING:
+    from ...explanations import CalibratedExplanations
     from ..calibrated_explainer import CalibratedExplainer
+else:
+    CalibratedExplainer = object
 
 
-class FeatureParallelExplainPlugin(BaseExplainPlugin):
+class FeatureParallelExplainExecutor(BaseExplainExecutor):
     """Feature-parallel explain execution strategy.
 
     Distributes feature perturbation tasks across an executor's workers,
@@ -72,8 +75,8 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
         This implementation mirrors the original sequential path but substitutes
         _explain_parallel_features for the sequential feature loop.
         """
-        # Import _feature_task from calibrated_explainer module
-        from ..calibrated_explainer import _feature_task  # pylint: disable=import-outside-toplevel
+        # Import _feature_task from feature_task module
+        from .feature_task import _feature_task  # pylint: disable=import-outside-toplevel
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
@@ -107,6 +110,10 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
             greater_values,
             covered_values,
             x_cal,
+            perturbed_threshold,
+            perturbed_bins,
+            perturbed_x,
+            perturbed_class,
         ) = explain_predict_step(
             explainer,
             x_input,
@@ -198,4 +205,4 @@ class FeatureParallelExplainPlugin(BaseExplainPlugin):
         )
 
 
-__all__ = ["FeatureParallelExplainPlugin"]
+__all__ = ["FeatureParallelExplainExecutor"]

@@ -261,6 +261,44 @@ All three register as trusted plugins. When no overrides are supplied, the
 resolver selects these built-ins, producing byte-for-byte identical outputs to
 the pre-plugin implementation.
 
+### 4a. Execution Strategy Wrapper Plugins (v0.10.0+)
+
+In addition to the three legacy plugins, a set of six execution strategy wrapper plugins enable users to select parallelism strategies for factual and alternative explanations via the plugin configuration system:
+
+**Factual mode execution strategies:**
+
+- `core.explanation.factual.sequential` - Single-threaded sequential processing
+- `core.explanation.factual.feature_parallel` - Parallel processing across features
+- `core.explanation.factual.instance_parallel` - Parallel processing across instances
+
+**Alternative mode execution strategies:**
+
+- `core.explanation.alternative.sequential` - Single-threaded sequential processing
+- `core.explanation.alternative.feature_parallel` - Parallel processing across features
+- `core.explanation.alternative.instance_parallel` - Parallel processing across instances
+
+Each wrapper plugin delegates to the corresponding execution plugin from
+`src/calibrated_explanations/core/explain/` and declares a fallback chain for graceful degradation:
+
+```text
+instance_parallel → feature_parallel → sequential → legacy
+```
+
+When a user selects an execution strategy plugin, the system attempts to use that strategy. If the underlying executor is unavailable or execution fails, it falls back to the next strategy in the chain. This ensures backward compatibility and safety while giving users fine-grained control over performance characteristics.
+
+Example configuration:
+
+```python
+# Select feature-parallel strategy (falls back to sequential if executor unavailable)
+explainer.explain_factual(x, explanation_plugin="core.explanation.factual.feature_parallel")
+```
+
+Or via environment:
+
+```bash
+export CE_EXPLANATION_PLUGIN_FACTUAL="core.explanation.factual.feature_parallel"
+```
+
 ### 5. Registry metadata, configuration, and dependency coordination
 
 - Plugin metadata extends ADR-006 with `modes` (subset of `{factual,

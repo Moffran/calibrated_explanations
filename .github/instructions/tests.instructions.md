@@ -6,11 +6,11 @@ applyTo:
 priority: 100
 ---
 
-**You are generating or editing tests. Follow this policy strictly:**
+All actionable guidance for tests now lives in `.github/tests-guidance.md`. Follow that document for:
 
-1. Prefer amending existing files over creating new ones.
-2. Only create a new file if **all** creation criteria in the repo policy are satisfied.
-3. Use the correct directory and naming mapping for the detected language.
-4. Reuse fixtures/helpers; do not duplicate them.
-5. Keep diffs minimal: focus the change on the SUT under edit.
-6. If a rule would be violated, output a short justification block for the PR and then proceed by **modifying an existing file instead**.
+- Framework + style expectations (pytest + pytest-mock, behavior-first assertions)
+- File creation and grouping policy (when you can/can't create new files, required directory mapping, PR justification)
+- Content rubric (AAA structure, naming, determinism, mocking, snapshot usage)
+- Coverage and tooling requirements, including the `pytest --cov=... --cov-fail-under=88` gate
+
+If something is unclear in that document, call it out in your PR rather than inventing new local conventions. Additional historical context still exists in `improvement_docs/test_analysis/TEST_GUIDELINES_ENHANCED.md`.

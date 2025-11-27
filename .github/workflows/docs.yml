@@ -21,7 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r docs/requirements-doc.txt
-          pip install .
+          pip install .[notebooks,viz,lime,eval]
 
       - name: Build documentation (HTML)
         run: |
@@ -34,7 +34,7 @@ jobs:
           sphinx-build -b linkcheck . _build/linkcheck
 
       - name: Run documentation navigation tests
-        run: pytest tests/docs
+        run: pytest --no-cov tests/docs
 
       - name: Upload documentation artifacts
         uses: actions/upload-artifact@v5
