@@ -724,7 +724,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     ):
         """
         Plot explanations for a given instance, with the option to show or save the plots.
-
         Parameters
         ----------
         index : int or None, default=None

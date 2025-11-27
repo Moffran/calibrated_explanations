@@ -1481,7 +1481,6 @@ class FactualExplanation(CalibratedExplanation):
     def plot(self, filter_top=None, **kwargs):
         """
         Plot the factual explanation for a given instance.
-
         Parameters
         ----------
         filter_top : int, optional

@@ -161,10 +161,7 @@ class NarrativeGenerator:
         threshold: Optional[float] = None,
         feature_names: Optional[List[str]] = None,
     ) -> str:
-        """
-        Generate narrative for a single explanation.
-
-        """
+        """Generate narrative for a single explanation."""
         if self.templates is None:
             raise ValueError("Templates not loaded. Call load_templates() first.")
 
