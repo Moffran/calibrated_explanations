@@ -1479,38 +1479,35 @@ class FactualExplanation(CalibratedExplanation):
         return instance_value < rule_boundary
 
     def plot(self, filter_top=None, **kwargs):
-        """
-        Plot the factual explanation for a given instance.
+        """Plot the factual explanation for a given instance.
+
         Parameters
         ----------
         filter_top : int, optional
             The number of top features to display.
         **kwargs : dict
-            Additional plotting arguments, such as:
+            Additional plotting arguments:
 
-            show : bool, default=True if filename is empty, False otherwise
-                A boolean parameter that determines whether the plot should be displayed or not. If set to
-                True, the plot will be displayed. If set to False, the plot will not be displayed.
-            filename : str, default=''
-                The filename parameter is a string that represents the full path and filename of the plot
-                image file that will be saved. If this parameter is not provided or is an empty string, the plot
-                will not be saved as an image file.
-            uncertainty : bool, default=False
-                The `uncertainty` parameter is a boolean flag that determines whether to plot the uncertainty
-                intervals for the feature weights. If `uncertainty` is set to `True`, the plot will show the
-                range of possible feature weights based on the lower and upper bounds of the uncertainty
-                intervals. If `uncertainty` is set to `False`, the plot will only show the feature weights
-            style : str, default='regular'
-                The `style` parameter is a string that determines the style of the plot. Possible styles are for :class:`.FactualExplanation`:
+            - show (bool): default=True if filename is empty, False otherwise.
+              Determines whether the plot should be displayed or not.
+            - filename (str): default=''. The full path and filename of the plot
+              image file that will be saved. If not provided or empty, the plot
+              will not be saved.
+            - uncertainty (bool): default=False. Whether to plot the uncertainty
+              intervals for the feature weights.
+            - style (str): default='regular'. The style of the plot. Possible
+              styles:
 
-                * 'regular' - a regular plot with feature weights and uncertainty intervals (if applicable)
-                * 'narrative' - generate human-readable narrative explanations
-            rnk_metric : str, default='feature_weight'
-                The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
-            rnk_weight : float, default=0.5
-                The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
+              * 'regular' - a regular plot with feature weights and uncertainty
+                intervals.
+              * 'narrative' - generate human-readable narrative explanations.
+
+            - rnk_metric (str): default='feature_weight'. The metric used to
+              rank the features. Supported metrics are 'ensured',
+              'feature_weight', and 'uncertainty'.
+            - rnk_weight (float): default=0.5. The weight of the uncertainty in
+              the ranking. Used with the 'ensured' ranking metric.
         """
-
         # Ensure style_override gets passed through
         style_override = kwargs.get("style_override")
         plot_use_legacy = kwargs.get("use_legacy")

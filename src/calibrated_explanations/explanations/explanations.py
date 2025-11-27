@@ -722,28 +722,34 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         style_override=None,
         **kwargs,
     ):
-        """
-        Plot explanations for a given instance, with the option to show or save the plots.
+        """Plot explanations for a given instance, with the option to show or save the plots.
+
         Parameters
         ----------
         index : int or None, default=None
-            The index of the instance for which you want to plot the explanation. If None, the function will plot all the explanations.
-        filter_top :  int or None, default=10
-            The number of top features to display in the plot. If set to `None`, all the features will be shown.
+            The index of the instance for which you want to plot the explanation. If None, the
+            function will plot all the explanations.
+        filter_top : int or None, default=10
+            The number of top features to display in the plot. If set to `None`, all the
+            features will be shown.
         show : bool, default=True
-            Determines whether the plots should be displayed immediately after they are generated. Suitable to set to False when saving
-            the plots to a file to suppress that the plots are shown.
+            Determines whether the plots should be displayed immediately after they are
+            generated. Suitable to set to False when saving the plots to a file.
         filename : str, default=''
-            The full path and filename of the plot image file that will be saved. If empty, the plot will not be saved.
+            The full path and filename of the plot image file that will be saved. If empty, the
+            plot will not be saved.
         uncertainty : bool, default=False
             Determines whether to include uncertainty information in the plots.
         style : str, default='regular'
-            The style of the plot. Supported styles are 'regular' and 'triangular' (experimental).
+            The style of the plot. Supported styles are 'regular' and 'triangular'
+            (experimental).
         rnk_metric : str, default=None
-            The metric used to rank the features. Supported metrics are 'ensured', 'feature_weight', and 'uncertainty'.
-            If None, the default from the explanation class is used.
+            The metric used to rank the features. Supported metrics are 'ensured',
+            'feature_weight', and 'uncertainty'. If None, the default from the explanation
+            class is used.
         rnk_weight : float, default=0.5
-            The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
+            The weight of the uncertainty in the ranking. Used with the 'ensured' ranking
+            metric.
 
         Returns
         -------
@@ -751,11 +757,16 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
 
         See Also
         --------
-        :meth:`.FactualExplanation.plot` : Refer to the docstring for plot in FactualExplanation for details on default ranking ('feature_weight').
-        :meth:`.AlternativeExplanation.plot` : Refer to the docstring for plot in AlternativeExplanation for details on default ranking ('ensured').
-        :meth:`.FastExplanation.plot` : Refer to the docstring for plot in FastExplanation for details on default ranking ('feature_weight').
+        FactualExplanation.plot
+            Refer to the docstring for plot in FactualExplanation for details on default
+            ranking ('feature_weight').
+        AlternativeExplanation.plot
+            Refer to the docstring for plot in AlternativeExplanation for details on default
+            ranking ('ensured').
+        FastExplanation.plot
+            Refer to the docstring for plot in FastExplanation for details on default ranking
+            ('feature_weight').
         """
-
         if style == "narrative":
             from ..viz.narrative_plugin import NarrativePlotPlugin
 
