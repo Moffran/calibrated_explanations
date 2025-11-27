@@ -15,7 +15,11 @@ from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSIO
 from calibrated_explanations.plugins.predict_monitor import (
     PredictBridgeMonitor as _PredictBridgeMonitor,
 )
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.core.exceptions import (
+    ConfigurationError,
+    DataShapeError,
+    ValidationError,
+)
 
 
 def _stub_explainer(explainer_factory, mode: str = "classification") -> CalibratedExplainer:
@@ -40,6 +44,32 @@ def _stub_explainer(explainer_factory, mode: str = "classification") -> Calibrat
     explainer._plot_style_override = None
     explainer._explanation_plugin_fallbacks = {}
     return explainer
+
+
+def test_oob_exceptions_are_propagated(explainer_factory):
+    class OOBFailingLearner:
+        def __init__(self) -> None:
+            self.fitted_ = True
+
+        def fit(self, *_args, **_kwargs):  # pragma: no cover - unused
+            return self
+
+        def predict_proba(self, *_args, **_kwargs):  # pragma: no cover - unused
+            return np.zeros((1, 2))
+
+        @property
+        def oob_decision_function_(self):
+            raise RuntimeError("oob failure")
+
+    with pytest.raises(RuntimeError, match="oob failure"):
+        explainer_factory(learner=OOBFailingLearner(), oob=True)
+
+
+def test_categorical_features_default_to_label_keys(explainer_factory):
+    labels = {0: {0: "a"}, 2: {0: "b"}}
+    explainer = explainer_factory(categorical_features=None, categorical_labels=labels)
+
+    assert explainer.categorical_features == [0, 2]
 
 
 def test_coerce_plugin_override_supports_multiple_sources(explainer_factory):
@@ -83,6 +113,108 @@ def test_build_chains_fall_back_without_plugin_manager(explainer_factory):
     assert explainer._build_plot_style_chain() == ()
 
 
+def test_build_instance_telemetry_payload_delegates(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    sentinel = object()
+
+    class StubOrchestrator:
+        def __init__(self) -> None:
+            self.seen = None
+
+        def _build_instance_telemetry_payload(self, explanations):
+            self.seen = explanations
+            return sentinel
+
+    explainer._plugin_manager = types.SimpleNamespace(
+        _explanation_orchestrator=StubOrchestrator()
+    )
+
+    assert explainer._build_instance_telemetry_payload("payload") is sentinel
+    assert explainer._plugin_manager._explanation_orchestrator.seen == "payload"
+
+
+def test_oob_path_reraises_source_error(monkeypatch):
+    class BareLearner:
+        """Learner exposing only fitted_ flag to satisfy check_is_fitted."""
+
+        def __init__(self) -> None:
+            self.fitted_ = True
+
+        def fit(self, *_args, **_kwargs):
+            return self
+
+    x_cal = np.asarray([[0.0], [1.0]])
+    y_cal = np.asarray([0, 1])
+
+    with pytest.raises(AttributeError):
+        CalibratedExplainer(BareLearner(), x_cal, y_cal, oob=True)
+
+
+def test_categorical_features_inferred_from_labels(explainer_factory):
+    categorical_labels = {1: {0: "zero"}}
+    explainer = explainer_factory(
+        categorical_features=None, categorical_labels=categorical_labels
+    )
+
+    assert explainer.categorical_features == [1]
+
+
+def test_require_plugin_manager_raises_when_missing(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    explainer._plugin_manager = None
+
+    with pytest.raises(RuntimeError, match="PluginManager is not initialized"):
+        explainer._require_plugin_manager()
+
+
+def test_instance_telemetry_payload_delegates(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    sentinel = object()
+
+    class StubOrchestrator:
+        def _build_instance_telemetry_payload(self, explanations):
+            return (explanations, sentinel)
+
+    explainer._plugin_manager = types.SimpleNamespace(
+        _explanation_orchestrator=StubOrchestrator()
+    )
+
+    assert explainer._build_instance_telemetry_payload("payload") == ("payload", sentinel)
+
+
+def test_build_chains_fall_back_without_plugin_manager(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    delattr(explainer, "_plugin_manager")
+
+    assert explainer._build_explanation_chain("factual") == ()
+    assert explainer._build_interval_chain(fast=False) == ()
+    assert explainer._build_plot_style_chain() == ()
+
+
+def test_property_caches_when_plugin_manager_missing(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    delattr(explainer, "_plugin_manager")
+
+    assert explainer._explanation_contexts == {}
+    assert explainer._last_explanation_mode is None
+
+    explainer._last_explanation_mode = "alt"
+    explainer._last_telemetry = {"key": "value"}
+    explainer._pyproject_explanations = {"foo": "bar"}
+    explainer._pyproject_intervals = {"bar": "baz"}
+    explainer._pyproject_plots = {"baz": "qux"}
+
+    assert explainer._plugin_manager_cache_last_explanation_mode == "alt"
+    assert explainer._plugin_manager_cache_last_telemetry == {"key": "value"}
+    assert explainer._plugin_manager_cache_pyproject_explanations == {"foo": "bar"}
+    assert explainer._plugin_manager_cache_pyproject_intervals == {"bar": "baz"}
+    assert explainer._plugin_manager_cache_pyproject_plots == {"baz": "qux"}
+
+    assert explainer._pyproject_explanations is None
+    assert explainer._pyproject_intervals is None
+    assert explainer._pyproject_plots is None
+
+
 def test_predict_bridge_monitor_tracks_usage():
     class DummyBridge:
         def __init__(self) -> None:
@@ -114,6 +246,38 @@ def test_predict_bridge_monitor_tracks_usage():
     assert bridge.calls[0][0] == "predict"
     assert bridge.calls[1][0] == "predict_interval"
     assert bridge.calls[2][0] == "predict_proba"
+
+
+def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+
+    class DummyManager:
+        def __init__(self) -> None:
+            self._interval_plugin_hints = {"fast": ()}
+            self._interval_plugin_fallbacks = {"fast": ()}
+            self._interval_plugin_identifiers = {"fast": None}
+            self._telemetry_interval_sources = {"fast": None}
+            self._interval_preferred_identifier = {"fast": None}
+            self._interval_context_metadata = {"fast": {}}
+
+    explainer._plugin_manager = DummyManager()
+
+    del explainer._interval_plugin_hints
+    del explainer._interval_plugin_fallbacks
+    del explainer._interval_plugin_identifiers
+    del explainer._telemetry_interval_sources
+    del explainer._interval_preferred_identifier
+    del explainer._interval_context_metadata
+
+    for attr in (
+        "_interval_plugin_hints",
+        "_interval_plugin_fallbacks",
+        "_interval_plugin_identifiers",
+        "_telemetry_interval_sources",
+        "_interval_preferred_identifier",
+        "_interval_context_metadata",
+    ):
+        assert not hasattr(explainer._plugin_manager, attr)
 
 
 def test_check_explanation_runtime_metadata_reports_errors(explainer_factory):
@@ -210,6 +374,194 @@ def test_check_interval_runtime_metadata_validates_requirements(explainer_factor
 
     explainer.bins = ("bin",)
     assert explainer._check_interval_runtime_metadata(base, identifier="id", fast=True) is None
+
+
+def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+
+    class StubManager:
+        def __init__(self) -> None:
+            self._interval_plugin_hints = {"default": ("a",)}
+            self._interval_plugin_fallbacks = {"default": ("b",)}
+            self._interval_plugin_identifiers = {"default": "id"}
+            self._telemetry_interval_sources = {"default": "src"}
+            self._interval_preferred_identifier = {"default": "pref"}
+            self._interval_context_metadata = {"default": {"meta": 1}}
+            self._plot_style_chain = ("style",)
+
+    explainer._plugin_manager = StubManager()
+
+    del explainer._interval_plugin_hints
+    del explainer._interval_plugin_fallbacks
+    del explainer._interval_plugin_identifiers
+    del explainer._telemetry_interval_sources
+    del explainer._interval_preferred_identifier
+    del explainer._interval_context_metadata
+    explainer._plot_style_chain = ("new_style",)
+
+    manager = explainer._plugin_manager
+    assert not hasattr(manager, "_interval_plugin_hints")
+    assert not hasattr(manager, "_interval_plugin_fallbacks")
+    assert not hasattr(manager, "_interval_plugin_identifiers")
+    assert not hasattr(manager, "_telemetry_interval_sources")
+    assert not hasattr(manager, "_interval_preferred_identifier")
+    assert not hasattr(manager, "_interval_context_metadata")
+    assert manager._plot_style_chain == ("new_style",)
+
+
+def test_cached_fields_are_tracked_without_plugin_manager(explainer_factory):
+    explainer = _stub_explainer(explainer_factory)
+    del explainer._plugin_manager
+
+    assert explainer._explanation_contexts == {}
+    assert explainer._last_explanation_mode is None
+    explainer._last_explanation_mode = "factual"
+    assert explainer._plugin_manager_cache_last_explanation_mode == "factual"
+
+    assert explainer._last_telemetry == {}
+    explainer._last_telemetry = {"k": 1}
+    assert explainer._plugin_manager_cache_last_telemetry == {"k": 1}
+
+    assert explainer._pyproject_explanations is None
+    explainer._pyproject_explanations = {"e": 1}
+    assert explainer._plugin_manager_cache_pyproject_explanations == {"e": 1}
+
+    assert explainer._pyproject_intervals is None
+    explainer._pyproject_intervals = {"i": 2}
+    assert explainer._plugin_manager_cache_pyproject_intervals == {"i": 2}
+
+    assert explainer._pyproject_plots is None
+    explainer._pyproject_plots = {"p": 3}
+    assert explainer._plugin_manager_cache_pyproject_plots == {"p": 3}
+
+
+def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_factory):
+    explainer = explainer_factory(mode="regression")
+    sentinel = object()
+
+    class StubIntervalRegistry:
+        def __init__(self) -> None:
+            self.calls: list[object] = []
+
+        def initialize_for_fast_explainer(self) -> None:
+            self.calls.append(sentinel)
+
+    registry = StubIntervalRegistry()
+
+    class StubPredictionOrchestrator:
+        def __init__(self, interval_registry: StubIntervalRegistry) -> None:
+            self._interval_registry = interval_registry
+            self._prediction_orchestrator = self
+
+    stub_manager = StubPredictionOrchestrator(registry)
+    monkeypatch.setattr(explainer, "_require_plugin_manager", lambda: stub_manager)
+    explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
+
+    assert registry.calls == [sentinel]
+
+
+def test_call_delegates_to_explain(explainer_factory, monkeypatch):
+    explainer = explainer_factory()
+    captured = {}
+
+    def _fake_explain(*args, **kwargs):
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+        return "explained"
+
+    monkeypatch.setattr(explainer, "explain", _fake_explain)
+
+    assert explainer("x", threshold=0.5) == "explained"
+    assert captured["args"] == ("x", 0.5, (5, 95), None, None)
+    assert captured["kwargs"] == {"_use_plugin": True}
+
+
+def test_explain_uses_plugin_orchestrator(explainer_factory):
+    explainer = explainer_factory()
+    sentinel = object()
+
+    class StubExplanationOrchestrator:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def invoke(self, *args, **kwargs):
+            self.calls.append((args, kwargs))
+            return sentinel
+
+    orchestrator = StubExplanationOrchestrator()
+    explainer._plugin_manager = types.SimpleNamespace(
+        _explanation_orchestrator=orchestrator
+    )
+    explainer._infer_explanation_mode = lambda: "factual"
+
+    result = explainer.explain("x", threshold=0.2, bins="bins", features_to_ignore=[1])
+
+    assert result is sentinel
+    assert orchestrator.calls[0][0][0] == "factual"
+    assert orchestrator.calls[0][1]["extras"] == {
+        "mode": "factual",
+        "_skip_instance_parallel": False,
+    }
+
+
+def test_reinitialize_validates_bins_length(explainer_factory):
+    explainer = explainer_factory()
+    bins = np.asarray([0, 1])
+    explainer.bins = bins
+
+    with pytest.raises(DataShapeError):
+        explainer.reinitialize(explainer.learner, explainer.x_cal, explainer.y_cal, bins=bins[:1])
+
+
+def test_explain_counterfactual_delegates(explainer_factory):
+    explainer = explainer_factory()
+    sentinel = object()
+    explainer.explore_alternatives = lambda *args, **kwargs: (args, kwargs, sentinel)
+
+    with pytest.warns(DeprecationWarning):
+        result = explainer.explain_counterfactual("x", threshold=1.0)
+
+    assert result[2] is sentinel
+
+
+def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch):
+    explainer = explainer_factory()
+    explainer.categorical_features = np.asarray([0])
+    explainer.features_to_ignore = np.asarray([1])
+
+    called = {}
+
+    class FakeDiscretizer:
+        to_discretize: tuple[int, ...] = ()
+        mins: dict[int, list[float]] = {}
+        means: dict[int, list[float]] = {}
+
+    def _fake_instantiate(
+        discretizer, x_cal, not_to_discretize, feature_names, y_cal, seed, old_discretizer
+    ):
+        called["not_to_discretize"] = not_to_discretize
+        return FakeDiscretizer()
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.discretizer_config.instantiate_discretizer",
+        _fake_instantiate,
+    )
+
+    explainer.set_discretizer("entropy", features_to_ignore=np.asarray([0]))
+
+    assert isinstance(explainer.discretizer, FakeDiscretizer)
+    assert 1 in called["not_to_discretize"]
+
+
+def test_predict_proba_uncalibrated_interval(explainer_factory):
+    explainer = explainer_factory(mode="classification")
+
+    proba, (low, high) = explainer.predict_proba(
+        explainer.x_cal, uq_interval=True, calibrated=False
+    )
+
+    assert proba.shape[1] == 2
+    np.testing.assert_array_equal(low, high)
 
 
 def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_factory):
@@ -311,6 +663,45 @@ def test_instantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factor
 
     monkeypatch.setattr(explain_orch.copy, "deepcopy", raising_deepcopy)
     assert explainer._instantiate_plugin(broken) is broken
+
+
+def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory):
+    explainer = explainer_factory()
+    explainer.bins = None
+
+    with pytest.raises(ValidationError, match="Cannot mix calibration instances"):
+        explainer.reinitialize(explainer.learner, xs=np.ones((1, 2)), ys=np.ones(1), bins=np.array([0]))
+
+    explainer.bins = np.array([0, 1])
+
+    with pytest.raises(DataShapeError, match="length of bins"):
+        explainer.reinitialize(
+            explainer.learner,
+            xs=np.ones((1, 2)),
+            ys=np.ones(1),
+            bins=np.array([0, 1, 2]),
+        )
+
+    sentinel = object()
+
+    def _update_interval(self, xs, ys, bins=None):
+        self.marker = (xs.shape, ys.shape, None if bins is None else bins.shape)
+        return sentinel
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.calibration.interval_learner.update_interval_learner",
+        _update_interval,
+    )
+
+    result = explainer.reinitialize(
+        explainer.learner,
+        xs=np.ones((2, 2)),
+        ys=np.ones(2),
+        bins=np.array([2, 3]),
+    )
+
+    assert explainer.bins.tolist() == [0, 1, 2, 3]
+    assert explainer.marker == ((2, 2), (2,), (2,))
 
 
 def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explainer_factory):
@@ -638,3 +1029,175 @@ def test_plot_plugin_fallbacks_property_operations(explainer_factory):
 
     explainer._plot_plugin_fallbacks = {"alt": ("plot_b",)}
     assert explainer._plugin_manager._plot_plugin_fallbacks == {"alt": ("plot_b",)}
+
+
+def test_explain_counterfactual_deprecates_and_delegates(monkeypatch, explainer_factory):
+    explainer = explainer_factory()
+    sentinel = object()
+
+    monkeypatch.setattr(
+        "calibrated_explanations.utils.deprecations.deprecate", lambda *args, **kwargs: None
+    )
+    explainer.explore_alternatives = lambda *args, **kwargs: sentinel
+
+    assert (
+        explainer.explain_counterfactual(
+            np.ones((1, 2)), threshold=None, low_high_percentiles=(5, 95), bins=None, features_to_ignore=None
+        )
+        is sentinel
+    )
+
+
+def test_call_and_explain_delegate_with_plugin(monkeypatch, explainer_factory):
+    explainer = explainer_factory()
+    sentinel = object()
+    recorded = {}
+
+    explainer._infer_explanation_mode = lambda: "factual"
+
+    class StubOrchestrator:
+        def invoke(self, mode, x, threshold, low_high_percentiles, bins, features_to_ignore, *, extras):
+            recorded["extras"] = extras
+            recorded["mode"] = mode
+            recorded["payload"] = (x, threshold, low_high_percentiles, bins, features_to_ignore)
+            return sentinel
+
+    explainer._plugin_manager = types.SimpleNamespace(
+        _explanation_orchestrator=StubOrchestrator()
+    )
+
+    assert explainer(np.zeros((1, 2))) is sentinel
+    assert recorded["extras"] == {"mode": "factual", "_skip_instance_parallel": False}
+    assert recorded["mode"] == "factual"
+
+
+def test_legacy_explain_path(monkeypatch, explainer_factory):
+    explainer = explainer_factory()
+    sentinel = object()
+
+    def _legacy_explain(self, *args, **kwargs):
+        return (self, args, kwargs, sentinel)
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.explain._legacy_explain.explain", _legacy_explain
+    )
+
+    result = explainer.explain(np.zeros((1, 2)), _use_plugin=False)
+
+    assert result[0] is explainer
+    assert result[-1] is sentinel
+
+
+def test_is_multiclass_and_set_mode_helpers(explainer_factory):
+    explainer = explainer_factory()
+    explainer._CalibratedExplainer__set_mode("classification", initialize=False)
+    explainer.num_classes = 3
+
+    assert explainer.is_multiclass() is True
+    explainer._CalibratedExplainer__set_mode("regression", initialize=False)
+    assert explainer.is_multiclass() is False
+
+    with pytest.raises(ValidationError):
+        explainer._CalibratedExplainer__set_mode("unknown", initialize=False)
+
+
+def test_set_discretizer_defaults_and_populates(monkeypatch, explainer_factory):
+    explainer = explainer_factory()
+    explainer.categorical_features = [1]
+    explainer.features_to_ignore = [0]
+    explainer.discretizer = "existing"
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.discretizer_config.validate_discretizer_choice",
+        lambda choice, mode: f"validated:{choice}:{mode}",
+    )
+
+    def _instantiate(choice, x_cal, not_to_discretize, feature_names, y_cal, seed, old):
+        return f"disc:{choice}:{tuple(not_to_discretize)}:{old}"
+
+    def _setup(self, discretizer, x_cal, num_features):
+        return {0: {"values": (1,), "frequencies": (2,)}}, np.ones_like(x_cal)
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.discretizer_config.instantiate_discretizer", _instantiate
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.core.discretizer_config.setup_discretized_data", _setup
+    )
+
+    explainer.set_discretizer("auto")
+
+    assert explainer.feature_values[0] == (1,)
+    assert explainer.feature_frequencies[0] == (2,)
+    assert "validated" in explainer.discretizer
+
+
+class _ListInterval:
+    def __init__(self, proba=None, low=None, high=None):
+        self.proba = proba
+        self.low = low
+        self.high = high
+
+    def predict_probability(self, x, *_args, **_kwargs):
+        return self.proba, self.low, self.high, None
+
+    def predict_proba(self, x, *_args, **_kwargs):
+        return self.proba, self.low, self.high, None
+
+
+def test_predict_variants_cover_branches(explainer_factory):
+    explainer = explainer_factory()
+    explainer._CalibratedExplainer__initialized = True
+
+    probs, intervals = explainer.predict_proba(np.zeros((2, 2)), calibrated=False, uq_interval=True)
+    assert probs.shape[0] == 2
+    assert intervals[0].shape == (2,)
+
+    explainer._CalibratedExplainer__set_mode("regression", initialize=False)
+    explainer._CalibratedExplainer__initialized = True
+    explainer.interval_learner = [_ListInterval(proba=np.array([0.2, 0.4]), low=np.zeros(2), high=np.ones(2))]
+    preds = explainer.predict_proba(np.zeros((2, 2)), calibrated=True, uq_interval=False)
+    assert preds.shape == (2, 2)
+
+    explainer._CalibratedExplainer__set_mode("classification", initialize=False)
+    explainer._CalibratedExplainer__initialized = True
+    explainer.num_classes = 3
+    explainer.interval_learner = _ListInterval(
+        proba=np.full((2, 3), 1 / 3), low=np.zeros((2, 3)), high=np.ones((2, 3))
+    )
+    probs_multi = explainer.predict_proba(np.zeros((2, 2)), calibrated=True, uq_interval=True)
+    assert probs_multi[0].shape == (2, 3)
+
+    explainer.num_classes = 2
+    explainer.interval_learner = [
+        types.SimpleNamespace(
+            predict_proba=lambda *_args, **_kwargs: (
+                np.full((2, 2), 0.5),
+                np.zeros((2, 2)),
+                np.ones((2, 2)),
+            )
+        )
+    ]
+    probs_binary = explainer.predict_proba(np.zeros((2, 2)), calibrated=True, uq_interval=True)
+    assert probs_binary[0].shape == (2, 2)
+
+
+def test_calibrated_confusion_matrix_rejects_regression(explainer_factory):
+    explainer = explainer_factory(mode="regression")
+
+    with pytest.raises(ValidationError):
+        explainer.calibrated_confusion_matrix()
+
+
+def test_predict_calibration_uses_predict_function(monkeypatch, explainer_factory):
+    explainer = explainer_factory()
+    captured = {}
+
+    def _predict(x):
+        captured["x"] = x
+        return np.array([42])
+
+    explainer.predict_function = _predict
+
+    assert explainer.predict_calibration().tolist() == [42]
+    assert np.array_equal(captured["x"], explainer.x_cal)
