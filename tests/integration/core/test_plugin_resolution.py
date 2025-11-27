@@ -3,10 +3,8 @@ from __future__ import annotations
 from typing import Any
 import pytest
 
-from calibrated_explanations.core.calibrated_explainer import (
-    CalibratedExplainer,
-    ConfigurationError,
-)
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins.registry import (
     clear_explanation_plugins,

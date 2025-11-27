@@ -10,10 +10,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from calibrated_explanations.core.calibrated_explainer import (
-    CalibratedExplainer,
-    ConfigurationError,
-)
+from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins.registry import (
     clear_explanation_plugins,
