@@ -47,7 +47,7 @@ def test_plot_config_reads_and_writes_expected_file(monkeypatch, tmp_path):
 
     # Create a temporary config file to avoid modifying the packaged file
     temp_config_path = tmp_path / "plot_config.ini"
-    
+
     original_config_path = (
         Path(__file__).resolve().parents[3]
         / "src"

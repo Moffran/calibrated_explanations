@@ -127,6 +127,7 @@ def _make_regressor(monkeypatch: pytest.MonkeyPatch, *, bins=None):
     explainer = DummyExplainer(bins=bins)
     return interval_module.IntervalRegressor(explainer)
 
+
 def test_initializer_flattens_calibration_arrays(monkeypatch):
     class ColumnExplainer(DummyExplainer):
         def __init__(self):
@@ -137,6 +138,7 @@ def test_initializer_flattens_calibration_arrays(monkeypatch):
             base = super().predict_calibration()
             return base.reshape(-1, 1)
 
+
 def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
     """Column-vector calibration inputs should be flattened during init."""
 
@@ -155,12 +157,11 @@ def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
     monkeypatch.setattr(interval_module, "VennAbers", DummyVennAbers)
 
     regressor = interval_module.IntervalRegressor(ColumnExplainer())
-
 
     assert regressor.y_cal_hat.ndim == 1
     assert regressor.residual_cal.ndim == 1
     assert regressor.sigma_cal.ndim == 1
-    assert regressor.bins.ndim == 1
+    assert regressor.bins is None or regressor.bins.ndim == 1
 
     assert regressor._y_cal_hat_storage.ndim == 1
     assert regressor._residual_cal_storage.ndim == 1
@@ -176,7 +177,9 @@ def test_append_helpers_expand_and_normalize(monkeypatch):
 
     assert regressor._y_cal_hat_storage.shape[0] >= base_storage.shape[0] + 5
     assert np.array_equal(regressor._y_cal_hat_storage[: base_storage.size], base_storage)
-    assert np.allclose(regressor._y_cal_hat_storage[base_storage.size : base_storage.size + 5], np.arange(1, 6))
+    assert np.allclose(
+        regressor._y_cal_hat_storage[base_storage.size : base_storage.size + 5], np.arange(1, 6)
+    )
 
     regressor._append_bins(np.array([[9], [8]]))
 
@@ -208,70 +211,6 @@ def test_bins_setter_flattens_column_vectors(monkeypatch):
     assert regressor._bins_storage.ndim == 1
     assert np.array_equal(regressor.bins, np.array([0, 1, 1, 0]))
 
-def test_interval_regressor_normalizes_calibration_shapes(monkeypatch):
-    """Column-vector calibration inputs should be flattened during init."""
-
-    class ColumnExplainer(DummyExplainer):
-        def __init__(self):
-            super().__init__(bins=None)
-            self.y_cal = np.array([[0.1], [0.2], [0.3], [0.4]])
-
-        def predict_calibration(self):  # pragma: no cover - exercised indirectly
-            return self.y_cal + 0.05
-
-        def _get_sigma_test(self, x):  # pylint: disable=unused-argument
-            return np.ones((len(x), 1))
-
-    monkeypatch.setattr(interval_module.crepes, "ConformalPredictiveSystem", DummyCPS)
-    monkeypatch.setattr(interval_module, "VennAbers", DummyVennAbers)
-
-    regressor = interval_module.IntervalRegressor(ColumnExplainer())
-
-    assert regressor._y_cal_hat_storage.ndim == 1
-    assert regressor._residual_cal_storage.ndim == 1
-    assert regressor._sigma_cal_storage.ndim == 1
-
-
-def test_append_helpers_expand_and_normalize(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-
-    base_storage = np.array(regressor._y_cal_hat_storage, copy=True)
-
-    regressor._append_calibration_buffer("y_cal_hat", np.arange(1, 6, dtype=float).reshape(-1, 1))
-
-    assert regressor._y_cal_hat_storage.shape[0] >= base_storage.shape[0] + 5
-    assert np.array_equal(regressor._y_cal_hat_storage[: base_storage.size], base_storage)
-    assert np.allclose(regressor._y_cal_hat_storage[base_storage.size : base_storage.size + 5], np.arange(1, 6))
-
-    regressor._append_bins(np.array([[9], [8]]))
-
-    assert np.array_equal(regressor.bins, np.array([9, 8]))
-
-
-def test_insert_calibration_updates_split_indices(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-
-    initial_small = len(regressor.split["parts"][0])
-    initial_large = len(regressor.split["parts"][1])
-
-    xs = np.array([[0.2, 0.2], [0.3, 0.3], [0.4, 0.4]])
-    ys = np.array([0.5, 0.6, 0.7])
-
-    regressor.insert_calibration(xs, ys)
-
-    assert len(regressor.split["parts"][0]) == initial_small + 2
-    assert len(regressor.split["parts"][1]) == initial_large + 1
-    assert regressor.split["parts"][0][-2:] == [3, 5]
-    assert regressor.split["parts"][1][-1] == 4
-
-
-def test_bins_setter_flattens_column_vectors(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-
-    regressor.bins = np.array([[0], [1], [1], [0]])
-
-    assert regressor._bins_storage.ndim == 1
-    assert np.array_equal(regressor.bins, np.array([0, 1, 1, 0]))
 
 def test_predict_probability_scalar_threshold(monkeypatch):
     regressor = _make_regressor(monkeypatch)
@@ -614,78 +553,6 @@ def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
 
     assert regressor._bins_size == 5
     assert np.array_equal(regressor._bins_storage[:5], np.array([2, 3, 4, 5, 6]))
-
-
-def test_append_helpers_ignore_empty_inputs(monkeypatch):
-    """Empty calibration inserts should not mutate internal buffers."""
-
-    regressor = _make_regressor(monkeypatch, bins=np.array([0, 1, 0, 1]))
-
-    original_y_hat = np.array(regressor._y_cal_hat_storage, copy=True)
-    original_y_hat_size = regressor._y_cal_hat_size
-    regressor._append_calibration_buffer("y_cal_hat", np.array([]))
-
-    assert regressor._y_cal_hat_size == original_y_hat_size
-    assert np.array_equal(
-        regressor._y_cal_hat_storage[:original_y_hat_size], original_y_hat[:original_y_hat_size]
-    )
-
-    original_bins = np.array(regressor._bins_storage, copy=True)
-    original_bins_size = regressor._bins_size
-    regressor._append_bins(np.array([]))
-
-    assert regressor._bins_size == original_bins_size
-    assert np.array_equal(regressor._bins_storage[:original_bins_size], original_bins)
-
-
-def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-
-    appended_calibration = np.array([[9.0], [8.0], [7.0], [6.0], [5.0]])
-    regressor._append_calibration_buffer("y_cal_hat", appended_calibration)
-
-    assert regressor._y_cal_hat_size == 4 + appended_calibration.shape[0]
-    assert np.allclose(regressor._y_cal_hat_storage[:4], np.array([0.15, 0.25, 0.35, 0.45]))
-    assert np.allclose(regressor._y_cal_hat_storage[4:9], appended_calibration.reshape(-1))
-
-    regressor._append_bins(np.array([[2], [3]]))
-    regressor._append_bins(np.array([[4], [5], [6]]))
-
-    assert regressor._bins_size == 5
-    assert np.array_equal(regressor._bins_storage[:5], np.array([2, 3, 4, 5, 6]))
-def test_insert_calibration_appends_bins_and_updates_alphas(monkeypatch):
-    base_bins = np.zeros(4, dtype=int)
-    regressor = _make_regressor(monkeypatch, bins=base_bins)
-    regressor.split["cps"].alphas = [None, {0: np.array([-0.5, 0.0])}]
-    regressor.cps.alphas = [None, {0: np.array([-0.6, -0.2])}]
-
-    xs = np.array([[0.1, 0.2]])
-    ys = np.array([0.2])
-    new_bins = np.array([0])
-
-    regressor.insert_calibration(xs, ys, bins=new_bins)
-
-    assert np.array_equal(regressor.bins[-1:], new_bins)
-    assert np.allclose(regressor.residual_cal[-1], ys[0] - xs.sum())
-    assert np.allclose(regressor.split["cps"].alphas[1][0], np.array([-0.5, -0.1, 0.0]))
-    assert np.allclose(regressor.cps.alphas[1][0], np.array([-0.6, -0.2, -0.1]))
-
-
-def test_insert_calibration_updates_split_indices(monkeypatch):
-    regressor = _make_regressor(monkeypatch)
-    xs = np.array([[0.2, 0.1], [0.3, 0.2], [0.4, 0.3]])
-    ys = np.array([0.7, 0.8, 0.9])
-
-    original_parts = [list(part) for part in regressor.split["parts"]]
-
-    base_len = len(regressor.residual_cal)
-
-    regressor.insert_calibration(xs, ys)
-
-    assert len(regressor.split["parts"][0]) == len(original_parts[0]) + 2
-    assert len(regressor.split["parts"][1]) == len(original_parts[1]) + 1
-    assert regressor.split["parts"][0][-2:] == [base_len - 1, base_len + 1]
-    assert regressor.split["parts"][1][-1] == base_len
 
 
 def test_compute_proba_cal_rejects_unsupported_type(monkeypatch):

@@ -6,16 +6,20 @@ and weight calculation used by all explain executors.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
 
-from ...utils.helper import concatenate_thresholds, safe_mean
+from ...utils.helper import concatenate_thresholds
 from .feature_task import (
     FeatureTaskResult,
-    _feature_task as feature_task,
-    assign_threshold as normalize_threshold,
     assign_weight_scalar,
+)
+from .feature_task import (
+    _feature_task as feature_task,
+)
+from .feature_task import (
+    assign_threshold as normalize_threshold,
 )
 
 if TYPE_CHECKING:
@@ -551,8 +555,6 @@ def explain_predict_step(
         perturbed_x,
         perturbed_class,
     )
-
-
 
 
 __all__ = [

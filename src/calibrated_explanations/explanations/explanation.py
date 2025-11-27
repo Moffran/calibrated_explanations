@@ -349,7 +349,7 @@ class CalibratedExplanation(ABC):
         template_path="exp.yaml",
         expertise_level=("beginner", "advanced"),
         output_format="dataframe",
-        **kwargs
+        **kwargs,
     ):
         """
         Generate narrative explanation for this single instance.
@@ -407,32 +407,32 @@ class CalibratedExplanation(ABC):
         :meth:`.plot` : Plot explanations with various visual styles.
         """
         from ..viz.narrative_plugin import NarrativePlotPlugin
-        
+
         # Create a temporary collection with just this explanation
         # We need to wrap this single explanation in a collection-like object
         # to use the narrative plugin
-        
+
         # Create plugin instance
         plugin = NarrativePlotPlugin(template_path=template_path)
-        
+
         # Create a minimal wrapper that looks like a collection
         class SingleExplanationWrapper:
             def __init__(self, explanation):
                 self.explanations = [explanation]
                 self.calibrated_explainer = explanation.calibrated_explanations.calibrated_explainer
                 self.y_threshold = explanation.y_threshold
-                
+
         wrapper = SingleExplanationWrapper(self)
-        
+
         # Generate narrative using the plugin
         result = plugin.plot(
             wrapper,
             template_path=template_path,
             expertise_level=expertise_level,
             output=output_format,
-            **kwargs
+            **kwargs,
         )
-        
+
         # For single explanations, extract the first row/item if it's a collection
         if output_format == "dataframe":
             # Return the DataFrame (will have one row)
@@ -1511,7 +1511,6 @@ class FactualExplanation(CalibratedExplanation):
             rnk_weight : float, default=0.5
                 The weight of the uncertainty in the ranking. Used with the 'ensured' ranking metric.
         """
-        
 
         # Ensure style_override gets passed through
         style_override = kwargs.get("style_override")
@@ -1630,7 +1629,7 @@ class FactualExplanation(CalibratedExplanation):
                     "Matplotlib backend 'Agg' does not support show(). "
                     "Either set show=False or switch to a different backend."
                 ) from e
-            raise# core-only test runs do not fail when visualization extras are
+            raise  # core-only test runs do not fail when visualization extras are
             # unavailable. Tests that require viz should use pytest.importorskip.
             warnings.warn(
                 f"Plotting unavailable: {e}",

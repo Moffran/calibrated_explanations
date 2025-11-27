@@ -38,7 +38,17 @@ class IntervalRegressor:
         self.ce = calibrated_explainer
         self._bins_storage = None
         self._bins_size = 0
-        self.bins = calibrated_explainer.bins
+
+        # Normalize bins to 1D if provided
+        initial_bins = calibrated_explainer.bins
+        if initial_bins is not None:
+            initial_bins = np.asarray(initial_bins)
+            if initial_bins.ndim != 1:
+                initial_bins = initial_bins.reshape(-1)
+            self.bins = np.array(initial_bins, copy=True)
+        else:
+            self.bins = None
+
         self.model = self
 
         initial_y_cal_hat = np.asarray(self.ce.predict_calibration())

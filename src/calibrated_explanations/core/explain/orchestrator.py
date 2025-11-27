@@ -446,7 +446,7 @@ class ExplanationOrchestrator:
         ensure_builtin_plugins()
 
         raw_override = self.explainer._explanation_plugin_overrides.get(mode)
-        override = self.explainer._coerce_plugin_override(raw_override)
+        override = self.explainer._plugin_manager.coerce_plugin_override(raw_override)
         if override is not None and not isinstance(override, str):
             plugin = override
             identifier = getattr(plugin, "plugin_meta", {}).get("name")

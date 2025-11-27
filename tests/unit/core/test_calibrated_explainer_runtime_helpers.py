@@ -72,30 +72,6 @@ def test_categorical_features_default_to_label_keys(explainer_factory):
     assert explainer.categorical_features == [0, 2]
 
 
-def test_coerce_plugin_override_supports_multiple_sources(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
-    explainer._plugin_manager = None
-
-    assert explainer._coerce_plugin_override(None) is None
-    assert explainer._coerce_plugin_override("tests.override") == "tests.override"
-
-    sentinel = object()
-
-    def factory():
-        return sentinel
-
-    assert explainer._coerce_plugin_override(factory) is sentinel
-
-    override = object()
-    assert explainer._coerce_plugin_override(override) is override
-
-    def bad_factory():
-        raise RuntimeError("boom")
-
-    with pytest.raises(ConfigurationError):
-        explainer._coerce_plugin_override(bad_factory)
-
-
 def test_require_plugin_manager_raises_when_missing(explainer_factory):
     explainer = _stub_explainer(explainer_factory)
     explainer._plugin_manager = None
@@ -125,9 +101,7 @@ def test_build_instance_telemetry_payload_delegates(explainer_factory):
             self.seen = explanations
             return sentinel
 
-    explainer._plugin_manager = types.SimpleNamespace(
-        _explanation_orchestrator=StubOrchestrator()
-    )
+    explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
 
     assert explainer._build_instance_telemetry_payload("payload") is sentinel
     assert explainer._plugin_manager._explanation_orchestrator.seen == "payload"
@@ -152,19 +126,9 @@ def test_oob_path_reraises_source_error(monkeypatch):
 
 def test_categorical_features_inferred_from_labels(explainer_factory):
     categorical_labels = {1: {0: "zero"}}
-    explainer = explainer_factory(
-        categorical_features=None, categorical_labels=categorical_labels
-    )
+    explainer = explainer_factory(categorical_features=None, categorical_labels=categorical_labels)
 
     assert explainer.categorical_features == [1]
-
-
-def test_require_plugin_manager_raises_when_missing(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
-    explainer._plugin_manager = None
-
-    with pytest.raises(RuntimeError, match="PluginManager is not initialized"):
-        explainer._require_plugin_manager()
 
 
 def test_instance_telemetry_payload_delegates(explainer_factory):
@@ -175,20 +139,9 @@ def test_instance_telemetry_payload_delegates(explainer_factory):
         def _build_instance_telemetry_payload(self, explanations):
             return (explanations, sentinel)
 
-    explainer._plugin_manager = types.SimpleNamespace(
-        _explanation_orchestrator=StubOrchestrator()
-    )
+    explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
 
     assert explainer._build_instance_telemetry_payload("payload") == ("payload", sentinel)
-
-
-def test_build_chains_fall_back_without_plugin_manager(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
-    delattr(explainer, "_plugin_manager")
-
-    assert explainer._build_explanation_chain("factual") == ()
-    assert explainer._build_interval_chain(fast=False) == ()
-    assert explainer._build_plot_style_chain() == ()
 
 
 def test_property_caches_when_plugin_manager_missing(explainer_factory):
@@ -489,9 +442,7 @@ def test_explain_uses_plugin_orchestrator(explainer_factory):
             return sentinel
 
     orchestrator = StubExplanationOrchestrator()
-    explainer._plugin_manager = types.SimpleNamespace(
-        _explanation_orchestrator=orchestrator
-    )
+    explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=orchestrator)
     explainer._infer_explanation_mode = lambda: "factual"
 
     result = explainer.explain("x", threshold=0.2, bins="bins", features_to_ignore=[1])
@@ -562,31 +513,6 @@ def test_predict_proba_uncalibrated_interval(explainer_factory):
 
     assert proba.shape[1] == 2
     np.testing.assert_array_equal(low, high)
-
-
-def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_factory):
-    explainer = explainer_factory(mode="regression")
-    sentinel = object()
-
-    class StubIntervalRegistry:
-        def __init__(self) -> None:
-            self.calls: list[object] = []
-
-        def initialize_for_fast_explainer(self) -> None:
-            self.calls.append(sentinel)
-
-    registry = StubIntervalRegistry()
-
-    class StubPredictionOrchestrator:
-        def __init__(self, interval_registry: StubIntervalRegistry) -> None:
-            self._interval_registry = interval_registry
-            self._prediction_orchestrator = self
-
-    stub_manager = StubPredictionOrchestrator(registry)
-    monkeypatch.setattr(explainer, "_require_plugin_manager", lambda: stub_manager)
-    explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
-
-    assert registry.calls == [sentinel]
 
 
 def test_ensure_interval_runtime_state_populates_defaults(explainer_factory):
@@ -670,7 +596,9 @@ def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory
     explainer.bins = None
 
     with pytest.raises(ValidationError, match="Cannot mix calibration instances"):
-        explainer.reinitialize(explainer.learner, xs=np.ones((1, 2)), ys=np.ones(1), bins=np.array([0]))
+        explainer.reinitialize(
+            explainer.learner, xs=np.ones((1, 2)), ys=np.ones(1), bins=np.array([0])
+        )
 
     explainer.bins = np.array([0, 1])
 
@@ -693,7 +621,7 @@ def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory
         _update_interval,
     )
 
-    result = explainer.reinitialize(
+    explainer.reinitialize(
         explainer.learner,
         xs=np.ones((2, 2)),
         ys=np.ones(2),
@@ -909,20 +837,6 @@ def test_preprocessor_metadata_none_handling(explainer_factory):
     assert explainer.preprocessor_metadata is None
 
 
-def test_coerce_plugin_override_factory_error_handling(explainer_factory):
-    """_coerce_plugin_override should convert factory exceptions to ConfigurationError."""
-    explainer = _stub_explainer(explainer_factory)
-    explainer._plugin_manager = None
-
-    def failing_factory():
-        raise ValueError("Factory failed")
-
-    from calibrated_explanations.core.exceptions import ConfigurationError
-
-    with pytest.raises(ConfigurationError, match="Callable explanation plugin override raised"):
-        explainer._coerce_plugin_override(failing_factory)
-
-
 def test_prediction_orchestrator_raises_when_missing_attribute(explainer_factory):
     """_prediction_orchestrator should raise when manager lacks the attribute."""
     explainer = _stub_explainer(explainer_factory)
@@ -932,9 +846,7 @@ def test_prediction_orchestrator_raises_when_missing_attribute(explainer_factory
 
     explainer._plugin_manager = BrokenManager()
 
-    with pytest.raises(
-        AttributeError, match="PluginManager has no '_prediction_orchestrator'"
-    ):
+    with pytest.raises(AttributeError, match="PluginManager has no '_prediction_orchestrator'"):
         _ = explainer._prediction_orchestrator
 
 
@@ -947,9 +859,7 @@ def test_explanation_orchestrator_raises_when_missing_attribute(explainer_factor
 
     explainer._plugin_manager = BrokenManager()
 
-    with pytest.raises(
-        AttributeError, match="PluginManager has no '_explanation_orchestrator'"
-    ):
+    with pytest.raises(AttributeError, match="PluginManager has no '_explanation_orchestrator'"):
         _ = explainer._explanation_orchestrator
 
 
@@ -1042,7 +952,11 @@ def test_explain_counterfactual_deprecates_and_delegates(monkeypatch, explainer_
 
     assert (
         explainer.explain_counterfactual(
-            np.ones((1, 2)), threshold=None, low_high_percentiles=(5, 95), bins=None, features_to_ignore=None
+            np.ones((1, 2)),
+            threshold=None,
+            low_high_percentiles=(5, 95),
+            bins=None,
+            features_to_ignore=None,
         )
         is sentinel
     )
@@ -1056,15 +970,15 @@ def test_call_and_explain_delegate_with_plugin(monkeypatch, explainer_factory):
     explainer._infer_explanation_mode = lambda: "factual"
 
     class StubOrchestrator:
-        def invoke(self, mode, x, threshold, low_high_percentiles, bins, features_to_ignore, *, extras):
+        def invoke(
+            self, mode, x, threshold, low_high_percentiles, bins, features_to_ignore, *, extras
+        ):
             recorded["extras"] = extras
             recorded["mode"] = mode
             recorded["payload"] = (x, threshold, low_high_percentiles, bins, features_to_ignore)
             return sentinel
 
-    explainer._plugin_manager = types.SimpleNamespace(
-        _explanation_orchestrator=StubOrchestrator()
-    )
+    explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
 
     assert explainer(np.zeros((1, 2))) is sentinel
     assert recorded["extras"] == {"mode": "factual", "_skip_instance_parallel": False}
@@ -1155,7 +1069,9 @@ def test_predict_variants_cover_branches(explainer_factory):
 
     explainer._CalibratedExplainer__set_mode("regression", initialize=False)
     explainer._CalibratedExplainer__initialized = True
-    explainer.interval_learner = [_ListInterval(proba=np.array([0.2, 0.4]), low=np.zeros(2), high=np.ones(2))]
+    explainer.interval_learner = [
+        _ListInterval(proba=np.array([0.2, 0.4]), low=np.zeros(2), high=np.ones(2))
+    ]
     preds = explainer.predict_proba(np.zeros((2, 2)), calibrated=True, uq_interval=False)
     assert preds.shape == (2, 2)
 

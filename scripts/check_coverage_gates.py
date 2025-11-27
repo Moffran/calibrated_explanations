@@ -49,7 +49,7 @@ def check_gates(coverage_map: Dict[str, float]) -> Tuple[bool, List[str]]:
         # We match by suffix because coverage.xml might have relative paths
         # Extract just the relative path part (everything after src/calibrated_explanations/)
         relative_target = target_suffix.rsplit("src/calibrated_explanations/", maxsplit=1)[-1]
-        
+
         matched_file = None
         for filename in coverage_map:
             if filename.endswith(relative_target):

@@ -1,50 +1,45 @@
 """Tests for the narrative plot plugin."""
 
 import pytest
-import numpy as np
 from sklearn.datasets import load_iris, load_diabetes
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import CalibratedExplainer
-from calibrated_explanations.viz.narrative_plugin import NarrativePlotPlugin
+from calibrated_explanations.viz import NarrativePlotPlugin
 
 
 # Fixtures for test data and models
 @pytest.fixture
 def iris_data():
     """Load and split iris dataset."""
-    X, y = load_iris(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42
-    )
-    return X_train, X_test, y_train, y_test
+    x, y = load_iris(return_X_y=True)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
+    return x_train, x_test, y_train, y_test
 
 
 @pytest.fixture
 def diabetes_data():
     """Load and split diabetes dataset."""
-    X, y = load_diabetes(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.3, random_state=42
-    )
-    return X_train, X_test, y_train, y_test
+    x, y = load_diabetes(return_X_y=True)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
+    return x_train, x_test, y_train, y_test
 
 
 @pytest.fixture
 def classification_explainer(iris_data):
     """Create a classification explainer."""
-    X_train, X_test, y_train, y_test = iris_data
+    x_train, x_test, y_train, y_test = iris_data
     # Use binary classification (classes 0 and 1 only)
     mask = y_train < 2
-    X_train_binary = X_train[mask]
+    x_train_binary = x_train[mask]
     y_train_binary = y_train[mask]
-    
+
     model = RandomForestClassifier(n_estimators=10, random_state=42)
-    model.fit(X_train_binary, y_train_binary)
-    
+    model.fit(x_train_binary, y_train_binary)
+
     explainer = CalibratedExplainer(
-        model, X_train_binary, y_train_binary, feature_names=[f"feature_{i}" for i in range(4)]
+        model, x_train_binary, y_train_binary, feature_names=[f"feature_{i}" for i in range(4)]
     )
     return explainer
 
@@ -52,13 +47,17 @@ def classification_explainer(iris_data):
 @pytest.fixture
 def regression_explainer(diabetes_data):
     """Create a regression explainer."""
-    X_train, X_test, y_train, y_test = diabetes_data
-    
+    x_train, x_test, y_train, y_test = diabetes_data
+
     model = RandomForestRegressor(n_estimators=10, random_state=42)
-    model.fit(X_train, y_train)
-    
+    model.fit(x_train, y_train)
+
     explainer = CalibratedExplainer(
-        model, X_train, y_train, feature_names=[f"feature_{i}" for i in range(10)]
+        model,
+        x_train,
+        y_train,
+        mode="regression",
+        feature_names=[f"feature_{i}" for i in range(10)],
     )
     return explainer
 
@@ -80,18 +79,14 @@ def test_narrative_plugin_with_custom_template():
 # Test with classification
 def test_narrative_plugin_classification_factual_beginner(classification_explainer, iris_data):
     """Test narrative generation for binary classification with beginner level."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:3]  # Get 3 test instances
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:3]  # Get 3 test instances
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="beginner",
-        output="dict"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="beginner", output="dict")
+
     assert isinstance(result, list)
     assert len(result) == 3
     assert "instance_index" in result[0]
@@ -102,23 +97,21 @@ def test_narrative_plugin_classification_factual_beginner(classification_explain
 
 def test_narrative_plugin_classification_all_levels(classification_explainer, iris_data):
     """Test narrative generation with all expertise levels."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:2]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:2]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
     result = plugin.plot(
-        explanations,
-        expertise_level=("beginner", "intermediate", "advanced"),
-        output="dict"
+        explanations, expertise_level=("beginner", "intermediate", "advanced"), output="dict"
     )
-    
+
     assert len(result) == 2
     assert "factual_explanation_beginner" in result[0]
     assert "factual_explanation_intermediate" in result[0]
     assert "factual_explanation_advanced" in result[0]
-    
+
     # Check that narratives are different for different levels
     assert result[0]["factual_explanation_beginner"] != result[0]["factual_explanation_advanced"]
 
@@ -126,17 +119,13 @@ def test_narrative_plugin_classification_all_levels(classification_explainer, ir
 # Test with regression
 def test_narrative_plugin_regression_factual(regression_explainer, diabetes_data):
     """Test narrative generation for regression."""
-    _, X_test, _, _ = diabetes_data
-    
-    explanations = regression_explainer.explain_factual(X_test[:3])
-    
+    _, x_test, _, _ = diabetes_data
+
+    explanations = regression_explainer.explain_factual(x_test[:3])
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="intermediate",
-        output="dict"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="intermediate", output="dict")
+
     assert len(result) == 3
     assert result[0]["problem_type"] == "regression"
     assert "factual_explanation_intermediate" in result[0]
@@ -144,19 +133,15 @@ def test_narrative_plugin_regression_factual(regression_explainer, diabetes_data
 
 def test_narrative_plugin_probabilistic_regression(regression_explainer, diabetes_data):
     """Test narrative generation for probabilistic (thresholded) regression."""
-    _, X_test, _, _ = diabetes_data
-    
+    _, x_test, _, _ = diabetes_data
+
     # Use a threshold to make it probabilistic regression
     threshold = 150.0
-    explanations = regression_explainer.explain_factual(X_test[:2], threshold=threshold)
-    
+    explanations = regression_explainer.explain_factual(x_test[:2], threshold=threshold)
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="advanced",
-        output="dict"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="advanced", output="dict")
+
     assert len(result) == 2
     assert result[0]["problem_type"] == "probabilistic_regression"
 
@@ -164,17 +149,13 @@ def test_narrative_plugin_probabilistic_regression(regression_explainer, diabete
 # Test alternative explanations
 def test_narrative_plugin_alternative_explanations(regression_explainer, diabetes_data):
     """Test narrative generation for alternative explanations."""
-    _, X_test, _, _ = diabetes_data
-    
-    explanations = regression_explainer.explain_alternative(X_test[:2])
-    
+    _, x_test, _, _ = diabetes_data
+
+    explanations = regression_explainer.explore_alternatives(x_test[:2])
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="beginner",
-        output="dict"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="beginner", output="dict")
+
     assert len(result) == 2
     # Should have alternative_explanation instead of factual_explanation
     assert "alternative_explanation_beginner" in result[0]
@@ -185,20 +166,17 @@ def test_narrative_plugin_alternative_explanations(regression_explainer, diabete
 def test_narrative_plugin_dataframe_output(classification_explainer, iris_data):
     """Test dataframe output format."""
     pytest.importorskip("pandas")
-    
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:2]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:2]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="beginner",
-        output="dataframe"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="beginner", output="dataframe")
+
     import pandas as pd
+
     assert isinstance(result, pd.DataFrame)
     assert len(result) == 2
     assert "instance_index" in result.columns
@@ -207,18 +185,14 @@ def test_narrative_plugin_dataframe_output(classification_explainer, iris_data):
 
 def test_narrative_plugin_text_output(classification_explainer, iris_data):
     """Test text output format."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:2]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:2]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="beginner",
-        output="text"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="beginner", output="text")
+
     assert isinstance(result, str)
     assert "Instance 0" in result
     assert "Instance 1" in result
@@ -227,18 +201,14 @@ def test_narrative_plugin_text_output(classification_explainer, iris_data):
 
 def test_narrative_plugin_html_output(classification_explainer, iris_data):
     """Test HTML output format."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:2]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:2]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="beginner",
-        output="html"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="beginner", output="html")
+
     assert isinstance(result, str)
     assert "<table" in result
     assert "</table>" in result
@@ -248,35 +218,35 @@ def test_narrative_plugin_html_output(classification_explainer, iris_data):
 # Test error handling
 def test_narrative_plugin_invalid_expertise_level(classification_explainer, iris_data):
     """Test error handling for invalid expertise level."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:1]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:1]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    
+
     with pytest.raises(ValueError, match="Invalid expertise level"):
         plugin.plot(
             explanations,
             expertise_level="expert",  # Invalid level
-            output="dict"
+            output="dict",
         )
 
 
 def test_narrative_plugin_invalid_output_format(classification_explainer, iris_data):
     """Test error handling for invalid output format."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:1]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:1]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    
+
     with pytest.raises(ValueError, match="Invalid output format"):
         plugin.plot(
             explanations,
             expertise_level="beginner",
-            output="json"  # Invalid format
+            output="json",  # Invalid format
         )
 
 
@@ -289,17 +259,13 @@ def test_narrative_plugin_missing_pandas_for_dataframe():
 # Test integration with explanations.plot()
 def test_narrative_via_explanations_plot(classification_explainer, iris_data):
     """Test calling narrative plugin via explanations.plot() method."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:2]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
-    result = explanations.plot(
-        style="narrative",
-        expertise_level="beginner",
-        output="dict"
-    )
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:2]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
+    result = explanations.plot(style="narrative", expertise_level="beginner", output="dict")
+
     assert isinstance(result, list)
     assert len(result) == 2
     assert "factual_explanation_beginner" in result[0]
@@ -308,19 +274,18 @@ def test_narrative_via_explanations_plot(classification_explainer, iris_data):
 def test_narrative_via_explanations_plot_dataframe(classification_explainer, iris_data):
     """Test dataframe output via explanations.plot()."""
     pytest.importorskip("pandas")
-    
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:2]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:2]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     result = explanations.plot(
-        style="narrative",
-        expertise_level=("beginner", "intermediate"),
-        output="dataframe"
+        style="narrative", expertise_level=("beginner", "intermediate"), output="dataframe"
     )
-    
+
     import pandas as pd
+
     assert isinstance(result, pd.DataFrame)
     assert "factual_explanation_beginner" in result.columns
     assert "factual_explanation_intermediate" in result.columns
@@ -329,18 +294,14 @@ def test_narrative_via_explanations_plot_dataframe(classification_explainer, iri
 # Test feature names
 def test_narrative_plugin_feature_names(classification_explainer, iris_data):
     """Test that feature names are properly extracted and used."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:1]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:1]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="beginner",
-        output="dict"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="beginner", output="dict")
+
     narrative = result[0]["factual_explanation_beginner"]
     # Check that feature names appear in the narrative
     assert "feature_" in narrative
@@ -349,18 +310,14 @@ def test_narrative_plugin_feature_names(classification_explainer, iris_data):
 # Test with multiple expertise levels as tuple
 def test_narrative_plugin_multiple_levels_tuple(classification_explainer, iris_data):
     """Test with multiple expertise levels specified as tuple."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:1]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:1]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level=("beginner", "advanced"),
-        output="dict"
-    )
-    
+    result = plugin.plot(explanations, expertise_level=("beginner", "advanced"), output="dict")
+
     assert "factual_explanation_beginner" in result[0]
     assert "factual_explanation_advanced" in result[0]
     assert "factual_explanation_intermediate" not in result[0]
@@ -376,17 +333,13 @@ def test_narrative_plugin_empty_explanations():
 
 def test_narrative_plugin_single_instance(classification_explainer, iris_data):
     """Test with a single instance."""
-    _, X_test, _, _ = iris_data
-    X_test_binary = X_test[iris_data[3] < 2][:1]
-    
-    explanations = classification_explainer.explain_factual(X_test_binary)
-    
+    _, x_test, _, _ = iris_data
+    x_test_binary = x_test[iris_data[3] < 2][:1]
+
+    explanations = classification_explainer.explain_factual(x_test_binary)
+
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(
-        explanations,
-        expertise_level="beginner",
-        output="dict"
-    )
-    
+    result = plugin.plot(explanations, expertise_level="beginner", output="dict")
+
     assert len(result) == 1
     assert result[0]["instance_index"] == 0

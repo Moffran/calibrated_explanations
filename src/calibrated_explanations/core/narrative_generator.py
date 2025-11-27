@@ -1,12 +1,14 @@
 """Narrative generation utilities for CalibratedExplainer."""
 
 from __future__ import annotations
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+
 import json
 import math
-import numpy as np
 import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 try:
     import yaml
@@ -15,6 +17,7 @@ except ImportError:
 
 try:
     import pandas as pd
+
     _PANDAS_AVAILABLE = True
 except ImportError:
     pd = None
@@ -24,19 +27,19 @@ except ImportError:
 def load_template_file(filepath: str) -> Dict[str, Any]:
     """Load template file - supports both JSON and YAML formats."""
     path = Path(filepath)
-    
+
     if not path.exists():
         raise FileNotFoundError(f"Template file not found: {filepath}")
-    
+
     extension = path.suffix.lower()
-    
+
     if extension == ".json":
         try:
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse JSON template: {e}")
-    
+            raise ValueError(f"Failed to parse JSON template: {e}") from e
+
     elif extension in (".yaml", ".yml"):
         if yaml is None:
             raise ValueError(
@@ -44,11 +47,11 @@ def load_template_file(filepath: str) -> Dict[str, Any]:
                 "Install with: pip install pyyaml"
             )
         try:
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
         except yaml.YAMLError as e:
-            raise ValueError(f"Failed to parse YAML template: {e}")
-    
+            raise ValueError(f"Failed to parse YAML template: {e}") from e
+
     else:
         raise ValueError(
             f"Unsupported template file format: {extension}. "
@@ -118,8 +121,8 @@ def crosses_zero(feat: Dict) -> bool:
     try:
         if wl is not None and wh is not None:
             return float(wl) <= 0.0 <= float(wh)
-    except Exception:
-        pass
+    except (ValueError, TypeError):
+        return False
     return False
 
 
@@ -131,24 +134,24 @@ def has_wide_prediction_interval(feat: Dict, threshold: float = 0.20) -> bool:
         if pl is not None and ph is not None:
             width = abs(float(ph) - float(pl))
             return width >= threshold - 1e-12
-    except Exception:
-        pass
+    except (ValueError, TypeError):
+        return False
     return False
 
 
 class NarrativeGenerator:
     """Generate human-readable narratives from calibrated explanations."""
-    
+
     def __init__(self, template_path: Optional[str] = None):
         """Initialize with optional template file path."""
         self.templates = None
         if template_path:
             self.load_templates(template_path)
-    
+
     def load_templates(self, template_path: str):
         """Load narrative templates from file."""
         self.templates = load_template_file(template_path)
-    
+
     def generate_narrative(
         self,
         explanation,
@@ -160,11 +163,11 @@ class NarrativeGenerator:
     ) -> str:
         """
         Generate narrative for a single explanation.
-        
+
         """
         if self.templates is None:
             raise ValueError("Templates not loaded. Call load_templates() first.")
-        
+
         # Get rules from explanation
         if hasattr(explanation, "get_rules"):
             rules_dict = explanation.get_rules()
@@ -172,18 +175,18 @@ class NarrativeGenerator:
             rules_dict = explanation._get_rules()
         else:
             raise AttributeError("Explanation has no get_rules method")
-        
+
         # Extract base prediction values
         bp = _first_or_none(rules_dict.get("base_predict"))
         bl = _first_or_none(rules_dict.get("base_predict_low"))
         bh = _first_or_none(rules_dict.get("base_predict_high"))
-        
+
         # Build context dictionary
         # Try to get the predicted class/label
         predicted_class = rules_dict.get("classes")
         if predicted_class is not None:
             # For classification, get the class label
-            if hasattr(explanation, 'get_class_labels'):
+            if hasattr(explanation, "get_class_labels"):
                 class_labels = explanation.get_class_labels()
                 if class_labels is not None and isinstance(class_labels, dict):
                     label = str(class_labels.get(predicted_class, predicted_class))
@@ -199,7 +202,7 @@ class NarrativeGenerator:
                 label = "0"
             else:
                 label = ""
-        
+
         context = {
             "label": label,
             "calibrated_pred": fmt_float(bp),
@@ -210,40 +213,45 @@ class NarrativeGenerator:
             "margin_value": "",
             "interval_width": "",
         }
-        
+
         # Calculate interval width for regression
-        if problem_type in ("regression", "probabilistic_regression"):
-            if bl is not None and bh is not None:
-                try:
-                    width = float(bh) - float(bl)
-                    context["interval_width"] = fmt_float(width)
-                except Exception:
-                    pass
-        
+        if (
+            problem_type in ("regression", "probabilistic_regression")
+            and bl is not None
+            and bh is not None
+        ):
+            try:
+                width = float(bh) - float(bl)
+                context["interval_width"] = fmt_float(width)
+            except (ValueError, TypeError):
+                pass
+
         # Get template
         try:
-            template = self.templates["narrative_templates"][problem_type][explanation_type][expertise_level]
+            template = self.templates["narrative_templates"][problem_type][explanation_type][
+                expertise_level
+            ]
         except KeyError:
             return f"Template not found for {problem_type}/{explanation_type}/{expertise_level}"
-        
+
         # Get feature rules with proper feature names
         rules = self._serialize_rules(rules_dict, feature_names)
-        
+
         # Split features by weight sign
         pos_features = [r for r in rules if r.get("weight", 0) > 0]
         neg_features = [r for r in rules if r.get("weight", 0) < 0]
-        
+
         # Sort by absolute weight
         pos_features.sort(key=lambda r: abs(r.get("weight", 0)), reverse=True)
         neg_features.sort(key=lambda r: abs(r.get("weight", 0)), reverse=True)
-        
+
         # Take top features (min 3)
         min_features = 3
         max_features = max(min_features, len(pos_features))
         pos_features = pos_features[:max_features]
         max_features = max(min_features, len(neg_features))
         neg_features = neg_features[:max_features]
-        
+
         # For advanced level: split by prediction interval width
         if expertise_level == "advanced":
             pos_certain = [r for r in pos_features if not has_wide_prediction_interval(r)]
@@ -251,28 +259,40 @@ class NarrativeGenerator:
             neg_certain = [r for r in neg_features if not has_wide_prediction_interval(r)]
             neg_uncertain = [r for r in neg_features if has_wide_prediction_interval(r)]
             uncertain_all = pos_uncertain + neg_uncertain
-            
+
             narrative = self._expand_template(
-                template, pos_certain, neg_certain, uncertain_all, 
-                context, expertise_level, problem_type  # Pass problem_type
+                template,
+                pos_certain,
+                neg_certain,
+                uncertain_all,
+                context,
+                expertise_level,
+                problem_type,  # Pass problem_type
             )
         else:
             narrative = self._expand_template(
-                template, pos_features, neg_features, [], 
-                context, expertise_level, problem_type  # Pass problem_type
+                template,
+                pos_features,
+                neg_features,
+                [],
+                context,
+                expertise_level,
+                problem_type,  # Pass problem_type
             )
-        
+
         return narrative
 
-    def _serialize_rules(self, rules_dict: Dict, feature_names: Optional[List[str]] = None) -> List[Dict]:
+    def _serialize_rules(
+        self, rules_dict: Dict, feature_names: Optional[List[str]] = None
+    ) -> List[Dict]:
         """Convert rule dictionary to list of feature dictionaries with proper names."""
         rules_list = rules_dict.get("rule", []) or []
         n = len(rules_list)
-        
+
         def get_item(key, idx):
             items = rules_dict.get(key, [])
             return items[idx] if idx < len(items) else None
-        
+
         def extract_feature_name_from_rule(rule: str) -> str:
             """Extract feature name from rule string."""
             if not rule:
@@ -281,14 +301,16 @@ class NarrativeGenerator:
             parts = rule.split()
             if parts:
                 # Remove any operators that might be stuck to the name
-                name = parts[0].rstrip('<=>=!<>')
+                import re
+
+                name = re.sub(r"[<=>=!<>]+$", "", parts[0])
                 return name
             return ""
-        
+
         result = []
         for i in range(n):
             feature_idx = get_item("feature", i)
-            
+
             # Try to get actual feature name
             if feature_names is not None and feature_idx is not None:
                 try:
@@ -297,14 +319,20 @@ class NarrativeGenerator:
                         feature_name = feature_names[feat_idx]
                     else:
                         # Fallback to extracting from rule
-                        feature_name = extract_feature_name_from_rule(rules_list[i] if i < len(rules_list) else "")
+                        feature_name = extract_feature_name_from_rule(
+                            rules_list[i] if i < len(rules_list) else ""
+                        )
                 except (ValueError, TypeError):
                     # Fallback to extracting from rule
-                    feature_name = extract_feature_name_from_rule(rules_list[i] if i < len(rules_list) else "")
+                    feature_name = extract_feature_name_from_rule(
+                        rules_list[i] if i < len(rules_list) else ""
+                    )
             else:
                 # Fallback to extracting from rule
-                feature_name = extract_feature_name_from_rule(rules_list[i] if i < len(rules_list) else "")
-            
+                feature_name = extract_feature_name_from_rule(
+                    rules_list[i] if i < len(rules_list) else ""
+                )
+
             feature_dict = {
                 "rule": rules_list[i] if i < len(rules_list) else "",
                 "value": get_item("value", i),
@@ -318,7 +346,7 @@ class NarrativeGenerator:
                 "predict_high": get_item("predict_high", i),
             }
             result.append(feature_dict)
-        
+
         return result
 
     def _expand_template(
@@ -329,27 +357,31 @@ class NarrativeGenerator:
         uncertain_features: List[Dict],
         context: Dict[str, str],
         level: str,
-        problem_type: str = "regression"
+        problem_type: str = "regression",
     ) -> str:
         """Expand template with features and context."""
         # Fill in global context placeholders
         for k, v in context.items():
             template = template.replace(f"{{{k}}}", v)
-        
+
         # Check if caution is needed based on calibrated probability interval width
         # Only for probability-based tasks (classification and probabilistic regression)
         caution_line = ""
-        if problem_type in ("binary_classification", "multiclass_classification", "probabilistic_regression"):
+        if problem_type in (
+            "binary_classification",
+            "multiclass_classification",
+            "probabilistic_regression",
+        ):
             try:
                 pred_low = context.get("pred_interval_lower", "")
                 pred_high = context.get("pred_interval_upper", "")
-                
+
                 # Try to parse and calculate width
                 if pred_low and pred_high and pred_low != "N/A" and pred_high != "N/A":
                     low_val = float(pred_low)
                     high_val = float(pred_high)
                     width = high_val - low_val
-                    
+
                     # Only show caution if width > 0.20
                     if width > 0.20:
                         if level == "beginner":
@@ -358,7 +390,7 @@ class NarrativeGenerator:
                             caution_line = f"⚠️ Use caution: calibrated probability interval is wide ({width:.3f})."
             except (ValueError, TypeError):
                 pass
-        
+
         # Build feature lines
         def build_lines(line: str, feats: List[Dict]) -> List[str]:
             rendered = []
@@ -371,10 +403,10 @@ class NarrativeGenerator:
                     # Fallback: extract from rule
                     rule = f.get("rule", "")
                     feat_name = rule.split()[0] if rule else ""
-                
+
                 rule = f.get("rule", "")
                 cond = clean_condition(rule, feat_name)
-                
+
                 # Per-feature uncertainty tags
                 tags = []
                 if has_wide_prediction_interval(f):
@@ -382,13 +414,13 @@ class NarrativeGenerator:
                 if crosses_zero(f):
                     tags.append("⚠️ direction uncertain")
                 uncertainty_tag = " [" + ", ".join(tags) + "]" if tags else ""
-                
+
                 txt = (
                     line.replace("{feature_name}", feat_name)
-                        .replace("{feature_actual_value}", str(f.get("value", "")))
-                        .replace("{condition}", cond)
+                    .replace("{feature_actual_value}", str(f.get("value", "")))
+                    .replace("{condition}", cond)
                 )
-                
+
                 # Handle predict placeholders
                 p, pl, ph = f.get("predict"), f.get("predict_low"), f.get("predict_high")
                 txt = (
@@ -396,30 +428,33 @@ class NarrativeGenerator:
                     .replace("{predict_low}", fmt_float(pl))
                     .replace("{predict_high}", fmt_float(ph))
                 )
-                
+
                 # Handle weight placeholders
                 w, wl, wh = f.get("weight"), f.get("weight_low"), f.get("weight_high")
                 txt = txt.replace("{feature_weight}", fmt_float(w))
-                
+
                 if level == "advanced" and wl is not None and wh is not None:
-                    txt = (
-                        txt.replace("{feature_weight_low}", fmt_float(wl))
-                        .replace("{feature_weight_high}", fmt_float(wh))
+                    txt = txt.replace("{feature_weight_low}", fmt_float(wl)).replace(
+                        "{feature_weight_high}", fmt_float(wh)
                     )
                 else:
                     # Remove interval placeholders
-                    txt = re.sub(r"\s*\[\{feature_weight_low\},\s*\{feature_weight_high\}\]", "", txt)
-                    txt = txt.replace("{feature_weight_low}", "").replace("{feature_weight_high}", "")
-                
+                    txt = re.sub(
+                        r"\s*\[\{feature_weight_low\},\s*\{feature_weight_high\}\]", "", txt
+                    )
+                    txt = txt.replace("{feature_weight_low}", "").replace(
+                        "{feature_weight_high}", ""
+                    )
+
                 txt += uncertainty_tag
                 rendered.append(txt)
             return rendered
-        
+
         lines = template.splitlines()
         out_lines = []
         placeholder = "{feature_name}"
         pos_done = neg_done = uncertain_done = False
-        
+
         for line in lines:
             if placeholder in line:
                 if not pos_done and pos_features:
@@ -433,9 +468,9 @@ class NarrativeGenerator:
                     uncertain_done = True
             else:
                 out_lines.append(line)
-        
+
         body = "\n".join(out_lines).strip()
-        
+
         if caution_line:
             return f"{caution_line}\n\n{body}".strip()
         return body

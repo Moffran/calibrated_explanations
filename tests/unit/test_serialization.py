@@ -215,10 +215,7 @@ def test_should_round_trip_explanation_when_serialized_then_deserialized(
     assert restored.prediction == factual_explanation.prediction
     assert len(restored.rules) == len(factual_explanation.rules)
     assert restored.rules[0].feature == factual_explanation.rules[0].feature
-    assert (
-        restored.rules[0].is_conjunctive
-        == factual_explanation.rules[0].is_conjunctive
-    )
+    assert restored.rules[0].is_conjunctive == factual_explanation.rules[0].is_conjunctive
 
 
 # Validation tests

@@ -720,7 +720,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         rnk_metric=None,
         rnk_weight=0.5,
         style_override=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Plot explanations for a given instance, with the option to show or save the plots.
@@ -756,7 +756,34 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         :meth:`.AlternativeExplanation.plot` : Refer to the docstring for plot in AlternativeExplanation for details on default ranking ('ensured').
         :meth:`.FastExplanation.plot` : Refer to the docstring for plot in FastExplanation for details on default ranking ('feature_weight').
         """
-        
+
+        if style == "narrative":
+            from ..viz.narrative_plugin import NarrativePlotPlugin
+
+            template_path = kwargs.pop("template_path", None)
+            expertise_level = kwargs.pop(
+                "expertise_level", ("beginner", "intermediate", "advanced")
+            )
+            output_format = kwargs.pop("output", "dataframe")
+
+            plugin = NarrativePlotPlugin(template_path=template_path)
+
+            if index is not None:
+                # Delegate to single explanation helper when a specific index is requested
+                return self[index].to_narrative(
+                    template_path=template_path,
+                    expertise_level=expertise_level,
+                    output_format=output_format,
+                    **kwargs,
+                )
+
+            return plugin.plot(
+                self,
+                template_path=template_path,
+                expertise_level=expertise_level,
+                output=output_format,
+                **kwargs,
+            )
 
         if len(filename) > 0:
             path, filename, title, ext = prepare_for_saving(filename)
@@ -794,7 +821,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         template_path="exp.yaml",
         expertise_level=("beginner", "advanced"),
         output_format="dataframe",
-        **kwargs
+        **kwargs,
     ):
         """
         Generate narrative explanations for the collection.
@@ -850,17 +877,17 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         :meth:`.plot` : Plot explanations with various visual styles.
         """
         from ..viz.narrative_plugin import NarrativePlotPlugin
-        
+
         # Create plugin instance
         plugin = NarrativePlotPlugin(template_path=template_path)
-        
+
         # Generate narratives using the plugin
         return plugin.plot(
             self,
             template_path=template_path,
             expertise_level=expertise_level,
             output=output_format,
-            **kwargs
+            **kwargs,
         )
 
     # pylint: disable=protected-access

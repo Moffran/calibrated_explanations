@@ -469,7 +469,7 @@ class PredictionOrchestrator:
             if fast
             else self.explainer._interval_plugin_override
         )
-        override = self.explainer._coerce_plugin_override(raw_override)
+        override = self.explainer._plugin_manager.coerce_plugin_override(raw_override)
         if override is not None and not isinstance(override, str):
             identifier = getattr(override, "plugin_meta", {}).get("name")
             return override, identifier

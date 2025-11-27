@@ -1,5 +1,5 @@
-# import sys; 
-# sys.path.insert(0, "/Users/poorna/Downloads/CE-updated/calibrated_explanations/src"); 
+# import sys;
+# sys.path.insert(0, "/Users/poorna/Downloads/CE-updated/calibrated_explanations/src");
 
 # Import the necessary libraries
 import numpy as np
@@ -71,9 +71,13 @@ print(
 )
 
 explanations_df = ce.explain_with_narrative(
-    X_test[:5], # Just X_test, not X_test.values
+    X_test[:5],  # Just X_test, not X_test.values
     # template_path="exp.yaml",
-    expertise_level=("beginner", "intermediate", "advanced") # "beginner", "intermediate", "advanced"
+    expertise_level=(
+        "beginner",
+        "intermediate",
+        "advanced",
+    ),  # "beginner", "intermediate", "advanced"
 )
 
 explanations_df.to_excel("binary_explanations.xlsx", index=False)

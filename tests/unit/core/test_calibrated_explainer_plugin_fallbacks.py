@@ -20,34 +20,6 @@ def _minimal_explainer() -> CalibratedExplainer:
     return CalibratedExplainer.__new__(CalibratedExplainer)
 
 
-def test_coerce_plugin_override_fallbacks():
-    """Fallback coercion should cover None, strings, callables, and manager delegation."""
-
-    explainer = _minimal_explainer()
-
-    # No plugin manager -> direct passthrough and callable instantiation
-    assert explainer._coerce_plugin_override(None) is None
-    assert explainer._coerce_plugin_override("identifier") == "identifier"
-
-    def _callable_override():
-        return {"constructed": True}
-
-    assert explainer._coerce_plugin_override(_callable_override) == {"constructed": True}
-
-    # With plugin manager we should delegate instead of using fallback logic
-    class _PM:
-        def __init__(self):
-            self.seen = None
-
-        def coerce_plugin_override(self, override):
-            self.seen = override
-            return "delegated"
-
-    explainer._plugin_manager = _PM()
-    assert explainer._coerce_plugin_override("value") == "delegated"
-    assert explainer._plugin_manager.seen == "value"
-
-
 def test_require_plugin_manager_raises_when_missing():
     """_require_plugin_manager should raise when the manager is absent."""
 
@@ -105,4 +77,3 @@ def test_chain_builders_use_fallback_without_manager():
     assert explainer._build_explanation_chain("factual") == ("factual", "default")
     assert explainer._build_interval_chain(fast=True) == ("interval", True)
     assert explainer._build_plot_style_chain() == ("plot",)
-
