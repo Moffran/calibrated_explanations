@@ -34,7 +34,7 @@ jobs:
           sphinx-build -b linkcheck . _build/linkcheck
 
       - name: Run documentation navigation tests
-        run: pytest --no-cov tests/docs
+        run: pytest -p no:cov tests/docs
 
       - name: Upload documentation artifacts
         uses: actions/upload-artifact@v5
