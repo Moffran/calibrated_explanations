@@ -1228,6 +1228,14 @@ def _register_builtins() -> None:
     )
 
     try:
+        import sys
+        from pathlib import Path
+
+        # Ensure the repository root is in the path
+        repo_root = Path(__file__).resolve().parents[2]
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+
         from external_plugins.fast_explanations import register as _register_fast_plugins
     except ImportError:
         _register_fast_plugins = None

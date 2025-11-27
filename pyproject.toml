@@ -4,14 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "calibrated_explanations"
-version = "0.9.0"
+version = "0.9.1"
+description = "Extract calibrated explanations from machine learning models."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "BSD-3-Clause"}
 authors = [
   { name="Helena Löfström", email="helena.lofstrom@ju.se" },
   { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },
 ]
-description = "Extract calibrated explanations from machine learning models."
-readme = "README.md"
-requires-python = ">=3.8"
 dependencies = [
   'crepes',
   'venn-abers',

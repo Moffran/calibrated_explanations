@@ -3,7 +3,11 @@
 
 ## [Unreleased]
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.0...main)
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
+
+## [v0.9.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.1) - 2025-11-27
+
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.0...v0.9.1)
 
 ### Release Plan Alignment (v0.9.1)
 
@@ -14,6 +18,19 @@
 - **Interval regression hardening.** Improved interval regression storage and probabilistic threshold handling so calibration buffers resize safely, aligned with the practitioner/researcher documentation updates that now cross-link interval workflows with the existing probabilistic regression guidance.【F:src/calibrated_explanations/core/calibration/interval_regressor.py†L1-L200】【F:docs/practitioner/index.md†L1-L20】【F:docs/researcher/future_work.md†L1-L32】
 
 ### Additional changes
+
+#### Narrative Generation API
+
+- **Introduced `to_narrative()` method for generating human-readable explanations** (contributed by @appraneethreddy)
+  - Added `to_narrative()` convenience method to `CalibratedExplanations` class for converting explanations into narrative text
+  - Created `NarrativeGenerator` class (`core/narrative_generator.py`) to handle template-based narrative generation with support for multiple expertise levels
+  - Implemented `NarrativePlotPlugin` (`viz/narrative_plugin.py`) integrating narrative generation with the plot system
+  - Supports multiple expertise levels: `"beginner"`, `"intermediate"`, `"advanced"` for tailored explanations
+  - Multiple output formats: DataFrame, plain text, HTML table, and dictionary structures
+  - Template-based customization with automatic fallback to default `explain_template.yaml`
+  - Problem type detection (classification vs regression) with threshold-aware narrative generation
+  - Proper handling of prediction intervals and uncertainty for calibrated predictions
+  - Comprehensive documentation in `docs/foundations/how-to/to_narrative.md` with usage examples
 
 #### Execution Strategy Plugins
 

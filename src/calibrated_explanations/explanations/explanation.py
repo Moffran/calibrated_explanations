@@ -772,7 +772,8 @@ class CalibratedExplanation(ABC):
             raise ValueError("Conjunctive rules require at least two features")
 
         predict_fn = self._get_explainer()._predict  # pylint: disable=protected-access
-        perturbed_row = perturbed.reshape(1, -1)
+        # Ensure perturbed is a writable copy to avoid "read-only" errors
+        perturbed = np.array(perturbed, copy=True)
 
         base_values = np.array([perturbed[idx] for idx in original_features], copy=True)
 
@@ -795,10 +796,9 @@ class CalibratedExplanation(ABC):
                 values1, values2 = value_iterables[:2]
                 for value_1 in values1:
                     perturbed[of1] = value_1
-                    perturbed_row[0, of1] = value_1
                     for value_2 in values2:
                         perturbed[of2] = value_2
-                        perturbed_row[0, of2] = value_2
+                        perturbed_row = perturbed.reshape(1, -1)
                         p_value, low, high, _ = predict_fn(
                             perturbed_row,
                             threshold=threshold,
@@ -815,13 +815,11 @@ class CalibratedExplanation(ABC):
                 values1, values2, values3 = value_iterables[:3]
                 for value_1 in values1:
                     perturbed[of1] = value_1
-                    perturbed_row[0, of1] = value_1
                     for value_2 in values2:
                         perturbed[of2] = value_2
-                        perturbed_row[0, of2] = value_2
                         for value_3 in values3:
                             perturbed[of3] = value_3
-                            perturbed_row[0, of3] = value_3
+                            perturbed_row = perturbed.reshape(1, -1)
                             p_value, low, high, _ = predict_fn(
                                 perturbed_row,
                                 threshold=threshold,

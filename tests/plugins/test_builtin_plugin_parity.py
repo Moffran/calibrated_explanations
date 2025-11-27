@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import numpy as np
 
 from calibrated_explanations.explanations.explanations import CalibratedExplanations
@@ -14,7 +17,13 @@ from calibrated_explanations.plugins.explanations import (
     ExplanationContext,
     ExplanationRequest,
 )
-from external_plugins.fast_explanations import (
+
+# Ensure the repository root is in the path
+repo_root = Path(__file__).resolve().parents[2]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
+from external_plugins.fast_explanations import (  # noqa: E402
     FastExplanationPlugin,
     register as register_fast_plugins,
 )

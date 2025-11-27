@@ -1311,6 +1311,14 @@ class CalibratedExplainer:
 
         # Delegate to external plugin pipeline for non-plugin path
         # pylint: disable-next=import-outside-toplevel
+        import sys
+        from pathlib import Path
+
+        # Ensure the repository root is in the path
+        repo_root = Path(__file__).resolve().parents[3]
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+
         from external_plugins.fast_explanations.pipeline import FastExplanationPipeline
 
         pipeline = FastExplanationPipeline(self)
@@ -1353,6 +1361,14 @@ class CalibratedExplainer:
         """
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
+        import sys
+        from pathlib import Path
+
+        # Ensure the repository root is in the path
+        repo_root = Path(__file__).resolve().parents[3]
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+
         from external_plugins.integrations.lime_pipeline import LimePipeline
 
         pipeline = LimePipeline(self)
@@ -1382,6 +1398,14 @@ class CalibratedExplainer:
         """
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
+        import sys
+        from pathlib import Path
+
+        # Ensure the repository root is in the path
+        repo_root = Path(__file__).resolve().parents[3]
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+
         from external_plugins.integrations.shap_pipeline import ShapPipeline
 
         pipeline = ShapPipeline(self)
@@ -1875,6 +1899,14 @@ class CalibratedExplainer:
         # Delegate to LimePipeline for lazy initialization and caching
         if not hasattr(self, "_lime_pipeline"):
             # pylint: disable-next=import-outside-toplevel
+            import sys
+            from pathlib import Path
+
+            # Ensure the repository root is in the path
+            repo_root = Path(__file__).resolve().parents[3]
+            if str(repo_root) not in sys.path:
+                sys.path.insert(0, str(repo_root))
+
             from external_plugins.integrations.lime_pipeline import LimePipeline
 
             self._lime_pipeline = LimePipeline(self)
@@ -1897,6 +1929,14 @@ class CalibratedExplainer:
         # Delegate to ShapPipeline for lazy initialization and caching
         if not hasattr(self, "_shap_pipeline"):
             # pylint: disable-next=import-outside-toplevel
+            import sys
+            from pathlib import Path
+
+            # Ensure the repository root is in the path
+            repo_root = Path(__file__).resolve().parents[3]
+            if str(repo_root) not in sys.path:
+                sys.path.insert(0, str(repo_root))
+
             from external_plugins.integrations.shap_pipeline import ShapPipeline
 
             self._shap_pipeline = ShapPipeline(self)
