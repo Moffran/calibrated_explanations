@@ -5,6 +5,24 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
+### ADR-001 Gap Closure: Documentation of Remaining Namespaces (Stage 4)
+
+- **Completed ADR-001 Stage 4: Documented all remaining top-level namespaces** with rationale, deprecation timelines, and migration paths
+  - **`api` namespace:** Classified as intentional deviation; relocation to core deferred to v1.1+ (low priority)
+  - **`legacy` namespace:** Compatibility shims for pre-v0.10 code; marked for complete removal in v2.0.0
+  - **`plotting.py` module:** Deprecated convenience re-export; ready for v0.11.0 removal (see below for implementation plan)
+  - **`perf` shim:** Temporary wrapper for cache/parallel split; ready for v0.11.0 removal post-Stage 1b (see below for implementation plan)
+  - **`integrations` namespace:** Classified as permanent; fully aligned with ADR-001 utilities guidance
+- **ADR-001 Gap #6 ("Extra top-level namespaces lack ADR coverage") now CLOSED**
+  - All namespaces now have documented purpose, classification (permanent/temporary), and migration paths
+  - See `improvement_docs/ADR-001-STAGE-4-COMPLETION-REPORT.md` for full documentation and timelines
+- **Ready for Deprecation Implementation:**
+  - `plotting.py` → Ready for v0.10.0 deprecation warnings and v0.11.0 removal
+  - `perf` shim → Ready for v0.10.1 deprecation warnings and v0.11.0 removal (after Stage 1b cache/parallel split)
+- **Future Deprecations (v1.1+):**
+  - `legacy` imports will receive deprecation warnings per ADR-011; removal target v2.0.0
+  - `api` relocation to core utilities (no user-facing deprecation; internal reorganization)
+
 ## [v0.9.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.1) - 2025-11-27
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.0...v0.9.1)

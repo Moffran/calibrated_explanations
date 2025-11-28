@@ -1,4 +1,4 @@
-> **Status note (2025-11-28):** Last edited 2025-11-28 · Archive after v1.0.0 GA · Implementation window: v0.9.0–v1.0.0 · **UPDATE: ADR-001 Stages 0–3 completed 2025-11-28** (see `improvement_docs/ADR-001-STAGE-3-COMPLETION-REPORT.md`).
+> **Status note (2025-11-28):** Last edited 2025-11-28 · Archive after v1.0.0 GA · Implementation window: v0.9.0–v1.0.0 · **UPDATE: ADR-001 Stages 0–4 completed 2025-11-28** (see `improvement_docs/ADR-001-STAGE-4-COMPLETION-REPORT.md` for Stage 4 details).
 
 # Release Plan to v1.0.0
 
@@ -16,14 +16,14 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 
 ### ADR-001 – Package and Boundary Layout
 
-**Implementation Status**: ✅ Stages 0–3 **COMPLETED** (2025-11-28). See `ADR-001-STAGE-3-COMPLETION-REPORT.md` for latest details.
+**Implementation Status**: ✅ Stages 0–4 **COMPLETED** (2025-11-28). See `ADR-001-STAGE-4-COMPLETION-REPORT.md` for latest details.
 
 - ✅ **Calibration layer remains embedded in `core`** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED: Calibration extracted to top-level package with compatibility shim.
 - ✅ **Core imports downstream siblings directly** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED (Stage 2): CalibratedExplainer refactored to use lazy imports and orchestrator delegation. All 14 module-level cross-sibling imports converted to runtime or TYPE_CHECKING imports.
 - ✅ **Cache and parallel boundaries not split** (severity 12, high) → `v0.10.0 runtime boundary realignment`. COMPLETED: Split into separate packages with perf shim.
 - ✅ **Schema validation package missing** (severity 6, medium) → `v0.10.1 schema & visualization contracts`. COMPLETED: Schema validation package created.
 - ✅ **Public API surface overly broad** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. COMPLETED (Stage 3): Deprecated 13 unsanctioned symbols with warnings; reserved 3 sanctioned entry points. Two-release deprecation window (v0.10.0 deprecation → v0.11.0 removal).
-- ⏳ **Extra top-level namespaces lack ADR coverage** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. DEFERRED to Stage 4.
+- ✅ **Extra top-level namespaces lack ADR coverage** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. COMPLETED (Stage 4): Documented `api`, `legacy`, `plotting`, `perf`, and `integrations` namespaces with rationale, deprecation timelines, and migration paths.
 
 ### ADR-002 – Exception Taxonomy and Validation Contract
 - **Legacy `ValueError`/`RuntimeError` usage in core and plugins** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Replace direct raises with taxonomy classes and add regression tests for calibration, plugin, and prediction flows.
