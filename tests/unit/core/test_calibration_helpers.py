@@ -10,7 +10,7 @@ from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations.core.calibration import interval_learner as ch
+from calibrated_explanations.calibration import interval_learner as ch
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
 

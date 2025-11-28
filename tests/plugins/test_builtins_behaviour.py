@@ -233,7 +233,7 @@ def test_interval_calibrator_requires_predict_function(monkeypatch):
 
 def test_interval_calibrator_requires_explainer_for_regression(monkeypatch):
     interval_module = types.ModuleType(
-        "calibrated_explanations.core.calibration.interval_regressor"
+        "calibrated_explanations.calibration.interval_regressor"
     )
     interval_module.IntervalRegressor = object
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
