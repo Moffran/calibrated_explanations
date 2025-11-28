@@ -1,4 +1,4 @@
-> **Status note (2025-11-28):** Last edited 2025-11-28 · Archive after v1.0.0 GA · Implementation window: v0.9.0–v1.0.0 · **UPDATE: ADR-001 Stages 0–4 completed 2025-11-28** (see `improvement_docs/ADR-001-STAGE-4-COMPLETION-REPORT.md` for Stage 4 details).
+> **Status note (2025-11-28):** Last edited 2025-11-28 · Archive after v1.0.0 GA · Implementation window: v0.9.0–v1.0.0 · **UPDATE: ADR-001 Stages 0–5 completed 2025-11-28** (see `improvement_docs/ADR-001-STAGE-5-COMPLETION-REPORT.md` for Stage 5 details; linting ready for v0.11.0+ CI deployment).
 
 # Release Plan to v1.0.0
 
