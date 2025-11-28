@@ -158,4 +158,15 @@ def __getattr__(name: str):
         globals()[name] = VennAbers
         return VennAbers
 
+    if name == "plotting":
+        deprecate_public_api_symbol(
+            "plotting",
+            "from calibrated_explanations import plotting",
+            "from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter, ...",
+            extra_context="The plotting module is deprecated. Use calibrated_explanations.viz submodule directly. Will be removed in v0.11.0.",
+        )
+        module = importlib.import_module(f"{__name__}.plotting")
+        globals()[name] = module
+        return module
+
     raise AttributeError(name)
