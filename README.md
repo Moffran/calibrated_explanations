@@ -160,8 +160,6 @@ underlying estimator and read the returned intervals.
 - **Optional plugin lane** for fast explanations and telemetry—disabled by
   default, opt-in when you need it.
 
-![Triangular alternatives example](https://github.com/Moffran/calibrated_explanations/blob/main/docs/images/alternatives_wine_ensured.png?raw=1)
-
 ---
 
 ## Installation options
