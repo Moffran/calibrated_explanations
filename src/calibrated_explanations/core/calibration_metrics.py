@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from .calibration.venn_abers import VennAbers
+from ..calibration.venn_abers import VennAbers
 from .exceptions import ValidationError
 
 

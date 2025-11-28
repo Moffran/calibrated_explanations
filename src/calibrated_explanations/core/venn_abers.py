@@ -19,6 +19,6 @@ import venn_abers as va  # Re-export for test monkeypatching
 # Note: We use filterwarnings to allow pytest to properly configure warning handling
 with warnings.catch_warnings():
     warnings.filterwarnings("default", category=DeprecationWarning)
-    from .calibration.venn_abers import VennAbers, exponent_scaling_list
+    from ..calibration.venn_abers import VennAbers, exponent_scaling_list
 
 __all__ = ["VennAbers", "exponent_scaling_list", "va"]

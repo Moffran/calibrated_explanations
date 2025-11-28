@@ -540,7 +540,7 @@ class PluginManager:
         Called from CalibratedExplainer.__init__ after PluginManager is initialized.
         """
         # Lazy import to avoid circular dependency
-        from ..core.calibration.interval_learner import (
+        from ..calibration.interval_learner import (
             initialize_interval_learner,  # pylint: disable=import-outside-toplevel
         )
         from ..core.explain.orchestrator import (
@@ -576,3 +576,4 @@ class PluginManager:
 
         # Initialize interval learner
         initialize_interval_learner(self.explainer)
+

@@ -777,7 +777,7 @@ class CalibratedExplainer:
         array-like
             The calibration input data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         return CalibrationState.get_x_cal(self)
 
@@ -795,7 +795,7 @@ class CalibratedExplainer:
         ValueError
             If the number of features in value does not match the existing calibration data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.set_x_cal(self, value)
 
@@ -808,7 +808,7 @@ class CalibratedExplainer:
         array-like
             The calibration target data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         return CalibrationState.get_y_cal(self)
 
@@ -821,7 +821,7 @@ class CalibratedExplainer:
         value : array-like of shape (n_samples,)
             The new calibration target data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.set_y_cal(self, value)
 
@@ -835,7 +835,7 @@ class CalibratedExplainer:
         y : array-like of shape (n_samples,)
             The new calibration target data to append.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.append_calibration(self, x, y)
 
@@ -844,7 +844,7 @@ class CalibratedExplainer:
 
         Delegates to the calibration.summaries module which manages the cache.
         """
-        from .calibration.summaries import (  # pylint: disable=import-outside-toplevel
+        from ..calibration.summaries import (  # pylint: disable=import-outside-toplevel
             invalidate_calibration_summaries as _invalidate,
         )
 
@@ -858,7 +858,7 @@ class CalibratedExplainer:
         Delegates to the calibration.summaries module which manages caching of
         statistical summaries used during explanation generation.
         """
-        from .calibration.summaries import (  # pylint: disable=import-outside-toplevel
+        from ..calibration.summaries import (  # pylint: disable=import-outside-toplevel
             get_calibration_summaries as _get,
         )
 
@@ -990,11 +990,11 @@ class CalibratedExplainer:
                     )
                 self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
             # update interval learner via helper
-            from .calibration.interval_learner import update_interval_learner as _upd_il
+            from ..calibration.interval_learner import update_interval_learner as _upd_il
 
             _upd_il(self, xs, ys, bins=bins)
         else:
-            from .calibration.interval_learner import initialize_interval_learner as _init_il
+            from ..calibration.interval_learner import initialize_interval_learner as _init_il
 
             _init_il(self)
         self.__initialized = True

@@ -15,6 +15,6 @@ import warnings
 # Note: We use filterwarnings to allow pytest to properly configure warning handling
 with warnings.catch_warnings():
     warnings.filterwarnings("default", category=DeprecationWarning)
-    from .calibration.interval_regressor import IntervalRegressor
+    from ..calibration.interval_regressor import IntervalRegressor
 
 __all__ = ["IntervalRegressor"]

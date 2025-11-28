@@ -1,17 +1,44 @@
-"""Performance primitives exposed to the rest of the code base."""
+"""Performance primitives exposed to the rest of the code base.
+
+DEPRECATED SHIM: This module is a compatibility shim for backward compatibility.
+As part of ADR-001 (Stage 1b), cache and parallel concerns have been split into
+dedicated top-level packages: calibrated_explanations.cache and
+calibrated_explanations.parallel.
+
+This shim will be removed in v1.1.0. Migration guide:
+- Old: from calibrated_explanations.perf import CalibratorCache
+- New: from calibrated_explanations.cache import CalibratorCache
+"""
 
 from __future__ import annotations
 
+import warnings
+
+# Emit deprecation warning
+warnings.warn(
+    "The 'calibrated_explanations.perf' module is deprecated. "
+    "Use 'calibrated_explanations.cache' and 'calibrated_explanations.parallel' instead. "
+    "This shim will be removed in v1.1.0.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+# Re-export from new packages for backward compatibility
+from ..cache import CacheConfig, CacheMetrics, CalibratorCache, TelemetryCallback
+from ..parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
+
+# Keep factory function for compatibility
 from dataclasses import dataclass
 from typing import Any
-
-from .cache import CacheConfig, CacheMetrics, CalibratorCache, TelemetryCallback
-from .parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
 
 
 @dataclass
 class PerfFactory:
-    """Factory bundling cache and parallel primitives behind feature flags."""
+    """Factory bundling cache and parallel primitives behind feature flags.
+    
+    DEPRECATED: This factory is maintained for backward compatibility only.
+    Use the cache and parallel packages directly instead.
+    """
 
     cache: CacheConfig
     parallel: ParallelConfig

@@ -1,4 +1,4 @@
-> **Status note (2025-11-01):** Last edited 2025-11-01 · Archive after v1.0.0 GA · Implementation window: v0.9.0–v1.0.0.
+> **Status note (2025-11-28):** Last edited 2025-11-28 · Archive after v1.0.0 GA · Implementation window: v0.9.0–v1.0.0 · **UPDATE: ADR-001 Stages 0–1c completed 2025-11-28** (see `improvement_docs/adrs/ADR-001-STAGE-1-COMPLETION-REPORT.md`).
 
 # Release Plan to v1.0.0
 
@@ -15,12 +15,15 @@ Scope: Concrete steps from v0.6.0 to a stable v1.0.0 with plugin-first execution
 The ADR gap analysis enumerates open issues across the architecture. The breakdown below assigns every recorded gap to a remediation strategy and target release before v1.0.0. Severity values cite the unified scoring in `ADR-gap-analysis.md`.【F:improvement_docs/ADR-gap-analysis.md†L1-L291】
 
 ### ADR-001 – Package and Boundary Layout
-- **Calibration layer remains embedded in `core`** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Split calibration helpers into a standalone `calibration` package and update imports so cross-package boundaries align with ADR-001.
-- **Core imports downstream siblings directly** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Refactor dependency direction with façade modules so `core` stops depending on `plugins`, `perf`, or visualization internals.
-- **Cache and parallel boundaries not split** (severity 12, high) → `v0.10.0 runtime boundary realignment`. Extract cache and parallel primitives into distinct packages with shared interfaces documented in updated ADR notes.
-- **Schema validation package missing** (severity 6, medium) → `v0.10.1 schema & visualization contracts`. Introduce a `schema` package owned by serialization to surface validation helpers without legacy coupling.
-- **Public API surface overly broad** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. Trim `__init__` exports to the sanctioned façade and document breaking changes through ADR-011 migration gates.
-- **Extra top-level namespaces lack ADR coverage** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. Either scope them under the sanctioned packages or draft superseding ADR addenda capturing their purpose before RC.
+
+**Implementation Status**: ✅ Stages 0–1c **COMPLETED** (2025-11-28). See `ADR-001-STAGE-1-COMPLETION-REPORT.md` for details.
+
+- ✅ **Calibration layer remains embedded in `core`** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED: Calibration extracted to top-level package with compatibility shim.
+- ⏳ **Core imports downstream siblings directly** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. DEFERRED to Stage 2 (CalibratedExplainer refactor). 
+- ✅ **Cache and parallel boundaries not split** (severity 12, high) → `v0.10.0 runtime boundary realignment`. COMPLETED: Split into separate packages with perf shim.
+- ✅ **Schema validation package missing** (severity 6, medium) → `v0.10.1 schema & visualization contracts`. COMPLETED: Schema validation package created.
+- ⏳ **Public API surface overly broad** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. DEFERRED to Stage 3.
+- ⏳ **Extra top-level namespaces lack ADR coverage** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. DEFERRED to Stage 4.
 
 ### ADR-002 – Exception Taxonomy and Validation Contract
 - **Legacy `ValueError`/`RuntimeError` usage in core and plugins** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Replace direct raises with taxonomy classes and add regression tests for calibration, plugin, and prediction flows.
