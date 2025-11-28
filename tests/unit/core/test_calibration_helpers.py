@@ -159,19 +159,20 @@ def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
     from calibrated_explanations.core import calibration_helpers as ch_helpers
 
     # Create a fake calibration package + interval_learner submodule
-    fake_interval = types.ModuleType("calibrated_explanations.core.calibration.interval_learner")
+    # Note: ADR-001 - calibration is extracted to top-level package
+    fake_interval = types.ModuleType("calibrated_explanations.calibration.interval_learner")
 
     def fake_assign_threshold(explainer, t):
         return "ok"
 
     fake_interval.assign_threshold = fake_assign_threshold
 
-    fake_pkg = types.ModuleType("calibrated_explanations.core.calibration")
+    fake_pkg = types.ModuleType("calibrated_explanations.calibration")
     fake_pkg.interval_learner = fake_interval
 
-    monkeypatch.setitem(sys.modules, "calibrated_explanations.core.calibration", fake_pkg)
+    monkeypatch.setitem(sys.modules, "calibrated_explanations.calibration", fake_pkg)
     monkeypatch.setitem(
-        sys.modules, "calibrated_explanations.core.calibration.interval_learner", fake_interval
+        sys.modules, "calibrated_explanations.calibration.interval_learner", fake_interval
     )
 
     with warnings.catch_warnings(record=True) as rec:

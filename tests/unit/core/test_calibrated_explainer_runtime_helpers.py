@@ -617,7 +617,7 @@ def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory
         return sentinel
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_learner.update_interval_learner",
+        "calibrated_explanations.calibration.interval_learner.update_interval_learner",
         _update_interval,
     )
 

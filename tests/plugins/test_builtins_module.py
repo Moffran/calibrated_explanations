@@ -271,7 +271,7 @@ def test_interval_plugin_requires_handles_and_returns_calibrator(monkeypatch: py
             created["kwargs"] = kwargs
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_regressor.IntervalRegressor",
+        "calibrated_explanations.calibration.interval_regressor.IntervalRegressor",
         DummyCalibrator,
         raising=False,
     )
@@ -295,7 +295,7 @@ def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: py
             created["kwargs"] = kwargs
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.venn_abers.VennAbers",
+        "calibrated_explanations.calibration.venn_abers.VennAbers",
         DummyCalibrator,
         raising=False,
     )
@@ -313,7 +313,7 @@ def test_interval_plugin_requires_predict_callable(monkeypatch: pytest.MonkeyPat
             pass
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.venn_abers.VennAbers",
+        "calibrated_explanations.calibration.venn_abers.VennAbers",
         DummyCalibrator,
         raising=False,
     )

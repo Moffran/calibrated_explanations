@@ -142,8 +142,12 @@ class TestDeprecatedDiscretizerSymbols:
 class TestDeprecatedCalibratorSymbols:
     """Verify that calibrator classes emit DeprecationWarning."""
 
-    def test_interval_regressor_deprecated(self):
+    def test_interval_regressor_deprecated(self, monkeypatch):
         """IntervalRegressor should emit DeprecationWarning."""
+        import calibrated_explanations as ce
+        # Clear cached value to force fresh __getattr__ call
+        monkeypatch.delitem(ce.__dict__, "IntervalRegressor", raising=False)
+        
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             from calibrated_explanations import IntervalRegressor
@@ -152,8 +156,12 @@ class TestDeprecatedCalibratorSymbols:
             assert len(dep_warnings) == 1
             assert "IntervalRegressor" in str(dep_warnings[0].message)
 
-    def test_venn_abers_deprecated(self):
+    def test_venn_abers_deprecated(self, monkeypatch):
         """VennAbers should emit DeprecationWarning."""
+        import calibrated_explanations as ce
+        # Clear cached value to force fresh __getattr__ call
+        monkeypatch.delitem(ce.__dict__, "VennAbers", raising=False)
+        
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             from calibrated_explanations import VennAbers

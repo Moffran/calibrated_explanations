@@ -238,8 +238,9 @@ def test_should_use_jsonschema_when_available_for_validation(
             """Mock validate method."""
             fake_validate(instance=instance, schema=schema)
 
-    monkeypatch.setattr(serialization, "jsonschema", FakeJSONSchema)
-    monkeypatch.setattr(serialization, "_schema_json", lambda: {"title": "fake"})
+    from calibrated_explanations import schema
+    monkeypatch.setattr(schema.validation, "jsonschema", FakeJSONSchema)
+    monkeypatch.setattr(schema.validation, "_schema_json", lambda: {"title": "fake"})
 
     payload = {
         "task": "classification",
@@ -274,8 +275,9 @@ def test_should_invoke_schema_loader_when_validating(
 
     validator = types.SimpleNamespace(validate=fake_validate)
 
-    monkeypatch.setattr(serialization, "jsonschema", validator)
-    monkeypatch.setattr(serialization, "_schema_json", fake_schema_loader)
+    from calibrated_explanations import schema
+    monkeypatch.setattr(schema.validation, "jsonschema", validator)
+    monkeypatch.setattr(schema.validation, "_schema_json", fake_schema_loader)
 
     payload = {"task": "regression"}
 
