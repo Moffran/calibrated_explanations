@@ -1,4 +1,4 @@
-> **Status note (2025-11-28):** Last edited 2025-11-28 · Archive after v1.0.0 GA · Implementation window: v0.9.0–v1.0.0 · **UPDATE: ADR-001 Stages 0–1c completed 2025-11-28** (see `improvement_docs/adrs/ADR-001-STAGE-1-COMPLETION-REPORT.md`).
+> **Status note (2025-11-28):** Last edited 2025-11-28 · Archive after v1.0.0 GA · Implementation window: v0.9.0–v1.0.0 · **UPDATE: ADR-001 Stages 0–2 completed 2025-11-28** (see `improvement_docs/adrs/ADR-001-STAGE-2-COMPLETION-REPORT.md`).
 
 # Release Plan to v1.0.0
 
@@ -16,10 +16,10 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 
 ### ADR-001 – Package and Boundary Layout
 
-**Implementation Status**: ✅ Stages 0–1c **COMPLETED** (2025-11-28). See `ADR-001-STAGE-1-COMPLETION-REPORT.md` for details.
+**Implementation Status**: ✅ Stages 0–2 **COMPLETED** (2025-11-28). See `ADR-001-STAGE-1-COMPLETION-REPORT.md` and `ADR-001-STAGE-2-COMPLETION-REPORT.md` for details.
 
 - ✅ **Calibration layer remains embedded in `core`** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED: Calibration extracted to top-level package with compatibility shim.
-- ⏳ **Core imports downstream siblings directly** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. DEFERRED to Stage 2 (CalibratedExplainer refactor). 
+- ✅ **Core imports downstream siblings directly** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED (Stage 2): CalibratedExplainer refactored to use lazy imports and orchestrator delegation. All 14 module-level cross-sibling imports converted to runtime or TYPE_CHECKING imports.
 - ✅ **Cache and parallel boundaries not split** (severity 12, high) → `v0.10.0 runtime boundary realignment`. COMPLETED: Split into separate packages with perf shim.
 - ✅ **Schema validation package missing** (severity 6, medium) → `v0.10.1 schema & visualization contracts`. COMPLETED: Schema validation package created.
 - ⏳ **Public API surface overly broad** (severity 6, medium) → `v0.10.0 runtime boundary realignment`. DEFERRED to Stage 3.

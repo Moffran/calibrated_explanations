@@ -14,9 +14,14 @@ conformal predictive systems (regression).
 from __future__ import annotations
 
 from time import time
+from typing import TYPE_CHECKING
 
 import numpy as np
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+
+if TYPE_CHECKING:
+    from ..plugins import IntervalCalibratorContext
+    from ..explanations import AlternativeExplanations, CalibratedExplanations
 
 try:
     import tomllib as _tomllib
@@ -26,30 +31,27 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
     except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
         _tomllib = None  # type: ignore[assignment]
 
-from ..perf import CalibratorCache, ParallelExecutor
-from ..plotting import _plot_global
-from ..explanations import AlternativeExplanations, CalibratedExplanations
-from ..integrations import LimeHelper, ShapHelper
-from ..utils.discretizers import (
-    EntropyDiscretizer,
-    RegressorDiscretizer,
-)
+# Core imports (no cross-sibling dependencies)
 from ..utils.helper import (
     check_is_fitted,
     convert_targets_to_numeric,
     safe_isinstance,
 )
-from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
-from ..plugins import (
-    IntervalCalibratorContext,
-)
-from ..plugins.builtins import LegacyPredictBridge
 
 from .exceptions import (
     DataShapeError,
     ValidationError,
 )
-from ..plugins.manager import PluginManager
+
+# Lazy imports deferred to avoid cross-sibling coupling
+# These are imported inside methods/properties where used
+# - perf (CalibratorCache, ParallelExecutor) - lazy in __init__
+# - plotting (_plot_global) - lazy in plotting methods
+# - explanations (AlternativeExplanations, CalibratedExplanations) - lazy as needed
+# - integrations (LimeHelper, ShapHelper) - lazy in __init__
+# - api.params (canonicalize_kwargs, etc.) - lazy in param handling
+# - plugins (IntervalCalibratorContext, PluginManager, LegacyPredictBridge) - lazy in __init__
+# - utils.discretizers (EntropyDiscretizer, RegressorDiscretizer) - lazy in validation
 
 
 class CalibratedExplainer:
@@ -230,6 +232,11 @@ class CalibratedExplainer:
 
         self.feature_values: Dict[int, List[Any]] = {}
         self.feature_frequencies: Dict[int, np.ndarray] = {}
+        
+        # Lazy import helper integrations (deferred from module level)
+        from ..integrations import LimeHelper, ShapHelper
+        from ..explanations import CalibratedExplanations
+        
         self.latest_explanation: Optional[CalibratedExplanations] = None
         self._lime_helper = LimeHelper(self)
         self._shap_helper = ShapHelper(self)
@@ -237,6 +244,11 @@ class CalibratedExplainer:
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.__set_mode(str.lower(mode), initialize=False)
+
+        # Lazy import orchestrator and plugin management (deferred from module level)
+        from ..plugins.manager import PluginManager
+        from ..plugins.builtins import LegacyPredictBridge
+        from ..perf import CalibratorCache, ParallelExecutor
 
         # Initialize plugin manager (SINGLE SOURCE OF TRUTH for plugin management)
         # PluginManager handles ALL plugin initialization including:
@@ -274,6 +286,9 @@ class CalibratedExplainer:
 
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode from runtime state."""
+        # Lazy import discretizers (deferred from module level)
+        from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
+        
         # Check discretizer type to infer mode
         discretizer = self.discretizer if hasattr(self, "discretizer") else None
         if discretizer is not None and isinstance(
@@ -1692,6 +1707,12 @@ class CalibratedExplainer:
             format_regression_prediction,
             format_classification_prediction,
         )
+        # Lazy import API params functions (deferred from module level)
+        from ..api.params import (
+            canonicalize_kwargs,
+            validate_param_combination,
+            warn_on_aliases,
+        )
 
         # emit deprecation warnings for aliases and normalize kwargs
         warn_on_aliases(kwargs)
@@ -1785,6 +1806,12 @@ class CalibratedExplainer:
         # strip plotting-only keys that callers may pass
         kwargs.pop("show", None)
         kwargs.pop("style_override", None)
+        # Lazy import API params functions (deferred from module level)
+        from ..api.params import (
+            canonicalize_kwargs,
+            validate_param_combination,
+            warn_on_aliases,
+        )
         # emit deprecation warnings for aliases and normalize kwargs
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
@@ -1948,6 +1975,8 @@ class CalibratedExplainer:
         # Pass any style overrides along to the plotting function
         style_override = kwargs.pop("style_override", None)
         kwargs["style_override"] = style_override
+        # Lazy import plotting function (deferred from module level)
+        from ..plotting import _plot_global
         _plot_global(self, x, y=y, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):
