@@ -5,23 +5,16 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
-### ADR-001 Gap Closure: Documentation of Remaining Namespaces (Stage 4)
+### ADR-001 Gap Closure
 
-- **Completed ADR-001 Stage 4: Documented all remaining top-level namespaces** with rationale, deprecation timelines, and migration paths
-  - **`api` namespace:** Classified as intentional deviation; relocation to core deferred to v1.1+ (low priority)
-  - **`legacy` namespace:** Compatibility shims for pre-v0.10 code; marked for complete removal in v2.0.0
-  - **`plotting.py` module:** Deprecated convenience re-export; ready for v0.11.0 removal (see below for implementation plan)
-  - **`perf` shim:** Temporary wrapper for cache/parallel split; ready for v0.11.0 removal post-Stage 1b (see below for implementation plan)
-  - **`integrations` namespace:** Classified as permanent; fully aligned with ADR-001 utilities guidance
-- **ADR-001 Gap #6 ("Extra top-level namespaces lack ADR coverage") now CLOSED**
-  - All namespaces now have documented purpose, classification (permanent/temporary), and migration paths
-  - See `improvement_docs/ADR-001-STAGE-4-COMPLETION-REPORT.md` for full documentation and timelines
-- **Ready for Deprecation Implementation:**
-  - `plotting.py` → Ready for v0.10.0 deprecation warnings and v0.11.0 removal
-  - `perf` shim → Ready for v0.10.1 deprecation warnings and v0.11.0 removal (after Stage 1b cache/parallel split)
-- **Future Deprecations (v1.1+):**
-  - `legacy` imports will receive deprecation warnings per ADR-011; removal target v2.0.0
-  - `api` relocation to core utilities (no user-facing deprecation; internal reorganization)
+- **All ADR-001 gaps (0–7) now addressed:** Comprehensive architectural alignment of import boundaries, public API surface, and namespace documentation
+  - **Stage 0 — Scope Confirmation:** ✅ Core ADR-001 boundaries confirmed; 5 intentional deviations documented (legacy, api, plotting, perf, integrations)
+  - **Stage 1 — Package Extraction:** ✅ Calibration, cache/parallel, and schema extraction complete; backward compatibility shims in place
+  - **Stage 2 — Cross-Sibling Decoupling:** ✅ 14 module-level imports from core converted to lazy/TYPE_CHECKING; transitive dependency reduction
+  - **Stage 3 — Public API Narrowing:** ✅ Unsanctioned symbols (13) now emit DeprecationWarning; API locked to 3 sanctioned entry points for v0.11.0
+  - **Stage 4 — Namespace Documentation:** ✅ All namespaces classified with rationale, deprecation timelines, and migration paths
+  - **Stage 5 — Import Graph Linting:** ✅ AST-based static analyzer detects violations; 17 enforcement tests; CI-ready with baseline (89 violations; ~60 TYPE_CHECKING false positives)
+
 
 ## [v0.9.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.1) - 2025-11-27
 
