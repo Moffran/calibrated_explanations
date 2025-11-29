@@ -248,7 +248,8 @@ class CalibratedExplainer:
         # Lazy import orchestrator and plugin management (deferred from module level)
         from ..plugins.manager import PluginManager
         from ..plugins.builtins import LegacyPredictBridge
-        from ..perf import CalibratorCache, ParallelExecutor
+        from ..cache import CalibratorCache
+        from ..parallel import ParallelExecutor
 
         # Initialize plugin manager (SINGLE SOURCE OF TRUTH for plugin management)
         # PluginManager handles ALL plugin initialization including:

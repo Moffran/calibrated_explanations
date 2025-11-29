@@ -5,6 +5,9 @@ changing the existing successful code paths.
 
 Do not export these in the package-level ``calibrated_explanations.core.__all__`` yet
 (to avoid API surface churn). Import them from this module directly.
+
+ADR-002 compliance: All exceptions inherit from CalibratedError and support
+structured error payloads via the ``details`` kwarg.
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ __all__ = [
     "NotFittedError",
     "ConvergenceError",
     "SerializationError",
+    "explain_exception",
 ]
 
 
@@ -63,3 +67,38 @@ class ConvergenceError(CalibratedError):
 
 class SerializationError(CalibratedError):
     """Failed to serialize/deserialize explanation artifacts."""
+
+
+def explain_exception(e: Exception) -> str:
+    """Return a human-readable multi-line description of an exception.
+
+    Formats library-specific ``CalibratedError`` instances with structured
+    details for diagnostics and logging. For other exceptions, returns the
+    standard string representation.
+
+    Parameters
+    ----------
+    e : Exception
+        The exception to format.
+
+    Returns
+    -------
+    str
+        Multi-line human-readable message.
+        For CalibratedError, includes class name, message, and details dict if present.
+
+    Example
+    -------
+    >>> from calibrated_explanations.core.exceptions import ValidationError, explain_exception
+    >>> e = ValidationError("x must not be empty", details={"param": "x", "requirement": "non-empty"})
+    >>> print(explain_exception(e))
+    ValidationError: x must not be empty
+      Details: {'param': 'x', 'requirement': 'non-empty'}
+    """
+    if isinstance(e, CalibratedError):
+        lines = [f"{e.__class__.__name__}: {str(e)}"]
+        if e.details is not None:
+            lines.append(f"  Details: {e.details}")
+        return "\n".join(lines)
+    return str(e)
+

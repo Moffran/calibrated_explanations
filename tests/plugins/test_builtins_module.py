@@ -10,6 +10,10 @@ from typing import Any, Dict, Iterable
 import numpy as np
 import pytest
 
+from calibrated_explanations.core.exceptions import (
+    ConfigurationError,
+    NotFittedError,
+)
 from calibrated_explanations.plugins import builtins as builtins_mod
 from calibrated_explanations.plugins.builtins import (
     LegacyAlternativeExplanationPlugin,
@@ -232,7 +236,7 @@ def test_supports_and_explain_methods(monkeypatch: pytest.MonkeyPatch):
         plugin = LegacyFactualExplanationPlugin()
         assert plugin.supports(instance)
         assert plugin.supports_mode("factual", task="classification")
-        with pytest.raises(ValueError):
+        with pytest.raises(ConfigurationError):
             plugin.explain(object(), "x")
         assert plugin.explain(instance, "x") == "ok"
     finally:
@@ -277,7 +281,7 @@ def test_interval_plugin_requires_handles_and_returns_calibrator(monkeypatch: py
     )
     context = _make_interval_context("regression")
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         LegacyIntervalCalibratorPlugin().create(context)
 
     context.metadata["explainer"] = SimpleNamespace()
@@ -319,7 +323,7 @@ def test_interval_plugin_requires_predict_callable(monkeypatch: pytest.MonkeyPat
     )
     context = _make_interval_context("classification")
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         LegacyIntervalCalibratorPlugin().create(context)
 
 
@@ -347,7 +351,7 @@ def test_explanation_plugin_requires_initialization():
         features_to_ignore=(),
         extras={},
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.explain_batch("x", request)
 
 
@@ -365,7 +369,7 @@ def test_explanation_plugin_missing_explainer_raises(explanation_context: Explan
         interval_settings={},
         plot_settings={},
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.initialize(context)
 
 
@@ -408,21 +412,21 @@ def test_plot_spec_builder_global_and_error_paths(monkeypatch: pytest.MonkeyPatc
     bad_ctx = _make_plot_context(
         options=MappingProxyType({"payload": 1}), intent=MappingProxyType({"type": "global"})
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         builder.build(bad_ctx)
 
     alt_ctx = _make_plot_context(
         intent=MappingProxyType({"type": "alternative", "title": "alt"}),
         options=MappingProxyType({"payload": {"predict": {}}}),
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         builder.build(alt_ctx)
 
     alt_bad_payload = _make_plot_context(
         intent=MappingProxyType({"type": "alternative", "title": "alt"}),
         options=MappingProxyType({"payload": 1}),
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         builder.build(alt_bad_payload)
 
 
@@ -587,7 +591,7 @@ def test_plot_spec_builder_regression_without_threshold(monkeypatch: pytest.Monk
 def test_plot_spec_builder_unsupported_intent():
     builder = PlotSpecDefaultBuilder()
     ctx = _make_plot_context(intent=MappingProxyType({"type": "other"}))
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         builder.build(ctx)
 
 
@@ -649,7 +653,7 @@ def test_plot_spec_renderer_raises_runtime_error(monkeypatch: pytest.MonkeyPatch
         raising=False,
     )
     ctx = _make_plot_context(save_ext=[".png"], path="bad", show=False)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         renderer.render({"spec": 1}, context=ctx)
 
 

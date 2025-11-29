@@ -76,7 +76,7 @@ class WrapCalibratedExplainer:
         try:
             check_is_fitted(learner)
             self.fitted = True
-        except (TypeError, RuntimeError):
+        except (TypeError, RuntimeError, NotFittedError):
             self.fitted = False
 
     def __repr__(self) -> str:

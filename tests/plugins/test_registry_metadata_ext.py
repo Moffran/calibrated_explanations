@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 
@@ -483,7 +484,7 @@ def test_register_explanation_plugin_invalid_metadata():
     class Plugin:
         plugin_meta = {"invalid": "meta"}
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("test", Plugin())
 
 

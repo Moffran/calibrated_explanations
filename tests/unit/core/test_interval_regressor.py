@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.calibration import interval_regressor as interval_module
+from calibrated_explanations.core.exceptions import ConfigurationError, DataShapeError
 from calibrated_explanations.utils import helper as helper_module
 
 
@@ -246,7 +247,7 @@ def test_predict_probability_requires_calibration_bins_when_test_bins_provided(m
     regressor = _make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1]])
 
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
+    with pytest.raises(ConfigurationError, match="Calibration bins must be assigned"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
@@ -375,7 +376,7 @@ def test_predict_probability_requires_calibration_bins(monkeypatch):
     regressor = _make_regressor(monkeypatch)
     x = np.array([[0.1, 0.2]])
 
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
+    with pytest.raises(ConfigurationError, match="Calibration bins must be assigned"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
@@ -384,7 +385,7 @@ def test_predict_probability_rejects_mismatched_bin_length(monkeypatch):
     regressor = _make_regressor(monkeypatch, bins=calibration_bins)
     x = np.array([[0.1, 0.2], [0.2, 0.3]])
 
-    with pytest.raises(ValueError, match="length of test bins"):
+    with pytest.raises(DataShapeError, match="length of test bins"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
@@ -405,7 +406,7 @@ def test_insert_calibration_requires_bins_when_existing_none(monkeypatch):
     xs = np.array([[0.1, 0.2], [0.2, 0.3]])
     ys = np.array([0.5, 0.6])
 
-    with pytest.raises(ValueError, match="Cannot mix calibration instances with and without bins"):
+    with pytest.raises(ConfigurationError, match="Cannot mix calibration instances with and without bins"):
         regressor.insert_calibration(xs, ys, bins=np.array([0, 1]))
 
 
@@ -415,7 +416,7 @@ def test_insert_calibration_validates_bin_length(monkeypatch):
     xs = np.array([[0.1, 0.2], [0.2, 0.3]])
     ys = np.array([0.5, 0.6])
 
-    with pytest.raises(ValueError, match="length of bins"):
+    with pytest.raises(DataShapeError, match="length of bins"):
         regressor.insert_calibration(xs, ys, bins=np.array([0]))
 
 

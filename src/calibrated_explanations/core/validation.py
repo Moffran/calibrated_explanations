@@ -3,16 +3,21 @@
 These utilities centralize defensive argument checks while preserving
 existing behavior, ensuring future refactors can rely on a consistent
 error vocabulary.
+
+ADR-002 compliance: Validation functions use the exception taxonomy
+(ValidationError, DataShapeError, NotFittedError, ConfigurationError, etc.)
+and accept optional details payloads.
 """
 
 from __future__ import annotations
 
-from typing import Any, Literal, Sequence, cast
+from typing import Any, Literal, Sequence, Type, cast
 
 import numpy as np
 import numpy.typing as npt
 
 from .exceptions import (
+    CalibratedError,
     DataShapeError,
     ModelNotSupportedError,
     NotFittedError,
@@ -153,6 +158,43 @@ def validate_fit_state(obj: Any, *, require: bool = True) -> None:
         raise NotFittedError("Operation requires a fitted estimator/explainer.")
 
 
+def validate(
+    condition: bool,
+    exc_cls: Type[CalibratedError],
+    message: str,
+    *,
+    details: dict[str, Any] | None = None,
+) -> None:
+    """Conditional validation helper for common patterns.
+
+    Raises an exception when a condition is False, enabling concise guard clauses.
+
+    Parameters
+    ----------
+    condition : bool
+        Condition to check. If False, raises exc_cls.
+    exc_cls : Type[CalibratedError]
+        Exception class to raise when condition is False.
+    message : str
+        Error message.
+    details : dict, optional
+        Structured error details to attach to the exception.
+
+    Raises
+    ------
+    exc_cls
+        If condition is False.
+
+    Example
+    -------
+    >>> from calibrated_explanations.core.validation import validate
+    >>> from calibrated_explanations.core.exceptions import ValidationError
+    >>> validate(len(x) > 0, ValidationError, "x must not be empty", details={"param": "x"})
+    """
+    if not condition:
+        raise exc_cls(message, details=details)
+
+
 __all__ = [
     "validate_inputs",
     "validate_not_none",
@@ -162,4 +204,5 @@ __all__ = [
     "validate_model",
     "validate_fit_state",
     "infer_task",
+    "validate",
 ]

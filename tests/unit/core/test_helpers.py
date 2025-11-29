@@ -22,6 +22,7 @@ from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
+from calibrated_explanations.core.exceptions import NotFittedError
 from calibrated_explanations.utils.helper import (
     calculate_metrics,
     check_is_fitted,
@@ -165,7 +166,7 @@ def test_check_is_fitted_with_fitted_estimator():
 def test_check_is_fitted_with_unfitted_estimator():
     """Test check_is_fitted with an unfitted estimator."""
     estimator = LinearRegression()
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(NotFittedError) as excinfo:
         check_is_fitted(estimator, attributes="coef_")
     assert "This LinearRegression instance is not fitted yet." in str(excinfo.value)
 
@@ -174,7 +175,7 @@ def test_check_is_fitted_with_custom_message():
     """Test check_is_fitted with a custom error message."""
     estimator = LinearRegression()
     msg = "Custom error message for %(name)s."
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(NotFittedError) as excinfo:
         check_is_fitted(estimator, attributes="coef_", msg=msg)
     assert "Custom error message for LinearRegression." in str(excinfo.value)
 

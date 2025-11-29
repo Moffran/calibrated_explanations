@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 
@@ -108,7 +109,7 @@ def test_validate_plugin_meta_rejects_bad_meta():
         def explain(self, model, x, **kwargs):
             return {}
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register(BadPlugin())
 
 

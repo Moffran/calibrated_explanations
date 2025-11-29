@@ -29,6 +29,7 @@ from types import MappingProxyType
 from typing import Any, Dict, Iterable, List, Mapping, Tuple
 
 from .. import __version__ as package_version
+from ..core.exceptions import ValidationError
 from .base import ExplainerPlugin, validate_plugin_meta
 
 _REGISTRY: List[ExplainerPlugin] = []
@@ -1028,7 +1029,7 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
         meta: Dict[str, Any] = dict(raw_meta)
         try:
             validate_plugin_meta(meta)
-        except ValueError as exc:
+        except (ValueError, ValidationError) as exc:
             warnings.warn(
                 f"Invalid metadata for plugin {identifier!r}: {exc}",
                 RuntimeWarning,

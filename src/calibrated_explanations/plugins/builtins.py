@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, Mapping, Sequence
 import numpy as np
 
 from .. import __version__ as package_version
+from ..core.exceptions import ConfigurationError, NotFittedError
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
     pass
@@ -181,7 +182,7 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
 
             explainer = context.metadata.get("explainer")
             if explainer is None:
-                raise RuntimeError("Legacy interval context missing 'explainer' handle")
+                raise NotFittedError("Legacy interval context missing 'explainer' handle", details={"context": "legacy_interval", "requirement": "explainer"})
             calibrator = IntervalRegressor(explainer)
         else:
             from ..calibration.venn_abers import VennAbers
@@ -190,7 +191,7 @@ class LegacyIntervalCalibratorPlugin(IntervalCalibratorPlugin):
             if predict_function is None:
                 explainer = context.metadata.get("explainer")
                 if explainer is None:
-                    raise RuntimeError("Legacy interval context missing 'predict_function' entry")
+                    raise NotFittedError("Legacy interval context missing 'predict_function' entry", details={"context": "legacy_interval", "requirement": "predict_function or explainer"})
                 predict_function = getattr(explainer, "predict_function", None)
             calibrator = VennAbers(
                 x_cal,
@@ -225,7 +226,7 @@ class _LegacyExplanationBase(ExplanationPlugin):
     def explain(self, model: Any, x: Any, **kwargs: Any) -> Any:  # pragma: no cover - legacy
         """Dispatch to the underlying explainer for single-instance explanations."""
         if not self.supports(model):
-            raise ValueError("Unsupported model for legacy plugin")
+            raise ConfigurationError("Unsupported model for legacy plugin", details={"model_type": type(model).__name__, "requirement": "CalibratedExplainer"})
         explanation_callable = getattr(model, self._explanation_attr)
         return explanation_callable(x, **kwargs)
 
@@ -239,12 +240,12 @@ class _LegacyExplanationBase(ExplanationPlugin):
         self._bridge = context.predict_bridge
         self._explainer = context.helper_handles.get("explainer")
         if self._explainer is None:
-            raise RuntimeError("Explanation context missing 'explainer' handle")
+            raise NotFittedError("Explanation context missing 'explainer' handle", details={"context": "legacy_explanation", "requirement": "explainer"})
 
     def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
         """Execute the explanation call and adapt legacy collections into batches."""
         if self._context is None or self._bridge is None or self._explainer is None:
-            raise RuntimeError("Plugin must be initialised before use")
+            raise NotFittedError("Plugin must be initialised before use", details={"context": "legacy_explanation", "requirement": "initialize()"})
 
         # Exercise the predict bridge lifecycle. The results are not used further
         # but calling the bridge ensures the contract is honoured.
@@ -354,10 +355,10 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
         legacy explanation path if the executor is unavailable or execution fails.
         """
         if self._context is None or self._bridge is None or self._explainer is None:
-            raise RuntimeError("Plugin must be initialised before use")
+            raise NotFittedError("Plugin must be initialised before use", details={"context": "execution_explanation", "requirement": "initialize()"})
 
         if self._execution_plugin_class is None:
-            raise RuntimeError("Execution plugin class not configured")
+            raise NotFittedError("Execution plugin class not configured", details={"context": "execution_explanation", "requirement": "execution_plugin_class"})
 
         try:
             # Import here to avoid circular imports
@@ -739,8 +740,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             options = context.options if isinstance(context.options, Mapping) else {}
             payload = options.get("payload", {})
             if not isinstance(payload, Mapping):
-                raise RuntimeError(
-                    "PlotSpec default builder expected payload mapping for global plot"
+                raise ConfigurationError(
+                    "PlotSpec default builder expected payload mapping for global plot",
+                    details={"intent_type": "global", "requirement": "payload must be a mapping"}
                 )
             payload_dict = dict(payload)
             payload_dict.pop("threshold", None)  # legacy-only field
@@ -755,16 +757,18 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             options = context.options if isinstance(context.options, Mapping) else {}
             payload = options.get("payload", {})
             if not isinstance(payload, Mapping):
-                raise RuntimeError(
-                    "PlotSpec default builder expected payload mapping for alternative plot"
+                raise ConfigurationError(
+                    "PlotSpec default builder expected payload mapping for alternative plot",
+                    details={"intent_type": "alternative", "requirement": "payload must be a mapping"}
                 )
 
             feature_payload = payload.get("feature_predict")
             if feature_payload is None:
                 feature_payload = payload.get("feature_weights")
             if feature_payload is None:
-                raise RuntimeError(
-                    "Alternative plot payload must supply 'feature_predict' or 'feature_weights'"
+                raise ConfigurationError(
+                    "Alternative plot payload must supply 'feature_predict' or 'feature_weights'",
+                    details={"intent_type": "alternative", "requirement": "feature_predict or feature_weights"}
                 )
 
             predict_payload = payload.get("predict", {})
@@ -989,7 +993,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             builder_kwargs.pop("threshold_label", None)
             return build_alternative_probabilistic_spec(**builder_kwargs)
 
-        raise RuntimeError("PlotSpec default builder currently supports only global plots")
+        raise ConfigurationError("PlotSpec default builder currently supports only global plots", details={"supported_intents": ["global"], "requirement": "intent type must be 'global'"})
 
 
 class PlotSpecDefaultRenderer(PlotRenderer):
@@ -1029,7 +1033,7 @@ class PlotSpecDefaultRenderer(PlotRenderer):
             else:
                 render_plotspec(artifact, show=context.show, save_path=base_path)
         except Exception as exc:  # pragma: no cover - defensive fallback
-            raise RuntimeError(f"PlotSpec renderer failed: {exc}") from exc
+            raise ConfigurationError(f"PlotSpec renderer failed: {exc}", details={"context": "plot_rendering", "original_error": str(exc)}) from exc
         return PlotRenderResult(artifact=artifact, figure=None, saved_paths=tuple(saved), extras={})
 
 
@@ -1070,7 +1074,7 @@ def _register_builtin_fast_plugins() -> None:
                 task = str(metadata.get("task") or metadata.get("mode") or "")
                 explainer = metadata.get("explainer")
                 if explainer is None:
-                    raise RuntimeError("FAST interval context missing 'explainer' handle")
+                    raise NotFittedError("FAST interval context missing 'explainer' handle", details={"context": "fast_interval", "requirement": "explainer"})
 
                 x_cal, y_cal = context.calibration_splits[0]
                 bins = context.bins.get("calibration")

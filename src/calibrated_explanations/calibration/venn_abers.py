@@ -14,6 +14,7 @@ import warnings
 import numpy as np
 import venn_abers as va
 
+from ..core.exceptions import ConfigurationError
 from ..utils.helper import convert_targets_to_numeric
 
 
@@ -207,7 +208,7 @@ class VennAbers:
                 tmp_probs[:, 1] = tprobs[:, c]
                 if self.is_mondrian():
                     if bins is None:
-                        raise ValueError("bins must be provided if Mondrian")
+                        raise ConfigurationError("Mondrian calibration: bins must be provided if Mondrian.", details={"context": "predict_proba", "requirement": "bins parameter"})
                     for b, va_class_bin in va_class.items():
                         p0p1[bins == b, :] = va_class_bin.predict_proba(tmp_probs[bins == b, :])[1]
                 else:
@@ -240,7 +241,7 @@ class VennAbers:
 
         if self.is_mondrian():
             if bins is None:
-                raise ValueError("bins must be provided if Mondrian")
+                raise ConfigurationError("Mondrian calibration: bins must be provided if Mondrian.", details={"context": "predict_proba", "requirement": "bins parameter"})
             for b, va_bin in self.va.items():
                 p0p1[bins == b, :] = va_bin.predict_proba(tprobs[bins == b, :])[1]
         else:

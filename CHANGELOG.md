@@ -5,6 +5,23 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
+### ADR-002 Validation Parity Implementation ✅
+
+- **Completed ADR-002 validation parity for v0.10.0 release**
+  - **Legacy exception taxonomy replacement**: Replaced 42+ `ValueError`/`RuntimeError` raises across calibration, plugins, and utilities with ADR-002 exception taxonomy (`ValidationError`, `DataShapeError`, `ConfigurationError`, `NotFittedError`, etc.)
+    - Calibration: `venn_abers.py` (2 raises), `interval_regressor.py` (4 raises)
+    - Plugins: `base.py` (8 raises), `builtins.py` (12+ raises)
+    - Utils: `helper.py` (1 raise, `check_is_fitted()`)
+  - **Structured error payloads**: All exception raises include `details` dict with diagnostic context (e.g., `{"context": "predict_proba", "requirement": "bins parameter"}`)
+  - **Shared validation entry points**: Enhanced `core/validation.py` with `validate()` helper function and unified validator signatures; `validate_inputs()`, `validate_model()`, `validate_fit_state()`, `infer_task()` all follow ADR-002 contracts
+  - **Error diagnostics**: Implemented `explain_exception(e)` helper in `core/exceptions.py` for human-readable multi-line exception formatting with structured details
+  - **Parameter guardrails**: Implemented real `validate_param_combination()` in `api/params.py` with mutual exclusivity detection (`threshold`/`confidence_level` mutual exclusivity as initial guard)
+  - **Fit-state harmonization**: Wrapper fit-state checks updated to catch `NotFittedError` in addition to `RuntimeError`; all plugins consistently use `NotFittedError` for state violations
+  - **Regression tests**: Added 23 comprehensive regression tests across 4 new test files validating exception parity, validation helpers, and parameter guardrails
+  - **Test coverage**: Maintained 89.36% coverage (exceeds 88% requirement) with all core ADR-002 implementation covered
+  - **Documentation**: Created `COMPLETION_REPORT.md` and `MIGRATION_NOTES.md` detailing implementation, exception mapping table, and recommended catch patterns
+  - **Impact**: Zero breaking changes to successful code paths; only exception types changed for better semantic correctness
+
 ### Test Coverage Improvements
 
 - **Expanded test coverage from 86.65% to 87.1%** through systematic addition of 50+ new unit tests

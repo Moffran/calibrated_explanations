@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from calibrated_explanations.core.exceptions import NotFittedError
 from calibrated_explanations.utils import helper
 
 
@@ -105,7 +106,7 @@ def test_check_is_fitted_paths(tmp_path):
     assert helper.check_is_fitted(DummyAttr(), attributes=["coef_"]) is None
 
     estimator = DummyNeedsFit()
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(NotFittedError) as excinfo:
         helper.check_is_fitted(estimator)
     assert "DummyNeedsFit" in str(excinfo.value)
 

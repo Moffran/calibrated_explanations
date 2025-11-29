@@ -14,6 +14,8 @@ from inspect import isclass
 import numpy as np
 from pandas import CategoricalDtype
 
+from calibrated_explanations.core.exceptions import NotFittedError
+
 
 def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:  # pylint: disable=unused-private-member
     """Create directory if it does not exist.
@@ -203,7 +205,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         fitted = [v for v in vars(estimator) if v.endswith("_") and not v.startswith("__")]
 
     if not fitted or fitted == []:
-        raise RuntimeError(msg % {"name": type(estimator).__name__})
+        raise NotFittedError(msg % {"name": type(estimator).__name__})
 
 
 def is_notebook():
