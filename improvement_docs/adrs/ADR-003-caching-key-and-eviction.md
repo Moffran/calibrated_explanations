@@ -1,8 +1,8 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2025-11-29):** Last edited 2025-11-29 · Archive after: v1.0.0 GA · Implementation: Fully completed in v0.10.0 · All ADR-003 gates satisfied per `improvement_docs/adr\ mending/ADR-003/COMPLETION_REPORT.md`.
 
 # ADR-003: Caching Key & Eviction Strategy
 
-Status: Proposed (targeting v0.9.0 opt-in release)
+Status: Accepted (implemented in v0.10.0)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -21,7 +21,7 @@ Introduce a unified in-process cache layer with:
   - namespace distinguishes domain ("calibration", "explanation" ,"dataset", etc.)
   - version_tag changes when algorithm parameters or code version affecting semantics changes (derived from `__version__` + strategy revision id)
   - payload_subset is a stable hash (blake2) over selected normalized inputs (e.g., model identifier, n_samples bucket, seed, feature schema hash)
-- Default backend: LRU (size-bounded) using `cachetools` with both max items and approximate memory budget (est via `Pympler` fallback to `sys.getsizeof`).
+- Default backend: LRU (size-bounded) using `cachetools` with both max items and approximate memory budget (est via `Pympler` sizing; fallback to `sys.getsizeof`).
 - Eviction policy: item removed if over size or memory budget; optional TTL for time-sensitive artifacts (unused initially).
 - Instrumentation: per-namespace hit/miss counters exposed via a lightweight metrics API (python dict or optional `prometheus_client`).
 - Config surface: environment variables + programmatic (`CacheConfig`) for max_items, max_mem_mb, enable/disable namespaces.

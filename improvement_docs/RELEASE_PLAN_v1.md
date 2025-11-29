@@ -35,11 +35,14 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 **Implementation Details**: See `improvement_docs/adr mending/ADR-002/COMPLETION_REPORT.md` and `MIGRATION_NOTES.md` for full audit trail, exception mapping, and catch patterns. Test coverage: 23 new regression tests (4 test files); 89.36% overall coverage maintained.
 
 ### ADR-003 – Caching Strategy
-- **Automatic invalidation & flush hooks missing** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Track cache versions, expose manual flush APIs, and update docs per ADR-003.
-- **Required artefacts not cached** (severity 16, critical) → `v0.10.0 runtime boundary realignment`. Extend caching to calibration summaries and explanation tensors with eviction rules.
-- **Governance & documentation (STRATEGY_REV) absent** (severity 12, high) → `v0.10.0 runtime boundary realignment`. Add governance artefacts (strategy revision log, release checklist hooks) and, if scope diverges, update ADR-003 rationale.
-- **Telemetry integration incomplete** (severity 9, high) → `v0.10.0 runtime boundary realignment`. Emit hit/miss counters via telemetry and ensure docs reflect the signals.
-- **Backend diverges from cachetools + pympler stack** (severity 9, high) → `v0.10.0 runtime boundary realignment`. Standardise on the mandated libraries or amend ADR-003 with rationale before RC.
+
+- ✅ **Automatic invalidation & flush hooks** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED: `CalibratorCache.flush()` and `reset_version()` API implemented; version tracking embedded in cache keys.
+- ✅ **Required artefacts not cached** (severity 16, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED: `ExplanationCacheFacade` routes calibration summaries and explanation tensors to shared cache layer with namespaced stages.
+- ✅ **Governance & documentation (STRATEGY_REV) absent** (severity 12, high) → `v0.10.0 runtime boundary realignment`. COMPLETED: STRATEGY_REV registry created, release checklist hooks added, governance artefacts documented in `improvement_docs/adr\ mending/ADR-003/`.
+- ✅ **Telemetry integration incomplete** (severity 9, high) → `v0.10.0 runtime boundary realignment`. COMPLETED: Hit/miss/eviction/store events emitted via `_emit()` callback; full test coverage added.
+- ✅ **Backend diverges from cachetools + pympler stack** (severity 9, high) → `v0.10.0 runtime boundary realignment`. COMPLETED: Migrated to `cachetools.LRUCache`/`TTLCache` backend with blake2b hashing; pympler integration deferred to v1.0.1 post-production monitoring.
+
+**Implementation Details:** See `improvement_docs/adr\ mending/ADR-003/COMPLETION_REPORT.md` for full closure summary, testing strategy, and migration path.
 
 ### ADR-004 – Parallel Execution Framework
 

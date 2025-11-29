@@ -36,11 +36,9 @@ TelemetryCallback = _cache.TelemetryCallback
 make_key = _cache.make_key
 
 # Expose implementation details so legacy monkeypatch targets continue to work
-CacheEntry = _cache.CacheEntry
 _default_size_estimator = _cache._default_size_estimator
 _hash_part = _cache._hash_part
 monotonic = _cache.monotonic
-OrderedDict = _cache.OrderedDict
 
 
 def __getattr__(name: str) -> Any:  # pragma: no cover - thin shim

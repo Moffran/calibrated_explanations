@@ -13,11 +13,13 @@ from .cache import (
     TelemetryCallback,
     make_key,
 )
+from .explanation_cache import ExplanationCacheFacade
 
 __all__ = [
     "CacheConfig",
     "CacheMetrics",
     "CalibratorCache",
+    "ExplanationCacheFacade",
     "TelemetryCallback",
     "make_key",
 ]

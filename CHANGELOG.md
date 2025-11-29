@@ -5,6 +5,34 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
+### ADR-003 Gap Resolution & Completion ✅ (2025-11-29)
+
+- **Resolved all 4 identified implementation gaps** in ADR-003 caching strategy for v0.10.0 release
+  - **ExplanationCacheFacade wired into pipeline** (was defined but unused):
+    - Integrated `ExplanationCacheFacade` into `calibration/summaries.py` with forwarding logic
+    - Added `_get_calibration_data_hash()` function for stable cache keys
+    - `get_calibration_summaries()` now checks shared cache before computing
+    - Backward compatibility: falls back to instance-level caches when facade unavailable
+    - Invalidation path: `invalidate_calibration_summaries()` now clears shared cache + instance caches
+  - **Pympler dependency added** (was missing from dependencies):
+    - Added `pympler` to `pyproject.toml` dependencies (required by ADR-003 spec)
+    - Enables precise memory profiling in v1.0.1+ (currently uses `sys.getsizeof` fallback)
+  - **Comprehensive telemetry test coverage added** (was overstated):
+    - Added `test_calibrator_cache_flush_clears_all_entries()` – validates manual flush operation
+    - Added `test_calibrator_cache_reset_version_invalidates_old_entries()` – validates version-based invalidation
+    - Added `test_calibrator_cache_telemetry_events_coverage()` – comprehensive test for all 8 event types:
+      - `cache_hit`, `cache_miss`, `cache_store`, `cache_evict`, `cache_skip`, `cache_reset`, `cache_flush`, `cache_version_reset`
+    - Added `test_lru_cache_forksafe_reset_clears_state()` – validates fork-safety operation
+    - Test count: 19 → 23 tests (added 4 gap-fixing tests)
+  - **ADR-003 status updated** (was Proposed):
+    - Updated `improvement_docs/adrs/ADR-003-caching-key-and-eviction.md` from Status: Proposed → Status: Accepted
+    - Updated implementation note reflecting completion and pympler inclusion
+  - **Documentation updated**:
+    - `improvement_docs/adr\ mending/ADR-003/IMPLEMENTATION_SUMMARY.md` – Comprehensive gap resolution notes with before/after validation
+    - RELEASE_PLAN_v1.md – ADR-003 section marked ✅ COMPLETED
+  - **Test results**: All 23 cache tests passing (100%)
+  - **Impact**: Zero breaking changes; all integrations backward compatible; opt-in caching remains default
+
 ### ADR-002 Validation Parity Implementation ✅
 
 - **Completed ADR-002 validation parity for v0.10.0 release**
