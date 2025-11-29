@@ -40,6 +40,8 @@ The following clarifications capture the phased approach and guardrails for the 
 
 - Opt-in default (unchanged): parallel execution stays disabled unless an executor or an enabling flag is supplied. The v0.9.1 facade will respect `executor.config.enabled`, `ParallelConfig` flags, and `CE_PARALLEL` overrides.
 
+- Domain-specific orchestration wraps the facade: per-domain runtimes (e.g., explain) should provide their own wrappers around the shared `ParallelExecutor` so that heuristics, chunk sizing, and nesting guards remain co-located with domain logic while the low-level executor stays in `calibrated_explanations.parallel`.
+
 - API contract preservation: strategy selection and configuration MUST remain optional enhancements. `WrapCalibratedExplainer` public entry points (`fit`, `calibrate`, `explain_factual`, `explore_alternatives`, `predict`, `predict_proba`, and plotting/uncertainty helpers) keep their existing signatures without deprecation warnings or behavioural breaking changes.
 
 - Graceful degradation (v0.9.1 minimum): the facade will detect basic executor errors (missing executor, disabled executor, platform hints indicating high spawn cost) and prefer serial; it will also surface a telemetry record when it forces a fallback to serial. Full automatic fallback-on-exception semantics for strategy construction remain part of the v0.10 scope.

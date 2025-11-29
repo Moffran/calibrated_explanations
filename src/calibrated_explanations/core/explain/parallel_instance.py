@@ -101,7 +101,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
             explainer._last_explanation_mode = explainer._infer_explanation_mode()
             return empty_explanation
 
-        chunk_size = max(1, executor.config.min_batch_size)
+        chunk_size = max(1, config.chunk_size)
         total_start_time = time()
 
         # Step 1: Partition instances into chunks

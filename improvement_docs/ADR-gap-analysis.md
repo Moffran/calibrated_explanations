@@ -71,6 +71,10 @@ descending order of this product within each ADR.
 | 8 | Testing and benchmarking coverage limited | 3 | 3 | 9 | Spawn lifecycle and throughput benchmarks remain manual or untested; v0.9.1 should add unit tests for the facade decision logic and a micro-benchmark harness to gather evidence. |
 | 9 | Documentation for strategies & troubleshooting lacking | 3 | 2 | 6 | No platform-specific matrices or plugin interoperability notes accompany the rollout; v0.9.1 should ship minimal guidance for the facade and record the v0.10 plan in ADR notes. |
 
+Alignment note: Parallel is treated as a shared service with domain-specific runtime wrappers (e.g., explain) expected to wrap
+the shared `ParallelExecutor` so heuristics and chunking remain co-located with domain executors while respecting ADR-001
+boundaries. ADR-004 now documents this expectation.
+
 ## ADR-005 – Explanation Envelope & Schema
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |

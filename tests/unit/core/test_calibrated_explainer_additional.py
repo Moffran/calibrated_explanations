@@ -700,7 +700,8 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         executor=EmptyExec(),
         num_features=explainer.num_features,
         categorical_features=(),
-        feature_values={},
+        feature_values={0: np.array([]), 1: np.array([])},
+        chunk_size=1,  # Ensure consistent chunk sizing
     )
     plugin = InstanceParallelExplainExecutor()
 
@@ -715,6 +716,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         class Config:
             enabled = True
             min_batch_size = 1
+            chunk_size = 1  # Force multiple chunks: 3 instances -> 3 chunks
 
         def __init__(self, results):
             self.config = self.Config()
@@ -744,7 +746,8 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         executor=exec_for_chunks,
         num_features=explainer.num_features,
         categorical_features=(),
-        feature_values={},
+        feature_values={0: np.array([]), 1: np.array([])},
+        chunk_size=1,  # Force multiple chunks
     )
 
     combined = plugin.execute(req, cfg, explainer)

@@ -362,36 +362,13 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
 
         try:
             # Import here to avoid circular imports
-            from ..core.explain._shared import ExplainConfig
-            from ..core.explain._shared import ExplainRequest as _ExplainRequest
-
-            # Build the execute request from the explanation request
-            explain_request = _ExplainRequest(
-                x=x,
-                threshold=request.threshold,
-                low_high_percentiles=request.low_high_percentiles or (5, 95),
-                bins=request.bins,
-                features_to_ignore=np.asarray(request.features_to_ignore or []),
-                use_plugin=False,
-                skip_instance_parallel=False,
-            )
-
-            # Build execution config from explainer state
-            calibration_data = {}
-            if hasattr(self._explainer, "_get_calibration_summaries"):
-                calibration_data = self._explainer._get_calibration_summaries()[1]
-
-            explain_config = ExplainConfig(
-                executor=getattr(self._explainer, "executor", None),
-                granularity=getattr(self._explainer, "granularity", "feature"),
-                num_features=self._explainer.num_features,
-                categorical_features=self._explainer.categorical_features or (),
-                feature_values=calibration_data,
-                mode=self._context.task,
-            )
+            from ..core.explain.parallel_runtime import build_explain_execution_plan
 
             # Instantiate and execute the plugin
             plugin = self._execution_plugin_class()
+            explain_request, explain_config = build_explain_execution_plan(
+                self._explainer, x, request
+            )
             collection = plugin.execute(explain_request, explain_config, self._explainer)
 
         except Exception as exc:
