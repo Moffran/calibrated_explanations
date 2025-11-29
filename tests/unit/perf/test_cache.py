@@ -6,7 +6,7 @@ from typing import Dict, Iterable, List
 import numpy as np
 import pytest
 
-from calibrated_explanations.perf.cache import (
+from calibrated_explanations.cache.cache import (
     CalibratorCache,
     CacheConfig,
     LRUCache,
@@ -57,7 +57,7 @@ def test_cache_respects_ttl(monkeypatch: pytest.MonkeyPatch) -> None:
         telemetry=None,
         size_estimator=lambda _: 1,
     )
-    monkeypatch.setattr("calibrated_explanations.perf.cache.monotonic", fake_monotonic)
+    monkeypatch.setattr("calibrated_explanations.cache.cache.monotonic", fake_monotonic)
 
     cache.set("alpha", 42)
     assert cache.get("alpha") == 42

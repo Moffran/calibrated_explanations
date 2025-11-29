@@ -1,4 +1,4 @@
-from calibrated_explanations.perf.cache import LRUCache, make_key
+from calibrated_explanations.cache.cache import LRUCache, make_key
 from calibrated_explanations.plugins import registry
 from calibrated_explanations.viz.plotspec import (
     PlotSpec,

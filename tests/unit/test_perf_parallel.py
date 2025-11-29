@@ -1,14 +1,12 @@
 """Unit tests for the ParallelExecutor facade."""
 
+import importlib
 import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from calibrated_explanations.perf.parallel import (
-    ParallelConfig,
-    ParallelExecutor,
-)
+from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
 
 
 @pytest.fixture
@@ -26,6 +24,17 @@ def clean_env():
 
 class TestParallelConfig:
     """Tests for configuration loading and environment overrides."""
+
+    def test_perf_parallel_shim_warns_and_forwards(self, clean_env):
+        """Deprecated perf shim should forward to canonical parallel module."""
+
+        with pytest.warns(DeprecationWarning):
+            shim = importlib.reload(
+                importlib.import_module("calibrated_explanations.perf.parallel")
+            )
+
+        assert shim.ParallelExecutor is ParallelExecutor
+        assert shim.ParallelConfig is ParallelConfig
 
     def test_defaults(self):
         """Test default configuration values."""
@@ -127,7 +136,7 @@ class TestParallelExecutor:
         executor = ParallelExecutor(cfg)
         # Mock joblib presence by patching the module attribute in the parallel module
         with patch("os.name", "posix"), patch("os.cpu_count", return_value=4), patch(
-            "calibrated_explanations.perf.parallel._JoblibParallel", new=MagicMock()
+            "calibrated_explanations.parallel.parallel._JoblibParallel", new=MagicMock()
         ):
             strategy = executor._resolve_strategy()
             assert strategy.func == executor._joblib_strategy
@@ -137,7 +146,7 @@ class TestParallelExecutor:
         cfg = ParallelConfig(enabled=True, strategy="joblib")
         executor = ParallelExecutor(cfg)
         # Force joblib to be None
-        with patch("calibrated_explanations.perf.parallel._JoblibParallel", None), patch.object(
+        with patch("calibrated_explanations.parallel.parallel._JoblibParallel", None), patch.object(
             executor, "_thread_strategy"
         ) as mock_thread:
             executor._joblib_strategy(lambda x: x, [1])
