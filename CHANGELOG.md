@@ -48,7 +48,45 @@
   - **Regression tests**: Added 23 comprehensive regression tests across 4 new test files validating exception parity, validation helpers, and parameter guardrails
   - **Test coverage**: Maintained 89.36% coverage (exceeds 88% requirement) with all core ADR-002 implementation covered
   - **Documentation**: Created `COMPLETION_REPORT.md` and `MIGRATION_NOTES.md` detailing implementation, exception mapping table, and recommended catch patterns
-  - **Impact**: Zero breaking changes to successful code paths; only exception types changed for better semantic correctness
+  - **Remaining legacy exceptions replaced** (6 additional locations identified and fixed):
+    - `src/calibrated_explanations/cache/cache.py` (lines 226–229): `ValueError` → `ValidationError` with parameter details
+    - `src/calibrated_explanations/explanations/explanations.py` (lines 189, 710–713): `ValueError`/`TypeError` → `SerializationError`/`ValidationError` with type metadata
+    - `src/calibrated_explanations/core/narrative_generator.py` (lines 41–56, 189): `FileNotFoundError`/`ValueError`/`AttributeError` → `SerializationError`/`ValidationError` with diagnostic context
+    - `src/calibrated_explanations/core/calibrated_explainer.py` (lines 280–285): `RuntimeError` → `NotFittedError` with state details
+    - `src/calibrated_explanations/plotting.py` (line 238): `RuntimeError` → `ConfigurationError` with requirement metadata
+  - **Validation API contract fully implemented**: Refactored `validate_inputs()` to match ADR-002 specification:
+    - **Signature**: `validate_inputs(x, y=None, task="auto", allow_nan=False, require_y=False, n_features=None, class_labels=None, check_finite=True) → None`
+    - **Behavior**: Validates feature/target matrix pair with comprehensive shape, dtype, and value checks
+    - **Error handling**: Raises `DataShapeError`, `ValidationError` with structured `details` payloads
+    - **Backward compatibility**: Old `validate_inputs_matrix()` preserved as separate entry point for explicit matrix validation
+  - **Comprehensive regression test suite**: Added 16 new tests in `test_validation_unit.py` covering ADR-002 contract compliance:
+    - Shape validation (2D x requirement, feature count matching)
+    - Target validation (length matching, NaN/inf checks)
+    - Parameter validation (task type, allow_nan, require_y, check_finite)
+    - Structured error payloads (details dict presence and content)
+    - Edge cases (pandas DataFrames, None values, infinity bounds)
+  - **Explanation module** (`explanation.py`): Replaced 5 legacy raises
+    - Line 260: Parameter validation error (feature_weights/width) → `ValidationError` with structured details
+    - Line 772: Input validation error (conjunctive rules) → `ValidationError` with structured details
+    - Line 1340: Configuration error (max_rule_size) → `ConfigurationError` with structured details
+    - Line 1622: Backend configuration error (Agg backend) → `ConfigurationError` with structured details
+    - Line 2236: Configuration error (max_rule_size) → `ConfigurationError` with structured details
+  - **Plugin explanations module** (`plugins/explanations.py`): Replaced 2 legacy raises
+    - Type validation errors → `ValidationError` with detailed metadata context
+    - Batch metadata validation errors → `ValidationError` with mode/task details
+  - **Plugin registry module** (`plugins/registry.py`): Replaced 28+ legacy raises
+    - Checksum validation: `ValidationError` with expected/actual hash details
+    - Metadata field validation: `ValidationError` with allowed values and unsupported values details
+    - Plugin registration: `ValidationError` for identifier/metadata requirements
+    - Validation functions (_ensure_sequence, _coerce_string_collection, _normalise_dependency_field, _normalise_tasks, validate_explanation_metadata, validate_interval_metadata, _ensure_bool, _ensure_string)
+  - **Visualization layer** (`viz/builders.py`, `viz/serializers.py`, `viz/narrative_plugin.py`): Replaced 9 legacy raises
+    - Sequence length validation: `ValidationError` with length/index diagnostic details
+    - PlotSpec validation: `ValidationError` for version/structure/field validation
+    - Narrative expertise level: `ValidationError` with allowed values
+    - Output format validation: `ValidationError` for invalid formats; `ConfigurationError` for unsupported formats
+  - **Total exceptions replaced**: 44+ legacy `ValueError`/`RuntimeError`/`TypeError` raises → ADR-002 taxonomy
+  - **Structured details payloads**: All exceptions include comprehensive diagnostic dictionaries with context-specific information
+  - **Regression test coverage**: Added 19 new tests validating exception types, details payloads, and hierarchy compliancespecifications
 
 ### Test Coverage Improvements
 

@@ -27,6 +27,7 @@ from typing import Optional
 
 import numpy as np
 
+from calibrated_explanations.core.exceptions import ValidationError
 # # Create a ConfigParser object
 # config = configparser.ConfigParser()
 
@@ -184,7 +185,14 @@ def perturb_dataset(
         "uniform",
         "gaussian",
     ]:
-        raise ValueError("Noise type must be either 'uniform' or 'gaussian'.")
+        raise ValidationError(
+            "Noise type must be either 'uniform' or 'gaussian'.",
+            details={
+                "param": "noise_type",
+                "allowed_values": ["uniform", "gaussian"],
+                "provided": noise_type,
+            },
+        )
 
     # Create a single RNG to be used throughout perturbations to ensure reproducibility
     local_rng = (

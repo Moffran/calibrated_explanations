@@ -14,7 +14,7 @@ from inspect import isclass
 import numpy as np
 from pandas import CategoricalDtype
 
-from calibrated_explanations.core.exceptions import NotFittedError
+from calibrated_explanations.core.exceptions import NotFittedError, ValidationError
 
 
 def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:  # pylint: disable=unused-private-member
@@ -74,9 +74,14 @@ def safe_isinstance(obj, class_path_str):
     # try each module path in order
     for _class_path_str in class_path_strs:
         if "." not in _class_path_str:
-            raise ValueError(
-                "class_path_str must be a string or list of strings specifying a full \
-                module path to a class. Eg, 'sklearn.ensemble.RandomForestRegressor'"
+            raise ValidationError(
+                "class_path_str must be a fully qualified module path (e.g., "
+                "'sklearn.ensemble.RandomForestRegressor').",
+                details={
+                    "param": "class_path_str",
+                    "requirement": "module path must include at least one '.'",
+                    "provided": _class_path_str,
+                },
             )
 
         # Splits on last occurrence of "."
@@ -382,7 +387,10 @@ def assert_threshold(threshold, x):
         return threshold
     if isinstance(threshold, tuple):
         if len(threshold) != 2:
-            raise ValueError("tuple thresholds must be a tuple with two values")
+            raise ValidationError(
+                "tuple thresholds must contain exactly two values",
+                details={"param": "threshold", "expected_length": 2, "actual_length": len(threshold)},
+            )
         return threshold
     if isinstance(threshold, (list, np.ndarray)):
         if not (len(threshold) == np.asarray(x).shape[0]):
@@ -390,8 +398,13 @@ def assert_threshold(threshold, x):
                 "list thresholds must have the same length as the number of samples"
             )
         return [assert_threshold(t, [x[i]]) for i, t in enumerate(threshold)]
-    raise ValueError(
-        "thresholds must be a scalar, binary tuple or list of scalars or binary tuples"
+    raise ValidationError(
+        "thresholds must be a scalar, binary tuple or list of scalars or binary tuples",
+        details={
+            "param": "threshold",
+            "expected_types": ["scalar", "tuple(len=2)", "list/ndarray of scalar or tuple(len=2)"],
+            "actual_type": type(threshold).__name__,
+        },
     )
 
 
@@ -441,14 +454,23 @@ def calculate_metrics(
         return ["ensured"]
 
     if uncertainty is None or prediction is None:
-        raise ValueError(
-            "Both uncertainty and prediction must be provided if any other argument is provided"
+        raise ValidationError(
+            "Both uncertainty and prediction must be provided if any other argument is provided",
+            details={
+                "params": ["uncertainty", "prediction"],
+                "requirement": "both required when computing metrics",
+                "uncertainty_is_none": uncertainty is None,
+                "prediction_is_none": prediction is None,
+            },
         )
     uncertainty = np.array(uncertainty) if isinstance(uncertainty, list) else uncertainty
     prediction = np.array(prediction) if isinstance(prediction, list) else prediction
     metrics = {}
     if not (-1 <= w <= 1):
-        raise ValueError("The weight must be between -1 and 1.")
+        raise ValidationError(
+            "The weight must be between -1 and 1.",
+            details={"param": "w", "min": -1, "max": 1, "provided": w},
+        )
     inverse_prediction = False
     if w < 0:
         w = -w

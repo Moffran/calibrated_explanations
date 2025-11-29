@@ -184,11 +184,23 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_batch(cls, batch):
         """Reconstruct a collection from an :class:`ExplanationBatch`."""
+        from ..core.exceptions import SerializationError, ValidationError
+
         container = batch.collection_metadata.get("container")
         if container is None:
-            raise ValueError("ExplanationBatch is missing container metadata")
+            raise SerializationError(
+                "ExplanationBatch is missing container metadata",
+                details={"artifact": "ExplanationBatch", "field": "container"},
+            )
         if not isinstance(container, cls):
-            raise TypeError("ExplanationBatch container metadata has unexpected type")
+            raise ValidationError(
+                "ExplanationBatch container metadata has unexpected type",
+                details={
+                    "param": "container",
+                    "expected_type": cls.__name__,
+                    "actual_type": type(container).__name__,
+                },
+            )
         return container
 
     # ------------------------------------------------------------------
@@ -687,6 +699,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
+        from ..core.exceptions import ValidationError
         from ..utils.deprecations import deprecate
 
         deprecate(
@@ -695,11 +708,25 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             stacklevel=3,
         )
         if not isinstance(index, int):
-            raise TypeError("index must be an integer")
+            raise ValidationError(
+                "index must be an integer",
+                details={"param": "index", "expected_type": "int", "actual_type": type(index).__name__},
+            )
         if index < 0:
-            raise ValueError("index must be greater than or equal to 0")
+            raise ValidationError(
+                "index must be greater than or equal to 0",
+                details={"param": "index", "value": index, "requirement": "non-negative"},
+            )
         if index >= len(self.x_test):
-            raise ValueError("index must be less than the number of test instances")
+            raise ValidationError(
+                "index must be less than the number of test instances",
+                details={
+                    "param": "index",
+                    "value": index,
+                    "max_index": len(self.x_test) - 1,
+                    "n_instances": len(self.x_test),
+                },
+            )
         return self.explanations[index]
 
     def _is_alternative(self):

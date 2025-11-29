@@ -278,10 +278,17 @@ class CalibratedExplainer:
 
     def _require_plugin_manager(self) -> PluginManager:
         """Return the plugin manager or raise if the explainer is not initialized."""
+        from .exceptions import NotFittedError
+
         manager = getattr(self, "_plugin_manager", None)
         if manager is None:
-            raise RuntimeError(
-                "PluginManager is not initialized. Instantiate CalibratedExplainer via __init__."
+            raise NotFittedError(
+                "PluginManager is not initialized. Instantiate CalibratedExplainer via __init__.",
+                details={
+                    "state": "uninitialized",
+                    "reason": "plugin_manager_missing",
+                    "required_method": "__init__",
+                },
             )
         return manager
 

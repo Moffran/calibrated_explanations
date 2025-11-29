@@ -223,10 +223,18 @@ class LRUCache(Generic[K, V]):
         size_estimator: Callable[[Any], int],
     ) -> None:
         """Initialize cache with cachetools backend."""
+        from ..core.exceptions import ValidationError
+
         if max_items <= 0:
-            raise ValueError("max_items must be positive")
+            raise ValidationError(
+                "max_items must be positive",
+                details={"param": "max_items", "value": max_items, "requirement": "positive"},
+            )
         if max_bytes is not None and max_bytes <= 0:
-            raise ValueError("max_bytes must be positive when provided")
+            raise ValidationError(
+                "max_bytes must be positive when provided",
+                details={"param": "max_bytes", "value": max_bytes, "requirement": "positive"},
+            )
         self.namespace = namespace
         self.version = version
         self.max_items = max_items

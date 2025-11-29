@@ -6,6 +6,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
+from calibrated_explanations.core.exceptions import ConfigurationError
 
 # Guard optional dependency imports so importing this module doesn't fail in
 # environments without matplotlib (tests/CI where viz extras aren't installed).
@@ -33,7 +34,14 @@ def __require_matplotlib():
         )
         if _MATPLOTLIB_IMPORT_ERROR is not None:
             msg += f"\nOriginal import error: {_MATPLOTLIB_IMPORT_ERROR}"
-        raise RuntimeError(msg)
+        raise ConfigurationError(
+            msg,
+            details={
+                "dependency": "matplotlib",
+                "extra": "viz",
+                "original_error": str(_MATPLOTLIB_IMPORT_ERROR) if _MATPLOTLIB_IMPORT_ERROR else None,
+            },
+        )
 
 
 def _compose_save_target(path, title: str, ext) -> str:

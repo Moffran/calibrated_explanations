@@ -257,7 +257,16 @@ class CalibratedExplanation(ABC):
             The sorted indices of the features.
         """
         if not (feature_weights is not None or width is not None):
-            raise ValueError("Either feature_weights or width (or both) must not be None")
+            from ..core.exceptions import ValidationError
+            raise ValidationError(
+                "Either feature_weights or width (or both) must not be None",
+                details={
+                    "param": "feature_weights/width",
+                    "requirement": "at least one must be provided",
+                    "feature_weights": feature_weights is not None,
+                    "width": width is not None,
+                },
+            )
         num_features = len(feature_weights) if feature_weights is not None else len(width)
         if num_to_show is None or num_to_show > num_features:
             num_to_show = num_features
@@ -769,7 +778,15 @@ class CalibratedExplanation(ABC):
             The predicted value, lower bound, upper bound, and count.
         """
         if len(original_features) < 2:
-            raise ValueError("Conjunctive rules require at least two features")
+            from ..core.exceptions import ValidationError
+            raise ValidationError(
+                "Conjunctive rules require at least two features",
+                details={
+                    "param": "original_features",
+                    "count": len(original_features),
+                    "requirement": "minimum 2 features",
+                },
+            )
 
         predict_fn = self._get_explainer()._predict  # pylint: disable=protected-access
         # Ensure perturbed is a writable copy to avoid "read-only" errors
@@ -1337,7 +1354,15 @@ class FactualExplanation(CalibratedExplanation):
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """Add conjunctive factual rules."""
         if max_rule_size >= 4:
-            raise ValueError("max_rule_size must be 2 or 3")
+            from ..core.exceptions import ConfigurationError
+            raise ConfigurationError(
+                "max_rule_size must be 2 or 3",
+                details={
+                    "param": "max_rule_size",
+                    "value": max_rule_size,
+                    "valid_range": [2, 3],
+                },
+            )
         if max_rule_size < 2:
             return self
 
@@ -1619,9 +1644,15 @@ class FactualExplanation(CalibratedExplanation):
                 )
         except RuntimeError as e:
             if "Agg" in str(e):
-                raise RuntimeError(
+                from ..core.exceptions import ConfigurationError
+                raise ConfigurationError(
                     "Matplotlib backend 'Agg' does not support show(). "
-                    "Either set show=False or switch to a different backend."
+                    "Either set show=False or switch to a different backend.",
+                    details={
+                        "backend": "Agg",
+                        "operation": "show()",
+                        "solution": "set show=False or use interactive backend",
+                    },
                 ) from e
             raise  # core-only test runs do not fail when visualization extras are
             # unavailable. Tests that require viz should use pytest.importorskip.
@@ -2233,7 +2264,15 @@ class AlternativeExplanation(CalibratedExplanation):
             Returns a self reference, to allow for method chaining
         """
         if max_rule_size >= 4:
-            raise ValueError("max_rule_size must be 2 or 3")
+            from ..core.exceptions import ConfigurationError
+            raise ConfigurationError(
+                "max_rule_size must be 2 or 3",
+                details={
+                    "param": "max_rule_size",
+                    "value": max_rule_size,
+                    "valid_range": [2, 3],
+                },
+            )
         if max_rule_size < 2:
             return self
 

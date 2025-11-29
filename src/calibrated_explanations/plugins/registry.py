@@ -193,7 +193,15 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
     checksum_value = checksum.get("sha256") if isinstance(checksum, Mapping) else checksum
 
     if not isinstance(checksum_value, str):
-        raise ValueError("plugin_meta['checksum'] must be a string or mapping with 'sha256'")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "plugin_meta['checksum'] must be a string or mapping with 'sha256'",
+            details={
+                "param": "checksum",
+                "expected_type": "str | Mapping with 'sha256' key",
+                "actual_type": type(checksum_value).__name__,
+            },
+        )
 
     checksum_value = checksum_value.lower()
     module_file = _resolve_plugin_module_file(plugin)
@@ -219,7 +227,16 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
 
     digest = hashlib.sha256(data).hexdigest()
     if digest != checksum_value:
-        raise ValueError(f"Checksum mismatch for plugin '{meta.get('name', '<unknown>')}'.")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"Checksum mismatch for plugin '{meta.get('name', '<unknown>')}'.",
+            details={
+                "param": "checksum",
+                "expected": checksum_value,
+                "actual": digest,
+                "plugin": str(meta.get('name', '<unknown>')),
+            },
+        )
 
 
 _EXPLANATION_PROTOCOL_VERSION = 1
@@ -243,25 +260,57 @@ def _ensure_sequence(
 ) -> Tuple[str, ...]:
     """Validate a metadata field is a sequence of strings."""
     if key not in meta:
-        raise ValueError(f"plugin_meta missing required key: {key}")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"plugin_meta missing required key: {key}",
+            details={"param": key, "section": "plugin_meta"},
+        )
     value = meta[key]
     if isinstance(value, str) or not isinstance(value, Iterable):
-        raise ValueError(f"plugin_meta[{key!r}] must be a sequence of strings")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"plugin_meta[{key!r}] must be a sequence of strings",
+            details={
+                "param": key,
+                "expected_type": "Iterable[str]",
+                "actual_type": type(value).__name__,
+            },
+        )
 
     collected: List[str] = []
     for item in value:
         if not isinstance(item, str):
-            raise ValueError(f"plugin_meta[{key!r}] must contain only string values")
+            from ..core.exceptions import ValidationError
+            raise ValidationError(
+                f"plugin_meta[{key!r}] must contain only string values",
+                details={
+                    "param": key,
+                    "invalid_item_type": type(item).__name__,
+                    "expected": "str",
+                },
+            )
         collected.append(item)
 
     if not collected and not allow_empty:
-        raise ValueError(f"plugin_meta[{key!r}] must not be empty")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"plugin_meta[{key!r}] must not be empty",
+            details={"param": key, "allow_empty": False},
+        )
 
     if allowed is not None:
         allowed_set = set(allowed)
         unknown = sorted(set(collected) - allowed_set)
         if unknown:
-            raise ValueError(f"plugin_meta[{key!r}] has unsupported values: {', '.join(unknown)}")
+            from ..core.exceptions import ValidationError
+            raise ValidationError(
+                f"plugin_meta[{key!r}] has unsupported values: {', '.join(unknown)}",
+                details={
+                    "param": key,
+                    "allowed_values": sorted(allowed_set),
+                    "unsupported_values": unknown,
+                },
+            )
 
     return tuple(collected)
 
@@ -284,14 +333,34 @@ def _coerce_string_collection(
         collected: List[str] = []
         for item in value:
             if not isinstance(item, str):
-                raise ValueError(f"plugin_meta[{key!r}] must contain only string values")
+                from ..core.exceptions import ValidationError
+                raise ValidationError(
+                    f"plugin_meta[{key!r}] must contain only string values",
+                    details={
+                        "param": key,
+                        "invalid_item_type": type(item).__name__,
+                        "expected": "str",
+                    },
+                )
             collected.append(item)
         result = tuple(collected)
     else:
-        raise ValueError(f"plugin_meta[{key!r}] must be a string or sequence of strings")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"plugin_meta[{key!r}] must be a string or sequence of strings",
+            details={
+                "param": key,
+                "expected_types": "str | Iterable[str]",
+                "actual_type": type(value).__name__,
+            },
+        )
 
     if not result and not allow_empty:
-        raise ValueError(f"plugin_meta[{key!r}] must not be empty")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"plugin_meta[{key!r}] must not be empty",
+            details={"param": key, "allow_empty": False},
+        )
     return result
 
 
@@ -306,7 +375,11 @@ def _normalise_dependency_field(
     if key not in meta:
         if optional:
             return None
-        raise ValueError(f"plugin_meta missing required key: {key}")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"plugin_meta missing required key: {key}",
+            details={"param": key, "section": "plugin_meta", "optional": optional},
+        )
 
     value = meta[key]
     normalised = _coerce_string_collection(value, key=key, allow_empty=allow_empty)
@@ -318,12 +391,24 @@ def _normalise_tasks(meta: Dict[str, Any]) -> Tuple[str, ...]:
     """Validate the tasks field for explanation plugins."""
     allowed_tasks = {"classification", "regression", "both"}
     if "tasks" not in meta:
-        raise ValueError("plugin_meta missing required key: tasks")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "plugin_meta missing required key: tasks",
+            details={"param": "tasks", "section": "plugin_meta"},
+        )
     tasks_value = meta["tasks"]
     tasks = _coerce_string_collection(tasks_value, key="tasks")
     unknown = sorted(set(tasks) - allowed_tasks)
     if unknown:
-        raise ValueError("plugin_meta['tasks'] has unsupported values: " + ", ".join(unknown))
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "plugin_meta['tasks'] has unsupported values: " + ", ".join(unknown),
+            details={
+                "param": "tasks",
+                "allowed_values": sorted(allowed_tasks),
+                "unsupported_values": unknown,
+            },
+        )
     meta["tasks"] = tasks
     return tasks
 
@@ -334,9 +419,15 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
         meta = dict(meta)
     schema_version = meta.get("schema_version")
     if isinstance(schema_version, int) and schema_version > _EXPLANATION_PROTOCOL_VERSION:
-        raise ValueError(
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
             "explanation plugin declares unsupported schema_version "
-            f"{schema_version}; runtime supports {_EXPLANATION_PROTOCOL_VERSION}"
+            f"{schema_version}; runtime supports {_EXPLANATION_PROTOCOL_VERSION}",
+            details={
+                "param": "schema_version",
+                "plugin_declares": schema_version,
+                "runtime_supports": _EXPLANATION_PROTOCOL_VERSION,
+            },
         )
 
     allowed_modes = set(_EXPLANATION_VALID_MODES) | set(_EXPLANATION_MODE_ALIASES)
@@ -354,12 +445,24 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
                 stacklevel=3,
             )
         if canonical not in _EXPLANATION_VALID_MODES:
-            raise ValueError(f"plugin_meta['modes'] has unsupported values: {canonical}")
+            from ..core.exceptions import ValidationError
+            raise ValidationError(
+                f"plugin_meta['modes'] has unsupported values: {canonical}",
+                details={
+                    "param": "modes",
+                    "allowed_values": sorted(_EXPLANATION_VALID_MODES),
+                    "unsupported_value": canonical,
+                },
+            )
         if canonical not in seen:
             seen.add(canonical)
             normalised_modes.append(canonical)
     if not normalised_modes:
-        raise ValueError("explanation plugin must declare at least one mode")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "explanation plugin must declare at least one mode",
+            details={"param": "modes", "required": True},
+        )
     meta["modes"] = tuple(normalised_modes)
 
     meta["capabilities"] = _ensure_sequence(meta, "capabilities", allow_empty=False)
@@ -373,28 +476,53 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
         if "trusted" in meta:
             meta["trust"] = meta["trusted"]
         else:
-            raise ValueError("plugin_meta missing required key: trust")
+            from ..core.exceptions import ValidationError
+            raise ValidationError(
+                "plugin_meta missing required key: trust",
+                details={"param": "trust", "section": "plugin_meta"},
+            )
     return meta
 
 
 def _ensure_bool(meta: Mapping[str, Any], key: str) -> bool:
     """Return *key* from *meta* ensuring it is a boolean."""
     if key not in meta:
-        raise ValueError(f"plugin_meta missing required key: {key}")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"plugin_meta missing required key: {key}",
+            details={"param": key, "section": "plugin_meta"},
+        )
     value = meta[key]
     if isinstance(value, bool):
         return value
-    raise ValueError(f"plugin_meta[{key!r}] must be a boolean")
+    from ..core.exceptions import ValidationError
+    raise ValidationError(
+        f"plugin_meta[{key!r}] must be a boolean",
+        details={"param": key, "expected_type": "bool", "actual_type": type(value).__name__},
+    )
 
 
 def _ensure_string(meta: Mapping[str, Any], key: str) -> str:
     """Return *key* from *meta* ensuring it is a string."""
     if key not in meta:
-        raise ValueError(f"plugin_meta missing required key: {key}")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            f"plugin_meta missing required key: {key}",
+            details={"param": key, "section": "plugin_meta"},
+        )
     value = meta[key]
     if isinstance(value, str) and value:
         return value
-    raise ValueError(f"plugin_meta[{key!r}] must be a non-empty string")
+    from ..core.exceptions import ValidationError
+    raise ValidationError(
+        f"plugin_meta[{key!r}] must be a non-empty string",
+        details={
+            "param": key,
+            "expected_type": "str",
+            "expected_empty": False,
+            "actual_type": type(value).__name__,
+        },
+    )
 
 
 def validate_interval_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -405,7 +533,11 @@ def validate_interval_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
         allowed={"classification", "regression"},
     )
     if not modes:
-        raise ValueError("interval plugin must declare at least one mode")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "interval plugin must declare at least one mode",
+            details={"param": "modes", "required": True},
+        )
 
     _ensure_sequence(meta, "capabilities", allow_empty=False)
     _validate_dependencies(meta)
@@ -417,7 +549,11 @@ def validate_interval_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
     # Trust must be explicitly present; interval metadata should not infer it
     # solely from 'trusted' when the 'trust' key is missing.
     if "trust" not in meta:
-        raise ValueError("plugin_meta missing required key: trust")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "plugin_meta missing required key: trust",
+            details={"param": "trust", "section": "plugin_meta"},
+        )
     # Reconcile trust/trusted to be consistent, mutating in place when possible
     declared_trust = _normalise_trust(meta)
     if isinstance(meta, dict):
@@ -475,11 +611,27 @@ def validate_plot_style_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]:
             normalised: list[str] = []
             for item in fallbacks:
                 if not isinstance(item, str) or not item:
-                    raise ValueError("plugin_meta['fallbacks'] must contain non-empty strings")
+                    from ..core.exceptions import ValidationError
+                    raise ValidationError(
+                        "plugin_meta['fallbacks'] must contain non-empty strings",
+                        details={
+                            "param": "fallbacks",
+                            "requirement": "non-empty strings",
+                            "invalid_item_type": type(item).__name__,
+                        },
+                    )
                 normalised.append(item)
             fallbacks = tuple(normalised)
         else:
-            raise ValueError("plugin_meta['fallbacks'] must be a string or sequence of strings")
+            from ..core.exceptions import ValidationError
+            raise ValidationError(
+                "plugin_meta['fallbacks'] must be a string or sequence of strings",
+                details={
+                    "param": "fallbacks",
+                    "expected_types": "str | Iterable[str]",
+                    "actual_type": type(fallbacks).__name__,
+                },
+            )
     else:
         fallbacks = ()
     meta = dict(meta)
@@ -645,10 +797,23 @@ def register_explanation_plugin(
 ) -> ExplanationPluginDescriptor:
     """Register an explanation plugin under the given identifier."""
     if not isinstance(identifier, str) or not identifier:
-        raise ValueError("identifier must be a non-empty string")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "identifier must be a non-empty string",
+            details={
+                "param": "identifier",
+                "expected_type": "str",
+                "expected_empty": False,
+                "actual_type": type(identifier).__name__,
+            },
+        )
     raw_meta = metadata or getattr(plugin, "plugin_meta", None)
     if raw_meta is None:
-        raise ValueError("plugin must expose plugin_meta metadata")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "plugin must expose plugin_meta metadata",
+            details={"param": "plugin", "required_attribute": "plugin_meta"},
+        )
     meta: Dict[str, Any] = dict(raw_meta)
     validate_plugin_meta(meta)
     meta = validate_explanation_metadata(meta)
@@ -706,10 +871,23 @@ def register_interval_plugin(
 ) -> IntervalPluginDescriptor:
     """Register an interval plugin descriptor."""
     if not isinstance(identifier, str) or not identifier:
-        raise ValueError("identifier must be a non-empty string")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "identifier must be a non-empty string",
+            details={
+                "param": "identifier",
+                "expected_type": "str",
+                "expected_empty": False,
+                "actual_type": type(identifier).__name__,
+            },
+        )
     raw_meta = metadata or getattr(plugin, "plugin_meta", None)
     if raw_meta is None:
-        raise ValueError("plugin must expose plugin_meta metadata")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "plugin must expose plugin_meta metadata",
+            details={"param": "plugin", "required_attribute": "plugin_meta"},
+        )
     meta: Dict[str, Any] = dict(raw_meta)
     validate_plugin_meta(meta)
     validate_interval_metadata(meta)
@@ -761,10 +939,23 @@ def register_plot_builder(
 ) -> PlotBuilderDescriptor:
     """Register a plot builder under *identifier*."""
     if not isinstance(identifier, str) or not identifier:
-        raise ValueError("identifier must be a non-empty string")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "identifier must be a non-empty string",
+            details={
+                "param": "identifier",
+                "expected_type": "str",
+                "expected_empty": False,
+                "actual_type": type(identifier).__name__,
+            },
+        )
     raw_meta = metadata or getattr(builder, "plugin_meta", None)
     if raw_meta is None:
-        raise ValueError("builder must expose plugin_meta metadata")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "builder must expose plugin_meta metadata",
+            details={"param": "builder", "required_attribute": "plugin_meta"},
+        )
     meta: Dict[str, Any] = dict(raw_meta)
     validate_plugin_meta(meta)
     validate_plot_builder_metadata(meta)
@@ -797,10 +988,23 @@ def register_plot_renderer(
 ) -> PlotRendererDescriptor:
     """Register a plot renderer under *identifier*."""
     if not isinstance(identifier, str) or not identifier:
-        raise ValueError("identifier must be a non-empty string")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "identifier must be a non-empty string",
+            details={
+                "param": "identifier",
+                "expected_type": "str",
+                "expected_empty": False,
+                "actual_type": type(identifier).__name__,
+            },
+        )
     raw_meta = metadata or getattr(renderer, "plugin_meta", None)
     if raw_meta is None:
-        raise ValueError("renderer must expose plugin_meta metadata")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "renderer must expose plugin_meta metadata",
+            details={"param": "renderer", "required_attribute": "plugin_meta"},
+        )
     meta: Dict[str, Any] = dict(raw_meta)
     validate_plugin_meta(meta)
     validate_plot_renderer_metadata(meta)
@@ -832,9 +1036,22 @@ def register_plot_style(
 ) -> PlotStyleDescriptor:
     """Register a style entry that maps to builder and renderer identifiers."""
     if not isinstance(identifier, str) or not identifier:
-        raise ValueError("identifier must be a non-empty string")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "identifier must be a non-empty string",
+            details={
+                "param": "identifier",
+                "expected_type": "str",
+                "expected_empty": False,
+                "actual_type": type(identifier).__name__,
+            },
+        )
     if metadata is None:
-        raise ValueError("metadata is required for style registration")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "metadata is required for style registration",
+            details={"param": "metadata", "required": True},
+        )
     meta: Dict[str, Any] = dict(metadata)
     validate_plot_style_metadata(meta)
     if meta.get("style") != identifier:
@@ -1267,7 +1484,11 @@ def register(plugin: ExplainerPlugin) -> None:
     """
     raw_meta = getattr(plugin, "plugin_meta", None)
     if raw_meta is None:
-        raise ValueError("plugin must expose plugin_meta metadata")
+        from ..core.exceptions import ValidationError
+        raise ValidationError(
+            "plugin must expose plugin_meta metadata",
+            details={"param": "plugin", "required_attribute": "plugin_meta"},
+        )
     meta: Dict[str, Any] = dict(raw_meta)
     validate_plugin_meta(meta)
     trusted = _should_trust(meta)
@@ -1353,7 +1574,10 @@ def trust_plugin(plugin: ExplainerPlugin | str) -> None:
     if isinstance(plugin, str):
         plugin = _resolve_plugin_from_name(plugin)
     if plugin not in _REGISTRY:
-        raise ValueError("Plugin must be registered before it can be trusted")
+        raise ValidationError(
+            "Plugin must be registered before it can be trusted",
+            details={"param": "plugin", "requirement": "must be registered"},
+        )
     raw_meta = getattr(plugin, "plugin_meta", None)
     meta: Dict[str, Any] = dict(raw_meta)
     validate_plugin_meta(meta)

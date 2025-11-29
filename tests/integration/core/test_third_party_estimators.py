@@ -114,6 +114,8 @@ def test_lightgbm_classifier_basic_integration():
         subsample=0.9,
         colsample_bytree=0.9,
         random_state=42,
+        n_jobs=1,
+        force_col_wise=True,
     )
     clf.fit(x_train, y_train)
 

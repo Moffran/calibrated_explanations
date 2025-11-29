@@ -26,10 +26,15 @@ except ImportError:
 
 def load_template_file(filepath: str) -> Dict[str, Any]:
     """Load template file - supports both JSON and YAML formats."""
+    from .exceptions import SerializationError
+
     path = Path(filepath)
 
     if not path.exists():
-        raise FileNotFoundError(f"Template file not found: {filepath}")
+        raise SerializationError(
+            f"Template file not found: {filepath}",
+            details={"filepath": filepath, "reason": "file_not_found"},
+        )
 
     extension = path.suffix.lower()
 
@@ -38,24 +43,40 @@ def load_template_file(filepath: str) -> Dict[str, Any]:
             with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse JSON template: {e}") from e
+            raise SerializationError(
+                f"Failed to parse JSON template: {e}",
+                details={"filepath": filepath, "format": "json", "error": str(e)},
+            ) from e
 
     elif extension in (".yaml", ".yml"):
         if yaml is None:
-            raise ValueError(
+            raise SerializationError(
                 f"Cannot load YAML file '{filepath}' - PyYAML not installed. "
-                "Install with: pip install pyyaml"
+                "Install with: pip install pyyaml",
+                details={
+                    "filepath": filepath,
+                    "format": "yaml",
+                    "reason": "yaml_not_installed",
+                },
             )
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
         except yaml.YAMLError as e:
-            raise ValueError(f"Failed to parse YAML template: {e}") from e
+            raise SerializationError(
+                f"Failed to parse YAML template: {e}",
+                details={"filepath": filepath, "format": "yaml", "error": str(e)},
+            ) from e
 
     else:
-        raise ValueError(
+        raise SerializationError(
             f"Unsupported template file format: {extension}. "
-            "Supported formats: .json, .yaml, .yml"
+            "Supported formats: .json, .yaml, .yml",
+            details={
+                "filepath": filepath,
+                "format": extension,
+                "supported": [".json", ".yaml", ".yml"],
+            },
         )
 
 
@@ -162,8 +183,13 @@ class NarrativeGenerator:
         feature_names: Optional[List[str]] = None,
     ) -> str:
         """Generate narrative for a single explanation."""
+        from .exceptions import ValidationError
+
         if self.templates is None:
-            raise ValueError("Templates not loaded. Call load_templates() first.")
+            raise ValidationError(
+                "Templates not loaded. Call load_templates() first.",
+                details={"state": "uninitialized", "required_method": "load_templates"},
+            )
 
         # Get rules from explanation
         if hasattr(explanation, "get_rules"):
@@ -171,7 +197,14 @@ class NarrativeGenerator:
         elif hasattr(explanation, "_get_rules"):
             rules_dict = explanation._get_rules()
         else:
-            raise AttributeError("Explanation has no get_rules method")
+            raise ValidationError(
+                "Explanation has no get_rules method",
+                details={
+                    "param": "explanation",
+                    "required_method": "get_rules",
+                    "type": type(explanation).__name__,
+                },
+            )
 
         # Extract base prediction values
         bp = _first_or_none(rules_dict.get("base_predict"))

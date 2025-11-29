@@ -128,26 +128,44 @@ class NarrativePlotPlugin:
         valid_levels = {"beginner", "intermediate", "advanced"}
         if isinstance(expertise_level, str):
             if expertise_level not in valid_levels:
-                raise ValueError(
+                from ..core.exceptions import ValidationError
+                raise ValidationError(
                     f"Invalid expertise level: {expertise_level}. "
-                    f"Valid levels: {', '.join(sorted(valid_levels))}"
+                    f"Valid levels: {', '.join(sorted(valid_levels))}",
+                    details={
+                        "param": "expertise_level",
+                        "value": expertise_level,
+                        "allowed_values": sorted(valid_levels),
+                    },
                 )
             levels = (expertise_level,)
         else:
             levels = tuple(expertise_level)
             invalid = [lv for lv in levels if lv not in valid_levels]
             if invalid:
-                raise ValueError(
+                from ..core.exceptions import ValidationError
+                raise ValidationError(
                     f"Invalid expertise level(s): {', '.join(invalid)}. "
-                    f"Valid levels: {', '.join(sorted(valid_levels))}"
+                    f"Valid levels: {', '.join(sorted(valid_levels))}",
+                    details={
+                        "param": "expertise_level",
+                        "invalid_values": invalid,
+                        "allowed_values": sorted(valid_levels),
+                    },
                 )
 
         # Validate output format
         valid_outputs = {"dataframe", "text", "html", "dict"}
         if output not in valid_outputs:
-            raise ValueError(
+            from ..core.exceptions import ValidationError
+            raise ValidationError(
                 f"Invalid output format: {output}. "
-                f"Valid formats: {', '.join(sorted(valid_outputs))}"
+                f"Valid formats: {', '.join(sorted(valid_outputs))}",
+                details={
+                    "param": "output",
+                    "value": output,
+                    "allowed_values": sorted(valid_outputs),
+                },
             )
 
         # Check pandas availability for dataframe output
@@ -333,7 +351,15 @@ class NarrativePlotPlugin:
             return self._format_as_html(results)
 
         # Should not reach here due to validation
-        raise ValueError(f"Unsupported output format: {output_format}")
+        from ..core.exceptions import ConfigurationError
+        raise ConfigurationError(
+            f"Unsupported output format: {output_format}",
+            details={
+                "param": "output_format",
+                "value": output_format,
+                "allowed_values": ["dataframe", "text", "html", "dict"],
+            },
+        )
 
     def _format_as_text(self, results: List[Dict[str, Any]]) -> str:
         """Format results as plain text.
