@@ -29,7 +29,7 @@ Define top-level internal packages (initial):
 - `calibrated_explanations.viz`: Visualization abstractions (future ADR-007).
 - `calibrated_explanations.utils`: Non-domain helpers (logging, hashing, config parsing) — keep lean.
 
-Public API consolidation via `calibrated_explanations.__init__` re-exporting stable entry points only (factories, dataclasses, high-level run functions). Everything else treated as private (leading underscore or omitted from `__all__`).
+Public API consolidation via `calibrated_explanations.__init__` re-exporting stable entry points only (`CalibratedExplainer`, `WrapCalibratedExplainer`, factories, dataclasses, high-level run functions). Everything else treated as private (leading underscore or omitted from `__all__`).
 
 Rules:
 

@@ -249,6 +249,7 @@ in `calibrated_explanations.parallel`. This wrapper approach is now reflected in
 
 ### ADR-026 – Explanation Plugin Semantics
 
+- **`explain` method remains public** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. Internalise `CalibratedExplainer.explain` (e.g. rename to `_explain` or move to internal module) to enforce the facade pattern.
 - **Predict bridge skips interval invariant checks** (severity 15, critical) → `v0.10.0 runtime boundary realignment`. Add invariant checks and tests. *Status 2025-11-04: Calibration contract and validation requirements clarified in ADR-026 subsections 2a/2b/3a/3b.*
 - **Explanation context exposes mutable dicts** (severity 12, high) → `v0.10.2 plugin trust & packaging compliance`. Return frozen contexts to plugins. *Status 2025-11-04: Frozen context requirement clarified in ADR-026 subsection 1.*
 - **Telemetry omits interval dependency hints** (severity 6, medium) → `v0.10.2 plugin trust & packaging compliance`. Extend telemetry payloads with dependency hints.
@@ -388,7 +389,7 @@ Release gate: Deprecation dashboard live, docs CI runs with notebook execution, 
 3. Complete ADR-003 caching deliverables: add invalidation/flush hooks, cache the mandated artefacts, emit telemetry, and align the backend with the cachetools+pympler stack or update the ADR rationale.【F:improvement_docs/ADR-gap-analysis.md†L54-L58】
 4. Implement ADR-004’s parallel execution backlog—auto strategy heuristics, telemetry with timings/utilisation, context management and cancellation, configuration surfaces, resource guardrails, fallback warnings, and automated benchmarking.【F:improvement_docs/ADR-gap-analysis.md†L64-L71】 Track deliverables in [Parallel Execution Improvement Plan – Phases 2–5](parallel_execution_improvement_plan.md#phase-2--executor--plugin-refactor-week-58).
 5. Enforce interval safety across bridges and exports to resolve ADR-021 and the ADR-015 predict-bridge gap, ensuring invariants, probability cubes, and serialization policies are honoured.【F:improvement_docs/ADR-gap-analysis.md†L239-L241】【F:improvement_docs/ADR-gap-analysis.md†L179-L182】
-6. Align runtime plugin semantics with ADR-026 by adding invariant checks, hardening contexts, and extending telemetry payloads.【F:improvement_docs/ADR-gap-analysis.md†L280-L282】
+6. Align runtime plugin semantics with ADR-026 by adding invariant checks, hardening contexts, and extending telemetry payloads. Also internalise `CalibratedExplainer.explain` to reinforce the facade pattern and prevent public access.【F:improvement_docs/ADR-gap-analysis.md†L280-L282】
 7. Remove deprecated backward-compatibility alias `_is_thresholded()` from `CalibratedExplanations` class (superseded by `_is_probabilistic_regression()` in v0.9.0). Update any remaining external code or documentation that may reference the old method name. This completes the terminology standardization cycle from ADR-021.【F:improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md†L119-L159】【F:TERMINOLOGY_ANALYSIS_THRESHOLDED_VS_PROBABILISTIC_REGRESSION.md†L1-L720】
 
 Release gate: Package boundaries, validation/caching/parallel tests, interval invariants, terminology cleanup, and updated ADR status notes all green with telemetry dashboards verifying the new signals.【F:improvement_docs/ADR-gap-analysis.md†L33-L282】

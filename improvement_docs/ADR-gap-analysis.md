@@ -282,10 +282,11 @@ boundaries. ADR-004 now documents this expectation.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Predict bridge skips interval invariant checks | 5 | 3 | 15 | `_PredictBridgeMonitor` never enforces `low ≤ predict ≤ high`, letting malformed intervals through. **STATUS 2025-11-04 (CRITICAL): Calibration contract and validation requirements clarified in ADR-026 subsections 2a/2b/3a/3b; enforcement remains for v0.10.0.** |
-| 2 | Explanation context exposes mutable dicts | 4 | 3 | 12 | Context builder embeds plain dicts despite the frozen contract, enabling plugin-side mutation. **STATUS 2025-11-04: Frozen context requirement clarified in ADR-026 subsection 1; enforcement remains.** |
-| 3 | Telemetry omits interval dependency hints | 3 | 2 | 6 | Batch telemetry drops `interval_dependencies`, reducing observability. |
-| 4 | Mondrian bins left mutable in requests | 2 | 2 | 4 | `ExplanationRequest` stores caller-supplied bins verbatim, violating the immutability promise. |
+| 1 | `explain` method remains public | 5 | 4 | 20 | `CalibratedExplainer.explain` is exposed as a public method, but ADR-026 defines it as an internal orchestration primitive that must not be invoked directly. |
+| 2 | Predict bridge skips interval invariant checks | 5 | 3 | 15 | `_PredictBridgeMonitor` never enforces `low ≤ predict ≤ high`, letting malformed intervals through. **STATUS 2025-11-04 (CRITICAL): Calibration contract and validation requirements clarified in ADR-026 subsections 2a/2b/3a/3b; enforcement remains for v0.10.0.** |
+| 3 | Explanation context exposes mutable dicts | 4 | 3 | 12 | Context builder embeds plain dicts despite the frozen contract, enabling plugin-side mutation. **STATUS 2025-11-04: Frozen context requirement clarified in ADR-026 subsection 1; enforcement remains.** |
+| 4 | Telemetry omits interval dependency hints | 3 | 2 | 6 | Batch telemetry drops `interval_dependencies`, reducing observability. |
+| 5 | Mondrian bins left mutable in requests | 2 | 2 | 4 | `ExplanationRequest` stores caller-supplied bins verbatim, violating the immutability promise. |
 
 ## ADR-027 – Documentation Standard (Audience Hubs)
 
