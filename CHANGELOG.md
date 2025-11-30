@@ -108,7 +108,11 @@
   - **Stage 3 — Public API Narrowing:** ✅ Unsanctioned symbols (13) now emit DeprecationWarning; API locked to 3 sanctioned entry points for v0.11.0
   - **Stage 4 — Namespace Documentation:** ✅ All namespaces classified with rationale, deprecation timelines, and migration paths
   - **Stage 5 — Import Graph Linting:** ✅ AST-based static analyzer detects violations; 17 enforcement tests; CI-ready with baseline (89 violations; ~60 TYPE_CHECKING false positives)
-
+- **Implemented "Allow-list" strategy for package boundaries** (Phase 1 of ADR-001 Gap Closure)
+  - **Updated Linter**: `scripts/check_import_graph.py` now enforces a strict allow-list of cross-sibling imports.
+  - **Defined Exceptions**: Created `improvement_docs/adr mending/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` documenting the 6 allowed architectural patterns (Exception Hierarchy, Orchestrator, Interfaces, Shared Utils, Visualization, Legacy).
+  - **Reduced Violations**: False positive violations reduced from 153 to 73. Remaining violations are true positives targeted for Phase 2 refactoring.
+  - **Impact**: CI will now fail on *new* unauthorized cross-sibling imports, preventing architectural drift.
 
 ## [v0.9.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.1) - 2025-11-27
 

@@ -56,32 +56,42 @@ class BoundaryConfig:
     
     # Intentional cross-sibling imports (allowed exceptions)
     # Format: (from_package, to_package) → [allowed_module_paths]
+    # See improvement_docs/ADR-001-EXCEPTIONS-AND-CONTRACTS.md for rationale
     allowed_cross_sibling: Dict[Tuple[str, str], List[str]] = field(default_factory=lambda: {
-        # core can import from utils and schema (domain models, validation)
-        ('core', 'utils'): [],  # All utils allowed
-        ('core', 'schema'): [],  # All schema allowed
-        ('core', 'api'): [],  # Parameter validation facade
+        # --- Pattern 1: Exception Hierarchy (ADR-002) ---
+        # Core defines base exceptions used by everyone
+        ('*', 'core'): ['calibrated_explanations.core.exceptions'],
+
+        # --- Pattern 2: Orchestrator Pattern (ADR-001) ---
+        # Explanations orchestrates calibration and core
+        ('explanations', 'calibration'): [],
+        ('explanations', 'core'): [],
         
-        # All packages can import from utils
+        # --- Pattern 3: Interface/Protocol Definition ---
+        # Plugins implement interfaces defined in core
+        ('plugins', 'core'): ['calibrated_explanations.core.interfaces'],
+        
+        # --- Pattern 4: Shared Utilities & Schema ---
+        # Everyone can use utils and schema
         ('*', 'utils'): [],
-        
-        # All packages can import from schema
         ('*', 'schema'): [],
         
-        # Temporary shims (post-Stage 1b)
-        ('perf', 'cache'): [],  # perf re-exports cache
-        ('perf', 'parallel'): [],  # perf re-exports parallel
-        
-        # Integrations can import from explanations (adapters)
-        ('integrations', 'explanations'): [],
-        ('integrations', 'core'): [],
-        
-        # Legacy compatibility (will be removed v2.0.0)
-        ('legacy', '*'): [],
-        
-        # Visualization can import from explanations
+        # --- Pattern 5: Visualization Layer ---
+        # Viz needs to understand what it is visualizing
         ('viz', 'explanations'): [],
         ('viz', 'core'): [],
+        
+        # --- Pattern 6: Legacy & Backward Compatibility ---
+        # Legacy code is allowed to break rules until v2.0
+        ('legacy', '*'): [],
+        
+        # --- Specific Module Allowances (Granular) ---
+        # Core uses API for parameter validation (Facade)
+        ('core', 'api'): [], 
+        
+        # Integrations adapters
+        ('integrations', 'explanations'): [],
+        ('integrations', 'core'): [],
     })
     
     # Packages that cannot import from each other

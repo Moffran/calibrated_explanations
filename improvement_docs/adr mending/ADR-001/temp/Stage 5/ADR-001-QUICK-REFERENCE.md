@@ -84,7 +84,7 @@
 
 **Recommendation**: **YES for now → revisit in v0.11.0 if packaging goals require split**
 
-**Decision**: `core.calibrated_explainer` is a thin delegator and the main entrance point. 
+**Decision**: `core.calibrated_explainer` is a thin delegator and the main entrance point. It should access the plugin manager which is the real orchestrator hub. So if possible, we retrict direct imports to just that.
 
 ---
 
@@ -98,6 +98,8 @@
 - ❌ NO (duplicate interfaces everywhere—not recommended)
 
 **Recommendation**: **YES → move to contracts in Phase 2**
+
+**Decision**: Yes. Move to contracts in Phase 2
 
 ---
 
