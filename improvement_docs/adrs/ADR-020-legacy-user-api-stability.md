@@ -38,6 +38,10 @@ Adopt a layered guardrail strategy that freezes the documented legacy API:
    confirm whether the legacy contract is affected. Any intentional API change
    requires updating the contract document and the signature tests in the same
    pull request.
+4. **Deprecation Policy Override.** The legacy API is exempt from the standard
+   two-minor-release deprecation policy (ADR-011). Removal or breaking changes
+   to legacy endpoints are permitted **only in major releases** and require a
+   formal decision record (ADR) approving the specific removal.
 
 ## Alternatives Considered
 

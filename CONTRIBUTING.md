@@ -10,6 +10,7 @@ This project follows a written release plan and Architecture Decision Records (A
 
 - Release Plan: see `improvement_docs/RELEASE_PLAN_v1.md`. It defines the remaining milestones and gates on the path to v1.0.0. Please align PRs with the current milestone and its scope.
 - ADRs: see `improvement_docs/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
+- Documentation: Follow [ADR-027](improvement_docs/adrs/ADR-027-documentation-standard.md) for all documentation structure and audience guidelines.
 
 Current highlights coming from reported issues and the release plan:
 

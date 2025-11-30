@@ -2,7 +2,9 @@
 
 # ADR-022: Documentation Information Architecture
 
-Status: Accepted
+> **Note:** This ADR has been superseded by [ADR-027](ADR-027-documentation-standard.md). Do not use for new documentation.
+
+Status: Superseded
 Date: 2025-10-12
 Deciders: Documentation Working Group
 Reviewers: Core maintainers

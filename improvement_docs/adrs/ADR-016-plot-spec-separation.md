@@ -10,7 +10,10 @@ The 0.5.x plotting stack mixed multiple responsibilities inside a handful of mat
 This update narrows the decision to the essential invariants needed for interoperability and clarifies how legacy rendering coexists with the PlotSpec pathway.
 
 ## Decision
-1. **Plot kinds and metadata**
+1. **General Standard for Adapters**
+   - This ADR serves as the authoritative standard for all visualization adapters (e.g., Plotly, HTML, etc.). Adapters must adhere to the semantic requirements defined here but are not bound by pixel-perfect parity with the legacy renderer unless explicitly stated.
+
+2. **Plot kinds and metadata**
    - `PlotSpec.kind` identifies the semantic plot type: `factual_probabilistic`, `alternative_probabilistic`, `factual_regression`, `alternative_regression`, `triangular`, `global_probabilistic`, `global_regression`. Additional kinds may be introduced as needed.
    - Each spec MUST include `mode` (`"classification" | "regression"`), optional `title`, and `feature_order` (list of indices used for the plot) when features are displayed.
    - Header/body layouts are optional but when present MUST use the dataclasses defined in `viz/plotspec.py` (`IntervalHeaderSpec`, `BarHPanelSpec`, `BarItem`).
