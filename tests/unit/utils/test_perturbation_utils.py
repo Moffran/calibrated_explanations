@@ -42,8 +42,9 @@ def test_perturb_dataset_uniform_with_seed():
 
 
 def test_perturb_dataset_invalid_noise_type():
+    from calibrated_explanations.core.exceptions import ValidationError
     x = np.array([[0.0], [1.0]])
     y = np.array([0.0, 1.0])
 
-    with pytest.raises(ValueError, match="Noise type must be either"):
+    with pytest.raises(ValidationError, match="Noise type must be either"):
         perturbation.perturb_dataset(x, y, noise_type="unknown")

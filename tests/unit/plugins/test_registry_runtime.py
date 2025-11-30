@@ -59,6 +59,8 @@ def test_verify_plugin_checksum_raises_on_mismatch(tmp_path, monkeypatch):
     module.__file__ = str(plugin_file)
     monkeypatch.setitem(sys.modules, module.__name__, module)
 
+    from calibrated_explanations.core.exceptions import ValidationError
+
     class Plugin:
         __module__ = module.__name__
         plugin_meta = {
@@ -70,5 +72,5 @@ def test_verify_plugin_checksum_raises_on_mismatch(tmp_path, monkeypatch):
             "checksum": {"sha256": "deadbeef"},
         }
 
-    with pytest.raises(ValueError, match="Checksum mismatch"):
+    with pytest.raises(ValidationError, match="Checksum mismatch"):
         registry._verify_plugin_checksum(Plugin(), Plugin.plugin_meta)

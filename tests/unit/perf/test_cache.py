@@ -17,7 +17,8 @@ from calibrated_explanations.cache.cache import (
 
 
 def test_lru_cache_rejects_invalid_limits() -> None:
-    with pytest.raises(ValueError):
+    from calibrated_explanations.core.exceptions import ValidationError
+    with pytest.raises(ValidationError):
         LRUCache(
             namespace="test",
             version="v1",
@@ -27,7 +28,7 @@ def test_lru_cache_rejects_invalid_limits() -> None:
             telemetry=None,
             size_estimator=lambda _: 1,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         LRUCache(
             namespace="test",
             version="v1",

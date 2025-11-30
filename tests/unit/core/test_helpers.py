@@ -99,8 +99,9 @@ def test_safe_isinstance_class_not_imported():
 
 def test_safe_isinstance_invalid_class_path():
     """Test safe_isinstance with an invalid class path string."""
+    from calibrated_explanations.core.exceptions import ValidationError
     model = RandomForestRegressor()
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValidationError) as excinfo:
         safe_isinstance(model, "InvalidClassPath")
         assert (
             "class_path_str must be a string or list of strings specifying a full module path to a class. Eg, 'sklearn.ensemble.RandomForestRegressor'"
@@ -265,16 +266,18 @@ def test_calculate_metrics_with_normalization():
 
 def test_calculate_metrics_invalid_weight():
     """Test calculate_metrics with an invalid weight."""
+    from calibrated_explanations.core.exceptions import ValidationError
     uncertainty = [0.1, 0.2, 0.3]
     prediction = [0.9, 0.8, 0.7]
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValidationError) as excinfo:
         calculate_metrics(uncertainty, prediction, w=1.5, metric="ensured")
     assert "The weight must be between -1 and 1." in str(excinfo.value)
 
 
 def test_calculate_metrics_missing_arguments():
     """Test calculate_metrics with missing uncertainty or prediction."""
-    with pytest.raises(ValueError) as excinfo:
+    from calibrated_explanations.core.exceptions import ValidationError
+    with pytest.raises(ValidationError) as excinfo:
         calculate_metrics(uncertainty=[0.1, 0.2, 0.3])
     assert (
         "Both uncertainty and prediction must be provided if any other argument is provided"

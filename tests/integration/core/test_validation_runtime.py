@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import sys
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.experimental import enable_hist_gradient_boosting  # noqa: F401
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -29,6 +30,11 @@ def test_calibrate_rejects_nans_in_calibration():
         w.calibrate(x_cal2, y_cal2)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="HistGradientBoostingClassifier.fit hangs indefinitely on Windows; upstream sklearn bug"
+)
+@pytest.mark.slow
 def test_predict_allows_nans_in_x_test_for_nan_tolerant_model():
     # HistGradientBoostingClassifier supports NaNs in x
     rng = np.random.RandomState(0)

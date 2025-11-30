@@ -448,6 +448,7 @@ def test_validate_explanation_batch_invalid_metadata_type() -> None:
     )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.core.exceptions import ValidationError
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
@@ -455,7 +456,7 @@ def test_validate_explanation_batch_invalid_metadata_type() -> None:
         instances=[],
         collection_metadata="not a mapping",
     )
-    with pytest.raises(TypeError, match="batch.collection_metadata must be a mutable mapping"):
+    with pytest.raises(ValidationError, match="batch.collection_metadata must be a mutable mapping"):
         validate_explanation_batch(batch)
 
 
@@ -466,6 +467,7 @@ def test_validate_explanation_batch_mode_mismatch() -> None:
     )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.core.exceptions import ValidationError
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
@@ -474,7 +476,7 @@ def test_validate_explanation_batch_mode_mismatch() -> None:
         collection_metadata={"mode": "alternative"},
     )
     with pytest.raises(
-        ValueError,
+        ValidationError,
         match="ExplanationBatch metadata reports mode 'alternative' but runtime expected 'factual'",
     ):
         validate_explanation_batch(batch, expected_mode="factual")
@@ -487,6 +489,7 @@ def test_validate_explanation_batch_task_mismatch() -> None:
     )
     from calibrated_explanations.explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.core.exceptions import ValidationError
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
@@ -495,7 +498,7 @@ def test_validate_explanation_batch_task_mismatch() -> None:
         collection_metadata={"task": "regression"},
     )
     with pytest.raises(
-        ValueError,
+        ValidationError,
         match="ExplanationBatch metadata reports task 'regression' but runtime expected 'classification'",
     ):
         validate_explanation_batch(batch, expected_task="classification")

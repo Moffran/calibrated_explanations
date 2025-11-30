@@ -73,10 +73,11 @@ def test_categorical_features_default_to_label_keys(explainer_factory):
 
 
 def test_require_plugin_manager_raises_when_missing(explainer_factory):
+    from calibrated_explanations.core.exceptions import NotFittedError
     explainer = _stub_explainer(explainer_factory)
     explainer._plugin_manager = None
 
-    with pytest.raises(RuntimeError, match="PluginManager is not initialized"):
+    with pytest.raises(NotFittedError, match="PluginManager is not initialized"):
         explainer._require_plugin_manager()
 
 

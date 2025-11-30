@@ -237,6 +237,7 @@ def test_plot_probabilistic_interval_requires_idx():
 
 def test_require_matplotlib_raises_when_import_failed(monkeypatch):
     """``__require_matplotlib`` should surface a readable error if ``plt`` is missing."""
+    from calibrated_explanations.core.exceptions import ConfigurationError
 
     monkeypatch.setattr(legacy_plotting, "plt", None)
     monkeypatch.setattr(
@@ -245,7 +246,7 @@ def test_require_matplotlib_raises_when_import_failed(monkeypatch):
         ImportError("backend failed"),
     )
 
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(ConfigurationError) as excinfo:
         legacy_plotting.__require_matplotlib()
 
     assert "backend failed" in str(excinfo.value)

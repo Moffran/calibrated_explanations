@@ -241,7 +241,8 @@ def test_perturb_dataset_gaussian_uses_provided_rng():
 
 
 def test_perturb_dataset_rejects_invalid_noise_type():
-    with pytest.raises(ValueError, match="Noise type must be either 'uniform' or 'gaussian'."):
+    from calibrated_explanations.core.exceptions import ValidationError
+    with pytest.raises(ValidationError, match="Noise type must be either 'uniform' or 'gaussian'."):
         perturb_dataset(
             np.array([[0.0]]),
             np.array([0.0]),

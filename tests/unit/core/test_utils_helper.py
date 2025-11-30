@@ -39,6 +39,7 @@ def test_make_directory_creates_expected_structure(tmp_path, monkeypatch):
 
 
 def test_safe_isinstance_variants(monkeypatch):
+    from calibrated_explanations.core.exceptions import ValidationError
     module_name = HelperExample.__module__
     assert helper.safe_isinstance(HelperExample(), f"{module_name}.HelperExample") is True
 
@@ -51,8 +52,8 @@ def test_safe_isinstance_variants(monkeypatch):
     # `None` input produces False without errors
     assert helper.safe_isinstance(HelperExample(), None) is False
 
-    # Missing dot raises ValueError
-    with pytest.raises(ValueError):
+    # Missing dot raises ValidationError
+    with pytest.raises(ValidationError):
         helper.safe_isinstance(HelperExample(), "notadottedpath")
 
 
@@ -153,6 +154,7 @@ def test_transform_to_numeric_with_and_without_mappings():
 
 
 def test_assert_threshold_handles_nested_structures():
+    from calibrated_explanations.core.exceptions import ValidationError
     assert helper.assert_threshold(0.5, [1, 2, 3]) == 0.5
     assert helper.assert_threshold((0.2, 0.8), [1, 2]) == (0.2, 0.8)
     assert helper.assert_threshold([0.1, 0.2], np.array([[1], [2]])) == [0.1, 0.2]
@@ -160,15 +162,16 @@ def test_assert_threshold_handles_nested_structures():
     thresholds = [(0.1, 0.9), (0.2, 0.8)]
     assert helper.assert_threshold(thresholds, np.array([[1], [2]])) == thresholds
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         helper.assert_threshold((0.1,), [1])
     with pytest.raises(AssertionError):
         helper.assert_threshold([0.1, 0.2, 0.3], [1, 2])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         helper.assert_threshold({1: 2}, [1])
 
 
 def test_calculate_metrics_behaviour():
+    from calibrated_explanations.core.exceptions import ValidationError
     assert helper.calculate_metrics() == ["ensured"]
 
     uncertainty = [0.2, 0.8]
@@ -188,10 +191,10 @@ def test_calculate_metrics_behaviour():
     expected_normalized = np.zeros_like(expected_ensured)
     assert np.allclose(normalized, expected_normalized)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         helper.calculate_metrics(uncertainty, None)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         helper.calculate_metrics(uncertainty, prediction, w=2)
 
 
