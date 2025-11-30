@@ -59,14 +59,14 @@ Alignment update: Parallel is treated as a shared service per ADR-001, with doma
 `ParallelExecutor` locally so heuristics and chunking live alongside the explain executors while the low-level executor remains
 in `calibrated_explanations.parallel`. This wrapper approach is now reflected in the execution code and ADR-004 notes.
 
-- **Workload-aware auto strategy absent** (severity 20, critical) → deferred to `v0.10.0 runtime boundary realignment`. The v0.9.1 plan introduces a conservative `ParallelFacade` to centralize selection heuristics and collect decision telemetry; the full `_auto_strategy` implementation will be revisited for v0.10 after field evidence is gathered.
-- **Telemetry lacks timings and utilisation metrics** (severity 20, critical) → phased: v0.9.1 will require compact decision telemetry (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type). Collection of per-task timings and worker utilisation is deferred to v0.10.
+- **Workload-aware auto strategy absent** (severity 20, critical) → deferred to `v0.10.0 runtime boundary realignment`. **PARTIAL:** `ParallelExecutor` facade implemented with basic `_auto_strategy` (OS/CPU based). Full workload-aware heuristics deferred to v0.10.
+- **Telemetry lacks timings and utilisation metrics** (severity 20, critical) → phased: v0.9.1 requires compact decision telemetry. **PARTIAL:** `ParallelMetrics` tracks counts but lacks timings/utilisation.
 - **Context management & cancellation missing** (severity 16, critical) → deferred to `v0.10.0 runtime boundary realignment`. v0.9.1 does not add cooperative cancellation but will document expectations.
-- **Configuration surface incomplete** (severity 12, high) → phased: add a small conservative config surface in v0.9.1 (min_features_for_parallel, min_instances_for_parallel, task_size_hint_bytes) exposed via the facade; richer flags like `force_serial_on_failure` and advanced injection hooks remain v0.10 scope.
-- **Resource guardrails ignore cgroup/CI limits** (severity 12, high) → deferred to `v0.10.0 runtime boundary realignment`. The facade will use conservative defaults to avoid oversubscription and expose overrides for CI/staging in v0.9.1.
-- **Fallback warnings not emitted** (severity 8, medium) → v0.9.1: the facade will emit structured decision telemetry and warn when it forces a serial fallback. Full structured warnings/telemetry integration will be extended in v0.10.
-- **Testing and benchmarking coverage limited** (severity 9, high) → v0.9.1: add unit tests for facade logic and a micro-benchmark harness (evaluation/parallel_ablation.py) for evidence-driven decisions; exhaustive lifecycle tests (spawn/fork/joblib) remain v0.10 work.
-- **Documentation for strategies & troubleshooting lacking** (severity 6, medium) → v0.9.1: ship minimal guidance for the facade (env var matrix, decision heuristics) and record the v0.10 plan in ADR notes.
+- **Configuration surface incomplete** (severity 12, high) → phased: add a small conservative config surface in v0.9.1. **PARTIAL:** `ParallelConfig` implemented but lacks `task_size_hint_bytes` and `force_serial_on_failure`.
+- **Resource guardrails ignore cgroup/CI limits** (severity 12, high) → deferred to `v0.10.0 runtime boundary realignment`. The facade uses `os.cpu_count()`; container awareness deferred.
+- **Fallback warnings not emitted** (severity 8, medium) → v0.9.1: the facade will emit structured decision telemetry. **PARTIAL:** Telemetry emitted, but user-facing warnings missing.
+- **Testing and benchmarking coverage limited** (severity 9, high) → v0.9.1: add unit tests for facade logic.
+- **Documentation for strategies & troubleshooting lacking** (severity 6, medium) → v0.9.1: ship minimal guidance for the facade.
 
 ### ADR-005 – Explanation Envelope & Schema
 
@@ -140,7 +140,7 @@ in `calibrated_explanations.parallel`. This wrapper approach is now reflected in
 | Repository-wide sweep of callsites | v0.9.1 | ✅ Representative | Representative callsites converted; remaining `warnings.warn` messages are runtime notices not deprecations.
 | Unit tests for helper | v0.9.1 | ✅ Done | `tests/unit/test_utils_deprecations.py` validates emission and error-mode behaviour.
 | Docs smoke/link check | v0.9.1 | ✅ Added | `tests/doc/test_deprecations_doc_smoke.py` validates the migration doc is present and basic links parse.
-| CI gating automation (two-minor-release enforcement) | v0.9.1 | ⏳ In progress | Requires CI workflow change; recommended follow-up PR to add workflow changes and governance hooks.
+| CI gating automation (two-minor-release enforcement) | v0.9.1 | ✅ Done | `deprecation-check.yml` enforces `CE_DEPRECATIONS=error`. |
 
 ### ADR-012 – Documentation & Gallery Build Policy
 
@@ -224,7 +224,7 @@ in `calibrated_explanations.parallel`. This wrapper approach is now reflected in
 
 ### ADR-022 – Documentation Information Architecture
 
-- **Seven-section navigation not implemented** (severity 20, critical) → `v0.9.0 documentation realignment`. Complete navigation restructure per IA plan.
+- **Seven-section navigation not implemented** (severity 20, critical) → `v0.9.0 documentation realignment`. **COMPLETED.** Navigation restructured with audience hubs.
 - **“Extending the library” lane missing** (severity 12, high) → `v0.9.0 documentation realignment`. Ship contributor/extension lane in navigation.
 - **Telemetry concept page lacks substance** (severity 8, medium) → `v0.9.0 documentation realignment`. Flesh out telemetry concept content.
 
@@ -257,7 +257,7 @@ in `calibrated_explanations.parallel`. This wrapper approach is now reflected in
 
 ### ADR-027 – Documentation Standard (Audience Hubs)
 
-- **PR template lacks parity review gate** (severity 15, critical) → `v0.9.1 governance & observability hardening`. Update template/checklist with parity review.
+- **PR template lacks parity review gate** (severity 15, critical) → `v0.9.1 governance & observability hardening`. **COMPLETED.** Checklist item added to PR template.
 - **“Task API comparison” reference missing** (severity 9, high) → `v0.9.1 governance & observability hardening`. Restore comparison link in practitioner hub.
 - **Researcher future-work ledger absent** (severity 6, medium) → `v0.9.1 governance & observability hardening`. Publish roadmap ledger tied to literature references.
 

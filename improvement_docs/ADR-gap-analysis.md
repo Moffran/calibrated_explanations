@@ -30,46 +30,46 @@ descending order of this product within each ADR.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Calibration layer remains embedded in `core` | 5 | 4 | 20 | Calibration helpers (`calibration_helpers.py`, `venn_abers.py`) still live under `core`, preventing the dedicated `calibration` package the ADR mandates. |
-| 2 | Core imports downstream siblings directly | 5 | 4 | 20 | `core.calibrated_explainer` pulls in explanations, plugins, perf, and API helpers, violating the "no sibling cross-talk" rule. |
-| 3 | Cache and parallel boundaries not split | 4 | 3 | 12 | Cache and parallel primitives continue to live under `perf/`, blocking independent evolution of the two packages. |
-| 4 | Schema validation package missing | 3 | 2 | 6 | Validation helpers sit in `serialization.py` rather than a standalone `schema` package, so consumers must import serialization to access schemas. |
-| 5 | Public API surface overly broad | 3 | 2 | 6 | `calibrated_explanations.__init__` lazily exports explanations, discretizers, and visualization namespaces beyond the sanctioned façade. |
-| 6 | Extra top-level namespaces lack ADR coverage | 3 | 2 | 6 | Packages such as `api`, `legacy`, `perf`, and `plotting.py` persist without documented boundary rationale. |
+| 1 | Calibration layer remains embedded in `core` | 0 | 0 | 0 | **COMPLETED.** Calibration extracted to `calibration` package with compatibility shim in `core`. |
+| 2 | Core imports downstream siblings directly | 0 | 0 | 0 | **COMPLETED.** Core imports are clean; lazy imports used where necessary. |
+| 3 | Cache and parallel boundaries not split | 0 | 0 | 0 | **COMPLETED.** `cache` and `parallel` packages created. |
+| 4 | Schema validation package missing | 0 | 0 | 0 | **COMPLETED.** `schema` package created. |
+| 5 | Public API surface overly broad | 0 | 0 | 0 | **COMPLETED.** `__init__` exports cleaned up (verified in code). |
+| 6 | Extra top-level namespaces lack ADR coverage | 0 | 0 | 0 | **COMPLETED.** Namespaces documented and rationalized. |
 
 ## ADR-002 – Exception Taxonomy and Validation Contract
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Legacy `ValueError`/`RuntimeError` usage in core and plugins | 5 | 4 | 20 | Critical prediction, calibration, and plugin paths still raise generic exceptions instead of the ADR taxonomy. |
-| 2 | Validation API contract not implemented | 4 | 4 | 16 | `validate_inputs` exposes a generic signature and duplicates logic, preventing reuse across wrappers and entry points. |
-| 3 | Structured error payload helpers absent | 4 | 3 | 12 | Missing `validate(...)` helper and `explain_exception` utility block the promised diagnostics pipeline. |
-| 4 | `validate_param_combination` is a no-op | 3 | 3 | 9 | Guardrails for parameter consistency remain unimplemented, weakening validation coverage. |
-| 5 | Fit-state and alias handling inconsistent | 3 | 2 | 6 | Wrapper normalisation diverges from `canonicalize_kwargs`, risking behavioural drift. |
+| 1 | Legacy `ValueError`/`RuntimeError` usage in core and plugins | 0 | 0 | 0 | **COMPLETED.** `CalibratedError` hierarchy adopted. |
+| 2 | Validation API contract not implemented | 0 | 0 | 0 | **COMPLETED.** `validate_inputs` implemented per ADR. |
+| 3 | Structured error payload helpers absent | 0 | 0 | 0 | **COMPLETED.** `explain_exception` and details dicts implemented. |
+| 4 | `validate_param_combination` is a no-op | 0 | 0 | 0 | **COMPLETED.** Implemented in `api/params.py` (verified via `wrap_explainer` import). |
+| 5 | Fit-state and alias handling inconsistent | 0 | 0 | 0 | **COMPLETED.** `check_is_fitted` and `NotFittedError` used consistently. |
 
 ## ADR-003 – Caching Strategy
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Automatic invalidation & flush hooks missing | 5 | 4 | 20 | Cache versions do not track package revisions, and operators lack a manual flush API. |
-| 2 | Required artefacts not cached | 4 | 4 | 16 | Only `_predict` leverages the cache; calibration summaries and explanation tensors recompute each run. |
-| 3 | Governance & documentation (STRATEGY_REV) absent | 4 | 3 | 12 | Release checklist lacks strategy revision tracking and public rollout collateral. |
-| 4 | Telemetry integration incomplete | 3 | 3 | 9 | Hit/miss counters are not surfaced through runtime telemetry, reducing observability. |
-| 5 | Backend diverges from cachetools + pympler stack | 3 | 3 | 9 | Custom LRU and sizing heuristics differ from the mandated library combination. |
+| 1 | Automatic invalidation & flush hooks missing | 0 | 0 | 0 | **COMPLETED.** `flush()` and `reset_version()` implemented. |
+| 2 | Required artefacts not cached | 0 | 0 | 0 | **COMPLETED.** `CalibratorCache` handles artefacts. |
+| 3 | Governance & documentation (STRATEGY_REV) absent | 0 | 0 | 0 | **COMPLETED.** Governance artefacts documented. |
+| 4 | Telemetry integration incomplete | 0 | 0 | 0 | **COMPLETED.** Telemetry hooks implemented in `cache.py`. |
+| 5 | Backend diverges from cachetools + pympler stack | 0 | 0 | 0 | **COMPLETED.** `cachetools` backend adopted. |
 
 ## ADR-004 – Parallel Execution Framework
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | ParallelFacade (conservative chooser) missing | 4 | 3 | 12 | A small, conservative facade that centralizes selection heuristics and emits compact decision telemetry (v0.9.1 scope) has not been implemented. Implementing this facade is the recommended low-risk first step before a full strategy rollout. |
-| 2 | Workload-aware auto strategy absent | 5 | 4 | 20 | `_auto_strategy` (full automatic strategy) remains unimplemented and is deferred to v0.10; the facade will collect field evidence to inform whether the full `_auto_strategy` is justified. |
-| 3 | Telemetry lacks timings and utilisation metrics | 5 | 4 | 20 | Runtime timings and worker utilisation remain uninstrumented; v0.9.1 should require compact decision telemetry (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type) while full per-task metrics are deferred to v0.10. |
-| 4 | Context management & cancellation missing | 4 | 4 | 16 | `ParallelExecutor` lacks context manager support and cancellation APIs, limiting safe lifecycle management; cooperative cancellation is out of scope for the v0.9.1 facade and belongs to v0.10. |
-| 5 | Configuration surface incomplete | 4 | 3 | 12 | `ParallelConfig` omits `task_size_hint_bytes`, `force_serial_on_failure`, and strategy injection hooks. v0.9.1 should add a small conservative config surface (min_instances_for_parallel, min_features_for_parallel, task_size_hint_bytes). |
-| 6 | Resource guardrails ignore cgroup/CI limits | 4 | 3 | 12 | Worker selection relies on CPU count without container-aware caps; full cgroup/container detection is deferred to v0.10 but the facade should use conservative defaults to avoid oversubscription. |
-| 7 | Fallback warnings not emitted | 4 | 2 | 8 | Serial fallbacks occur silently; the facade should emit structured decision telemetry and a warning when it forces a serial fallback (v0.9.1). |
-| 8 | Testing and benchmarking coverage limited | 3 | 3 | 9 | Spawn lifecycle and throughput benchmarks remain manual or untested; v0.9.1 should add unit tests for the facade decision logic and a micro-benchmark harness to gather evidence. |
-| 9 | Documentation for strategies & troubleshooting lacking | 3 | 2 | 6 | No platform-specific matrices or plugin interoperability notes accompany the rollout; v0.9.1 should ship minimal guidance for the facade and record the v0.10 plan in ADR notes. |
+| 1 | ParallelFacade (conservative chooser) missing | 0 | 0 | 0 | **COMPLETED.** `ParallelExecutor` facade implemented with basic `_auto_strategy`. |
+| 2 | Workload-aware auto strategy absent | 5 | 4 | 20 | `_auto_strategy` is rudimentary (OS/CPU count only); lacks task size/memory heuristics. |
+| 3 | Telemetry lacks timings and utilisation metrics | 5 | 4 | 20 | `ParallelMetrics` only tracks counts (submitted/completed/failures); timings missing. |
+| 4 | Context management & cancellation missing | 4 | 4 | 16 | `ParallelExecutor` lacks `__enter__`/`__exit__` and cancellation support. |
+| 5 | Configuration surface incomplete | 4 | 3 | 12 | `ParallelConfig` lacks `task_size_hint_bytes`, `force_serial_on_failure`. |
+| 6 | Resource guardrails ignore cgroup/CI limits | 4 | 3 | 12 | Uses `os.cpu_count()` directly; ignores container limits. |
+| 7 | Fallback warnings not emitted | 4 | 2 | 8 | Fallbacks emit telemetry but no user-facing warnings. |
+| 8 | Testing and benchmarking coverage limited | 3 | 3 | 9 | Spawn lifecycle and throughput benchmarks remain manual or untested. |
+| 9 | Documentation for strategies & troubleshooting lacking | 3 | 2 | 6 | No platform-specific matrices or plugin interoperability notes accompany the rollout. |
 
 Alignment note: Parallel is treated as a shared service with domain-specific runtime wrappers (e.g., explain) expected to wrap
 the shared `ParallelExecutor` so heuristics and chunking remain co-located with domain executors while respecting ADR-001
@@ -140,10 +140,10 @@ boundaries. ADR-004 now documents this expectation.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Central `deprecate()` helper missing | 5 | 3 | 15 | Public APIs call `warnings.warn` directly, so deprecation messages repeat and lack keying. |
-| 2 | Migration guide absent | 5 | 3 | 15 | CHANGELOG references a guide that has not been authored, leaving adopters without instructions. |
-| 3 | Release plan lacks status table | 4 | 3 | 12 | `RELEASE_PLAN_v1.md` has no structured tracking for deprecation windows. |
-| 4 | CI gates for deprecation policy missing | 4 | 3 | 12 | No automated enforcement of the "two minor releases" window or migration-note presence. |
+| 1 | Central `deprecate()` helper missing | 0 | 0 | 0 | **COMPLETED.** Helper implemented in `utils/deprecations.py`. |
+| 2 | Migration guide absent | 0 | 0 | 0 | **COMPLETED.** Guide published at `docs/migration/deprecations.md`. |
+| 3 | Release plan lacks status table | 0 | 0 | 0 | **COMPLETED.** Status table added to `RELEASE_PLAN_v1.md`. |
+| 4 | CI gates for deprecation policy missing | 0 | 0 | 0 | **COMPLETED.** `deprecation-check.yml` enforces `CE_DEPRECATIONS=error`. |
 
 ## ADR-012 – Documentation & Gallery Build Policy
 
@@ -288,8 +288,8 @@ boundaries. ADR-004 now documents this expectation.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Audience-based navigation structure not implemented | 5 | 4 | 20 | The "Getting Started / Practitioner / Researcher / Contributor" hub structure (ADR-027) is not yet implemented in the Sphinx toctree. |
-| 2 | PR template lacks parity review gate | 5 | 3 | 15 | Adoption Step 5 requires reviewers to confirm classification/regression parity, but no checklist enforces it. |
+| 1 | Audience-based navigation structure not implemented | 0 | 0 | 0 | **COMPLETED.** Hubs (`practitioner`, `researcher`, `contributor`) implemented in `docs/index.md`. |
+| 2 | PR template lacks parity review gate | 0 | 0 | 0 | **COMPLETED.** Checklist item added to PR template. |
 | 3 | “Task API comparison” reference missing | 3 | 3 | 9 | Get Started hub omits the mandated comparison link, weakening practitioner onboarding. |
 | 4 | Telemetry concept page lacks substance | 4 | 2 | 8 | Flesh out telemetry concept content (required by ADR-027 advanced tracks). |
 | 5 | Researcher future-work ledger absent | 3 | 2 | 6 | Researcher advanced hub lacks the promised roadmap tied to literature references. |
