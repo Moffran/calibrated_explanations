@@ -245,13 +245,9 @@ boundaries. ADR-004 now documents this expectation.
 | 2 | FAST explanations drop probability cubes | 4 | 3 | 12 | `explain_fast` omits `__full_probabilities__`, so ADR-promised metadata is missing for FAST runs. |
 | 3 | JSON export stores live callables | 3 | 2 | 6 | `_collection_metadata` serializes `assign_threshold` functions, breaking downstream tooling expectations. |
 
-## ADR-022 – Documentation Information Architecture
+## ADR-022 – Documentation Information Architecture (Superseded)
 
-| Rank | Gap | Violation | Scope | Unified severity | Notes |
-| ---: | --- | --- | --- | --- | --- |
-| 1 | Seven-section navigation not implemented | 5 | 4 | 20 | Landing page still groups content into four buckets, defying the mandated IA. |
-| 2 | “Extending the library” lane missing | 4 | 3 | 12 | Contributor workflows surface as audience hubs instead of the prescribed top-level section. |
-| 3 | Telemetry concept page lacks substance | 4 | 2 | 8 | Concept entry redirects rather than teaching telemetry semantics envisioned by the ADR. |
+*Superseded by ADR-027. See ADR-027 section for active gaps.*
 
 ## ADR-023 – Matplotlib Coverage Exemption
 
@@ -292,6 +288,8 @@ boundaries. ADR-004 now documents this expectation.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | PR template lacks parity review gate | 5 | 3 | 15 | Adoption Step 5 requires reviewers to confirm classification/regression parity, but no checklist enforces it. |
-| 2 | “Task API comparison” reference missing | 3 | 3 | 9 | Get Started hub omits the mandated comparison link, weakening practitioner onboarding. |
-| 3 | Researcher future-work ledger absent | 3 | 2 | 6 | Researcher advanced hub lacks the promised roadmap tied to literature references. |
+| 1 | Audience-based navigation structure not implemented | 5 | 4 | 20 | The "Getting Started / Practitioner / Researcher / Contributor" hub structure (ADR-027) is not yet implemented in the Sphinx toctree. |
+| 2 | PR template lacks parity review gate | 5 | 3 | 15 | Adoption Step 5 requires reviewers to confirm classification/regression parity, but no checklist enforces it. |
+| 3 | “Task API comparison” reference missing | 3 | 3 | 9 | Get Started hub omits the mandated comparison link, weakening practitioner onboarding. |
+| 4 | Telemetry concept page lacks substance | 4 | 2 | 8 | Flesh out telemetry concept content (required by ADR-027 advanced tracks). |
+| 5 | Researcher future-work ledger absent | 3 | 2 | 6 | Researcher advanced hub lacks the promised roadmap tied to literature references. |
