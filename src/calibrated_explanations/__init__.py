@@ -73,7 +73,7 @@ def __getattr__(name: str):
     # DEPRECATED SYMBOLS (emit DeprecationWarning per ADR-001 Stage 3)
     # ===================================================================
 
-    from .utils.deprecation import deprecate_public_api_symbol
+    from .utils import deprecate_public_api_symbol
 
     if name == "viz":
         deprecate_public_api_symbol(

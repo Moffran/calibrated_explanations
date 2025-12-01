@@ -5,6 +5,7 @@ directly from ``calibrated_explanations.utils`` rather than reaching into
 individual helper modules.
 """
 
+from .deprecation import deprecate_public_api_symbol
 from .deprecations import _EMITTED, _EMITTED_PER_TEST, _should_raise, deprecate, deprecate_alias
 from .discretizers import (
     BinaryEntropyDiscretizer,
@@ -48,6 +49,7 @@ __all__ = [
     "check_is_fitted",
     "concatenate_thresholds",
     "convert_targets_to_numeric",
+    "deprecate_public_api_symbol",
     "immutable_array",
     "deprecate",
     "deprecate_alias",

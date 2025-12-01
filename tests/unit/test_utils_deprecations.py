@@ -10,9 +10,9 @@ import calibrated_explanations.utils as utils_mod
 
 def _reload_module():
     """Reload the utils package and its deprecation helpers."""
-    importlib.reload(utils_mod)
     # Ensure the underlying deprecations module picks up a clean slate
     importlib.reload(importlib.import_module("calibrated_explanations.utils.deprecations"))
+    importlib.reload(utils_mod)
     return utils_mod
 
 

@@ -13,7 +13,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import check_random_state
 
 from ..core.exceptions import ValidationError
-from ..utils.helper import safe_mean
+from .helper import safe_mean
 
 
 # pylint: disable=too-many-instance-attributes

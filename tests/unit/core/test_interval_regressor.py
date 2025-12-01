@@ -266,7 +266,11 @@ def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch)
             return arr[0, col]
         return arr.ravel()[0]
 
-    monkeypatch.setattr(utils_module, "safe_first_element", stub_safe_first_element, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        stub_safe_first_element,
+        raising=False,
+    )
 
     proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
 
@@ -291,7 +295,10 @@ def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch)
             return array[0, col]
         return array.flat[0]
 
-    monkeypatch.setattr(utils_module, "safe_first_element", fake_safe_first_element)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        fake_safe_first_element,
+    )
 
     proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
 
@@ -416,7 +423,11 @@ def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
         calls.append((col, result))
         return result
 
-    monkeypatch.setattr(utils_module, "safe_first_element", tracking_safe_first, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        tracking_safe_first,
+        raising=False,
+    )
 
     proba, _, _, _ = regressor.predict_probability(x, y_threshold=thresholds)
 

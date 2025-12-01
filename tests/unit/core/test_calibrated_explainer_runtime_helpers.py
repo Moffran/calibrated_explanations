@@ -947,7 +947,7 @@ def test_explain_counterfactual_deprecates_and_delegates(monkeypatch, explainer_
     sentinel = object()
 
     monkeypatch.setattr(
-        "calibrated_explanations.utils.deprecations.deprecate", lambda *args, **kwargs: None
+        "calibrated_explanations.utils.deprecate", lambda *args, **kwargs: None
     )
     explainer.explore_alternatives = lambda *args, **kwargs: sentinel
 

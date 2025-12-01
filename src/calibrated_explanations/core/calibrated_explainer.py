@@ -164,7 +164,7 @@ class CalibratedExplainer:
         self.y_cal = y_cal
 
         # Initialize RNG with seed
-        from ..utils.rng import set_rng_seed  # pylint: disable=import-outside-toplevel
+        from ..utils import set_rng_seed  # pylint: disable=import-outside-toplevel
 
         seed = kwargs.get("seed", 42)
         self.seed = seed

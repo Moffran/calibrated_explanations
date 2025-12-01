@@ -1277,7 +1277,7 @@ def register_plot_plugin(
     metadata: Mapping[str, Any] | None = None,
 ) -> PlotBuilderDescriptor:
     """Compatibility shim registering *plugin* as both builder and renderer."""
-        from ..utils import deprecate
+    from ..utils import deprecate
 
     deprecate(
         "register_plot_plugin is deprecated; use register_plot_builder/register_plot_renderer",
