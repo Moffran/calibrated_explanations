@@ -11,11 +11,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..core.exceptions import ConfigurationError
-from ..core.explain.feature_task import assign_threshold as normalize_threshold
+from calibrated_explanations.core import ConfigurationError, assign_threshold as normalize_threshold
 
 if TYPE_CHECKING:
-    from ..core.calibrated_explainer import CalibratedExplainer
+    from calibrated_explanations.core import CalibratedExplainer
 
 
 def assign_threshold(explainer: CalibratedExplainer, threshold) -> None:

@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LinearRegression
 
-from src.calibrated_explanations.calibration.interval_regressor import IntervalRegressor
-from src.calibrated_explanations.calibration.venn_abers import VennAbers
-from src.calibrated_explanations.core.exceptions import ConfigurationError, DataShapeError
+from calibrated_explanations.calibration.interval_regressor import IntervalRegressor
+from calibrated_explanations.calibration.venn_abers import VennAbers
+from calibrated_explanations.core import ConfigurationError, DataShapeError
 
 
 class _MockModel:

@@ -16,7 +16,7 @@ import warnings
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core import CalibratedExplainer
 
 
 # Tests run with `error::FutureWarning` in `pytest.ini` which makes

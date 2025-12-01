@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..core.exceptions import ConfigurationError
+from calibrated_explanations.core import ConfigurationError
 
 # Minimal, conservative alias map.
 ALIAS_MAP: dict[str, str] = {

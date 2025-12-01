@@ -13,7 +13,7 @@ from functools import singledispatchmethod
 import crepes
 import numpy as np
 
-from ..core.exceptions import ConfigurationError, DataShapeError
+from calibrated_explanations.core import ConfigurationError, DataShapeError
 from ..utils import safe_first_element
 from .venn_abers import VennAbers
 

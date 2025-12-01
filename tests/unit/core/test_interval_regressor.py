@@ -5,7 +5,7 @@ import pytest
 
 import calibrated_explanations.utils as utils_module
 from calibrated_explanations.calibration import interval_regressor as interval_module
-from calibrated_explanations.core.exceptions import ConfigurationError, DataShapeError
+from calibrated_explanations.core import ConfigurationError, DataShapeError
 
 
 class DummyCPS:

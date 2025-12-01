@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.calibrated_explanations.core.exceptions import ConfigurationError
-from src.calibrated_explanations.calibration import venn_abers as venn_abers_module
-from src.calibrated_explanations.calibration.venn_abers import VennAbers
+from calibrated_explanations.core import ConfigurationError
+from calibrated_explanations.calibration import venn_abers as venn_abers_module
+from calibrated_explanations.calibration.venn_abers import VennAbers
 
 
 class _StubVennAbers:

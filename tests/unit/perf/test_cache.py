@@ -17,7 +17,7 @@ from calibrated_explanations.cache.cache import (
 
 
 def test_lru_cache_rejects_invalid_limits() -> None:
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.core import ValidationError
     with pytest.raises(ValidationError):
         LRUCache(
             namespace="test",

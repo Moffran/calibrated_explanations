@@ -27,7 +27,7 @@ from typing import Optional
 
 import numpy as np
 
-from calibrated_explanations.core.exceptions import ValidationError
+# from calibrated_explanations.core import ValidationError
 # # Create a ConfigParser object
 # config = configparser.ConfigParser()
 
@@ -181,6 +181,8 @@ def perturb_dataset(
     scaled_x_cal = perturbed_x_cal.copy()
     scaled_y_cal = np.tile(y_cal.copy(), scale_factor)
     categorical_feature_set = set() if categorical_features is None else set(categorical_features)
+    from calibrated_explanations.core import ValidationError
+
     if noise_type not in [
         "uniform",
         "gaussian",

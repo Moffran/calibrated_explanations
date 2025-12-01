@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from ..core.wrap_explainer import WrapCalibratedExplainer
 from .config import ExplainerConfig
 
 
@@ -53,6 +52,8 @@ def quick_explain(
     Any
         A CalibratedExplanations-like object from `explain_factual`.
     """
+    from calibrated_explanations.core import WrapCalibratedExplainer
+
     cfg = ExplainerConfig(
         model=model,
         low_high_percentiles=low_high_percentiles,

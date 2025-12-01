@@ -14,7 +14,7 @@ from inspect import isclass
 import numpy as np
 from pandas import CategoricalDtype
 
-from calibrated_explanations.core.exceptions import NotFittedError, ValidationError
+# from calibrated_explanations.core import NotFittedError, ValidationError
 
 
 def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:  # pylint: disable=unused-private-member
@@ -72,6 +72,8 @@ def safe_isinstance(obj, class_path_str):
         class_path_strs = [""]
 
     # try each module path in order
+    from calibrated_explanations.core import ValidationError
+
     for _class_path_str in class_path_strs:
         if "." not in _class_path_str:
             raise ValidationError(
@@ -178,6 +180,8 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
     NotFittedError
         If the attributes are not found.
     """
+    from calibrated_explanations.core import NotFittedError
+
     if isclass(estimator):
         raise TypeError(f"{estimator} is a class, not an instance.")
     if msg is None:
@@ -381,6 +385,8 @@ def assert_threshold(threshold, x):
         ...
     AssertionError: list thresholds must have the same length as the number of samples
     """
+    from calibrated_explanations.core import ValidationError
+
     if threshold is None:
         return threshold
     if np.isscalar(threshold) and isinstance(threshold, (numbers.Integral, numbers.Real)):
@@ -450,6 +456,8 @@ def calculate_metrics(
     -----
     If the method is called with no arguments, it will return the list of available metrics.
     """
+    from calibrated_explanations.core import ValidationError
+
     if uncertainty is None and prediction is None:
         return ["ensured"]
 

@@ -8,7 +8,7 @@ import types
 import numpy as np
 import pytest
 
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.core import (
     ConfigurationError,
     NotFittedError,
 )

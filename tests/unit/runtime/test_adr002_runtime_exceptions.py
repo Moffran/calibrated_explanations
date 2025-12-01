@@ -11,7 +11,7 @@ Coverage areas:
 """
 
 import pytest
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.core import (
     ValidationError,
     ConfigurationError,
 )
@@ -193,13 +193,13 @@ class TestExceptionHierarchyCompliance:
 
     def test_validation_error_is_calibrated_error(self):
         """Verify ValidationError inherits from CalibratedError."""
-        from calibrated_explanations.core.exceptions import CalibratedError
+        from calibrated_explanations.core import CalibratedError
 
         assert issubclass(ValidationError, CalibratedError)
 
     def test_configuration_error_is_calibrated_error(self):
         """Verify ConfigurationError inherits from CalibratedError."""
-        from calibrated_explanations.core.exceptions import CalibratedError
+        from calibrated_explanations.core import CalibratedError
 
         assert issubclass(ConfigurationError, CalibratedError)
 

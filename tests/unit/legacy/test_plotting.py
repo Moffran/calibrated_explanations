@@ -936,7 +936,7 @@ def test_probabilistic_saves_before_show(monkeypatch, tmp_path):
 
 
 def test_require_matplotlib_raises(monkeypatch):
-    from calibrated_explanations.core.exceptions import ConfigurationError
+    from calibrated_explanations.core import ConfigurationError
     monkeypatch.setattr(plotting, "plt", None)
     monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("missing backend"))
 

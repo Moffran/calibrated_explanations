@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.core import ValidationError
 from calibrated_explanations.plugins.base import validate_plugin_meta
 
 

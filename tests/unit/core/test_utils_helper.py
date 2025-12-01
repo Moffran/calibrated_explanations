@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from calibrated_explanations.core.exceptions import NotFittedError
+from calibrated_explanations.core import NotFittedError, ValidationError
 from calibrated_explanations.utils import helper
 
 
@@ -39,7 +39,7 @@ def test_make_directory_creates_expected_structure(tmp_path, monkeypatch):
 
 
 def test_safe_isinstance_variants(monkeypatch):
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.core import ValidationError
     module_name = HelperExample.__module__
     assert helper.safe_isinstance(HelperExample(), f"{module_name}.HelperExample") is True
 
@@ -154,7 +154,7 @@ def test_transform_to_numeric_with_and_without_mappings():
 
 
 def test_assert_threshold_handles_nested_structures():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.core import ValidationError
     assert helper.assert_threshold(0.5, [1, 2, 3]) == 0.5
     assert helper.assert_threshold((0.2, 0.8), [1, 2]) == (0.2, 0.8)
     assert helper.assert_threshold([0.1, 0.2], np.array([[1], [2]])) == [0.1, 0.2]
@@ -171,7 +171,7 @@ def test_assert_threshold_handles_nested_structures():
 
 
 def test_calculate_metrics_behaviour():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.core import ValidationError
     assert helper.calculate_metrics() == ["ensured"]
 
     uncertainty = [0.2, 0.8]

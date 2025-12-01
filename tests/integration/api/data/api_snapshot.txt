@@ -3,5 +3,15 @@ CalibratedExplainer
 WrapCalibratedExplainer
 transform_to_numeric
 # core __all__
+CalibratedError
 CalibratedExplainer
+ConfigurationError
+ConvergenceError
+DataShapeError
+ModelNotSupportedError
+NotFittedError
+SerializationError
+ValidationError
 WrapCalibratedExplainer
+assign_threshold
+explain_exception
