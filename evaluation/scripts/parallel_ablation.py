@@ -29,7 +29,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 from calibrated_explanations import CalibratedExplainer
-from calibrated_explanations.perf import ParallelConfig, ParallelExecutor
+from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
 
 
 # ---------------------------------------------------------------------------

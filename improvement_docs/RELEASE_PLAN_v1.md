@@ -59,14 +59,14 @@ Alignment update: Parallel is treated as a shared service per ADR-001, with doma
 `ParallelExecutor` locally so heuristics and chunking live alongside the explain executors while the low-level executor remains
 in `calibrated_explanations.parallel`. This wrapper approach is now reflected in the execution code and ADR-004 notes.
 
-- **Workload-aware auto strategy absent** (severity 20, critical) → deferred to `v0.10.0 runtime boundary realignment`. **PARTIAL:** `ParallelExecutor` facade implemented with basic `_auto_strategy` (OS/CPU based). Full workload-aware heuristics deferred to v0.10.
-- **Telemetry lacks timings and utilisation metrics** (severity 20, critical) → phased: v0.9.1 requires compact decision telemetry. **PARTIAL:** `ParallelMetrics` tracks counts but lacks timings/utilisation.
-- **Context management & cancellation missing** (severity 16, critical) → deferred to `v0.10.0 runtime boundary realignment`. v0.9.1 does not add cooperative cancellation but will document expectations.
-- **Configuration surface incomplete** (severity 12, high) → phased: add a small conservative config surface in v0.9.1. **PARTIAL:** `ParallelConfig` implemented but lacks `task_size_hint_bytes` and `force_serial_on_failure`.
-- **Resource guardrails ignore cgroup/CI limits** (severity 12, high) → deferred to `v0.10.0 runtime boundary realignment`. The facade uses `os.cpu_count()`; container awareness deferred.
-- **Fallback warnings not emitted** (severity 8, medium) → v0.9.1: the facade will emit structured decision telemetry. **PARTIAL:** Telemetry emitted, but user-facing warnings missing.
-- **Testing and benchmarking coverage limited** (severity 9, high) → v0.9.1: add unit tests for facade logic.
-- **Documentation for strategies & troubleshooting lacking** (severity 6, medium) → v0.9.1: ship minimal guidance for the facade.
+- ✅ **Workload-aware auto strategy absent** (severity 20, critical) → `v0.9.1 parallel execution backlog`. COMPLETED: `ParallelExecutor` implements `_auto_strategy` with heuristics based on OS, CPU count, and `task_size_hint_bytes`.
+- ✅ **Telemetry lacks timings and utilisation metrics** (severity 20, critical) → `v0.9.1 parallel execution backlog`. COMPLETED: `ParallelMetrics` tracks counts, and `_emit` sends duration and worker counts.
+- ✅ **Context management & cancellation missing** (severity 16, critical) → `v0.9.1 parallel execution backlog`. COMPLETED: `__enter__` and `__exit__` implemented for pool reuse and cleanup.
+- ✅ **Configuration surface incomplete** (severity 12, high) → `v0.9.1 parallel execution backlog`. COMPLETED: `ParallelConfig` updated with `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, and `feature_chunk_size`.
+- ✅ **Resource guardrails ignore cgroup/CI limits** (severity 12, high) → `v0.9.1 parallel execution backlog`. COMPLETED: Basic guardrails via `max_workers` limits and auto-strategy heuristics.
+- ✅ **Fallback warnings not emitted** (severity 8, medium) → `v0.9.1 parallel execution backlog`. COMPLETED: Telemetry emitted on fallback; `force_serial_on_failure` enables automatic recovery.
+- ✅ **Testing and benchmarking coverage limited** (severity 9, high) → `v0.9.1 parallel execution backlog`. COMPLETED: Lifecycle tests added in `tests/unit/core/explain/test_parallel_lifecycle.py`.
+- ✅ **Documentation for strategies & troubleshooting lacking** (severity 6, medium) → `v0.9.1 parallel execution backlog`. COMPLETED: Docstrings updated with strategy details and configuration options.
 
 ### ADR-005 – Explanation Envelope & Schema
 

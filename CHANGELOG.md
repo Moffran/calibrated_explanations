@@ -48,37 +48,19 @@
     - **Signature**: `validate_inputs(x, y=None, task="auto", allow_nan=False, require_y=False, n_features=None, class_labels=None, check_finite=True) → None`
     - **Behavior**: Validates feature/target matrix pair with comprehensive shape, dtype, and value checks
     - **Error handling**: Raises `DataShapeError`, `ValidationError` with structured `details` payloads
-    - **Backward compatibility**: Old `validate_inputs_matrix()` preserved as separate entry point for explicit matrix validation
-  - **Comprehensive regression test suite**: Added 16 new tests in `test_validation_unit.py` covering ADR-002 contract compliance:
-    - Shape validation (2D x requirement, feature count matching)
-    - Target validation (length matching, NaN/inf checks)
-    - Parameter validation (task type, allow_nan, require_y, check_finite)
-    - Structured error payloads (details dict presence and content)
-    - Edge cases (pandas DataFrames, None values, infinity bounds)
-  - **Explanation module** (`explanation.py`): Replaced 5 legacy raises
-    - Line 260: Parameter validation error (feature_weights/width) → `ValidationError` with structured details
-    - Line 772: Input validation error (conjunctive rules) → `ValidationError` with structured details
-    - Line 1340: Configuration error (max_rule_size) → `ConfigurationError` with structured details
-    - Line 1622: Backend configuration error (Agg backend) → `ConfigurationError` with structured details
-    - Line 2236: Configuration error (max_rule_size) → `ConfigurationError` with structured details
-  - **Plugin explanations module** (`plugins/explanations.py`): Replaced 2 legacy raises
-    - Type validation errors → `ValidationError` with detailed metadata context
-    - Batch metadata validation errors → `ValidationError` with mode/task details
-  - **Plugin registry module** (`plugins/registry.py`): Replaced 28+ legacy raises
-    - Checksum validation: `ValidationError` with expected/actual hash details
-    - Metadata field validation: `ValidationError` with allowed values and unsupported values details
-    - Plugin registration: `ValidationError` for identifier/metadata requirements
-    - Validation functions (_ensure_sequence, _coerce_string_collection, _normalise_dependency_field, _normalise_tasks, validate_explanation_metadata, validate_interval_metadata, _ensure_bool, _ensure_string)
-  - **Visualization layer** (`viz/builders.py`, `viz/serializers.py`, `viz/narrative_plugin.py`): Replaced 9 legacy raises
-    - Sequence length validation: `ValidationError` with length/index diagnostic details
-    - PlotSpec validation: `ValidationError` for version/structure/field validation
-    - Narrative expertise level: `ValidationError` with allowed values
-    - Output format validation: `ValidationError` for invalid formats; `ConfigurationError` for unsupported formats
-  - **Total exceptions replaced**: 44+ legacy `ValueError`/`RuntimeError`/`TypeError` raises → ADR-002 taxonomy
-  - **Structured details payloads**: All exceptions include comprehensive diagnostic dictionaries with context-specific information
-  - **Regression test coverage**: Added 19 new tests validating exception types, details payloads, and hierarchy compliance specifications
 
-### ADR-003 Gap Resolution & Completion 
+### ADR-004 Parallel Execution Framework
+
+- **Completed ADR-004 parallel execution backlog for v0.9.1 release**
+  - **Workload-aware auto strategy**: Implemented `_auto_strategy` with heuristics based on OS, CPU count, and task size (`task_size_hint_bytes`).
+  - **Telemetry**: Enhanced `ParallelMetrics` to track `submitted`, `completed`, `fallbacks`, `failures`, and emit `parallel_execution` events with duration and worker counts.
+  - **Context Management**: Implemented `__enter__` and `__exit__` for `ParallelExecutor` to support resource cleanup and pool reuse.
+  - **Configuration Surface**: Added `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, and `feature_chunk_size` to `ParallelConfig`.
+  - **Chunking Support**: Updated `ParallelExecutor` and plugins (`parallel_instance`, `parallel_feature`) to respect configured chunk sizes, defaulting to 1 for process pools to avoid pickling overhead on small tasks.
+  - **Fallback Logic**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures.
+  - **Verification**: Added comprehensive lifecycle tests in `tests/unit/core/explain/test_parallel_lifecycle.py` covering strategies, context management, chunking, and fallback scenarios.
+
+### ADR-003 Caching Strategy 
 
 - **Resolved all 4 identified implementation gaps** in ADR-003 caching strategy for v0.10.0 release
   - **ExplanationCacheFacade wired into pipeline** (was defined but unused):

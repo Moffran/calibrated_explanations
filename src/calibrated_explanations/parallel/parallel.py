@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
@@ -51,7 +52,11 @@ class ParallelConfig:
     strategy: Literal["auto", "threads", "processes", "joblib", "sequential"] = "auto"
     max_workers: int | None = None
     min_batch_size: int = 32
+    instance_chunk_size: int | None = None
+    feature_chunk_size: int | None = None
     granularity: Literal["feature", "instance"] = "feature"
+    task_size_hint_bytes: int = 0
+    force_serial_on_failure: bool = False
     telemetry: TelemetryCallback | None = None
 
     @classmethod
@@ -79,6 +84,19 @@ class ParallelConfig:
             if token.startswith("min_batch="):
                 cfg.min_batch_size = max(1, int(token.split("=", 1)[1]))
                 continue
+            if token.startswith("instance_chunk="):
+                cfg.instance_chunk_size = max(1, int(token.split("=", 1)[1]))
+                continue
+            if token.startswith("feature_chunk="):
+                cfg.feature_chunk_size = max(1, int(token.split("=", 1)[1]))
+                continue
+            if token.startswith("task_bytes="):
+                cfg.task_size_hint_bytes = max(0, int(token.split("=", 1)[1]))
+                continue
+            if token.startswith("force_serial="):
+                val = token.split("=", 1)[1].lower()
+                cfg.force_serial_on_failure = val in {"1", "true", "on"}
+                continue
             if token == "enable":  # noqa: S105  # nosec B105 - configuration toggle keyword
                 cfg.enabled = True
                 continue
@@ -102,6 +120,47 @@ class ParallelExecutor:
         self.config = config
         self.cache = cache
         self.metrics = ParallelMetrics()
+        self._pool: Any = None
+        self._active_strategy_name: str | None = None
+
+    def __enter__(self) -> "ParallelExecutor":
+        """Initialize the execution pool if parallelism is enabled."""
+        if not self.config.enabled:
+            return self
+
+        strategy_name = self.config.strategy
+        if strategy_name == "auto":
+            strategy_name = self._auto_strategy()
+        
+        self._active_strategy_name = strategy_name
+
+        try:
+            if strategy_name == "threads":
+                max_workers = self.config.max_workers or min(32, (os.cpu_count() or 1) * 5)
+                self._pool = ThreadPoolExecutor(max_workers=max_workers)
+            elif strategy_name == "processes":
+                max_workers = self.config.max_workers or (os.cpu_count() or 1)
+                if self.cache is not None:
+                    self.cache.forksafe_reset()
+                self._pool = ProcessPoolExecutor(max_workers=max_workers)
+            elif strategy_name == "joblib":
+                if _JoblibParallel is not None:
+                    n_jobs = self.config.max_workers or -1
+                    self._pool = _JoblibParallel(n_jobs=n_jobs, prefer="processes")
+        except Exception as exc:
+            logger.warning("Failed to initialize parallel pool: %s. Falling back to serial.", exc)
+            self._pool = None
+            self._active_strategy_name = "sequential"
+            
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Shutdown the execution pool."""
+        if self._pool is not None:
+            if hasattr(self._pool, "shutdown"):
+                self._pool.shutdown(wait=True)
+            self._pool = None
+        self._active_strategy_name = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -113,6 +172,7 @@ class ParallelExecutor:
         *,
         workers: int | None = None,
         work_items: int | None = None,
+        chunksize: int | None = None,
     ) -> List[R]:
         """Execute *fn* across *items* using the configured parallel strategy."""
         items_list = list(items)
@@ -121,17 +181,30 @@ class ParallelExecutor:
         candidate = work_items if work_items is not None else len(items_list)
         if candidate < self.config.min_batch_size:
             return [fn(item) for item in items_list]
+        
         self.metrics.submitted += len(items_list)
+        start_time = time.perf_counter()
+        
         try:
             strategy = self._resolve_strategy()
-            results = strategy(fn, items_list, workers=workers)
+            results = strategy(fn, items_list, workers=workers, chunksize=chunksize)
         except Exception as exc:  # pragma: no cover - best effort fallback
             self.metrics.failures += 1
             self.metrics.fallbacks += 1
             self._emit("parallel_fallback", {"error": repr(exc)})
-            results = [fn(item) for item in items_list]
+            if self.config.force_serial_on_failure:
+                results = [fn(item) for item in items_list]
+            else:
+                raise exc
         else:
             self.metrics.completed += len(results)
+            duration = time.perf_counter() - start_time
+            self._emit("parallel_execution", {
+                "strategy": self._active_strategy_name or self.config.strategy,
+                "items": len(items_list),
+                "duration": duration,
+                "workers": workers or self.config.max_workers
+            })
         return results
 
     # ------------------------------------------------------------------
@@ -141,7 +214,7 @@ class ParallelExecutor:
         self,
     ) -> Callable[[Callable[[T], R], Sequence[T], Any], List[R]]:
         """Return a concrete execution strategy based on configuration."""
-        strategy = self.config.strategy
+        strategy = self._active_strategy_name or self.config.strategy
         if strategy == "auto":
             strategy = self._auto_strategy()
         if strategy == "threads":
@@ -154,11 +227,22 @@ class ParallelExecutor:
 
     def _auto_strategy(self) -> str:
         """Choose a sensible default backend for the current platform."""
+        # 1. Platform constraints
         if os.name == "nt":  # prefer threads on Windows for compatibility
             return "threads"
+            
+        # 2. Resource constraints
         cpu_count = os.cpu_count() or 1
         if cpu_count <= 2:
             return "threads"
+            
+        # 3. Workload heuristics
+        # If tasks are very large, pickling overhead in processes might outweigh GIL benefits
+        # Threshold: 10MB (arbitrary, but conservative)
+        if self.config.task_size_hint_bytes > 10 * 1024 * 1024:
+            return "threads"
+
+        # 4. Library preference
         # When joblib is available prefer it because of smarter chunking
         if _JoblibParallel is not None:
             return "joblib"
@@ -168,38 +252,59 @@ class ParallelExecutor:
     # Individual strategies
     # ------------------------------------------------------------------
     def _serial_strategy(
-        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
+        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None, chunksize: int | None = None
     ) -> List[R]:
         """Fallback strategy executing sequentially in the current process."""
         return [fn(item) for item in items]
 
     def _thread_strategy(
-        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
+        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None, chunksize: int | None = None
     ) -> List[R]:
         """Execute work items using a thread pool."""
+        # ThreadPoolExecutor.map uses chunksize=1 by default if not specified
+        chunksize = chunksize if chunksize is not None else 1
+        
+        if self._pool is not None and isinstance(self._pool, ThreadPoolExecutor):
+            return list(self._pool.map(fn, items, chunksize=chunksize))
+
         max_workers = workers or self.config.max_workers or min(32, (os.cpu_count() or 1) * 5)
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            return list(pool.map(fn, items))
+            return list(pool.map(fn, items, chunksize=chunksize))
 
     def _process_strategy(
-        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
+        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None, chunksize: int | None = None
     ) -> List[R]:
         """Execute work items using a process pool with cache isolation."""
+        # ProcessPoolExecutor.map uses a heuristic for chunksize if not specified
+        chunksize = chunksize if chunksize is not None else 1
+        
+        if self._pool is not None and isinstance(self._pool, ProcessPoolExecutor):
+            return list(self._pool.map(fn, items, chunksize=chunksize))
+
         max_workers = workers or self.config.max_workers or (os.cpu_count() or 1)
         # Reset cache to avoid cross-process contamination (fork safety)
         if self.cache is not None:
             self.cache.forksafe_reset()
         with ProcessPoolExecutor(max_workers=max_workers, mp_context=None) as pool:
-            return list(pool.map(fn, items))
+            return list(pool.map(fn, items, chunksize=chunksize))
 
     def _joblib_strategy(
-        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None
+        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None, chunksize: int | None = None
     ) -> List[R]:
         """Dispatch work through joblib's Parallel abstraction when available."""
         if _JoblibParallel is None:
-            return self._thread_strategy(fn, items, workers=workers)
+            return self._thread_strategy(fn, items, workers=workers, chunksize=chunksize)
+        
+        # joblib uses 'batch_size' instead of 'chunksize'
+        batch_size = chunksize if chunksize is not None else "auto"
+
+        if self._pool is not None and isinstance(self._pool, _JoblibParallel):
+            # Reusing joblib pool is tricky as it's usually a context manager or object
+            # If self._pool is a Parallel instance, we can call it.
+            return self._pool(_joblib_delayed(fn)(item) for item in items)
+
         n_jobs = workers or self.config.max_workers or -1
-        parallel = _JoblibParallel(n_jobs=n_jobs, prefer="processes")
+        parallel = _JoblibParallel(n_jobs=n_jobs, prefer="processes", batch_size=batch_size)
         return parallel(_joblib_delayed(fn)(item) for item in items)
 
     # ------------------------------------------------------------------

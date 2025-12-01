@@ -169,7 +169,8 @@ class FeatureParallelExplainExecutor(BaseExplainExecutor):
         # Step 4: Process features in parallel using executor
         if feature_tasks:
             work_items = max(len(feature_tasks), 1) * max(n_instances, 1)
-            results = executor.map(_feature_task, feature_tasks, work_items=work_items)
+            chunksize = executor.config.feature_chunk_size
+            results = executor.map(_feature_task, feature_tasks, work_items=work_items, chunksize=chunksize)
 
             # Merge results in sorted order to ensure determinism
             for result in sorted(results, key=lambda item: item[0]):

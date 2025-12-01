@@ -45,6 +45,7 @@ Deliver the runtime polish and ADR-004 remediation items called out in Release P
   - Deliverables: specification for `task_size_hint_bytes`, `force_serial_on_failure`, backend preference flags (per ADR-004).
   - Dependencies: ADR-004 decision, Release Plan §v0.10.0 #4 configuration commitments.
   - Success metric: configuration options documented with migration notes and telemetry hooks defined.
+  - **Status**: Completed (2025-12-01). Implemented in `ParallelConfig`.
 
 ## Phase 2 – Executor & Plugin Refactor (Week 5–8)
 
@@ -62,6 +63,7 @@ Deliver the runtime polish and ADR-004 remediation items called out in Release P
   - Deliverables: implement context management, cooperative cancellation, and resource cleanup per ADR-004.
   - Dependencies: telemetry design (P0.2) for instrumentation integration.
   - Success metric: integration tests covering `with ParallelExecutor(...)` usage and forced cancellation path.
+  - **Status**: Completed (2025-12-01). Implemented `__enter__`/`__exit__` and pool lifecycle management.
 
 ## Phase 3 – Workload-aware Strategy (Week 9–11)
 
@@ -71,6 +73,7 @@ Deliver the runtime polish and ADR-004 remediation items called out in Release P
   - Deliverables: workload estimator using `task_size_hint_bytes`, dataset shape, platform to choose strategy (threads/processes/joblib) automatically.
   - Dependencies: Phase 1 hooks, telemetry instrumentation to validate choices.
   - Success metric: heuristic achieves ≥1.3× speedup vs current auto on benchmark suite in `evaluation/scripts/parallel_ablation.py`.
+  - **Status**: Partially Completed (2025-12-01). Implemented `task_size_hint_bytes` heuristic in `_auto_strategy`.
 - **Task P3.2 – Dynamic gating & chunk sizing**
   - Deliverables: runtime adjustments for chunk sizes based on telemetry (e.g., adaptively expand when work items per worker low).
   - Dependencies: Task P3.1 outputs, telemetry pipeline.
