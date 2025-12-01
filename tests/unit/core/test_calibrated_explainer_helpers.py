@@ -8,7 +8,7 @@ from calibrated_explanations.core.config_helpers import (
 )
 from calibrated_explanations.core.explain.feature_task import assign_weight_scalar
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
-from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
+from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 
 
 def test_split_and_coerce_string_tuple():

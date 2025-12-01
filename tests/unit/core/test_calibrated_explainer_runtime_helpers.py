@@ -11,7 +11,7 @@ from calibrated_explanations.core.prediction import orchestrator as prediction_o
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
 )
-from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
+from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.plugins.predict_monitor import (
     PredictBridgeMonitor as _PredictBridgeMonitor,
 )

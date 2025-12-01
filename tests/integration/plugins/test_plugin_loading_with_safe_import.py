@@ -199,7 +199,7 @@ class TestPluginDiscoveryWithSafeImport:
         # The plugin system should be able to ensure builtin plugins are loaded
         # without crashing if optional dependencies are missing
         try:
-            from calibrated_explanations.plugins.registry import (
+            from calibrated_explanations.plugins import (
                 ensure_builtin_plugins,
             )
 

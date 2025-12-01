@@ -1365,8 +1365,8 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
         "threshold": threshold,
     }
 
-    from .plugins import PlotRenderContext
-    from .plugins.registry import (
+    from .plugins import (
+        PlotRenderContext,
         ensure_builtin_plugins,
         find_plot_plugin,
         find_plot_plugin_trusted,

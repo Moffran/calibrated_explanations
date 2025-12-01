@@ -22,8 +22,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
 import numpy as np
 
 from ...core.config_helpers import coerce_string_tuple
-from ...plugins import IntervalCalibratorContext
-from ...plugins.registry import (
+from ...plugins import (
+    IntervalCalibratorContext,
     ensure_builtin_plugins,
     find_interval_descriptor,
     find_interval_plugin,

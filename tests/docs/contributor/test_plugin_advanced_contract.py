@@ -97,7 +97,7 @@ class TestMethodCEnvironmentVariables:
 
     def test_explanation_plugin_fallback_environment_variable(self):
         """Verify CE_EXPLANATION_PLUGIN_*_FALLBACKS environment variable."""
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_explanation_plugin,
             _EXPLANATION_PLUGINS,
         )
@@ -260,7 +260,7 @@ class TestMethodEPluginMetadata:
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
         from calibrated_explanations import CalibratedExplainer
-        from calibrated_explanations.plugins.registry import ensure_builtin_plugins
+        from calibrated_explanations.plugins import ensure_builtin_plugins
 
         ensure_builtin_plugins()
 

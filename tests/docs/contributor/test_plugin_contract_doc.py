@@ -58,7 +58,7 @@ def test_plugin_contract_class_behaviour():
 
 def test_plugin_contract_registration():
     from calibrated_explanations.plugins.base import validate_plugin_meta
-    from calibrated_explanations.plugins.registry import (
+    from calibrated_explanations.plugins import (
         register_explanation_plugin,
         _EXPLANATION_PLUGINS,
     )

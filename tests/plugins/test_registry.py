@@ -4,7 +4,7 @@ import warnings
 
 import pytest
 
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     ensure_builtin_plugins,
     list_explanation_descriptors,
     mark_explanation_trusted,

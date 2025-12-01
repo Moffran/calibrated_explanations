@@ -5,7 +5,7 @@ import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     clear_explanation_plugins,
     ensure_builtin_plugins,
     register_explanation_plugin,

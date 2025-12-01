@@ -18,7 +18,7 @@ if str(SRC) not in sys.path:
 
 from calibrated_explanations.plugins import ExplanationContext
 from calibrated_explanations.plugins import registry
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     clear_explanation_plugins,
     ensure_builtin_plugins,
 )

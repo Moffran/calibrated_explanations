@@ -7,7 +7,7 @@ from calibrated_explanations.calibration import interval_learner as ch
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     clear_interval_plugins,
     ensure_builtin_plugins,
     register_interval_plugin,

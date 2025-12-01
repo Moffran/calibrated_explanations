@@ -223,7 +223,7 @@ class TestNotebookMethodE:
         """Test Method E: Custom plugin with declared dependencies."""
         from dataclasses import dataclass
         from calibrated_explanations.plugins.explanations import ExplanationPlugin
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_explanation_plugin,
             _EXPLANATION_PLUGINS,
         )
@@ -305,7 +305,7 @@ class TestNotebookMethodE:
         """Test that plugin dependencies are included in fallback chain."""
         from dataclasses import dataclass
         from calibrated_explanations.plugins.explanations import ExplanationPlugin
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_explanation_plugin,
             ensure_builtin_plugins,
             _EXPLANATION_PLUGINS,

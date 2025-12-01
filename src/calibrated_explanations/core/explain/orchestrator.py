@@ -19,15 +19,17 @@ import copy
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 from ...core.config_helpers import coerce_string_tuple
-from ...plugins import ExplanationContext, ExplanationRequest, validate_explanation_batch
-from ...plugins.predict_monitor import PredictBridgeMonitor
-from ...plugins.registry import (
+from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
+    ExplanationContext,
+    ExplanationRequest,
     ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
     is_identifier_denied,
+    validate_explanation_batch,
 )
+from ...plugins.predict_monitor import PredictBridgeMonitor
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
 from ..exceptions import ConfigurationError
 
