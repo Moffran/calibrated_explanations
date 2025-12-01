@@ -64,7 +64,7 @@ def __getattr__(name: str):
         return WrapCalibratedExplainer
 
     if name == "transform_to_numeric":
-        module = importlib.import_module(f"{__name__}.utils.helper")
+        module = importlib.import_module(f"{__name__}.utils")
         value = getattr(module, name)
         globals()[name] = value
         return value
@@ -126,10 +126,10 @@ def __getattr__(name: str):
         deprecate_public_api_symbol(
             name,
             f"from calibrated_explanations import {name}",
-            f"from calibrated_explanations.utils.discretizers import {name}",
+            f"from calibrated_explanations.utils import {name}",
             extra_context="Discretizers are internal utilities; import from the discretizers submodule.",
         )
-        module = importlib.import_module(f"{__name__}.utils.discretizers")
+        module = importlib.import_module(f"{__name__}.utils")
         value = getattr(module, name)
         globals()[name] = value
         return value

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from calibrated_explanations.utils.helper import safe_import, safe_isinstance
+from calibrated_explanations.utils import safe_import, safe_isinstance
 
 
 class TestSafeImportInPluginLoading:

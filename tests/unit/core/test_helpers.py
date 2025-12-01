@@ -23,7 +23,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
 from calibrated_explanations.core.exceptions import NotFittedError
-from calibrated_explanations.utils.helper import (
+from calibrated_explanations.utils import (
     calculate_metrics,
     check_is_fitted,
     safe_import,

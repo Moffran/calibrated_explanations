@@ -4,13 +4,13 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from ..utils.discretizers import (
+from ..utils import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
     EntropyDiscretizer,
     RegressorDiscretizer,
 )
-from ..utils.helper import immutable_array
+from ..utils import immutable_array
 from .exceptions import ValidationError
 from .explain._computation import discretize as _discretize_func
 

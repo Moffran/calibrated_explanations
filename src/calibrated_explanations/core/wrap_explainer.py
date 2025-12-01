@@ -19,7 +19,7 @@ from calibrated_explanations.api.params import (
 from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
 from calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
 
-from ..utils.helper import check_is_fitted, safe_isinstance  # noqa: F401
+from ..utils import check_is_fitted, safe_isinstance  # noqa: F401
 from .calibrated_explainer import CalibratedExplainer  # circular during split
 
 if TYPE_CHECKING:  # pragma: no cover - import only for type checking

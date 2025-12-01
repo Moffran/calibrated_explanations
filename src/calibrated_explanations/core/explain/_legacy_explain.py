@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from ...utils.helper import safe_mean
+from ...utils import safe_mean
 from ._computation import explain_predict_step
 
 if TYPE_CHECKING:

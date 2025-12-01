@@ -21,10 +21,7 @@ from calibrated_explanations.core.exceptions import (
 )
 from calibrated_explanations.core.explain._helpers import compute_feature_effects
 from calibrated_explanations.explanations import CalibratedExplanations
-from calibrated_explanations.utils.helper import (
-    assert_threshold,
-    safe_isinstance,
-)
+from calibrated_explanations.utils import assert_threshold, safe_isinstance
 
 if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer

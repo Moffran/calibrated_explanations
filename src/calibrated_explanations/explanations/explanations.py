@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 
 import numpy as np
 
-from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
-from ..utils.helper import prepare_for_saving
+from ..utils import EntropyDiscretizer, RegressorDiscretizer
+from ..utils import prepare_for_saving
 from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
 from .models import Explanation as DomainExplanation
@@ -700,7 +700,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
         from ..core.exceptions import ValidationError
-        from ..utils.deprecations import deprecate
+        from ..utils import deprecate
 
         deprecate(
             "This method is deprecated and may be removed in future versions. Use indexing instead.",

@@ -24,7 +24,7 @@ from calibrated_explanations.plugins.registry import (
     register_explanation_plugin,
     register_interval_plugin,
 )
-from calibrated_explanations.utils.perturbation import perturb_dataset
+from calibrated_explanations.utils import perturb_dataset
 
 
 class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):

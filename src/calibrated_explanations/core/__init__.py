@@ -10,7 +10,7 @@ become aware without flooding logs.
 import os
 import sys
 
-from ..utils.deprecations import deprecate
+from ..utils import deprecate
 from .calibrated_explainer import CalibratedExplainer  # noqa: F401
 from .wrap_explainer import WrapCalibratedExplainer  # noqa: F401
 

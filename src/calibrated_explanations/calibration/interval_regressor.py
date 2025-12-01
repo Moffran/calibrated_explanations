@@ -14,6 +14,7 @@ import crepes
 import numpy as np
 
 from ..core.exceptions import ConfigurationError, DataShapeError
+from ..utils import safe_first_element
 from .venn_abers import VennAbers
 
 
@@ -205,13 +206,6 @@ class IntervalRegressor:
             p, low, high = self.split["va"].predict_proba(
                 x[i, :].reshape(1, -1), output_interval=True, bins=[bins[i]]
             )
-            # import helper locally to avoid top-level dependency
-            try:
-                from ..utils.helper import safe_first_element
-            except Exception:
-                # fall back to the package path if relative import fails
-                from calibrated_explanations.utils.helper import safe_first_element
-
             p = safe_first_element(p, col=1)
             low = safe_first_element(low)
             high = safe_first_element(high)

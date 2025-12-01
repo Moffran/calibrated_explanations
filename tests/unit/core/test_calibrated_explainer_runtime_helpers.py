@@ -778,7 +778,7 @@ def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory)
 
 def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
     """_infer_explanation_mode should detect alternative mode when EntropyDiscretizer is set."""
-    from calibrated_explanations.utils.discretizers import EntropyDiscretizer
+    from calibrated_explanations.utils import EntropyDiscretizer
 
     explainer = _stub_explainer(explainer_factory)
     x_cal = np.asarray([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
@@ -796,7 +796,7 @@ def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
 
 def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory):
     """_infer_explanation_mode should detect alternative mode when RegressorDiscretizer is set."""
-    from calibrated_explanations.utils.discretizers import RegressorDiscretizer
+    from calibrated_explanations.utils import RegressorDiscretizer
 
     explainer = _stub_explainer(explainer_factory, mode="regression")
     x_cal = np.asarray([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])

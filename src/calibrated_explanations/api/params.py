@@ -99,7 +99,7 @@ def warn_on_aliases(kwargs: dict[str, Any]) -> None:
     -----
     - No behavior change; only a `DeprecationWarning` to guide users.
     """
-    from ..utils.deprecations import deprecate_alias
+    from ..utils import deprecate_alias
 
     for alias, canonical in ALIAS_MAP.items():
         if alias in kwargs:

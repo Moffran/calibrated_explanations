@@ -32,11 +32,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
         _tomllib = None  # type: ignore[assignment]
 
 # Core imports (no cross-sibling dependencies)
-from ..utils.helper import (
-    check_is_fitted,
-    convert_targets_to_numeric,
-    safe_isinstance,
-)
+from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
 from .exceptions import (
     DataShapeError,
@@ -295,7 +291,7 @@ class CalibratedExplainer:
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode from runtime state."""
         # Lazy import discretizers (deferred from module level)
-        from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
+        from ..utils import EntropyDiscretizer, RegressorDiscretizer
         
         # Check discretizer type to infer mode
         discretizer = self.discretizer if hasattr(self, "discretizer") else None
@@ -1131,7 +1127,7 @@ class CalibratedExplainer:
 
         Both the deprecated method and its test must be removed together to avoid orphaned tests.
         """
-        from ..utils.deprecations import deprecate
+        from ..utils import deprecate
 
         deprecate(
             "The `explain_counterfactual` method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.",

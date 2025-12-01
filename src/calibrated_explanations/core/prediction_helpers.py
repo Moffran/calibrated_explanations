@@ -20,7 +20,7 @@ from .exceptions import (
     ValidationError,
     DataShapeError,
 )
-from ..utils.helper import assert_threshold, safe_isinstance
+from ..utils import assert_threshold, safe_isinstance
 from .explain._computation import explain_predict_step
 
 # Local typing protocol to avoid importing CalibratedExplainer and creating cycles.

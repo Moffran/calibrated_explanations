@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, List, Mapping, Sequence, Tuple
 
 import numpy as np
 
-from ...utils.helper import safe_isinstance
+from ...utils import safe_isinstance
 from ..prediction_helpers import initialize_explanation as _ih
 from ._computation import explain_predict_step  # Re-export for backward compatibility
 from .feature_task import FeatureTaskResult

@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional, Tuple
 
-from ..utils.helper import safe_import
+from ..utils import safe_import
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard
     from ..core.calibrated_explainer import CalibratedExplainer

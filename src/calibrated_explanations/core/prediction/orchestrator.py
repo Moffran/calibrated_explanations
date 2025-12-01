@@ -30,7 +30,7 @@ from ...plugins.registry import (
     find_interval_plugin_trusted,
     is_identifier_denied,
 )
-from ...utils.helper import assert_threshold
+from ...utils import assert_threshold
 from ..exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
 from ..explain.feature_task import assign_weight
 

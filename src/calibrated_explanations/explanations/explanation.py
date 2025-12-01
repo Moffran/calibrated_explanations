@@ -33,13 +33,13 @@ from calibrated_explanations.core.explain.feature_task import (
 )
 
 from ..plotting import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
-from ..utils.discretizers import (
+from ..utils import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
     EntropyDiscretizer,
     RegressorDiscretizer,
 )
-from ..utils.helper import calculate_metrics, prepare_for_saving, safe_first_element, safe_mean
+from ..utils import calculate_metrics, prepare_for_saving, safe_first_element, safe_mean
 
 # @dataclass
 # class PredictionInterval:

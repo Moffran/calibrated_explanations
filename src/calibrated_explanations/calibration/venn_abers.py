@@ -15,7 +15,7 @@ import numpy as np
 import venn_abers as va
 
 from ..core.exceptions import ConfigurationError
-from ..utils.helper import convert_targets_to_numeric
+from ..utils import convert_targets_to_numeric
 
 
 class VennAbers:

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from calibrated_explanations.utils.perturbation import (
+from calibrated_explanations.utils import (
     categorical_perturbation,
     gaussian_perturbation,
     perturb_dataset,

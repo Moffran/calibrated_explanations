@@ -36,8 +36,8 @@ from ..explanations.explanation import (
     CalibratedExplanation as _AbstractExplanation,
 )
 from ..explanations.explanations import CalibratedExplanations
-from ..utils.helper import safe_isinstance
-from ..utils.perturbation import perturb_dataset
+from ..utils import safe_isinstance
+from ..utils import perturb_dataset
 from .explanations import (
     ExplanationBatch,
     ExplanationContext,

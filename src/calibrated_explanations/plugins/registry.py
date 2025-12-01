@@ -434,7 +434,7 @@ def validate_explanation_metadata(meta: Mapping[str, Any]) -> Dict[str, Any]:
     raw_modes = _ensure_sequence(meta, "modes", allowed=allowed_modes)
     normalised_modes: List[str] = []
     seen: set[str] = set()
-    from ..utils.deprecations import deprecate
+    from ..utils import deprecate
 
     for mode in raw_modes:
         canonical = _EXPLANATION_MODE_ALIASES.get(mode, mode)
@@ -1277,7 +1277,7 @@ def register_plot_plugin(
     metadata: Mapping[str, Any] | None = None,
 ) -> PlotBuilderDescriptor:
     """Compatibility shim registering *plugin* as both builder and renderer."""
-    from ..utils.deprecations import deprecate
+        from ..utils import deprecate
 
     deprecate(
         "register_plot_plugin is deprecated; use register_plot_builder/register_plot_renderer",

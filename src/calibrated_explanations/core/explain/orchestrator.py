@@ -28,7 +28,7 @@ from ...plugins.registry import (
     find_explanation_plugin,
     is_identifier_denied,
 )
-from ...utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
+from ...utils import EntropyDiscretizer, RegressorDiscretizer
 from ..exceptions import ConfigurationError
 
 if TYPE_CHECKING:

@@ -8,12 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from calibrated_explanations.utils.deprecations import (
-    _EMITTED,
-    _EMITTED_PER_TEST,
-    _should_raise,
-    deprecate,
-)
+from calibrated_explanations.utils import _EMITTED, _EMITTED_PER_TEST, _should_raise, deprecate
 
 
 @pytest.fixture(autouse=True)

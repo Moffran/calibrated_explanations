@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
 
-from ...utils.helper import concatenate_thresholds
+from ...utils import concatenate_thresholds
 from .feature_task import (
     FeatureTaskResult,
     assign_weight_scalar,

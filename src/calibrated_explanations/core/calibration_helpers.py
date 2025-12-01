@@ -33,7 +33,7 @@ __all__ = [
 def __getattr__(name: str):
     """Lazy-load functions from calibration.interval_learner with deprecation warning."""
     if name in __all__:
-        from ..utils.deprecations import deprecate
+        from ..utils import deprecate
 
         msg = (
             f"Importing {name} from calibration_helpers is deprecated."

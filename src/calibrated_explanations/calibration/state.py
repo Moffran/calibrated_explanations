@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ..utils.helper import safe_isinstance
+from ..utils import safe_isinstance
 from ..core.exceptions import DataShapeError
 
 if TYPE_CHECKING:

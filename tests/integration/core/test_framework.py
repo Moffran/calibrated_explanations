@@ -18,12 +18,7 @@ from unittest.mock import patch
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import NotFittedError
-from calibrated_explanations.utils.helper import (
-    check_is_fitted,
-    is_notebook,
-    make_directory,
-    safe_import,
-)
+from calibrated_explanations.utils import check_is_fitted, is_notebook, make_directory, safe_import
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestClassifier
 

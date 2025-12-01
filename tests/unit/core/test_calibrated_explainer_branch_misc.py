@@ -12,7 +12,7 @@ from calibrated_explanations.core.exceptions import (
     DataShapeError,
     ValidationError,
 )
-from calibrated_explanations.utils.discretizers import RegressorDiscretizer
+from calibrated_explanations.utils import RegressorDiscretizer
 
 
 def test_slice_threshold_branches_exercised():

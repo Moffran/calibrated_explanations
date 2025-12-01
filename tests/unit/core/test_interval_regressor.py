@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import builtins
-
 import numpy as np
 import pytest
 
+import calibrated_explanations.utils as utils_module
 from calibrated_explanations.calibration import interval_regressor as interval_module
 from calibrated_explanations.core.exceptions import ConfigurationError, DataShapeError
-from calibrated_explanations.utils import helper as helper_module
 
 
 class DummyCPS:
@@ -251,26 +249,14 @@ def test_predict_probability_requires_calibration_bins_when_test_bins_provided(m
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
-def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
-    original_import = builtins.__import__  # capture original before any monkeypatching
-
+def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch):
     regressor = _make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.4, 0.6])
 
     import importlib
 
-    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
-    import_attempts: list[tuple[str, int]] = []
-
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):  # noqa: D401 - test helper
-        import_attempts.append((name, level))
-        if level > 0 and name.endswith("utils.helper"):
-            raise ImportError("relative helper unavailable")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-
+    utils_module = importlib.import_module("calibrated_explanations.utils")
     calls: list[int] = []
 
     def stub_safe_first_element(values, *, col=0):
@@ -280,7 +266,7 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
             return arr[0, col]
         return arr.ravel()[0]
 
-    monkeypatch.setattr(helper_module, "safe_first_element", stub_safe_first_element, raising=False)
+    monkeypatch.setattr(utils_module, "safe_first_element", stub_safe_first_element, raising=False)
 
     proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
 
@@ -295,9 +281,7 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.25, 0.35])
 
-    import importlib
-
-    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
+    utils_module = importlib.import_module("calibrated_explanations.utils")
     calls: list[tuple[np.ndarray, int | None]] = []
 
     def fake_safe_first_element(values, col=None):
@@ -307,16 +291,7 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
             return array[0, col]
         return array.flat[0]
 
-    monkeypatch.setattr(helper_module, "safe_first_element", fake_safe_first_element)
-
-    def failing_import(
-        name, globals=None, locals=None, fromlist=(), level=0
-    ):  # pragma: no cover - helper
-        if name.endswith("utils.helper") and level == 1:
-            raise ImportError("forced failure")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", failing_import)
+    monkeypatch.setattr(utils_module, "safe_first_element", fake_safe_first_element)
 
     proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
 
@@ -434,14 +409,14 @@ def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
     thresholds = np.array([0.3, 0.7])
 
     calls: list[tuple[int | None, float]] = []
-    original_safe_first = helper_module.safe_first_element
+    original_safe_first = utils_module.safe_first_element
 
     def tracking_safe_first(values, default=0.0, col=None):
         result = original_safe_first(values, default=default, col=col)
         calls.append((col, result))
         return result
 
-    monkeypatch.setattr(helper_module, "safe_first_element", tracking_safe_first, raising=False)
+    monkeypatch.setattr(utils_module, "safe_first_element", tracking_safe_first, raising=False)
 
     proba, _, _, _ = regressor.predict_probability(x, y_threshold=thresholds)
 
