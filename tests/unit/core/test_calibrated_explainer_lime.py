@@ -7,7 +7,7 @@ import types
 
 import numpy as np
 
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.explanations import CalibratedExplanations
 
 
 class _StubLearner:

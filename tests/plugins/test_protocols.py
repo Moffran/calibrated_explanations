@@ -355,7 +355,7 @@ def test_validate_explanation_batch_invalid_container_cls() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.explanations import CalibratedExplanation
 
     batch = ExplanationBatch(
         container_cls="not a class",
@@ -372,7 +372,7 @@ def test_validate_explanation_batch_invalid_container_inheritance() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.explanations import CalibratedExplanation
 
     batch = ExplanationBatch(
         container_cls=object,  # doesn't inherit from CalibratedExplanations
@@ -391,7 +391,7 @@ def test_validate_explanation_batch_invalid_explanation_cls() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanations import CalibratedExplanations
+    from calibrated_explanations.explanations import CalibratedExplanations
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
@@ -408,8 +408,8 @@ def test_validate_explanation_batch_invalid_instances_type() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanations import CalibratedExplanations
-    from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.explanations import CalibratedExplanations
+    from calibrated_explanations.explanations import CalibratedExplanation
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
@@ -426,8 +426,8 @@ def test_validate_explanation_batch_invalid_instance_mapping() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanations import CalibratedExplanations
-    from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.explanations import CalibratedExplanations
+    from calibrated_explanations.explanations import CalibratedExplanation
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
@@ -446,8 +446,8 @@ def test_validate_explanation_batch_invalid_metadata_type() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanations import CalibratedExplanations
-    from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.explanations import CalibratedExplanations
+    from calibrated_explanations.explanations import CalibratedExplanation
     from calibrated_explanations.core.exceptions import ValidationError
 
     batch = ExplanationBatch(
@@ -465,8 +465,8 @@ def test_validate_explanation_batch_mode_mismatch() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanations import CalibratedExplanations
-    from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.explanations import CalibratedExplanations
+    from calibrated_explanations.explanations import CalibratedExplanation
     from calibrated_explanations.core.exceptions import ValidationError
 
     batch = ExplanationBatch(
@@ -487,8 +487,8 @@ def test_validate_explanation_batch_task_mismatch() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanations import CalibratedExplanations
-    from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.explanations import CalibratedExplanations
+    from calibrated_explanations.explanations import CalibratedExplanation
     from calibrated_explanations.core.exceptions import ValidationError
 
     batch = ExplanationBatch(
@@ -509,8 +509,8 @@ def test_validate_explanation_batch_invalid_container_instance() -> None:
         ExplanationBatch,
         validate_explanation_batch,
     )
-    from calibrated_explanations.explanations.explanations import CalibratedExplanations
-    from calibrated_explanations.explanations.explanation import CalibratedExplanation
+    from calibrated_explanations.explanations import CalibratedExplanations
+    from calibrated_explanations.explanations import CalibratedExplanation
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,

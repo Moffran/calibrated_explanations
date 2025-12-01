@@ -10,9 +10,7 @@ def test_interval_regressor_lazy_import(monkeypatch):
     with pytest.warns(DeprecationWarning, match="IntervalRegressor.*deprecated"):
         interval_regressor = ce.IntervalRegressor
 
-    from calibrated_explanations.calibration.interval_regressor import (
-        IntervalRegressor as IntervalRegressorImpl,
-    )
+    from calibrated_explanations.calibration import IntervalRegressor as IntervalRegressorImpl
 
     assert interval_regressor is IntervalRegressorImpl
     assert ce.__dict__["IntervalRegressor"] is IntervalRegressorImpl
@@ -24,7 +22,7 @@ def test_venn_abers_lazy_import(monkeypatch):
     with pytest.warns(DeprecationWarning, match="VennAbers.*deprecated"):
         venn_abers = ce.VennAbers
 
-    from calibrated_explanations.calibration.venn_abers import VennAbers as VennAbersImpl
+    from calibrated_explanations.calibration import VennAbers as VennAbersImpl
 
     assert venn_abers is VennAbersImpl
     assert ce.__dict__["VennAbers"] is VennAbersImpl

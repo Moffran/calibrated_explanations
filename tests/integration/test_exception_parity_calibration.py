@@ -4,8 +4,7 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LinearRegression
 
-from calibrated_explanations.calibration.interval_regressor import IntervalRegressor
-from calibrated_explanations.calibration.venn_abers import VennAbers
+from calibrated_explanations.calibration import IntervalRegressor, VennAbers
 from calibrated_explanations.core import ConfigurationError, DataShapeError
 
 

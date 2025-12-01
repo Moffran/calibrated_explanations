@@ -1,5 +1,5 @@
 import numpy as np
-from calibrated_explanations.viz.builders import (
+from calibrated_explanations.viz import (
     build_probabilistic_bars_spec,
     build_regression_bars_spec,
     build_alternative_probabilistic_spec,

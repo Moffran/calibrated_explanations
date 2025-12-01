@@ -6,12 +6,12 @@ verification. See TEST_GUIDELINES_ENHANCED.md for patterns.
 
 import pytest
 
-from calibrated_explanations.viz.serializers import (
+from calibrated_explanations.viz import (
     plotspec_to_dict,
     plotspec_from_dict,
     validate_plotspec,
 )
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import (
     PlotSpec,
     IntervalHeaderSpec,
     BarHPanelSpec,

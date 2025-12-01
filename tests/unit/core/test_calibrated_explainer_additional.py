@@ -45,7 +45,7 @@ from calibrated_explanations.plugins.predict_monitor import (
 from calibrated_explanations.core.exceptions import DataShapeError
 from calibrated_explanations.plugins.predict import PredictBridge
 from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.explanations import CalibratedExplanations
 
 
 class DummyLearner:

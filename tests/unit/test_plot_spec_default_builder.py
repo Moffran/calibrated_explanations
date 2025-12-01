@@ -4,8 +4,8 @@ import numpy as np
 
 from calibrated_explanations.plugins import PlotRenderContext
 from calibrated_explanations.plugins.builtins import PlotSpecDefaultBuilder
-from calibrated_explanations.viz.builders import _legacy_get_fill_color
-from calibrated_explanations.viz.plotspec import PlotSpec
+from calibrated_explanations.viz import _legacy_get_fill_color
+from calibrated_explanations.viz import PlotSpec
 
 REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)
 REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)

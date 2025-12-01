@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from .explanations.models import Explanation, FeatureRule
+from .explanations import Explanation, FeatureRule
 from .schema import validate_payload  # noqa: F401 - re-exported for backward compatibility
 
 

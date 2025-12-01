@@ -13,7 +13,7 @@ import types
 import pytest
 
 from calibrated_explanations import serialization
-from calibrated_explanations.explanations.models import Explanation, FeatureRule
+from calibrated_explanations.explanations import Explanation, FeatureRule
 
 
 # Shared fixtures and test data

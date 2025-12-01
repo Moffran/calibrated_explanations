@@ -7,7 +7,7 @@ import pytest
 
 from calibrated_explanations.core import ConfigurationError
 from calibrated_explanations.calibration import venn_abers as venn_abers_module
-from calibrated_explanations.calibration.venn_abers import VennAbers
+from calibrated_explanations.calibration import VennAbers
 
 
 class _StubVennAbers:

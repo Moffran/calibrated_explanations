@@ -9,7 +9,7 @@ from typing import List, Sequence
 import numpy as np
 import pytest
 
-from calibrated_explanations.explanations.explanations import (
+from calibrated_explanations.explanations import (
     AlternativeExplanations,
     CalibratedExplanations,
 )

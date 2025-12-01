@@ -1,8 +1,8 @@
 import pytest
-from calibrated_explanations.viz.builders import (
+from calibrated_explanations.viz import (
     build_probabilistic_bars_spec,
 )
-from calibrated_explanations.viz.matplotlib_adapter import render
+from calibrated_explanations.viz import render
 
 
 def _make_interval_weights():

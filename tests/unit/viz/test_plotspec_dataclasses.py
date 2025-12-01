@@ -1,6 +1,6 @@
 import pytest
 
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import (
     BarHPanelSpec,
     BarItem,
     IntervalHeaderSpec,

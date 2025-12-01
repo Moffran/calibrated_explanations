@@ -1,25 +1,62 @@
-"""Cache layer for the calibrated explanations performance architecture.
+"""Cache entry points (ADR-001 Stage 5 API tightening).
 
-This package provides namespaced, versioned caching with optional TTL and memory budgets,
-thread-safety, and lightweight telemetry. See ADR-003 for design details.
-
-Part of ADR-001: Core Decomposition Boundaries (Stage 1b).
+Only the stable cache interfaces are exposed from the package root to prevent
+callers from depending on backend-specific helpers. This keeps the public
+surface lintable by the import graph checker.
 """
 
-from .cache import (
-    CacheConfig,
-    CacheMetrics,
-    CalibratorCache,
-    TelemetryCallback,
-    make_key,
-)
-from .explanation_cache import ExplanationCacheFacade
+from __future__ import annotations
 
-__all__ = [
+from importlib import import_module
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - import-time only
+    from .cache import (
+        CacheConfig,
+        CacheMetrics,
+        CalibratorCache,
+        LRUCache,
+        TelemetryCallback,
+        _default_size_estimator,
+        _hash_part,
+        make_key,
+    )
+    from .explanation_cache import ExplanationCacheFacade
+
+
+__all__ = (
     "CacheConfig",
     "CacheMetrics",
     "CalibratorCache",
     "ExplanationCacheFacade",
+    "LRUCache",
     "TelemetryCallback",
+    "_default_size_estimator",
+    "_hash_part",
     "make_key",
-]
+)
+
+_NAME_TO_MODULE = {
+    "CacheConfig": ("cache", "CacheConfig"),
+    "CacheMetrics": ("cache", "CacheMetrics"),
+    "CalibratorCache": ("cache", "CalibratorCache"),
+    "LRUCache": ("cache", "LRUCache"),
+    "TelemetryCallback": ("cache", "TelemetryCallback"),
+    "_default_size_estimator": ("cache", "_default_size_estimator"),
+    "_hash_part": ("cache", "_hash_part"),
+    "make_key": ("cache", "make_key"),
+    "ExplanationCacheFacade": ("explanation_cache", "ExplanationCacheFacade"),
+}
+
+
+def __getattr__(name: str) -> Any:
+    """Lazily expose cache interfaces from the package root."""
+
+    if name not in __all__:
+        raise AttributeError(name)
+
+    module_name, attr_name = _NAME_TO_MODULE[name]
+    module = import_module(f"{__name__}.{module_name}")
+    value = getattr(module, attr_name)
+    globals()[name] = value
+    return value

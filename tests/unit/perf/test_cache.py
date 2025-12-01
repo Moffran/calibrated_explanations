@@ -6,7 +6,7 @@ from typing import Dict, Iterable, List
 import numpy as np
 import pytest
 
-from calibrated_explanations.cache.cache import (
+from calibrated_explanations.cache import (
     CalibratorCache,
     CacheConfig,
     LRUCache,

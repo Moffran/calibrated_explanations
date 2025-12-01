@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.viz import matplotlib_adapter as ma
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import (
     BarHPanelSpec,
     BarItem,
     IntervalHeaderSpec,

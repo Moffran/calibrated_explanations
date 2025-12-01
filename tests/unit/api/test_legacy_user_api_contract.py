@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 
 import calibrated_explanations as ce
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.explanations import CalibratedExplanations
 
 
 def _param_names(func):
