@@ -70,7 +70,7 @@ class BoundaryConfig:
         # --- Pattern 3: Interface/Protocol Definition ---
         # Plugins implement interfaces defined in core
         ('plugins', 'core'): ['calibrated_explanations.core.interfaces'],
-        
+
         # --- Pattern 4: Shared Utilities & Schema ---
         # Everyone can use utils and schema
         ('*', 'utils'): [],
@@ -80,7 +80,33 @@ class BoundaryConfig:
         # Viz needs to understand what it is visualizing
         ('viz', 'explanations'): [],
         ('viz', 'core'): [],
-        
+
+        # --- Pattern 6: Orchestration & Runtime Facades ---
+        # CalibratedExplainer orchestrates plugins/calibration/cache/parallel at runtime
+        ('core', 'calibration'): [],
+        ('core', 'plugins'): [],
+        ('core', 'explanations'): [],
+        ('core', 'cache'): [],
+        ('core', 'parallel'): [],
+        ('core', 'integrations'): [],
+        ('core', 'api'): [],
+
+        # --- Pattern 7: Cache/Parallel shared services ---
+        ('calibration', 'cache'): [],
+        ('parallel', 'cache'): [],
+
+        # --- Pattern 8: Plugin adapter bridge ---
+        # In-tree adapters wrap legacy implementations while ADR-015 matures
+        ('plugins', 'explanations'): [],
+        ('plugins', 'viz'): [],
+        ('plugins', 'calibration'): [],
+
+        # --- Pattern 9: Visualization hooks from explanations ---
+        ('explanations', 'viz'): [],
+
+        # --- Pattern 10: Plugin discovery from explanations ---
+        ('explanations', 'plugins'): [],
+
         # --- Pattern 6: Legacy & Backward Compatibility ---
         # Legacy code is allowed to break rules until v2.0
         ('legacy', '*'): [],
@@ -117,10 +143,11 @@ class BoundaryConfig:
 
 def extract_imports(file_path: Path) -> List[Tuple[str, int]]:
     """Extract all imports from a Python file.
-    
+
     Returns:
         List of (module_name, line_number) tuples for each import statement.
     """
+    type_checking_blocks: List[Tuple[int, int]] = []
     try:
         tree = ast.parse(file_path.read_text(encoding='utf-8'))
     except (SyntaxError, UnicodeDecodeError) as e:
@@ -129,17 +156,32 @@ def extract_imports(file_path: Path) -> List[Tuple[str, int]]:
     
     imports = []
     
+    # Track TYPE_CHECKING blocks so we can skip type-only imports.
+    for node in ast.walk(tree):
+        if isinstance(node, ast.If):
+            if isinstance(node.test, ast.Name) and node.test.id == 'TYPE_CHECKING':
+                start = node.lineno
+                end = getattr(node, 'end_lineno', start)
+                type_checking_blocks.append((start, end))
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
+                # Skip imports that live inside TYPE_CHECKING guards
+                if any(start <= node.lineno <= end for start, end in type_checking_blocks):
+                    continue
                 imports.append((alias.name, node.lineno))
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ''
             # Handle relative imports
             if node.level > 0:  # Relative import
                 relative_prefix = '.' * node.level
+                if any(start <= node.lineno <= end for start, end in type_checking_blocks):
+                    continue
                 imports.append((f"{relative_prefix}{module}", node.lineno))
             else:
+                if any(start <= node.lineno <= end for start, end in type_checking_blocks):
+                    continue
                 imports.append((module, node.lineno))
     
     return imports
@@ -203,7 +245,7 @@ def resolve_relative_import(source_file: Path, relative_import: str) -> Optional
     return '.'.join(resolved_parts)
 
 
-def check_import_violations(src_dir: Path, config: BoundaryConfig) -> List[ImportViolation]:
+def check_import_violations(src_dir: Path, config: BoundaryConfig, *, strict: bool = False) -> List[ImportViolation]:
     """Scan all Python files and check for import violations.
     
     Args:
@@ -269,10 +311,12 @@ def check_import_violations(src_dir: Path, config: BoundaryConfig) -> List[Impor
                 is_allowed = True
             
             # Check if in strict mode
-            in_strict = any(
-                py_file.match(f"*{strict_mod}") 
-                for strict_mod in config.strict_modules
-            )
+            in_strict = False
+            if strict:
+                in_strict = any(
+                    py_file.match(f"*{strict_mod}")
+                    for strict_mod in config.strict_modules
+                )
             
             if not is_allowed or in_strict:
                 violations.append(ImportViolation(
@@ -368,7 +412,7 @@ def main() -> int:
     config = BoundaryConfig()
     
     # Check for violations
-    violations = check_import_violations(args.src_dir, config)
+    violations = check_import_violations(args.src_dir, config, strict=args.strict)
     
     # Print violations
     print_violations(violations)

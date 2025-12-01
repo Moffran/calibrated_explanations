@@ -16,7 +16,7 @@ The ADR gap analysis enumerates open issues across the architecture. The breakdo
 
 ### ADR-001 – Package and Boundary Layout
 
-**Implementation Status**: ✅ Stages 0–5 **COMPLETED** (2025-11-28). Phase 1 (Allow-list) implemented in `scripts/check_import_graph.py`. See `improvement_docs/adr mending/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` for details.
+**Implementation Status**: ✅ Stages 0–5 **COMPLETED** (2025-11-28). Phase 1 (Allow-list) implemented in `scripts/check_import_graph.py`. See `improvement_docs/adr mending/ADR-001/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` for details.
 
 - ✅ **Calibration layer remains embedded in `core`** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED: Calibration extracted to top-level package with compatibility shim.
 - ✅ **Core imports downstream siblings directly** (severity 20, critical) → `v0.10.0 runtime boundary realignment`. COMPLETED (Stage 2): CalibratedExplainer refactored to use lazy imports and orchestrator delegation. All 14 module-level cross-sibling imports converted to runtime or TYPE_CHECKING imports.

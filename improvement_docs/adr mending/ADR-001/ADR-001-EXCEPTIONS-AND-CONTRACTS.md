@@ -34,6 +34,26 @@ ADR-001 defines a strict layered architecture. However, practical implementation
 **Rule:** `legacy` package is exempt from strict boundary checks.
 **Rationale:** To facilitate gradual migration, legacy code is isolated but allowed to depend on other parts of the system until it is refactored or removed in v2.0.
 
+### 6. CalibratedExplainer Orchestration
+**Rule:** `core` (specifically the CalibratedExplainer orchestrator) may import from `calibration`, `plugins`, `explanations`, `cache`, `parallel`, `integrations`, and `api`.
+**Rationale:** The orchestrator wires together calibration, cache, parallel execution, plugin discovery, and API validation at runtime. These imports remain constrained to the orchestrator so that other `core` modules stay boundary-pure.
+
+### 7. Shared Services
+**Rule:** `calibration` and `parallel` may import from `cache`.
+**Rationale:** Cache is treated as a shared service (ADR-003) consumed by calibration workflows and parallel execution to avoid redundant computation.
+
+### 8. Plugin Adapter Bridge
+**Rule:** `plugins` may import from `explanations`, `viz`, and `calibration` while the ADR-015 plugin bridge stabilises.
+**Rationale:** In-tree plugin adapters delegate to the legacy explanations/viz implementations to preserve behaviour while the dedicated plugin contracts harden. These imports are scoped to the adapters and will be revisited when the ADR-015 runtime path is declared stable.
+
+### 9. Visualization Hooks from Explanations
+**Rule:** `explanations` may import from `viz`.
+**Rationale:** Explanation payloads include optional narrative hooks that render via the visualization layer. Imports are limited to the adapter shims used for rendering.
+
+### 10. Plugin Discovery from Explanations
+**Rule:** `explanations` may import from `plugins`.
+**Rationale:** Explanation orchestrators perform plugin discovery when resolving custom explanation strategies. These imports remain within orchestrator modules to avoid broad coupling.
+
 ## Enforcement
 These exceptions are encoded in `scripts/check_import_graph.py` in the `BoundaryConfig.allowed_cross_sibling` dictionary.
 Any import violating ADR-001 that is NOT in this list will cause the CI build to fail.

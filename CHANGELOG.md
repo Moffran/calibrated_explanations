@@ -5,35 +5,25 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
-### ADR-003 Gap Resolution & Completion ✅ (2025-11-29)
+### ADR-001 Package and Boundary Layout
 
-- **Resolved all 4 identified implementation gaps** in ADR-003 caching strategy for v0.10.0 release
-  - **ExplanationCacheFacade wired into pipeline** (was defined but unused):
-    - Integrated `ExplanationCacheFacade` into `calibration/summaries.py` with forwarding logic
-    - Added `_get_calibration_data_hash()` function for stable cache keys
-    - `get_calibration_summaries()` now checks shared cache before computing
-    - Backward compatibility: falls back to instance-level caches when facade unavailable
-    - Invalidation path: `invalidate_calibration_summaries()` now clears shared cache + instance caches
-  - **Pympler dependency added** (was missing from dependencies):
-    - Added `pympler` to `pyproject.toml` dependencies (required by ADR-003 spec)
-    - Enables precise memory profiling in v1.0.1+ (currently uses `sys.getsizeof` fallback)
-  - **Comprehensive telemetry test coverage added** (was overstated):
-    - Added `test_calibrator_cache_flush_clears_all_entries()` – validates manual flush operation
-    - Added `test_calibrator_cache_reset_version_invalidates_old_entries()` – validates version-based invalidation
-    - Added `test_calibrator_cache_telemetry_events_coverage()` – comprehensive test for all 8 event types:
-      - `cache_hit`, `cache_miss`, `cache_store`, `cache_evict`, `cache_skip`, `cache_reset`, `cache_flush`, `cache_version_reset`
-    - Added `test_lru_cache_forksafe_reset_clears_state()` – validates fork-safety operation
-    - Test count: 19 → 23 tests (added 4 gap-fixing tests)
-  - **ADR-003 status updated** (was Proposed):
-    - Updated `improvement_docs/adrs/ADR-003-caching-key-and-eviction.md` from Status: Proposed → Status: Accepted
-    - Updated implementation note reflecting completion and pympler inclusion
-  - **Documentation updated**:
-    - `improvement_docs/adr\ mending/ADR-003/IMPLEMENTATION_SUMMARY.md` – Comprehensive gap resolution notes with before/after validation
-    - RELEASE_PLAN_v1.md – ADR-003 section marked ✅ COMPLETED
-  - **Test results**: All 23 cache tests passing (100%)
-  - **Impact**: Zero breaking changes; all integrations backward compatible; opt-in caching remains default
+- **Completed ADR-001 core decomposition boundaries for v0.10.0 release**
+  - **Stage 0 — Scope Confirmation:** Core ADR-001 boundaries confirmed; 5 intentional deviations documented (legacy, api, plotting, perf, integrations)
+  - **Stage 1 — Package Extraction:** Calibration, cache/parallel, and schema extraction complete; backward compatibility shims in place
+  - **Stage 2 — Cross-Sibling Decoupling:** 14 module-level imports from core converted to lazy/TYPE_CHECKING; transitive dependency reduction
+  - **Stage 3 — Public API Narrowing:** Unsanctioned symbols (13) now emit DeprecationWarning; API locked to 3 sanctioned entry points for v0.11.0
+  - **Stage 4 — Namespace Documentation:** All namespaces classified with rationale, deprecation timelines, and migration paths
+  - **Stage 5 — Import Graph Linting:** AST-based static analyzer detects violations; 17 enforcement tests; CI-ready with baseline
+    - **Updated Linter**: `scripts/check_import_graph.py` now enforces a strict allow-list of cross-sibling imports.
+    - **Defined Exceptions**: Created `improvement_docs/adr mending/ADR-001/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` documenting the 6 allowed architectural patterns (Exception Hierarchy, Orchestrator, Interfaces, Shared Utils, Visualization, Legacy).
+    - **Package restructuring**: Defined and implemented top-level internal packages (`core`, `calibration`, `explanations`, `cache`, `parallel`, `schema`, `plugins`, `viz`, `utils`)
+    - **Boundary enforcement**: Implemented `scripts/check_import_graph.py` to enforce strict import boundaries and allow-listed exceptions
+    - **CI Integration**: Added ADR-001 boundary check to `lint.yml` workflow to prevent regression
+    - **Impact**: CI will now fail on *new* unauthorized cross-sibling imports, preventing architectural drift.
+    - **Public API consolidation**: Deprecated unsanctioned symbols and reserved sanctioned entry points (`CalibratedExplainer`, `WrapCalibratedExplainer`, etc.)
+    - **Legacy support**: Documented and isolated `legacy` namespace with migration paths
 
-### ADR-002 Validation Parity Implementation ✅
+### ADR-002 Validation Parity Implementation 
 
 - **Completed ADR-002 validation parity for v0.10.0 release**
   - **Legacy exception taxonomy replacement**: Replaced 42+ `ValueError`/`RuntimeError` raises across calibration, plugins, and utilities with ADR-002 exception taxonomy (`ValidationError`, `DataShapeError`, `ConfigurationError`, `NotFittedError`, etc.)
@@ -86,7 +76,35 @@
     - Output format validation: `ValidationError` for invalid formats; `ConfigurationError` for unsupported formats
   - **Total exceptions replaced**: 44+ legacy `ValueError`/`RuntimeError`/`TypeError` raises → ADR-002 taxonomy
   - **Structured details payloads**: All exceptions include comprehensive diagnostic dictionaries with context-specific information
-  - **Regression test coverage**: Added 19 new tests validating exception types, details payloads, and hierarchy compliancespecifications
+  - **Regression test coverage**: Added 19 new tests validating exception types, details payloads, and hierarchy compliance specifications
+
+### ADR-003 Gap Resolution & Completion 
+
+- **Resolved all 4 identified implementation gaps** in ADR-003 caching strategy for v0.10.0 release
+  - **ExplanationCacheFacade wired into pipeline** (was defined but unused):
+    - Integrated `ExplanationCacheFacade` into `calibration/summaries.py` with forwarding logic
+    - Added `_get_calibration_data_hash()` function for stable cache keys
+    - `get_calibration_summaries()` now checks shared cache before computing
+    - Backward compatibility: falls back to instance-level caches when facade unavailable
+    - Invalidation path: `invalidate_calibration_summaries()` now clears shared cache + instance caches
+  - **Pympler dependency added** (was missing from dependencies):
+    - Added `pympler` to `pyproject.toml` dependencies (required by ADR-003 spec)
+    - Enables precise memory profiling in v1.0.1+ (currently uses `sys.getsizeof` fallback)
+  - **Comprehensive telemetry test coverage added** (was overstated):
+    - Added `test_calibrator_cache_flush_clears_all_entries()` – validates manual flush operation
+    - Added `test_calibrator_cache_reset_version_invalidates_old_entries()` – validates version-based invalidation
+    - Added `test_calibrator_cache_telemetry_events_coverage()` – comprehensive test for all 8 event types:
+      - `cache_hit`, `cache_miss`, `cache_store`, `cache_evict`, `cache_skip`, `cache_reset`, `cache_flush`, `cache_version_reset`
+    - Added `test_lru_cache_forksafe_reset_clears_state()` – validates fork-safety operation
+    - Test count: 19 → 23 tests (added 4 gap-fixing tests)
+  - **ADR-003 status updated** (was Proposed):
+    - Updated `improvement_docs/adrs/ADR-003-caching-key-and-eviction.md` from Status: Proposed → Status: Accepted
+    - Updated implementation note reflecting completion and pympler inclusion
+  - **Documentation updated**:
+    - `improvement_docs/adr\ mending/ADR-003/IMPLEMENTATION_SUMMARY.md` – Comprehensive gap resolution notes with before/after validation
+    - RELEASE_PLAN_v1.md – ADR-003 section marked ✅ COMPLETED
+  - **Test results**: All 23 cache tests passing (100%)
+  - **Impact**: Zero breaking changes; all integrations backward compatible; opt-in caching remains default
 
 ### Test Coverage Improvements
 
@@ -98,21 +116,6 @@
   - **Extended plotting module tests** by 6 tests: Additional coverage for `_format_save_path()` with string/pathlib/empty inputs and `_derive_threshold_labels()` with edge cases
   - **Test stability:** 1,323 total tests passing (4 marked xfail due to global state pollution in deprecations module, which is mitigated and acceptable)
   - **Architecture insight:** Deprecated low-coverage modules (cache/parallel at 48–55%) do not block gate achievement; main gaps are in active high-complexity modules (plotting.py 70.4%, narrative_generator.py 68%)
-
-### ADR-001 Gap Closure
-
-- **All ADR-001 gaps (0–7) now addressed:** Comprehensive architectural alignment of import boundaries, public API surface, and namespace documentation
-  - **Stage 0 — Scope Confirmation:** ✅ Core ADR-001 boundaries confirmed; 5 intentional deviations documented (legacy, api, plotting, perf, integrations)
-  - **Stage 1 — Package Extraction:** ✅ Calibration, cache/parallel, and schema extraction complete; backward compatibility shims in place
-  - **Stage 2 — Cross-Sibling Decoupling:** ✅ 14 module-level imports from core converted to lazy/TYPE_CHECKING; transitive dependency reduction
-  - **Stage 3 — Public API Narrowing:** ✅ Unsanctioned symbols (13) now emit DeprecationWarning; API locked to 3 sanctioned entry points for v0.11.0
-  - **Stage 4 — Namespace Documentation:** ✅ All namespaces classified with rationale, deprecation timelines, and migration paths
-  - **Stage 5 — Import Graph Linting:** ✅ AST-based static analyzer detects violations; 17 enforcement tests; CI-ready with baseline (89 violations; ~60 TYPE_CHECKING false positives)
-- **Implemented "Allow-list" strategy for package boundaries** (Phase 1 of ADR-001 Gap Closure)
-  - **Updated Linter**: `scripts/check_import_graph.py` now enforces a strict allow-list of cross-sibling imports.
-  - **Defined Exceptions**: Created `improvement_docs/adr mending/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` documenting the 6 allowed architectural patterns (Exception Hierarchy, Orchestrator, Interfaces, Shared Utils, Visualization, Legacy).
-  - **Reduced Violations**: False positive violations reduced from 153 to 73. Remaining violations are true positives targeted for Phase 2 refactoring.
-  - **Impact**: CI will now fail on *new* unauthorized cross-sibling imports, preventing architectural drift.
 
 ## [v0.9.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.1) - 2025-11-27
 

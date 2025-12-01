@@ -31,3 +31,6 @@ jobs:
       - name: Docstring coverage report
         run: |
           python scripts/check_docstring_coverage.py --fail-under 94.0
+      - name: ADR-001 Boundary Check
+        run: |
+          python scripts/check_import_graph.py
