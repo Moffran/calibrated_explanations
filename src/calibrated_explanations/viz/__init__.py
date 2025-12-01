@@ -15,6 +15,8 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:  # pragma: no cover - import-time only
     from . import matplotlib_adapter, plots
     from .builders import (
+        REGRESSION_BAR_COLOR,
+        REGRESSION_BASE_COLOR,
         _legacy_get_fill_color,
         build_alternative_probabilistic_spec,
         build_alternative_regression_spec,
@@ -57,6 +59,8 @@ __all__ = (
     "build_global_plotspec_dict",
     "build_factual_probabilistic_plotspec_dict",
     "is_valid_probability_values",
+    "REGRESSION_BAR_COLOR",
+    "REGRESSION_BASE_COLOR",
     "_legacy_get_fill_color",
     "render",
     "matplotlib_adapter",
@@ -84,6 +88,8 @@ _NAME_TO_MODULE = {
         "build_factual_probabilistic_plotspec_dict",
     ),
     "is_valid_probability_values": ("builders", "is_valid_probability_values"),
+    "REGRESSION_BAR_COLOR": ("builders", "REGRESSION_BAR_COLOR"),
+    "REGRESSION_BASE_COLOR": ("builders", "REGRESSION_BASE_COLOR"),
     "_legacy_get_fill_color": ("builders", "_legacy_get_fill_color"),
     "render": ("matplotlib_adapter", "render"),
     "matplotlib_adapter": ("matplotlib_adapter", None),

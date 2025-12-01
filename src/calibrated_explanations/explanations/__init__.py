@@ -19,13 +19,18 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         FactualExplanation,
         FastExplanation,
     )
-    from .explanations import AlternativeExplanations, CalibratedExplanations
+    from .explanations import (
+        AlternativeExplanations,
+        CalibratedExplanations,
+        FrozenCalibratedExplainer,
+    )
     from .models import Explanation, FeatureRule, from_legacy_dict
 
 
 __all__ = (
     "CalibratedExplanations",
     "AlternativeExplanations",
+    "FrozenCalibratedExplainer",
     "CalibratedExplanation",
     "FactualExplanation",
     "AlternativeExplanation",
@@ -40,6 +45,7 @@ __all__ = (
 _NAME_TO_MODULE = {
     "CalibratedExplanations": ("explanations", "CalibratedExplanations"),
     "AlternativeExplanations": ("explanations", "AlternativeExplanations"),
+    "FrozenCalibratedExplainer": ("explanations", "FrozenCalibratedExplainer"),
     "CalibratedExplanation": ("explanation", "CalibratedExplanation"),
     "FactualExplanation": ("explanation", "FactualExplanation"),
     "AlternativeExplanation": ("explanation", "AlternativeExplanation"),
