@@ -184,9 +184,9 @@ class ParallelExecutor:
         
         self.metrics.submitted += len(items_list)
         start_time = time.perf_counter()
-        
+
         try:
-            strategy = self._resolve_strategy()
+            strategy = self._resolve_strategy(work_items=candidate)
             results = strategy(fn, items_list, workers=workers, chunksize=chunksize)
         except Exception as exc:  # pragma: no cover - best effort fallback
             self.metrics.failures += 1
@@ -203,7 +203,10 @@ class ParallelExecutor:
                 "strategy": self._active_strategy_name or self.config.strategy,
                 "items": len(items_list),
                 "duration": duration,
-                "workers": workers or self.config.max_workers
+                "workers": workers or self.config.max_workers,
+                "work_items": candidate,
+                "task_size_hint_bytes": self.config.task_size_hint_bytes,
+                "granularity": self.config.granularity,
             })
         return results
 
@@ -212,11 +215,13 @@ class ParallelExecutor:
     # ------------------------------------------------------------------
     def _resolve_strategy(
         self,
+        *,
+        work_items: int | None = None,
     ) -> Callable[[Callable[[T], R], Sequence[T], Any], List[R]]:
         """Return a concrete execution strategy based on configuration."""
         strategy = self._active_strategy_name or self.config.strategy
         if strategy == "auto":
-            strategy = self._auto_strategy()
+            strategy = self._auto_strategy(work_items=work_items)
         if strategy == "threads":
             return partial(self._thread_strategy)
         if strategy == "processes":
@@ -225,22 +230,35 @@ class ParallelExecutor:
             return partial(self._joblib_strategy)
         return partial(self._serial_strategy)
 
-    def _auto_strategy(self) -> str:
+    def _auto_strategy(self, *, work_items: int | None = None) -> str:
         """Choose a sensible default backend for the current platform."""
+        # 0. Honour explicit hints to stay serial for tiny workloads
+        if work_items is not None and work_items < max(2 * self.config.min_batch_size, 64):
+            return "sequential"
+
         # 1. Platform constraints
         if os.name == "nt":  # prefer threads on Windows for compatibility
             return "threads"
-            
+
         # 2. Resource constraints
         cpu_count = os.cpu_count() or 1
         if cpu_count <= 2:
             return "threads"
-            
+
         # 3. Workload heuristics
         # If tasks are very large, pickling overhead in processes might outweigh GIL benefits
         # Threshold: 10MB (arbitrary, but conservative)
         if self.config.task_size_hint_bytes > 10 * 1024 * 1024:
             return "threads"
+
+        if work_items is not None:
+            # Prefer threads when payloads are modest or when feature granularity favours
+            # in-process sharing; tilt toward processes only when the workload is heavy
+            # enough to amortise spin-up costs.
+            if work_items < 5000:
+                return "threads"
+            if work_items > 50000 and self.config.granularity == "instance":
+                return "processes"
 
         # 4. Library preference
         # When joblib is available prefer it because of smarter chunking

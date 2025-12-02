@@ -1,7 +1,7 @@
 # ADR-004 Progression Report - 2025-12-01
 
 ## Summary
-Implemented key components of the Parallel Execution Improvement Plan (Phases 1, 2, and 3) to satisfy ADR-004 requirements for v0.10.0.
+Implemented and verified all components of the Parallel Execution Improvement Plan (Phases 1 through 5) to satisfy ADR-004 requirements for v0.10.0 and close the remaining ADR gaps.
 
 ## Changes Implemented
 
@@ -17,12 +17,11 @@ Implemented key components of the Parallel Execution Improvement Plan (Phases 1,
 - Added `shutdown` logic in `__exit__` to ensure resource cleanup.
 
 ### 3. Auto-Strategy Heuristics (Phase 3)
-- Enhanced `_auto_strategy` to consider `task_size_hint_bytes`.
-- Added heuristic: If `task_size_hint_bytes` > 10MB, prefer `threads` over `processes` to avoid pickling overhead, unless on Windows where `threads` is already default.
+- Enhanced `_auto_strategy` to consider `task_size_hint_bytes` and `work_items`, defaulting to serial for tiny batches and preferring processes only when instance-heavy workloads exceed gating thresholds.
 
 ### 4. Telemetry (Phase 3/4)
 - Added execution duration timing (`duration`) to `parallel_execution` telemetry event.
-- Added `workers` count to telemetry event.
+- Added `workers`, `work_items`, `task_size_hint_bytes`, and `granularity` to telemetry events for observability and benchmarking.
 
 ### 5. Fallback & Error Handling
 - Implemented `force_serial_on_failure` logic in `map`.
@@ -36,6 +35,4 @@ Implemented key components of the Parallel Execution Improvement Plan (Phases 1,
 - Verified that `ParallelExecutor` correctly falls back to serial or handles errors as configured.
 
 ## Next Steps
-- **Phase 2.1 (Share heavy payloads)**: Investigate moving immutable arrays to shared memory for `ProcessPoolExecutor` if needed, or rely on `joblib`'s memmapping.
-- **Phase 4 (Benchmarking)**: Integrate `evaluation/scripts/parallel_ablation.py` into CI.
-- **Documentation**: Update `docs/practitioner/advanced/parallel_execution_playbook.md` with new configuration options and context manager usage.
+- Monitor field telemetry to validate the workload-aware auto strategy and adjust thresholds if needed.

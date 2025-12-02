@@ -1,5 +1,7 @@
 from functools import partial
 
+from typing import Any
+
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
 
 
@@ -144,6 +146,56 @@ def test_auto_strategy(monkeypatch):
         "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
     )
     assert executor._auto_strategy() == "processes"
+
+
+def test_auto_strategy_work_items(monkeypatch):
+    config = ParallelConfig(enabled=True, strategy="auto", min_batch_size=16)
+    executor = ParallelExecutor(config)
+
+    assert executor._auto_strategy(work_items=10) == "sequential"
+    assert executor._auto_strategy(work_items=4000) == "threads"
+
+    monkeypatch.setattr("calibrated_explanations.parallel.parallel.os.name", "posix", raising=False)
+    monkeypatch.setattr("calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False)
+    executor.config.granularity = "instance"
+    assert executor._auto_strategy(work_items=60000) == "processes"
+
+
+def test_resolve_strategy_forwards_work_items(monkeypatch):
+    config = ParallelConfig(enabled=True, strategy="auto")
+    executor = ParallelExecutor(config)
+
+    captured: dict[str, int | None] = {"work_items": None}
+
+    def fake_auto_strategy(*, work_items: int | None = None) -> str:
+        captured["work_items"] = work_items
+        return "threads"
+
+    monkeypatch.setattr(executor, "_auto_strategy", fake_auto_strategy)
+    strategy = executor._resolve_strategy(work_items=123)
+
+    assert captured["work_items"] == 123
+    assert strategy.func.__name__ == "_thread_strategy"
+
+
+def test_map_passes_work_items_to_resolver(monkeypatch):
+    config = ParallelConfig(enabled=True, min_batch_size=1)
+    executor = ParallelExecutor(config)
+
+    captured: dict[str, int | None] = {"work_items": None}
+
+    def fake_resolve_strategy(*, work_items: int | None = None):
+        captured["work_items"] = work_items
+
+        def _runner(fn, items, **_: Any):
+            return [fn(item) for item in items]
+
+        return _runner
+
+    monkeypatch.setattr(executor, "_resolve_strategy", fake_resolve_strategy)
+    executor.map(lambda x: x + 1, [1, 2, 3], work_items=99)
+
+    assert captured["work_items"] == 99
 
 
 def test_thread_strategy(monkeypatch):

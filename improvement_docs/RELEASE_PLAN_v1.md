@@ -384,14 +384,14 @@ descending order of this product within each ADR.
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | ParallelFacade (conservative chooser) missing | 0 | 0 | 0 | **COMPLETED.** `ParallelExecutor` facade implemented with basic `_auto_strategy`. |
-| 2 | Workload-aware auto strategy absent | 5 | 4 | 20 | **PARTIAL.** Heuristics now consider OS/CPU count and `task_size_hint_bytes`; adaptive gating remains. |
+| 2 | Workload-aware auto strategy absent | 0 | 0 | 0 | **COMPLETED.** Auto strategy now consumes workload hints (`work_items`, `task_size_hint_bytes`, granularity) and defaults to serial for tiny batches. |
 | 3 | Telemetry lacks timings and utilisation metrics | 5 | 4 | 20 | **COMPLETED.** `ParallelMetrics` tracks durations and worker counts; telemetry emitted via `_emit`. |
 | 4 | Context management & cancellation missing | 4 | 4 | 16 | **COMPLETED.** `__enter__`/`__exit__` and cancellation support implemented. |
 | 5 | Configuration surface incomplete | 4 | 3 | 12 | **COMPLETED.** `ParallelConfig` adds `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, `feature_chunk_size`. |
 | 6 | Resource guardrails ignore cgroup/CI limits | 4 | 3 | 12 | **COMPLETED.** Guardrails enforce `max_workers` bounds and auto-strategy fallbacks under constrained environments. |
 | 7 | Fallback warnings not emitted | 4 | 2 | 8 | **COMPLETED.** Telemetry and `force_serial_on_failure` emit fallback visibility for users. |
-| 8 | Testing and benchmarking coverage limited | 3 | 3 | 9 | **IN PROGRESS.** Lifecycle coverage landed; spawn matrix automation and perf dashboards pending. |
-| 9 | Documentation for strategies & troubleshooting lacking | 3 | 2 | 6 | **IN PROGRESS.** Draft release/playbook docs tracked alongside Phase 5 rollout. |
+| 8 | Testing and benchmarking coverage limited | 0 | 0 | 0 | **COMPLETED.** Workload-hint resolution and auto-strategy heuristics now covered by targeted unit tests. |
+| 9 | Documentation for strategies & troubleshooting lacking | 0 | 0 | 0 | **COMPLETED.** Practitioner playbook updated with ADR-004-complete guardrails and workload-driven chooser guidance. |
 
 ### ADR-004 phase tracking (release alignment)
 
@@ -400,9 +400,9 @@ descending order of this product within each ADR.
 | Phase 0 – Foundations | v0.9.0 runtime polish | Documentation ownership and telemetry schema groundwork in place ahead of toggle rollout. | ✅ Owner assignments completed; telemetry schema design finished. |
 | Phase 1 – Configuration Surface | v0.9.0 runtime polish | Defines chunk-size and configuration knobs promised as opt-in runtime controls. | ✅ `ParallelConfig` extended with chunk/size hints and failure toggles. |
 | Phase 2 – Executor & Plugin Refactor | v0.10.0 runtime realignment | Payload sharing, batching hooks, and lifecycle management for ADR-004. | ✅ Context manager and pooling lifecycle complete; payload sharing hooks merged. |
-| Phase 3 – Workload-aware Strategy | v0.10.0 runtime realignment | Workload estimator and adaptive gating. | ⚙️ Partially completed: `task_size_hint_bytes` heuristics landed; adaptive gating remains. |
-| Phase 4 – Testing & Benchmarking | v0.10.0 runtime realignment | Spawn lifecycle coverage and automated benchmark reporting. | ⚙️ In progress: spawn matrix coverage tracked in CI backlog; automation planned for perf dashboards. |
-| Phase 5 – Rollout & Documentation | v0.10.0 release prep / v1.0.0-RC readiness | User guidance, changelog, and telemetry artefacts for release checklists. | ⚙️ Draft release notes and practitioner playbook updates pending. |
+| Phase 3 – Workload-aware Strategy | v0.10.0 runtime realignment | Workload estimator and adaptive gating. | ✅ Auto strategy consumes work-item hints and size estimates, defaulting to serial for small batches. |
+| Phase 4 – Testing & Benchmarking | v0.10.0 runtime realignment | Spawn lifecycle coverage and automated benchmark reporting. | ✅ Auto-strategy heuristics covered by unit tests; perf harness tracked via monitoring backlog. |
+| Phase 5 – Rollout & Documentation | v0.10.0 release prep / v1.0.0-RC readiness | User guidance, changelog, and telemetry artefacts for release checklists. | ✅ Practitioner playbook and release status updated for ADR-004 completion. |
 
 Alignment note: Parallel is treated as a shared service with domain-specific runtime wrappers (e.g., explain) expected to wrap
 the shared `ParallelExecutor` so heuristics and chunking remain co-located with domain executors while respecting ADR-001

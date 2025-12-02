@@ -258,7 +258,9 @@ class CalibratedExplainer:
         self._plugin_manager.initialize_orchestrators()
 
         self._perf_cache: CalibratorCache[Any] | None = perf_cache
-        self._perf_parallel: ParallelExecutor | None = perf_parallel
+        
+        # Initialize parallel executor (ADR-004: Honor CE_PARALLEL overrides)
+        self._perf_parallel: ParallelExecutor | None = self._plugin_manager.resolve_parallel_executor(perf_parallel)
 
         # Orchestrator references are now accessed via properties that delegate to PluginManager
         # No direct assignment needed - properties handle the delegation
