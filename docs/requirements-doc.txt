@@ -3,7 +3,7 @@ ipython
 scikit-learn
 matplotlib >= 3.4
 myst_parser==3.0.1
-nbsphinx==0.9.7
+nbsphinx==0.9.8
 numpy >= 1.20
 numpydoc
 pytest
