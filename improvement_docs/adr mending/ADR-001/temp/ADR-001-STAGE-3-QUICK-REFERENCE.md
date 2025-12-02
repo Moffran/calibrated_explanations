@@ -249,7 +249,7 @@ What is the symbol's location?
 | Add tests (File 3) | 1.5 hr | 14 tests × 6 min each |
 | CHANGELOG + docs | 1 hr | Use template from roadmap |
 | Test suite run | 30 min | Full pytest cycle |
-| **Total** | **~5 hours** | One sprint per team |
+| **Total** | **~5 hours** | One iteration per team |
 
 ---
 

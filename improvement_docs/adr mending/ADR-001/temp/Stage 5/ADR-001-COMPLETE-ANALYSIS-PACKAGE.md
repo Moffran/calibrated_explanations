@@ -147,7 +147,7 @@ START: Read ADR-001-DECISION-BRIEF.md
 
 1. Read: **ADR-001-DECISION-BRIEF.md** (15 min)
 2. Vote on: Approve Phase 1? Approve Phase 2? Defer Phase 3?
-3. If YES to Phase 1: Assign developer + schedule 2 hours this sprint
+3. If YES to Phase 1: Assign developer + schedule 2 hours this iteration
 4. If YES to Phase 2: Schedule post-v0.10.0
 
 ### 👨‍💻 **Developer (Implementing Phase 1)**

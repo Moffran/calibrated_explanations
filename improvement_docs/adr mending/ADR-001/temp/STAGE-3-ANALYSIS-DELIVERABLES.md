@@ -97,7 +97,7 @@ This analysis generated **5 comprehensive documents** designed for different aud
 
 **Key Takeaways:**
 - Gap is clearly defined and addressable
-- Timeline is realistic (1 sprint implementation + full release cycle)
+- Timeline is realistic (1 iteration implementation + full release cycle)
 - Low risk, moderate effort
 - Clear ROI (aligns package boundaries per ADR-001)
 
@@ -145,7 +145,7 @@ This analysis generated **5 comprehensive documents** designed for different aud
 - Migration flow (user journey)
 - Version timeline (v0.10.0 → v0.11.0 → v1.0.0)
 - Symbol classification matrix (all symbols organized by category)
-- Implementation timeline (2-week sprint + post-release)
+- Implementation timeline (iteration + post-release)
 - Effort breakdown (visual + hours)
 - Test coverage summary (visual tree)
 - Document artifacts (what was generated)
@@ -164,7 +164,7 @@ This analysis generated **5 comprehensive documents** designed for different aud
 - Clear visual of 16-symbol → 3-symbol API
 - Timeline shows two-release deprecation window
 - All 4 symbol categories mapped to submodule paths
-- 14 new tests + low risk make this achievable in 1 sprint
+- 14 new tests + low risk make this achievable in 1 iteration
 
 ---
 
@@ -266,12 +266,12 @@ improvement_docs/adrs/
 
 ## 🚀 Next Steps
 
-### Immediate (This Week)
+### Immediate (This Iteration)
 1. **Review** this index and read `ADR-001-STAGE-3-SUMMARY.md`
 2. **Approve** by relevant stakeholders (tech leads, maintainers)
-3. **Schedule** implementation (recommend: next sprint)
+3. **Schedule** implementation (recommend: next iteration)
 
-### Near-Term (Next Sprint)
+### Near-Term (Next Iteration)
 1. **Create feature branch:** `feat/adr-001-stage-3-api-narrowing`
 2. **Follow roadmap:** 8 step-by-step stages in `IMPLEMENTATION-ROADMAP.md`
 3. **Use code templates:** Copy-paste from roadmap (time-saver)

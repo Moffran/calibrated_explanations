@@ -5,7 +5,7 @@
 This note enumerates the public-facing methods and parameters that library users
 rely on today, based on the executable examples in the README and maintained
 notebooks. The goal is to make the existing surface area explicit so we can add
-hard guardrails without accidentally breaking published workflows.
+hard guardrails without accidentally breaking published workflows. Terminology follows [terminology](RELEASE_PLAN_v1.md#terminology-for-improvement-plans): release milestones mark the gates in the enforcement roadmap, and phases referenced in dependent plans keep those definitions.
 
 ## Primary entry point: `WrapCalibratedExplainer`
 
@@ -178,6 +178,20 @@ These examples of WrapCalibratedExplainer shows what may only be extended, not r
    # Include uncertainty interval, outputted as a tuple (low, high)
    calib_proba_cls, low_high = classifier.predict_proba(X_test_cls, uq_interval=True)
 ```
+
+## Enforcement and verification roadmap
+
+- **Release alignment:**
+  - v0.9.1: add CI smoke notebooks that replay the README/quickstart flows and fail on API/keyword regressions; wire into ADR-020 status tracking.
+  - v0.10.0: introduce automated API diff checks against the captured baseline signatures for `WrapCalibratedExplainer`, `CalibratedExplainer`, and explanation collections; block release if deltas are not annotated with waivers that expire in one iteration.
+  - v0.10.1: convert the notebook/CLI checks into required release gates and ensure legacy alias coverage is either tested or explicitly waived with expiry dates.
+- **Guardrails and dependencies:**
+  - Tie verification steps to ADR-017 naming waves so module renames run alongside contract tests rather than diverging.
+  - Keep the enforcement roadmap synced with ADR-020 milestones so legacy API enforcement visibility appears in the release plan tables.
+- **Verification steps:**
+  - Notebook smoke tests (classification, regression, probabilistic regression) run with `--nbval` or equivalent to confirm tutorial calls remain valid.
+  - API diff checks capture function/class signatures and keyword defaults; diffs require release-manager sign-off plus a remediation issue.
+  - Targeted smoke notebooks or scripts exercise `.predict`, `.predict_proba`, `.explain_factual`, `.explore_alternatives`, collection indexing, and `.plot` with filenames to keep plotting contracts intact.
 
 ## Summary of required guardrails
 

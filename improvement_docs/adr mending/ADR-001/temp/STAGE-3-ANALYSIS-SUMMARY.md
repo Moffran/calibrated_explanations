@@ -130,7 +130,7 @@ from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter
 
 ### Phase 1: v0.10.0 (Deprecation Phase)
 
-**Effort:** 4–6 hours (1 sprint)
+**Effort:** 4–6 hours (1 iteration)
 
 **Changes:**
 - Create `src/calibrated_explanations/utils/deprecation.py` – Central helper
@@ -282,12 +282,12 @@ Next: Implement Stage 3 (deprecation warnings in v0.10.0)
 
 ## 🚀 Next Steps
 
-### This Week
+### This Iteration
 - [ ] Review this analysis
 - [ ] Get stakeholder approval
-- [ ] Schedule implementation for next sprint
+- [ ] Schedule implementation for next iteration
 
-### Next Sprint
+### Next Iteration
 - [ ] Create feature branch: `feat/adr-001-stage-3-api-narrowing`
 - [ ] Follow 8-step implementation roadmap
 - [ ] Use code templates from roadmap
@@ -308,7 +308,7 @@ Next: Implement Stage 3 (deprecation warnings in v0.10.0)
 2. **Clear Path** – Migration examples for all 4 symbol categories
 3. **Well-Tested** – 14 unit tests validate both warning emission and sanctioned symbols
 4. **ADR-Aligned** – Directly addresses ADR-001 Gap #5 + implements ADR-011
-5. **Effort-Efficient** – 4–6 hours implementation + ~5 hours ongoing (one sprint total)
+5. **Effort-Efficient** – 4–6 hours implementation + ~5 hours ongoing (one iteration total)
 6. **User-Friendly** – Warnings point to exact migration path; no guessing
 
 ---
@@ -367,5 +367,5 @@ This package provides everything needed to:
 
 **Analysis Date:** 2025-11-28  
 **Status:** ✅ READY FOR IMPLEMENTATION  
-**Next Action:** Schedule implementation sprint + get stakeholder approval
+**Next Action:** Schedule implementation iteration + get stakeholder approval
 

@@ -223,7 +223,7 @@ plots.plot_factual(...)
    - Run full test suite
    - Verify coverage ≥88%
 
-**Total effort:** 4–6 hours (1 sprint)
+**Total effort:** 4–6 hours (1 iteration)
 
 ---
 

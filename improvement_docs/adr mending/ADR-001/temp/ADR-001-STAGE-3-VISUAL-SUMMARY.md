@@ -175,12 +175,12 @@ v1.0.0 (Future)
 ## 🚀 Implementation Timeline
 
 ```
-WEEK 1: Preparation & Testing
+ITERATION 1: Preparation & Testing
 ├─ Mon-Wed: Create deprecation helper + update __getattr__
 ├─ Thu: Add unit tests (14 new tests)
 └─ Fri: Verify no regressions (coverage ≥88%)
 
-WEEK 2: Documentation & Release
+ITERATION 2: Documentation & Release
 ├─ Mon-Tue: Create migration guide + architecture docs
 ├─ Wed: Update CHANGELOG + README
 ├─ Thu: Code review + address feedback
@@ -215,7 +215,7 @@ WHEN READY FOR v0.11.0:
 │ CHANGELOG + docs                60 min  █████████
 │ Full test suite validation      30 min  ████
 ├────────────────────────────────────────────┤
-│ TOTAL EFFORT: ~5 hours (1 sprint)          │
+│ TOTAL EFFORT: ~5 hours (1 iteration)       │
 └────────────────────────────────────────────┘
 
 Complexity: 🟡 Medium

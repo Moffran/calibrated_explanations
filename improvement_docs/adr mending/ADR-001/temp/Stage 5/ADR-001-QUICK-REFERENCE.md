@@ -183,7 +183,7 @@ NOW (v0.10.0)    →    v0.10.1    →    v0.11.0+
 - [ ] Discuss 3 decision points with team
 - [ ] Vote on Phases
 
-### NEXT SPRINT (If Phase 1 Approved)
+### NEXT STEPS (If Phase 1 Approved)
 - [ ] Assign developer
 - [ ] Allocate 2 hours
 - [ ] Target: Unblock v0.10.0

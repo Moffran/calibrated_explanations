@@ -96,7 +96,7 @@ from calibrated_explanations import (
 
 ## 🚀 Implementation Checklist (v0.10.0)
 
-- [ ] Create `src/calibrated_explanations/utils/deprecation.py` (30 min)
+- [ ] Schedule implementation iteration
 - [ ] Fix calibration import bug: `..calibration` → `.calibration` (10 min)
 - [ ] Update `__getattr__` with deprecation warnings (90 min)
 - [ ] Add 14 unit tests (90 min)
@@ -125,7 +125,7 @@ from calibrated_explanations import (
 | --- | --- | --- | --- |
 | **End Users (sanctioned API)** | ✅ None | None | N/A |
 | **End Users (unsanctioned API)** | 🟡 Warnings; need to update imports | Low | v0.10.x cycle |
-| **Developers (implementing)** | Low (follow roadmap template) | 5 hours | 1 sprint |
+| **Developers (implementing)** | Low (follow roadmap template) | 5 hours | 1 iteration |
 | **Reviewers** | Low (clear checklist) | 45 min | PR review |
 | **Maintainers** | 🟢 Low overhead | Low | Ongoing |
 
@@ -202,7 +202,7 @@ improvement_docs/
 3. **Ready-to-Use** – Code templates provided; 80% copy-paste
 4. **Well-Tested** – 14 unit tests validate all scenarios
 5. **ADR-Compliant** – Aligns with ADR-001 (boundaries) + ADR-011 (deprecation)
-6. **One Sprint** – 5 hours implementation effort
+6. **One Iteration** – 5 hours implementation effort
 
 ---
 
@@ -235,11 +235,11 @@ A: API remains confusing; users don't know which imports are official. ADR-001 G
 - [ ] Read `STAGE-3-ANALYSIS-SUMMARY.md` (15 min)
 - [ ] Approve or request changes
 
-### This Week
+### This Iteration
 - [ ] Get stakeholder sign-off
-- [ ] Schedule implementation sprint
+- [ ] Schedule implementation iteration
 
-### Next Sprint
+### Next Iteration
 - [ ] Create branch: `feat/adr-001-stage-3-api-narrowing`
 - [ ] Follow `adrs/ADR-001-STAGE-3-IMPLEMENTATION-ROADMAP.md`
 - [ ] Use code templates
@@ -268,5 +268,5 @@ A: API remains confusing; users don't know which imports are official. ADR-001 G
 
 **Status:** ✅ READY FOR IMPLEMENTATION  
 **Contact:** This analysis package is self-contained and complete.  
-**Next:** Schedule implementation sprint and approve.
+**Next:** Schedule implementation iteration and approve.
 

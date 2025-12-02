@@ -58,7 +58,7 @@ Positive:
 - Patch coverage guard discourages untested features while permitting incremental debt paydown.
 
 Negative/Risks:
-- Initial CI failures until legacy debt is addressed; requires remediation sprints.
+- Initial CI failures until legacy debt is addressed; requires remediation efforts.
 - Slightly longer test runtime from additional reporting/threshold checks.
 
 ## Adoption & Migration

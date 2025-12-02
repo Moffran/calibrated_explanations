@@ -1,7 +1,7 @@
 # ADR-001 Stage 3 Implementation Roadmap
 
 **Status:** Ready for v0.10.0 Implementation  
-**Estimated Effort:** 4–6 hours (3-4 sprints)  
+**Estimated Effort:** 4–6 hours (3-4 iterations)  
 **Prerequisites:** ADR-001 Stages 1–2 complete ✅
 
 ---

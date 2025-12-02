@@ -4,6 +4,8 @@
 
 This merged plan combines the coverage standardization roadmap with the module-level gap analysis so gating, baselines, and remediation tactics live together.
 
+Terminology follows hard guardrails without accidentally breaking published workflows. Terminology follows [terminology](RELEASE_PLAN_v1.md#terminology-for-improvement-plans): phases are numbered plan segments (0–3 below), and release milestones are the versioned gates (v0.9.1, v0.10.0, v0.10.1) where gates turn on.
+
 ## Tooling and gating roadmap
 
 ### Phase 0 – Tooling foundation (Week 1)
@@ -25,6 +27,7 @@ This merged plan combines the coverage standardization roadmap with the module-l
 1. Update `.github/workflows/test.yml` to run `pytest --cov=src/calibrated_explanations --cov-report=xml --cov-report=term --cov-fail-under=90` and upload the XML artifact for Codecov patch gating.【F:.github/workflows/test.yml†L33-L49】
 2. Enable Codecov’s “patch coverage must be ≥88%” status check and make it required.
 3. Document the waiver process in `CONTRIBUTING.md`, emphasising that waivers must link to follow-up issues.【F:CONTRIBUTING.md†L49-L58】
+4. Map gating to releases: v0.9.1 enables the XML+Codecov upload, v0.10.0 raises the project `fail_under` to 90, and v0.10.1 makes per-module thresholds for plugins/plotting mandatory with expiry dates captured beside each exemption.
 
 ### Phase 3 – Continuous improvement (Ongoing)
 1. Review `.coveragerc` exemptions quarterly, removing expired shims or adding TODO dates.
@@ -103,15 +106,16 @@ The same run highlighted thin coverage across gateway modules such as `core/__in
 
 ## Proposed remediation roadmap
 
-| Phase | Scope | Target modules | Success criteria |
-| --- | --- | --- | --- |
-| Sprint 1 | Plotting router + builder hardening | `plotting`, `viz/builders`, legacy plotting save paths | Windows save-extension assertions restored; plotting router coverage ≥80%; builder uncertainty segments executed in tests. |
-| Sprint 2 | Explanation pipeline + wrappers | `core/calibrated_explainer`, `explanations/explanation`, `core/wrap_explainer` | Categorical init and caching branches covered; wrapper APIs exercised; module coverage ≥90%. |
-| Sprint 3 | Plugin registry + built-ins | `plugins/registry`, `plugins/builtins`, `plugins/cli` | Trust toggles round-trip metadata; CLI smoke tests capture error paths; plugin modules reach ≥88% coverage. |
-| Sprint 4 | Gateways + legacy surfaces | `core/prediction_helpers`, `core/__init__`, `calibrated_explanations/__init__`, `legacy/plotting.py` | Lazy import guards and Mondrian validation tested; decision logged for the remaining legacy plotting surface (tests vs. `.coveragerc`); residual modules ≥88% or explicitly excluded. |
+| Iteration | Phase alignment | Focus | Success criteria | Release milestone |
+| --- | --- | --- | --- | --- |
+| Iteration 1 | Phase 1 debt burn-down | `plotting`, `viz/builders`, legacy plotting save paths | Windows save-extension assertions restored; plotting router coverage ≥80%; builder uncertainty segments executed in tests. | v0.9.1 |
+| Iteration 2 | Phase 1 debt burn-down | `core/calibrated_explainer`, `explanations/explanation`, `core/wrap_explainer` | Categorical init and caching branches covered; wrapper APIs exercised; module coverage ≥90%. | v0.9.1 |
+| Iteration 3 | Phase 2 CI gating | `plugins/registry`, `plugins/builtins`, `plugins/cli` | Trust toggles round-trip metadata; CLI smoke tests capture error paths; plugin modules reach ≥88% coverage. | v0.10.0 (dependent on explain plugin refactor landing) |
+| Iteration 4 | Phase 3 continuous improvement | `core/prediction_helpers`, `core/__init__`, `calibrated_explanations/__init__`, `legacy/plotting.py` | Lazy import guards and Mondrian validation tested; decision logged for the remaining legacy plotting surface (tests vs. `.coveragerc`); residual modules ≥88% or explicitly excluded. | v0.10.1 |
 
 ## Supporting actions
 1. Land shared fixtures in `tests/conftest.py` for synthetic calibration payloads, plugin descriptors, and plotting datasets so the new test suites stay concise.
 2. Normalize filesystem assertions (paths, extension ordering) via helper utilities that wrap `pathlib.Path`, guaranteeing the Windows/Posix parity fix remains exercised.
-3. Update `.coveragerc` after Sprint 4 to reflect the final decision on legacy re-exports, attaching expiry dates to any exclusions that remain.
-4. Track per-module thresholds each sprint (e.g., `coverage report --fail-under=<module-threshold>`) and surface them in CI dashboards to prevent regressions while the plan is underway.
+3. Update `.coveragerc` after Iteration 4 to reflect the final decision on legacy re-exports, attaching expiry dates to any exclusions that remain and recording them in the release checklist for v0.10.1.
+4. Track per-module thresholds periodically (e.g., `coverage report --fail-under=<module-threshold>`) and surface them in CI dashboards to prevent regressions while the plan is underway.
+5. Call out dependencies on structural refactors (explain plugin split, legacy plotting normalization) in planning so coverage goals move in lockstep with the code churn they rely on; coverage waivers tied to these refactors expire once the refactor merges.

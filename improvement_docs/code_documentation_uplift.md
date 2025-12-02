@@ -5,7 +5,7 @@
 This consolidated roadmap merges the ADR-018 docstring strategy with the `pydocstyle` execution guide so contributors have a single reference for planning and day-to-day execution.
 
 ## Goal
-Achieve consistent, numpydoc-compliant code documentation across the `calibrated_explanations` codebase with measurable coverage thresholds and automated enforcement.
+Achieve consistent, numpydoc-compliant code documentation across the `calibrated_explanations` codebase with measurable coverage thresholds and automated enforcement. Each phase below maps to the release train so stakeholders can see when gates turn on: Phase 0 in v0.8.0, Phase 1 in v0.9.1, Phase 2 in v0.10.0, and Phase 3 carried forward as the v1.0.0 sustainability bar. The uplift depends on the Documentation Overhaul blueprint to keep terminology and examples synchronized across prose and code (apply the same language for calibrated explanations, probabilistic regression, and optional telemetry callouts). Terminology follows hard guardrails without accidentally breaking published workflows. Terminology follows [terminology](RELEASE_PLAN_v1.md#terminology-for-improvement-plans): phases are numbered plan segments, and release milestones remain the versioned gates.
 
 ## Phase 0 – Preparation (Week 1)
 1. Ratify ADR-018 and circulate a short style primer in `CONTRIBUTING.md` and the README.
@@ -20,12 +20,14 @@ Achieve consistent, numpydoc-compliant code documentation across the `calibrated
 3. Create parallel issues/checklists for each subpackage with assignees and review deadlines.
 4. Add module summaries and upgrade docstrings to numpydoc format; capture tricky cases in a shared FAQ. Reinforce calibrated explanations/probabilistic regression as the primary narrative in examples and parameter descriptions, pair alternative explanations with triangular plot context, and mark telemetry/performance hooks (including fast explanation plugins) as optional references only.
 5. Track progress in a dashboard (GitHub project or spreadsheet) updated weekly.
+6. Target success metrics per batch before moving to Phase 2: Batch A–C reach ≥90% public callable coverage, Batch D reaches ≥88% (acknowledging plugin sprawl), Batch E ≥85% with an explicit waiver expiry by the next release, and Batch F aligns to the package-wide ≥90% goal.
 
-## Phase 2 – Tooling Enforcement (Weeks 5-6)
+## Phase 2 – Tooling Enforcement
 1. Enable `pydocstyle` in CI as non-blocking (warning-only) to surface regressions.
 2. Iterate on false positives; extend ignores only when accompanied by inline justification.
 3. Once ≥85% coverage achieved, flip the CI check to blocking for touched files.
 4. Capture and commit the initial failure report before blocking enforcement so future regressions reference a known baseline.
+5. Release cadence alignment: v0.10.0 branch cut flips the blocking check for touched files; v0.10.1 raises the default to package-wide ≥90% and makes waivers expire within one iteration unless renewed with a documented follow-up issue.
 
 ## Phase 3 – Continuous Improvement (Ongoing)
 1. Add a documentation coverage badge to README fed by scheduled job.

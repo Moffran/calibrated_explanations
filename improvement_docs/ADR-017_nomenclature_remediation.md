@@ -2,7 +2,7 @@
 
 # ADR-017 Nomenclature Remediation
 
-This consolidated plan combines the nomenclature review and standardization roadmap so the problem statement, phases, and success criteria live in one place.
+This consolidated plan combines the nomenclature review and standardization roadmap so the problem statement, phases, and success criteria live in one place. Terminology follows hard guardrails without accidentally breaking published workflows. Terminology follows [terminology](RELEASE_PLAN_v1.md#terminology-for-improvement-plans): phases are numbered plan segments, release milestones mark the gates, and any “stage” references belong only to ADR-001 historical material.
 
 ## Severity assessment
 
@@ -27,12 +27,13 @@ Collectively these issues indicate that nomenclature drift is systemic rather th
 2. Deprecate `core.py` by renaming the shim to `deprecated_core_module.py` and updating imports inside the package to target `calibrated_explanations.core`. Keep the old name as a thin import wrapper that emits a warning.【F:src/calibrated_explanations/core.py†L1-L14】
 3. Document the new naming policy inside `docs/architecture.md` and the developer guides so contributors can reference expectations.
 
-### Phase 2 – Module renames (weeks 3–5)
+### Phase 2 – Module renames
 1. Rename CamelCase and underscored private modules (`core/venn_abers.py`, `_interval_regressor.py`, `viz/plots.py`) to descriptive snake_case equivalents. The canonical implementations now live in `core/venn_abers.py`, `core/interval_regressor.py`, and `viz/plots.py`; temporary import shims lived under `legacy/` until their scheduled v0.9.0 removal.【F:src/calibrated_explanations/core/venn_abers.py†L1-L120】【F:src/calibrated_explanations/core/interval_regressor.py†L1-L120】【F:src/calibrated_explanations/viz/plots.py†L1-L20】【F:src/calibrated_explanations/legacy/__init__.py†L1-L6】
 2. Move shim modules and other legacy helpers into a dedicated `legacy/` namespace to visually distinguish transitional code.
 3. Update internal imports, tests, and docs to reference the canonical module names and rely on the shims only for backwards compatibility.
+4. Measurement checkpoint: track % of modules renamed periodically (target ≥50% by end of the phase) and record remaining alias counts in the release checklist for v0.9.1.
 
-### Phase 3 – Attribute and helper cleanup (weeks 6–8)
+### Phase 3 – Attribute and helper cleanup
 1. Replace direct access to mangled attributes (e.g. `_CalibratedExplainer__initialized`) with public or protected accessors so that helper modules stop propagating mangled names.【F:src/calibrated_explanations/core/calibration_helpers.py†L19-L115】
 2. Rename helper functions to follow verb-first snake_case conventions, removing ambiguous prefixes such as `safe_` unless they convey a real semantic guarantee.
 3. Update plugin identifiers and schema keys to follow the dot-delimited lowercase format described in ADR-017. Audit docs and code comments for alignment.
@@ -47,3 +48,5 @@ Collectively these issues indicate that nomenclature drift is systemic rather th
 - Helper modules are scoped by responsibility, and no new double-underscore attributes are introduced outside legacy compatibility layers.
 - Contributor docs and automated tooling reinforce the conventions, preventing future drift.
 - ADR-021 references link back to the terminology note relocated to the concepts library so interval semantics remain consistent.
+- Release mapping: Phases 1–2 align to v0.9.1 (with the % renamed and mangled attribute counts reported in the release checklist), Phase 3 cleanup and mangled-attribute removal ties to v0.10.0, and Phase 4 enforcement/cleanup completes before the v1.0.0 branch cut.
+- Legacy API contract stability: run ADR-020 notebook smoke tests and API diff checks after each rename wave to ensure `WrapCalibratedExplainer` and `CalibratedExplainer` signatures stay stable despite module moves.

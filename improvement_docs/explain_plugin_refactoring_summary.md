@@ -4,6 +4,14 @@
 
 Successfully decomposed the monolithic `CalibratedExplainer.explain` method into a plugin-based architecture, as specified in the user's requirement. This refactoring addresses ADR-004 gaps and separates execution strategies cleanly.
 
+Terminology follows hard guardrails without accidentally breaking published workflows. Terminology follows [terminology](RELEASE_PLAN_v1.md#terminology-for-improvement-plans): release milestones refer to versioned gates in the release plan uplift table, phases reference ADR-004 and related plan segments.
+
+**Status:** Core refactor merged; follow-on coverage and documentation uplift work remains.
+**Risks:**
+- Coverage gaps remain around plugin selection error paths and executor fallback branches; tie remediation to the ADR-019 phase that targets plugin modules (v0.10.0).
+- Documentation references to explain execution live in the contributor hub; keep terminology aligned with the documentation overhaul and code doc uplift to avoid drift.
+**Release alignment:** Surface plugin-refactor readiness in the release plan’s uplift status table (v0.10.0) and gate releases on the coverage/doc tasks listed below.
+
 ## Changes Implemented
 
 ### 1. New Package Structure: `core/explain/`
@@ -168,6 +176,7 @@ From the original task specification, remaining opportunities:
 
 4. **Configuration object**: Replace scattered executor/granularity checks with a
    unified `ParallelConfig` object per ADR-004 specification.
+5. **Coverage/doc alignment**: Add plugin-level unit tests (selection failures, executor fallbacks) and contributor doc snippets that mirror the documentation overhaul structure; target completion in the ADR-019 Phase 3 window (v0.10.0) and keep status reflected in the release plan uplift table.
 
 ## Conclusion
 
