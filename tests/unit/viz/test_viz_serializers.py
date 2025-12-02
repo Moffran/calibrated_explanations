@@ -1,7 +1,7 @@
 """Tests for PlotSpec serializers: to_dict and from_dict.
 
 Focuses on semantic assertions (domain invariants) and roundtrip
-verification. See TEST_GUIDELINES_ENHANCED.md for patterns.
+verification. See .github/tests-guidance.md for patterns.
 """
 
 import pytest

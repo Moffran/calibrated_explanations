@@ -13,11 +13,12 @@ CLI, configuration, and documentation updates.
    methods beyond basic parameter passing.
 3. Follow the {doc}`../foundations/governance/test_policy` so every Python
    example added to the docs or README gains a matching test in `tests/docs/`.
-4. Set up your environment using the workflow in {doc}`../foundations/governance/pr_guide` and run
+4. Consult the [Centralized Test Guidance](https://github.com/Moffran/calibrated_explanations/blob/main/.github/tests-guidance.md) for unit and integration testing standards, patterns, and anti-patterns.
+5. Set up your environment using the workflow in {doc}`../foundations/governance/pr_guide` and run
    the formatter, tests, and doc builds locally.
-5. Use the {doc}`extending/guides/index` collection when adding new plugins or
+6. Use the {doc}`extending/guides/index` collection when adding new plugins or
    command-line tooling.
-6. When upgrading between releases, consult the {doc}`../migration/index` for
+7. When upgrading between releases, consult the {doc}`../migration/index` for
    terminology changes, breaking changes, and migration guidance.
 
 ## Advanced contributor tooling

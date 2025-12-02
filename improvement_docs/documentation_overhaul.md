@@ -9,6 +9,14 @@ Last updated: 2025-10-28
 - **Owner:** Documentation working group
 - **Related ADRs:** ADR-027 (Documentation Audience Standard)
 
+### ADR-027 status snapshot
+
+| Item | Status | Notes |
+| --- | --- | --- |
+| Audience-first navigation and hubs | ⚙️ In progress | Navigation reordered; audience hubs under active rewrite. |
+| PR template parity review gate | ✅ Complete | Checklist item added so new docs keep practitioner/researcher parity. |
+| ADR alignment | ⚙️ In progress | ADR-022 marked superseded; remaining work tracked through this blueprint. |
+
 ## Purpose
 Establish a single, audience-led plan for rebuilding the documentation set so practitioners, researchers, and contributors can each reach calibrated explanations quickly without wading through optional telemetry or plugin details. This blueprint replaces the superseded information-architecture, review, and standardization plans that previously overlapped.
 

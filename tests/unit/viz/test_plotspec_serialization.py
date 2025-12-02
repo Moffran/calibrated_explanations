@@ -1,7 +1,7 @@
 """Tests for PlotSpec serialization and roundtrip behavior.
 
 Focuses on semantic assertions (domain invariants) rather than
-implementation details. See TEST_GUIDELINES_ENHANCED.md for patterns.
+implementation details. See .github/tests-guidance.md for patterns.
 """
 
 import numpy as np
