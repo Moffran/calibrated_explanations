@@ -474,12 +474,28 @@ def _assert_equivalent(modern_payload: Mapping[str, np.ndarray], reference_paylo
 def _instantiate_explainer(setup: ScenarioSetup, *, parallel: ParallelExecutor | None) -> CalibratedExplainer:
     """Create a fresh explainer instance with the requested parallel executor."""
 
+    kwargs = dict(setup.kwargs)
+    
+    # Force parallel plugin if parallel executor is enabled
+    if parallel is not None and parallel.config.enabled:
+        granularity = parallel.config.granularity
+        overrides = {}
+        if granularity == "feature":
+            overrides["factual"] = "core.explanation.factual.feature_parallel"
+            overrides["alternative"] = "core.explanation.alternative.feature_parallel"
+        elif granularity == "instance":
+            overrides["factual"] = "core.explanation.factual.instance_parallel"
+            overrides["alternative"] = "core.explanation.alternative.instance_parallel"
+        
+        if overrides:
+            kwargs["explanation_plugin_overrides"] = overrides
+
     explainer = CalibratedExplainer(
         setup.learner,
         setup.x_cal,
         setup.y_cal,
         perf_parallel=parallel,
-        **setup.kwargs,
+        **kwargs,
     )
     explainer.set_discretizer(None)
     return explainer
@@ -514,6 +530,9 @@ def _benchmark_variant(
 def _benchmark_scenario(setup: ScenarioSetup, operation: str) -> Mapping[str, Any]:
     """Return timing information for all parallel variants in a scenario."""
 
+    if VERBOSE:
+        print(f"Running baseline for {setup.spec.name}.{operation}...", flush=True)
+
     baseline_variant = PARALLEL_VARIANTS[0]
     baseline_parallel = ParallelExecutor(baseline_variant.config) if baseline_variant.config.enabled else None
     baseline_explainer = _instantiate_explainer(setup, parallel=baseline_parallel)
@@ -522,11 +541,14 @@ def _benchmark_scenario(setup: ScenarioSetup, operation: str) -> Mapping[str, An
     baseline_payload = _collect_payload(baseline_result)
     baseline_time = _time_call(baseline_callable)
 
+    if VERBOSE:
+        print(f"Baseline finished: {baseline_time:.4f}s", flush=True)
+
     variant_entries: List[MutableMapping[str, Any]] = []
     for variant in PARALLEL_VARIANTS:
         # Optionally announce the task/variant about to run
         if VERBOSE:
-            print(f"Task: {setup.spec.name}.{operation}  Variant: {variant.name}")
+            print(f"Task: {setup.spec.name}.{operation}  Variant: {variant.name}", flush=True)
 
         if variant is baseline_variant:
             entry = {
@@ -586,7 +608,15 @@ def benchmark_parallel_options() -> Iterable[Mapping[str, Any]]:
 
     rng = np.random.default_rng(RNG_SEED)
     for spec in DATASET_SPECS:
+        if VERBOSE:
+            print(f"--- Starting scenario: {spec.name} ---", flush=True)
+            print(f"Building setup for {spec.name}...", flush=True)
+        
         setup = _build_setup(spec, random_state=int(rng.integers(0, 10_000)))
+        
+        if VERBOSE:
+            print(f"Setup built for {spec.name}. Running benchmarks...", flush=True)
+
         for operation in EXPLANATION_APIS:
             yield _benchmark_scenario(setup, operation)
 
@@ -607,7 +637,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     """Entry-point printing ablation measurements as formatted JSON."""
 
     args = _parse_args(argv)
-    results = list(benchmark_parallel_options())
+    
     metadata = {
         "timing_repeat": TIMING_REPEAT,
         "timing_warmup": TIMING_WARMUP,
@@ -626,14 +656,29 @@ def main(argv: Sequence[str] | None = None) -> None:
             for variant in PARALLEL_VARIANTS
         ],
     }
-    output = {"metadata": metadata, "results": results}
-    serialized = json.dumps(output, indent=2, sort_keys=True)
-    print(serialized)
+    
+    results = []
+    
+    # If output file exists, try to load existing results to resume or append?
+    # For now, we just overwrite but update continuously.
+    
+    for result in benchmark_parallel_options():
+        results.append(result)
+        
+        output = {"metadata": metadata, "results": results}
+        serialized = json.dumps(output, indent=2, sort_keys=True)
+        
+        if VERBOSE:
+            # Print the last result summary to stdout
+            print(f"Completed {result['scenario']}.{result['operation']} - Baseline: {result['baseline_time']:.4f}s")
 
-    if args.output is not None:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(serialized + "\n", encoding="utf-8")
-
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(serialized + "\n", encoding="utf-8")
+            
+    # Final print to stdout if no output file, or just as confirmation
+    if args.output is None:
+        print(serialized)
 
 if __name__ == "__main__":
     main()
