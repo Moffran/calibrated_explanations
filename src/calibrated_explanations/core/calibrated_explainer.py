@@ -279,7 +279,7 @@ class CalibratedExplainer:
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            setattr(result, k, copy.deepcopy(v, memo))
+            setattr(result, k, deepcopy(v, memo))
         return result
 
     def _require_plugin_manager(self) -> PluginManager:
