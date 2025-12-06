@@ -13,6 +13,7 @@ conformal predictive systems (regression).
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
+import copy
 from time import time
 from typing import TYPE_CHECKING
 
@@ -279,8 +280,20 @@ class CalibratedExplainer:
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
+            if k in {"_perf_cache", "_perf_parallel"}:
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
         return result
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["_perf_cache"] = None
+        state["_perf_parallel"] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
 
     def _require_plugin_manager(self) -> PluginManager:
         """Return the plugin manager or raise if the explainer is not initialized."""
