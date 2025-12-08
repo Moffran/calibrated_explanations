@@ -109,7 +109,14 @@ def initialize_explanation(
             raise ValidationError("Bins required for Mondrian explanations")
         if len(bins) != len(x):  # pragma: no cover - defensive
             raise DataShapeError("The length of bins must match the number of added instances.")
-    explanation = CalibratedExplanations(explainer, x, threshold, bins, features_to_ignore)
+    explanation = CalibratedExplanations(
+        explainer,
+        x,
+        threshold,
+        bins,
+        features_to_ignore,
+        condition_source=getattr(explainer, "condition_source", "observed"),
+    )
     if threshold is not None:
         if "regression" not in explainer.mode:
             raise ValidationError(

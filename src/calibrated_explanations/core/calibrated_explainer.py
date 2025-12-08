@@ -179,6 +179,16 @@ class CalibratedExplainer:
         self.__noise_type = kwargs.get("noise_type", "uniform")
         self.__scale_factor = kwargs.get("scale_factor", 5)
         self.__severity = kwargs.get("severity", 1)
+        self.condition_source = kwargs.get("condition_source", "observed")
+        if self.condition_source not in {"observed", "prediction"}:
+            raise ValidationError(
+                "condition_source must be either 'observed' or 'prediction'",
+                details={
+                    "param": "condition_source",
+                    "value": self.condition_source,
+                    "allowed": ("observed", "prediction"),
+                },
+            )
 
         self.categorical_labels = categorical_labels
         self.class_labels = class_labels
@@ -1615,7 +1625,15 @@ class CalibratedExplainer:
         return self._reject_orchestrator.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=too-many-branches
-    def set_discretizer(self, discretizer, x_cal=None, y_cal=None, features_to_ignore=None) -> None:
+    def set_discretizer(
+        self,
+        discretizer,
+        x_cal=None,
+        y_cal=None,
+        features_to_ignore=None,
+        *,
+        condition_source: Optional[str] = None,
+    ) -> None:
         """Assign the discretizer to be used.
 
         Parameters
@@ -1627,55 +1645,13 @@ class CalibratedExplainer:
         y_cal : array-like, optional
             The calibration target data for the discretizer.
         """
-        from .discretizer_config import (  # pylint: disable=import-outside-toplevel
-            validate_discretizer_choice,
-            instantiate_discretizer,
-            setup_discretized_data,
-        )
-
-        if x_cal is None:
-            x_cal = self.x_cal
-        if y_cal is None:
-            y_cal = self.y_cal
-
-        # Validate and potentially default the discretizer choice
-        discretizer = validate_discretizer_choice(discretizer, self.mode)
-
-        if features_to_ignore is None:
-            features_to_ignore = []
-        not_to_discretize = np.union1d(
-            np.union1d(self.categorical_features, self.features_to_ignore), features_to_ignore
-        )
-
-        # Store old discretizer to check if we can cache
-        old_discretizer = self.discretizer
-
-        # Instantiate the discretizer (may return cached instance if type matches)
-        self.discretizer = instantiate_discretizer(
+        self._explanation_orchestrator.set_discretizer(
             discretizer,
-            x_cal,
-            not_to_discretize,
-            self.feature_names,
-            y_cal,
-            self.seed,
-            old_discretizer,
+            x_cal=x_cal,
+            y_cal=y_cal,
+            features_to_ignore=features_to_ignore,
+            condition_source=condition_source,
         )
-
-        # If discretizer is unchanged, skip recomputation
-        if self.discretizer is old_discretizer and hasattr(self, "discretized_X_cal"):
-            return
-
-        # Setup discretized data and build feature caches
-        feature_data, self.discretized_X_cal = setup_discretized_data(
-            self, self.discretizer, self.x_cal, self.num_features
-        )
-
-        # Populate feature_values and feature_frequencies from the setup data
-        self.feature_values = {}
-        self.feature_frequencies = {}
-        for feature, data in feature_data.items():
-            self.feature_values[feature] = data["values"]
-            self.feature_frequencies[feature] = data["frequencies"]
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def predict(self, x, uq_interval=False, calibrated=True, **kwargs):

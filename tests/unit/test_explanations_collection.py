@@ -282,6 +282,7 @@ class FakeFactual(DummyExplanation):
         prediction,
         y_threshold,
         instance_bin=None,
+        condition_source="observed",
     ):
         super().__init__(
             index,
@@ -297,6 +298,7 @@ class FakeFactual(DummyExplanation):
             "feature_predict": feature_predict,
             "threshold": y_threshold,
             "instance_bin": instance_bin,
+            "condition_source": condition_source,
         }
 
 
@@ -315,6 +317,7 @@ class FakeFast(DummyExplanation):
         prediction,
         y_threshold,
         instance_bin=None,
+        condition_source="observed",
     ):
         super().__init__(
             index,
@@ -329,6 +332,7 @@ class FakeFast(DummyExplanation):
             "feature_predict": feature_predict,
             "threshold": y_threshold,
             "instance_bin": instance_bin,
+            "condition_source": condition_source,
         }
 
 

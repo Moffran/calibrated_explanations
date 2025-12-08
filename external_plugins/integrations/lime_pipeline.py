@@ -158,7 +158,13 @@ class LimePipeline:
                 )
 
         # Create explanation object
-        explanation = CalibratedExplanations(self.explainer, x_test, threshold, bins)
+        explanation = CalibratedExplanations(
+            self.explainer,
+            x_test,
+            threshold,
+            bins,
+            condition_source=getattr(self.explainer, "condition_source", "observed"),
+        )
 
         # Validate and set threshold if provided
         if threshold is not None:

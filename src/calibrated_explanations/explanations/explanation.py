@@ -115,6 +115,7 @@ class CalibratedExplanation(ABC):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Abstract base class for storing and visualizing calibrated explanations.
 
@@ -182,6 +183,7 @@ class CalibratedExplanation(ABC):
         self._has_conjunctive_rules = False
         self.bin = [instance_bin] if instance_bin is not None else None
         self.explain_time = None
+        self.condition_source = condition_source
         # reduce dependence on Explainer class
         if not isinstance(self._get_explainer().y_cal, Categorical):
             self.y_minmax = [
@@ -1078,6 +1080,7 @@ class FactualExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Class for storing and visualizing factual explanations.
 
@@ -1116,6 +1119,7 @@ class FactualExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
         self._get_rules()
@@ -1690,6 +1694,7 @@ class AlternativeExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Class representing an alternative explanation for a given instance.
 
@@ -1728,6 +1733,7 @@ class AlternativeExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
         self._has_rules = False
@@ -2591,6 +2597,7 @@ class FastExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source="observed",
     ):
         """Class representing fast explanations.
 
@@ -2616,6 +2623,8 @@ class FastExplanation(CalibratedExplanation):
             The threshold for binary classification or regression explanations.
         instance_bin : int, optional
             The bin index of the instance.
+        condition_source : str, default="observed"
+            The source of the conditions for the explanation.
         """
         super().__init__(
             calibrated_explanations,
@@ -2627,6 +2636,7 @@ class FastExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
         self._get_rules()

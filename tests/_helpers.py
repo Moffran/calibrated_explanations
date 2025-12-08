@@ -87,6 +87,7 @@ def initiate_explainer(
     bins=None,
     fast=False,
     verbose=False,
+    **kwargs,
 ):
     """Initialize a CalibratedExplainer instance."""
     from calibrated_explanations.core import CalibratedExplainer
@@ -103,4 +104,5 @@ def initiate_explainer(
         fast=fast,
         difficulty_estimator=difficulty_estimator,
         verbose=verbose,
+        **kwargs,
     )

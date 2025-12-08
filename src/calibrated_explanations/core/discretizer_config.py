@@ -60,6 +60,9 @@ def instantiate_discretizer(
     y_cal: Optional[np.ndarray],
     seed: int,
     current_discretizer: Optional[Any] = None,
+    *,
+    condition_labels: Optional[np.ndarray] = None,
+    condition_source: str = "observed",
 ) -> Any:
     """Instantiate or return cached discretizer if already correct type.
 
@@ -85,29 +88,37 @@ def instantiate_discretizer(
     Any
         The discretizer instance.
     """
+    if condition_source not in {"observed", "prediction"}:
+        raise ValidationError(
+            "condition_source must be 'observed' or 'prediction'",
+            details={"param": "condition_source", "value": condition_source},
+        )
+
+    labels = condition_labels if condition_source == "prediction" else y_cal
+
     if discretizer_name == "binaryEntropy":
         if isinstance(current_discretizer, BinaryEntropyDiscretizer):
             return current_discretizer
         return BinaryEntropyDiscretizer(
-            x_cal, features_to_ignore, feature_names, labels=y_cal, random_state=seed
+            x_cal, features_to_ignore, feature_names, labels=labels, random_state=seed
         )
     elif discretizer_name == "binaryRegressor":
         if isinstance(current_discretizer, BinaryRegressorDiscretizer):
             return current_discretizer
         return BinaryRegressorDiscretizer(
-            x_cal, features_to_ignore, feature_names, labels=y_cal, random_state=seed
+            x_cal, features_to_ignore, feature_names, labels=labels, random_state=seed
         )
     elif discretizer_name == "entropy":
         if isinstance(current_discretizer, EntropyDiscretizer):
             return current_discretizer
         return EntropyDiscretizer(
-            x_cal, features_to_ignore, feature_names, labels=y_cal, random_state=seed
+            x_cal, features_to_ignore, feature_names, labels=labels, random_state=seed
         )
     elif discretizer_name == "regressor":
         if isinstance(current_discretizer, RegressorDiscretizer):
             return current_discretizer
         return RegressorDiscretizer(
-            x_cal, features_to_ignore, feature_names, labels=y_cal, random_state=seed
+            x_cal, features_to_ignore, feature_names, labels=labels, random_state=seed
         )
     else:
         raise ValidationError(f"Unknown discretizer: {discretizer_name}")

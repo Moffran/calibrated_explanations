@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 
 import numpy as np
 
+from ..core.exceptions import ValidationError
 from ..utils import EntropyDiscretizer, RegressorDiscretizer
 from ..utils import prepare_for_saving
 from .adapters import legacy_to_domain
@@ -47,7 +48,16 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     and accessing explanations for test instances.
     """
 
-    def __init__(self, calibrated_explainer, x, y_threshold, bins, features_to_ignore=None) -> None:
+    def __init__(
+        self,
+        calibrated_explainer,
+        x,
+        y_threshold,
+        bins,
+        features_to_ignore=None,
+        *,
+        condition_source: str = "observed",
+    ) -> None:
         """Initialize the explanation collection for a calibrated explainer.
 
         Parameters
@@ -61,9 +71,16 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         bins : array-like
             The bins for conditional explanations.
         """
+        if condition_source not in {"observed", "prediction"}:
+            raise ValidationError(
+                "condition_source must be 'observed' or 'prediction'",
+                details={"param": "condition_source", "value": condition_source},
+            )
+
         self.calibrated_explainer: FrozenCalibratedExplainer = FrozenCalibratedExplainer(
             calibrated_explainer
         )
+        self.condition_source: str = condition_source
         self.x_test: np.ndarray = x
         self.y_threshold: Optional[Union[float, Tuple[float, float], List[Tuple[float, float]]]] = (
             y_threshold
@@ -564,6 +581,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     prediction,
                     self.y_threshold,
                     instance_bin=instance_bin,
+                    condition_source=self.condition_source,
                 )
             else:
                 explanation = FactualExplanation(
@@ -576,6 +594,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     prediction,
                     self.y_threshold,
                     instance_bin=instance_bin,
+                    condition_source=self.condition_source,
                 )
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
@@ -630,6 +649,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 prediction,
                 self.y_threshold,
                 instance_bin=instance_bin,
+                condition_source=self.condition_source,
             )
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
