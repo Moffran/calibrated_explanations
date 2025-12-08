@@ -156,7 +156,11 @@ class TestParallelExecutor:
         """Test that telemetry callback is invoked on fallback."""
         mock_telemetry = MagicMock()
         cfg = ParallelConfig(
-            enabled=True, strategy="threads", min_batch_size=1, telemetry=mock_telemetry
+            enabled=True,
+            strategy="threads",
+            min_batch_size=1,
+            telemetry=mock_telemetry,
+            force_serial_on_failure=True,
         )
         executor = ParallelExecutor(cfg)
 

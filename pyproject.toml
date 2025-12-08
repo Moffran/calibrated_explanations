@@ -24,6 +24,7 @@ dependencies = [
   'numpy',
   'pandas',
   'scikit-learn',
+  'pyyaml',
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",

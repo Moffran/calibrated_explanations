@@ -96,12 +96,14 @@ def make_executor(enabled=True, min_batch_size=1):
         def __init__(self):
             self.enabled = enabled
             self.min_batch_size = min_batch_size
+            self.instance_chunk_size = None
+            self.feature_chunk_size = None
 
     class Exec:
         def __init__(self):
             self.config = Config()
 
-        def map(self, func, items, work_items=None):
+        def map(self, func, items, work_items=None, chunksize=None):
             return [func(it) for it in items]
 
     return Exec()

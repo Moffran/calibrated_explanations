@@ -275,15 +275,23 @@ class CalibratedExplainer:
 
         self.init_time = time() - init_time
 
+    # TODO: Needs to be 
     def __deepcopy__(self, memo):
+        """Safely deepcopy the explainer, handling circular references."""
+        if id(self) in memo:
+            return memo[id(self)]
+        # Create a shallow copy without calling __init__
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
+        # Manually copy attributes
         for k, v in self.__dict__.items():
-            if k in {"_perf_cache", "_perf_parallel"}:
-                setattr(result, k, None)
-            else:
+            try:
                 setattr(result, k, copy.deepcopy(v, memo))
+            except TypeError:
+                # Fallback for uncopyable objects
+                setattr(result, k, v)
+        
         return result
 
     def __getstate__(self):

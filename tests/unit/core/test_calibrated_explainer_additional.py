@@ -689,6 +689,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         class Config:
             enabled = True
             min_batch_size = 1
+            instance_chunk_size = None
 
         def __init__(self):
             self.config = self.Config()
@@ -717,6 +718,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
             enabled = True
             min_batch_size = 1
             chunk_size = 1  # Force multiple chunks: 3 instances -> 3 chunks
+            instance_chunk_size = 1
 
         def __init__(self, results):
             self.config = self.Config()
@@ -795,7 +797,7 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
             "E",
             (),
             {
-                "config": type("C", (), {"enabled": True, "min_batch_size": 2}),
+                "config": type("C", (), {"enabled": True, "min_batch_size": 2, "instance_chunk_size": None}),
                 "map": lambda *_a, **_k: [],
             },
         )(),
