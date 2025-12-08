@@ -1110,6 +1110,7 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         _use_plugin: bool = True,
+        **kwargs,
     ) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
@@ -1125,6 +1126,8 @@ class CalibratedExplainer:
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        **kwargs : dict
+            Additional arguments passed to the explanation orchestrator.
 
         Returns
         -------
@@ -1141,6 +1144,7 @@ class CalibratedExplainer:
             features_to_ignore,
             discretizer=discretizer,
             _use_plugin=_use_plugin,
+            **kwargs,
         )
 
     def explain_counterfactual(
@@ -1188,6 +1192,7 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         _use_plugin: bool = True,
+        **kwargs,
     ) -> AlternativeExplanations:
         """Create a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
@@ -1203,6 +1208,8 @@ class CalibratedExplainer:
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        **kwargs : dict
+            Additional arguments passed to the explanation orchestrator.
 
         Returns
         -------
@@ -1223,6 +1230,7 @@ class CalibratedExplainer:
             features_to_ignore,
             discretizer=discretizer,
             _use_plugin=_use_plugin,
+            **kwargs,
         )  # type: ignore[return-value]
 
     def __call__(

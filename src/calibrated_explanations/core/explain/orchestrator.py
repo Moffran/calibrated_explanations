@@ -357,6 +357,7 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         discretizer: str | None = None,
         _use_plugin: bool = True,
+        **kwargs: Any,
     ) -> Any:
         """Execute factual explanation with automatic discretizer setting.
 
@@ -379,6 +380,8 @@ class ExplanationOrchestrator:
             Discretizer type to set (e.g., "binaryEntropy" for classification).
         _use_plugin : bool, default=True
             Whether to use the plugin system.
+        **kwargs : Any
+            Additional arguments passed to the explanation plugin.
 
         Returns
         -------
@@ -410,6 +413,7 @@ class ExplanationOrchestrator:
             low_high_percentiles=low_high_percentiles,
             bins=bins,
             features_to_ignore=features_to_ignore,
+            extras=kwargs,
         )
 
     def invoke_alternative(  # pylint: disable=invalid-name
@@ -421,6 +425,7 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         discretizer: str | None = None,
         _use_plugin: bool = True,
+        **kwargs: Any,
     ) -> Any:
         """Execute alternative explanation with automatic discretizer setting.
 
@@ -443,6 +448,8 @@ class ExplanationOrchestrator:
             Discretizer type to set (e.g., "entropy" for classification).
         _use_plugin : bool, default=True
             Whether to use the plugin system.
+        **kwargs : Any
+            Additional arguments passed to the explanation plugin.
 
         Returns
         -------
@@ -474,6 +481,7 @@ class ExplanationOrchestrator:
             low_high_percentiles=low_high_percentiles,
             bins=bins,
             features_to_ignore=features_to_ignore,
+            extras=kwargs,
         )
 
     def _ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:
