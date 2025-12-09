@@ -44,10 +44,11 @@ __all__ = [
 def __getattr__(name: str) -> Any:
     """Lazily expose the sanctioned core API surface.
 
-    The lazy indirection keeps the public facade small and avoids importing heavy
-    dependencies unless explicitly requested by callers. This satisfies the Stage 5
-    requirement that consumers import from the package root instead of internal
-    modules.
+    Symbol resolution for the public API is performed lazily, so that heavy dependencies
+    are only imported when their corresponding symbols are accessed. Note that some
+    module-level imports may still occur at import time; only the API symbols listed in
+    __all__ are resolved on demand. This satisfies the Stage 5 requirement that consumers
+    import from the package root instead of internal modules.
     """
     if name == "CalibratedExplainer":
         from .calibrated_explainer import CalibratedExplainer
