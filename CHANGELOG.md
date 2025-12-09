@@ -5,7 +5,7 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
-### ADR-001 Package and Boundary Layout
+### Release Task 1 - ADR-001 Package and Boundary Layout
 
 - **Completed ADR-001 core decomposition boundaries for v0.10.0 release**
   - **Stage 0 — Scope Confirmation:** Core ADR-001 boundaries confirmed; 5 intentional deviations documented (legacy, api, plotting, perf, integrations)
@@ -23,7 +23,7 @@
     - **Public API consolidation**: Deprecated unsanctioned symbols and reserved sanctioned entry points (`CalibratedExplainer`, `WrapCalibratedExplainer`, etc.)
     - **Legacy support**: Documented and isolated `legacy` namespace with migration paths
 
-### ADR-002 Validation Parity Implementation
+### Release Task 2 - ADR-002 Validation Parity Implementation
 
 - **Completed ADR-002 validation parity for v0.10.0 release**
   - **Legacy exception taxonomy replacement**: Replaced 42+ `ValueError`/`RuntimeError` raises across calibration, plugins, and utilities with ADR-002 exception taxonomy (`ValidationError`, `DataShapeError`, `ConfigurationError`, `NotFittedError`, etc.)
@@ -49,18 +49,7 @@
     - **Behavior**: Validates feature/target matrix pair with comprehensive shape, dtype, and value checks
     - **Error handling**: Raises `DataShapeError`, `ValidationError` with structured `details` payloads
 
-### ADR-004 Parallel Execution Framework
-
-- **Completed ADR-004 parallel execution backlog for v0.9.1 release**
-  - **Workload-aware auto strategy**: Implemented `_auto_strategy` with heuristics based on OS, CPU count, and task size (`task_size_hint_bytes`).
-  - **Telemetry**: Enhanced `ParallelMetrics` to track `submitted`, `completed`, `fallbacks`, `failures`, and emit `parallel_execution` events with duration and worker counts.
-  - **Context Management**: Implemented `__enter__` and `__exit__` for `ParallelExecutor` to support resource cleanup and pool reuse.
-  - **Configuration Surface**: Added `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, and `feature_chunk_size` to `ParallelConfig`.
-  - **Chunking Support**: Updated `ParallelExecutor` and plugins (`parallel_instance`, `parallel_feature`) to respect configured chunk sizes, defaulting to 1 for process pools to avoid pickling overhead on small tasks.
-  - **Fallback Logic**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures.
-  - **Verification**: Added comprehensive lifecycle tests in `tests/unit/core/explain/test_parallel_lifecycle.py` covering strategies, context management, chunking, and fallback scenarios.
-
-### ADR-003 Caching Strategy
+### Release Task 3 - ADR-003 Caching Strategy
 
 - **Resolved all 4 identified implementation gaps** in ADR-003 caching strategy for v0.10.0 release
   - **ExplanationCacheFacade wired into pipeline** (was defined but unused):
@@ -87,6 +76,21 @@
     - RELEASE_PLAN_v1.md – ADR-003 section marked ✅ COMPLETED
   - **Test results**: All 23 cache tests passing (100%)
   - **Impact**: Zero breaking changes; all integrations backward compatible; opt-in caching remains default
+
+### Release Task 4 - ADR-004 Parallel Execution Framework
+
+- **Completed ADR-004 parallel execution backlog for v0.9.1 release**
+  - **Workload-aware auto strategy**: Implemented `_auto_strategy` with heuristics based on OS, CPU count, and task size (`task_size_hint_bytes`).
+  - **Telemetry**: Enhanced `ParallelMetrics` to track `submitted`, `completed`, `fallbacks`, `failures`, and emit `parallel_execution` events with duration and worker counts.
+  - **Context Management**: Implemented `__enter__` and `__exit__` for `ParallelExecutor` to support resource cleanup and pool reuse.
+  - **Configuration Surface**: Added `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, and `feature_chunk_size` to `ParallelConfig`.
+  - **Chunking Support**: Updated `ParallelExecutor` and plugins (`parallel_instance`, `parallel_feature`) to respect configured chunk sizes, defaulting to 1 for process pools to avoid pickling overhead on small tasks.
+  - **Fallback Logic**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures.
+  - **Verification**: Added comprehensive lifecycle tests in `tests/unit/core/explain/test_parallel_lifecycle.py` covering strategies, context management, chunking, and fallback scenarios.
+
+### Release Task 8 - Condition Source Support
+
+- **`condition_source` implemented:** Added support for the `condition_source` configuration used by calibrators and explanation plugins to select conditioning data sources; wired into the public API, covered by unit tests, and documented in the practitioner guides.
 
 ### Test Coverage Improvements
 
