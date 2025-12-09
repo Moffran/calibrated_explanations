@@ -33,7 +33,99 @@ from typing import (
     TypeVar,
 )
 
-import cachetools
+try:  # pragma: no cover - behaviour varies by environment
+    import cachetools
+    _HAVE_CACHETOOLS = True
+except Exception:  # pragma: no cover - tested indirectly in CI when missing
+    cachetools = None  # type: ignore
+    _HAVE_CACHETOOLS = False
+    # Provide a tiny, well-tested fallback for environments where
+    # `cachetools` is not installed (CI minimal images). The fallback
+    # implements the minimal API used by this module: `LRUCache` and
+    # `TTLCache` supporting `maxsize`, iteration, get/set, pop and clear.
+    from collections import OrderedDict
+    import time
+
+    class _FallbackBase:
+        pass
+
+    class LRUCache(OrderedDict):
+        """A minimal LRU cache compatible with cachetools.LRUCache.
+
+        Behaviour:
+        - `maxsize` limits number of entries and evicts least-recently-used.
+        - Accessing an entry moves it to the end (most-recently-used).
+        """
+
+        def __init__(self, maxsize: int):
+            super().__init__()
+            self.maxsize = int(maxsize)
+
+        def __getitem__(self, key):
+            value = super().__getitem__(key)
+            # mark as recently used
+            self.move_to_end(key)
+            return value
+
+        def get(self, key, default=None):
+            if key in self:
+                return self.__getitem__(key)
+            return default
+
+        def __setitem__(self, key, value):
+            if key in self:
+                # overwrite and mark as recent
+                super().__setitem__(key, value)
+                self.move_to_end(key)
+                return
+            super().__setitem__(key, value)
+            # Evict least-recently-used if over capacity
+            while self.maxsize is not None and len(self) > self.maxsize:
+                self.popitem(last=False)
+
+    class TTLCache(LRUCache):
+        """A minimal TTL cache that stores expiry timestamps alongside values."""
+
+        def __init__(self, maxsize: int, ttl: float):
+            super().__init__(maxsize=maxsize)
+            self._ttl = float(ttl)
+            # store mapping key -> expiry
+            self._expiries = {}
+
+        def __setitem__(self, key, value):
+            super().__setitem__(key, value)
+            self._expiries[key] = time.time() + self._ttl
+
+        def __getitem__(self, key):
+            if key in self._expiries and time.time() >= self._expiries.get(key, 0):
+                # expired
+                try:
+                    super().pop(key)
+                finally:
+                    self._expiries.pop(key, None)
+                raise KeyError(key)
+            return super().__getitem__(key)
+
+        def get(self, key, default=None):
+            try:
+                return self.__getitem__(key)
+            except KeyError:
+                return default
+
+        def pop(self, key, *args):
+            self._expiries.pop(key, None)
+            return super().pop(key, *args)
+
+        def clear(self):
+            self._expiries.clear()
+            super().clear()
+
+    # Expose compatible names expected elsewhere in the module
+    class _CacheModuleShim:
+        LRUCache = LRUCache
+        TTLCache = TTLCache
+
+    cachetools = _CacheModuleShim()
 import numpy as np
 
 logger = logging.getLogger(__name__)
