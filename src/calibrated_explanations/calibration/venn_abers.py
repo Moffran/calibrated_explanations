@@ -223,7 +223,7 @@ class VennAbers:
                 low[:, c], high[:, c] = p0p1[:, 0], p0p1[:, 1]
                 tmp = high[:, c] / (1 - low[:, c] + high[:, c])
                 va_proba[:, c] = tmp
-            # TODO: Surprisingly, probability normalization is needed, needs looking into
+            # FIXME: Probability normalization is unexpectedly required here; see issue #123 for investigation.
             row_sums = va_proba.sum(axis=1, keepdims=True)
             # Guard against divide-by-zero for degenerate rows.
             safe_row_sums = np.where(row_sums == 0, 1.0, row_sums)
