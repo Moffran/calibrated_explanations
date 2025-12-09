@@ -34,8 +34,14 @@ from typing import (
 
 import cachetools
 import numpy as np
+from time import monotonic
 
 logger = logging.getLogger(__name__)
+
+# Export monotonic to support legacy shims/tests that reference
+# `calibrated_explanations.cache.cache.monotonic`.
+# This keeps a small compatibility surface without changing behaviour.
+monotonic = monotonic
 
 if sys.version_info >= (3, 10):
     dataclass = _dataclass

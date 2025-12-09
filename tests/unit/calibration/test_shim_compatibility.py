@@ -85,6 +85,11 @@ class TestCoreCalibrationShimImports:
 
             if "calibrated_explanations.core.calibration" in sys.modules:
                 del sys.modules["calibrated_explanations.core.calibration"]
+            # Import inside the capture context so the shim's import-time
+            # deprecation warning is recorded by the context manager.
+            import importlib
+
+            importlib.import_module("calibrated_explanations.core.calibration")
 
             assert len(w) >= 1
             assert issubclass(w[-1].category, DeprecationWarning)
