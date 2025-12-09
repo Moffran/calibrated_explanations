@@ -11,6 +11,7 @@ from calibrated_explanations.explanations import (
     CalibratedExplanations,
     FrozenCalibratedExplainer,
 )
+from tests.helpers.deprecation import warns_or_raises
 
 
 class DummyDomainMapper:
@@ -433,13 +434,13 @@ def test_plot_routing(monkeypatch, calibrated_collection):
 def test_get_explanation_validations(calibrated_collection):
     from calibrated_explanations.core import ValidationError
 
-    with pytest.warns(DeprecationWarning):
+    with warns_or_raises():
         assert calibrated_collection.get_explanation(0) is calibrated_collection.explanations[0]
-    with pytest.warns(DeprecationWarning), pytest.raises(ValidationError):
+    with warns_or_raises(), pytest.raises(ValidationError):
         calibrated_collection.get_explanation("one")
-    with pytest.warns(DeprecationWarning), pytest.raises(ValidationError):
+    with warns_or_raises(), pytest.raises(ValidationError):
         calibrated_collection.get_explanation(-1)
-    with pytest.warns(DeprecationWarning), pytest.raises(ValidationError):
+    with warns_or_raises(), pytest.raises(ValidationError):
         calibrated_collection.get_explanation(100)
 
 

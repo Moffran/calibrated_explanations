@@ -11,6 +11,7 @@ import pytest
 import calibrated_explanations.core.wrap_explainer as wrap_module
 from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
 class _PredictOnlyLearner:
@@ -72,9 +73,13 @@ def wrapper() -> WrapCalibratedExplainer:
 
 def test_normalize_public_kwargs_filters_aliases(wrapper: WrapCalibratedExplainer) -> None:
     payload = {"threshold": 0.3, "alpha": (1, 99), "irrelevant": "value"}
-    with pytest.deprecated_call():
-        filtered = wrapper._normalize_public_kwargs(payload, allowed={"threshold"})
-    assert filtered == {"threshold": 0.3}
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning):
+            wrapper._normalize_public_kwargs(payload, allowed={"threshold"})
+    else:
+        with warns_or_raises():
+            filtered = wrapper._normalize_public_kwargs(payload, allowed={"threshold"})
+        assert filtered == {"threshold": 0.3}
     assert payload["alpha"] == (1, 99)
     assert payload["irrelevant"] == "value"
 

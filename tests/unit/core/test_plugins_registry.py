@@ -10,6 +10,7 @@ import pytest
 
 from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
+from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
 class _FakeEntryPoint:
@@ -259,10 +260,14 @@ def test_register_explanation_plugin_translates_aliases():
             "trust": True,
         }
 
-    with pytest.warns(DeprecationWarning):
-        descriptor = registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning):
+            registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
+    else:
+        with warns_or_raises():
+            descriptor = registry.register_explanation_plugin("legacy.mode", LegacyModePlugin())
 
-    assert descriptor.metadata["modes"] == ("factual",)
+        assert descriptor.metadata["modes"] == ("factual",)
 
 
 def test_register_explanation_plugin_schema_version_future():
@@ -498,21 +503,25 @@ def test_register_plot_plugin_combines_builder_and_renderer():
 
     plugin = CombinedPlugin()
     try:
-        with pytest.warns(DeprecationWarning):
-            descriptor = registry.register_plot_plugin("example.plot.combined", plugin)
-        assert descriptor.identifier == "example.plot.combined"
-        assert registry.find_plot_builder("example.plot.combined") is plugin
-        assert registry.find_plot_renderer("example.plot.combined") is plugin
+        if deprecations_error_enabled():
+            with pytest.raises(DeprecationWarning):
+                registry.register_plot_plugin("example.plot.combined", plugin)
+        else:
+            with warns_or_raises():
+                descriptor = registry.register_plot_plugin("example.plot.combined", plugin)
+            assert descriptor.identifier == "example.plot.combined"
+            assert registry.find_plot_builder("example.plot.combined") is plugin
+            assert registry.find_plot_renderer("example.plot.combined") is plugin
 
-        combined = registry.find_plot_plugin("example.plot.combined")
-        assert combined is not None
-        assert combined.plugin_meta is plugin.plugin_meta
-        assert combined.build(1, foo=2) == ("build", (1,), {"foo": 2})
-        assert combined.render(3, bar=4) == ("render", (3,), {"bar": 4})
+            combined = registry.find_plot_plugin("example.plot.combined")
+            assert combined is not None
+            assert combined.plugin_meta is plugin.plugin_meta
+            assert combined.build(1, foo=2) == ("build", (1,), {"foo": 2})
+            assert combined.render(3, bar=4) == ("render", (3,), {"bar": 4})
 
-        trusted_combined = registry.find_plot_plugin_trusted("example.plot.combined")
-        assert trusted_combined is not None
-        assert trusted_combined.build(5) == ("build", (5,), {})
+            trusted_combined = registry.find_plot_plugin_trusted("example.plot.combined")
+            assert trusted_combined is not None
+            assert trusted_combined.build(5) == ("build", (5,), {})
     finally:
         registry.clear_plot_plugins()
 
@@ -763,8 +772,12 @@ def test_list_plot_descriptors_respect_trust(monkeypatch):
 
     try:
         trusted_plugin = TrustedCombo()
-        with pytest.warns(DeprecationWarning):
-            registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
+        if deprecations_error_enabled():
+            with pytest.raises(DeprecationWarning):
+                registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
+        else:
+            with warns_or_raises():
+                registry.register_plot_plugin("example.plot.trusted", trusted_plugin)
 
         builder_desc = registry.register_plot_builder("example.plot.untrusted", UntrustedBuilder())
         renderer_desc = registry.register_plot_renderer(
@@ -780,27 +793,42 @@ def test_list_plot_descriptors_respect_trust(monkeypatch):
             },
         )
 
-        all_builders = registry.list_plot_builder_descriptors()
-        assert [d.identifier for d in all_builders] == [
-            "example.plot.trusted",
-            "example.plot.untrusted",
-        ]
+        if not deprecations_error_enabled():
+            all_builders = registry.list_plot_builder_descriptors()
+            assert [d.identifier for d in all_builders] == [
+                "example.plot.trusted",
+                "example.plot.untrusted",
+            ]
         trusted_builders = registry.list_plot_builder_descriptors(trusted_only=True)
-        assert [d.identifier for d in trusted_builders] == ["example.plot.trusted"]
+        if deprecations_error_enabled():
+            # In raise-mode the deprecated registration raised and the trusted
+            # plugin won't be present.
+            assert [d.identifier for d in trusted_builders] == []
+        else:
+            assert [d.identifier for d in trusted_builders] == ["example.plot.trusted"]
 
         all_renderers = registry.list_plot_renderer_descriptors()
-        assert [d.identifier for d in all_renderers] == [
-            "example.plot.trusted",
-            "example.plot.untrusted",
-        ]
+        if deprecations_error_enabled():
+            assert [d.identifier for d in all_renderers] == ["example.plot.untrusted"]
+        else:
+            assert [d.identifier for d in all_renderers] == [
+                "example.plot.trusted",
+                "example.plot.untrusted",
+            ]
         trusted_renderers = registry.list_plot_renderer_descriptors(trusted_only=True)
-        assert [d.identifier for d in trusted_renderers] == ["example.plot.trusted"]
+        if deprecations_error_enabled():
+            assert [d.identifier for d in trusted_renderers] == []
+        else:
+            assert [d.identifier for d in trusted_renderers] == ["example.plot.trusted"]
 
         styles = registry.list_plot_style_descriptors()
-        assert [d.identifier for d in styles] == [
-            "example.plot.trusted",
-            "example.plot.untrusted",
-        ]
+        if deprecations_error_enabled():
+            assert [d.identifier for d in styles] == ["example.plot.untrusted"]
+        else:
+            assert [d.identifier for d in styles] == [
+                "example.plot.trusted",
+                "example.plot.untrusted",
+            ]
     finally:
         registry.clear_plot_plugins()
 

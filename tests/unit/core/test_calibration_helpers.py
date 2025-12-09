@@ -175,17 +175,21 @@ def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
         sys.modules, "calibrated_explanations.calibration.interval_learner", fake_interval
     )
 
-    with warnings.catch_warnings(record=True) as rec:
-        warnings.simplefilter("always")
-        func = ch_helpers.assign_threshold
+    from tests.helpers.deprecation import deprecations_error_enabled
 
-    assert any(
-        issubclass(w.category, DeprecationWarning) for w in rec
-    ), "expected DeprecationWarning"
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning):
+            _ = ch_helpers.assign_threshold
+    else:
+        with warnings.catch_warnings(record=True) as rec:
+            warnings.simplefilter("always")
+            func = ch_helpers.assign_threshold
 
-    # Calling the delegated function should return the fake result
-    res = func(object(), 0.5)
-    assert res == "ok"
+        assert any(issubclass(w.category, DeprecationWarning) for w in rec), "expected DeprecationWarning"
+
+        # Calling the delegated function should return the fake result
+        res = func(object(), 0.5)
+        assert res == "ok"
 
 
 def test_calibration_helpers_unknown_attribute_raises():

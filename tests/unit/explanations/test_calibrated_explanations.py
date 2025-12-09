@@ -13,6 +13,7 @@ from calibrated_explanations.explanations import (
     AlternativeExplanations,
     CalibratedExplanations,
 )
+from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
 @dataclass
@@ -217,14 +218,26 @@ def test_get_low_high_percentile_validation(collection: CalibratedExplanations) 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
     from calibrated_explanations.core.exceptions import ValidationError
 
-    with pytest.warns(DeprecationWarning):
-        assert collection.get_explanation(1) is collection.explanations[1]
-    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
-        collection.get_explanation("1")  # type: ignore[arg-type]
-    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
-        collection.get_explanation(-1)
-    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
-        collection.get_explanation(len(collection.x_test))
+    if deprecations_error_enabled():
+        # In raise-mode deprecations trigger before the validation checks;
+        # assert that the deprecation is raised instead of the ValidationError.
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(1)
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation("1")  # type: ignore[arg-type]
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(-1)
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(len(collection.x_test))
+    else:
+        with warns_or_raises():
+            assert collection.get_explanation(1) is collection.explanations[1]
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation("1")  # type: ignore[arg-type]
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation(-1)
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation(len(collection.x_test))
 
 
 def test_plot_routes_calls(monkeypatch, tmp_path, collection: CalibratedExplanations) -> None:

@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
+from tests.helpers.deprecation import warns_or_raises
 
 
 @pytest.fixture
@@ -28,13 +29,19 @@ class TestParallelConfig:
     def test_perf_parallel_shim_warns_and_forwards(self, clean_env):
         """Deprecated perf shim should forward to canonical parallel module."""
 
-        with pytest.warns(DeprecationWarning):
-            shim = importlib.reload(
-                importlib.import_module("calibrated_explanations.perf.parallel")
-            )
+        from tests.helpers.deprecation import deprecations_error_enabled
 
-        assert shim.ParallelExecutor is ParallelExecutor
-        assert shim.ParallelConfig is ParallelConfig
+        if deprecations_error_enabled():
+            with pytest.raises(DeprecationWarning):
+                importlib.reload(importlib.import_module("calibrated_explanations.perf.parallel"))
+        else:
+            with warns_or_raises():
+                shim = importlib.reload(
+                    importlib.import_module("calibrated_explanations.perf.parallel")
+                )
+
+            assert shim.ParallelExecutor is ParallelExecutor
+            assert shim.ParallelConfig is ParallelConfig
 
     def test_defaults(self):
         """Test default configuration values."""

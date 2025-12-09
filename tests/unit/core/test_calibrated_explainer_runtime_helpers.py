@@ -22,6 +22,7 @@ from calibrated_explanations.core.exceptions import (
     DataShapeError,
     ValidationError,
 )
+from tests.helpers.deprecation import warns_or_raises
 
 
 def _stub_explainer(explainer_factory, mode: str = "classification") -> CalibratedExplainer:
@@ -473,10 +474,15 @@ def test_explain_counterfactual_delegates(explainer_factory):
     sentinel = object()
     explainer.explore_alternatives = lambda *args, **kwargs: (args, kwargs, sentinel)
 
-    with pytest.warns(DeprecationWarning):
-        result = explainer.explain_counterfactual("x", threshold=1.0)
+    from tests.helpers.deprecation import deprecations_error_enabled
 
-    assert result[2] is sentinel
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning):
+            explainer.explain_counterfactual("x", threshold=1.0)
+    else:
+        with pytest.warns(DeprecationWarning):
+            result = explainer.explain_counterfactual("x", threshold=1.0)
+        assert result[2] is sentinel
 
 
 def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch):
