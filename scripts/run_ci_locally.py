@@ -322,8 +322,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"Failed to write summary JSON: {exc}")
 
     return first_nonzero_rc
-    print("\nAll requested steps completed.")
-    return 0
 
 
 if __name__ == "__main__":
