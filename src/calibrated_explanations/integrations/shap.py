@@ -51,6 +51,10 @@ class ShapHelper:
 
     def preload(self, num_test: Optional[int] = None) -> Tuple[Any, Any]:
         """Materialize the SHAP explainer when :mod:`shap` is available."""
+        # If already enabled and cached, return immediately to avoid importing optional deps
+        if self._enabled and self._explainer_instance is not None:
+            return self._explainer_instance, self._reference_explanation
+
         shap_module = safe_import("shap")
         if not shap_module:
             return None, None

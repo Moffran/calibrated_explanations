@@ -14,7 +14,7 @@ GATES: Dict[str, float] = {
     "src/calibrated_explanations/core/calibrated_explainer.py": 95.0,
     "src/calibrated_explanations/serialization.py": 95.0,
     "src/calibrated_explanations/plugins/registry.py": 95.0,
-    "src/calibrated_explanations/core/calibration/interval_regressor.py": 95.0,
+    "src/calibrated_explanations/calibration/interval_regressor.py": 95.0,
 }
 
 
