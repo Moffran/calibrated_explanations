@@ -1,8 +1,8 @@
 # ADR-001 Stage 3 Completion Report: Public API Surface Tightening
 
-**Date Completed:** November 28, 2025  
-**Status:** ✅ COMPLETE  
-**Implementation Time:** 4 hours  
+**Date Completed:** November 28, 2025
+**Status:** ✅ COMPLETE
+**Implementation Time:** 4 hours
 **Test Coverage:** 18 unit tests, 100% passing
 
 ---
@@ -108,7 +108,7 @@ from calibrated_explanations import EntropyDiscretizer     # Is this public API?
 ### v0.10.0 with Stage 3 (Clear Deprecation Warning)
 ```python
 from calibrated_explanations import CalibratedExplanations
-# DeprecationWarning: 'CalibratedExplanations' imported from top level is deprecated 
+# DeprecationWarning: 'CalibratedExplanations' imported from top level is deprecated
 # and will be removed in v0.11.0.
 #   ❌ DEPRECATED: from calibrated_explanations import CalibratedExplanations
 #   ✓ RECOMMENDED: from calibrated_explanations.explanations import CalibratedExplanations
@@ -128,8 +128,8 @@ from calibrated_explanations import CalibratedExplanations  # ❌ AttributeError
 
 ### ✅ ADR-001 Gap #5 Resolution
 
-**Gap:** "Public API surface overly broad"  
-**Severity:** 6 (medium)  
+**Gap:** "Public API surface overly broad"
+**Severity:** 6 (medium)
 **Status:** ✅ RESOLVED
 
 **How Resolved:**
@@ -140,7 +140,7 @@ from calibrated_explanations import CalibratedExplanations  # ❌ AttributeError
 
 ### ✅ ADR-011 Alignment (Deprecation Policy)
 
-**Requirement:** Central deprecation helper with structured warnings  
+**Requirement:** Central deprecation helper with structured warnings
 **Status:** ✅ IMPLEMENTED
 
 **Pattern Used:**

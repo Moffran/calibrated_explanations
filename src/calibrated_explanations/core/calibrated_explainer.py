@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 if TYPE_CHECKING:
     from ..plugins import IntervalCalibratorContext
     from ..explanations import AlternativeExplanations, CalibratedExplanations
+    from ..plugins.manager import PluginManager
 
 try:
     import tomllib as _tomllib
@@ -239,11 +240,10 @@ class CalibratedExplainer:
 
         self.feature_values: Dict[int, List[Any]] = {}
         self.feature_frequencies: Dict[int, np.ndarray] = {}
-        
+
         # Lazy import helper integrations (deferred from module level)
         from ..integrations import LimeHelper, ShapHelper
-        from ..explanations import CalibratedExplanations
-        
+
         self.latest_explanation: Optional[CalibratedExplanations] = None
         self._lime_helper = LimeHelper(self)
         self._shap_helper = ShapHelper(self)
@@ -269,9 +269,11 @@ class CalibratedExplainer:
         self._plugin_manager.initialize_orchestrators()
 
         self._perf_cache: CalibratorCache[Any] | None = perf_cache
-        
+
         # Initialize parallel executor (ADR-004: Honor CE_PARALLEL overrides)
-        self._perf_parallel: ParallelExecutor | None = self._plugin_manager.resolve_parallel_executor(perf_parallel)
+        self._perf_parallel: ParallelExecutor | None = (
+            self._plugin_manager.resolve_parallel_executor(perf_parallel)
+        )
 
         # Orchestrator references are now accessed via properties that delegate to PluginManager
         # No direct assignment needed - properties handle the delegation
@@ -285,7 +287,7 @@ class CalibratedExplainer:
 
         self.init_time = time() - init_time
 
-    # TODO: Needs to be 
+    # TODO: Needs to be
     def __deepcopy__(self, memo):
         """Safely deepcopy the explainer, handling circular references."""
         if id(self) in memo:
@@ -301,7 +303,7 @@ class CalibratedExplainer:
             except TypeError:
                 # Fallback for uncopyable objects
                 setattr(result, k, v)
-        
+
         return result
 
     def __getstate__(self):
@@ -333,7 +335,7 @@ class CalibratedExplainer:
         """Infer the explanation mode from runtime state."""
         # Lazy import discretizers (deferred from module level)
         from ..utils import EntropyDiscretizer, RegressorDiscretizer
-        
+
         # Check discretizer type to infer mode
         discretizer = self.discretizer if hasattr(self, "discretizer") else None
         if discretizer is not None and isinstance(
@@ -1726,6 +1728,7 @@ class CalibratedExplainer:
             format_regression_prediction,
             format_classification_prediction,
         )
+
         # Lazy import API params functions (deferred from module level)
         from ..api.params import (
             canonicalize_kwargs,
@@ -1831,6 +1834,7 @@ class CalibratedExplainer:
             validate_param_combination,
             warn_on_aliases,
         )
+
         # emit deprecation warnings for aliases and normalize kwargs
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
@@ -1996,6 +2000,7 @@ class CalibratedExplainer:
         kwargs["style_override"] = style_override
         # Lazy import plotting function (deferred from module level)
         from ..plotting import _plot_global
+
         _plot_global(self, x, y=y, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):

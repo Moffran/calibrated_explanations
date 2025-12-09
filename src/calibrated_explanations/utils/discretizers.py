@@ -223,7 +223,11 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
         if labels is None:
             raise ValidationError(
                 "Labels must not be None when using BinaryEntropyDiscretizer.",
-                details={"param": "labels", "requirement": "non-null", "discretizer": "BinaryEntropy"},
+                details={
+                    "param": "labels",
+                    "requirement": "non-null",
+                    "discretizer": "BinaryEntropy",
+                },
             )
         BaseDiscretizer.__init__(
             self,

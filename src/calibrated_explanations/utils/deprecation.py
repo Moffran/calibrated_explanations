@@ -19,20 +19,20 @@ def deprecate_public_api_symbol(
     extra_context: Optional[str] = None,
 ) -> None:
     """Emit structured deprecation warning for top-level API symbols.
-    
+
     This function centralizes deprecation messaging for unsanctioned exports
-    from calibrated_explanations.__init__, following ADR-001 Stage 3 and 
+    from calibrated_explanations.__init__, following ADR-001 Stage 3 and
     ADR-011 deprecation policy.
-    
+
     Args:
         symbol_name: Name of the symbol being accessed (e.g., "CalibratedExplanations")
-        current_import: Current (deprecated) import path 
+        current_import: Current (deprecated) import path
                         (e.g., "from calibrated_explanations import CalibratedExplanations")
         recommended_import: Recommended new import path
                            (e.g., "from calibrated_explanations.explanations import CalibratedExplanations")
         removal_version: Version in which the symbol will be removed from __init__.py (default: v0.11.0)
         extra_context: Optional additional migration guidance or explanation
-        
+
     Examples:
         >>> deprecate_public_api_symbol(
         ...     "CalibratedExplanations",
@@ -46,12 +46,12 @@ def deprecate_public_api_symbol(
         f"  ❌ DEPRECATED: {current_import}\n"
         f"  ✓ RECOMMENDED: {recommended_import}\n"
     )
-    
+
     if extra_context:
         message += f"\n  Details: {extra_context}\n"
-    
-    message += f"\nSee https://calibrated-explanations.readthedocs.io/en/latest/migration/api_surface_narrowing.html for migration guide.\n"
-    
+
+    message += "\nSee https://calibrated-explanations.readthedocs.io/en/latest/migration/api_surface_narrowing.html for migration guide.\n"
+
     warnings.warn(
         message.rstrip(),
         category=DeprecationWarning,

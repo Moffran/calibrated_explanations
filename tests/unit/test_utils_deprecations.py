@@ -1,7 +1,6 @@
 import warnings
 import importlib
 import os
-import warnings
 
 import pytest
 

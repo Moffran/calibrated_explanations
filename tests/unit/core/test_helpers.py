@@ -22,7 +22,7 @@ from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
-from calibrated_explanations.core import NotFittedError, ValidationError
+from calibrated_explanations.core import NotFittedError
 from calibrated_explanations.utils import (
     calculate_metrics,
     check_is_fitted,
@@ -100,6 +100,7 @@ def test_safe_isinstance_class_not_imported():
 def test_safe_isinstance_invalid_class_path():
     """Test safe_isinstance with an invalid class path string."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     model = RandomForestRegressor()
     with pytest.raises(ValidationError) as excinfo:
         safe_isinstance(model, "InvalidClassPath")
@@ -267,6 +268,7 @@ def test_calculate_metrics_with_normalization():
 def test_calculate_metrics_invalid_weight():
     """Test calculate_metrics with an invalid weight."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     uncertainty = [0.1, 0.2, 0.3]
     prediction = [0.9, 0.8, 0.7]
     with pytest.raises(ValidationError) as excinfo:
@@ -277,6 +279,7 @@ def test_calculate_metrics_invalid_weight():
 def test_calculate_metrics_missing_arguments():
     """Test calculate_metrics with missing uncertainty or prediction."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     with pytest.raises(ValidationError) as excinfo:
         calculate_metrics(uncertainty=[0.1, 0.2, 0.3])
     assert (

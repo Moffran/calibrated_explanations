@@ -8,7 +8,7 @@ surface lintable by the import graph checker.
 from __future__ import annotations
 
 from importlib import import_module
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only
     from .cache import (

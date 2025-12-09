@@ -395,7 +395,11 @@ def assert_threshold(threshold, x):
         if len(threshold) != 2:
             raise ValidationError(
                 "tuple thresholds must contain exactly two values",
-                details={"param": "threshold", "expected_length": 2, "actual_length": len(threshold)},
+                details={
+                    "param": "threshold",
+                    "expected_length": 2,
+                    "actual_length": len(threshold),
+                },
             )
         return threshold
     if isinstance(threshold, (list, np.ndarray)):

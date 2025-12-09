@@ -14,6 +14,7 @@ import crepes
 import numpy as np
 
 from calibrated_explanations.core import ConfigurationError, DataShapeError
+
 from ..utils import safe_first_element
 from .venn_abers import VennAbers
 
@@ -170,7 +171,13 @@ class IntervalRegressor:
             four values: proba (y <= y_threshold), lower bound, upper bound, and None.
         """
         if bins is not None and self.bins is None:
-            raise ConfigurationError("Calibration bins must be assigned.", details={"context": "predict", "requirement": "calibration with bins or no test bins"})
+            raise ConfigurationError(
+                "Calibration bins must be assigned.",
+                details={
+                    "context": "predict",
+                    "requirement": "calibration with bins or no test bins",
+                },
+            )
 
         n_samples = x.shape[0]
         normalized_bins = None
@@ -181,7 +188,10 @@ class IntervalRegressor:
             elif candidate.ndim > 1:
                 candidate = candidate.reshape(-1)
             if candidate.shape[0] != n_samples:
-                raise DataShapeError(f"length of test bins ({candidate.shape[0]}) does not match number of test instances ({n_samples}).", details={"bins_length": candidate.shape[0], "n_samples": n_samples}) # pylint: disable=line-too-long
+                raise DataShapeError(
+                    f"length of test bins ({candidate.shape[0]}) does not match number of test instances ({n_samples}).",
+                    details={"bins_length": candidate.shape[0], "n_samples": n_samples},
+                )  # pylint: disable=line-too-long
             normalized_bins = candidate.tolist()
 
         iter_bins = normalized_bins if normalized_bins is not None else [None] * n_samples
@@ -429,9 +439,18 @@ class IntervalRegressor:
         # Update bins
         if bins is not None:
             if self.bins is None:
-                raise ConfigurationError("Cannot mix calibration instances with and without bins.", details={"context": "add_calibration_instances", "requirement": "consistent bin usage"})
+                raise ConfigurationError(
+                    "Cannot mix calibration instances with and without bins.",
+                    details={
+                        "context": "add_calibration_instances",
+                        "requirement": "consistent bin usage",
+                    },
+                )
             if len(bins) != len(ys):
-                raise DataShapeError(f"length of bins ({len(bins)}) does not match number of added instances ({len(ys)}).", details={"bins_length": len(bins), "n_instances": len(ys)}) # pylint: disable=line-too-long
+                raise DataShapeError(
+                    f"length of bins ({len(bins)}) does not match number of added instances ({len(ys)}).",
+                    details={"bins_length": len(bins), "n_instances": len(ys)},
+                )  # pylint: disable=line-too-long
             self._append_bins(bins)
 
         if small_part == 0 or len(large_idx) > 0:  # add to cps calibration

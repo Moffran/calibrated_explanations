@@ -56,6 +56,7 @@ def test_plotspec_roundtrip_and_validate__should_preserve_semantics():
 def test_validate_rejects_bad_payload():
     """Verify that validation rejects malformed payloads."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     with pytest.raises(ValidationError):
         validate_plotspec(["not", "a", "dict"])
     with pytest.raises(ValidationError):

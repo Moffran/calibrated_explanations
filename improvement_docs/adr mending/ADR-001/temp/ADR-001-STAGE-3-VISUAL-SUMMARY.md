@@ -1,7 +1,7 @@
 # ADR-001 Stage 3: Visual Gap Closure & Architecture Summary
 
-**Created:** 2025-11-28  
-**Stage:** 3 of 5  
+**Created:** 2025-11-28
+**Stage:** 3 of 5
 **Overall Progress:** 60% (Stages 0–2 complete; 3-5 in flight)
 
 ---
@@ -372,22 +372,21 @@ Stage 4-5 (Future)
 
 ## 📞 FAQ Quick Answers
 
-**Q: Why remove in two releases?**  
+**Q: Why remove in two releases?**
 A: ADR-011 requires two-release deprecation window. Gives users ~2-4 months to migrate.
 
-**Q: Will users' code break?**  
+**Q: Will users' code break?**
 A: Not in v0.10.0. In v0.11.0, only if they didn't update imports (simple fix: change import path).
 
-**Q: Are sanctioned symbols safe?**  
+**Q: Are sanctioned symbols safe?**
 A: Yes. Zero changes to CalibratedExplainer, WrapCalibratedExplainer, transform_to_numeric.
 
-**Q: What about internal tests?**  
+**Q: What about internal tests?**
 A: Scan before v0.11.0; update any tests using unsanctioned imports to use submodule paths.
 
-**Q: Should we auto-migrate user code?**  
+**Q: Should we auto-migrate user code?**
 A: Not in scope. Clear deprecation warnings + migration guide are sufficient.
 
 ---
 
 **Status:** ✅ ANALYSIS COMPLETE – Ready for implementation review and approval
-

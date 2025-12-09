@@ -1,7 +1,7 @@
 # ADR-001 Cross-Sibling Violations: Visual Summary
 
-**Generated**: 2025-11-30  
-**Total Violations**: 153  
+**Generated**: 2025-11-30
+**Total Violations**: 153
 **Analysis Date**: Stage 5 Linting Assessment
 
 ---
@@ -201,7 +201,7 @@ NOW              v0.10.0          v0.10.1          v0.11.0+
 │                  ├─ v0.10.0 GA   ├─ v0.10.1 GA   └─ v0.11.0+ GA
 │                  │ (unblock)     │ (polish)
 └──────────────────┴───────────────┴────────────────────────────
-  
+
   Recommended: Hybrid Phase 1 + Phase 2
   Later: Option D only if need to split packages
 ```

@@ -38,6 +38,7 @@ def test_probabilistic_spec_clamps_header_bounds():
 
 def test_probabilistic_spec_validates_sequence_length():
     from calibrated_explanations.core.exceptions import ValidationError
+
     with pytest.raises(ValidationError, match="feature_weights"):
         builders.build_probabilistic_bars_spec(
             title="missing",

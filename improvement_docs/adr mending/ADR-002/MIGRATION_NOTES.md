@@ -1,7 +1,7 @@
 # ADR-002 Migration Guide for Downstream Code
 
-**Version**: v0.10.0  
-**Date**: 2025-11-29  
+**Version**: v0.10.0
+**Date**: 2025-11-29
 **Scope**: Exception taxonomy changes, parameter guardrails, error diagnostics
 
 ---
@@ -256,7 +256,7 @@ except CalibratedError as e:
     context = e.details.get("context")
     param = e.details.get("param")
     requirement = e.details.get("requirement")
-    
+
     # Log structured context for monitoring/alerting
     logger.error("Calibration error", extra={
         "error_type": type(e).__name__,
@@ -387,19 +387,19 @@ Code breaks **only if** it:
 
 ### FAQ
 
-**Q: Will my code break when I upgrade to v0.10.0?**  
+**Q: Will my code break when I upgrade to v0.10.0?**
 A: Only if you explicitly catch `ValueError` or `RuntimeError` from calibrated_explanations. Update those catch blocks to use ADR-002 exception types.
 
-**Q: Can I continue catching `Exception`?**  
+**Q: Can I continue catching `Exception`?**
 A: Yes, all ADR-002 exceptions inherit from `Exception`. Generic `except Exception:` catches will continue working.
 
-**Q: How do I access error details?**  
+**Q: How do I access error details?**
 A: Use `e.details` dict (e.g., `e.details['context']`). Use `explain_exception(e)` for human-readable formatting.
 
-**Q: Are parameter guardrails backward compatible?**  
+**Q: Are parameter guardrails backward compatible?**
 A: Yes. Previously conflicting parameters silently failed; now they raise `ConfigurationError`. This is an improvement in clarity, not a breaking change.
 
-**Q: Can I test the new exceptions?**  
+**Q: Can I test the new exceptions?**
 A: Yes. Test files are provided:
   - `tests/integration/test_exception_parity_calibration.py`
   - `tests/integration/test_exception_parity_plugins.py`
@@ -415,4 +415,3 @@ A: Yes. Test files are provided:
 - **Validation API**: `src/calibrated_explanations/core/validation.py`
 - **Parameter Management**: `src/calibrated_explanations/api/params.py`
 - **Completion Report**: `improvement_docs/adr mending/ADR-002/COMPLETION_REPORT.md`
-

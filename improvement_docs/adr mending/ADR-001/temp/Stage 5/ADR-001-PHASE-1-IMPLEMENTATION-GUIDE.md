@@ -1,8 +1,8 @@
 # ADR-001 Phase 1 Implementation Guide: Option A (Allow-List)
 
-**Objective**: Codify 153 cross-sibling imports as intentional and enforcement-ready for v0.10.0  
-**Timeline**: ~2 hours  
-**Effort Level**: Low (configuration + documentation)  
+**Objective**: Codify 153 cross-sibling imports as intentional and enforcement-ready for v0.10.0
+**Timeline**: ~2 hours
+**Effort Level**: Low (configuration + documentation)
 **Target Audience**: Developers implementing Phase 1
 
 ---
@@ -51,11 +51,11 @@ allowed_cross_sibling: Dict[Tuple[str, str], List[str]] = field(default_factory=
     ('core', 'utils'): [],          # Core uses utilities
     ('core', 'schema'): [],         # Core uses schema definitions
     ('core', 'api'): [],            # Core uses parameter API
-    
+
     # All packages can import from universal layers
     ('*', 'utils'): [],             # All packages use utilities
     ('*', 'schema'): [],            # All packages use schema
-    
+
     # SHARED DOMAIN CONTRACTS (ADR-002 exception taxonomy)
     # All packages can raise ADR-002 exceptions
     ('api', 'core.exceptions'): [],
@@ -66,41 +66,41 @@ allowed_cross_sibling: Dict[Tuple[str, str], List[str]] = field(default_factory=
     ('utils', 'core.exceptions'): [],
     ('viz', 'core.exceptions'): [],
     ('parallel', 'core.exceptions'): [],
-    
+
     # ORCHESTRATOR HUB PATTERN (core.calibrated_explainer coordinates siblings)
     ('calibration', 'core.calibrated_explainer'): [],
     ('calibration', 'core.wrap_explainer'): [],
     ('cache', 'core.calibrated_explainer'): [],
     ('parallel', 'core.calibrated_explainer'): [],
-    
+
     # DOMAIN INTERFACE IMPORTS (siblings import strategy interfaces from core)
     ('calibration', 'core.explain.feature_task'): [],  # Type hints for feature task interface
     ('plugins', 'core.explain'): [],                     # Plugin strategies use core.explain
-    
+
     # CORE DOMAIN MODEL IMPORTS (siblings use core models)
     ('calibration', 'core.prediction'): [],             # Calibration uses prediction interface
     ('explanations', 'core'): [],                       # Explanations use core models
-    
+
     # PLUGIN COORDINATION (temporary until ADR-006 plugin interface)
     ('plugins', 'core'): [],                            # Plugins access core (ADR-006 will formalize)
     ('plugins', 'explanations'): [],                    # Plugins load explanations
-    
+
     # CACHE LAYER COORDINATION
     ('cache', 'core.explain'): [],                      # Cache needs explanation metadata
-    
+
     # VISUALIZATION ADAPTERS (expected to cross boundaries)
     ('viz', 'core'): [],                                # Viz converts core models to specs
     ('viz', 'explanations'): [],                        # Viz integrates with explanations
     ('viz', 'plugins'): [],                             # Viz loads plot plugins
-    
+
     # INTEGRATION LAYER
     ('integrations', 'core'): [],                       # Integrations use core
     ('integrations', 'explanations'): [],               # Integrations adapt explanations
-    
+
     # PERF SHIM (re-exports for backward compatibility)
     ('perf', 'cache'): [],                              # Perf re-exports cache
     ('perf', 'parallel'): [],                           # Perf re-exports parallel
-    
+
     # LEGACY COMPATIBILITY (deprecated)
     ('legacy', '*'): [],                                # Legacy imports everything (deprecated path)
 })
@@ -122,50 +122,50 @@ Add a docstring comment right above the `allowed_cross_sibling` definition expla
 allowed_cross_sibling: Dict[Tuple[str, str], List[str]] = field(default_factory=lambda: {
     """
     ALLOWLIST for intentional cross-sibling imports enforcing ADR-001 boundaries.
-    
+
     Rules are organized by category:
-    
+
     1. UNIVERSAL LAYERS (all packages can import)
        - (*,utils): All packages use utilities
        - (*,schema): All packages use schema definitions
-    
+
     2. SHARED DOMAIN CONTRACTS (ADR-002 exception taxonomy)
        - (*,core.exceptions): All packages raise ADR-002-compliant exceptions
        Rationale: Exception taxonomy is a shared architectural contract.
        Migration path (v0.10.1): Move to core.contracts.py re-export.
-    
+
     3. ORCHESTRATOR HUB PATTERN
        - (calibration,core.calibrated_explainer): Calibration checks orchestrator state
        - (cache,core.calibrated_explainer): Cache integrates with orchestrator state
        - (parallel,core.calibrated_explainer): Parallel respects orchestrator lifecycle
        Rationale: core.calibrated_explainer is the coordination hub for all subsystems.
        Migration path (v0.11.0+): May transition to coordinator pattern if multi-distribution split needed.
-    
+
     4. DOMAIN INTERFACES
        - (calibration,core.explain.feature_task): Feature task interface (type hints)
        - (plugins,core.explain): Explanation strategy interfaces
        Rationale: Interfaces are shared domain models that multiple subsystems depend on.
        Migration path (v0.10.1): Move to core.contracts.py exports.
-    
+
     5. PLUGIN COORDINATION (temporary until ADR-006)
        - (plugins,core): Plugin discovery and initialization
        - (plugins,explanations): Plugin-explanation integration
        Rationale: Plugins need to query available strategies and explanations.
        Migration path (v0.10.2): ADR-006 will formalize plugin interface; eliminate these imports.
-    
+
     6. VISUALIZATION ADAPTERS
        - (viz,core): Viz converts core domain models to plot specs
        - (viz,explanations): Viz integrates with explanation models
        Rationale: Visualization is an adapter layer that translates domain models for rendering.
-       
+
     7. INTEGRATION LAYER
        - (integrations,core): Integrations adapt core functionality
        - (integrations,explanations): Integrations adapt explanations
-       
+
     8. COMPATIBILITY SHIMS
        - (perf,cache) / (perf,parallel): Perf layer re-exports for backward compatibility
        - (legacy,*): Legacy imports everything (deprecated v1.0.0 target removal)
-    
+
     See improvement_docs/ADR-001-EXCEPTIONS-AND-CONTRACTS.md for full rationale.
     """
 ```
@@ -205,7 +205,7 @@ Create file: `improvement_docs/ADR-001-EXCEPTIONS-AND-CONTRACTS.md`
 ```markdown
 # ADR-001 Exceptions and Domain Contracts
 
-**Status**: Approved (v0.10.0)  
+**Status**: Approved (v0.10.0)
 **Rationale**: ADR-001 states "No cross-talk between siblings except through core domain models or **explicitly defined interfaces**." This document codifies the explicitly defined interfaces and shared contracts.
 
 ## Shared Domain Contracts (Allowed Cross-Sibling Imports)
@@ -218,7 +218,7 @@ All packages can import these from core without violating ADR-001:
 
 **Imports**: All packages may import from `core.exceptions` (57 current imports across calibration, plugins, cache, viz, utils).
 
-**Migration Path**: 
+**Migration Path**:
 - v0.10.0: Direct imports from `core.exceptions` (current)
 - v0.10.1: Move to re-export via `core.contracts.py` (cleaner boundary)
 - v0.11.0+: If coordinator pattern adopted, exceptions route through coordinator
@@ -330,8 +330,8 @@ from calibrated_explanations.explanations import attribution
 
 Siblings should NOT import from each other, except as listed above. Examples:
 
-❌ `calibration.state` imports `explanations.explanations` (not a domain interface)  
-❌ `plugins.builtins` imports `cache.cache` (not a shared interface)  
+❌ `calibration.state` imports `explanations.explanations` (not a domain interface)
+❌ `plugins.builtins` imports `cache.cache` (not a shared interface)
 ❌ `explanations.explanations` imports `calibration.venn_abers` (not core or interface)
 
 These would represent tight coupling that should be refactored or routed through core.
@@ -399,22 +399,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      
+
       - name: Check import graph compliance
         run: |
           python scripts/check_import_graph.py
         continue-on-error: false
-      
+
       - name: Generate import graph report
         if: failure()
         run: |
           python scripts/check_import_graph.py --report import_violations.json
-      
+
       - name: Upload report
         if: failure()
         uses: actions/upload-artifact@v3
@@ -547,7 +547,7 @@ Or add print statements to linter to see which file is causing the issue.
 
 **Cause**: Linter installed but not in PATH, or Python version mismatch.
 
-**Fix**: 
+**Fix**:
 - Ensure linter script uses `#!/usr/bin/env python3` shebang
 - CI step should run `python scripts/check_import_graph.py` (not just `check_import_graph.py`)
 - Ensure `.github/workflows/*.yml` has correct Python version (check `pyproject.toml` for minimum version)
@@ -579,6 +579,6 @@ Once Phase 1 is complete and v0.10.0 ships:
 
 ---
 
-**Timeline**: ~2 hours total for all steps  
-**Blocker**: None (can be implemented in isolation)  
+**Timeline**: ~2 hours total for all steps
+**Blocker**: None (can be implemented in isolation)
 **Next**: Schedule Phase 2 (v0.10.1) for post-release review

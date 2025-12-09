@@ -1,7 +1,7 @@
 # ADR-001 Stage 4: Visual Summary & Architecture Impact
 
-**Prepared for**: ADR-001 Gap Closure Plan (Stages 0–6)  
-**Date**: 2025-11-28  
+**Prepared for**: ADR-001 Gap Closure Plan (Stages 0–6)
+**Date**: 2025-11-28
 **Status**: ✅ COMPLETE
 
 ---
@@ -170,7 +170,7 @@ v0.11.0      → Shim removed entirely
 ```
 "calibrated_explanations.perf" is deprecated and will be removed in v0.11.0.
   ❌ DEPRECATED: from calibrated_explanations.perf import CalibratorCache, ParallelExecutor
-  ✓ RECOMMENDED: 
+  ✓ RECOMMENDED:
      from calibrated_explanations.cache import CalibratorCache
      from calibrated_explanations.parallel import ParallelExecutor
 See https://calibrated-explanations.readthedocs.io/en/latest/migration/perf_relocation.html

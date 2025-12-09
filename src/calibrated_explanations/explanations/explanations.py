@@ -13,8 +13,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 import numpy as np
 
 from ..core.exceptions import ValidationError
-from ..utils import EntropyDiscretizer, RegressorDiscretizer
-from ..utils import prepare_for_saving
+from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
 from .models import Explanation as DomainExplanation
@@ -730,7 +729,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if not isinstance(index, int):
             raise ValidationError(
                 "index must be an integer",
-                details={"param": "index", "expected_type": "int", "actual_type": type(index).__name__},
+                details={
+                    "param": "index",
+                    "expected_type": "int",
+                    "actual_type": type(index).__name__,
+                },
             )
         if index < 0:
             raise ValidationError(

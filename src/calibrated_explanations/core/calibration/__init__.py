@@ -24,7 +24,7 @@ warnings.warn(
 )
 
 # Re-export from the new top-level package
-from ...calibration import (  # noqa: F401
+from ...calibration import (  # noqa: F401,E402
     CalibrationState,
     IntervalRegressor,
     VennAbers,

@@ -64,6 +64,6 @@ Per ADR-003, the cache uses versioned keys to enable invalidation when algorithm
 
 ---
 
-**Last Updated:** 2025-11-29  
-**Owner:** ADR-003 Maintainer  
+**Last Updated:** 2025-11-29
+**Owner:** ADR-003 Maintainer
 **Review Frequency:** Per-release (before v1.0.0-rc, then before each minor release)

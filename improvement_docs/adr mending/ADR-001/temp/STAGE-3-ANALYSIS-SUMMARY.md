@@ -1,8 +1,8 @@
 # ✅ ADR-001 Stage 3 Analysis: Complete Package
 
-**Analysis Date:** November 28, 2025  
-**Status:** ✅ READY FOR IMPLEMENTATION  
-**Repository:** kristinebergs/calibrated_explanations  
+**Analysis Date:** November 28, 2025
+**Status:** ✅ READY FOR IMPLEMENTATION
+**Repository:** kristinebergs/calibrated_explanations
 **Branch:** ADR-001
 
 ---
@@ -164,7 +164,7 @@ from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter
 - 13 × "Should emit deprecation warning" (one per unsanctioned symbol)
 - 3 × "Should NOT emit warning" (one per sanctioned symbol)
 
-**Coverage:** ≥95% for deprecation module  
+**Coverage:** ≥95% for deprecation module
 **Execution:** All pass in <100ms (lightweight)
 
 **Test Example:**
@@ -315,19 +315,19 @@ Next: Implement Stage 3 (deprecation warnings in v0.10.0)
 
 ## ❓ FAQ
 
-**Q: Why deprecate instead of just remove?**  
+**Q: Why deprecate instead of just remove?**
 A: ADR-011 requires two-release window. Gives users time to migrate; violates no SLAs.
 
-**Q: Will this break existing code?**  
+**Q: Will this break existing code?**
 A: Not in v0.10.0. In v0.11.0, yes—but migration is trivial (one-line import changes).
 
-**Q: What about internal tests?**  
+**Q: What about internal tests?**
 A: Scan for deprecated imports; update before v0.11.0 release.
 
-**Q: Why 13 symbols? Can we do fewer?**  
+**Q: Why 13 symbols? Can we do fewer?**
 A: These 13 are defined as "unsanctioned" per ADR-001. Analysis is comprehensive.
 
-**Q: What if users don't migrate?**  
+**Q: What if users don't migrate?**
 A: Graceful degradation: v0.10.0 works (warnings); v0.11.0 requires updates. Standard deprecation.
 
 ---
@@ -343,8 +343,8 @@ A: Graceful degradation: v0.10.0 works (warnings); v0.11.0 requires updates. Sta
 | ADR-001-STAGE-3-VISUAL-SUMMARY.md | Visual learners | Diagrams & flows | ✅ READY |
 | STAGE-3-ANALYSIS-DELIVERABLES.md | Everyone | This index | ✅ READY |
 
-**Total:** ~2,000 lines of analysis  
-**Time to implement:** 4–6 hours (from templates)  
+**Total:** ~2,000 lines of analysis
+**Time to implement:** 4–6 hours (from templates)
 **Time to review:** ~45 minutes per PR
 
 ---
@@ -365,7 +365,6 @@ This package provides everything needed to:
 
 ---
 
-**Analysis Date:** 2025-11-28  
-**Status:** ✅ READY FOR IMPLEMENTATION  
+**Analysis Date:** 2025-11-28
+**Status:** ✅ READY FOR IMPLEMENTATION
 **Next Action:** Schedule implementation iteration + get stakeholder approval
-

@@ -239,6 +239,7 @@ def test_should_use_jsonschema_when_available_for_validation(
             fake_validate(instance=instance, schema=schema)
 
     from calibrated_explanations import schema
+
     monkeypatch.setattr(schema.validation, "jsonschema", FakeJSONSchema)
     monkeypatch.setattr(schema.validation, "_schema_json", lambda: {"title": "fake"})
 
@@ -276,6 +277,7 @@ def test_should_invoke_schema_loader_when_validating(
     validator = types.SimpleNamespace(validate=fake_validate)
 
     from calibrated_explanations import schema
+
     monkeypatch.setattr(schema.validation, "jsonschema", validator)
     monkeypatch.setattr(schema.validation, "_schema_json", fake_schema_loader)
 

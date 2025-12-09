@@ -121,10 +121,11 @@ class ExplanationOrchestrator:
             Source for condition labels ('observed' or 'prediction').
         """
         import numpy as np
+
         from ...core.discretizer_config import (
-            validate_discretizer_choice,
             instantiate_discretizer,
             setup_discretized_data,
+            validate_discretizer_choice,
         )
         from ..exceptions import ValidationError
 
@@ -153,7 +154,10 @@ class ExplanationOrchestrator:
             condition_labels = np.asarray(predictions)
 
             # Filter out NaNs
-            if np.issubdtype(condition_labels.dtype, np.number) and np.isnan(condition_labels).any():
+            if (
+                np.issubdtype(condition_labels.dtype, np.number)
+                and np.isnan(condition_labels).any()
+            ):
                 mask = ~np.isnan(condition_labels)
                 x_cal = x_cal[mask]
                 condition_labels = condition_labels[mask]

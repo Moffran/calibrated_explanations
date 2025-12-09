@@ -38,28 +38,28 @@ Narrow `calibrated_explanations.__init__` from 16 exported symbols to 3 sanction
 
 - [ ] Create `src/calibrated_explanations/utils/deprecation.py`
   - Function: `deprecate_public_api_symbol(symbol_name, current_import, recommended_import, removal_version, extra_context)`
-  
+
 - [ ] Fix bug in `src/calibrated_explanations/__init__.py`
   - Line ~87: `from ..calibration.interval_regressor` → `from .calibration.interval_regressor`
-  
+
 - [ ] Update `__getattr__` for each unsanctioned symbol
   - Wrap with: `deprecate_public_api_symbol(...)`
   - Pattern: Call helper before returning module/value
-  
+
 - [ ] Add tests to `tests/unit/test_package_init.py`
   - 13 × `test_should_emit_deprecation_for_*`
   - 3 × `test_should_not_warn_for_*`
-  
+
 - [ ] Update `CHANGELOG.md`
   - Section: "Deprecations"
   - List all 13 symbols with before/after imports
-  
+
 - [ ] Create `docs/migration/api_surface_narrowing.md`
   - Include all 4 migration examples (explanations, discretizers, calibrators, viz)
-  
+
 - [ ] Create `docs/architecture/public_api.md`
   - Document sanctioned symbols and submodule import paths
-  
+
 - [ ] Run tests
   ```bash
   pytest tests/unit/test_package_init.py -v
@@ -296,6 +296,5 @@ All green? → Commit and create PR.
 
 ---
 
-**Last updated:** 2025-11-28  
+**Last updated:** 2025-11-28
 **Status:** ✅ Ready for implementation
-

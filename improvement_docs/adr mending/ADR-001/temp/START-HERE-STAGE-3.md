@@ -1,8 +1,8 @@
 # ADR-001 Stage 3 Analysis Package – Start Here
 
-**Created:** 2025-11-28  
-**Status:** ✅ Complete & Ready for Review  
-**Total Documents:** 6 comprehensive analysis files  
+**Created:** 2025-11-28
+**Status:** ✅ Complete & Ready for Review
+**Total Documents:** 6 comprehensive analysis files
 **Implementation Time:** 4–6 hours (from code templates)
 
 ---
@@ -208,22 +208,22 @@ improvement_docs/
 
 ## ❓ FAQ
 
-**Q: Which file should I read first?**  
+**Q: Which file should I read first?**
 A: This page + `STAGE-3-ANALYSIS-SUMMARY.md` (together: 20 min for context)
 
-**Q: I need to implement this now. What do I do?**  
+**Q: I need to implement this now. What do I do?**
 A: Open `adrs/ADR-001-STAGE-3-IMPLEMENTATION-ROADMAP.md` in your editor. Follow 8 steps. Use code templates.
 
-**Q: Can I copy-paste the code?**  
+**Q: Can I copy-paste the code?**
 A: Yes! Most code templates are ready to copy. Some require customization (file paths), which is marked in comments.
 
-**Q: What's the bug that needs fixing?**  
+**Q: What's the bug that needs fixing?**
 A: Current `__getattr__` uses `from ..calibration.interval_regressor` (wrong relative path). Should be `from .calibration.interval_regressor`. Fixed in implementation roadmap.
 
-**Q: How long will this take?**  
+**Q: How long will this take?**
 A: Implementation: 4–6 hours. Review: ~45 minutes per PR.
 
-**Q: What if we skip this?**  
+**Q: What if we skip this?**
 A: API remains confusing; users don't know which imports are official. ADR-001 Gap #5 remains unresolved. Not recommended.
 
 ---
@@ -266,7 +266,6 @@ A: API remains confusing; users don't know which imports are official. ADR-001 G
 
 ---
 
-**Status:** ✅ READY FOR IMPLEMENTATION  
-**Contact:** This analysis package is self-contained and complete.  
+**Status:** ✅ READY FOR IMPLEMENTATION
+**Contact:** This analysis package is self-contained and complete.
 **Next:** Schedule implementation iteration and approve.
-

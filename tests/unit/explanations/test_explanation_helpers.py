@@ -267,6 +267,7 @@ def test_length_and_metadata_helpers(simple_explanation):
 
 def test_rank_features_requires_input(simple_explanation):
     from calibrated_explanations.core.exceptions import ValidationError
+
     with pytest.raises(ValidationError):
         simple_explanation._rank_features()
 
@@ -493,6 +494,7 @@ def test_predict_conjunctive_average():
 
 def test_predict_conjunctive_requires_multiple_features():
     from calibrated_explanations.core.exceptions import ValidationError
+
     explanation = _make_explanation()
     with pytest.raises(ValidationError):
         explanation._predict_conjunctive(

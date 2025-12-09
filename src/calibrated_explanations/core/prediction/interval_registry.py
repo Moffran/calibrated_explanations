@@ -145,4 +145,3 @@ class IntervalRegistry:
         typically creating multiple interval learners for different feature bins.
         """
         initialize_interval_learner_for_fast_explainer(self.explainer)
-

@@ -76,6 +76,7 @@ def test_categorical_features_default_to_label_keys(explainer_factory):
 
 def test_require_plugin_manager_raises_when_missing(explainer_factory):
     from calibrated_explanations.core.exceptions import NotFittedError
+
     explainer = _stub_explainer(explainer_factory)
     explainer._plugin_manager = None
 
@@ -491,7 +492,14 @@ def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch
         means: dict[int, list[float]] = {}
 
     def _fake_instantiate(
-        discretizer, x_cal, not_to_discretize, feature_names, y_cal, seed, old_discretizer, **_kwargs
+        discretizer,
+        x_cal,
+        not_to_discretize,
+        feature_names,
+        y_cal,
+        seed,
+        old_discretizer,
+        **_kwargs,
     ):
         called["not_to_discretize"] = not_to_discretize
         return FakeDiscretizer()
@@ -512,9 +520,7 @@ def test_set_discretizer_prediction_condition_source(explainer_factory, monkeypa
         def __init__(self, *_args: Any, **_kwargs: Any) -> None:
             pass
 
-    monkeypatch.setitem(
-        sys.modules, "cachetools", types.SimpleNamespace(TTLCache=_DummyTTLCache)
-    )
+    monkeypatch.setitem(sys.modules, "cachetools", types.SimpleNamespace(TTLCache=_DummyTTLCache))
 
     explainer = explainer_factory()
     explainer.condition_source = "prediction"
@@ -989,9 +995,7 @@ def test_explain_counterfactual_deprecates_and_delegates(monkeypatch, explainer_
     explainer = explainer_factory()
     sentinel = object()
 
-    monkeypatch.setattr(
-        "calibrated_explanations.utils.deprecate", lambda *args, **kwargs: None
-    )
+    monkeypatch.setattr("calibrated_explanations.utils.deprecate", lambda *args, **kwargs: None)
     explainer.explore_alternatives = lambda *args, **kwargs: sentinel
 
     assert (
@@ -1070,9 +1074,7 @@ def test_set_discretizer_defaults_and_populates(monkeypatch, explainer_factory):
         lambda choice, mode: f"validated:{choice}:{mode}",
     )
 
-    def _instantiate(
-        choice, x_cal, not_to_discretize, feature_names, y_cal, seed, old, **kwargs
-    ):
+    def _instantiate(choice, x_cal, not_to_discretize, feature_names, y_cal, seed, old, **kwargs):
         assert kwargs.get("condition_source") == "observed"
         return f"disc:{choice}:{tuple(not_to_discretize)}:{old}"
 

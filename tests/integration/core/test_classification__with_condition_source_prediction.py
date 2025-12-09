@@ -41,7 +41,13 @@ def test_binary_ce(binary_dataset):
     ) = binary_dataset
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="classification", condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="classification",
+        condition_source="prediction",
     )
 
     cal_exp.initialize_reject_learner()
@@ -147,7 +153,13 @@ def test_binary_ce_str_target(binary_dataset):
     y_cal = y_cal.astype(str)
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="classification", condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="classification",
+        condition_source="prediction",
     )
 
     cal_exp.initialize_reject_learner()
@@ -346,7 +358,14 @@ def test_binary_fast_ce(binary_dataset):
     ) = binary_dataset
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="classification", fast=True, condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="classification",
+        fast=True,
+        condition_source="prediction",
     )
 
     fast_explanation = cal_exp.explain_fast(x_test)

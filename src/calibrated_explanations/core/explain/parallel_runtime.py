@@ -19,7 +19,6 @@ from ._shared import ExplainConfig, ExplainRequest
 
 if TYPE_CHECKING:
     from ...plugins import ExplanationRequest
-    from .sequential import SequentialExplainExecutor
 
 _DEFAULT_PERCENTILES: Tuple[float, float] = (5, 95)
 
@@ -54,9 +53,7 @@ class ExplainParallelRuntime:
 
         parallel_config = executor.config if executor is not None else ParallelConfig()
         resolved_granularity = (
-            granularity
-            or getattr(explainer, "granularity", None)
-            or parallel_config.granularity
+            granularity or getattr(explainer, "granularity", None) or parallel_config.granularity
         )
         chunk_size = max(1, parallel_config.min_batch_size)
         min_instances = max(
@@ -93,12 +90,8 @@ def build_explain_execution_plan(
     """Prepare explain execution request and config using explain-local rules."""
 
     prepared_x = validate_and_prepare_input(explainer, x)
-    features_to_ignore_array = merge_ignore_features(
-        explainer, request.features_to_ignore
-    )
-    low_high_percentiles = tuple(
-        request.low_high_percentiles or _DEFAULT_PERCENTILES
-    )
+    features_to_ignore_array = merge_ignore_features(explainer, request.features_to_ignore)
+    low_high_percentiles = tuple(request.low_high_percentiles or _DEFAULT_PERCENTILES)
 
     explain_request = ExplainRequest(
         x=prepared_x,

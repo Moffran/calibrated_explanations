@@ -1,10 +1,10 @@
 # ADR-001 Stage 3: Public API Surface Narrowing & Deprecation Strategy
 
-**Date Authored:** 2025-11-28  
-**Status:** ✅ RECOMMENDED FOR IMPLEMENTATION  
-**Target Release Cycle:** v0.10.0 → v0.11.0 (Stage 3 deprecation gate closure)  
-**Linked ADRs:** ADR-001 (Package Layout), ADR-011 (Deprecation Policy)  
-**Severity:** 6 (medium) – Violation impact 3 × Code scope 2  
+**Date Authored:** 2025-11-28
+**Status:** ✅ RECOMMENDED FOR IMPLEMENTATION
+**Target Release Cycle:** v0.10.0 → v0.11.0 (Stage 3 deprecation gate closure)
+**Linked ADRs:** ADR-001 (Package Layout), ADR-011 (Deprecation Policy)
+**Severity:** 6 (medium) – Violation impact 3 × Code scope 2
 
 ---
 
@@ -100,10 +100,10 @@ def deprecate_public_api_symbol(
     extra_context: Optional[str] = None,
 ):
     """Emit structured deprecation warning for top-level API symbols.
-    
+
     Args:
         symbol_name: Name of the symbol being accessed (e.g., "CalibratedExplanations")
-        current_import: Current (deprecated) import path 
+        current_import: Current (deprecated) import path
                         (e.g., "from calibrated_explanations import CalibratedExplanations")
         recommended_import: Recommended new import path
                            (e.g., "from calibrated_explanations.explanations import CalibratedExplanations")
@@ -115,10 +115,10 @@ def deprecate_public_api_symbol(
         f"  Current:     {current_import}\n"
         f"  Recommended: {recommended_import}\n"
     )
-    
+
     if extra_context:
         message += f"  Context: {extra_context}\n"
-    
+
     warnings.warn(
         message.rstrip(),
         category=DeprecationWarning,
@@ -135,9 +135,9 @@ Wrap each unsanctioned symbol with a deprecation warning:
 ```python
 def __getattr__(name: str):
     """Lazy import for public symbols (some deprecated per ADR-001 Stage 3)."""
-    
+
     # ... [existing sanctioned imports] ...
-    
+
     if name == "viz":
         from calibrated_explanations.utils.deprecation import deprecate_public_api_symbol
         deprecate_public_api_symbol(
@@ -149,7 +149,7 @@ def __getattr__(name: str):
         module = importlib.import_module(f"{__name__}.viz")
         globals()[name] = module
         return module
-    
+
     # Explanation classes
     if name in {"AlternativeExplanation", "FactualExplanation", "FastExplanation"}:
         from calibrated_explanations.utils.deprecation import deprecate_public_api_symbol
@@ -163,7 +163,7 @@ def __getattr__(name: str):
         value = getattr(module, name)
         globals()[name] = value
         return value
-    
+
     # ... [repeat pattern for all unsanctioned symbols] ...
 ```
 
@@ -269,23 +269,23 @@ plots.plot_factual(...)
 - [ ] **Create deprecation helper**
   - File: `src/calibrated_explanations/utils/deprecation.py`
   - Function: `deprecate_public_api_symbol()`
-  
+
 - [ ] **Update `__init__.py` with warnings**
   - Wrap all unsanctioned symbols with deprecation calls
   - Test warnings are emitted correctly
-  
+
 - [ ] **Fix calibration import bug**
   - Change `from ..calibration.interval_regressor` → `from .calibration.interval_regressor`
-  
+
 - [ ] **Add tests for deprecation warnings**
   - Test each unsanctioned symbol emits the correct warning
   - Verify sanctioned symbols do NOT emit warnings
   - See "Test Changes" section below
-  
+
 - [ ] **Update CHANGELOG**
   - Document that explanation, discretizer, calibrator, and viz imports are deprecated
   - Point users to migration guide
-  
+
 - [ ] **Documentation**
   - Add migration guide to docs
   - Update architecture docs to reflect sanctioned API
@@ -295,11 +295,11 @@ plots.plot_factual(...)
 - [ ] **Remove unsanctioned symbols from `__getattr__`**
   - Delete all deprecation branches
   - Update `__all__` to sanctioned-only list
-  
+
 - [ ] **Update tests**
   - Remove tests that verify unsanctioned imports work
   - Update integration tests to use new import paths
-  
+
 - [ ] **Update CHANGELOG**
   - Document breaking change (removal of top-level exports)
   - Reference v0.10.0 migration guide
@@ -322,128 +322,128 @@ import calibrated_explanations as ce
 
 class TestDeprecatedExplanationImports:
     """Verify explanation classes emit deprecation warnings from top level."""
-    
+
     def test_should_emit_deprecation_when_accessing_alternative_explanation(self, monkeypatch):
         # Arrange
         monkeypatch.delitem(ce.__dict__, "AlternativeExplanation", raising=False)
-        
+
         # Act & Assert
         with pytest.warns(DeprecationWarning, match="AlternativeExplanation.*deprecated"):
             alternative_explanation = ce.AlternativeExplanation
-        
+
         # Verify actual import still works
         from calibrated_explanations.explanations.explanation import AlternativeExplanation
         assert alternative_explanation is AlternativeExplanation
-    
+
     def test_should_emit_deprecation_when_accessing_factual_explanation(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "FactualExplanation", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="FactualExplanation.*deprecated"):
             factual_explanation = ce.FactualExplanation
-        
+
         from calibrated_explanations.explanations.explanation import FactualExplanation
         assert factual_explanation is FactualExplanation
-    
+
     def test_should_emit_deprecation_when_accessing_calibrated_explanations(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "CalibratedExplanations", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="CalibratedExplanations.*deprecated"):
             explanations = ce.CalibratedExplanations
-        
+
         from calibrated_explanations.explanations.explanations import CalibratedExplanations
         assert explanations is CalibratedExplanations
 
 
 class TestDeprecatedDiscretizerImports:
     """Verify discretizers emit deprecation warnings from top level."""
-    
+
     def test_should_emit_deprecation_when_accessing_entropy_discretizer(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "EntropyDiscretizer", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="EntropyDiscretizer.*deprecated"):
             discretizer = ce.EntropyDiscretizer
-        
+
         from calibrated_explanations.utils.discretizers import EntropyDiscretizer
         assert discretizer is EntropyDiscretizer
-    
+
     def test_should_emit_deprecation_when_accessing_regressor_discretizer(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "RegressorDiscretizer", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="RegressorDiscretizer.*deprecated"):
             discretizer = ce.RegressorDiscretizer
-        
+
         from calibrated_explanations.utils.discretizers import RegressorDiscretizer
         assert discretizer is RegressorDiscretizer
 
 
 class TestDeprecatedCalibratorImports:
     """Verify calibrators emit deprecation warnings from top level."""
-    
+
     def test_should_emit_deprecation_when_accessing_interval_regressor(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "IntervalRegressor", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="IntervalRegressor.*deprecated"):
             regressor = ce.IntervalRegressor
-        
+
         from calibrated_explanations.calibration import IntervalRegressor
         assert regressor is IntervalRegressor
-    
+
     def test_should_emit_deprecation_when_accessing_venn_abers(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "VennAbers", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="VennAbers.*deprecated"):
             venn = ce.VennAbers
-        
+
         from calibrated_explanations.calibration import VennAbers
         assert venn is VennAbers
 
 
 class TestDeprecatedVizImports:
     """Verify viz namespace emits deprecation warning from top level."""
-    
+
     def test_should_emit_deprecation_when_accessing_viz_namespace(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "viz", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="viz.*deprecated"):
             viz = ce.viz
-        
+
         from calibrated_explanations import viz as viz_direct
         assert viz is viz_direct
 
 
 class TestSanctionedImportsNoWarnings:
     """Verify sanctioned symbols do NOT emit deprecation warnings."""
-    
+
     def test_should_not_emit_deprecation_for_calibrated_explainer(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "CalibratedExplainer", raising=False)
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             # Should not raise
             explainer_cls = ce.CalibratedExplainer
-        
+
         from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
         assert explainer_cls is CalibratedExplainer
-    
+
     def test_should_not_emit_deprecation_for_wrap_calibrated_explainer(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "WrapCalibratedExplainer", raising=False)
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             # Should not raise
             wrapper_cls = ce.WrapCalibratedExplainer
-        
+
         from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
         assert wrapper_cls is WrapCalibratedExplainer
-    
+
     def test_should_not_emit_deprecation_for_transform_to_numeric(self, monkeypatch):
         monkeypatch.delitem(ce.__dict__, "transform_to_numeric", raising=False)
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             # Should not raise
             transform_fn = ce.transform_to_numeric
-        
+
         from calibrated_explanations.utils.helper import transform_to_numeric
         assert transform_fn is transform_to_numeric
 ```
@@ -461,15 +461,15 @@ import calibrated_explanations as ce
 
 class TestSanctionedSymbolsOnly:
     """Verify only sanctioned symbols are accessible from top level."""
-    
+
     def test_should_access_calibrated_explainer(self):
         from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
         assert ce.CalibratedExplainer is CalibratedExplainer
-    
+
     def test_should_access_wrap_calibrated_explainer(self):
         from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
         assert ce.WrapCalibratedExplainer is WrapCalibratedExplainer
-    
+
     def test_should_access_transform_to_numeric(self):
         from calibrated_explanations.utils.helper import transform_to_numeric
         assert ce.transform_to_numeric is transform_to_numeric
@@ -477,23 +477,23 @@ class TestSanctionedSymbolsOnly:
 
 class TestUnsanctionedSymbolsRaiseAttributeError:
     """Verify unsanctioned symbols raise AttributeError."""
-    
+
     def test_should_raise_on_alternative_explanation(self):
         with pytest.raises(AttributeError, match="has no attribute 'AlternativeExplanation'"):
             ce.AlternativeExplanation
-    
+
     def test_should_raise_on_entropy_discretizer(self):
         with pytest.raises(AttributeError, match="has no attribute 'EntropyDiscretizer'"):
             ce.EntropyDiscretizer
-    
+
     def test_should_raise_on_interval_regressor(self):
         with pytest.raises(AttributeError, match="has no attribute 'IntervalRegressor'"):
             ce.IntervalRegressor
-    
+
     def test_should_raise_on_venn_abers(self):
         with pytest.raises(AttributeError, match="has no attribute 'VennAbers'"):
             ce.VennAbers
-    
+
     def test_should_raise_on_viz_namespace(self):
         with pytest.raises(AttributeError, match="has no attribute 'viz'"):
             ce.viz
@@ -508,7 +508,7 @@ Scan for any integration tests that use deprecated top-level imports and update 
 ```python
 # OLD (deprecated)
 from calibrated_explanations import (
-    CalibratedExplainer, 
+    CalibratedExplainer,
     CalibratedExplanations,  # ← Deprecated
     EntropyDiscretizer,      # ← Deprecated
 )
@@ -581,20 +581,20 @@ from calibrated_explanations.utils.discretizers import EntropyDiscretizer
 ```markdown
 ### Deprecations
 
-- **Top-level explanation class imports** (e.g., `from calibrated_explanations import CalibratedExplanations`) 
-  are deprecated and will be removed in v0.11.0. 
+- **Top-level explanation class imports** (e.g., `from calibrated_explanations import CalibratedExplanations`)
+  are deprecated and will be removed in v0.11.0.
   Import from `calibrated_explanations.explanations` instead.
-  
-- **Top-level discretizer imports** (e.g., `from calibrated_explanations import EntropyDiscretizer`) 
-  are deprecated and will be removed in v0.11.0. 
+
+- **Top-level discretizer imports** (e.g., `from calibrated_explanations import EntropyDiscretizer`)
+  are deprecated and will be removed in v0.11.0.
   Import from `calibrated_explanations.utils.discretizers` instead.
-  
-- **Top-level calibrator imports** (e.g., `from calibrated_explanations import IntervalRegressor`) 
-  are deprecated and will be removed in v0.11.0. 
+
+- **Top-level calibrator imports** (e.g., `from calibrated_explanations import IntervalRegressor`)
+  are deprecated and will be removed in v0.11.0.
   Import from `calibrated_explanations.calibration` instead.
-  
-- **Top-level `viz` namespace import** (e.g., `from calibrated_explanations import viz`) 
-  is deprecated and will be removed in v0.11.0. 
+
+- **Top-level `viz` namespace import** (e.g., `from calibrated_explanations import viz`)
+  is deprecated and will be removed in v0.11.0.
   Import specific items from `calibrated_explanations.viz` instead.
 
 See [migration guide](./docs/migration/api_surface_narrowing.md) for detailed examples.
@@ -640,4 +640,3 @@ Document the sanctioned façade, explain rationale, link to submodule docs.
 - **ADR-011:** Deprecation Policy – `improvement_docs/RELEASE_PLAN_v1.md:L104-L120`
 - **Current `__init__.py`:** `src/calibrated_explanations/__init__.py`
 - **Test guidance:** `.github/tests-guidance.md`
-

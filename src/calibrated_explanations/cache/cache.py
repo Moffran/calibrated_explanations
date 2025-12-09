@@ -21,7 +21,6 @@ import threading
 from dataclasses import dataclass as _dataclass
 from dataclasses import field
 from hashlib import blake2b
-from time import monotonic
 from typing import (
     Any,
     Callable,
@@ -282,7 +281,7 @@ class LRUCache(Generic[K, V]):
 
     def set(self, key: K, value: V) -> None:
         """Store ``value`` under ``key`` honouring eviction policies.
-        
+
         Note: None values are wrapped to distinguish them from missing keys.
         """
         # Wrap None values to distinguish from missing keys
@@ -297,7 +296,7 @@ class LRUCache(Generic[K, V]):
         with self._lock:
             # Track the old keys before adding the new entry
             old_keys = set(self._store.keys())
-            
+
             # Track memory for existing entry if present
             if key in self._store:
                 existing = self._store[key]
@@ -314,14 +313,14 @@ class LRUCache(Generic[K, V]):
             # Add the new entry (cachetools may auto-evict if max_items reached)
             self._store[key] = stored_value
             self._bytes += cost
-            
+
             # Detect and track any auto-evictions by cachetools
             new_keys = set(self._store.keys())
             evicted_by_cachetools = old_keys - new_keys - {key}
             for evicted_key in evicted_by_cachetools:
                 self.metrics.evictions += 1
                 self._emit("cache_evict", {"key": evicted_key, "reason": "auto_by_cachetools"})
-            
+
             self.metrics.sets += 1
             self._emit("cache_store", {"key": key, "cost": cost})
 

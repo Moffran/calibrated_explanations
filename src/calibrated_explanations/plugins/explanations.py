@@ -161,6 +161,7 @@ def validate_explanation_batch(
     metadata = batch.collection_metadata
     if not isinstance(metadata, MutableMappingABC):
         from ..core.exceptions import ValidationError
+
         raise ValidationError(
             "batch.collection_metadata must be a mutable mapping",
             details={
@@ -173,6 +174,7 @@ def validate_explanation_batch(
     mode_hint = metadata.get("mode")
     if expected_mode is not None and mode_hint is not None and str(mode_hint) != expected_mode:
         from ..core.exceptions import ValidationError
+
         raise ValidationError(
             "ExplanationBatch metadata reports mode '"
             + str(mode_hint)
@@ -190,6 +192,7 @@ def validate_explanation_batch(
     task_hint = metadata.get("task")
     if expected_task is not None and task_hint is not None and str(task_hint) != expected_task:
         from ..core.exceptions import ValidationError
+
         raise ValidationError(
             "ExplanationBatch metadata reports task '"
             + str(task_hint)

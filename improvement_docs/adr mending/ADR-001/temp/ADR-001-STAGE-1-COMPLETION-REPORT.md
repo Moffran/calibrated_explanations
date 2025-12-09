@@ -1,8 +1,8 @@
 # ADR-001 Gap Closure Implementation Progress
 
-**Status**: Stages 0–1c Completed  
-**Date**: 2025-11-28  
-**Implemented by**: Stage-by-stage ADR-001 package boundary realignment  
+**Status**: Stages 0–1c Completed
+**Date**: 2025-11-28
+**Implemented by**: Stage-by-stage ADR-001 package boundary realignment
 
 ## Completed Stages
 
@@ -135,4 +135,3 @@ All changes include:
 2. Update test imports to use new package locations (gradually)
 3. Proceed with Stages 2–5 per RELEASE_PLAN_V1.md timeline
 4. Document adoption progress in ADR-001 adoption notes
-

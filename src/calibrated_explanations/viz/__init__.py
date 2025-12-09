@@ -9,8 +9,9 @@ expected.
 
 from __future__ import annotations
 
-from importlib import import_module, util as _importlib_util
-from typing import Any, TYPE_CHECKING
+from importlib import import_module
+from importlib import util as _importlib_util
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only
     from . import matplotlib_adapter, plots
@@ -20,13 +21,14 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         _legacy_get_fill_color,
         build_alternative_probabilistic_spec,
         build_alternative_regression_spec,
+        build_factual_probabilistic_plotspec_dict,
         build_global_plotspec_dict,
         build_probabilistic_bars_spec,
         build_regression_bars_spec,
         build_triangular_plotspec_dict,
-        build_factual_probabilistic_plotspec_dict,
         is_valid_probability_values,
     )
+    from .matplotlib_adapter import render
     from .narrative_plugin import NarrativePlotPlugin
     from .plotspec import BarHPanelSpec, BarItem, IntervalHeaderSpec, PlotSpec
     from .serializers import (
@@ -35,7 +37,6 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only
         plotspec_to_dict,
         validate_plotspec,
     )
-    from .matplotlib_adapter import render
 
 
 def _require_matplotlib() -> None:

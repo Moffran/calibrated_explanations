@@ -1,9 +1,9 @@
 # Test Collection Fix: ADR-001 Deprecation Warnings
 
-**Date**: 2025-11-28  
-**Issue**: Test collection was failing with DeprecationWarning errors from ADR-001 Stage 3 and 4  
-**Resolution**: Updated `pytest.ini` to allow intentional deprecation warnings  
-**Status**: ✅ Fixed - All 113+ tests now collect without errors  
+**Date**: 2025-11-28
+**Issue**: Test collection was failing with DeprecationWarning errors from ADR-001 Stage 3 and 4
+**Resolution**: Updated `pytest.ini` to allow intentional deprecation warnings
+**Status**: ✅ Fixed - All 113+ tests now collect without errors
 
 ---
 

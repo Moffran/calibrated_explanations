@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 import numpy as np
 
 if TYPE_CHECKING:
-    from calibrated_explanations.cache import ExplanationCacheFacade
     from calibrated_explanations.core import CalibratedExplainer
 
 

@@ -1,7 +1,7 @@
 # ADR-001 Stage 0: Scope Confirmation & Intentional Divergences
 
-**Status**: Decision note for gap closure implementation  
-**Date**: 2025-11-28  
+**Status**: Decision note for gap closure implementation
+**Date**: 2025-11-28
 **Context**: Before executing the gap closure plan, confirm ADR-001 scope and document intentional divergences.
 
 ## Confirmed ADR-001 Scope
@@ -67,4 +67,3 @@ With one core developer, explicit ownership assignments are not necessary. All p
 ## Next Steps
 
 This confirmation note is superseded by implementation of Stages 1–5. Any future deviations from this scope require a follow-up decision note and PR discussion.
-

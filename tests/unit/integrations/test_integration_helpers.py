@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import numpy as np
-import pytest
 
 from calibrated_explanations.integrations.lime import LimeHelper
 from calibrated_explanations.integrations.shap import ShapHelper
@@ -18,7 +16,7 @@ class TestLimeHelper:
         """LimeHelper should initialize with _enabled=False."""
         mock_explainer = MagicMock()
         helper = LimeHelper(explainer=mock_explainer)
-        
+
         assert helper.is_enabled() is False
         assert helper._explainer_instance is None
         assert helper._reference_explanation is None
@@ -27,7 +25,7 @@ class TestLimeHelper:
         """set_enabled() should update the _enabled flag."""
         mock_explainer = MagicMock()
         helper = LimeHelper(explainer=mock_explainer)
-        
+
         assert helper.is_enabled() is False
         helper.set_enabled(True)
         assert helper.is_enabled() is True
@@ -36,15 +34,15 @@ class TestLimeHelper:
         """set_enabled(False) should call reset()."""
         mock_explainer = MagicMock()
         helper = LimeHelper(explainer=mock_explainer)
-        
+
         # Manually set some state
         helper._enabled = True
         helper._explainer_instance = MagicMock()
         helper._reference_explanation = MagicMock()
-        
+
         # Disable
         helper.set_enabled(False)
-        
+
         # State should be cleared
         assert helper.is_enabled() is False
         assert helper._explainer_instance is None
@@ -54,15 +52,15 @@ class TestLimeHelper:
         """reset() should clear all cached state."""
         mock_explainer = MagicMock()
         helper = LimeHelper(explainer=mock_explainer)
-        
+
         # Set some state
         helper._enabled = True
         helper._explainer_instance = MagicMock()
         helper._reference_explanation = MagicMock()
-        
+
         # Call reset
         helper.reset()
-        
+
         # Verify state cleared
         assert helper._enabled is False
         assert helper._explainer_instance is None
@@ -72,10 +70,10 @@ class TestLimeHelper:
         """preload() should return (None, None) when lime is not installed."""
         mock_explainer = MagicMock()
         helper = LimeHelper(explainer=mock_explainer)
-        
+
         with patch("calibrated_explanations.integrations.lime.safe_import", return_value=None):
             instance, explanation = helper.preload()
-            
+
             assert instance is None
             assert explanation is None
 
@@ -83,39 +81,39 @@ class TestLimeHelper:
         """explainer_instance property should return cached instance."""
         mock_explainer = MagicMock()
         helper = LimeHelper(explainer=mock_explainer)
-        
+
         # Preload with unavailable LIME (returns None)
         with patch("calibrated_explanations.integrations.lime.safe_import", return_value=None):
             instance = helper.explainer_instance
-            
+
             assert instance is None
 
     def test_should_expose_cached_reference_explanation(self):
         """reference_explanation property should return cached explanation."""
         mock_explainer = MagicMock()
         helper = LimeHelper(explainer=mock_explainer)
-        
+
         # Preload with unavailable LIME (returns None)
         with patch("calibrated_explanations.integrations.lime.safe_import", return_value=None):
             explanation = helper.reference_explanation
-            
+
             assert explanation is None
 
     def test_should_not_preload_when_already_enabled(self):
         """preload() should skip initialization if already enabled."""
         mock_explainer = MagicMock()
         helper = LimeHelper(explainer=mock_explainer)
-        
+
         # Mark as already enabled with a cached instance
         helper._enabled = True
         mock_instance = MagicMock()
         helper._explainer_instance = mock_instance
         mock_explanation = MagicMock()
         helper._reference_explanation = mock_explanation
-        
+
         # Call preload - should not reinitialize
         instance, explanation = helper.preload()
-        
+
         assert instance is mock_instance
         assert explanation is mock_explanation
 
@@ -127,7 +125,7 @@ class TestShapHelper:
         """ShapHelper should initialize with _enabled=False."""
         mock_explainer = MagicMock()
         helper = ShapHelper(explainer=mock_explainer)
-        
+
         assert helper.is_enabled() is False
         assert helper._explainer_instance is None
         assert helper._reference_explanation is None
@@ -136,7 +134,7 @@ class TestShapHelper:
         """set_enabled() should update the _enabled flag."""
         mock_explainer = MagicMock()
         helper = ShapHelper(explainer=mock_explainer)
-        
+
         assert helper.is_enabled() is False
         helper.set_enabled(True)
         assert helper.is_enabled() is True
@@ -145,15 +143,15 @@ class TestShapHelper:
         """set_enabled(False) should call reset()."""
         mock_explainer = MagicMock()
         helper = ShapHelper(explainer=mock_explainer)
-        
+
         # Manually set some state
         helper._enabled = True
         helper._explainer_instance = MagicMock()
         helper._reference_explanation = MagicMock()
-        
+
         # Disable
         helper.set_enabled(False)
-        
+
         # State should be cleared
         assert helper.is_enabled() is False
         assert helper._explainer_instance is None
@@ -163,15 +161,15 @@ class TestShapHelper:
         """reset() should clear all cached state."""
         mock_explainer = MagicMock()
         helper = ShapHelper(explainer=mock_explainer)
-        
+
         # Set some state
         helper._enabled = True
         helper._explainer_instance = MagicMock()
         helper._reference_explanation = MagicMock()
-        
+
         # Call reset
         helper.reset()
-        
+
         # Verify state cleared
         assert helper._enabled is False
         assert helper._explainer_instance is None
@@ -181,10 +179,10 @@ class TestShapHelper:
         """preload() should return (None, None) when shap is not installed."""
         mock_explainer = MagicMock()
         helper = ShapHelper(explainer=mock_explainer)
-        
+
         with patch("calibrated_explanations.integrations.shap.safe_import", return_value=None):
             instance, explanation = helper.preload()
-            
+
             assert instance is None
             assert explanation is None
 
@@ -192,38 +190,38 @@ class TestShapHelper:
         """explainer_instance property should return cached instance."""
         mock_explainer = MagicMock()
         helper = ShapHelper(explainer=mock_explainer)
-        
+
         # Preload with unavailable SHAP (returns None)
         with patch("calibrated_explanations.integrations.shap.safe_import", return_value=None):
             instance = helper.explainer_instance
-            
+
             assert instance is None
 
     def test_should_expose_cached_reference_explanation(self):
         """reference_explanation property should return cached explanation."""
         mock_explainer = MagicMock()
         helper = ShapHelper(explainer=mock_explainer)
-        
+
         # Preload with unavailable SHAP (returns None)
         with patch("calibrated_explanations.integrations.shap.safe_import", return_value=None):
             explanation = helper.reference_explanation
-            
+
             assert explanation is None
 
     def test_should_not_preload_when_already_enabled(self):
         """preload() should skip initialization if already enabled."""
         mock_explainer = MagicMock()
         helper = ShapHelper(explainer=mock_explainer)
-        
+
         # Mark as already enabled with a cached instance
         helper._enabled = True
         mock_instance = MagicMock()
         helper._explainer_instance = mock_instance
         mock_explanation = MagicMock()
         helper._reference_explanation = mock_explanation
-        
+
         # Call preload - should not reinitialize
         instance, explanation = helper.preload()
-        
+
         assert instance is mock_instance
         assert explanation is mock_explanation

@@ -1,13 +1,13 @@
 # ADR-001 Stage 2 Completion Report: Decouple Cross-Sibling Imports in CalibratedExplainer
 
-**Date Completed:** 2025-01-XX  
+**Date Completed:** 2025-01-XX
 **Objective:** Remove module-level cross-sibling dependencies from `CalibratedExplainer` to decouple from perf, plotting, explanations, integrations, plugins, discretizers, and api.params packages. This decoupling enables these packages to evolve independently and breaks circular dependency chains.
 
 ## Executive Summary
 
 Stage 2 successfully completed all import decoupling for the `CalibratedExplainer` class. All 14 module-level cross-sibling imports were converted to lazy runtime imports or delegated to the PluginManager orchestrator facade. The implementation maintains full backward compatibility and preserves all public APIs.
 
-**Test Status:** ✅ CalibratedExplainer instantiation and prediction verified with integration test  
+**Test Status:** ✅ CalibratedExplainer instantiation and prediction verified with integration test
 **Backward Compatibility:** ✅ All APIs preserved; changes are internal import mechanics only
 
 ## Changes Made
@@ -109,7 +109,7 @@ def _infer_explanation_mode(self) -> str:
     """Infer the explanation mode from runtime state."""
     # Lazy import discretizers (deferred from module level)
     from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
-    
+
     # Check discretizer type to infer mode
     discretizer = self.discretizer if hasattr(self, "discretizer") else None
     if discretizer is not None and isinstance(

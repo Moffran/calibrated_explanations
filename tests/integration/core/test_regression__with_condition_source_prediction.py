@@ -96,7 +96,13 @@ def test_failure_regression(regression_dataset):
     )
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="regression", condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        condition_source="prediction",
     )
     with pytest.raises(NotFittedError):
         cal_exp.set_difficulty_estimator(DifficultyEstimator())
@@ -116,7 +122,13 @@ def test_regression_ce(regression_dataset):
     )
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="regression", condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        condition_source="prediction",
     )
 
     factual_explanation = cal_exp.explain_factual(x_test)
@@ -167,7 +179,13 @@ def test_regression_predict_reject_requires_threshold(regression_dataset):
     ) = regression_dataset
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="regression", condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        condition_source="prediction",
     )
 
     cal_exp.initialize_reject_learner(threshold=0.5)
@@ -193,7 +211,13 @@ def test_regression_reject_learner_custom_calibration(regression_dataset):
     ) = regression_dataset
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="regression", condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        condition_source="prediction",
     )
 
     # Use a list to exercise the fallback calibration_set path inside initialize_reject_learner
@@ -234,7 +258,13 @@ def test_probabilistic_regression_ce(regression_dataset):
     ) = regression_dataset
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="regression", condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        condition_source="prediction",
     )
 
     cal_exp.initialize_reject_learner(threshold=0.5)
@@ -279,7 +309,13 @@ def test_probabilistic_regression_int_threshold_ce(regression_dataset):
     ) = regression_dataset
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
-        model, x_cal, y_cal, feature_names, categorical_features, mode="regression", condition_source="prediction"
+        model,
+        x_cal,
+        y_cal,
+        feature_names,
+        categorical_features,
+        mode="regression",
+        condition_source="prediction",
     )
 
     # Single integer threshold (y is normalized to [0,1])
@@ -581,4 +617,3 @@ def test_var_normalized_probabilistic_regression_ce(regression_dataset):
     cal_exp.explore_alternatives(x_test, y_test)
 
     cal_exp.explore_alternatives(x_test, y_test[0])
-

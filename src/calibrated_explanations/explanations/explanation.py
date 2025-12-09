@@ -38,8 +38,11 @@ from ..utils import (
     BinaryRegressorDiscretizer,
     EntropyDiscretizer,
     RegressorDiscretizer,
+    calculate_metrics,
+    prepare_for_saving,
+    safe_first_element,
+    safe_mean,
 )
-from ..utils import calculate_metrics, prepare_for_saving, safe_first_element, safe_mean
 
 # @dataclass
 # class PredictionInterval:
@@ -260,6 +263,7 @@ class CalibratedExplanation(ABC):
         """
         if not (feature_weights is not None or width is not None):
             from ..core.exceptions import ValidationError
+
             raise ValidationError(
                 "Either feature_weights or width (or both) must not be None",
                 details={
@@ -781,6 +785,7 @@ class CalibratedExplanation(ABC):
         """
         if len(original_features) < 2:
             from ..core.exceptions import ValidationError
+
             raise ValidationError(
                 "Conjunctive rules require at least two features",
                 details={
@@ -1359,6 +1364,7 @@ class FactualExplanation(CalibratedExplanation):
         """Add conjunctive factual rules."""
         if max_rule_size >= 4:
             from ..core.exceptions import ConfigurationError
+
             raise ConfigurationError(
                 "max_rule_size must be 2 or 3",
                 details={
@@ -1649,6 +1655,7 @@ class FactualExplanation(CalibratedExplanation):
         except RuntimeError as e:
             if "Agg" in str(e):
                 from ..core.exceptions import ConfigurationError
+
                 raise ConfigurationError(
                     "Matplotlib backend 'Agg' does not support show(). "
                     "Either set show=False or switch to a different backend.",
@@ -2271,6 +2278,7 @@ class AlternativeExplanation(CalibratedExplanation):
         """
         if max_rule_size >= 4:
             from ..core.exceptions import ConfigurationError
+
             raise ConfigurationError(
                 "max_rule_size must be 2 or 3",
                 details={

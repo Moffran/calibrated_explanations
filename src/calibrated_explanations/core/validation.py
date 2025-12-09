@@ -11,7 +11,7 @@ and accept optional details payloads.
 
 from __future__ import annotations
 
-from typing import Any, Literal, Sequence, Type, cast
+from typing import Any, Literal, Type, cast
 
 import numpy as np
 import numpy.typing as npt

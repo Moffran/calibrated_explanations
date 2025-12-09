@@ -797,7 +797,9 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
             "E",
             (),
             {
-                "config": type("C", (), {"enabled": True, "min_batch_size": 2, "instance_chunk_size": None}),
+                "config": type(
+                    "C", (), {"enabled": True, "min_batch_size": 2, "instance_chunk_size": None}
+                ),
                 "map": lambda *_a, **_k: [],
             },
         )(),

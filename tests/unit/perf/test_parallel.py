@@ -89,7 +89,13 @@ def test_map_uses_strategy_and_updates_metrics(monkeypatch):
     def telemetry(event, payload):
         events.append((event, payload))
 
-    config = ParallelConfig(enabled=True, strategy="threads", min_batch_size=1, telemetry=telemetry, force_serial_on_failure=True)
+    config = ParallelConfig(
+        enabled=True,
+        strategy="threads",
+        min_batch_size=1,
+        telemetry=telemetry,
+        force_serial_on_failure=True,
+    )
     print(f"DEBUG: config.force_serial_on_failure={config.force_serial_on_failure}")
     executor = ParallelExecutor(config)
     monkeypatch.setattr(executor, "_resolve_strategy", lambda **k: failing_strategy)
@@ -128,8 +134,10 @@ def test_auto_strategy(monkeypatch):
     executor = ParallelExecutor(config)
 
     import os
+
     class MockOS:
         name = "nt"
+
         @staticmethod
         def cpu_count():
             return os.cpu_count()
@@ -161,14 +169,18 @@ def test_auto_strategy_work_items(monkeypatch):
     assert executor._auto_strategy(work_items=4000) == "threads"
 
     import os
+
     class MockOS:
         name = "posix"
+
         @staticmethod
         def cpu_count():
             return os.cpu_count()
 
     monkeypatch.setattr("calibrated_explanations.parallel.parallel.os", MockOS, raising=False)
-    monkeypatch.setattr("calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
+    )
     executor.config.granularity = "instance"
     assert executor._auto_strategy(work_items=60000) == "processes"
 

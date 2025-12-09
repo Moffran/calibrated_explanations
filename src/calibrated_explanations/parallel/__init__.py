@@ -7,7 +7,7 @@ the package root. Lower-level chunking utilities remain internal.
 from __future__ import annotations
 
 from importlib import import_module
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only
     from .parallel import ParallelConfig, ParallelExecutor, ParallelMetrics

@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from calibrated_explanations.core import ConfigurationError, assign_threshold as normalize_threshold
+from calibrated_explanations.core import ConfigurationError
+from calibrated_explanations.core import assign_threshold as normalize_threshold
 
 if TYPE_CHECKING:
     from calibrated_explanations.core import CalibratedExplainer

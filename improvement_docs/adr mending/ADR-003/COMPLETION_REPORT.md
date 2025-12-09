@@ -1,8 +1,8 @@
 # ADR-003 Caching Strategy – Completion Report
 
-**Date:** 2025-11-29  
-**Status:** ✅ COMPLETE (v0.10.0 deliverables)  
-**Target Release:** v1.0.0  
+**Date:** 2025-11-29
+**Status:** ✅ COMPLETE (v0.10.0 deliverables)
+**Target Release:** v1.0.0
 **Implementation Window:** v0.10.0 runtime boundary realignment
 
 ---
@@ -376,6 +376,6 @@ redis       # Distributed cache backend (v1.1+)
 
 ---
 
-**Document Status:** Complete & Ready for Release  
-**Sign-off:** Core Maintainer Review Pending  
+**Document Status:** Complete & Ready for Release
+**Sign-off:** Core Maintainer Review Pending
 **Next Review:** Post-v1.0.0 GA (monitor telemetry, evaluate v1.0.1 enhancements)

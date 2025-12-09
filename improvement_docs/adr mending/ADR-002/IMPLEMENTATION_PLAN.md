@@ -1,7 +1,7 @@
 # ADR-002 Validation Parity: Implementation Plan
 
-**Date Started**: 2025-11-29  
-**Target Release**: v0.10.0  
+**Date Started**: 2025-11-29
+**Target Release**: v0.10.0
 **Status**: IN PROGRESS
 
 ## Scope
@@ -175,11 +175,11 @@ From `improvement_docs/ADR-gap-analysis.md` (L44-L48):
 - `tests/integration/test_exception_parity_calibration.py`:
   - VennAbers with missing bins → ConfigurationError
   - IntervalRegressor with mismatched bins → DataShapeError
-  
+
 - `tests/integration/test_exception_parity_plugins.py`:
   - Plugin initialization without state → NotFittedError
   - Invalid plugin metadata → ValidationError/ConfigurationError
-  
+
 - `tests/integration/test_exception_parity_prediction.py`:
   - Prediction on unfitted explainer → NotFittedError
   - Invalid data shapes → DataShapeError
@@ -256,4 +256,3 @@ From `improvement_docs/ADR-gap-analysis.md` (L44-L48):
 6. ✅ Comprehensive regression tests added with >88% coverage
 7. ✅ Migration notes document all breaking changes
 8. ✅ ADR-002 mending report documents all changes
-

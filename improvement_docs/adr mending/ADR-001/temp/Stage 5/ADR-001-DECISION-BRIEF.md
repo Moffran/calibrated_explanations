@@ -1,8 +1,8 @@
 # ADR-001 Stage 5 Gap Analysis: Executive Decision Brief
 
-**Date**: 2025-11-30  
-**Status**: Action Required  
-**Impact**: v0.10.0 Release Readiness + Long-Term Architecture  
+**Date**: 2025-11-30
+**Status**: Action Required
+**Impact**: v0.10.0 Release Readiness + Long-Term Architecture
 **Audience**: Maintainers & Steering Committee
 
 ---
@@ -158,7 +158,7 @@ The Stage 5 completion report claimed "no boundary violations," but this was bas
 1. Create `src/calibrated_explanations/core/contracts.py`:
    ```python
    """Domain contracts: shared interfaces for all packages."""
-   
+
    # Re-export exception taxonomy (single import point)
    from calibrated_explanations.core.exceptions import (
        CalibratedExplanationError,
@@ -166,17 +166,17 @@ The Stage 5 completion report claimed "no boundary violations," but this was bas
        ConfigurationError,
        NotFittedError,
    )
-   
+
    # Export protocols for siblings
    from abc import ABC, abstractmethod
    from typing import Protocol
-   
+
    class ExplanationStrategy(ABC):
        """Interface for explanation algorithms."""
-   
+
    class CalibrationStrategy(ABC):
        """Interface for calibrators."""
-   
+
    class CalibratedExplainerState(Protocol):
        """Protocol for explainer state (used by calibrators, cache)."""
        @property
@@ -355,6 +355,6 @@ For detailed analysis, see:
 
 **Status**: Awaiting maintainer decision on Phases 1, 2, and 3.
 
-**Prepared by**: ADR-001 Stage 5 Gap Analysis  
-**Date**: 2025-11-30  
+**Prepared by**: ADR-001 Stage 5 Gap Analysis
+**Date**: 2025-11-30
 **Contact**: See CONTRIBUTING.md for maintainer contact info

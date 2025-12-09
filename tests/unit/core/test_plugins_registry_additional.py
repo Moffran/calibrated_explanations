@@ -131,6 +131,7 @@ def test_resolve_plugin_module_file_branches(tmp_path):
 
 def test_verify_plugin_checksum_warnings_and_errors(monkeypatch, tmp_path):
     from calibrated_explanations.core.exceptions import ValidationError
+
     plugin = SimpleNamespace()
 
     with pytest.raises(ValidationError):
@@ -183,6 +184,7 @@ def test_validate_explanation_metadata_from_mapping():
 
 def test_validate_interval_metadata_requires_trust():
     from calibrated_explanations.core.exceptions import ValidationError
+
     meta = {
         "modes": ("classification",),
         "capabilities": ["interval:classification"],
@@ -197,6 +199,7 @@ def test_validate_interval_metadata_requires_trust():
 
 def test_sequence_and_collection_validation_errors():
     from calibrated_explanations.core.exceptions import ValidationError
+
     with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": "single"}, "values")
 
@@ -363,6 +366,7 @@ def test_register_explanation_plugin_updates_raw_meta():
 
 def test_register_interval_plugin_requires_metadata():
     from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_interval_plugins()
 
     class MissingMetaInterval:
@@ -391,6 +395,7 @@ class ExampleIntervalPlugin:
 
 def test_register_plot_builder_renderer_require_metadata():
     from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_plot_plugins()
 
     class NoMetaBuilder:
@@ -408,6 +413,7 @@ def test_register_plot_builder_renderer_require_metadata():
 
 def test_register_helpers_validate_identifiers():
     from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
     with pytest.raises(ValidationError):
         registry.register_explanation_plugin("", _SimpleExplanationPlugin())
@@ -437,6 +443,7 @@ def test_register_helpers_validate_identifiers():
 
 def test_register_plot_style_validation():
     from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_plot_plugins()
     with pytest.raises(ValidationError):
         registry.register_plot_style("style", metadata=None)  # type: ignore[arg-type]
@@ -765,6 +772,7 @@ def test_resolve_plugin_from_name_and_safe_supports():
 
 def test_refresh_descriptor_and_register_errors():
     from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
     plugin = _SimpleExplanationPlugin()
     descriptor = registry.register_explanation_plugin("simple.extra", plugin)

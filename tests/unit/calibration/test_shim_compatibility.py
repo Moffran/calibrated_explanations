@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import warnings
 
-import pytest
-
 
 class TestCoreCalibrationShimImports:
     """Test that core.calibration shim correctly re-exports top-level calibration."""
@@ -81,15 +79,12 @@ class TestCoreCalibrationShimImports:
         # First import should emit warning
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            import importlib
 
             # Force fresh import
             import sys
 
             if "calibrated_explanations.core.calibration" in sys.modules:
                 del sys.modules["calibrated_explanations.core.calibration"]
-
-            from calibrated_explanations.core.calibration import VennAbers
 
             assert len(w) >= 1
             assert issubclass(w[-1].category, DeprecationWarning)

@@ -131,7 +131,7 @@ class ParallelExecutor:
         strategy_name = self.config.strategy
         if strategy_name == "auto":
             strategy_name = self._auto_strategy()
-        
+
         self._active_strategy_name = strategy_name
 
         try:
@@ -151,7 +151,7 @@ class ParallelExecutor:
             logger.warning("Failed to initialize parallel pool: %s. Falling back to serial.", exc)
             self._pool = None
             self._active_strategy_name = "sequential"
-            
+
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -181,7 +181,7 @@ class ParallelExecutor:
         candidate = work_items if work_items is not None else len(items_list)
         if candidate < self.config.min_batch_size:
             return [fn(item) for item in items_list]
-        
+
         self.metrics.submitted += len(items_list)
         start_time = time.perf_counter()
 
@@ -199,15 +199,18 @@ class ParallelExecutor:
         else:
             self.metrics.completed += len(results)
             duration = time.perf_counter() - start_time
-            self._emit("parallel_execution", {
-                "strategy": self._active_strategy_name or self.config.strategy,
-                "items": len(items_list),
-                "duration": duration,
-                "workers": workers or self.config.max_workers,
-                "work_items": candidate,
-                "task_size_hint_bytes": self.config.task_size_hint_bytes,
-                "granularity": self.config.granularity,
-            })
+            self._emit(
+                "parallel_execution",
+                {
+                    "strategy": self._active_strategy_name or self.config.strategy,
+                    "items": len(items_list),
+                    "duration": duration,
+                    "workers": workers or self.config.max_workers,
+                    "work_items": candidate,
+                    "task_size_hint_bytes": self.config.task_size_hint_bytes,
+                    "granularity": self.config.granularity,
+                },
+            )
         return results
 
     # ------------------------------------------------------------------
@@ -270,18 +273,28 @@ class ParallelExecutor:
     # Individual strategies
     # ------------------------------------------------------------------
     def _serial_strategy(
-        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None, chunksize: int | None = None
+        self,
+        fn: Callable[[T], R],
+        items: Sequence[T],
+        *,
+        workers: int | None = None,
+        chunksize: int | None = None,
     ) -> List[R]:
         """Fallback strategy executing sequentially in the current process."""
         return [fn(item) for item in items]
 
     def _thread_strategy(
-        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None, chunksize: int | None = None
+        self,
+        fn: Callable[[T], R],
+        items: Sequence[T],
+        *,
+        workers: int | None = None,
+        chunksize: int | None = None,
     ) -> List[R]:
         """Execute work items using a thread pool."""
         # ThreadPoolExecutor.map uses chunksize=1 by default if not specified
         chunksize = chunksize if chunksize is not None else 1
-        
+
         if self._pool is not None and isinstance(self._pool, ThreadPoolExecutor):
             return list(self._pool.map(fn, items, chunksize=chunksize))
 
@@ -290,12 +303,17 @@ class ParallelExecutor:
             return list(pool.map(fn, items, chunksize=chunksize))
 
     def _process_strategy(
-        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None, chunksize: int | None = None
+        self,
+        fn: Callable[[T], R],
+        items: Sequence[T],
+        *,
+        workers: int | None = None,
+        chunksize: int | None = None,
     ) -> List[R]:
         """Execute work items using a process pool with cache isolation."""
         # ProcessPoolExecutor.map uses a heuristic for chunksize if not specified
         chunksize = chunksize if chunksize is not None else 1
-        
+
         if self._pool is not None and isinstance(self._pool, ProcessPoolExecutor):
             return list(self._pool.map(fn, items, chunksize=chunksize))
 
@@ -307,12 +325,17 @@ class ParallelExecutor:
             return list(pool.map(fn, items, chunksize=chunksize))
 
     def _joblib_strategy(
-        self, fn: Callable[[T], R], items: Sequence[T], *, workers: int | None = None, chunksize: int | None = None
+        self,
+        fn: Callable[[T], R],
+        items: Sequence[T],
+        *,
+        workers: int | None = None,
+        chunksize: int | None = None,
     ) -> List[R]:
         """Dispatch work through joblib's Parallel abstraction when available."""
         if _JoblibParallel is None:
             return self._thread_strategy(fn, items, workers=workers, chunksize=chunksize)
-        
+
         # joblib uses 'batch_size' instead of 'chunksize'
         batch_size = chunksize if chunksize is not None else "auto"
 
@@ -339,4 +362,3 @@ class ParallelExecutor:
 
 
 __all__ = ["ParallelConfig", "ParallelExecutor", "ParallelMetrics"]
-

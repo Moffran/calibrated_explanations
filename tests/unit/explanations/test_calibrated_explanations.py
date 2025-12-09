@@ -216,6 +216,7 @@ def test_get_low_high_percentile_validation(collection: CalibratedExplanations) 
 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
     from calibrated_explanations.core.exceptions import ValidationError
+
     with pytest.warns(DeprecationWarning):
         assert collection.get_explanation(1) is collection.explanations[1]
     with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
@@ -270,6 +271,7 @@ def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> 
 
 def test_from_batch_validation_errors(collection: CalibratedExplanations) -> None:
     from calibrated_explanations.core.exceptions import SerializationError, ValidationError
+
     batch_missing = SimpleNamespace(collection_metadata={})
     with pytest.raises(SerializationError):
         CalibratedExplanations.from_batch(batch_missing)

@@ -132,7 +132,7 @@ ADR-002 compliance to 100% across the entire codebase.
   - Unsupported enum values
   - Length/shape mismatches
   - Type mismatches
-  
+
 - **ConfigurationError** (6 raises): Configuration/option constraint violations
   - Invalid configuration parameters
   - Backend compatibility issues
@@ -147,16 +147,16 @@ ADR-002 compliance to 100% across the entire codebase.
 
 1. **TestExplanationRuntimeExceptions** (4 tests)
    - Validates exception types for explanation module raises
-   
+
 2. **TestPluginValidationExceptions** (3 tests)
    - Validates checksum, required key, and unsupported value error details
-   
+
 3. **TestVizLayerExceptions** (6 tests)
    - Validates sequence length, PlotSpec version, body, expertise level, output format errors
-   
+
 4. **TestADR002DetailsPayloads** (3 tests)
    - Validates exception details support and diagnostic format
-   
+
 5. **TestExceptionHierarchyCompliance** (3 tests)
    - Validates exception hierarchy inheritance relationships
 

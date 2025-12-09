@@ -1,7 +1,7 @@
 # ADR-002 Validation Parity: Completion Report
 
-**Date Completed**: 2025-11-29  
-**Release Target**: v0.10.0  
+**Date Completed**: 2025-11-29
+**Release Target**: v0.10.0
 **Status**: ✅ COMPLETE
 
 ---
@@ -29,7 +29,7 @@ A total of **8 modules** were refactored with **42+ exception replacements**, an
 - **venn_abers.py** (2 raises):
   - L210, L243: `ValueError` → `ConfigurationError` with structured details
   - Context: Mondrian calibration requirements
-  
+
 - **interval_regressor.py** (4 raises):
   - L171: `ValueError` → `ConfigurationError` (test bins without calibration bins)
   - L182: `ValueError` → `DataShapeError` (test bins length mismatch)
@@ -40,7 +40,7 @@ A total of **8 modules** were refactored with **42+ exception replacements**, an
 - **base.py** (8 raises):
   - All `ValueError` → `ValidationError` in `validate_plugin_meta()`
   - Enforces ADR-006 plugin metadata contract
-  
+
 - **builtins.py** (12 raises):
   - L184, L193: `RuntimeError` → `NotFittedError` (legacy interval context)
   - L228, L242, L247: `RuntimeError` → `ConfigurationError`/`NotFittedError` (explanation plugin)
@@ -295,7 +295,7 @@ except ConfigurationError as e:
        ...
    except ValueError as e:
        ...
-   
+
    # NEW
    try:
        ...
@@ -378,4 +378,3 @@ except ConfigurationError as e:
 ---
 
 **Status**: ✅ **COMPLETE AND READY FOR v0.10.0 RELEASE**
-

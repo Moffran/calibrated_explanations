@@ -1,7 +1,7 @@
 # ADR-001 Stage 4: Documentation of Remaining Namespaces
 
-**Status**: ✅ COMPLETE (2025-11-28)  
-**Author**: ADR-001 Gap Closure Plan  
+**Status**: ✅ COMPLETE (2025-11-28)
+**Author**: ADR-001 Gap Closure Plan
 **Scope**: Document intentional deviations and boundaries for `api`, `legacy`, `plotting`, `perf`, and `integrations` namespaces
 
 ## Executive Summary

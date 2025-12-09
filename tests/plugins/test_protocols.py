@@ -456,7 +456,9 @@ def test_validate_explanation_batch_invalid_metadata_type() -> None:
         instances=[],
         collection_metadata="not a mapping",
     )
-    with pytest.raises(ValidationError, match="batch.collection_metadata must be a mutable mapping"):
+    with pytest.raises(
+        ValidationError, match="batch.collection_metadata must be a mutable mapping"
+    ):
         validate_explanation_batch(batch)
 
 

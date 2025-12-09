@@ -202,6 +202,7 @@ def test_perturb_dataset_gaussian_with_custom_rng():
 
 def test_perturb_dataset_rejects_unknown_noise_type():
     from calibrated_explanations.core.exceptions import ValidationError
+
     x_cal = np.zeros((2, 2))
     y_cal = np.zeros(2)
 

@@ -46,6 +46,7 @@ def test_entropy_discretizer_discretizes_and_preserves_categoricals():
 
 def test_binary_entropy_discretizer_requires_labels():
     from calibrated_explanations.core.exceptions import ValidationError
+
     data = np.array([[0.1], [0.2]])
     feature_names = ("feat",)
     with pytest.raises(ValidationError):
@@ -109,6 +110,7 @@ def test_regressor_discretizer_discretize_vector_input():
 
 def test_binary_regressor_discretizer_requires_labels():
     from calibrated_explanations.core.exceptions import ValidationError
+
     data = np.array([[0.1], [0.2]])
     feature_names = ("feat",)
 

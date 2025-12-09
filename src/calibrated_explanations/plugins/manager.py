@@ -605,4 +605,3 @@ class PluginManager:
 
         # Initialize interval learner
         initialize_interval_learner(self.explainer)
-

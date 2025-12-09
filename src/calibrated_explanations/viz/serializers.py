@@ -110,6 +110,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
     """
     if not isinstance(obj, dict):
         from ..core.exceptions import ValidationError
+
         raise ValidationError(
             "PlotSpec payload must be a dict",
             details={"expected_type": "dict", "actual_type": type(obj).__name__},
@@ -118,6 +119,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
     version = obj.get("plotspec_version")
     if version != PLOTSPEC_VERSION:
         from ..core.exceptions import ValidationError
+
         raise ValidationError(
             f"unsupported or missing plotspec_version: {version}",
             details={"expected_version": PLOTSPEC_VERSION, "actual_version": version},
@@ -127,6 +129,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
     body = obj.get("body")
     if body is None:
         from ..core.exceptions import ValidationError
+
         raise ValidationError(
             "PlotSpec body is required for bar plots",
             details={"section": "body", "requirement": "required for bar plots"},
@@ -134,6 +137,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
     bars = body.get("bars")
     if not isinstance(bars, list):
         from ..core.exceptions import ValidationError
+
         raise ValidationError(
             "PlotSpec body.bars must be a list",
             details={
@@ -145,6 +149,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
     for i, b in enumerate(bars):
         if "label" not in b or "value" not in b:
             from ..core.exceptions import ValidationError
+
             raise ValidationError(
                 f"bar at index {i} missing required fields 'label' or 'value'",
                 details={

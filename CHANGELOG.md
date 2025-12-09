@@ -23,7 +23,7 @@
     - **Public API consolidation**: Deprecated unsanctioned symbols and reserved sanctioned entry points (`CalibratedExplainer`, `WrapCalibratedExplainer`, etc.)
     - **Legacy support**: Documented and isolated `legacy` namespace with migration paths
 
-### ADR-002 Validation Parity Implementation 
+### ADR-002 Validation Parity Implementation
 
 - **Completed ADR-002 validation parity for v0.10.0 release**
   - **Legacy exception taxonomy replacement**: Replaced 42+ `ValueError`/`RuntimeError` raises across calibration, plugins, and utilities with ADR-002 exception taxonomy (`ValidationError`, `DataShapeError`, `ConfigurationError`, `NotFittedError`, etc.)
@@ -60,7 +60,7 @@
   - **Fallback Logic**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures.
   - **Verification**: Added comprehensive lifecycle tests in `tests/unit/core/explain/test_parallel_lifecycle.py` covering strategies, context management, chunking, and fallback scenarios.
 
-### ADR-003 Caching Strategy 
+### ADR-003 Caching Strategy
 
 - **Resolved all 4 identified implementation gaps** in ADR-003 caching strategy for v0.10.0 release
   - **ExplanationCacheFacade wired into pipeline** (was defined but unused):

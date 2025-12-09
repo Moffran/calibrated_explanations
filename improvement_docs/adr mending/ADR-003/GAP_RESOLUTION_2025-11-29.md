@@ -11,9 +11,9 @@ Successfully resolved all 4 identified gaps in ADR-003 caching implementation fo
 | Telemetry test coverage incomplete | 9 (high) | ✅ RESOLVED | Added 4 comprehensive tests (flush, reset_version, events) |
 | ADR status still "Proposed" | 6 (medium) | ✅ RESOLVED | Updated to "Accepted" with completion notes |
 
-**Total Severity Resolved:** 40/40 points (100%)  
-**Test Results:** 23/23 passing ✅  
-**Implementation Time:** 2025-11-29  
+**Total Severity Resolved:** 40/40 points (100%)
+**Test Results:** 23/23 passing ✅
+**Implementation Time:** 2025-11-29
 
 ---
 
@@ -66,19 +66,19 @@ def get_calibration_summaries(...):
         cached = cache_facade.get_calibration_summaries(...)
         if cached is not None:
             return cached
-    
+
     # 2. Fall back to instance cache
     if explainer._categorical_value_counts_cache is not None:
         return explainer._categorical_value_counts_cache, ...
-    
+
     # 3. Compute summaries
     categorical_value_counts = {...}
     numeric_sorted_cache = {...}
-    
+
     # 4. Store in shared cache if available
     if cache_facade is not None:
         cache_facade.set_calibration_summaries(...)
-    
+
     # 5. Store in instance cache (backward compat)
     explainer._categorical_value_counts_cache = categorical_value_counts
     ...
@@ -86,11 +86,11 @@ def get_calibration_summaries(...):
 
 ### Validation
 
-✅ Module imports successfully  
-✅ Hash function tested (stable, deterministic)  
-✅ Cache facade methods properly called  
-✅ Backward compatibility maintained (instance cache fallback)  
-✅ Invalidation path validates both layers  
+✅ Module imports successfully
+✅ Hash function tested (stable, deterministic)
+✅ Cache facade methods properly called
+✅ Backward compatibility maintained (instance cache fallback)
+✅ Invalidation path validates both layers
 
 ---
 
@@ -125,10 +125,10 @@ dependencies = [
 
 ### Validation
 
-✅ Dependency listed in pyproject.toml  
-✅ Import path verified  
-✅ No version constraints (uses latest stable)  
-✅ ADR-003 backend specification now complete  
+✅ Dependency listed in pyproject.toml
+✅ Import path verified
+✅ No version constraints (uses latest stable)
+✅ ADR-003 backend specification now complete
 
 ---
 
@@ -163,10 +163,10 @@ def test_calibrator_cache_flush_clears_all_entries() -> None:
     cache.set(stage="predict", parts=["a"], value=10)
     cache.set(stage="calibrate", parts=["b"], value=20)
     cache.set(stage="fit", parts=["c"], value=30)
-    
+
     # Action: flush
     cache.flush()
-    
+
     # Verify: all cleared
     assert cache.get(stage="predict", parts=["a"]) is None
     assert cache.get(stage="calibrate", parts=["b"]) is None
@@ -189,17 +189,17 @@ def test_calibrator_cache_reset_version_invalidates_old_entries() -> None:
     # Setup: store with v1
     cache.set(stage="predict", parts=["a"], value=10)
     assert cache.get(stage="predict", parts=["a"]) == 10
-    
+
     # Action: reset version
     cache.reset_version("v2")
-    
+
     # Verify: old entries orphaned
     assert cache.get(stage="predict", parts=["a"]) is None
-    
+
     # Verify: new entries work with v2
     cache.set(stage="predict", parts=["a"], value=99)
     assert cache.get(stage="predict", parts=["a"]) == 99
-    
+
     # Verify: version_reset event
     assert "cache_version_reset" in events
 ```
@@ -221,36 +221,36 @@ Validates all 8 telemetry event types emitted:
 def test_calibrator_cache_telemetry_events_coverage() -> None:
     """Verify all 8 telemetry event types emitted (ADR-003 contract)."""
     events: Dict[str, int] = {}
-    
+
     # 1. cache_store
     cache.set(stage="predict", parts=["a"], value=10)
     assert events.get("cache_store", 0) >= 1
-    
+
     # 2. cache_hit
     cache.get(stage="predict", parts=["a"])
     assert events.get("cache_hit", 0) >= 1
-    
+
     # 3. cache_miss
     cache.get(stage="predict", parts=["missing"])
     assert events.get("cache_miss", 0) >= 1
-    
+
     # 4. cache_evict
     cache.set(stage="predict", parts=["b"], value=20)
     cache.set(stage="predict", parts=["c"], value=30)  # Triggers eviction
     assert events.get("cache_evict", 0) >= 1
-    
+
     # 5. cache_skip
     big_cache.set(stage="oversized", parts=["x"], value=[...])
     assert events.get("cache_skip", 0) >= 1
-    
+
     # 6. cache_reset
     cache.forksafe_reset()
     # (implicit verification in next test)
-    
+
     # 7. cache_flush
     cache.flush()
     assert events.get("cache_flush", 0) >= 1
-    
+
     # 8. cache_version_reset
     cache.reset_version("v2")
     # (verified in previous test)
@@ -277,11 +277,11 @@ Validates `forksafe_reset()` operation:
 
 ### Validation
 
-✅ All 8 telemetry event types explicitly tested  
-✅ Flush operation validated  
-✅ Reset_version operation validated  
-✅ Fork-safety validated  
-✅ 100% test pass rate maintained  
+✅ All 8 telemetry event types explicitly tested
+✅ Flush operation validated
+✅ Reset_version operation validated
+✅ Fork-safety validated
+✅ 100% test pass rate maintained
 
 ---
 
@@ -298,8 +298,8 @@ ADR-003 status was "Proposed (targeting v0.9.0 opt-in release)" despite v0.10.0 
 Updated header and status:
 
 ```markdown
-> **Status note (2025-11-29):** Last edited 2025-11-29 · Archive after: v1.0.0 GA 
-> · Implementation: Fully completed in v0.10.0 · All ADR-003 gates satisfied 
+> **Status note (2025-11-29):** Last edited 2025-11-29 · Archive after: v1.0.0 GA
+> · Implementation: Fully completed in v0.10.0 · All ADR-003 gates satisfied
 > per `improvement_docs/adr\ mending/ADR-003/COMPLETION_REPORT.md`.
 
 # ADR-003: Caching Key & Eviction Strategy
@@ -325,10 +325,10 @@ With v0.10.0 implementation complete and all tests passing, status should be **A
 
 ### Validation
 
-✅ ADR status updated to Accepted  
-✅ Status notes include completion date and reference to COMPLETION_REPORT  
-✅ IMPLEMENTATION_SUMMARY updated with gap resolution  
-✅ RELEASE_PLAN updated to reflect ✅ COMPLETED  
+✅ ADR status updated to Accepted
+✅ Status notes include completion date and reference to COMPLETION_REPORT
+✅ IMPLEMENTATION_SUMMARY updated with gap resolution
+✅ RELEASE_PLAN updated to reflect ✅ COMPLETED
 
 ---
 
@@ -380,9 +380,9 @@ tests\unit\perf\test_cache.py .......................                    [100%]
 ============================= 23 passed in 0.35s ==============================
 ```
 
-✅ All 23 tests passing (100%)  
-✅ No regressions  
-✅ Backward compatibility maintained  
+✅ All 23 tests passing (100%)
+✅ No regressions
+✅ Backward compatibility maintained
 
 ### Import Verification
 
@@ -451,14 +451,13 @@ from calibrated_explanations.calibration.summaries import get_calibration_summar
 
 ## Sign-Off
 
-✅ **All 4 gaps resolved (40/40 severity points)**  
-✅ **Test suite complete (23/23 passing)**  
-✅ **ADR-003 status: Accepted (from Proposed)**  
-✅ **v0.10.0 implementation gates satisfied**  
-✅ **Ready for v1.0.0 release candidate**  
+✅ **All 4 gaps resolved (40/40 severity points)**
+✅ **Test suite complete (23/23 passing)**
+✅ **ADR-003 status: Accepted (from Proposed)**
+✅ **v0.10.0 implementation gates satisfied**
+✅ **Ready for v1.0.0 release candidate**
 ✅ **Backward compatible; production-ready**
 
-**Date:** 2025-11-29  
-**Author:** Automated Gap Resolution  
+**Date:** 2025-11-29
+**Author:** Automated Gap Resolution
 **Status:** ✅ COMPLETE AND VALIDATED
-

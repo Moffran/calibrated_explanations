@@ -185,6 +185,7 @@ def test_plotspec_roundtrip__should_preserve_optional_fields():
 def test_validate_plotspec_missing_body_raises():
     """Verify that PlotSpec validation rejects specs without body."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     bad = {"plotspec_version": "1.0.0", "title": "no body"}
     with pytest.raises(ValidationError):
         validate_plotspec(bad)
@@ -193,6 +194,7 @@ def test_validate_plotspec_missing_body_raises():
 def test_validate_plotspec_requires_version():
     """Verify that PlotSpec validation requires version field."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     bad = {"title": "missing version", "body": {"bars": []}}
     with pytest.raises(ValidationError):
         validate_plotspec(bad)
@@ -201,6 +203,7 @@ def test_validate_plotspec_requires_version():
 def test_validate_plotspec_rejects_bar_without_value():
     """Verify that bars without value are rejected."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     bad = {
         "plotspec_version": "1.0.0",
         "body": {"bars": [{"label": "f0"}]},
@@ -212,6 +215,7 @@ def test_validate_plotspec_rejects_bar_without_value():
 def test_validate_plotspec_rejects_incomplete_bars():
     """Verify that bars missing label or value are rejected."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     missing_value = {"plotspec_version": "1.0.0", "body": {"bars": [{"label": "a"}]}}
     with pytest.raises(ValidationError):
         validate_plotspec(missing_value)
@@ -224,6 +228,7 @@ def test_validate_plotspec_rejects_incomplete_bars():
 def test_validate_plotspec_requires_bar_label_and_value():
     """Verify that bar items require both label and value fields."""
     from calibrated_explanations.core.exceptions import ValidationError
+
     bad = {
         "plotspec_version": "1.0.0",
         "body": {"bars": [{"label": "f0"}]},

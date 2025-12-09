@@ -25,7 +25,7 @@ Completed all 5 ADR-003 caching deliverables (75 severity points) for v0.10.0 ru
 - **New Module:** `src/calibrated_explanations/cache/explanation_cache.py`
 - **Facade:** `ExplanationCacheFacade` – thin wrapper over shared cache layer
 - **Integration:** ✅ Now wired into `src/calibrated_explanations/calibration/summaries.py` (NEW)
-- **Stages:** 
+- **Stages:**
   - `explain:calibration_summaries` – categorical counts + sorted numerics ✅ Integrated
   - `explain:feature_names` – feature name vectors
   - `explain:attribution_tensors` – future support for SHAP/attribution values
@@ -49,12 +49,12 @@ Completed all 5 ADR-003 caching deliverables (75 severity points) for v0.10.0 ru
 - **Total Tests:** Updated from 19 → 23 tests (added 4 tests for flush, reset_version, and telemetry)
 
 ### 5. ✅ Backend Alignment with cachetools + pympler (9 points)
-- **Dependencies:** 
+- **Dependencies:**
   - `cachetools` ✅ (was present)
   - `pympler` ✅ Added to pyproject.toml (2025-11-29)
 - **Implementation:** `cachetools.LRUCache` + `TTLCache` backend
 - **Hashing:** blake2b (per ADR spec)
-- **Memory Sizing:** 
+- **Memory Sizing:**
   - Default: `sys.getsizeof()` fallback to 256 bytes
   - With pympler: Can use `asizeof()` for precise memory profiling (v1.0.1+)
   - Budget enforcement via max_bytes parameter
@@ -217,13 +217,13 @@ facade.invalidate_all()  # Clears all explanation caches
 
 ## Sign-Off
 
-✅ **All gaps resolved (4/4)**  
-✅ **Implementation complete & tested (23/23 tests passing)**  
-✅ **ADR-003 status: Accepted (from Proposed)**  
-✅ **Ready for v1.0.0 release candidate**  
+✅ **All gaps resolved (4/4)**
+✅ **Implementation complete & tested (23/23 tests passing)**
+✅ **ADR-003 status: Accepted (from Proposed)**
+✅ **Ready for v1.0.0 release candidate**
 ✅ **Backward compatible; fully documented**
 
-**Updated:** 2025-11-29  
+**Updated:** 2025-11-29
 **Status:** Gap resolution complete → Ready for Code Review → Integration → Release
 
 **Coverage:** Cache module 90.7% coverage (exceeds ADR-019 floor)
@@ -341,10 +341,10 @@ facade.invalidate_all()
 
 ## Sign-Off
 
-✅ **Implementation Complete & Tested**  
-✅ **All 5 gaps resolved (75/75 points)**  
-✅ **Ready for v1.0.0 release candidate**  
+✅ **Implementation Complete & Tested**
+✅ **All 5 gaps resolved (75/75 points)**
+✅ **Ready for v1.0.0 release candidate**
 ✅ **Documentation in place; backward compatible**
 
-**Date:** 2025-11-29  
+**Date:** 2025-11-29
 **Status:** Ready for Code Review → Integration → Release

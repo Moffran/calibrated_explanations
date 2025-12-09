@@ -66,7 +66,7 @@ def test_calibrated_explainer_factories_support_expected_keywords():
         assert "threshold" in params
         assert "low_high_percentiles" in params
         assert "bins" in params
-        
+
         # Handle optional kwargs and _use_plugin
         if params[-1] == "kwargs":
             if params[-2] == "_use_plugin":

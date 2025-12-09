@@ -64,7 +64,7 @@ def test_single_split_classification_recovers_rule():
     explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
 
     y_pred = explainer.predict_proba(x_test, calibrated=True)
-    assert np.all((y_pred >= 0.0) & (y_pred <= 1.0))    # probabilities map to numeric labels
+    assert np.all((y_pred >= 0.0) & (y_pred <= 1.0))  # probabilities map to numeric labels
 
     y_pred = explainer.predict(x_test, calibrated=True).astype(int)
     assert (y_pred == y_test).mean() > 0.8
@@ -78,6 +78,7 @@ def test_single_split_classification_recovers_rule():
     top_feature = _top_rule_feature(alternative[0])
     assert top_feature < len(feature_names) // 2
     assert feature_names[top_feature] in alternative[0]._get_rules()["rule"][0]
+
 
 def test_single_split_regression_recovers_rule():
     """Regression: CE should highlight the informative feature behind the split."""
@@ -106,6 +107,7 @@ def test_single_split_regression_recovers_rule():
     assert top_feature < len(feature_names) // 2
     assert feature_names[top_feature] in alternative[0]._get_rules()["rule"][0]
 
+
 def test_single_split_probabilistic_regression_rule_and_intervals():
     """Probabilistic regression: intervals should reflect the simple split."""
 
@@ -118,7 +120,9 @@ def test_single_split_probabilistic_regression_rule_and_intervals():
     explainer.fit(x_train, y_train)
     explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
 
-    preds, (low, high) = explainer.predict_proba(x_test, uq_interval=True, calibrated=True, threshold=y_test)
+    preds, (low, high) = explainer.predict_proba(
+        x_test, uq_interval=True, calibrated=True, threshold=y_test
+    )
     assert np.all((preds > 0.0) & (preds < 1.0))  # probabilities map to numeric labels
 
     factual = explainer.explain_factual(x_test[:3], threshold=y_test[:3])
@@ -132,6 +136,7 @@ def test_single_split_probabilistic_regression_rule_and_intervals():
     assert top_feature < len(feature_names) // 2
     rule_texts = alternative[0]._get_rules()["rule"]
     assert any(feature_names[top_feature] in rule for rule in rule_texts)
+
 
 def test_single_split_classification_recovers_rule__with_condition_source_prediction():
     """Classification: CE should surface the single-feature split from the tree."""
@@ -191,13 +196,17 @@ def test_single_split_probabilistic_regression_rule_and_intervals__with_conditio
     explainer.fit(x_train, y_train)
     explainer.calibrate(x_cal, y_cal, feature_names=feature_names)
 
-    factual = explainer.explain_factual(x_test[:3], threshold=y_test[:3], condition_source="prediction")
+    factual = explainer.explain_factual(
+        x_test[:3], threshold=y_test[:3], condition_source="prediction"
+    )
     top_feature = _top_rule_feature(factual[0])
     assert top_feature < len(feature_names) // 2
     rule_texts = factual[0]._get_rules()["rule"]
     assert any(feature_names[top_feature] in rule for rule in rule_texts)
 
-    alternative = explainer.explore_alternatives(x_test[:3], threshold=y_test[:3], condition_source="prediction")
+    alternative = explainer.explore_alternatives(
+        x_test[:3], threshold=y_test[:3], condition_source="prediction"
+    )
     top_feature = _top_rule_feature(alternative[0])
     assert top_feature < len(feature_names) // 2
     rule_texts = alternative[0]._get_rules()["rule"]

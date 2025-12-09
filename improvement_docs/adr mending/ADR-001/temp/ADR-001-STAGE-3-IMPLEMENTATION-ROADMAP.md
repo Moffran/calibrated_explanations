@@ -1,7 +1,7 @@
 # ADR-001 Stage 3 Implementation Roadmap
 
-**Status:** Ready for v0.10.0 Implementation  
-**Estimated Effort:** 4–6 hours (3-4 iterations)  
+**Status:** Ready for v0.10.0 Implementation
+**Estimated Effort:** 4–6 hours (3-4 iterations)
 **Prerequisites:** ADR-001 Stages 1–2 complete ✅
 
 ---
@@ -13,7 +13,7 @@
 # calibrated_explanations/__init__.py
 __all__ = [
     "CalibratedExplainer",
-    "WrapCalibratedExplainer", 
+    "WrapCalibratedExplainer",
     "transform_to_numeric",
 ]
 
@@ -28,7 +28,7 @@ def __getattr__(name):
 # calibrated_explanations/__init__.py
 __all__ = [
     "CalibratedExplainer",
-    "WrapCalibratedExplainer", 
+    "WrapCalibratedExplainer",
     "transform_to_numeric",
 ]
 
@@ -66,20 +66,20 @@ def deprecate_public_api_symbol(
     extra_context: Optional[str] = None,
 ) -> None:
     """Emit structured deprecation warning for top-level API symbols.
-    
+
     This function centralizes deprecation messaging for unsanctioned exports
-    from calibrated_explanations.__init__, following ADR-001 Stage 3 and 
+    from calibrated_explanations.__init__, following ADR-001 Stage 3 and
     ADR-011 deprecation policy.
-    
+
     Args:
         symbol_name: Name of the symbol being accessed (e.g., "CalibratedExplanations")
-        current_import: Current (deprecated) import path 
+        current_import: Current (deprecated) import path
                         (e.g., "from calibrated_explanations import CalibratedExplanations")
         recommended_import: Recommended new import path
                            (e.g., "from calibrated_explanations.explanations import CalibratedExplanations")
         removal_version: Version in which the symbol will be removed from __init__.py (default: v0.11.0)
         extra_context: Optional additional migration guidance or explanation
-        
+
     Examples:
         >>> deprecate_public_api_symbol(
         ...     "CalibratedExplanations",
@@ -93,12 +93,12 @@ def deprecate_public_api_symbol(
         f"  ❌ DEPRECATED: {current_import}\n"
         f"  ✓  RECOMMENDED: {recommended_import}\n"
     )
-    
+
     if extra_context:
         message += f"\n  Details: {extra_context}\n"
-    
+
     message += f"\nSee https://calibrated-explanations.readthedocs.io/en/latest/migration/api_surface_narrowing.html for migration guide.\n"
-    
+
     warnings.warn(
         message.rstrip(),
         category=DeprecationWarning,
@@ -240,7 +240,7 @@ if TYPE_CHECKING:
 
         globals()[name] = IntervalRegressor
         return IntervalRegressor
-    
+
     if name == "VennAbers":
         from .utils.deprecation import deprecate_public_api_symbol
         deprecate_public_api_symbol(
@@ -263,13 +263,13 @@ if TYPE_CHECKING:
 
         globals()[name] = CalibratedExplainer
         return CalibratedExplainer
-    
+
     if name == "WrapCalibratedExplainer":
         from .core.wrap_explainer import WrapCalibratedExplainer
 
         globals()[name] = WrapCalibratedExplainer
         return WrapCalibratedExplainer
-    
+
     if name == "transform_to_numeric":
         module = importlib.import_module(f"{__name__}.utils.helper")
         value = getattr(module, name)
@@ -295,125 +295,125 @@ import calibrated_explanations as ce
 
 class TestDeprecatedPublicApiSymbols:
     """Verify that unsanctioned symbols emit DeprecationWarning when accessed from top level."""
-    
+
     # Explanation classes
-    
+
     def test_should_emit_deprecation_for_alternative_explanation(self, monkeypatch):
         """Should warn when accessing AlternativeExplanation from top level."""
         monkeypatch.delitem(ce.__dict__, "AlternativeExplanation", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="AlternativeExplanation.*deprecated.*v0.11.0"):
             _ = ce.AlternativeExplanation
-    
+
     def test_should_emit_deprecation_for_factual_explanation(self, monkeypatch):
         """Should warn when accessing FactualExplanation from top level."""
         monkeypatch.delitem(ce.__dict__, "FactualExplanation", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="FactualExplanation.*deprecated.*v0.11.0"):
             _ = ce.FactualExplanation
-    
+
     def test_should_emit_deprecation_for_fast_explanation(self, monkeypatch):
         """Should warn when accessing FastExplanation from top level."""
         monkeypatch.delitem(ce.__dict__, "FastExplanation", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="FastExplanation.*deprecated.*v0.11.0"):
             _ = ce.FastExplanation
-    
+
     def test_should_emit_deprecation_for_alternative_explanations(self, monkeypatch):
         """Should warn when accessing AlternativeExplanations from top level."""
         monkeypatch.delitem(ce.__dict__, "AlternativeExplanations", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="AlternativeExplanations.*deprecated.*v0.11.0"):
             _ = ce.AlternativeExplanations
-    
+
     def test_should_emit_deprecation_for_calibrated_explanations(self, monkeypatch):
         """Should warn when accessing CalibratedExplanations from top level."""
         monkeypatch.delitem(ce.__dict__, "CalibratedExplanations", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="CalibratedExplanations.*deprecated.*v0.11.0"):
             _ = ce.CalibratedExplanations
-    
+
     # Discretizers
-    
+
     def test_should_emit_deprecation_for_entropy_discretizer(self, monkeypatch):
         """Should warn when accessing EntropyDiscretizer from top level."""
         monkeypatch.delitem(ce.__dict__, "EntropyDiscretizer", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="EntropyDiscretizer.*deprecated.*v0.11.0"):
             _ = ce.EntropyDiscretizer
-    
+
     def test_should_emit_deprecation_for_regressor_discretizer(self, monkeypatch):
         """Should warn when accessing RegressorDiscretizer from top level."""
         monkeypatch.delitem(ce.__dict__, "RegressorDiscretizer", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="RegressorDiscretizer.*deprecated.*v0.11.0"):
             _ = ce.RegressorDiscretizer
-    
+
     def test_should_emit_deprecation_for_binary_entropy_discretizer(self, monkeypatch):
         """Should warn when accessing BinaryEntropyDiscretizer from top level."""
         monkeypatch.delitem(ce.__dict__, "BinaryEntropyDiscretizer", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="BinaryEntropyDiscretizer.*deprecated.*v0.11.0"):
             _ = ce.BinaryEntropyDiscretizer
-    
+
     def test_should_emit_deprecation_for_binary_regressor_discretizer(self, monkeypatch):
         """Should warn when accessing BinaryRegressorDiscretizer from top level."""
         monkeypatch.delitem(ce.__dict__, "BinaryRegressorDiscretizer", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="BinaryRegressorDiscretizer.*deprecated.*v0.11.0"):
             _ = ce.BinaryRegressorDiscretizer
-    
+
     # Calibrators
-    
+
     def test_should_emit_deprecation_for_interval_regressor(self, monkeypatch):
         """Should warn when accessing IntervalRegressor from top level."""
         monkeypatch.delitem(ce.__dict__, "IntervalRegressor", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="IntervalRegressor.*deprecated.*v0.11.0"):
             _ = ce.IntervalRegressor
-    
+
     def test_should_emit_deprecation_for_venn_abers(self, monkeypatch):
         """Should warn when accessing VennAbers from top level."""
         monkeypatch.delitem(ce.__dict__, "VennAbers", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="VennAbers.*deprecated.*v0.11.0"):
             _ = ce.VennAbers
-    
+
     # Viz namespace
-    
+
     def test_should_emit_deprecation_for_viz_namespace(self, monkeypatch):
         """Should warn when accessing viz namespace from top level."""
         monkeypatch.delitem(ce.__dict__, "viz", raising=False)
-        
+
         with pytest.warns(DeprecationWarning, match="viz.*deprecated.*v0.11.0"):
             _ = ce.viz
 
 
 class TestSanctionedSymbolsNoWarnings:
     """Verify that sanctioned symbols do NOT emit deprecation warnings."""
-    
+
     def test_should_not_warn_for_calibrated_explainer(self, monkeypatch):
         """Sanctioned: CalibratedExplainer should not emit warnings."""
         monkeypatch.delitem(ce.__dict__, "CalibratedExplainer", raising=False)
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             # Should not raise
             _ = ce.CalibratedExplainer
-    
+
     def test_should_not_warn_for_wrap_calibrated_explainer(self, monkeypatch):
         """Sanctioned: WrapCalibratedExplainer should not emit warnings."""
         monkeypatch.delitem(ce.__dict__, "WrapCalibratedExplainer", raising=False)
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             # Should not raise
             _ = ce.WrapCalibratedExplainer
-    
+
     def test_should_not_warn_for_transform_to_numeric(self, monkeypatch):
         """Sanctioned: transform_to_numeric should not emit warnings."""
         monkeypatch.delitem(ce.__dict__, "transform_to_numeric", raising=False)
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             # Should not raise
@@ -466,8 +466,8 @@ Add to `## Unreleased / [v0.10.0-dev]` section:
 ```markdown
 # API Surface Narrowing: v0.10.0 → v0.11.0 Migration Guide
 
-As of v0.10.0, the public API exported from `calibrated_explanations` is being narrowed to align with ADR-001 
-package layout guidelines. This ensures a clear separation between entry points (the sanctioned façade) and 
+As of v0.10.0, the public API exported from `calibrated_explanations` is being narrowed to align with ADR-001
+package layout guidelines. This ensures a clear separation between entry points (the sanctioned façade) and
 internal domain classes.
 
 ## What's Changing?
@@ -643,9 +643,9 @@ ADR-001 ("Package and Boundary Layout") establishes clear boundaries between:
 - **Experimental modules** (submodule imports): Visualization and plotting components
 
 This narrowing:
-✅ Reduces cognitive load when reading example code  
-✅ Makes the public API contract explicit  
-✅ Enables internal refactoring without breaking changes  
+✅ Reduces cognitive load when reading example code
+✅ Makes the public API contract explicit
+✅ Enables internal refactoring without breaking changes
 ✅ Follows Python best practices (e.g., scikit-learn, pandas)
 
 ---
@@ -832,4 +832,3 @@ Relates to #[ADR-011]
 4. **Update all docs/notebooks** to use new import paths
 5. **Release as breaking change** with migration guide reference
 6. **Remove deprecation.py** (no longer needed after v0.11.0)
-

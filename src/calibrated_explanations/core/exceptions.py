@@ -101,4 +101,3 @@ def explain_exception(e: Exception) -> str:
             lines.append(f"  Details: {e.details}")
         return "\n".join(lines)
     return str(e)
-

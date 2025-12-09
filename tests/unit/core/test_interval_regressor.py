@@ -256,7 +256,7 @@ def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch)
 
     import importlib
 
-    utils_module = importlib.import_module("calibrated_explanations.utils")
+    _utils_module = importlib.import_module("calibrated_explanations.utils")
     calls: list[int] = []
 
     def stub_safe_first_element(values, *, col=0):
@@ -285,7 +285,7 @@ def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.25, 0.35])
 
-    utils_module = importlib.import_module("calibrated_explanations.utils")
+    _utils_module = importlib.import_module("calibrated_explanations.utils")
     calls: list[tuple[np.ndarray, int | None]] = []
 
     def fake_safe_first_element(values, col=None):
@@ -388,7 +388,9 @@ def test_insert_calibration_requires_bins_when_existing_none(monkeypatch):
     xs = np.array([[0.1, 0.2], [0.2, 0.3]])
     ys = np.array([0.5, 0.6])
 
-    with pytest.raises(ConfigurationError, match="Cannot mix calibration instances with and without bins"):
+    with pytest.raises(
+        ConfigurationError, match="Cannot mix calibration instances with and without bins"
+    ):
         regressor.insert_calibration(xs, ys, bins=np.array([0, 1]))
 
 
@@ -404,7 +406,7 @@ def test_insert_calibration_validates_bin_length(monkeypatch):
 
 def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
     """Verify fallback import mechanism for safe_first_element when relative import fails.
-    
+
     Note: With the refactored structure where interval_regressor lives in the top-level
     calibration package (not core.calibration), the relative import from ..utils.helper
     now resolves correctly and doesn't require fallback. This test validates that

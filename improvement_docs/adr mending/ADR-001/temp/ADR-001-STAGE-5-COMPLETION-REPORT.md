@@ -1,7 +1,7 @@
 # ADR-001 Stage 5: Import Graph Linting and Enforcement Tests
 
-**Status**: ✅ COMPLETE (2025-11-28)  
-**Author**: ADR-001 Gap Closure Plan  
+**Status**: ✅ COMPLETE (2025-11-28)
+**Author**: ADR-001 Gap Closure Plan
 **Scope**: Implement static analysis and runtime tests to enforce documented ADR-001 boundaries
 
 ## Executive Summary
@@ -210,17 +210,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Run import graph linter
         run: python scripts/check_import_graph.py --report violations.json
-      
+
       - name: Upload report
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: import-violations
           path: violations.json
-      
+
       - name: Run enforcement tests
         run: pytest tests/unit/test_import_graph_enforcement.py -v
 ```

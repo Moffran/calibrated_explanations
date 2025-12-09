@@ -2,7 +2,7 @@
 
 import pytest
 
-from calibrated_explanations.core.exceptions import ConfigurationError, ValidationError
+from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.plugins.base import validate_plugin_meta
 
 
@@ -14,10 +14,10 @@ def test_validate_plugin_meta_missing_required_key_raises_validation_error():
         "version": "1.0",
         # Missing 'provider'
     }
-    
+
     with pytest.raises(ValidationError, match="missing required key"):
         validate_plugin_meta(incomplete_meta)
-    
+
     # Verify exception carries message
     try:
         validate_plugin_meta(incomplete_meta)
@@ -33,7 +33,7 @@ def test_validate_plugin_meta_invalid_type_raises_validation_error():
         "version": "1.0",
         "provider": "test",
     }
-    
+
     with pytest.raises(ValidationError, match="must be"):
         validate_plugin_meta(bad_meta)
 
@@ -53,7 +53,7 @@ def test_validate_plugin_meta_invalid_capabilities_raises_validation_error():
         "provider": "test",
         "capabilities": "not_a_sequence",  # Should be a sequence of strings
     }
-    
+
     with pytest.raises(ValidationError, match="must be a sequence"):
         validate_plugin_meta(bad_capabilities)
 
@@ -67,7 +67,7 @@ def test_validate_plugin_meta_empty_capabilities_raises_validation_error():
         "provider": "test",
         "capabilities": [],  # Empty not allowed
     }
-    
+
     with pytest.raises(ValidationError, match="must not be empty"):
         validate_plugin_meta(empty_capabilities)
 
@@ -82,6 +82,6 @@ def test_validate_plugin_meta_trusted_not_boolean_raises_validation_error():
         "capabilities": ["test:capability"],
         "trusted": "yes",  # Should be boolean
     }
-    
+
     with pytest.raises(ValidationError, match="must be a boolean"):
         validate_plugin_meta(bad_trusted)

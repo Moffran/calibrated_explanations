@@ -1,7 +1,7 @@
 # ADR-001 Gap Analysis: Complete Documentation Package
 
-**Generated**: 2025-11-30  
-**Status**: Analysis Complete, Ready for Implementation  
+**Generated**: 2025-11-30
+**Status**: Analysis Complete, Ready for Implementation
 **Audience**: Maintainers, Steering Committee, Developers
 
 ---
@@ -191,8 +191,8 @@ The 153 violations represent **documented architectural patterns**, not code def
 
 ADR-002 unified exception types across all code. This is intentional—every package uses the same exceptions for validation, configuration, state, and runtime errors.
 
-**Current**: 57 imports of `core.exceptions` from siblings.  
-**Phase 1**: Allow explicitly.  
+**Current**: 57 imports of `core.exceptions` from siblings.
+**Phase 1**: Allow explicitly.
 **Phase 2**: Move to `core/contracts.py` re-export (cleaner boundary).
 
 ---
@@ -201,7 +201,7 @@ ADR-002 unified exception types across all code. This is intentional—every pac
 
 The wrapper explainer (`CalibratedExplainer`) is the coordination center. It imports from calibration, cache, plugins, parallel—not because of poor design, but because it *orchestrates* these subsystems.
 
-**Current**: 25 violations (mostly in explainer importing siblings).  
+**Current**: 25 violations (mostly in explainer importing siblings).
 **Future (v0.11.0+)**: Coordinator pattern could mediate these calls if multi-distribution is a goal. But it's optional.
 
 ---

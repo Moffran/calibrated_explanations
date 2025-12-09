@@ -33,12 +33,12 @@ from .plots import (  # noqa: F401
 )
 from .predict import PredictBridge  # noqa: F401
 from .registry import (  # noqa: F401
-    EXPLANATION_PROTOCOL_VERSION,
     _EXPLANATION_PLUGINS,
     _INTERVAL_PLUGINS,
     _PLOT_BUILDERS,
     _PLOT_RENDERERS,
     _PLOT_STYLES,
+    EXPLANATION_PROTOCOL_VERSION,
     clear_explanation_plugins,
     clear_interval_plugins,
     clear_plot_plugins,
@@ -62,8 +62,8 @@ from .registry import (  # noqa: F401
     register_plot_renderer,
     register_plot_style,
     trust_plugin,
-    untrust_plugin,
     unregister,
+    untrust_plugin,
     validate_explanation_metadata,
 )
 

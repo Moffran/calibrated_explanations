@@ -375,6 +375,7 @@ def test_finalize_variants(calibrated_collection, monkeypatch):
 
 def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
     from calibrated_explanations.core import SerializationError, ValidationError
+
     called = {}
 
     def fake_collection_to_batch(collection):
@@ -431,6 +432,7 @@ def test_plot_routing(monkeypatch, calibrated_collection):
 
 def test_get_explanation_validations(calibrated_collection):
     from calibrated_explanations.core import ValidationError
+
     with pytest.warns(DeprecationWarning):
         assert calibrated_collection.get_explanation(0) is calibrated_collection.explanations[0]
     with pytest.warns(DeprecationWarning), pytest.raises(ValidationError):

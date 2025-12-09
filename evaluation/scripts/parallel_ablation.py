@@ -475,7 +475,7 @@ def _instantiate_explainer(setup: ScenarioSetup, *, parallel: ParallelExecutor |
     """Create a fresh explainer instance with the requested parallel executor."""
 
     kwargs = dict(setup.kwargs)
-    
+
     # Force parallel plugin if parallel executor is enabled
     if parallel is not None and parallel.config.enabled:
         granularity = parallel.config.granularity
@@ -486,7 +486,7 @@ def _instantiate_explainer(setup: ScenarioSetup, *, parallel: ParallelExecutor |
         elif granularity == "instance":
             overrides["factual"] = "core.explanation.factual.instance_parallel"
             overrides["alternative"] = "core.explanation.alternative.instance_parallel"
-        
+
         if overrides:
             kwargs["explanation_plugin_overrides"] = overrides
 
@@ -611,9 +611,9 @@ def benchmark_parallel_options() -> Iterable[Mapping[str, Any]]:
         if VERBOSE:
             print(f"--- Starting scenario: {spec.name} ---", flush=True)
             print(f"Building setup for {spec.name}...", flush=True)
-        
+
         setup = _build_setup(spec, random_state=int(rng.integers(0, 10_000)))
-        
+
         if VERBOSE:
             print(f"Setup built for {spec.name}. Running benchmarks...", flush=True)
 
@@ -637,7 +637,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     """Entry-point printing ablation measurements as formatted JSON."""
 
     args = _parse_args(argv)
-    
+
     metadata = {
         "timing_repeat": TIMING_REPEAT,
         "timing_warmup": TIMING_WARMUP,
@@ -656,18 +656,18 @@ def main(argv: Sequence[str] | None = None) -> None:
             for variant in PARALLEL_VARIANTS
         ],
     }
-    
+
     results = []
-    
+
     # If output file exists, try to load existing results to resume or append?
     # For now, we just overwrite but update continuously.
-    
+
     for result in benchmark_parallel_options():
         results.append(result)
-        
+
         output = {"metadata": metadata, "results": results}
         serialized = json.dumps(output, indent=2, sort_keys=True)
-        
+
         if VERBOSE:
             # Print the last result summary to stdout
             print(f"Completed {result['scenario']}.{result['operation']} - Baseline: {result['baseline_time']:.4f}s")
@@ -675,7 +675,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         if args.output is not None:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(serialized + "\n", encoding="utf-8")
-            
+
     # Final print to stdout if no output file, or just as confirmation
     if args.output is None:
         print(serialized)

@@ -18,13 +18,14 @@ warnings.warn(
     stacklevel=2,
 )
 
-from ..cache import CacheConfig, CacheMetrics, CalibratorCache, TelemetryCallback
-from ..parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
+from ..cache import CacheConfig, CacheMetrics, CalibratorCache, TelemetryCallback  # noqa: E402
+from ..parallel import ParallelConfig, ParallelExecutor, ParallelMetrics  # noqa: E402
 
 
 @dataclass
 class PerfFactory:  # pragma: no cover
     """Factory bundling cache and parallel primitives (deprecated)."""
+
     cache: CacheConfig
     parallel: ParallelConfig
 
@@ -66,14 +67,22 @@ def __getattr__(name: str) -> Any:  # pragma: no cover
     """Forward other attribute access to cache and parallel packages."""
     try:
         from .. import cache
+
         return getattr(cache, name)
     except AttributeError:
         from .. import parallel
+
         return getattr(parallel, name)
 
 
 __all__ = [
-    "CalibratorCache", "CacheConfig", "CacheMetrics",
-    "ParallelConfig", "ParallelExecutor", "ParallelMetrics",
-    "PerfFactory", "TelemetryCallback", "from_config",
+    "CalibratorCache",
+    "CacheConfig",
+    "CacheMetrics",
+    "ParallelConfig",
+    "ParallelExecutor",
+    "ParallelMetrics",
+    "PerfFactory",
+    "TelemetryCallback",
+    "from_config",
 ]

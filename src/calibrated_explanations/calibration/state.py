@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from calibrated_explanations.core import DataShapeError
+
 from ..utils import safe_isinstance
 
 if TYPE_CHECKING:

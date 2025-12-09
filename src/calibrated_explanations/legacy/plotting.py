@@ -6,6 +6,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
+
 from calibrated_explanations.core.exceptions import ConfigurationError
 
 # Guard optional dependency imports so importing this module doesn't fail in
@@ -39,7 +40,9 @@ def __require_matplotlib():
             details={
                 "dependency": "matplotlib",
                 "extra": "viz",
-                "original_error": str(_MATPLOTLIB_IMPORT_ERROR) if _MATPLOTLIB_IMPORT_ERROR else None,
+                "original_error": str(_MATPLOTLIB_IMPORT_ERROR)
+                if _MATPLOTLIB_IMPORT_ERROR
+                else None,
             },
         )
 

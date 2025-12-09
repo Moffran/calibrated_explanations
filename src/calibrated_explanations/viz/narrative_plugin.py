@@ -129,6 +129,7 @@ class NarrativePlotPlugin:
         if isinstance(expertise_level, str):
             if expertise_level not in valid_levels:
                 from ..core.exceptions import ValidationError
+
                 raise ValidationError(
                     f"Invalid expertise level: {expertise_level}. "
                     f"Valid levels: {', '.join(sorted(valid_levels))}",
@@ -144,6 +145,7 @@ class NarrativePlotPlugin:
             invalid = [lv for lv in levels if lv not in valid_levels]
             if invalid:
                 from ..core.exceptions import ValidationError
+
                 raise ValidationError(
                     f"Invalid expertise level(s): {', '.join(invalid)}. "
                     f"Valid levels: {', '.join(sorted(valid_levels))}",
@@ -158,6 +160,7 @@ class NarrativePlotPlugin:
         valid_outputs = {"dataframe", "text", "html", "dict"}
         if output not in valid_outputs:
             from ..core.exceptions import ValidationError
+
             raise ValidationError(
                 f"Invalid output format: {output}. "
                 f"Valid formats: {', '.join(sorted(valid_outputs))}",
@@ -352,6 +355,7 @@ class NarrativePlotPlugin:
 
         # Should not reach here due to validation
         from ..core.exceptions import ConfigurationError
+
         raise ConfigurationError(
             f"Unsupported output format: {output_format}",
             details={

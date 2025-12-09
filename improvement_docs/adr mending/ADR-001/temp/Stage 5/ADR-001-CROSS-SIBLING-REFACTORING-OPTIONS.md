@@ -1,7 +1,7 @@
 # ADR-001 Cross-Sibling Import Refactoring: Strategic Options
 
-**Date**: 2025-11-30  
-**Status**: Analysis & Options Document  
+**Date**: 2025-11-30
+**Status**: Analysis & Options Document
 **Scope**: Resolve 153 cross-sibling import violations to achieve full ADR-001 Stage 5 compliance
 
 ## Executive Summary
@@ -110,33 +110,33 @@ Below are four distinct refactoring strategies, ranging from pragmatic to archit
 
 allowed_cross_sibling = {
     # ... existing entries ...
-    
+
     # SHARED EXCEPTION TAXONOMY (ADR-002)
     # All packages can import core.exceptions for raising ADR-002 exceptions
     ('*', 'core.exceptions'): [],  # Exception taxonomy is a shared contract
-    
+
     # CORE ORCHESTRATOR PATTERN
     # Calibration and explanations import core orchestrator/wrapper for state/type hints
     ('calibration', 'core.calibrated_explainer'): [],
     ('calibration', 'core.wrap_explainer'): [],
     ('explanations', 'core'): [],  # explanations uses core domain models
     ('cache', 'core.calibrated_explainer'): [],  # cache integrates with wrapper state
-    
+
     # EXPLANATION TASK INTERFACE (domain model)
     # Calibration imports feature_task interface for type hints
     ('calibration', 'core.explain.feature_task'): [],
-    
+
     # PLUGIN COORDINATION (temporary until ADR-006 plugin interface)
     ('plugins', 'core'): [],
     ('plugins', 'explanations'): [],
-    
+
     # API PARAMETER VALIDATION
     ('api', 'core'): [],
-    
+
     # CORE INTERNAL UTILITIES
     # core.calibrated_explainer and others use internal utils
     ('core', 'core.utils'): [],  # self-sibling (OK: both in core)
-    
+
     # VISUALIZATION ADAPTERS
     ('viz', 'core'): [],
     ('viz', 'plugins'): [],
@@ -182,10 +182,10 @@ allowed_cross_sibling = {
    ```python
    # src/calibrated_explanations/core/contracts.py
    """Shared domain contracts for all packages."""
-   
+
    from abc import ABC, abstractmethod
    from typing import Protocol
-   
+
    # Re-export exception taxonomy (ADR-002 shared contract)
    from calibrated_explanations.core.exceptions import (
        CalibratedExplanationError,
@@ -193,26 +193,26 @@ allowed_cross_sibling = {
        ConfigurationError,
        NotFittedError,
    )
-   
+
    # Strategy interfaces
    class ExplanationStrategy(ABC):
        """Interface for explanation algorithms."""
-       
+
        @abstractmethod
        def explain(self, x, y_pred): pass
-   
+
    class CalibrationStrategy(ABC):
        """Interface for calibrators."""
-       
+
        @abstractmethod
        def calibrate(self, x, y): pass
-   
+
    class CalibratedExplainerState(Protocol):
        """Protocol for explainer state checks (used by calibration)."""
-       
+
        @property
        def is_fitted(self) -> bool: ...
-       
+
        @property
        def is_calibrated(self) -> bool: ...
    ```
@@ -227,7 +227,7 @@ allowed_cross_sibling = {
    ```python
    # In calibration/state.py
    from core.contracts import CalibratedExplainerState, CalibratedExplainerError
-   
+
    def check_calibration_state(explainer: CalibratedExplainerState) -> None:
        if not explainer.is_calibrated:
            raise CalibratedExplainerError("Not calibrated")
@@ -268,14 +268,14 @@ allowed_cross_sibling = {
    # Before:
    from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
    from calibrated_explanations.core.exceptions import NotFittedError
-   
+
    # After:
    from typing import TYPE_CHECKING
    from calibrated_explanations.core.exceptions import NotFittedError  # Keep this
-   
+
    if TYPE_CHECKING:
        from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-   
+
    def check_state(explainer: "CalibratedExplainer") -> None:
        # Import only at runtime if needed
        if not hasattr(explainer, '_calibration_data'):
@@ -286,7 +286,7 @@ allowed_cross_sibling = {
    ```python
    # Before:
    from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-   
+
    # After:
    def register_plugin(explainer: "WrapCalibratedExplainer") -> None:
        # Import only when registration happens
@@ -302,7 +302,7 @@ allowed_cross_sibling = {
        """Extract imports, marking TYPE_CHECKING imports."""
        tree = ast.parse(file_path.read_text())
        imports = []
-       
+
        # Track which imports are in TYPE_CHECKING blocks
        type_checking_lines = set()
        for node in ast.walk(tree):
@@ -311,7 +311,7 @@ allowed_cross_sibling = {
                    for item in ast.walk(node):
                        if isinstance(item, (ast.Import, ast.ImportFrom)):
                            type_checking_lines.add(item.lineno)
-       
+
        # Extract imports, marking TYPE_CHECKING
        for node in ast.walk(tree):
            if isinstance(node, ast.Import):
@@ -322,9 +322,9 @@ allowed_cross_sibling = {
                module = node.module or ''
                is_type_checking = node.lineno in type_checking_lines
                imports.append((module, node.lineno, is_type_checking))
-       
+
        return imports
-   
+
    # Then update violation check to allow TYPE_CHECKING imports
    if imported_type_checking:
        continue  # TYPE_CHECKING imports don't violate boundaries
@@ -365,30 +365,30 @@ allowed_cross_sibling = {
 1. **Create `core/coordinator.py`** (new orchestration layer):
    ```python
    """Core coordinator: mediates cross-package communication."""
-   
+
    from typing import Any, Dict, Protocol
-   
+
    class CalibrationCoordinator:
        """Handles all calibration<->explanation<->core interaction."""
-       
+
        def calibrate_with_state(self, explainer, calibrator, x, y) -> None:
            """Calibration state updates that core.calibrated_explainer approves."""
            # Calibration calls this instead of directly accessing explainer._calibration_data
            explainer._calibration_data = calibrator.fit(x, y)
-       
+
        def get_explanation_interface(self, task_type: str):
            """Plugins query for explanation strategies through coordinator."""
            # Returns the right strategy without plugin knowing core.explain internals
            from calibrated_explanations.core.explain import feature_task
            return feature_task
-   
+
    class ExceptionFacade:
        """All packages import exceptions through this facade."""
        from calibrated_explanations.core.exceptions import *  # Re-export all
-   
+
    # Singleton instance
    _coordinator = CalibrationCoordinator()
-   
+
    def get_coordinator() -> CalibrationCoordinator:
        return _coordinator
    ```
@@ -401,7 +401,7 @@ allowed_cross_sibling = {
        ('explanations', 'core.coordinator'): [],
        ('plugins', 'core.coordinator'): [],
        ('cache', 'core.coordinator'): [],
-       
+
        # All packages import exceptions through facade
        ('*', 'core.exceptions'): [],  # Explicitly sanctioned shared contract
    }
@@ -412,7 +412,7 @@ allowed_cross_sibling = {
    # OLD: calibration/state.py
    from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
    explainer._calibration_data = ...
-   
+
    # NEW: calibration/state.py
    from calibrated_explanations.core.coordinator import get_coordinator
    coordinator = get_coordinator()
@@ -422,7 +422,7 @@ allowed_cross_sibling = {
 4. **Update `core/calibrated_explainer.py`** to register coordinator hooks:
    ```python
    from calibrated_explanations.core.coordinator import get_coordinator
-   
+
    coordinator = get_coordinator()
    # Pass callbacks so calibration can signal state changes through the coordinator
    coordinator.register_state_callback(self._on_calibration_complete)

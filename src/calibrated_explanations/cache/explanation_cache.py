@@ -10,7 +10,7 @@ Part of ADR-001 (boundary layers) and ADR-003 (caching strategy).
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -159,9 +159,7 @@ class ExplanationCacheFacade:
             parts=(explainer_id,),
         )
 
-    def set_feature_names_cache(
-        self, *, explainer_id: str, feature_names: Tuple[str, ...]
-    ) -> None:
+    def set_feature_names_cache(self, *, explainer_id: str, feature_names: Tuple[str, ...]) -> None:
         """Store feature names in the cache for quick reuse.
 
         Parameters

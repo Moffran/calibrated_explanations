@@ -9,8 +9,8 @@ from ..utils import (
     BinaryRegressorDiscretizer,
     EntropyDiscretizer,
     RegressorDiscretizer,
+    immutable_array,
 )
-from ..utils import immutable_array
 from .exceptions import ValidationError
 from .explain._computation import discretize as _discretize_func
 

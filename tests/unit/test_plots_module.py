@@ -70,7 +70,7 @@ def test_should_read_plot_pyproject_with_malformed_toml(tmp_path, monkeypatch):
     """Reading malformed TOML should handle gracefully (e.g., empty or invalid)."""
     monkeypatch.chdir(tmp_path)
     (tmp_path / "pyproject.toml").write_text("[invalid toml", encoding="utf-8")
-    
+
     # Should return empty dict or raise handled exception, depending on implementation
     result = plotting._read_plot_pyproject()
     assert isinstance(result, dict)
@@ -86,7 +86,7 @@ def test_should_read_plot_pyproject_with_missing_section(tmp_path, monkeypatch):
         """,
         encoding="utf-8",
     )
-    
+
     assert plotting._read_plot_pyproject() == {}
 
 
@@ -100,7 +100,7 @@ def test_should_read_plot_pyproject_with_partial_settings(tmp_path, monkeypatch)
         """,
         encoding="utf-8",
     )
-    
+
     result = plotting._read_plot_pyproject()
     assert result.get("style") == "minimal"
     assert "fallbacks" not in result or result["fallbacks"] is None
@@ -138,6 +138,7 @@ def test_should_format_save_path_with_string():
 def test_should_format_save_path_with_pathlib():
     """_format_save_path should handle pathlib.Path objects."""
     from pathlib import Path
+
     result = plotting._format_save_path(Path("/some/path"), "file.png")
     assert isinstance(result, str)
     assert "file.png" in result
@@ -165,4 +166,3 @@ def test_should_derive_threshold_labels_with_invalid_sequence():
     assert isinstance(neg_label, str)
     # Should fall back to default labels
     assert "threshold" in pos_label.lower() or "target" in pos_label.lower()
-

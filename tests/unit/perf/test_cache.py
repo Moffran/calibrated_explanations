@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from time import monotonic
 from typing import Dict, Iterable, List
 
 import numpy as np
@@ -18,6 +17,7 @@ from calibrated_explanations.cache import (
 
 def test_lru_cache_rejects_invalid_limits() -> None:
     from calibrated_explanations.core import ValidationError
+
     with pytest.raises(ValidationError):
         LRUCache(
             namespace="test",
@@ -42,6 +42,7 @@ def test_lru_cache_rejects_invalid_limits() -> None:
 
 def test_cache_respects_ttl() -> None:
     import time
+
     cache = LRUCache[
         str,
         int,
@@ -57,10 +58,10 @@ def test_cache_respects_ttl() -> None:
 
     cache.set("alpha", 42)
     assert cache.get("alpha") == 42
-    
+
     # Sleep to allow TTL to expire (cachetools TTLCache uses real time)
     time.sleep(0.15)
-    
+
     # After TTL expiration, the entry should be inaccessible
     # Note: cachetools may not immediately report this as a miss
     # until we try to access it
@@ -298,7 +299,7 @@ def test_should_handle_cache_miss_with_none_value() -> None:
     """Cache should distinguish between missing keys and None values."""
     config = CacheConfig(enabled=True, max_items=4)
     cache: CalibratorCache[int | None] = CalibratorCache(config)
-    
+
     # Store explicit None
     cache.set(stage="verify", parts=["test"], value=None)
     assert cache.get(stage="verify", parts=["test"]) is None
@@ -309,12 +310,12 @@ def test_should_handle_multiple_parts_as_composite_key() -> None:
     """Cache key should be composite of stage, parts list."""
     config = CacheConfig(enabled=True, max_items=10)
     cache: CalibratorCache[str] = CalibratorCache(config)
-    
+
     # Store with different parts
     cache.set(stage="predict", parts=[1, 2], value="result_1_2")
     cache.set(stage="predict", parts=[1, 3], value="result_1_3")
     cache.set(stage="predict", parts=[1, 2, 3], value="result_1_2_3")
-    
+
     assert cache.get(stage="predict", parts=[1, 2]) == "result_1_2"
     assert cache.get(stage="predict", parts=[1, 3]) == "result_1_3"
     assert cache.get(stage="predict", parts=[1, 2, 3]) == "result_1_2_3"
@@ -325,11 +326,11 @@ def test_should_handle_different_stages_independently() -> None:
     """Different stages should maintain separate cache entries."""
     config = CacheConfig(enabled=True, max_items=10)
     cache: CalibratorCache[int] = CalibratorCache(config)
-    
+
     cache.set(stage="fit", parts=["a"], value=10)
     cache.set(stage="predict", parts=["a"], value=20)
     cache.set(stage="calibrate", parts=["a"], value=30)
-    
+
     assert cache.get(stage="fit", parts=["a"]) == 10
     assert cache.get(stage="predict", parts=["a"]) == 20
     assert cache.get(stage="calibrate", parts=["a"]) == 30
@@ -339,10 +340,10 @@ def test_should_handle_compute_with_factory_exception() -> None:
     """Compute should propagate factory exceptions."""
     config = CacheConfig(enabled=True, max_items=4)
     cache: CalibratorCache[int] = CalibratorCache(config)
-    
+
     def failing_factory() -> int:
         raise ValueError("Factory error")
-    
+
     with pytest.raises(ValueError, match="Factory error"):
         cache.compute(stage="predict", parts=["fail"], fn=failing_factory)
 
@@ -351,18 +352,18 @@ def test_should_respect_cache_disable() -> None:
     """When disabled, cache should pass-through to factory every call."""
     config = CacheConfig(enabled=False, max_items=100)
     cache: CalibratorCache[int] = CalibratorCache(config)
-    
+
     call_count = 0
-    
+
     def counting_factory() -> int:
         nonlocal call_count
         call_count += 1
         return call_count
-    
+
     # Even with same key, disabled cache should call factory each time
     result1 = cache.compute(stage="predict", parts=["x"], fn=counting_factory)
     result2 = cache.compute(stage="predict", parts=["x"], fn=counting_factory)
-    
+
     assert result1 == 1
     assert result2 == 2
     assert call_count == 2
@@ -372,17 +373,17 @@ def test_should_track_hit_miss_stats() -> None:
     """Cache metrics should accurately track hits and misses."""
     config = CacheConfig(enabled=True, max_items=5)
     cache: CalibratorCache[str] = CalibratorCache(config)
-    
+
     # Miss (set doesn't count as hit/miss)
     assert cache.get(stage="predict", parts=["new"]) is None
-    
+
     # Store value
     cache.set(stage="predict", parts=["new"], value="value1")
-    
+
     # Hit
     result = cache.get(stage="predict", parts=["new"])
     assert result == "value1"
-    
+
     snapshot = cache.metrics.snapshot()
     assert snapshot["hits"] >= 1
     assert snapshot["misses"] >= 1
@@ -392,16 +393,16 @@ def test_should_handle_lru_eviction_with_size_limit() -> None:
     """LRU cache should evict oldest when size limit exceeded."""
     config = CacheConfig(enabled=True, max_items=2)
     cache: CalibratorCache[int] = CalibratorCache(config)
-    
+
     cache.set(stage="predict", parts=["a"], value=1)
     cache.set(stage="predict", parts=["b"], value=2)
-    
+
     # Access 'a' to make it recently used
     _ = cache.get(stage="predict", parts=["a"])
-    
+
     # Add third item, should evict 'b' (least recently used)
     cache.set(stage="predict", parts=["c"], value=3)
-    
+
     assert cache.get(stage="predict", parts=["a"]) == 1
     assert cache.get(stage="predict", parts=["b"]) is None
     assert cache.get(stage="predict", parts=["c"]) == 3
