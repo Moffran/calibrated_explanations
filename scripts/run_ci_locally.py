@@ -301,6 +301,20 @@ def main(argv: Optional[List[str]] = None) -> int:
                 for r in (important if failed else [])
             ],
         }
+        # Optionally run pre-commit and include its result in the summary.
+        try:
+            preproc = subprocess.run(["pre-commit", "run", "--all-files"], capture_output=True, text=True)
+            pre_rc = preproc.returncode
+            summary["pre_commit"] = {
+                "rc": pre_rc,
+                "stdout_tail": preproc.stdout.splitlines()[-50:],
+                "stderr_tail": preproc.stderr.splitlines()[-50:],
+            }
+            print(f"\npre-commit exit code: {pre_rc}")
+        except Exception as exc:  # pragma: no cover - best-effort
+            summary["pre_commit"] = {"error": str(exc)}
+            print(f"Failed to run pre-commit: {exc}")
+
         with open(summary_path, "w", encoding="utf-8") as fh:
             json.dump(summary, fh, indent=2)
         print(f"\nWrote CI local summary to: {summary_path}")
