@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import numpy as np
@@ -5,6 +6,154 @@ import pytest
 from pandas import Categorical
 
 from calibrated_explanations.explanations import explanation as explanation_module
+
+import math
+import warnings
+
+import numpy as np
+import pytest
+
+from calibrated_explanations.explanations.explanation import (
+    CalibratedExplanation,
+)
+
+
+class DummyExplainer:
+    def __init__(self):
+        self.feature_names = ["feat"]
+        self.categorical_features = []
+        self.categorical_labels = None
+        # calibration matrix with two calibration rows for feature 0
+        self.x_cal = np.array([[6.0], [7.0]])
+        self.sample_percentiles = [25, 75]
+        self.num_features = 1
+
+
+class DummyCalibrated:
+    def __init__(self):
+        self.low_high_percentiles = (0.05, 0.95)
+        self.features_to_ignore = set()
+
+
+class DummyExplanation(CalibratedExplanation):
+    def __init__(self):
+        # do not call super; just provide attributes used by helpers
+        self.calibrated_explanations = DummyCalibrated()
+        self._explainer = DummyExplainer()
+        self.x_test = np.array([5.0])
+        self.binned = {"rule_values": {0: [[1.0, 2.0, 3.0]]}}
+        self.prediction = {"classes": 1, "predict": 0.5, "low": 0.4, "high": 0.6}
+        self.y_threshold = None
+        self.bin = None
+        self._has_rules = False
+        self._has_conjunctive_rules = False
+
+    def _get_explainer(self):
+        return self._explainer
+
+    def _check_preconditions(self):
+        return None
+
+    def _get_rules(self):
+        return {"rule": []}
+
+    def _is_lesser(self, rule_boundary, instance_value):
+        return rule_boundary < instance_value
+
+    # Implement abstract methods from CalibratedExplanation so tests can
+    # instantiate this dummy subclass without triggering TypeError.
+    def __repr__(self):
+        return "DummyExplanation"
+
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
+        return self
+
+    def build_rules_payload(self):
+        return {"core": {}, "metadata": {}}
+
+    def plot(self, *args, **kwargs):
+        return None
+
+
+def test_to_python_number_and_normalize_compute_confidence():
+    # numpy scalar
+    assert CalibratedExplanation._to_python_number(np.int32(3)) == 3
+    assert CalibratedExplanation._to_python_number(np.float64(2.5)) == 2.5
+    # numpy array -> list
+    assert CalibratedExplanation._to_python_number(np.array([1, 2])) == [1, 2]
+    # nan becomes None
+    assert CalibratedExplanation._to_python_number(np.nan) is None
+
+    # normalize percentiles: >1 becomes fraction
+    inst = DummyExplanation()
+    assert inst._normalize_percentile_value(95) == 0.95
+    # values in [0,1] unchanged
+    assert inst._normalize_percentile_value(0.05) == 0.05
+    # inf preserved
+    assert math.isinf(inst._normalize_percentile_value(math.inf))
+    # non-numeric returns None
+    assert inst._normalize_percentile_value("bad") is None
+
+    # compute confidence
+    assert CalibratedExplanation._compute_confidence_level((0.05, 0.95)) == pytest.approx(0.9)
+    # missing percentiles
+    assert CalibratedExplanation._compute_confidence_level(None) is None
+    # -inf handling
+    assert CalibratedExplanation._compute_confidence_level((-math.inf, 0.5)) == 0.5
+    # inf handling
+    assert CalibratedExplanation._compute_confidence_level((0.1, math.inf)) == pytest.approx(0.9)
+
+
+def test_build_uncertainty_payload_and_interval():
+    inst = DummyExplanation()
+    payload = inst._build_uncertainty_payload(
+        value=0.7,
+        low=0.6,
+        high=0.8,
+        representation="percentile",
+        percentiles=(0.05, 0.95),
+        include_percentiles=True,
+    )
+    assert payload["representation"] == "percentile"
+    assert payload["calibrated_value"] == 0.7
+    assert payload["lower_bound"] == 0.6
+    assert payload["upper_bound"] == 0.8
+    assert payload["raw_percentiles"] == [0.05, 0.95]
+    assert payload["confidence_level"] == pytest.approx(0.9)
+
+    interval = CalibratedExplanation._build_interval(0.2, 0.4)
+    assert interval == {"lower": 0.2, "upper": 0.4}
+
+
+def test_convert_and_parse_condition_and_build_payload():
+    inst = DummyExplanation()
+    # parse equality with single =
+    op, val = inst._parse_condition("feat", "feat = 3")
+    assert op == "=="
+    assert val == "3"
+    # convert numeric
+    assert inst._convert_condition_value("3", 0) == 3.0
+    # convert infinities and text
+    assert inst._convert_condition_value("-inf", 0) == float("-inf")
+    assert inst._convert_condition_value("inf", 0) == float("inf")
+    assert inst._convert_condition_value("foo", 0) == "foo"
+
+    payload = inst._build_condition_payload(0, "feat = 4", 2.0, 4.0)
+    assert payload["feature"] == "feat"
+    assert payload["operator"] == "=="
+    assert payload["value"] == 4.0
+
+
+def test_add_new_rule_condition_warns_when_no_lower_values():
+    inst = DummyExplanation()
+    # prepare explainer x_cal such that no values are < rule_boundary
+    inst._explainer.x_cal = np.array([[6.0], [7.0]])
+    inst.x_test = np.array([5.0])
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = inst.add_new_rule_condition(0, 4.0)
+        assert result is inst
+        assert any("Lowest feature value" in str(x.message) for x in w)
 
 
 class DiscretizerStub:
