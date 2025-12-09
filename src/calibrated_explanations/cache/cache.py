@@ -35,6 +35,7 @@ from typing import (
 
 try:  # pragma: no cover - behaviour varies by environment
     import cachetools
+
     _HAVE_CACHETOOLS = True
 except Exception:  # pragma: no cover - tested indirectly in CI when missing
     cachetools = None  # type: ignore
@@ -43,8 +44,8 @@ except Exception:  # pragma: no cover - tested indirectly in CI when missing
     # `cachetools` is not installed (CI minimal images). The fallback
     # implements the minimal API used by this module: `LRUCache` and
     # `TTLCache` supporting `maxsize`, iteration, get/set, pop and clear.
-    from collections import OrderedDict
     import time
+    from collections import OrderedDict
 
     class _FallbackBase:
         pass

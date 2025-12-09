@@ -356,9 +356,9 @@ class TestImportGraphIntegration:
             Path("improvement_docs/RELEASE_PLAN_v1.md"),
         ]
         # Some environments (Linux) are case-sensitive while others (Windows) are not.
-        assert any(plan.exists() for plan in release_plan_candidates), (
-            "Stage 5 documentation should include the release plan in improvement_docs."
-        )
+        assert any(
+            plan.exists() for plan in release_plan_candidates
+        ), "Stage 5 documentation should include the release plan in improvement_docs."
 
         # After implementation, this should reference Stage 5 completion
         # This test serves as a marker for Stage 5 readiness
