@@ -22,7 +22,6 @@ from calibrated_explanations.core.exceptions import (
     DataShapeError,
     ValidationError,
 )
-from tests.helpers.deprecation import warns_or_raises
 
 
 def _stub_explainer(explainer_factory, mode: str = "classification") -> CalibratedExplainer:

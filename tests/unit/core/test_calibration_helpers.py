@@ -185,7 +185,9 @@ def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
             warnings.simplefilter("always")
             func = ch_helpers.assign_threshold
 
-        assert any(issubclass(w.category, DeprecationWarning) for w in rec), "expected DeprecationWarning"
+        assert any(
+            issubclass(w.category, DeprecationWarning) for w in rec
+        ), "expected DeprecationWarning"
 
         # Calling the delegated function should return the fake result
         res = func(object(), 0.5)
