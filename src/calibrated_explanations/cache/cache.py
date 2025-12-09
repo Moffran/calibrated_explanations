@@ -63,17 +63,31 @@ except Exception:  # pragma: no cover - tested indirectly in CI when missing
             self.maxsize = int(maxsize)
 
         def __getitem__(self, key):
+            """Retrieve the value for *key* and mark it as recently used.
+
+            This method moves the key to the end to record recent usage.
+            Raises KeyError if the key is not present.
+            """
             value = super().__getitem__(key)
             # mark as recently used
             self.move_to_end(key)
             return value
 
         def get(self, key, default=None):
+            """Return the value for *key* if present, otherwise *default*.
+
+            If the key is present this marks it as recently used.
+            """
             if key in self:
                 return self.__getitem__(key)
             return default
 
         def __setitem__(self, key, value):
+            """Set *key* to *value*, update recency, and evict if needed.
+
+            Existing keys are moved to the end (most-recently-used). When the
+            cache exceeds ``maxsize`` the least-recently-used item is evicted.
+            """
             if key in self:
                 # overwrite and mark as recent
                 super().__setitem__(key, value)
