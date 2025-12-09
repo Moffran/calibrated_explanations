@@ -256,7 +256,6 @@ class CalibratedExplainer:
         from ..plugins.manager import PluginManager
         from ..plugins.builtins import LegacyPredictBridge
         from ..cache import CalibratorCache
-        from ..parallel import ParallelExecutor
 
         # Initialize plugin manager (SINGLE SOURCE OF TRUTH for plugin management)
         # PluginManager handles ALL plugin initialization including:
@@ -271,8 +270,8 @@ class CalibratedExplainer:
         self._perf_cache: CalibratorCache[Any] | None = perf_cache
 
         # Initialize parallel executor (ADR-004: Honor CE_PARALLEL overrides)
-        self._perf_parallel: ParallelExecutor | None = (
-            self._plugin_manager.resolve_parallel_executor(perf_parallel)
+        self._perf_parallel: "ParallelExecutor" | None = self._resolve_parallel_executor(
+            perf_parallel
         )
 
         # Orchestrator references are now accessed via properties that delegate to PluginManager
@@ -332,6 +331,19 @@ class CalibratedExplainer:
                 },
             )
         return manager
+
+    def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
+        """Resolve the parallel executor honoring overrides and environment config."""
+        from ..parallel import ParallelConfig, ParallelExecutor
+
+        if explicit_executor is not None:
+            return explicit_executor
+
+        env_config = ParallelConfig.from_env()
+        if env_config.enabled:
+            return ParallelExecutor(env_config)
+
+        return None
 
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode from runtime state."""

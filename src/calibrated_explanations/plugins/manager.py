@@ -525,35 +525,6 @@ class PluginManager:
         self._explanation_plugin_identifiers.clear()
 
     # =========================================================================
-    # Parallel Execution Resolution
-    # =========================================================================
-
-    def resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
-        """Resolve the parallel executor, respecting environment overrides.
-
-        Parameters
-        ----------
-        explicit_executor : ParallelExecutor | None
-            The executor passed explicitly to the explainer.
-
-        Returns
-        -------
-        ParallelExecutor | None
-            The resolved executor.
-        """
-        # Lazy import to avoid circular dependencies or early import costs
-        from ..parallel import ParallelConfig, ParallelExecutor
-
-        if explicit_executor is not None:
-            return explicit_executor
-
-        env_config = ParallelConfig.from_env()
-        if env_config.enabled:
-            return ParallelExecutor(env_config)
-
-        return None
-
-    # =========================================================================
     # Orchestrator initialization (moved from CalibratedExplainer)
     # =========================================================================
 
