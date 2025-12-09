@@ -149,9 +149,12 @@ class VennAbers:
             probs = self._predict_proba(x)
         if self.de is not None:
             difficulty = self.de.apply(x)
-            # method = logit_based_scaling_list
+            # Alternative difficulty scaling methods are available for experimentation:
+            #   method = logit_based_scaling_list
+            #   method = sigmoid_scaling_list
+            # By default, exponent_scaling_list is used. To try a different scaling method,
+            # uncomment the corresponding line above. See documentation for details.
             method = exponent_scaling_list
-            # method = sigmoid_scaling_list
             if self.is_multiclass():
                 probs_tmp = method(probs, difficulty)
             else:
