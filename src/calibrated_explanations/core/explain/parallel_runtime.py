@@ -44,7 +44,6 @@ class ExplainParallelRuntime:
         configuration so explain strategies do not need to reach into the
         parallel package directly.
         """
-
         executor = getattr(explainer, "_perf_parallel", None) or getattr(
             explainer, "executor", None
         )
@@ -70,7 +69,6 @@ class ExplainParallelRuntime:
 
     def build_config(self, explainer: Any) -> ExplainConfig:
         """Materialize an :class:`ExplainConfig` for executor dispatch."""
-
         return ExplainConfig(
             executor=self.executor,
             granularity=self.granularity if self.executor is not None else "none",
@@ -88,7 +86,6 @@ def build_explain_execution_plan(
     explainer: Any, x: Any, request: "ExplanationRequest"
 ) -> Tuple[ExplainRequest, ExplainConfig]:
     """Prepare explain execution request and config using explain-local rules."""
-
     prepared_x = validate_and_prepare_input(explainer, x)
     features_to_ignore_array = merge_ignore_features(explainer, request.features_to_ignore)
     low_high_percentiles = tuple(request.low_high_percentiles or _DEFAULT_PERCENTILES)

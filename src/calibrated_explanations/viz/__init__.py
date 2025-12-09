@@ -107,7 +107,6 @@ _MATPLOTLIB_REQUIRED = {"matplotlib_adapter", "plots", "render"}
 
 def __getattr__(name: str) -> Any:
     """Lazily load plotting primitives and adapters."""
-
     if name not in __all__:
         raise AttributeError(name)
 

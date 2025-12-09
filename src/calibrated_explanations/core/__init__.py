@@ -49,7 +49,6 @@ def __getattr__(name: str) -> Any:
     requirement that consumers import from the package root instead of internal
     modules.
     """
-
     if name == "CalibratedExplainer":
         from .calibrated_explainer import CalibratedExplainer
 

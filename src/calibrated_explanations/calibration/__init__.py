@@ -67,7 +67,6 @@ def __getattr__(name: str) -> Any:
     The lazy indirection keeps import time light while ensuring callers only use
     the package root as the public boundary, per ADR-001 Stage 5 guidance.
     """
-
     if name not in __all__:
         raise AttributeError(name)
 

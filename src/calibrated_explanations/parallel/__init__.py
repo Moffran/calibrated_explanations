@@ -28,7 +28,6 @@ _NAME_TO_MODULE = {
 
 def __getattr__(name: str) -> Any:
     """Lazily expose the sanctioned parallel API surface."""
-
     if name not in __all__:
         raise AttributeError(name)
 

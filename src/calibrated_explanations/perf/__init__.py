@@ -30,12 +30,15 @@ class PerfFactory:  # pragma: no cover
     parallel: ParallelConfig
 
     def make_cache(self) -> CalibratorCache[Any]:
+        """Build a cache backend based on the stored configuration."""
         return CalibratorCache(self.cache)
 
     def make_parallel_executor(self, cache: CalibratorCache[Any] | None = None) -> ParallelExecutor:
+        """Create a parallel executor wired to this factory's parallel config."""
         return ParallelExecutor(self.parallel, cache=cache)
 
     def make_parallel_backend(self, cache: CalibratorCache[Any] | None = None) -> ParallelExecutor:
+        """Alias for :meth:`make_parallel_executor` for backwards compatibility."""
         return self.make_parallel_executor(cache=cache)
 
 

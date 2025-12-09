@@ -51,7 +51,6 @@ _NAME_TO_MODULE = {
 
 def __getattr__(name: str) -> Any:
     """Lazily expose cache interfaces from the package root."""
-
     if name not in __all__:
         raise AttributeError(name)
 

@@ -307,12 +307,14 @@ class CalibratedExplainer:
         return result
 
     def __getstate__(self):
+        """Exclude runtime helpers when pickling."""
         state = self.__dict__.copy()
         state["_perf_cache"] = None
         state["_perf_parallel"] = None
         return state
 
     def __setstate__(self, state):
+        """Restore state after pickling without restoring helpers."""
         self.__dict__.update(state)
 
     def _require_plugin_manager(self) -> PluginManager:

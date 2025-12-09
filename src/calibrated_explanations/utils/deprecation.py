@@ -33,7 +33,8 @@ def deprecate_public_api_symbol(
         removal_version: Version in which the symbol will be removed from __init__.py (default: v0.11.0)
         extra_context: Optional additional migration guidance or explanation
 
-    Examples:
+    Examples
+    --------
         >>> deprecate_public_api_symbol(
         ...     "CalibratedExplanations",
         ...     "from calibrated_explanations import CalibratedExplanations",
