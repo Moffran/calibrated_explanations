@@ -1,47 +1,9 @@
 from calibrated_explanations.serialization import to_json, from_json
 from calibrated_explanations.explanations import legacy_to_domain
 from tests._helpers import initiate_explainer
+from tests.helpers.dataset_utils import make_binary_dataset
 
-import numpy as np
-import pandas as pd
 from numpy import testing as npt
-from sklearn.model_selection import train_test_split
-
-
-def _make_binary_dataset():
-    # Lightweight version of the project's binary_dataset fixture used for parity tests
-    dataset = "diabetes_full"
-    df = pd.read_csv(f"data/{dataset}.csv", dtype=np.float64)
-    df = df.iloc[:500, :]
-    target = "Y"
-    x, y = df.drop(target, axis=1), df[target]
-    no_of_features = x.shape[1]
-    columns = x.columns
-    categorical_features = [i for i in range(no_of_features) if len(np.unique(x.iloc[:, i])) < 10]
-    idx = np.argsort(y.values).astype(int)
-    x, y = x.values[idx, :], y.values[idx]
-    num_to_test = 2
-    test_index = np.array(
-        [*range(num_to_test // 2), *range(len(y) - 1, len(y) - num_to_test // 2 - 1, -1)]
-    )
-    train_index = np.setdiff1d(np.array(range(len(y))), test_index)
-    trainx_cal, x_test = x[train_index, :], x[test_index, :]
-    y_train, y_test = y[train_index], y[test_index]
-    x_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
-        trainx_cal, y_train, test_size=0.33, random_state=42, stratify=y_train
-    )
-    return (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        y_test,
-        None,
-        no_of_features,
-        categorical_features,
-        columns,
-    )
 
 
 def _build_payload_from_exp(exp):
@@ -68,7 +30,7 @@ def test_explain_factual_and_roundtrip():
         _,
         categorical_features,
         feature_names,
-    ) = _make_binary_dataset()
+    ) = make_binary_dataset()
 
     # Trained model helper used across tests
     from tests._helpers import get_classification_model
@@ -123,7 +85,7 @@ def test_explore_alternatives_and_conjunctive_rules():
         _,
         categorical_features,
         feature_names,
-    ) = _make_binary_dataset()
+    ) = make_binary_dataset()
     from tests._helpers import get_classification_model
 
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)

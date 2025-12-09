@@ -13,7 +13,7 @@ from calibrated_explanations.plugins import registry
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
-class _FakeEntryPoint:
+class FakeEntryPoint:
     def __init__(self, plugin: Any) -> None:
         self.name = plugin.plugin_meta["name"]
         self.module = "tests.plugins.fake"
@@ -25,7 +25,7 @@ class _FakeEntryPoint:
         return self._plugin
 
 
-class _FakeEntryPoints(list):
+class FakeEntryPoints(list):
     def select(self, *, group: str):
         return [entry for entry in self if getattr(entry, "group", None) == group]
 
@@ -319,7 +319,7 @@ def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
     registry._ENV_TRUST_CACHE = None
 
     plugin = _make_entry_plugin()
-    fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+    fake_entries = FakeEntryPoints([FakeEntryPoint(plugin)])
     monkeypatch.setattr(
         registry.importlib_metadata,
         "entry_points",
@@ -340,7 +340,7 @@ def test_load_entrypoint_plugins_trusted_by_env(monkeypatch):
     registry._ENV_TRUST_CACHE = None
 
     plugin = _make_entry_plugin()
-    fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+    fake_entries = FakeEntryPoints([FakeEntryPoint(plugin)])
     monkeypatch.setattr(
         registry.importlib_metadata,
         "entry_points",
@@ -943,7 +943,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
     trusted = LoaderEntryPoint("trusted", loader=lambda: TrustedPlugin())
     attr_entry = LoaderEntryPoint("attr", module=attr_module_name, attr="attr_plugin")
 
-    entry_points = _FakeEntryPoints([failing, no_meta, invalid, untrusted, trusted, attr_entry])
+    entry_points = FakeEntryPoints([failing, no_meta, invalid, untrusted, trusted, attr_entry])
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entry_points)
 
     try:

@@ -92,6 +92,17 @@
 
 - **`condition_source` implemented:** Added support for the `condition_source` configuration used by calibrators and explanation plugins to select conditioning data sources; wired into the public API, covered by unit tests, and documented in the practitioner guides.
 
+
+### Release Task 10 - Test Suite Improvements
+- Renamed private test helpers (e.g., `_helper`) to public snake_case helpers (`helper`) across the test suite to improve readability and maintainability.
+  - Updated ~15 test files including `test_alternative_regression_parity.py`, `test_matplotlib_adapter.py`, `test_plugin_resolution.py`, etc.
+  - Preserved private naming for mocks of SUT private methods.
+  - Fixed circular imports and deprecation warnings encountered during refactoring.
+  - Consolidated duplicated private test helpers (`_FakeExplanation`, `_FakeExplainer`, etc.) into `tests/helpers/explainer_utils.py`.
+  - Refactored `tests/unit/legacy/test_plotting_module.py` and `tests/integration/viz/test_plots_integration.py` to use shared helpers.
+  - Renamed all private classes in `tests/` to public classes (e.g., `_FakeSeries` -> `FakeSeries`, `_MockModel` -> `MockModel`) to align with ADR-017 visibility standards and prevent nomenclature drift.
+
+
 ### Test Coverage Improvements
 
 - **Expanded test coverage from 86.65% to 87.1%** through systematic addition of 50+ new unit tests

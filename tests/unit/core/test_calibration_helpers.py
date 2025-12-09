@@ -73,7 +73,7 @@ def test_fast_calibration_helper_delegates(monkeypatch):
     assert captured_calls[-1]["metadata"].get("operation") == "initialize_fast"
 
 
-class _BaseStubExplainer:
+class BaseStubExplainer:
     """Utility stub exposing the minimal CalibratedExplainer surface for tests."""
 
     mode: str
@@ -87,7 +87,7 @@ class _BaseStubExplainer:
 
 
 def test_update_interval_learner__should_reject_fast_mode_updates():
-    class FastExplainer(_BaseStubExplainer):
+    class FastExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="classification")
 
@@ -101,7 +101,7 @@ def test_update_interval_learner__should_reject_fast_mode_updates():
 
 
 def test_update_interval_learner__should_raise_when_regression_interval_is_list():
-    class RegressionListExplainer(_BaseStubExplainer):
+    class RegressionListExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="regression")
             self.interval_learner = []  # fast-mode sentinel from runtime helpers
@@ -123,7 +123,7 @@ def test_update_interval_learner__should_insert_calibration_for_regression_inter
         def insert_calibration(self, xs, ys, bins=None):
             self.calls.append((tuple(xs), tuple(ys), bins))
 
-    class RegressionExplainer(_BaseStubExplainer):
+    class RegressionExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="regression")
             self.interval_learner = TrackingInterval()

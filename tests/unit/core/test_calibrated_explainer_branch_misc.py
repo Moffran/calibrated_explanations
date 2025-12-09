@@ -90,11 +90,11 @@ def test_get_sigma_test_uses_difficulty_estimator(explainer_factory):
     values = explainer._get_sigma_test(np.zeros((3, explainer.num_features)))
     assert np.all(values == 1)
 
-    class _Estimator:
+    class Estimator:
         def apply(self, x):
             return np.full(x.shape[0], 0.42)
 
-    explainer.difficulty_estimator = _Estimator()
+    explainer.difficulty_estimator = Estimator()
     updated = explainer._get_sigma_test(np.zeros((2, explainer.num_features)))
     assert np.all(updated == 0.42)
 

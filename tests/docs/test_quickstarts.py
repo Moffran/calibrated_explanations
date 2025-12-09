@@ -6,26 +6,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import WrapCalibratedExplainer
-
-
-def _extract_threshold_value(threshold):
-    if threshold is None:
-        return None
-    if isinstance(threshold, dict):
-        for key in ("value", "threshold", "amount"):
-            value = threshold.get(key)
-            if isinstance(value, (int, float)):
-                return value
-        return None
-    if isinstance(threshold, (list, tuple)):
-        for item in threshold:
-            value = _extract_threshold_value(item)
-            if value is not None:
-                return value
-        return None
-    if isinstance(threshold, (int, float)):
-        return threshold
-    return None
+from tests.helpers.doc_utils import extract_threshold_value
 
 
 def test_classification_quickstart() -> None:
@@ -54,7 +35,7 @@ def test_classification_quickstart() -> None:
     prediction = first_instance.prediction
     uncertainty = telemetry.get("uncertainty", {})
     assert uncertainty.get("representation") == "venn_abers"
-    assert _extract_threshold_value(uncertainty.get("threshold")) is None
+    assert extract_threshold_value(uncertainty.get("threshold")) is None
     raw_percentiles = uncertainty.get("raw_percentiles")
     if isinstance(raw_percentiles, dict):
         assert all(value is None for value in raw_percentiles.values())
@@ -76,7 +57,7 @@ def test_classification_quickstart() -> None:
     first_rule_metadata = rules_payload["metadata"]["feature_rules"][0]
     prediction_uncertainty = first_rule_metadata["prediction_uncertainty"]
     assert prediction_uncertainty["representation"] == "venn_abers"
-    assert _extract_threshold_value(prediction_uncertainty.get("threshold")) is None
+    assert extract_threshold_value(prediction_uncertainty.get("threshold")) is None
 
 
 def test_regression_quickstart() -> None:
@@ -107,7 +88,7 @@ def test_regression_quickstart() -> None:
     prediction = first_instance.prediction
     uncertainty = telemetry.get("uncertainty", {})
     assert uncertainty.get("representation") == "threshold"
-    threshold_metadata = _extract_threshold_value(uncertainty.get("threshold"))
+    threshold_metadata = extract_threshold_value(uncertainty.get("threshold"))
     assert threshold_metadata == pytest.approx(2.5)
     raw_percentiles = uncertainty.get("raw_percentiles")
     if isinstance(raw_percentiles, dict):
@@ -131,4 +112,4 @@ def test_regression_quickstart() -> None:
     first_rule_metadata = rules_payload["metadata"]["feature_rules"][0]
     prediction_uncertainty = first_rule_metadata["prediction_uncertainty"]
     assert prediction_uncertainty["representation"] == "threshold"
-    assert _extract_threshold_value(first_rule_metadata.get("threshold")) == pytest.approx(2.5)
+    assert extract_threshold_value(first_rule_metadata.get("threshold")) == pytest.approx(2.5)

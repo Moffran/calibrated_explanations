@@ -9,7 +9,7 @@ from calibrated_explanations.plugins import registry
 
 
 @pytest.fixture(autouse=True)
-def _isolate_registry(monkeypatch):
+def isolate_registry(monkeypatch):
     """Ensure each test works with a clean registry state."""
 
     registry.clear_explanation_plugins()
@@ -18,7 +18,7 @@ def _isolate_registry(monkeypatch):
     registry.clear_explanation_plugins()
 
 
-def _make_metadata(name: str, trusted: bool) -> dict[str, object]:
+def make_metadata(name: str, trusted: bool) -> dict[str, object]:
     capabilities = (
         "explain",
         "explanation:factual",
@@ -38,8 +38,8 @@ def _make_metadata(name: str, trusted: bool) -> dict[str, object]:
 
 
 def test_list_explanation_descriptors_trusted_only_filters():
-    trusted_plugin = types.SimpleNamespace(plugin_meta=_make_metadata("trusted", True))
-    untrusted_plugin = types.SimpleNamespace(plugin_meta=_make_metadata("untrusted", False))
+    trusted_plugin = types.SimpleNamespace(plugin_meta=make_metadata("trusted", True))
+    untrusted_plugin = types.SimpleNamespace(plugin_meta=make_metadata("untrusted", False))
 
     registry.register_explanation_plugin("trusted", trusted_plugin)
     registry.register_explanation_plugin("untrusted", untrusted_plugin)

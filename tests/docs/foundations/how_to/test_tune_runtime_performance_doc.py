@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from tests.docs.get_started.test_quickstart_classification_doc import (
-    _run_quickstart_classification,
-)
+from tests.helpers.doc_utils import run_quickstart_classification
 
 
 def test_tune_runtime_performance_snippet():
     from calibrated_explanations import WrapCalibratedExplainer
     from calibrated_explanations.api.config import ExplainerBuilder
 
-    context = _run_quickstart_classification()
+    context = run_quickstart_classification()
     model = context.explainer.learner
     builder = ExplainerBuilder(model)
     config = builder.perf_cache(

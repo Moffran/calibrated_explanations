@@ -15,22 +15,21 @@ import pytest
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins.cli import main
 from calibrated_explanations.plugins import (
-    clear_explanation_plugins,
     ensure_builtin_plugins,
     find_explanation_descriptor,
     register_explanation_plugin,
-    unregister,
 )
+from tests.helpers.plugin_utils import cleanup_plugin
 
 
 @pytest.fixture(autouse=True)
-def _ensure_builtins() -> None:
+def ensure_builtins() -> None:
     """Make sure built-in plugins are available for every test."""
 
     ensure_builtin_plugins()
 
 
-class _TemporaryFactualPlugin(LegacyFactualExplanationPlugin):
+class TemporaryFactualPlugin(LegacyFactualExplanationPlugin):
     """Legacy factual plugin variant that starts untrusted."""
 
     plugin_meta = {
@@ -39,14 +38,6 @@ class _TemporaryFactualPlugin(LegacyFactualExplanationPlugin):
         "trusted": False,
         "trust": {"trusted": False},
     }
-
-
-def _cleanup_plugin(plugin: LegacyFactualExplanationPlugin) -> None:
-    """Remove the plugin and restore built-in registry state."""
-
-    unregister(plugin)
-    clear_explanation_plugins()
-    ensure_builtin_plugins()
 
 
 def test_console_script_entrypoint_exposed() -> None:
@@ -96,7 +87,7 @@ def test_show_missing_descriptor(capfd: pytest.CaptureFixture[str]) -> None:
 def test_trust_and_untrust_commands(capfd: pytest.CaptureFixture[str]) -> None:
     """Trusted state changes should flow through the registry."""
 
-    plugin = _TemporaryFactualPlugin()
+    plugin = TemporaryFactualPlugin()
     register_explanation_plugin("tests.cli.untrusted", plugin)
     try:
         descriptor = find_explanation_descriptor("tests.cli.untrusted")
@@ -119,4 +110,4 @@ def test_trust_and_untrust_commands(capfd: pytest.CaptureFixture[str]) -> None:
         descriptor = find_explanation_descriptor("tests.cli.untrusted")
         assert descriptor is not None and not descriptor.trusted
     finally:
-        _cleanup_plugin(plugin)
+        cleanup_plugin(plugin)

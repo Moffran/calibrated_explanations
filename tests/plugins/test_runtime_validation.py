@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pytest
+from tests.helpers.explainer_utils import make_explainer_from_dataset
 
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins import (
@@ -60,38 +60,8 @@ class RegressionOnlyFactualPlugin(LegacyFactualExplanationPlugin):
     }
 
 
-def _make_explainer(binary_dataset, **overrides):
-    from tests._helpers import get_classification_model
-
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        _,
-        _,
-        _,
-        categorical_features,
-        feature_names,
-    ) = binary_dataset
-
-    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    explainer = CalibratedExplainer(
-        model,
-        x_cal,
-        y_cal,
-        mode="classification",
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        class_labels=["No", "Yes"],
-        **overrides,
-    )
-    return explainer, x_test
-
-
 def test_invalid_batch_metadata_raises_configuration_error(binary_dataset):
-    explainer, x_test = _make_explainer(
+    explainer, x_test = make_explainer_from_dataset(
         binary_dataset,
         factual_plugin=MisreportingFactualPlugin(),
     )
@@ -101,7 +71,7 @@ def test_invalid_batch_metadata_raises_configuration_error(binary_dataset):
 
 
 def test_predict_bridge_usage_enforced(binary_dataset):
-    explainer, x_test = _make_explainer(
+    explainer, x_test = make_explainer_from_dataset(
         binary_dataset,
         factual_plugin=NonPredictingFactualPlugin(),
     )
@@ -116,7 +86,7 @@ def test_task_metadata_mismatch_rejected(binary_dataset):
     register_explanation_plugin("tests.regression_only", plugin)
 
     try:
-        explainer, x_test = _make_explainer(
+        explainer, x_test = make_explainer_from_dataset(
             binary_dataset,
             factual_plugin="tests.regression_only",
         )

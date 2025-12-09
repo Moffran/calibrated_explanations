@@ -9,7 +9,7 @@ from calibrated_explanations.utils import (
 )
 
 
-class _TrackingPermutationRng:
+class TrackingPermutationRng:
     """RNG stub that returns a deterministic permutation and records calls."""
 
     def __init__(self):
@@ -22,14 +22,14 @@ class _TrackingPermutationRng:
         return np.array(list(reversed(values)))
 
 
-class _IdentityPermutationRng:
+class IdentityPermutationRng:
     """RNG stub that always returns the input unchanged."""
 
     def permutation(self, values):
         return np.array(values, copy=True)
 
 
-class _DeterministicUniformRng:
+class DeterministicUniformRng:
     """RNG stub that records uniform requests and returns predictable draws."""
 
     def __init__(self):
@@ -48,7 +48,7 @@ class _DeterministicUniformRng:
         return np.arange(size, dtype=float)
 
 
-class _RecordingGaussianRng:
+class RecordingGaussianRng:
     """RNG stub that records gaussian requests and returns zero noise."""
 
     def __init__(self):
@@ -72,7 +72,7 @@ def test_categorical_perturbation_generates_new_permutation():
 
 def test_categorical_perturbation_casts_float_attempts():
     column = np.array([0, 1, 2, 3])
-    rng = _TrackingPermutationRng()
+    rng = TrackingPermutationRng()
 
     result = categorical_perturbation(column, num_permutations=2.6, rng=rng)
 
@@ -82,7 +82,7 @@ def test_categorical_perturbation_casts_float_attempts():
 
 def test_categorical_perturbation_fallback_swaps_values_when_permutations_identical():
     column = np.array(["cat", "dog", "mouse"])
-    rng = _IdentityPermutationRng()
+    rng = IdentityPermutationRng()
 
     result = categorical_perturbation(column, num_permutations=0, rng=rng)
 
@@ -91,7 +91,7 @@ def test_categorical_perturbation_fallback_swaps_values_when_permutations_identi
 
 def test_categorical_perturbation_returns_copy_for_single_unique_value():
     column = np.array(["same", "same", "same"])
-    rng = _IdentityPermutationRng()
+    rng = IdentityPermutationRng()
 
     result = categorical_perturbation(column, num_permutations=5, rng=rng)
 
@@ -141,7 +141,7 @@ def test_uniform_perturbation_matches_expected_draws():
 def test_perturb_dataset_uniform_with_categorical_features_and_rng_stub():
     x_cal = np.array([[0, 0.1], [1, 0.2]], dtype=float)
     y_cal = np.array([0, 1])
-    rng = _DeterministicUniformRng()
+    rng = DeterministicUniformRng()
 
     perturbed_x, scaled_x, scaled_y, factor = perturb_dataset(
         x_cal,
@@ -220,7 +220,7 @@ def test_perturb_dataset_seed_reproducible_for_uniform_noise():
 def test_perturb_dataset_gaussian_uses_provided_rng():
     x_cal = np.array([[1.0, 2.0], [3.0, 4.0]])
     y_cal = np.array([0, 1])
-    rng = _RecordingGaussianRng()
+    rng = RecordingGaussianRng()
 
     perturbed_x, scaled_x, scaled_y, factor = perturb_dataset(
         x_cal,

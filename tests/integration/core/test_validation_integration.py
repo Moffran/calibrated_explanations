@@ -15,41 +15,41 @@ from calibrated_explanations.core.exceptions import (
 )
 
 
-class _DummyReg:
+class DummyReg:
     def predict(self, x):  # noqa: D401
         return np.zeros((len(x),), dtype=float)
 
 
-class _DummyCls(_DummyReg):
+class DummyCls(DummyReg):
     def predict_proba(self, x):
         return np.tile([0.5, 0.5], (len(x), 1))
 
 
 def test_infer_task_prefers_model_capabilities():
-    assert infer_task(model=_DummyCls()) == "classification"
-    assert infer_task(model=_DummyReg()) == "regression"
+    assert infer_task(model=DummyCls()) == "classification"
+    assert infer_task(model=DummyReg()) == "regression"
     # y-based inference fallback
     assert infer_task(y=np.array([0, 1, 0])) == "classification"
     assert infer_task(y=np.array([0.1, 0.2])) == "regression"
 
 
 def test_validate_model_and_fit_state():
-    class _NoPredict:
+    class NoPredict:
         pass
 
     with pytest.raises(ModelNotSupportedError):
-        validate_model(_NoPredict())
+        validate_model(NoPredict())
 
     # fit state
-    class _Obj:
+    class Obj:
         fitted = False
 
     with pytest.raises(NotFittedError):
-        validate_fit_state(_Obj(), require=True)
+        validate_fit_state(Obj(), require=True)
 
     # no exception when fitted
-    _Obj.fitted = True
-    validate_fit_state(_Obj(), require=True)
+    Obj.fitted = True
+    validate_fit_state(Obj(), require=True)
 
 
 def test_validate_inputs_matrix_shapes_and_finite():

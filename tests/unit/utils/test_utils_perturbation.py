@@ -4,7 +4,7 @@ import pytest
 from calibrated_explanations.utils import perturbation
 
 
-class _IdentityRNG:
+class IdentityRNG:
     """Deterministic RNG that always returns the original input."""
 
     def permutation(self, column):
@@ -32,7 +32,7 @@ def test_categorical_perturbation_respects_rng_and_returns_copy():
 
 def test_categorical_perturbation_identity_rng_triggers_swap_fallback():
     column = np.array([1, 2, 3, 4])
-    result = perturbation.categorical_perturbation(column, num_permutations=0, rng=_IdentityRNG())
+    result = perturbation.categorical_perturbation(column, num_permutations=0, rng=IdentityRNG())
 
     # The degenerate RNG should force the fallback swap branch.
     assert np.array_equal(result, np.array([2, 1, 3, 4]))
@@ -41,7 +41,7 @@ def test_categorical_perturbation_identity_rng_triggers_swap_fallback():
 
 def test_categorical_perturbation_identity_rng_handles_constant_column():
     column = np.array([7, 7, 7])
-    result = perturbation.categorical_perturbation(column, rng=_IdentityRNG())
+    result = perturbation.categorical_perturbation(column, rng=IdentityRNG())
 
     # When the column has no variability we still expect a defensive copy.
     assert np.array_equal(result, column)

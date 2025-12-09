@@ -17,7 +17,7 @@ from tests.helpers.deprecation import warns_or_raises, deprecations_error_enable
 
 
 @dataclass
-class _DummyOriginalExplainer:
+class DummyOriginalExplainer:
     """Lightweight stand-in for :class:`CalibratedExplainer`."""
 
     feature_names: Sequence[str]
@@ -67,7 +67,7 @@ class _DummyOriginalExplainer:
         return None, shap_exp
 
 
-class _DummyExplanation:
+class DummyExplanation:
     """Minimal explanation object exercising list-handling logic."""
 
     def __init__(
@@ -132,17 +132,15 @@ class _DummyExplanation:
 
 @pytest.fixture()
 def collection() -> CalibratedExplanations:
-    explainer = _DummyOriginalExplainer(
-        feature_names=("f0", "f1"), class_labels={0: "no", 1: "yes"}
-    )
+    explainer = DummyOriginalExplainer(feature_names=("f0", "f1"), class_labels={0: "no", 1: "yes"})
     x = np.arange(6, dtype=float).reshape(3, 2)
     thresholds = [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7)]
     bins = ["bin0", "bin1", "bin2"]
     coll = CalibratedExplanations(explainer, x, thresholds, bins)
     coll.explanations = [
-        _DummyExplanation(0, 0.1, probabilities=np.array([0.9, 0.1]), interval=(0.0, 0.2)),
-        _DummyExplanation(1, 0.2, probabilities=np.array([0.8, 0.2]), interval=(0.1, 0.3)),
-        _DummyExplanation(2, 0.3, probabilities=np.array([0.7, 0.3]), interval=(0.2, 0.4)),
+        DummyExplanation(0, 0.1, probabilities=np.array([0.9, 0.1]), interval=(0.0, 0.2)),
+        DummyExplanation(1, 0.2, probabilities=np.array([0.8, 0.2]), interval=(0.1, 0.3)),
+        DummyExplanation(2, 0.3, probabilities=np.array([0.7, 0.3]), interval=(0.2, 0.4)),
     ]
     return coll
 

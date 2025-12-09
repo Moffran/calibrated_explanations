@@ -13,7 +13,7 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
-class _RecordingExplainer:
+class RecordingExplainer:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.plot_calls: list[tuple[Any, dict[str, Any]]] = []
@@ -37,7 +37,7 @@ class _RecordingExplainer:
 
 
 @dataclass
-class _DummyModel:
+class DummyModel:
     """Tiny stand-in compatible with WrapCalibratedExplainer._from_config."""
 
     value: float = 0.0
@@ -45,12 +45,10 @@ class _DummyModel:
 
 def _configured_wrapper(
     threshold: float | None, percentiles: tuple[int, int]
-) -> tuple[WrapCalibratedExplainer, _RecordingExplainer]:
-    cfg = ExplainerConfig(
-        model=_DummyModel(), threshold=threshold, low_high_percentiles=percentiles
-    )
+) -> tuple[WrapCalibratedExplainer, RecordingExplainer]:
+    cfg = ExplainerConfig(model=DummyModel(), threshold=threshold, low_high_percentiles=percentiles)
     wrapper = WrapCalibratedExplainer._from_config(cfg)
-    recorder = _RecordingExplainer()
+    recorder = RecordingExplainer()
     wrapper.explainer = recorder
     wrapper.fitted = True
     wrapper.calibrated = True

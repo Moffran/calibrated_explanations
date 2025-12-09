@@ -335,7 +335,7 @@ def test_sequence_and_collection_validation_errors():
         )
 
 
-class _SimpleExplanationPlugin:
+class SimpleExplanationPlugin:
     plugin_meta = {
         "schema_version": 1,
         "capabilities": ["explain"],
@@ -357,7 +357,7 @@ class _SimpleExplanationPlugin:
 
 def test_register_explanation_plugin_updates_raw_meta():
     registry.clear_explanation_plugins()
-    plugin = _SimpleExplanationPlugin()
+    plugin = SimpleExplanationPlugin()
     descriptor = registry.register_explanation_plugin("simple", plugin)
     assert descriptor.metadata["trusted"] is False
     assert plugin.plugin_meta["trusted"] is False
@@ -416,7 +416,7 @@ def test_register_helpers_validate_identifiers():
 
     registry.clear_explanation_plugins()
     with pytest.raises(ValidationError):
-        registry.register_explanation_plugin("", _SimpleExplanationPlugin())
+        registry.register_explanation_plugin("", SimpleExplanationPlugin())
 
     class NoMetaPlugin:
         plugin_meta = None
@@ -430,10 +430,10 @@ def test_register_helpers_validate_identifiers():
 
     registry.clear_plot_plugins()
     with pytest.raises(ValidationError):
-        registry.register_plot_builder("", _Builder())
+        registry.register_plot_builder("", Builder())
 
     with pytest.raises(ValidationError):
-        registry.register_plot_renderer("", _Renderer())
+        registry.register_plot_renderer("", Renderer())
 
     with pytest.raises(ValidationError):
         registry.register_plot_style(
@@ -463,7 +463,7 @@ def test_register_plot_style_validation():
     assert descriptor.metadata["default_for"] == "ce"
 
 
-class _Builder:
+class Builder:
     plugin_meta = {
         "schema_version": 1,
         "capabilities": ["plot:builder"],
@@ -481,7 +481,7 @@ class _Builder:
         return {}
 
 
-class _Renderer:
+class Renderer:
     plugin_meta = {
         "schema_version": 1,
         "capabilities": ["plot:renderer"],
@@ -530,8 +530,8 @@ def test_find_plot_plugin_variants():
             "renderer_id": "renderer",
         },
     )
-    registry.register_plot_builder("builder", _Builder())
-    registry.register_plot_renderer("renderer", _Renderer())
+    registry.register_plot_builder("builder", Builder())
+    registry.register_plot_renderer("renderer", Renderer())
     plugin = registry.find_plot_plugin("style")
     assert plugin is not None
     assert plugin.build({}, {}) == {}
@@ -549,8 +549,8 @@ def test_find_plot_plugin_trusted_requires_trust():
             "renderer_id": "renderer",
         },
     )
-    registry.register_plot_builder("builder", _Builder())
-    registry.register_plot_renderer("renderer", _Renderer())
+    registry.register_plot_builder("builder", Builder())
+    registry.register_plot_renderer("renderer", Renderer())
     assert registry.find_plot_plugin_trusted("style") is None
 
     registry.mark_plot_builder_trusted("builder")
@@ -574,7 +574,7 @@ def test_find_interval_trusted_and_builtin_helpers(monkeypatch):
     registry.ensure_builtin_plugins()  # second call should hit early return
 
 
-class _EntryPoint:
+class EntryPoint:
     def __init__(self, plugin):
         self.name = plugin.plugin_meta["name"]
         self.module = "tests.entry"
@@ -587,8 +587,8 @@ class _EntryPoint:
 
 
 def test_load_entrypoint_plugins_include_untrusted(monkeypatch):
-    plugin = _SimpleExplanationPlugin()
-    entries = [_EntryPoint(plugin)]
+    plugin = SimpleExplanationPlugin()
+    entries = [EntryPoint(plugin)]
 
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entries)
 
@@ -598,11 +598,11 @@ def test_load_entrypoint_plugins_include_untrusted(monkeypatch):
 
 
 def test_load_entrypoint_plugins_trusted_flow(monkeypatch):
-    class TrustedPlugin(_SimpleExplanationPlugin):
-        plugin_meta = {**_SimpleExplanationPlugin.plugin_meta, "trust": True, "trusted": True}
+    class TrustedPlugin(SimpleExplanationPlugin):
+        plugin_meta = {**SimpleExplanationPlugin.plugin_meta, "trust": True, "trusted": True}
 
     plugin = TrustedPlugin()
-    entries = [_EntryPoint(plugin)]
+    entries = [EntryPoint(plugin)]
 
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entries)
 
@@ -673,8 +673,8 @@ def test_refresh_interval_descriptor_trust():
 
 
 def test_refresh_plot_builder_and_renderer_trust():
-    registry.register_plot_builder("builder", _Builder())
-    registry.register_plot_renderer("renderer", _Renderer())
+    registry.register_plot_builder("builder", Builder())
+    registry.register_plot_renderer("renderer", Renderer())
 
     with pytest.raises(KeyError):
         registry._refresh_plot_builder_trust("unknown", trusted=True)
@@ -689,7 +689,7 @@ def test_refresh_plot_builder_and_renderer_trust():
     assert renderer_untrusted.trusted is False
 
 
-class _MutableMeta(MutableMapping):
+class MutableMeta(MutableMapping):
     def __init__(self, data):
         self._data = dict(data)
 
@@ -709,9 +709,9 @@ class _MutableMeta(MutableMapping):
         return len(self._data)
 
 
-class _MutablePlugin:
+class MutablePlugin:
     def __init__(self, *, trusted: bool):
-        self.plugin_meta = _MutableMeta(
+        self.plugin_meta = MutableMeta(
             {
                 "schema_version": 1,
                 "capabilities": ["explain"],
@@ -730,7 +730,7 @@ class _MutablePlugin:
 
 
 def test_register_existing_plugin_updates_trust_list():
-    plugin = _MutablePlugin(trusted=False)
+    plugin = MutablePlugin(trusted=False)
     registry.register(plugin)
     assert plugin not in registry.list_plugins(include_untrusted=False)
 
@@ -757,11 +757,11 @@ def test_resolve_plugin_from_name_and_safe_supports():
         registry._resolve_plugin_from_name("missing")
     registry._REGISTRY.remove(raising_plugin)
 
-    plugin = _SimpleExplanationPlugin()
+    plugin = SimpleExplanationPlugin()
     registry.register(plugin)
     assert registry._resolve_plugin_from_name("simple.explanation") is plugin
 
-    class BrokenPlugin(_SimpleExplanationPlugin):
+    class BrokenPlugin(SimpleExplanationPlugin):
         def supports(self, model):
             raise RuntimeError("boom")
 
@@ -774,7 +774,7 @@ def test_refresh_descriptor_and_register_errors():
     from calibrated_explanations.core.exceptions import ValidationError
 
     registry.clear_explanation_plugins()
-    plugin = _SimpleExplanationPlugin()
+    plugin = SimpleExplanationPlugin()
     descriptor = registry.register_explanation_plugin("simple.extra", plugin)
     registry.unregister(plugin)
     assert registry._resolve_plugin_from_name("simple.explanation") is descriptor.plugin
@@ -829,7 +829,7 @@ def test_refresh_descriptor_and_register_errors():
     registry.register(FailingPlugin())
 
     registry.clear()
-    plugin2 = _SimpleExplanationPlugin()
+    plugin2 = SimpleExplanationPlugin()
     registry.register(plugin2)
     registry.trust_plugin("simple.explanation")
     registry.untrust_plugin("simple.explanation")

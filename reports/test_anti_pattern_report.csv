@@ -1,11 +1,5 @@
 file,line,pattern,snippet
-conftest.py,46,private helper call,"if _env_flag(""FAST_TESTS""):"
-conftest.py,109,private helper call,explainer.interval_learner = _FixtureIntervalLearner()
-conftest.py,130,private helper call,learner = _FixtureLearner(mode=mode)
 test_readme_doc.py,53,private helper call,context = _run_readme_snippet()
-_fixtures.py,34,private helper call,"ds = _read_csv_cached(f""data/reg/{dataset}"")"
-_fixtures.py,72,private helper call,"df = _read_csv_cached(filename, delimiter=delimiter, dtype=np.float64)"
-_fixtures.py,128,private helper call,"df = _read_csv_cached(file_path, delimiter=delimiter).dropna()"
 core\test_calibrated_explainer_additional_behavioral.py,30,private helper call,self.iloc = _FakeILoc(self)
 core\test_calibrated_explainer_additional_behavioral.py,46,private helper call,return _FakeSeries(self._series._values[key])
 core\test_calibrated_explainer_additional_behavioral.py,141,private helper call,"np.testing.assert_array_equal(explainer._get_sigma_test(np.ones((3, 2))), np.ones(3))"
@@ -39,46 +33,26 @@ core\test_calibrated_explainer_utils.py,187,private helper call,"assert ""missin
 core\test_calibrated_explainer_utils.py,196,private helper call,"assert ""missing capability"" in explainer._check_interval_runtime_metadata("
 core\test_calibrated_explainer_utils.py,206,private helper call,"assert ""not marked fast_compatible"" in explainer._check_interval_runtime_metadata("
 core\test_calibrated_explainer_utils.py,217,private helper call,"assert ""requires bins"" in explainer._check_interval_runtime_metadata("
-docs\test_navigation.py,29,private helper call,"index_path = _resolve_doc(""index"")"
-docs\test_navigation.py,33,private helper call,target = _resolve_doc(slug)
-docs\test_quickstarts.py,22,private helper call,value = _extract_threshold_value(item)
-docs\test_quickstarts.py,57,private helper call,"assert _extract_threshold_value(uncertainty.get(""threshold"")) is None"
-docs\test_quickstarts.py,79,private helper call,"assert _extract_threshold_value(prediction_uncertainty.get(""threshold"")) is None"
-docs\test_quickstarts.py,110,private helper call,"threshold_metadata = _extract_threshold_value(uncertainty.get(""threshold""))"
-docs\test_quickstarts.py,134,private helper call,"assert _extract_threshold_value(first_rule_metadata.get(""threshold"")) == pytest.approx(2.5)"
 docs\contributor\test_plugin_advanced_contract.py,49,private helper call,"chain = _resolve_plot_style_chain(explainer, explicit_style=None)"
 docs\contributor\test_plugin_advanced_contract.py,89,private helper call,"chain = _resolve_plot_style_chain(explainer, explicit_style=None)"
 docs\contributor\test_plugin_advanced_contract.py,338,private helper call,"chain = _resolve_plot_style_chain(explainer, explicit_style=""plot_spec.default"")"
 docs\contributor\test_plugin_advanced_contract.py,369,private helper call,"chain = _resolve_plot_style_chain(explainer, explicit_style=None)"
-docs\contributor\test_plugin_contract_doc.py,51,private helper call,model: Any = _build_dummy_model()
-docs\foundations\concepts\test_probabilistic_regression_doc.py,9,private helper call,context = _run_quickstart_regression()
 docs\foundations\governance\test_optional_telemetry_doc.py,35,private helper call,context = _build_classification_context()
-docs\foundations\how_to\test_configure_telemetry_doc.py,11,private helper call,context = _run_quickstart_classification()
-docs\foundations\how_to\test_export_explanations_doc.py,13,private helper call,context = _run_quickstart_classification()
 docs\foundations\how_to\test_integrate_with_pipelines_doc.py,53,private helper call,explainer = WrapCalibratedExplainer._from_config(config)
 docs\foundations\how_to\test_integrate_with_pipelines_doc.py,72,private helper call,context = _build_pipeline_context()
-docs\foundations\how_to\test_interpret_explanations_doc.py,9,private helper call,context = _run_quickstart_classification()
-docs\foundations\how_to\test_tune_runtime_performance_doc.py,12,private helper call,context = _run_quickstart_classification()
-docs\foundations\how_to\test_tune_runtime_performance_doc.py,23,private helper call,explainer = WrapCalibratedExplainer._from_config(config)
-docs\foundations\how_to\test_tune_runtime_performance_doc.py,30,private helper call,explainer_parallel = WrapCalibratedExplainer._from_config(config_parallel)
-docs\get_started\test_quickstart_classification_doc.py,54,private helper call,context = _run_quickstart_classification()
-docs\get_started\test_quickstart_classification_doc.py,62,private helper call,context = _run_quickstart_classification()
-docs\get_started\test_quickstart_regression_doc.py,60,private helper call,context = _run_quickstart_regression()
-docs\get_started\test_quickstart_regression_doc.py,69,private helper call,context = _run_quickstart_regression()
+docs\foundations\how_to\test_tune_runtime_performance_doc.py,21,private helper call,explainer = WrapCalibratedExplainer._from_config(config)
+docs\foundations\how_to\test_tune_runtime_performance_doc.py,28,private helper call,explainer_parallel = WrapCalibratedExplainer._from_config(config_parallel)
 docs\index\test_index_doc.py,71,private helper call,context = _run_index_snippet()
 integration\test_exception_parity_calibration.py,35,private helper call,model = _MockModel()
 integration\api\test_api_snapshot.py,16,private helper call,"*_exported_symbols(root),"
 integration\api\test_api_snapshot.py,18,private helper call,"*_exported_symbols(core_pkg),"
-integration\core\test_explanation_parity.py,71,private helper call,) = _make_binary_dataset()
-integration\core\test_explanation_parity.py,126,private helper call,) = _make_binary_dataset()
-integration\core\test_explanation_parity.py,197,private helper call,payload = _build_payload_from_exp(orig)
-integration\core\test_explanation_parity.py,259,private helper call,"_assert_collections_close(plugin, legacy)"
-integration\core\test_explanation_parity.py,292,private helper call,"_assert_collections_close(plugin, legacy)"
-integration\core\test_explanation_parity.py,326,private helper call,"_assert_collections_close(plugin, legacy)"
-integration\core\test_explanation_parity.py,353,private helper call,payload = _build_payload_from_exp(orig)
-integration\core\test_explanation_parity.py,365,private helper call,payload = _build_payload_from_exp(alt)
-integration\core\test_explanation_plugin_resolution.py,193,private helper call,_cleanup_plugin(plugin)
-integration\core\test_explanation_plugin_resolution.py,305,private helper call,"_compare_collections(plugin_collection, legacy_collection)"
+integration\core\test_explanation_parity.py,159,private helper call,payload = _build_payload_from_exp(orig)
+integration\core\test_explanation_parity.py,221,private helper call,"_assert_collections_close(plugin, legacy)"
+integration\core\test_explanation_parity.py,254,private helper call,"_assert_collections_close(plugin, legacy)"
+integration\core\test_explanation_parity.py,288,private helper call,"_assert_collections_close(plugin, legacy)"
+integration\core\test_explanation_parity.py,315,private helper call,payload = _build_payload_from_exp(orig)
+integration\core\test_explanation_parity.py,327,private helper call,payload = _build_payload_from_exp(alt)
+integration\core\test_explanation_plugin_resolution.py,302,private helper call,"_compare_collections(plugin_collection, legacy_collection)"
 integration\core\test_framework.py,104,private helper call,factual_explanations._get_rules()
 integration\core\test_framework.py,105,private helper call,factual_explanations._is_alternative()
 integration\core\test_framework.py,106,private helper call,factual_explanations._is_one_sided()
@@ -102,36 +76,11 @@ integration\core\test_golden_explanations.py,103,private helper call,"assert _ap
 integration\core\test_golden_explanations.py,116,private helper call,payload = _serialize_regression(factual)
 integration\core\test_golden_explanations.py,118,private helper call,"_write_if_missing(REG_FILE, payload)"
 integration\core\test_golden_explanations.py,124,private helper call,"assert _approx_equal(golden[k], payload[k]), f""Mismatch in field {k}"""
-integration\core\test_plugin_resolution.py,139,private helper call,plugin = _RecordingFactualPlugin()
-integration\core\test_plugin_resolution.py,143,private helper call,"explainer, x_test = _make_explainer("
-integration\core\test_plugin_resolution.py,177,private helper call,_cleanup_plugin(plugin)
-integration\core\test_plugin_resolution.py,182,private helper call,plugin = _LegacySchemaFactualPlugin()
-integration\core\test_plugin_resolution.py,186,private helper call,"explainer, x_test = _make_explainer("
-integration\core\test_plugin_resolution.py,192,private helper call,_cleanup_plugin(plugin)
-integration\core\test_plugin_resolution.py,198,private helper call,"explainer, x_test = _make_explainer(binary_dataset, factual_plugin=""tests.missing.plugin"")"
-integration\core\test_plugin_resolution.py,205,private helper call,"explainer, x_test = _make_explainer(binary_dataset)"
-integration\core\test_plugin_resolution.py,226,private helper call,"explainer, x_test = _make_regression_explainer(regression_dataset)"
-integration\core\test_plugin_resolution.py,249,private helper call,_make_explainer(binary_dataset)
 integration\core\test_preprocessor_wiring.py,65,private helper call,w = we.WrapCalibratedExplainer._from_config(cfg)
 integration\core\test_preprocessor_wiring.py,79,private helper call,w = we.WrapCalibratedExplainer._from_config(cfg)
 integration\core\test_preprocessor_wiring.py,123,private helper call,w = we.WrapCalibratedExplainer._from_config(cfg)
 integration\core\test_preprocessor_wiring.py,169,private helper call,wrapper = we.WrapCalibratedExplainer._from_config(cfg)
 integration\core\test_regression.py,70,private helper call,return _StubDifficulty().fit()
-integration\core\test_regression_uncertainty_telemetry.py,78,private helper call,value = _extract_threshold_value(item)
-integration\core\test_regression_uncertainty_telemetry.py,114,private helper call,"low, high = _extract_percentile_values(percentiles)"
-integration\core\test_regression_uncertainty_telemetry.py,121,private helper call,"low, high = _extract_percentile_values(percentiles)"
-integration\core\test_regression_uncertainty_telemetry.py,125,private helper call,"extracted_threshold = _extract_threshold_value(payload.get(""threshold""))"
-integration\core\test_regression_uncertainty_telemetry.py,135,private helper call,"explainer, x_test = _train_regression_explainer()"
-integration\core\test_regression_uncertainty_telemetry.py,153,private helper call,_assert_uncertainty_schema(
-integration\core\test_regression_uncertainty_telemetry.py,164,private helper call,_assert_uncertainty_schema(
-integration\core\test_regression_uncertainty_telemetry.py,171,private helper call,"assert _extract_threshold_value(first_metadata_rule.get(""threshold"")) == pytest.approx("
-integration\core\test_regression_uncertainty_telemetry.py,179,private helper call,"class_explainer, class_test = _train_classification_explainer()"
-integration\core\test_regression_uncertainty_telemetry.py,183,private helper call,_assert_uncertainty_schema(
-integration\core\test_regression_uncertainty_telemetry.py,186,private helper call,"_assert_uncertainty_schema(class_metadata_rule[""weight_uncertainty""], ""venn_abers"", False, None)"
-integration\core\test_regression_uncertainty_telemetry.py,188,private helper call,"reg_explainer, reg_test = _train_regression_explainer()"
-integration\core\test_regression_uncertainty_telemetry.py,192,private helper call,"_assert_uncertainty_schema(reg_metadata_rule[""prediction_uncertainty""], ""threshold"", False, 2.5)"
-integration\core\test_regression_uncertainty_telemetry.py,193,private helper call,"assert _extract_threshold_value(reg_metadata_rule.get(""threshold"")) == pytest.approx(2.5)"
-integration\core\test_regression_uncertainty_telemetry.py,195,private helper call,"_assert_uncertainty_schema(reg_metadata_rule[""weight_uncertainty""], ""venn_abers"", False, None)"
 integration\core\test_regression__with_condition_source_prediction.py,70,private helper call,return _StubDifficulty().fit()
 integration\core\test_single_rule_decision_rules.py,50,private helper call,rules = explanation._get_rules() # noqa: SLF001 - test needs rule internals
 integration\core\test_single_rule_decision_rules.py,58,private helper call,"x, latent, feature_names = _single_split_dataset()"
@@ -178,94 +127,17 @@ integration\core\test_validation_integration.py,30,private helper call,"assert i
 integration\core\test_validation_integration.py,41,private helper call,validate_model(_NoPredict())
 integration\core\test_validation_integration.py,48,private helper call,"validate_fit_state(_Obj(), require=True)"
 integration\core\test_validation_integration.py,52,private helper call,"validate_fit_state(_Obj(), require=True)"
-integration\plugins\test_cli_smoke.py,99,private helper call,plugin = _TemporaryFactualPlugin()
-integration\plugins\test_cli_smoke.py,122,private helper call,_cleanup_plugin(plugin)
-integration\plugins\test_explanation_plugin_integration.py,115,private helper call,"explainer, x_test = _make_explainer(binary_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,133,private helper call,"explainer, x_test = _make_explainer(binary_dataset, factual_plugin=""tests.integration.missing"")"
-integration\plugins\test_explanation_plugin_integration.py,141,private helper call,"explainer, x_test = _make_explainer(binary_dataset, factual_plugin=plugin)"
-integration\plugins\test_explanation_plugin_integration.py,148,private helper call,"explainer, x_test = _make_explainer(binary_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,152,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,156,private helper call,"explainer, x_test = _make_explainer("
-integration\plugins\test_explanation_plugin_integration.py,162,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,166,private helper call,"explainer, x_test = _make_explainer("
-integration\plugins\test_explanation_plugin_integration.py,172,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,176,private helper call,"explainer, x_test = _make_explainer("
-integration\plugins\test_explanation_plugin_integration.py,182,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,186,private helper call,"explainer, x_test = _make_explainer(binary_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,190,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,194,private helper call,"explainer, x_test = _make_explainer("
-integration\plugins\test_explanation_plugin_integration.py,200,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,204,private helper call,"explainer, x_test = _make_explainer("
-integration\plugins\test_explanation_plugin_integration.py,210,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,214,private helper call,"explainer, x_test = _make_explainer("
-integration\plugins\test_explanation_plugin_integration.py,220,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,261,private helper call,"explainer, x_test = _make_multiclass_explainer(multiclass_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,265,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,269,private helper call,"explainer, x_test = _make_multiclass_explainer("
-integration\plugins\test_explanation_plugin_integration.py,275,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,279,private helper call,"explainer, x_test = _make_multiclass_explainer("
-integration\plugins\test_explanation_plugin_integration.py,285,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,289,private helper call,"explainer, x_test = _make_multiclass_explainer("
-integration\plugins\test_explanation_plugin_integration.py,295,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,299,private helper call,"explainer, x_test = _make_multiclass_explainer(multiclass_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,303,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,307,private helper call,"explainer, x_test = _make_multiclass_explainer("
-integration\plugins\test_explanation_plugin_integration.py,313,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,317,private helper call,"explainer, x_test = _make_multiclass_explainer("
-integration\plugins\test_explanation_plugin_integration.py,323,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,327,private helper call,"explainer, x_test = _make_multiclass_explainer("
-integration\plugins\test_explanation_plugin_integration.py,333,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,370,private helper call,"explainer, x_test = _make_regression_explainer(regression_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,374,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,378,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,384,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,388,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,394,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,398,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,404,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,408,private helper call,"explainer, x_test = _make_regression_explainer(regression_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,412,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,416,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,422,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,426,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,432,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,436,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,442,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,451,private helper call,"explainer, x_test = _make_regression_explainer(regression_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,455,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,459,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,465,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,471,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,477,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,483,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,489,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,493,private helper call,"explainer, x_test = _make_regression_explainer(regression_dataset)"
-integration\plugins\test_explanation_plugin_integration.py,497,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,503,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,509,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,515,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,521,private helper call,"_assert_collections_equal(plugin_result, legacy)"
-integration\plugins\test_explanation_plugin_integration.py,527,private helper call,"explainer, x_test = _make_regression_explainer("
-integration\plugins\test_explanation_plugin_integration.py,533,private helper call,"_assert_collections_equal(plugin_result, legacy)"
 integration\plugins\test_interval_pyproject_integration.py,76,private helper call,"model, x_cal, y_cal = _make_simple_classifier()"
-integration\viz\test_plots_integration.py,18,private helper call,self.calibrated_explanations = _CE()
-integration\viz\test_plots_integration.py,60,private helper call,"expl = _FakeExplanation(mode=""regression"")"
-integration\viz\test_plots_integration.py,64,private helper call,_plots._plot_regression(
-integration\viz\test_plots_integration.py,95,private helper call,"expl = _FakeExplanation(mode=""regression"")"
-integration\viz\test_plots_integration.py,103,private helper call,_plots._plot_alternative(
-integration\viz\test_plots_integration.py,123,private helper call,expl = _FakeExplainer()
-integration\viz\test_plots_integration.py,127,private helper call,"_plots._plot_global(expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False)"
-integration\viz\test_plots_integration.py,131,private helper call,fig = _plots._plot_proba_triangle()
-integration\viz\test_plots_integration.py,151,private helper call,expl = _FakeExplanationThresh()
-integration\viz\test_plots_integration.py,159,private helper call,_plots._plot_alternative(
-integration\viz\test_plots_integration.py,199,private helper call,expl = _FakeExplainerProba()
-integration\viz\test_plots_integration.py,202,private helper call,"_plots._plot_global(expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False)"
-integration\viz\test_plots_integration.py,207,private helper call,"expl = _FakeExplanation(mode=""regression"")"
-integration\viz\test_plots_integration.py,214,private helper call,_plots._plot_alternative(
-integration\viz\test_plots_integration.py,245,private helper call,_plots._plot_alternative(
-integration\viz\test_plots_integration.py,246,private helper call,"explanation=_ProbabilisticExplanation(),"
-integration\viz\test_plots_integration.py,266,private helper call,"expl = _FakeExplanation(mode=""regression"")"
-integration\viz\test_plots_integration.py,276,private helper call,_plots._plot_alternative(
+integration\viz\test_plots_integration.py,29,private helper call,_plots._plot_regression(
+integration\viz\test_plots_integration.py,68,private helper call,_plots._plot_alternative(
+integration\viz\test_plots_integration.py,92,private helper call,"_plots._plot_global(expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False)"
+integration\viz\test_plots_integration.py,96,private helper call,fig = _plots._plot_proba_triangle()
+integration\viz\test_plots_integration.py,124,private helper call,_plots._plot_alternative(
+integration\viz\test_plots_integration.py,167,private helper call,"_plots._plot_global(expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False)"
+integration\viz\test_plots_integration.py,179,private helper call,_plots._plot_alternative(
+integration\viz\test_plots_integration.py,210,private helper call,_plots._plot_alternative(
+integration\viz\test_plots_integration.py,211,private helper call,"explanation=_ProbabilisticExplanation(),"
+integration\viz\test_plots_integration.py,241,private helper call,_plots._plot_alternative(
 integration\viz\test_plots_more.py,12,private helper call,fig = _plots._plot_proba_triangle()
 legacy\test_plotting.py,218,private helper call,"result_dir = plotting._compose_save_target(folder, ""demo"", "".png"")"
 legacy\test_plotting.py,222,private helper call,"result_file = plotting._compose_save_target(file_base, ""demo"", "".png"")"
@@ -281,39 +153,25 @@ plugins\test_base_validation.py,76,private helper call,meta = _make_valid_meta()
 plugins\test_base_validation.py,84,private helper call,meta = _make_valid_meta()
 plugins\test_base_validation.py,93,private helper call,meta = _make_valid_meta()
 plugins\test_base_validation.py,102,private helper call,meta = _make_valid_meta()
-plugins\test_builtins_behaviour.py,91,private helper call,"labels = builtins._derive_threshold_labels([1, 3.75])"
-plugins\test_builtins_behaviour.py,97,private helper call,assert builtins._derive_threshold_labels(sentinel) == (
-plugins\test_builtins_behaviour.py,101,private helper call,"assert builtins._derive_threshold_labels(2.5) == (""Y < 2.50"", ""Y ≥ 2.50"")"
-plugins\test_builtins_behaviour.py,106,private helper call,"labels = builtins._derive_threshold_labels([""bad"", ""value""])"
-plugins\test_builtins_behaviour.py,113,private helper call,"_SentinelExplainer(([1.0, 2.0], ([0.1, 0.2], [0.3, 0.4])))"
-plugins\test_builtins_behaviour.py,126,private helper call,"bridge = builtins.LegacyPredictBridge(_SentinelExplainer([4.0, 5.0]))"
-plugins\test_builtins_behaviour.py,153,private helper call,assert builtins._supports_calibrated_explainer(DummyExplainer()) is True
-plugins\test_builtins_behaviour.py,154,private helper call,assert builtins._supports_calibrated_explainer(object()) is False
-plugins\test_builtins_behaviour.py,163,private helper call,batch = builtins._collection_to_batch(collection) # noqa: SLF001
-plugins\test_builtins_behaviour.py,173,private helper call,batch = builtins._collection_to_batch(EmptyCollection()) # noqa: SLF001
-plugins\test_builtins_behaviour.py,188,private helper call,context = _make_interval_context(
+plugins\test_builtins_behaviour.py,76,private helper call,"labels = builtins._derive_threshold_labels([1, 3.75])"
+plugins\test_builtins_behaviour.py,82,private helper call,assert builtins._derive_threshold_labels(sentinel) == (
+plugins\test_builtins_behaviour.py,86,private helper call,"assert builtins._derive_threshold_labels(2.5) == (""Y < 2.50"", ""Y ≥ 2.50"")"
+plugins\test_builtins_behaviour.py,91,private helper call,"labels = builtins._derive_threshold_labels([""bad"", ""value""])"
+plugins\test_builtins_behaviour.py,98,private helper call,"_SentinelExplainer(([1.0, 2.0], ([0.1, 0.2], [0.3, 0.4])))"
+plugins\test_builtins_behaviour.py,111,private helper call,"bridge = builtins.LegacyPredictBridge(_SentinelExplainer([4.0, 5.0]))"
+plugins\test_builtins_behaviour.py,138,private helper call,assert builtins._supports_calibrated_explainer(DummyExplainer()) is True
+plugins\test_builtins_behaviour.py,139,private helper call,assert builtins._supports_calibrated_explainer(object()) is False
+plugins\test_builtins_behaviour.py,148,private helper call,batch = builtins._collection_to_batch(collection) # noqa: SLF001
+plugins\test_builtins_behaviour.py,158,private helper call,batch = builtins._collection_to_batch(EmptyCollection()) # noqa: SLF001
+plugins\test_builtins_behaviour.py,173,private helper call,context = _make_interval_context(
+plugins\test_builtins_behaviour.py,198,private helper call,context = _make_interval_context(
 plugins\test_builtins_behaviour.py,213,private helper call,context = _make_interval_context(
-plugins\test_builtins_behaviour.py,228,private helper call,context = _make_interval_context(
-plugins\test_builtins_behaviour.py,241,private helper call,"context = _make_interval_context(metadata={""task"": ""regression""})"
-plugins\test_builtins_behaviour.py,255,private helper call,context = _make_explanation_context(
-plugins\test_builtins_behaviour.py,256,private helper call,"explainer=None, predict_bridge=builtins.LegacyPredictBridge(_SentinelExplainer([1]))"
-plugins\test_builtins_behaviour.py,293,private helper call,context = _make_explanation_context(
-plugins\test_builtins_behaviour.py,332,private helper call,"context = _make_plot_context(intent={""type"": ""anything""})"
-plugins\test_builtins_behaviour.py,339,private helper call,context = _make_plot_context()
-plugins\test_builtins_behaviour.py,357,private helper call,context = _make_plot_context(
-plugins\test_builtins_behaviour.py,371,private helper call,"builder.build(_make_plot_context(intent={""type"": ""global""}, options={""payload"": 3}))"
-plugins\test_builtins_behaviour.py,373,private helper call,"builder.build(_make_plot_context(intent={""type"": ""alternative""}, options={""payload"": 3}))"
-plugins\test_builtins_behaviour.py,376,private helper call,_make_plot_context(
-plugins\test_builtins_behaviour.py,410,private helper call,context = _make_plot_context(
-plugins\test_builtins_behaviour.py,460,private helper call,context = _make_plot_context(
-plugins\test_builtins_behaviour.py,511,private helper call,context = _make_plot_context(
-plugins\test_builtins_behaviour.py,557,private helper call,context = _make_plot_context(
-plugins\test_builtins_behaviour.py,602,private helper call,context = _make_plot_context(
-plugins\test_builtins_behaviour.py,621,private helper call,"builder.build(_make_plot_context(intent={""type"": ""unsupported""}))"
-plugins\test_builtins_behaviour.py,635,private helper call,"context = _make_plot_context(show=True, save_ext=("".png"", "".svg""), path=""/tmp/plot"")"
-plugins\test_builtins_behaviour.py,653,private helper call,"context = _make_plot_context(show=False, path=""base"")"
-plugins\test_builtins_behaviour.py,676,private helper call,builtins._register_builtins() # noqa: SLF001
-plugins\test_builtins_behaviour.py,690,private helper call,builtins._register_builtins() # noqa: SLF001
+plugins\test_builtins_behaviour.py,226,private helper call,"context = _make_interval_context(metadata={""task"": ""regression""})"
+plugins\test_builtins_behaviour.py,240,private helper call,context = _make_explanation_context(
+plugins\test_builtins_behaviour.py,241,private helper call,"explainer=None, predict_bridge=builtins.LegacyPredictBridge(_SentinelExplainer([1]))"
+plugins\test_builtins_behaviour.py,278,private helper call,context = _make_explanation_context(
+plugins\test_builtins_behaviour.py,661,private helper call,builtins._register_builtins() # noqa: SLF001
+plugins\test_builtins_behaviour.py,675,private helper call,builtins._register_builtins() # noqa: SLF001
 plugins\test_builtins_module.py,71,private helper call,super().__init__(_Explainer())
 plugins\test_builtins_module.py,91,private helper call,collection = _make_collection(with_instances=True)
 plugins\test_builtins_module.py,102,private helper call,"helper_handles={""explainer"": _Explainer()},"
@@ -328,24 +186,10 @@ plugins\test_builtins_module.py,250,private helper call,empty_batch = _collectio
 plugins\test_builtins_module.py,250,private helper call,empty_batch = _collection_to_batch(_make_collection(with_instances=False))
 plugins\test_builtins_module.py,254,private helper call,populated = _make_collection(with_instances=True)
 plugins\test_builtins_module.py,255,private helper call,batch = _collection_to_batch(populated)
-plugins\test_builtins_module.py,263,private helper call,ctx = _make_plot_context()
 plugins\test_builtins_module.py,282,private helper call,"context = _make_interval_context(""regression"")"
 plugins\test_builtins_module.py,306,private helper call,"context = _make_interval_context(""classification"")"
 plugins\test_builtins_module.py,324,private helper call,"context = _make_interval_context(""classification"")"
-plugins\test_builtins_module.py,378,private helper call,context = _make_plot_context()
-plugins\test_builtins_module.py,392,private helper call,"ctx = _make_plot_context(save_ext=["".png"", "".svg""], path=""/tmp/output"", show=True)"
-plugins\test_builtins_module.py,406,private helper call,ctx = _make_plot_context()
-plugins\test_builtins_module.py,412,private helper call,bad_ctx = _make_plot_context(
-plugins\test_builtins_module.py,418,private helper call,alt_ctx = _make_plot_context(
-plugins\test_builtins_module.py,425,private helper call,alt_bad_payload = _make_plot_context(
-plugins\test_builtins_module.py,455,private helper call,ctx = _make_plot_context(
-plugins\test_builtins_module.py,511,private helper call,ctx = _make_plot_context(
-plugins\test_builtins_module.py,548,private helper call,ctx = _make_plot_context(
-plugins\test_builtins_module.py,581,private helper call,ctx = _make_plot_context(
-plugins\test_builtins_module.py,593,private helper call,"ctx = _make_plot_context(intent=MappingProxyType({""type"": ""other""}))"
 plugins\test_builtins_module.py,619,private helper call,_register_builtins()
-plugins\test_builtins_module.py,639,private helper call,"ctx = _make_plot_context(save_ext=None, path=None, show=False)"
-plugins\test_builtins_module.py,655,private helper call,"ctx = _make_plot_context(save_ext=["".png""], path=""bad"", show=False)"
 plugins\test_builtins_module.py,676,private helper call,_register_builtins()
 plugins\test_builtin_plugin_parity.py,108,private helper call,"plugin.initialize(_make_context(explainer, ""factual""))"
 plugins\test_builtin_plugin_parity.py,109,private helper call,"batch = plugin.explain_batch(x_test, _make_request())"
@@ -393,23 +237,10 @@ plugins\test_cli_additional.py,157,private helper call,exit_code = cli._cmd_trus
 plugins\test_external_plugins_extra.py,40,private helper call,extras = _parse_external_plugins_from_pyproject()
 plugins\test_external_plugins_extra.py,43,private helper call,extras = _parse_external_plugins_from_pyproject()
 plugins\test_external_plugins_extra.py,51,private helper call,extras = _parse_external_plugins_from_pyproject()
-plugins\test_interval_resolution.py,171,private helper call,"explainer, _ = _make_explainer(binary_dataset)"
-plugins\test_interval_resolution.py,184,private helper call,"explainer, _ = _make_explainer(binary_dataset, fast=True)"
-plugins\test_interval_resolution.py,222,private helper call,"explainer, _ = _make_explainer(binary_dataset)"
-plugins\test_interval_resolution.py,239,private helper call,"explainer, _ = _make_explainer(binary_dataset)"
-plugins\test_interval_resolution.py,261,private helper call,"explainer, _ = _make_explainer(binary_dataset)"
-plugins\test_interval_resolution.py,283,private helper call,"explainer, _ = _make_explainer("
-plugins\test_interval_resolution.py,316,private helper call,"explainer, _ = _make_explainer(binary_dataset)"
-plugins\test_interval_resolution.py,335,private helper call,"_make_explainer(binary_dataset, fast=True)"
-plugins\test_interval_resolution.py,364,private helper call,"descriptor = register_interval_plugin(""tests.interval.explicit"", _ExplicitIntervalPlugin())"
-plugins\test_interval_resolution.py,366,private helper call,"explainer, _ = _make_explainer(binary_dataset, interval_plugin=descriptor.identifier)"
-plugins\test_interval_resolution.py,398,private helper call,"descriptor = register_interval_plugin(""tests.interval.missing_cap"", _MissingCapabilityPlugin())"
-plugins\test_interval_resolution.py,401,private helper call,"_make_explainer(binary_dataset, interval_plugin=descriptor.identifier)"
-plugins\test_interval_resolution.py,440,private helper call,"descriptor = register_interval_plugin(""tests.interval.fast_override"", _FastRecordingPlugin())"
-plugins\test_interval_resolution.py,442,private helper call,"explainer, _ = _make_explainer("
-plugins\test_interval_resolution.py,485,private helper call,"""tests.interval.fast_incompatible"", _FastIncompatiblePlugin()"
-plugins\test_interval_resolution.py,489,private helper call,_make_explainer(
-plugins\test_interval_resolution.py,506,private helper call,"explainer, _ = _make_explainer(binary_dataset)"
+plugins\test_interval_resolution.py,333,private helper call,"descriptor = register_interval_plugin(""tests.interval.explicit"", _ExplicitIntervalPlugin())"
+plugins\test_interval_resolution.py,369,private helper call,"descriptor = register_interval_plugin(""tests.interval.missing_cap"", _MissingCapabilityPlugin())"
+plugins\test_interval_resolution.py,411,private helper call,"descriptor = register_interval_plugin(""tests.interval.fast_override"", _FastRecordingPlugin())"
+plugins\test_interval_resolution.py,456,private helper call,"""tests.interval.fast_incompatible"", _FastIncompatiblePlugin()"
 plugins\test_protocols.py,47,private helper call,"predict_bridge=_DummyPredictBridge(),"
 plugins\test_protocols.py,145,private helper call,"assert isinstance(_GoodExplanationPlugin(), ExplanationPlugin)"
 plugins\test_protocols.py,146,private helper call,"assert not isinstance(_BadExplanationPlugin(), ExplanationPlugin)"
@@ -477,31 +308,28 @@ plugins\test_registry_metadata_ext.py,508,private helper call,"meta = _base_meta
 plugins\test_registry_metadata_ext.py,515,private helper call,"meta = _base_meta(capabilities=[""interval""])"
 plugins\test_registry_metadata_ext.py,523,private helper call,"meta = _base_meta(capabilities=[""interval""])"
 plugins\test_registry_metadata_ext.py,531,private helper call,"meta = _base_meta(capabilities=[""plot""])"
-plugins\test_runtime_validation.py,94,private helper call,"explainer, x_test = _make_explainer("
-plugins\test_runtime_validation.py,104,private helper call,"explainer, x_test = _make_explainer("
-plugins\test_runtime_validation.py,119,private helper call,"explainer, x_test = _make_explainer("
 scripts\test_check_perf_micro.py,34,private helper call,"_write(baseline_path, baseline)"
 scripts\test_check_perf_micro.py,35,private helper call,"_write(current_path, current)"
 scripts\test_check_perf_micro.py,69,private helper call,"_write(baseline_path, baseline)"
 scripts\test_check_perf_micro.py,70,private helper call,"_write(current_path, current)"
-unit\test_explanations_collection.py,218,private helper call,assert not none_collection._is_one_sided()
-unit\test_explanations_collection.py,261,private helper call,assert collection._is_probabilistic_regression()
-unit\test_explanations_collection.py,263,private helper call,assert collection._is_one_sided()
-unit\test_explanations_collection.py,486,private helper call,payload = calibrated_collection._legacy_payload(exp)
-unit\test_explanations_collection.py,492,private helper call,payload_rules = calibrated_collection._legacy_payload(exp)
-unit\test_explanations_collection.py,496,private helper call,generated = calibrated_collection._legacy_payload(exp)
-unit\test_explanations_collection.py,501,private helper call,assert calibrated_collection._get_explainer() is calibrated_collection.calibrated_explainer
-unit\test_explanations_collection.py,502,private helper call,rules = calibrated_collection._get_rules()
-unit\test_explanations_collection.py,505,private helper call,assert not calibrated_collection._is_one_sided()
-unit\test_explanations_collection.py,509,private helper call,metadata = calibrated_collection._collection_metadata()
-unit\test_explanations_collection.py,532,private helper call,"assert np.array_equal(frozen._discretize(dummy.x_cal), dummy.x_cal)"
-unit\test_explanations_collection.py,536,private helper call,assert frozen._predict(dummy.x_cal).shape[0] == dummy.x_cal.shape[0]
-unit\test_perf_parallel.py,121,private helper call,strategy = executor._resolve_strategy()
-unit\test_perf_parallel.py,130,private helper call,strategy = executor._resolve_strategy()
-unit\test_perf_parallel.py,141,private helper call,strategy = executor._resolve_strategy()
-unit\test_perf_parallel.py,152,private helper call,"executor._joblib_strategy(lambda x: x, [1])"
-unit\test_perf_parallel.py,228,private helper call,"results = executor._thread_strategy(lambda x: x * 3, items)"
-unit\test_perf_parallel.py,243,private helper call,"results = executor._serial_strategy(tracking_fn, items)"
+unit\test_explanations_collection.py,219,private helper call,assert not none_collection._is_one_sided()
+unit\test_explanations_collection.py,262,private helper call,assert collection._is_probabilistic_regression()
+unit\test_explanations_collection.py,264,private helper call,assert collection._is_one_sided()
+unit\test_explanations_collection.py,487,private helper call,payload = calibrated_collection._legacy_payload(exp)
+unit\test_explanations_collection.py,493,private helper call,payload_rules = calibrated_collection._legacy_payload(exp)
+unit\test_explanations_collection.py,497,private helper call,generated = calibrated_collection._legacy_payload(exp)
+unit\test_explanations_collection.py,502,private helper call,assert calibrated_collection._get_explainer() is calibrated_collection.calibrated_explainer
+unit\test_explanations_collection.py,503,private helper call,rules = calibrated_collection._get_rules()
+unit\test_explanations_collection.py,506,private helper call,assert not calibrated_collection._is_one_sided()
+unit\test_explanations_collection.py,510,private helper call,metadata = calibrated_collection._collection_metadata()
+unit\test_explanations_collection.py,533,private helper call,"assert np.array_equal(frozen._discretize(dummy.x_cal), dummy.x_cal)"
+unit\test_explanations_collection.py,537,private helper call,assert frozen._predict(dummy.x_cal).shape[0] == dummy.x_cal.shape[0]
+unit\test_perf_parallel.py,128,private helper call,strategy = executor._resolve_strategy()
+unit\test_perf_parallel.py,137,private helper call,strategy = executor._resolve_strategy()
+unit\test_perf_parallel.py,148,private helper call,strategy = executor._resolve_strategy()
+unit\test_perf_parallel.py,159,private helper call,"executor._joblib_strategy(lambda x: x, [1])"
+unit\test_perf_parallel.py,235,private helper call,"results = executor._thread_strategy(lambda x: x * 3, items)"
+unit\test_perf_parallel.py,250,private helper call,"results = executor._serial_strategy(tracking_fn, items)"
 unit\test_plots_configuration.py,25,private helper call,config = plotting._read_plot_pyproject()
 unit\test_plots_configuration.py,34,private helper call,assert plotting._read_plot_pyproject() == {}
 unit\test_plots_configuration.py,38,private helper call,"assert plotting._split_csv("" a , b , , c "") == (""a"", ""b"", ""c"")"
@@ -530,14 +358,6 @@ unit\test_plots_module.py,156,private helper call,"result = plotting._format_sav
 unit\test_plots_module.py,164,private helper call,"pos_label, neg_label = plotting._derive_threshold_labels([""invalid""])"
 unit\test_plot_spec_default_builder.py,10,private helper call,"REG_BAR_COLOR = _legacy_get_fill_color(1.0, 1.0)"
 unit\test_plot_spec_default_builder.py,11,private helper call,"REG_BASE_COLOR = _legacy_get_fill_color(1.0, 0.15)"
-unit\test_plot_spec_default_builder.py,46,private helper call,context = _make_context(
-unit\test_plot_spec_default_builder.py,77,private helper call,context = _make_context(
-unit\test_plot_spec_default_builder.py,108,private helper call,context = _make_context(
-unit\test_plot_spec_default_builder.py,145,private helper call,context = _make_context(
-unit\test_plot_spec_default_builder.py,181,private helper call,context = _make_context(
-unit\test_utils_deprecations.py,19,private helper call,dep_mod = _reload_module()
-unit\test_utils_deprecations.py,35,private helper call,dep_mod = _reload_module()
-unit\test_utils_deprecations.py,59,private helper call,dep_mod = _reload_module()
 unit\api\test_api_builder.py,53,private helper call,"w = WrapCalibratedExplainer._from_config(cfg) # private, intentional"
 unit\api\test_api_builder.py,62,private helper call,w = WrapCalibratedExplainer._from_config(cfg)
 unit\api\test_api_builder.py,96,private helper call,w = WrapCalibratedExplainer._from_config(cfg)
@@ -548,75 +368,50 @@ unit\api\test_legacy_user_api_contract.py,62,private helper call,factual_params 
 unit\api\test_legacy_user_api_contract.py,63,private helper call,alternative_params = _param_names(ce.CalibratedExplainer.explore_alternatives)
 unit\api\test_legacy_user_api_contract.py,92,private helper call,plot_params = _param_names(CalibratedExplanations.plot)
 unit\api\test_legacy_user_api_contract.py,105,private helper call,add_params = _param_names(CalibratedExplanations.add_conjunctions)
-unit\core\test_alias_warnings.py,48,private helper call,"w, x = _prepare_wrapper()"
-unit\core\test_alias_warnings.py,56,private helper call,"w, x = _prepare_wrapper()"
-unit\core\test_alias_warnings.py,63,private helper call,"w, x = _prepare_wrapper()"
-unit\core\test_alias_warnings.py,70,private helper call,"w, x = _prepare_wrapper()"
-unit\core\test_alias_warnings.py,77,private helper call,"w, x = _prepare_wrapper()"
-unit\core\test_calibrated_explainer_additional.py,136,private helper call,_patch_interval_initializers(monkeypatch)
-unit\core\test_calibrated_explainer_additional.py,148,private helper call,"assert _read_pyproject_section((""tool"",)) == {}"
-unit\core\test_calibrated_explainer_additional.py,159,private helper call,"assert _read_pyproject_section((""tool"", ""missing"")) == {}"
-unit\core\test_calibrated_explainer_additional.py,170,private helper call,"assert _read_pyproject_section((""tool"", ""calibrated_explanations"", ""explanations"")) == {}"
-unit\core\test_calibrated_explainer_additional.py,178,private helper call,"assert _read_pyproject_section((""tool"", ""calibrated_explanations"", ""explanations"")) == {"
-unit\core\test_calibrated_explainer_additional.py,184,private helper call,"assert _coerce_string_tuple(""alpha"") == (""alpha"",)"
-unit\core\test_calibrated_explainer_additional.py,185,private helper call,"assert _coerce_string_tuple([""alpha"", """", ""beta"", 1]) == (""alpha"", ""beta"")"
-unit\core\test_calibrated_explainer_additional.py,186,private helper call,assert _coerce_string_tuple(None) == ()
-unit\core\test_calibrated_explainer_additional.py,187,private helper call,assert _coerce_string_tuple(123) == ()
-unit\core\test_calibrated_explainer_additional.py,192,private helper call,monitor = _PredictBridgeMonitor(bridge)
-unit\core\test_calibrated_explainer_additional.py,211,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal, oob=True)"
-unit\core\test_calibrated_explainer_additional.py,235,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal, oob=True)"
-unit\core\test_calibrated_explainer_additional.py,249,private helper call,"_make_explainer(monkeypatch, learner, x_cal, y_cal, mode=""regression"", oob=True)"
-unit\core\test_calibrated_explainer_additional.py,256,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,259,private helper call,"assert ""missing tasks"" in explainer._check_explanation_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,264,private helper call,"assert ""does not support task"" in explainer._check_explanation_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,269,private helper call,"assert ""missing modes"" in explainer._check_explanation_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,274,private helper call,"assert ""does not declare mode"" in explainer._check_explanation_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,279,private helper call,"assert ""missing required capabilities"" in explainer._check_explanation_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,287,private helper call,"explainer._check_explanation_runtime_metadata(ok, identifier=""demo"", mode=""factual"") is None"
-unit\core\test_calibrated_explainer_additional.py,295,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,305,private helper call,"explainer._check_explanation_runtime_metadata(metadata, identifier=""demo"", mode=""factual"")"
-unit\core\test_calibrated_explainer_additional.py,314,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,316,private helper call,assert explainer._instantiate_plugin(None) is None
-unit\core\test_calibrated_explainer_additional.py,322,private helper call,assert explainer._instantiate_plugin(plugin_factory) is plugin_factory
-unit\core\test_calibrated_explainer_additional.py,329,private helper call,inst = explainer._instantiate_plugin(proto)
-unit\core\test_calibrated_explainer_additional.py,338,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,352,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,357,private helper call,"context = explainer._build_interval_context(fast=True, metadata={""note"": ""demo""})"
-unit\core\test_calibrated_explainer_additional.py,369,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,374,private helper call,"context = explainer._build_interval_context(fast=True, metadata={})"
-unit\core\test_calibrated_explainer_additional.py,383,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,385,private helper call,"context = explainer._build_interval_context(fast=True, metadata={})"
-unit\core\test_calibrated_explainer_additional.py,388,private helper call,"explainer._capture_interval_calibrators(context=context, calibrator=calibrators, fast=True)"
-unit\core\test_calibrated_explainer_additional.py,397,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,417,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,430,private helper call,explainer._ensure_interval_runtime_state()
-unit\core\test_calibrated_explainer_additional.py,438,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal, mode=""regression"")"
-unit\core\test_calibrated_explainer_additional.py,441,private helper call,"assert ""metadata unavailable"" in explainer._check_interval_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,446,private helper call,"assert ""unsupported interval"" in explainer._check_interval_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,451,private helper call,"assert ""missing modes"" in explainer._check_interval_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,456,private helper call,"assert ""does not support mode"" in explainer._check_interval_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,461,private helper call,"assert ""missing capability"" in explainer._check_interval_runtime_metadata("
-unit\core\test_calibrated_explainer_additional.py,466,private helper call,"assert explainer._check_interval_runtime_metadata(ok, identifier=""demo"", fast=False) is None"
-unit\core\test_calibrated_explainer_additional.py,473,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,480,private helper call,"assert explainer._gather_interval_hints(fast=True) == (""fast-one"",)"
-unit\core\test_calibrated_explainer_additional.py,481,private helper call,"assert explainer._gather_interval_hints(fast=False) == (""one"", ""two"", ""three"")"
-unit\core\test_calibrated_explainer_additional.py,486,private helper call,assert _split_csv(None) == ()
-unit\core\test_calibrated_explainer_additional.py,487,private helper call,"assert _split_csv("""") == ()"
-unit\core\test_calibrated_explainer_additional.py,488,private helper call,"assert _split_csv(""a,b , ,c"") == (""a"", ""b"", ""c"")"
-unit\core\test_calibrated_explainer_additional.py,491,private helper call,"assert _assign_weight_scalar(0.5, 1.0) == 0.5"
-unit\core\test_calibrated_explainer_additional.py,496,private helper call,"assert _assign_weight_scalar(inst, pred) == 1.0"
-unit\core\test_calibrated_explainer_additional.py,499,private helper call,"assert _assign_weight_scalar(np.array([]), np.array([])) == 0.0"
-unit\core\test_calibrated_explainer_additional.py,546,private helper call,result = _feature_task(args)
-unit\core\test_calibrated_explainer_additional.py,602,private helper call,result = _feature_task(args)
-unit\core\test_calibrated_explainer_additional.py,658,private helper call,result = _feature_task(args)
-unit\core\test_calibrated_explainer_additional.py,668,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,677,private helper call,"explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))"
-unit\core\test_calibrated_explainer_additional.py,786,private helper call,"explainer = _make_explainer(monkeypatch, DummyLearner(), np.ones((1, 2)), np.array([0]))"
-unit\core\test_calibrated_explainer_additional.py,862,private helper call,result = _feature_task(args)
-unit\core\test_calibrated_explainer_additional.py,874,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
-unit\core\test_calibrated_explainer_additional.py,876,private helper call,"cat_counts, num_sorted = explainer._get_calibration_summaries()"
-unit\core\test_calibrated_explainer_additional.py,882,private helper call,"cat_counts2, num_sorted2 = explainer._get_calibration_summaries()"
-unit\core\test_calibrated_explainer_additional.py,891,private helper call,"explainer = _make_explainer(monkeypatch, learner, x_cal, y_cal)"
+unit\core\test_calibrated_explainer_additional.py,59,private helper call,"assert _read_pyproject_section((""tool"",)) == {}"
+unit\core\test_calibrated_explainer_additional.py,70,private helper call,"assert _read_pyproject_section((""tool"", ""missing"")) == {}"
+unit\core\test_calibrated_explainer_additional.py,81,private helper call,"assert _read_pyproject_section((""tool"", ""calibrated_explanations"", ""explanations"")) == {}"
+unit\core\test_calibrated_explainer_additional.py,89,private helper call,"assert _read_pyproject_section((""tool"", ""calibrated_explanations"", ""explanations"")) == {"
+unit\core\test_calibrated_explainer_additional.py,95,private helper call,"assert _coerce_string_tuple(""alpha"") == (""alpha"",)"
+unit\core\test_calibrated_explainer_additional.py,96,private helper call,"assert _coerce_string_tuple([""alpha"", """", ""beta"", 1]) == (""alpha"", ""beta"")"
+unit\core\test_calibrated_explainer_additional.py,97,private helper call,assert _coerce_string_tuple(None) == ()
+unit\core\test_calibrated_explainer_additional.py,98,private helper call,assert _coerce_string_tuple(123) == ()
+unit\core\test_calibrated_explainer_additional.py,103,private helper call,monitor = _PredictBridgeMonitor(bridge)
+unit\core\test_calibrated_explainer_additional.py,170,private helper call,"assert ""missing tasks"" in explainer._check_explanation_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,175,private helper call,"assert ""does not support task"" in explainer._check_explanation_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,180,private helper call,"assert ""missing modes"" in explainer._check_explanation_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,185,private helper call,"assert ""does not declare mode"" in explainer._check_explanation_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,190,private helper call,"assert ""missing required capabilities"" in explainer._check_explanation_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,198,private helper call,"explainer._check_explanation_runtime_metadata(ok, identifier=""demo"", mode=""factual"") is None"
+unit\core\test_calibrated_explainer_additional.py,216,private helper call,"explainer._check_explanation_runtime_metadata(metadata, identifier=""demo"", mode=""factual"")"
+unit\core\test_calibrated_explainer_additional.py,227,private helper call,assert explainer._instantiate_plugin(None) is None
+unit\core\test_calibrated_explainer_additional.py,233,private helper call,assert explainer._instantiate_plugin(plugin_factory) is plugin_factory
+unit\core\test_calibrated_explainer_additional.py,240,private helper call,inst = explainer._instantiate_plugin(proto)
+unit\core\test_calibrated_explainer_additional.py,268,private helper call,"context = explainer._build_interval_context(fast=True, metadata={""note"": ""demo""})"
+unit\core\test_calibrated_explainer_additional.py,285,private helper call,"context = explainer._build_interval_context(fast=True, metadata={})"
+unit\core\test_calibrated_explainer_additional.py,296,private helper call,"context = explainer._build_interval_context(fast=True, metadata={})"
+unit\core\test_calibrated_explainer_additional.py,299,private helper call,"explainer._capture_interval_calibrators(context=context, calibrator=calibrators, fast=True)"
+unit\core\test_calibrated_explainer_additional.py,341,private helper call,explainer._ensure_interval_runtime_state()
+unit\core\test_calibrated_explainer_additional.py,352,private helper call,"assert ""metadata unavailable"" in explainer._check_interval_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,357,private helper call,"assert ""unsupported interval"" in explainer._check_interval_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,362,private helper call,"assert ""missing modes"" in explainer._check_interval_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,367,private helper call,"assert ""does not support mode"" in explainer._check_interval_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,372,private helper call,"assert ""missing capability"" in explainer._check_interval_runtime_metadata("
+unit\core\test_calibrated_explainer_additional.py,377,private helper call,"assert explainer._check_interval_runtime_metadata(ok, identifier=""demo"", fast=False) is None"
+unit\core\test_calibrated_explainer_additional.py,391,private helper call,"assert explainer._gather_interval_hints(fast=True) == (""fast-one"",)"
+unit\core\test_calibrated_explainer_additional.py,392,private helper call,"assert explainer._gather_interval_hints(fast=False) == (""one"", ""two"", ""three"")"
+unit\core\test_calibrated_explainer_additional.py,397,private helper call,assert _split_csv(None) == ()
+unit\core\test_calibrated_explainer_additional.py,398,private helper call,"assert _split_csv("""") == ()"
+unit\core\test_calibrated_explainer_additional.py,399,private helper call,"assert _split_csv(""a,b , ,c"") == (""a"", ""b"", ""c"")"
+unit\core\test_calibrated_explainer_additional.py,402,private helper call,"assert _assign_weight_scalar(0.5, 1.0) == 0.5"
+unit\core\test_calibrated_explainer_additional.py,407,private helper call,"assert _assign_weight_scalar(inst, pred) == 1.0"
+unit\core\test_calibrated_explainer_additional.py,410,private helper call,"assert _assign_weight_scalar(np.array([]), np.array([])) == 0.0"
+unit\core\test_calibrated_explainer_additional.py,457,private helper call,result = _feature_task(args)
+unit\core\test_calibrated_explainer_additional.py,513,private helper call,result = _feature_task(args)
+unit\core\test_calibrated_explainer_additional.py,569,private helper call,result = _feature_task(args)
+unit\core\test_calibrated_explainer_additional.py,773,private helper call,result = _feature_task(args)
+unit\core\test_calibrated_explainer_additional.py,787,private helper call,"cat_counts, num_sorted = explainer._get_calibration_summaries()"
+unit\core\test_calibrated_explainer_additional.py,793,private helper call,"cat_counts2, num_sorted2 = explainer._get_calibration_summaries()"
 unit\core\test_calibrated_explainer_branch_misc.py,58,private helper call,"assert explainer._infer_explanation_mode() == ""factual"""
 unit\core\test_calibrated_explainer_branch_misc.py,70,private helper call,"assert explainer._infer_explanation_mode() == ""alternative"""
 unit\core\test_calibrated_explainer_branch_misc.py,76,private helper call,"explainer._CalibratedExplainer__set_mode(""classification"", initialize=False)"
@@ -635,10 +430,6 @@ unit\core\test_calibrated_explainer_helpers.py,106,private helper call,"msg = or
 unit\core\test_calibrated_explainer_helpers.py,121,private helper call,"assert orch._check_metadata(meta_valid, identifier=""id"", mode=""factual"") is None"
 unit\core\test_calibrated_explainer_lime.py,41,private helper call,"return _StubLimeExplanation(weights, proba)"
 unit\core\test_calibrated_explainer_lime.py,87,private helper call,explainer.learner = _StubLearner()
-unit\core\test_calibrated_explainer_lime.py,114,private helper call,_register_stub_libraries(monkeypatch)
-unit\core\test_calibrated_explainer_lime.py,115,private helper call,explainer = _make_stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_lime.py,136,private helper call,_register_stub_libraries(monkeypatch)
-unit\core\test_calibrated_explainer_lime.py,138,private helper call,explainer = _make_stub_explainer(explainer_factory)
 unit\core\test_calibrated_explainer_lime.py,140,private helper call,"shap_1, shap_exp_1 = explainer._preload_shap()"
 unit\core\test_calibrated_explainer_lime.py,142,private helper call,assert explainer._is_shap_enabled() is True
 unit\core\test_calibrated_explainer_lime.py,146,private helper call,"shap_2, shap_exp_2 = explainer._preload_shap()"
@@ -654,27 +445,19 @@ unit\core\test_calibrated_explainer_plugin_fallbacks.py,77,private helper call,e
 unit\core\test_calibrated_explainer_plugin_fallbacks.py,78,private helper call,"assert explainer._build_explanation_chain(""factual"") == (""factual"", ""default"")"
 unit\core\test_calibrated_explainer_plugin_fallbacks.py,79,private helper call,"assert explainer._build_interval_chain(fast=True) == (""interval"", True)"
 unit\core\test_calibrated_explainer_plugin_fallbacks.py,80,private helper call,"assert explainer._build_plot_style_chain() == (""plot"",)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,80,private helper call,explainer = _stub_explainer(explainer_factory)
 unit\core\test_calibrated_explainer_runtime_helpers.py,84,private helper call,explainer._require_plugin_manager()
-unit\core\test_calibrated_explainer_runtime_helpers.py,88,private helper call,explainer = _stub_explainer(explainer_factory)
 unit\core\test_calibrated_explainer_runtime_helpers.py,91,private helper call,"assert explainer._build_explanation_chain(""factual"") == ()"
 unit\core\test_calibrated_explainer_runtime_helpers.py,92,private helper call,assert explainer._build_interval_chain(fast=False) == ()
 unit\core\test_calibrated_explainer_runtime_helpers.py,93,private helper call,assert explainer._build_plot_style_chain() == ()
-unit\core\test_calibrated_explainer_runtime_helpers.py,97,private helper call,explainer = _stub_explainer(explainer_factory)
 unit\core\test_calibrated_explainer_runtime_helpers.py,110,private helper call,"assert explainer._build_instance_telemetry_payload(""payload"") is sentinel"
-unit\core\test_calibrated_explainer_runtime_helpers.py,139,private helper call,explainer = _stub_explainer(explainer_factory)
 unit\core\test_calibrated_explainer_runtime_helpers.py,148,private helper call,"assert explainer._build_instance_telemetry_payload(""payload"") == (""payload"", sentinel)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,152,private helper call,explainer = _stub_explainer(explainer_factory)
 unit\core\test_calibrated_explainer_runtime_helpers.py,193,private helper call,monitor = _PredictBridgeMonitor(bridge)
-unit\core\test_calibrated_explainer_runtime_helpers.py,209,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,241,private helper call,"explainer = _stub_explainer(explainer_factory, mode=""classification"")"
 unit\core\test_calibrated_explainer_runtime_helpers.py,244,private helper call,"explainer._check_explanation_runtime_metadata(None, identifier=""missing"", mode=""factual"")"
 unit\core\test_calibrated_explainer_runtime_helpers.py,260,private helper call,"assert ""unsupported"" in explainer._check_explanation_runtime_metadata("
 unit\core\test_calibrated_explainer_runtime_helpers.py,265,private helper call,"assert ""missing tasks"" in explainer._check_explanation_runtime_metadata("
 unit\core\test_calibrated_explainer_runtime_helpers.py,270,private helper call,"assert ""does not declare mode"" in explainer._check_explanation_runtime_metadata("
 unit\core\test_calibrated_explainer_runtime_helpers.py,275,private helper call,message = explainer._check_explanation_runtime_metadata(
 unit\core\test_calibrated_explainer_runtime_helpers.py,282,private helper call,"explainer._check_explanation_runtime_metadata(ok, identifier=""id"", mode=""factual"") is None"
-unit\core\test_calibrated_explainer_runtime_helpers.py,287,private helper call,"explainer = _stub_explainer(explainer_factory, mode=""regression"")"
 unit\core\test_calibrated_explainer_runtime_helpers.py,290,private helper call,"explainer._check_interval_runtime_metadata(None, identifier=""missing"", fast=False)"
 unit\core\test_calibrated_explainer_runtime_helpers.py,302,private helper call,"assert ""unsupported interval schema_version"" in explainer._check_interval_runtime_metadata("
 unit\core\test_calibrated_explainer_runtime_helpers.py,308,private helper call,"assert ""missing modes declaration"" in explainer._check_interval_runtime_metadata("
@@ -683,51 +466,30 @@ unit\core\test_calibrated_explainer_runtime_helpers.py,318,private helper call,"
 unit\core\test_calibrated_explainer_runtime_helpers.py,323,private helper call,"assert ""not marked fast_compatible"" in explainer._check_interval_runtime_metadata("
 unit\core\test_calibrated_explainer_runtime_helpers.py,328,private helper call,"assert ""requires bins"" in explainer._check_interval_runtime_metadata("
 unit\core\test_calibrated_explainer_runtime_helpers.py,333,private helper call,"assert explainer._check_interval_runtime_metadata(base, identifier=""id"", fast=True) is None"
-unit\core\test_calibrated_explainer_runtime_helpers.py,337,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,370,private helper call,explainer = _stub_explainer(explainer_factory)
 unit\core\test_calibrated_explainer_runtime_helpers.py,415,private helper call,explainer._CalibratedExplainer__initialize_interval_learner_for_fast_explainer()
-unit\core\test_calibrated_explainer_runtime_helpers.py,576,private helper call,explainer._ensure_interval_runtime_state()
-unit\core\test_calibrated_explainer_runtime_helpers.py,604,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,613,private helper call,assert explainer._instantiate_plugin(callable_with_meta) is callable_with_meta
-unit\core\test_calibrated_explainer_runtime_helpers.py,620,private helper call,clone = explainer._instantiate_plugin(prototype)
-unit\core\test_calibrated_explainer_runtime_helpers.py,634,private helper call,assert explainer._instantiate_plugin(broken) is sentinel
-unit\core\test_calibrated_explainer_runtime_helpers.py,641,private helper call,assert explainer._instantiate_plugin(broken) is broken
-unit\core\test_calibrated_explainer_runtime_helpers.py,686,private helper call,"explainer = _stub_explainer(explainer_factory, mode=""regression"")"
-unit\core\test_calibrated_explainer_runtime_helpers.py,721,private helper call,"plugin, identifier = explainer._resolve_interval_plugin(fast=False)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,728,private helper call,"explainer = _stub_explainer(explainer_factory, mode=""regression"")"
-unit\core\test_calibrated_explainer_runtime_helpers.py,740,private helper call,explainer._resolve_interval_plugin(fast=False)
-unit\core\test_calibrated_explainer_runtime_helpers.py,746,private helper call,"explainer = _stub_explainer(explainer_factory, mode=""regression"")"
-unit\core\test_calibrated_explainer_runtime_helpers.py,757,private helper call,"context = explainer._build_interval_context(fast=False, metadata={""extra"": 2})"
-unit\core\test_calibrated_explainer_runtime_helpers.py,774,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,782,private helper call,"counts, numeric = explainer._get_calibration_summaries()"
-unit\core\test_calibrated_explainer_runtime_helpers.py,788,private helper call,"counts_cached, numeric_cached = explainer._get_calibration_summaries()"
-unit\core\test_calibrated_explainer_runtime_helpers.py,803,private helper call,"explainer = _stub_explainer(explainer_factory, mode=""regression"")"
-unit\core\test_calibrated_explainer_runtime_helpers.py,806,private helper call,explainer.interval_learner = _RaisingInterval()
-unit\core\test_calibrated_explainer_runtime_helpers.py,812,private helper call,"predict, low, high, classes = explainer._predict_impl(x)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,820,private helper call,"predict_t, low_t, high_t, classes_t = explainer._predict_impl(x, threshold=threshold)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,832,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,843,private helper call,"assert explainer._infer_explanation_mode() == ""alternative"""
-unit\core\test_calibrated_explainer_runtime_helpers.py,850,private helper call,"explainer = _stub_explainer(explainer_factory, mode=""regression"")"
-unit\core\test_calibrated_explainer_runtime_helpers.py,861,private helper call,"assert explainer._infer_explanation_mode() == ""alternative"""
-unit\core\test_calibrated_explainer_runtime_helpers.py,866,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,867,private helper call,"assert explainer._infer_explanation_mode() == ""factual"""
-unit\core\test_calibrated_explainer_runtime_helpers.py,872,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,883,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,892,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,905,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,918,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,931,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,939,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,947,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,964,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,980,private helper call,explainer = _stub_explainer(explainer_factory)
-unit\core\test_calibrated_explainer_runtime_helpers.py,1055,private helper call,"explainer._CalibratedExplainer__set_mode(""classification"", initialize=False)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,1059,private helper call,"explainer._CalibratedExplainer__set_mode(""regression"", initialize=False)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,1063,private helper call,"explainer._CalibratedExplainer__set_mode(""unknown"", initialize=False)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,1119,private helper call,"explainer._CalibratedExplainer__set_mode(""regression"", initialize=False)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,1122,private helper call,"_ListInterval(proba=np.array([0.2, 0.4]), low=np.zeros(2), high=np.ones(2))"
-unit\core\test_calibrated_explainer_runtime_helpers.py,1127,private helper call,"explainer._CalibratedExplainer__set_mode(""classification"", initialize=False)"
-unit\core\test_calibrated_explainer_runtime_helpers.py,1130,private helper call,explainer.interval_learner = _ListInterval(
+unit\core\test_calibrated_explainer_runtime_helpers.py,581,private helper call,explainer._ensure_interval_runtime_state()
+unit\core\test_calibrated_explainer_runtime_helpers.py,618,private helper call,assert explainer._instantiate_plugin(callable_with_meta) is callable_with_meta
+unit\core\test_calibrated_explainer_runtime_helpers.py,625,private helper call,clone = explainer._instantiate_plugin(prototype)
+unit\core\test_calibrated_explainer_runtime_helpers.py,639,private helper call,assert explainer._instantiate_plugin(broken) is sentinel
+unit\core\test_calibrated_explainer_runtime_helpers.py,646,private helper call,assert explainer._instantiate_plugin(broken) is broken
+unit\core\test_calibrated_explainer_runtime_helpers.py,726,private helper call,"plugin, identifier = explainer._resolve_interval_plugin(fast=False)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,745,private helper call,explainer._resolve_interval_plugin(fast=False)
+unit\core\test_calibrated_explainer_runtime_helpers.py,762,private helper call,"context = explainer._build_interval_context(fast=False, metadata={""extra"": 2})"
+unit\core\test_calibrated_explainer_runtime_helpers.py,787,private helper call,"counts, numeric = explainer._get_calibration_summaries()"
+unit\core\test_calibrated_explainer_runtime_helpers.py,793,private helper call,"counts_cached, numeric_cached = explainer._get_calibration_summaries()"
+unit\core\test_calibrated_explainer_runtime_helpers.py,811,private helper call,explainer.interval_learner = _RaisingInterval()
+unit\core\test_calibrated_explainer_runtime_helpers.py,817,private helper call,"predict, low, high, classes = explainer._predict_impl(x)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,825,private helper call,"predict_t, low_t, high_t, classes_t = explainer._predict_impl(x, threshold=threshold)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,848,private helper call,"assert explainer._infer_explanation_mode() == ""alternative"""
+unit\core\test_calibrated_explainer_runtime_helpers.py,866,private helper call,"assert explainer._infer_explanation_mode() == ""alternative"""
+unit\core\test_calibrated_explainer_runtime_helpers.py,872,private helper call,"assert explainer._infer_explanation_mode() == ""factual"""
+unit\core\test_calibrated_explainer_runtime_helpers.py,1060,private helper call,"explainer._CalibratedExplainer__set_mode(""classification"", initialize=False)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,1064,private helper call,"explainer._CalibratedExplainer__set_mode(""regression"", initialize=False)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,1068,private helper call,"explainer._CalibratedExplainer__set_mode(""unknown"", initialize=False)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,1124,private helper call,"explainer._CalibratedExplainer__set_mode(""regression"", initialize=False)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,1127,private helper call,"_ListInterval(proba=np.array([0.2, 0.4]), low=np.zeros(2), high=np.ones(2))"
+unit\core\test_calibrated_explainer_runtime_helpers.py,1132,private helper call,"explainer._CalibratedExplainer__set_mode(""classification"", initialize=False)"
+unit\core\test_calibrated_explainer_runtime_helpers.py,1135,private helper call,explainer.interval_learner = _ListInterval(
 unit\core\test_domain_model_adapters.py,71,private helper call,"_make_legacy_payload_zero_rules(),"
 unit\core\test_domain_model_adapters.py,72,private helper call,"_make_legacy_payload_two_rules(),"
 unit\core\test_domain_model_adapters.py,108,private helper call,_make_feature_rule(
@@ -738,69 +500,39 @@ unit\core\test_explain_legacy_equivalence.py,96,private helper call,"x_train, y_
 unit\core\test_explain_legacy_equivalence.py,115,private helper call,"_assert_collection_equal(modern, legacy)"
 unit\core\test_fast_units.py,61,private helper call,p = _FakePlugin()
 unit\core\test_instance_parallel.py,21,private helper call,"x_cal, y_cal, x_test = _make_dataset()"
-unit\core\test_interval_regressor.py,171,private helper call,regressor = _make_regressor(monkeypatch)
 unit\core\test_interval_regressor.py,175,private helper call,"regressor._append_calibration_buffer(""y_cal_hat"", np.arange(1, 6, dtype=float).reshape(-1, 1))"
 unit\core\test_interval_regressor.py,183,private helper call,"regressor._append_bins(np.array([[9], [8]]))"
-unit\core\test_interval_regressor.py,189,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,206,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,215,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,230,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,245,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,253,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,283,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,316,private helper call,"regressor = _make_regressor(monkeypatch, bins=calibration_bins)"
-unit\core\test_interval_regressor.py,358,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,367,private helper call,"regressor = _make_regressor(monkeypatch, bins=calibration_bins)"
-unit\core\test_interval_regressor.py,375,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,387,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,399,private helper call,"regressor = _make_regressor(monkeypatch, bins=base_bins)"
-unit\core\test_interval_regressor.py,415,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,446,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,458,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,472,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,480,private helper call,"regressor = _make_regressor(monkeypatch, bins=base_bins)"
-unit\core\test_interval_regressor.py,508,private helper call,"regressor = _make_regressor(monkeypatch, bins=np.array([0, 1, 0, 1]))"
 unit\core\test_interval_regressor.py,512,private helper call,"regressor._append_calibration_buffer(""y_cal_hat"", np.array([]))"
 unit\core\test_interval_regressor.py,521,private helper call,regressor._append_bins(np.array([]))
-unit\core\test_interval_regressor.py,528,private helper call,regressor = _make_regressor(monkeypatch)
 unit\core\test_interval_regressor.py,531,private helper call,"regressor._append_calibration_buffer(""y_cal_hat"", appended_calibration)"
 unit\core\test_interval_regressor.py,537,private helper call,"regressor._append_bins(np.array([[2], [3]]))"
 unit\core\test_interval_regressor.py,538,private helper call,"regressor._append_bins(np.array([[4], [5], [6]]))"
-unit\core\test_interval_regressor.py,545,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,553,private helper call,"regressor = _make_regressor(monkeypatch, bins=base_bins)"
-unit\core\test_interval_regressor.py,571,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,598,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,605,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,642,private helper call,"regressor = _make_regressor(monkeypatch, bins=None)"
 unit\core\test_interval_regressor.py,644,private helper call,"regressor._append_bins(np.array([[1], [2]]))"
-unit\core\test_interval_regressor.py,652,private helper call,regressor = _make_regressor(monkeypatch)
 unit\core\test_interval_regressor.py,655,private helper call,"grown = regressor._ensure_capacity(original, size=1, additional=2)"
-unit\core\test_interval_regressor.py,662,private helper call,regressor = _make_regressor(monkeypatch)
-unit\core\test_interval_regressor.py,677,private helper call,regressor = _make_regressor(monkeypatch)
 unit\core\test_perturbation.py,75,private helper call,rng = _TrackingPermutationRng()
 unit\core\test_perturbation.py,85,private helper call,rng = _IdentityPermutationRng()
 unit\core\test_perturbation.py,94,private helper call,rng = _IdentityPermutationRng()
 unit\core\test_perturbation.py,144,private helper call,rng = _DeterministicUniformRng()
 unit\core\test_perturbation.py,223,private helper call,rng = _RecordingGaussianRng()
-unit\core\test_plugins_registry.py,316,private helper call,plugin = _make_entry_plugin()
-unit\core\test_plugins_registry.py,317,private helper call,fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
-unit\core\test_plugins_registry.py,317,private helper call,fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
-unit\core\test_plugins_registry.py,337,private helper call,plugin = _make_entry_plugin()
-unit\core\test_plugins_registry.py,338,private helper call,fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
-unit\core\test_plugins_registry.py,338,private helper call,fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
-unit\core\test_plugins_registry.py,590,private helper call,"registry._verify_plugin_checksum(plugin, dict(meta))"
-unit\core\test_plugins_registry.py,593,private helper call,"registry._verify_plugin_checksum(plugin, dict(meta_string))"
-unit\core\test_plugins_registry.py,597,private helper call,"registry._verify_plugin_checksum(plugin, bad_meta)"
-unit\core\test_plugins_registry.py,607,private helper call,"registry._verify_plugin_checksum(object(), meta_missing)"
-unit\core\test_plugins_registry.py,610,private helper call,"registry._verify_plugin_checksum(plugin, {""checksum"": 123, ""name"": ""bad""})"
-unit\core\test_plugins_registry.py,836,private helper call,assert registry._normalise_trust(meta_mapping) is True
-unit\core\test_plugins_registry.py,838,private helper call,names = registry._env_trusted_names()
-unit\core\test_plugins_registry.py,842,private helper call,"assert registry._env_trusted_names() == {""auto_plugin""}"
-unit\core\test_plugins_registry.py,845,private helper call,assert registry._should_trust(meta_env) is True
-unit\core\test_plugins_registry.py,849,private helper call,"registry._warn_untrusted_plugin(meta_untrusted, source=""entry"")"
-unit\core\test_plugins_registry.py,852,private helper call,"registry._warn_untrusted_plugin(meta_untrusted, source=""entry"")"
-unit\core\test_plugins_registry.py,905,private helper call,return self._loader()
-unit\core\test_plugins_registry.py,918,private helper call,"entry_points = _FakeEntryPoints([failing, no_meta, invalid, untrusted, trusted, attr_entry])"
+unit\core\test_plugins_registry.py,321,private helper call,plugin = _make_entry_plugin()
+unit\core\test_plugins_registry.py,322,private helper call,fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+unit\core\test_plugins_registry.py,322,private helper call,fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+unit\core\test_plugins_registry.py,342,private helper call,plugin = _make_entry_plugin()
+unit\core\test_plugins_registry.py,343,private helper call,fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+unit\core\test_plugins_registry.py,343,private helper call,fake_entries = _FakeEntryPoints([_FakeEntryPoint(plugin)])
+unit\core\test_plugins_registry.py,599,private helper call,"registry._verify_plugin_checksum(plugin, dict(meta))"
+unit\core\test_plugins_registry.py,602,private helper call,"registry._verify_plugin_checksum(plugin, dict(meta_string))"
+unit\core\test_plugins_registry.py,606,private helper call,"registry._verify_plugin_checksum(plugin, bad_meta)"
+unit\core\test_plugins_registry.py,616,private helper call,"registry._verify_plugin_checksum(object(), meta_missing)"
+unit\core\test_plugins_registry.py,619,private helper call,"registry._verify_plugin_checksum(plugin, {""checksum"": 123, ""name"": ""bad""})"
+unit\core\test_plugins_registry.py,864,private helper call,assert registry._normalise_trust(meta_mapping) is True
+unit\core\test_plugins_registry.py,866,private helper call,names = registry._env_trusted_names()
+unit\core\test_plugins_registry.py,870,private helper call,"assert registry._env_trusted_names() == {""auto_plugin""}"
+unit\core\test_plugins_registry.py,873,private helper call,assert registry._should_trust(meta_env) is True
+unit\core\test_plugins_registry.py,877,private helper call,"registry._warn_untrusted_plugin(meta_untrusted, source=""entry"")"
+unit\core\test_plugins_registry.py,880,private helper call,"registry._warn_untrusted_plugin(meta_untrusted, source=""entry"")"
+unit\core\test_plugins_registry.py,933,private helper call,return self._loader()
+unit\core\test_plugins_registry.py,946,private helper call,"entry_points = _FakeEntryPoints([failing, no_meta, invalid, untrusted, trusted, attr_entry])"
 unit\core\test_plugins_registry_additional.py,28,private helper call,"assert registry._normalise_trust({""trust"": {""trusted"": ""yes""}})"
 unit\core\test_plugins_registry_additional.py,29,private helper call,"assert registry._normalise_trust({""trust"": {""default"": ""1""}})"
 unit\core\test_plugins_registry_additional.py,33,private helper call,first = registry._env_trusted_names()
@@ -868,14 +600,6 @@ unit\core\test_plugins_registry_checksum.py,65,private helper call,module_name =
 unit\core\test_plugins_registry_checksum.py,90,private helper call,module_name = _write_checksum_plugin(tmp_path)
 unit\core\test_prediction_helpers.py,71,private helper call,self.interval_learner = self._build_interval_learner()
 unit\core\test_prediction_helpers.py,90,private helper call,learner = _Learner(as_list=self._fast)
-unit\core\test_prediction_helpers.py,125,private helper call,explainer = _StubExplainer(num_features=3)
-unit\core\test_prediction_helpers.py,135,private helper call,explainer = _StubExplainer(num_features=4)
-unit\core\test_prediction_helpers.py,143,private helper call,explainer = _StubExplainer(mondrian=True)
-unit\core\test_prediction_helpers.py,168,private helper call,explainer = _StubExplainer(mondrian=True)
-unit\core\test_prediction_helpers.py,191,private helper call,"explainer = _StubExplainer(mode=""classification"")"
-unit\core\test_prediction_helpers.py,214,private helper call,"explainer = _StubExplainer(mode=""regression"")"
-unit\core\test_prediction_helpers.py,249,private helper call,"explainer = _StubExplainer(mode=""regression"")"
-unit\core\test_prediction_helpers.py,273,private helper call,explainer = _StubExplainer(multiclass=False)
 unit\core\test_utils_helper.py,117,private helper call,helper.check_is_fitted(_BadEstimator())
 unit\core\test_venn_abers.py,68,private helper call,learner = _DummyLearner(
 unit\core\test_venn_abers.py,77,private helper call,"difficulty = _DifficultyEstimator(np.array([0.2, 0.5, 0.7]))"
@@ -884,59 +608,60 @@ unit\core\test_venn_abers.py,148,private helper call,"learner = _DummyLearner(np
 unit\core\test_venn_abers.py,172,private helper call,"learner = _DummyLearner(np.array([[0.6, 0.4], [0.35, 0.65], [0.45, 0.55]]))"
 unit\core\test_venn_abers.py,202,private helper call,"difficulty = _DifficultyEstimator(np.array([0.3, 0.6, 0.2]))"
 unit\core\test_venn_abers.py,207,private helper call,"learner=_DummyLearner(np.array([[0.6, 0.4], [0.4, 0.6]])),"
-unit\core\test_wrap_explainer_helpers.py,70,private helper call,return WrapCalibratedExplainer(_PredictOnlyLearner())
-unit\core\test_wrap_explainer_helpers.py,76,private helper call,"filtered = wrapper._normalize_public_kwargs(payload, allowed={""threshold""})"
-unit\core\test_wrap_explainer_helpers.py,83,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""auto"""
-unit\core\test_wrap_explainer_helpers.py,85,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""true"""
-unit\core\test_wrap_explainer_helpers.py,87,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""false"""
-unit\core\test_wrap_explainer_helpers.py,89,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""auto"""
-unit\core\test_wrap_explainer_helpers.py,102,private helper call,"""array_like"": _BadToList(),"
-unit\core\test_wrap_explainer_helpers.py,104,private helper call,serialised = wrapper._serialise_preprocessor_value(payload)
-unit\core\test_wrap_explainer_helpers.py,113,private helper call,preprocessor = _RecordingPreprocessor()
-unit\core\test_wrap_explainer_helpers.py,114,private helper call,snapshot = wrapper._extract_preprocessor_snapshot(preprocessor)
-unit\core\test_wrap_explainer_helpers.py,127,private helper call,assert wrapper._build_preprocessor_metadata() is None
-unit\core\test_wrap_explainer_helpers.py,129,private helper call,wrapper._preprocessor = _RecordingPreprocessor()
-unit\core\test_wrap_explainer_helpers.py,131,private helper call,metadata = wrapper._build_preprocessor_metadata()
-unit\core\test_wrap_explainer_helpers.py,139,private helper call,preprocessor = _RecordingPreprocessor()
-unit\core\test_wrap_explainer_helpers.py,143,private helper call,x_fit = wrapper._pre_fit_preprocess(x)
-unit\core\test_wrap_explainer_helpers.py,147,private helper call,x_transformed = wrapper._pre_transform(x)
-unit\core\test_wrap_explainer_helpers.py,151,private helper call,x_inference = wrapper._maybe_preprocess_for_inference(x)
-unit\core\test_wrap_explainer_helpers.py,163,private helper call,wrapper._preprocessor = _FailingPreprocessor()
-unit\core\test_wrap_explainer_helpers.py,165,private helper call,x_fit = wrapper._pre_fit_preprocess(x)
-unit\core\test_wrap_explainer_helpers.py,169,private helper call,x_pred = wrapper._pre_transform(x)
-unit\core\test_wrap_explainer_helpers.py,174,private helper call,recorder = _ExplainerRecorder()
-unit\core\test_wrap_explainer_helpers.py,178,private helper call,wrapper.learner = _PredictProbaLearner()
-unit\core\test_wrap_explainer_helpers.py,180,private helper call,wrapper._finalize_fit(reinitialize=True)
-unit\core\test_wrap_explainer_helpers.py,189,private helper call,"assert wrapper._format_proba_output(matrix, False) is matrix"
-unit\core\test_wrap_explainer_helpers.py,192,private helper call,"result_multi = wrapper._format_proba_output(multi, True)"
-unit\core\test_wrap_explainer_helpers.py,197,private helper call,"_, intervals = wrapper._format_proba_output(binary, True)"
-unit\core\test_wrap_explainer_helpers.py,201,private helper call,"_, fallback = wrapper._format_proba_output(vector, True)"
-unit\core\test_wrap_explainer_helpers.py,234,private helper call,"model=_PredictOnlyLearner(),"
-unit\core\test_wrap_explainer_helpers.py,242,private helper call,wrapper = WrapCalibratedExplainer._from_config(cfg)
-unit\core\test_wrap_explainer_helpers.py,285,private helper call,wrapper.explainer = _RecordingExplainer()
-unit\core\test_wrap_explainer_helpers.py,303,private helper call,wrapper = WrapCalibratedExplainer(_PredictProbaLearner())
-unit\core\test_wrap_explainer_helpers.py,321,private helper call,wrapper.explainer = _Recorder()
-unit\core\test_wrap_explainer_helpers.py,337,private helper call,"model=_PredictOnlyLearner(),"
-unit\core\test_wrap_explainer_helpers.py,343,private helper call,"_perf_factory=_PerfFactory(),"
-unit\core\test_wrap_explainer_helpers.py,345,private helper call,wrapper = WrapCalibratedExplainer._from_config(cfg)
-unit\core\test_wrap_explainer_helpers.py,359,private helper call,wrapper.explainer = _PlotRecorder()
-unit\core\test_wrap_explainer_helpers.py,374,private helper call,assert wrapper._serialise_preprocessor_value(None) is None
-unit\core\test_wrap_explainer_helpers.py,379,private helper call,custom = _Custom()
-unit\core\test_wrap_explainer_helpers.py,380,private helper call,assert wrapper._serialise_preprocessor_value(custom) == str(custom)
-unit\core\test_wrap_explainer_helpers.py,389,private helper call,assert wrapper._pre_fit_preprocess(data) is data
-unit\core\test_wrap_explainer_helpers.py,403,private helper call,preprocessor = _TwoStep()
-unit\core\test_wrap_explainer_helpers.py,407,private helper call,transformed = wrapper._pre_fit_preprocess(data)
-unit\core\test_wrap_keyword_defaults.py,49,private helper call,"model=_DummyModel(), threshold=threshold, low_high_percentiles=percentiles"
-unit\core\test_wrap_keyword_defaults.py,51,private helper call,wrapper = WrapCalibratedExplainer._from_config(cfg)
-unit\core\test_wrap_keyword_defaults.py,52,private helper call,recorder = _RecordingExplainer()
-unit\core\test_wrap_keyword_defaults.py,61,private helper call,"wrapper, recorder = _configured_wrapper(threshold=0.42, percentiles=(10, 90))"
-unit\core\test_wrap_keyword_defaults.py,75,private helper call,"wrapper, recorder = _configured_wrapper(threshold=0.15, percentiles=(5, 95))"
-unit\core\test_wrap_keyword_defaults.py,90,private helper call,"wrapper, recorder = _configured_wrapper(threshold=0.33, percentiles=(20, 80))"
-unit\explanations\test_calibrated_explanations.py,134,private helper call,explainer = _DummyOriginalExplainer(
-unit\explanations\test_calibrated_explanations.py,142,private helper call,"_DummyExplanation(0, 0.1, probabilities=np.array([0.9, 0.1]), interval=(0.0, 0.2)),"
-unit\explanations\test_calibrated_explanations.py,143,private helper call,"_DummyExplanation(1, 0.2, probabilities=np.array([0.8, 0.2]), interval=(0.1, 0.3)),"
-unit\explanations\test_calibrated_explanations.py,144,private helper call,"_DummyExplanation(2, 0.3, probabilities=np.array([0.7, 0.3]), interval=(0.2, 0.4)),"
-unit\explanations\test_calibrated_explanations.py,203,private helper call,assert collection._is_one_sided()
+unit\core\test_wrap_explainer_helpers.py,71,private helper call,return WrapCalibratedExplainer(_PredictOnlyLearner())
+unit\core\test_wrap_explainer_helpers.py,78,private helper call,"wrapper._normalize_public_kwargs(payload, allowed={""threshold""})"
+unit\core\test_wrap_explainer_helpers.py,81,private helper call,"filtered = wrapper._normalize_public_kwargs(payload, allowed={""threshold""})"
+unit\core\test_wrap_explainer_helpers.py,88,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""auto"""
+unit\core\test_wrap_explainer_helpers.py,90,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""true"""
+unit\core\test_wrap_explainer_helpers.py,92,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""false"""
+unit\core\test_wrap_explainer_helpers.py,94,private helper call,"assert wrapper._normalize_auto_encode_flag() == ""auto"""
+unit\core\test_wrap_explainer_helpers.py,107,private helper call,"""array_like"": _BadToList(),"
+unit\core\test_wrap_explainer_helpers.py,109,private helper call,serialised = wrapper._serialise_preprocessor_value(payload)
+unit\core\test_wrap_explainer_helpers.py,118,private helper call,preprocessor = _RecordingPreprocessor()
+unit\core\test_wrap_explainer_helpers.py,119,private helper call,snapshot = wrapper._extract_preprocessor_snapshot(preprocessor)
+unit\core\test_wrap_explainer_helpers.py,132,private helper call,assert wrapper._build_preprocessor_metadata() is None
+unit\core\test_wrap_explainer_helpers.py,134,private helper call,wrapper._preprocessor = _RecordingPreprocessor()
+unit\core\test_wrap_explainer_helpers.py,136,private helper call,metadata = wrapper._build_preprocessor_metadata()
+unit\core\test_wrap_explainer_helpers.py,144,private helper call,preprocessor = _RecordingPreprocessor()
+unit\core\test_wrap_explainer_helpers.py,148,private helper call,x_fit = wrapper._pre_fit_preprocess(x)
+unit\core\test_wrap_explainer_helpers.py,152,private helper call,x_transformed = wrapper._pre_transform(x)
+unit\core\test_wrap_explainer_helpers.py,156,private helper call,x_inference = wrapper._maybe_preprocess_for_inference(x)
+unit\core\test_wrap_explainer_helpers.py,168,private helper call,wrapper._preprocessor = _FailingPreprocessor()
+unit\core\test_wrap_explainer_helpers.py,170,private helper call,x_fit = wrapper._pre_fit_preprocess(x)
+unit\core\test_wrap_explainer_helpers.py,174,private helper call,x_pred = wrapper._pre_transform(x)
+unit\core\test_wrap_explainer_helpers.py,179,private helper call,recorder = _ExplainerRecorder()
+unit\core\test_wrap_explainer_helpers.py,183,private helper call,wrapper.learner = _PredictProbaLearner()
+unit\core\test_wrap_explainer_helpers.py,185,private helper call,wrapper._finalize_fit(reinitialize=True)
+unit\core\test_wrap_explainer_helpers.py,194,private helper call,"assert wrapper._format_proba_output(matrix, False) is matrix"
+unit\core\test_wrap_explainer_helpers.py,197,private helper call,"result_multi = wrapper._format_proba_output(multi, True)"
+unit\core\test_wrap_explainer_helpers.py,202,private helper call,"_, intervals = wrapper._format_proba_output(binary, True)"
+unit\core\test_wrap_explainer_helpers.py,206,private helper call,"_, fallback = wrapper._format_proba_output(vector, True)"
+unit\core\test_wrap_explainer_helpers.py,239,private helper call,"model=_PredictOnlyLearner(),"
+unit\core\test_wrap_explainer_helpers.py,247,private helper call,wrapper = WrapCalibratedExplainer._from_config(cfg)
+unit\core\test_wrap_explainer_helpers.py,290,private helper call,wrapper.explainer = _RecordingExplainer()
+unit\core\test_wrap_explainer_helpers.py,308,private helper call,wrapper = WrapCalibratedExplainer(_PredictProbaLearner())
+unit\core\test_wrap_explainer_helpers.py,326,private helper call,wrapper.explainer = _Recorder()
+unit\core\test_wrap_explainer_helpers.py,342,private helper call,"model=_PredictOnlyLearner(),"
+unit\core\test_wrap_explainer_helpers.py,348,private helper call,"_perf_factory=_PerfFactory(),"
+unit\core\test_wrap_explainer_helpers.py,350,private helper call,wrapper = WrapCalibratedExplainer._from_config(cfg)
+unit\core\test_wrap_explainer_helpers.py,364,private helper call,wrapper.explainer = _PlotRecorder()
+unit\core\test_wrap_explainer_helpers.py,379,private helper call,assert wrapper._serialise_preprocessor_value(None) is None
+unit\core\test_wrap_explainer_helpers.py,384,private helper call,custom = _Custom()
+unit\core\test_wrap_explainer_helpers.py,385,private helper call,assert wrapper._serialise_preprocessor_value(custom) == str(custom)
+unit\core\test_wrap_explainer_helpers.py,394,private helper call,assert wrapper._pre_fit_preprocess(data) is data
+unit\core\test_wrap_explainer_helpers.py,408,private helper call,preprocessor = _TwoStep()
+unit\core\test_wrap_explainer_helpers.py,412,private helper call,transformed = wrapper._pre_fit_preprocess(data)
+unit\core\test_wrap_keyword_defaults.py,50,private helper call,"model=_DummyModel(), threshold=threshold, low_high_percentiles=percentiles"
+unit\core\test_wrap_keyword_defaults.py,52,private helper call,wrapper = WrapCalibratedExplainer._from_config(cfg)
+unit\core\test_wrap_keyword_defaults.py,53,private helper call,recorder = _RecordingExplainer()
+unit\core\test_wrap_keyword_defaults.py,62,private helper call,"wrapper, recorder = _configured_wrapper(threshold=0.42, percentiles=(10, 90))"
+unit\core\test_wrap_keyword_defaults.py,76,private helper call,"wrapper, recorder = _configured_wrapper(threshold=0.15, percentiles=(5, 95))"
+unit\core\test_wrap_keyword_defaults.py,95,private helper call,"wrapper, recorder = _configured_wrapper(threshold=0.33, percentiles=(20, 80))"
+unit\explanations\test_calibrated_explanations.py,135,private helper call,explainer = _DummyOriginalExplainer(
+unit\explanations\test_calibrated_explanations.py,143,private helper call,"_DummyExplanation(0, 0.1, probabilities=np.array([0.9, 0.1]), interval=(0.0, 0.2)),"
+unit\explanations\test_calibrated_explanations.py,144,private helper call,"_DummyExplanation(1, 0.2, probabilities=np.array([0.8, 0.2]), interval=(0.1, 0.3)),"
+unit\explanations\test_calibrated_explanations.py,145,private helper call,"_DummyExplanation(2, 0.3, probabilities=np.array([0.7, 0.3]), interval=(0.2, 0.4)),"
+unit\explanations\test_calibrated_explanations.py,204,private helper call,assert collection._is_one_sided()
 unit\explanations\test_explanation_helpers.py,77,private helper call,assert CalibratedExplanation._to_python_number(np.int32(3)) == 3
 unit\explanations\test_explanation_helpers.py,78,private helper call,assert CalibratedExplanation._to_python_number(np.float64(2.5)) == 2.5
 unit\explanations\test_explanation_helpers.py,80,private helper call,"assert CalibratedExplanation._to_python_number(np.array([1, 2])) == [1, 2]"
@@ -1017,8 +742,6 @@ unit\explanations\test_explanation_helpers.py,661,private helper call,conditions
 unit\explanations\test_explanation_more.py,45,private helper call,"return ContainerStub(), ContainerStub()._get_explainer()"
 unit\explanations\test_explanation_more.py,112,private helper call,"container, explainer = _make_container_and_explainer()"
 unit\explanations\test_explanation_more.py,180,private helper call,"container, explainer = _make_container_and_explainer()"
-unit\legacy\test_plotting.py,59,private helper call,self.calibrated_explanations = _CalibratedStub(confidence)
-unit\legacy\test_plotting.py,62,private helper call,self._explainer = _InnerExplainer(inner_multiclass)
 unit\legacy\test_plotting.py,105,private helper call,plotting._plot_probabilistic(
 unit\legacy\test_plotting.py,151,private helper call,plotting._plot_probabilistic(
 unit\legacy\test_plotting.py,176,private helper call,plotting._plot_probabilistic(
@@ -1029,14 +752,12 @@ unit\legacy\test_plotting.py,261,private helper call,plotting._plot_probabilisti
 unit\legacy\test_plotting.py,279,private helper call,plotting._plot_probabilistic(
 unit\legacy\test_plotting.py,297,private helper call,plotting._plot_probabilistic(
 unit\legacy\test_plotting.py,319,private helper call,plotting._plot_probabilistic(
-unit\legacy\test_plotting.py,353,private helper call,explainer = _ThresholdWrapper()
 unit\legacy\test_plotting.py,358,private helper call,plotting._plot_global(
 unit\legacy\test_plotting.py,379,private helper call,plotting._plot_regression(
 unit\legacy\test_plotting.py,407,private helper call,plotting._plot_regression(
 unit\legacy\test_plotting.py,428,private helper call,plotting._plot_regression(
 unit\legacy\test_plotting.py,456,private helper call,plotting._plot_probabilistic(
 unit\legacy\test_plotting.py,474,private helper call,plotting._plot_probabilistic(
-unit\legacy\test_plotting.py,509,private helper call,explainer = _NonProbExplainer()
 unit\legacy\test_plotting.py,514,private helper call,plotting._plot_global(
 unit\legacy\test_plotting.py,526,private helper call,plotting._plot_regression(
 unit\legacy\test_plotting.py,548,private helper call,plotting._plot_regression(
@@ -1048,94 +769,44 @@ unit\legacy\test_plotting.py,664,private helper call,plotting._plot_triangular(
 unit\legacy\test_plotting.py,682,private helper call,plotting._plot_triangular(
 unit\legacy\test_plotting.py,705,private helper call,plotting._plot_probabilistic(
 unit\legacy\test_plotting.py,721,private helper call,plotting._plot_regression(
-unit\legacy\test_plotting.py,747,private helper call,self.learner = _Learner()
-unit\legacy\test_plotting.py,757,private helper call,explainer = _Explainer()
 unit\legacy\test_plotting.py,761,private helper call,"plotting._plot_global(explainer, x=np.array([[0.0], [1.0]]), show=True)"
-unit\legacy\test_plotting.py,770,private helper call,self.learner = _Learner()
-unit\legacy\test_plotting.py,781,private helper call,explainer = _Explainer()
 unit\legacy\test_plotting.py,784,private helper call,plotting._plot_global(
-unit\legacy\test_plotting.py,800,private helper call,self.learner = _Learner()
-unit\legacy\test_plotting.py,822,private helper call,self.learner = _Learner()
-unit\legacy\test_plotting.py,838,private helper call,multi_explainer = _MultiExplainer()
 unit\legacy\test_plotting.py,839,private helper call,"plotting._plot_global(multi_explainer, x=np.zeros((3, 1)), show=True)"
 unit\legacy\test_plotting.py,840,private helper call,plotting._plot_global(
-unit\legacy\test_plotting.py,847,private helper call,binary_explainer = _BinaryExplainer()
 unit\legacy\test_plotting.py,848,private helper call,plotting._plot_global(
 unit\legacy\test_plotting.py,865,private helper call,"plotting._plot_global(explainer, x=np.zeros((1, 1)), show=False)"
-unit\legacy\test_plotting.py,887,private helper call,explainer = _PredictOnlyExplainer()
 unit\legacy\test_plotting.py,892,private helper call,plotting._plot_global(
 unit\legacy\test_plotting.py,902,private helper call,plotting._plot_proba_triangle()
 unit\legacy\test_plotting.py,919,private helper call,plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,60,private helper call,self._explainer = _FakeExplainer(is_multiclass_flag=is_multiclass)
-unit\legacy\test_plotting_module.py,61,private helper call,self.calibrated_explanations = _CalibrationEnvelope()
-unit\legacy\test_plotting_module.py,135,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,136,private helper call,"explanation=_FakeExplanation(),"
-unit\legacy\test_plotting_module.py,162,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,163,private helper call,"explanation=_FakeExplanation(),"
-unit\legacy\test_plotting_module.py,190,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,191,private helper call,"explanation=_FakeExplanation(),"
-unit\legacy\test_plotting_module.py,199,private helper call,"path=_string_path(tmp_path),"
-unit\legacy\test_plotting_module.py,217,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,218,private helper call,"explanation=_FakeExplanation(),"
-unit\legacy\test_plotting_module.py,271,private helper call,explanation = _FakeExplanation(
-unit\legacy\test_plotting_module.py,276,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,285,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,294,private helper call,explanation = _FakeExplanation(
-unit\legacy\test_plotting_module.py,300,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,309,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,317,private helper call,explanation = _FakeExplanation(
-unit\legacy\test_plotting_module.py,322,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,331,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,340,private helper call,explanation = _FakeExplanation(
-unit\legacy\test_plotting_module.py,345,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,354,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,384,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,385,private helper call,"explanation=_FakeExplanation(),"
-unit\legacy\test_plotting_module.py,421,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,422,private helper call,"explanation=_FakeExplanation(),"
-unit\legacy\test_plotting_module.py,447,private helper call,"explanation = _FakeExplanation(mode=""regression"")"
-unit\legacy\test_plotting_module.py,455,private helper call,legacy_plotting._plot_regression(
-unit\legacy\test_plotting_module.py,464,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,472,private helper call,legacy_plotting._plot_regression(
-unit\legacy\test_plotting_module.py,481,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,503,private helper call,legacy_plotting._plot_regression(
-unit\legacy\test_plotting_module.py,504,private helper call,"explanation=_FakeExplanation(mode=""regression""),"
-unit\legacy\test_plotting_module.py,523,private helper call,"explanation = _FakeExplanation(mode=""classification"")"
-unit\legacy\test_plotting_module.py,527,private helper call,legacy_plotting._plot_triangular(
-unit\legacy\test_plotting_module.py,535,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,541,private helper call,"regression = _FakeExplanation(mode=""regression"")"
-unit\legacy\test_plotting_module.py,542,private helper call,legacy_plotting._plot_triangular(
-unit\legacy\test_plotting_module.py,550,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,571,private helper call,"explanation = _FakeExplanation(mode=""regression"")"
-unit\legacy\test_plotting_module.py,572,private helper call,legacy_plotting._plot_alternative(
-unit\legacy\test_plotting_module.py,581,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,587,private helper call,thresholded = _FakeExplanation(
-unit\legacy\test_plotting_module.py,594,private helper call,legacy_plotting._plot_alternative(
-unit\legacy\test_plotting_module.py,603,private helper call,"path=_string_path(path),"
-unit\legacy\test_plotting_module.py,615,private helper call,explanation = _FakeExplanation()
-unit\legacy\test_plotting_module.py,620,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,639,private helper call,explanation = _FakeExplanation()
-unit\legacy\test_plotting_module.py,644,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,665,private helper call,explanation = _FakeExplanation()
-unit\legacy\test_plotting_module.py,673,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,693,private helper call,non_prob = _FakeNonProbExplainer()
-unit\legacy\test_plotting_module.py,694,private helper call,legacy_plotting._plot_global(
-unit\legacy\test_plotting_module.py,703,private helper call,"prob = _FakeProbExplainer(classes=(0, 1, 2))"
-unit\legacy\test_plotting_module.py,705,private helper call,legacy_plotting._plot_global(
-unit\legacy\test_plotting_module.py,726,private helper call,"legacy_plotting._plot_global(_FakeNonProbExplainer(), np.zeros((2, 1)), show=False)"
-unit\legacy\test_plotting_module.py,726,private helper call,"legacy_plotting._plot_global(_FakeNonProbExplainer(), np.zeros((2, 1)), show=False)"
-unit\legacy\test_plotting_module.py,754,private helper call,explainer = _ThresholdExplainer()
-unit\legacy\test_plotting_module.py,759,private helper call,legacy_plotting._plot_global(
-unit\legacy\test_plotting_module.py,780,private helper call,explainer = _FakeProbExplainer()
-unit\legacy\test_plotting_module.py,781,private helper call,"legacy_plotting._plot_global(explainer, np.zeros((1, 1)), show=False)"
-unit\legacy\test_plotting_module.py,797,private helper call,explainer = _GuardExplainer()
-unit\legacy\test_plotting_module.py,802,private helper call,legacy_plotting._plot_global(
-unit\legacy\test_plotting_module.py,813,private helper call,legacy_plotting._plot_proba_triangle()
-unit\legacy\test_plotting_module.py,846,private helper call,explanation = _FakeExplanation()
-unit\legacy\test_plotting_module.py,856,private helper call,legacy_plotting._plot_probabilistic(
-unit\legacy\test_plotting_module.py,865,private helper call,"path=_string_path(tmp_path),"
-unit\legacy\test_plotting_module.py,876,private helper call,explanation = _FakeExplanation()
-unit\legacy\test_plotting_module.py,887,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,46,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,73,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,101,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,128,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,187,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,211,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,233,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,256,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,295,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,332,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,366,private helper call,legacy_plotting._plot_regression(
+unit\legacy\test_plotting_module.py,383,private helper call,legacy_plotting._plot_regression(
+unit\legacy\test_plotting_module.py,414,private helper call,legacy_plotting._plot_regression(
+unit\legacy\test_plotting_module.py,438,private helper call,legacy_plotting._plot_triangular(
+unit\legacy\test_plotting_module.py,453,private helper call,legacy_plotting._plot_triangular(
+unit\legacy\test_plotting_module.py,483,private helper call,legacy_plotting._plot_alternative(
+unit\legacy\test_plotting_module.py,505,private helper call,legacy_plotting._plot_alternative(
+unit\legacy\test_plotting_module.py,531,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,555,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,584,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,605,private helper call,legacy_plotting._plot_global(
+unit\legacy\test_plotting_module.py,616,private helper call,legacy_plotting._plot_global(
+unit\legacy\test_plotting_module.py,637,private helper call,"legacy_plotting._plot_global(FakeNonProbExplainer(), np.zeros((2, 1)), show=False)"
+unit\legacy\test_plotting_module.py,670,private helper call,legacy_plotting._plot_global(
+unit\legacy\test_plotting_module.py,692,private helper call,"legacy_plotting._plot_global(explainer, np.zeros((1, 1)), show=False)"
+unit\legacy\test_plotting_module.py,713,private helper call,legacy_plotting._plot_global(
+unit\legacy\test_plotting_module.py,724,private helper call,legacy_plotting._plot_proba_triangle()
+unit\legacy\test_plotting_module.py,767,private helper call,legacy_plotting._plot_probabilistic(
+unit\legacy\test_plotting_module.py,798,private helper call,legacy_plotting._plot_probabilistic(
 unit\perf\test_cache.py,118,private helper call,assert _default_size_estimator(array) == array.nbytes
 unit\perf\test_cache.py,131,private helper call,assert _default_size_estimator(shim) == expected
 unit\perf\test_cache.py,136,private helper call,assert _default_size_estimator(Opaque()) == 256
@@ -1163,8 +834,6 @@ unit\perf\test_parallel.py,281,private helper call,"assert executor._joblib_stra
 unit\perf\test_parallel.py,302,private helper call,"result = executor._joblib_strategy(echo, [1, 2, 3])"
 unit\perf\test_parallel.py,314,private helper call,"executor._emit(""test"", {""value"": 1})"
 unit\perf\test_parallel.py,322,private helper call,"executor._emit(""test"", {""value"": 2}) # should not raise"
-unit\plugins\test_registry_runtime.py,41,private helper call,"trusted_plugin = types.SimpleNamespace(plugin_meta=_make_metadata(""trusted"", True))"
-unit\plugins\test_registry_runtime.py,42,private helper call,"untrusted_plugin = types.SimpleNamespace(plugin_meta=_make_metadata(""untrusted"", False))"
 unit\plugins\test_registry_runtime.py,76,private helper call,"registry._verify_plugin_checksum(Plugin(), Plugin.plugin_meta)"
 unit\utils\test_deprecations_helper.py,30,private helper call,assert _should_raise() is True
 unit\utils\test_deprecations_helper.py,35,private helper call,assert _should_raise() is True
@@ -1176,33 +845,11 @@ unit\utils\test_deprecations_helper.py,70,private helper call,result = _should_r
 unit\utils\test_deprecations_helper.py,86,private helper call,assert _should_raise() is True
 unit\utils\test_utils_perturbation.py,35,private helper call,"result = perturbation.categorical_perturbation(column, num_permutations=0, rng=_IdentityRNG())"
 unit\utils\test_utils_perturbation.py,44,private helper call,"result = perturbation.categorical_perturbation(column, rng=_IdentityRNG())"
-unit\viz\test_alternative_regression_parity.py,53,private helper call,self.calibrated_explainer = _StubExplainer()
-unit\viz\test_alternative_regression_parity.py,57,private helper call,return _confidence_from_percentiles(self._percentiles)
-unit\viz\test_alternative_regression_parity.py,71,private helper call,self.calibrated_explanations = _StubCalibrated(percentiles)
-unit\viz\test_alternative_regression_parity.py,176,private helper call,"_record(""fill_betweenx"")"
-unit\viz\test_alternative_regression_parity.py,179,private helper call,legacy_plotting._plot_alternative(
-unit\viz\test_alternative_regression_parity.py,181,private helper call,"instance=_as_float_list(case.instance),"
-unit\viz\test_alternative_regression_parity.py,183,private helper call,"feature_predict=_coerce_array(case.feature_predict),"
-unit\viz\test_alternative_regression_parity.py,193,private helper call,"return _summarise_legacy_records(records, case)"
-unit\viz\test_alternative_regression_parity.py,293,private helper call,plotspec_plotting._plot_alternative(
-unit\viz\test_alternative_regression_parity.py,295,private helper call,"instance=_as_float_list(case.instance),"
-unit\viz\test_alternative_regression_parity.py,297,private helper call,"feature_predict=_coerce_array(case.feature_predict),"
-unit\viz\test_alternative_regression_parity.py,309,private helper call,return _summarise_plotspec(spec)
-unit\viz\test_alternative_regression_parity.py,368,private helper call,explanation = _StubAlternativeExplanation(
-unit\viz\test_alternative_regression_parity.py,373,private helper call,"legacy_summary = _collect_legacy_summary(explanation=explanation, case=case)"
-unit\viz\test_alternative_regression_parity.py,374,private helper call,"plotspec_summary = _collect_plotspec_summary(explanation=explanation, case=case)"
-unit\viz\test_matplotlib_adapter.py,36,private helper call,"self.spines = {key: _FakeSpine() for key in (""top"", ""right"", ""bottom"", ""left"")}"
-unit\viz\test_matplotlib_adapter.py,71,private helper call,twin = _FakeAxes()
-unit\viz\test_matplotlib_adapter.py,97,private helper call,"return _FakeGridSpec(self, nrows, ncols, height_ratios)"
-unit\viz\test_matplotlib_adapter.py,100,private helper call,ax = _FakeAxes()
-unit\viz\test_matplotlib_adapter.py,120,private helper call,return _FakeFigure(figsize)
-unit\viz\test_matplotlib_adapter.py,225,private helper call,"bars=[BarItem(label=_BadLabel(), value=0.1), BarItem(label=""ok"", value=-0.2)],"
+unit\viz\test_alternative_regression_parity.py,130,private helper call,"_record(""fill_betweenx"")"
+unit\viz\test_alternative_regression_parity.py,133,private helper call,legacy_plotting._plot_alternative(
+unit\viz\test_alternative_regression_parity.py,247,private helper call,plotspec_plotting._plot_alternative(
 unit\viz\test_matplotlib_adapter.py,342,private helper call,"bars=[_SimpleBar(""no-flag"", 0.3, -0.2, 0.5)],"
 unit\viz\test_matplotlib_adapter.py,627,private helper call,"spec = _NamespaceSpec(title=""ns"", header=header, body=body, figure_size=(4, 3))"
-unit\viz\test_matplotlib_adapter_primitives.py,22,private helper call,"predict, feature_weights = _make_interval_weights()"
-unit\viz\test_matplotlib_adapter_primitives.py,56,private helper call,"predict, feature_weights = _make_interval_weights()"
-unit\viz\test_matplotlib_adapter_regression_primitives.py,20,private helper call,"predict, feature_weights = _make_regression_interval_weights()"
-unit\viz\test_matplotlib_adapter_regression_primitives.py,46,private helper call,"predict, feature_weights = _make_regression_interval_weights()"
 unit\viz\test_plotspec_mvp.py,63,private helper call,plotting._plot_probabilistic(
 unit\viz\test_plotspec_mvp.py,113,private helper call,plotting._plot_regression(
 unit\viz\test_plotspec_mvp.py,185,private helper call,"result1 = plotting._format_save_path(base, ""figurepng"")"
@@ -1213,12 +860,5 @@ unit\viz\test_plotspec_mvp.py,484,private helper call,plotting._plot_probabilist
 unit\viz\test_plotspec_mvp.py,667,private helper call,plotting._plot_probabilistic(
 unit\viz\test_plotspec_mvp.py,668,private helper call,"_Explanation(),"
 unit\viz\test_plotspec_mvp.py,738,private helper call,plotting._plot_alternative(
-unit\viz\test_plotspec_render_behavior.py,41,private helper call,"fig, axes = _render_spec_and_get_axes(spec)"
-unit\viz\test_plotspec_render_behavior.py,75,private helper call,"fig, axs = _render_spec_and_get_axes(spec)"
-unit\viz\test_plotspec_schema_and_primitives.py,23,private helper call,"plotspec = _load(os.path.join(SCHEMA_DIR, ""plotspec_schema.json""))"
-unit\viz\test_plotspec_schema_and_primitives.py,39,private helper call,"schema = _load(os.path.join(SCHEMA_DIR, ""plotspec_schema.json""))"
-unit\viz\test_plotspec_schema_and_primitives.py,49,private helper call,"schema = _load(os.path.join(SCHEMA_DIR, ""plotspec_schema.json""))"
-unit\viz\test_plotspec_schema_and_primitives.py,73,private helper call,"plotspec_schema = _load(os.path.join(SCHEMA_DIR, ""plotspec_schema.json""))"
-unit\viz\test_plotspec_schema_and_primitives.py,74,private helper call,"primitives_schema = _load(os.path.join(SCHEMA_DIR, ""primitives_schema.json""))"
-unit\viz\test_plot_parity_adapter.py,279,private helper call,_plots._plot_triangular(
-unit\viz\test_plot_parity_adapter.py,296,private helper call,_plots._plot_triangular(
+unit\viz\test_plot_parity_adapter.py,274,private helper call,_plots._plot_triangular(
+unit\viz\test_plot_parity_adapter.py,291,private helper call,_plots._plot_triangular(

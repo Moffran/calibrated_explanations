@@ -14,7 +14,7 @@ import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
 
-def _minimal_explainer() -> CalibratedExplainer:
+def minimal_explainer() -> CalibratedExplainer:
     """Return a minimally constructed explainer without invoking ``__init__``."""
 
     return CalibratedExplainer.__new__(CalibratedExplainer)
@@ -24,7 +24,7 @@ def test_require_plugin_manager_raises_when_missing():
     """_require_plugin_manager should raise when the manager is absent."""
     from calibrated_explanations.core.exceptions import NotFittedError
 
-    explainer = _minimal_explainer()
+    explainer = minimal_explainer()
 
     with pytest.raises(NotFittedError, match="PluginManager is not initialized"):
         explainer._require_plugin_manager()
@@ -33,7 +33,7 @@ def test_require_plugin_manager_raises_when_missing():
 def test_plugin_state_accessors_cache_without_manager():
     """Property setters should cache values when PluginManager is unavailable."""
 
-    explainer = _minimal_explainer()
+    explainer = minimal_explainer()
 
     assert explainer._explanation_plugin_overrides == {}
     explainer._explanation_plugin_overrides = {"factual": "explicit"}
@@ -55,13 +55,13 @@ def test_plugin_state_accessors_cache_without_manager():
 def test_chain_builders_use_fallback_without_manager():
     """Chain builders should return empty tuples without an initialized manager."""
 
-    explainer = _minimal_explainer()
+    explainer = minimal_explainer()
     assert explainer._build_explanation_chain("factual") == ()
     assert explainer._build_interval_chain(fast=False) == ()
     assert explainer._build_plot_style_chain() == ()
 
     # Provide a lightweight manager to ensure the delegation path is exercised
-    class _Manager:
+    class Manager:
         def __init__(self):
             self._default_explanation_identifiers = {"factual": "default"}
 
@@ -74,7 +74,7 @@ def test_chain_builders_use_fallback_without_manager():
         def _build_plot_chain(self):
             return ("plot",)
 
-    explainer._plugin_manager = _Manager()
+    explainer._plugin_manager = Manager()
     assert explainer._build_explanation_chain("factual") == ("factual", "default")
     assert explainer._build_interval_chain(fast=True) == ("interval", True)
     assert explainer._build_plot_style_chain() == ("plot",)

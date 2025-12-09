@@ -7,7 +7,7 @@ pytest.importorskip("matplotlib")
 pytestmark = pytest.mark.viz
 
 
-def _render_spec_and_get_axes(spec):
+def render_spec_and_get_axes(spec):
     # Request the figure back for inspection
     # import backend-specific adapter and matplotlib lazily (after importorskip)
     from calibrated_explanations.viz import matplotlib_adapter
@@ -38,7 +38,7 @@ def test_probabilistic_header_axes_unit_interval_with_custom_minmax():
         y_minmax=(5.0, 10.0),
         interval=True,
     )
-    fig, axes = _render_spec_and_get_axes(spec)
+    fig, axes = render_spec_and_get_axes(spec)
     try:
         neg_xlim = axes[0].get_xlim()
         pos_xlim = axes[1].get_xlim()
@@ -72,7 +72,7 @@ def test_body_xlim_contains_zero_and_padding():
         y_minmax=None,
         interval=True,
     )
-    fig, axs = _render_spec_and_get_axes(spec)
+    fig, axs = render_spec_and_get_axes(spec)
     # body is last axis
     ax = axs[-1]
     x0, x1 = ax.get_xlim()

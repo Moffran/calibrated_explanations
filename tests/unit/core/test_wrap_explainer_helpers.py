@@ -14,25 +14,25 @@ from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
-class _PredictOnlyLearner:
+class PredictOnlyLearner:
     """Minimal learner exposing the hooks WrapCalibratedExplainer expects."""
 
     def __init__(self) -> None:
         self.fitted = True
 
-    def fit(self, x: Any | None = None, y: Any | None = None, **_: Any) -> "_PredictOnlyLearner":
+    def fit(self, x: Any | None = None, y: Any | None = None, **_: Any) -> "PredictOnlyLearner":
         return self
 
     def predict(self, x: Any) -> Any:
         return np.asarray(x)
 
 
-class _PredictProbaLearner(_PredictOnlyLearner):
+class PredictProbaLearner(PredictOnlyLearner):
     def predict_proba(self, x: Any) -> Any:
         return np.asarray(x)
 
 
-class _RecordingPreprocessor:
+class RecordingPreprocessor:
     """Test double that mimics key sklearn preprocessor attributes."""
 
     def __init__(self) -> None:
@@ -58,7 +58,7 @@ class _RecordingPreprocessor:
         return ["x1", "x2"]
 
 
-class _ExplainerRecorder:
+class ExplainerRecorder:
     def __init__(self) -> None:
         self.reinitialized_with: list[Any] = []
 
@@ -68,7 +68,7 @@ class _ExplainerRecorder:
 
 @pytest.fixture()
 def wrapper() -> WrapCalibratedExplainer:
-    return WrapCalibratedExplainer(_PredictOnlyLearner())
+    return WrapCalibratedExplainer(PredictOnlyLearner())
 
 
 def test_normalize_public_kwargs_filters_aliases(wrapper: WrapCalibratedExplainer) -> None:
@@ -97,14 +97,14 @@ def test_normalize_auto_encode_flag_variants(wrapper: WrapCalibratedExplainer) -
 def test_serialise_preprocessor_value_handles_nested_structures(
     wrapper: WrapCalibratedExplainer,
 ) -> None:
-    class _BadToList:
+    class BadToList:
         def tolist(self) -> Any:  # pragma: no cover - invoked and caught
             raise ValueError("boom")
 
     payload = {
         "numbers": {1, 2},
         "sequence": (1, 2, 3),
-        "array_like": _BadToList(),
+        "array_like": BadToList(),
     }
     serialised = wrapper._serialise_preprocessor_value(payload)
     assert serialised == {
@@ -115,7 +115,7 @@ def test_serialise_preprocessor_value_handles_nested_structures(
 
 
 def test_extract_preprocessor_snapshot(wrapper: WrapCalibratedExplainer) -> None:
-    preprocessor = _RecordingPreprocessor()
+    preprocessor = RecordingPreprocessor()
     snapshot = wrapper._extract_preprocessor_snapshot(preprocessor)
     assert snapshot is not None
     assert set(snapshot) == {"custom", "categories", "transformers", "feature_names_out", "mapping"}
@@ -131,17 +131,17 @@ def test_build_preprocessor_metadata_with_and_without_preprocessor(
 ) -> None:
     assert wrapper._build_preprocessor_metadata() is None
 
-    wrapper._preprocessor = _RecordingPreprocessor()
+    wrapper._preprocessor = RecordingPreprocessor()
     wrapper._auto_encode = False
     metadata = wrapper._build_preprocessor_metadata()
     assert metadata is not None
     assert metadata["auto_encode"] == "false"
-    assert metadata["transformer_id"].endswith(":_RecordingPreprocessor")
+    assert metadata["transformer_id"].endswith(":RecordingPreprocessor")
     assert metadata["mapping_snapshot"]["custom"] == {"snap": [1, 2]}
 
 
 def test_pre_fit_preprocess_and_transform_stages(wrapper: WrapCalibratedExplainer) -> None:
-    preprocessor = _RecordingPreprocessor()
+    preprocessor = RecordingPreprocessor()
     wrapper._preprocessor = preprocessor
 
     x = np.array([[1, 2], [3, 4]])
@@ -158,14 +158,14 @@ def test_pre_fit_preprocess_and_transform_stages(wrapper: WrapCalibratedExplaine
 
 
 def test_preprocess_failures_are_swallowed(wrapper: WrapCalibratedExplainer) -> None:
-    class _FailingPreprocessor:
+    class FailingPreprocessor:
         def fit_transform(self, x: Any) -> Any:
             raise RuntimeError("boom")
 
         def transform(self, x: Any) -> Any:
             raise RuntimeError("boom")
 
-    wrapper._preprocessor = _FailingPreprocessor()
+    wrapper._preprocessor = FailingPreprocessor()
     x = np.array([[1, 2]])
     x_fit = wrapper._pre_fit_preprocess(x)
     assert np.array_equal(x_fit, x)
@@ -176,11 +176,11 @@ def test_preprocess_failures_are_swallowed(wrapper: WrapCalibratedExplainer) -> 
 
 
 def test_finalize_fit_preserves_existing_explainer(wrapper: WrapCalibratedExplainer) -> None:
-    recorder = _ExplainerRecorder()
+    recorder = ExplainerRecorder()
     wrapper.explainer = recorder
     wrapper.fitted = False
     wrapper.calibrated = True
-    wrapper.learner = _PredictProbaLearner()
+    wrapper.learner = PredictProbaLearner()
 
     wrapper._finalize_fit(reinitialize=True)
 
@@ -236,7 +236,7 @@ def test_from_config_sets_perf_primitives_to_none_when_disabled(
 ) -> None:
     monkeypatch.setattr("calibrated_explanations.perf.from_config", lambda _: None)
     cfg = SimpleNamespace(
-        model=_PredictOnlyLearner(),
+        model=PredictOnlyLearner(),
         threshold=0.4,
         low_high_percentiles=(5, 95),
         preprocessor=None,
@@ -277,7 +277,7 @@ def test_explain_lime_invokes_underlying_explainer(
     wrapper.fitted = True
     wrapper.calibrated = True
 
-    class _RecordingExplainer:
+    class RecordingExplainer:
         def __init__(self) -> None:
             self.calls: list[tuple[Any, dict[str, Any]]] = []
 
@@ -287,7 +287,7 @@ def test_explain_lime_invokes_underlying_explainer(
 
     monkeypatch.setattr(wrap_module, "validate_inputs_matrix", lambda *_, **__: None)
     monkeypatch.setattr(wrap_module, "validate_param_combination", lambda *_, **__: None)
-    wrapper.explainer = _RecordingExplainer()
+    wrapper.explainer = RecordingExplainer()
 
     result = wrapper.explain_lime(np.array([[1, 2]]), custom_flag=True)
 
@@ -305,7 +305,7 @@ def test_predict_requires_fit(wrapper: WrapCalibratedExplainer) -> None:
 
 
 def test_predict_proba_threshold_requires_calibration_when_available() -> None:
-    wrapper = WrapCalibratedExplainer(_PredictProbaLearner())
+    wrapper = WrapCalibratedExplainer(PredictProbaLearner())
     wrapper.fitted = True
     wrapper.calibrated = False
 
@@ -314,7 +314,7 @@ def test_predict_proba_threshold_requires_calibration_when_available() -> None:
 
 
 def test_set_difficulty_estimator_delegates(wrapper: WrapCalibratedExplainer) -> None:
-    class _Recorder:
+    class Recorder:
         def __init__(self) -> None:
             self.received: list[Any] = []
 
@@ -323,7 +323,7 @@ def test_set_difficulty_estimator_delegates(wrapper: WrapCalibratedExplainer) ->
 
     wrapper.fitted = True
     wrapper.calibrated = True
-    wrapper.explainer = _Recorder()
+    wrapper.explainer = Recorder()
 
     wrapper.set_difficulty_estimator("estimator")
 
@@ -331,7 +331,7 @@ def test_set_difficulty_estimator_delegates(wrapper: WrapCalibratedExplainer) ->
 
 
 def test_plot_uses_configured_defaults() -> None:
-    class _PerfFactory:
+    class PerfFactory:
         def make_cache(self) -> object:
             return object()
 
@@ -339,17 +339,17 @@ def test_plot_uses_configured_defaults() -> None:
             return ("executor", cache)
 
     cfg = SimpleNamespace(
-        model=_PredictOnlyLearner(),
+        model=PredictOnlyLearner(),
         threshold=0.2,
         low_high_percentiles=(10, 90),
         preprocessor=None,
         auto_encode="auto",
         unseen_category_policy="error",
-        _perf_factory=_PerfFactory(),
+        _perf_factory=PerfFactory(),
     )
     wrapper = WrapCalibratedExplainer._from_config(cfg)
 
-    class _PlotRecorder:
+    class PlotRecorder:
         def __init__(self) -> None:
             self.calls: list[tuple[Any, dict[str, Any]]] = []
 
@@ -361,7 +361,7 @@ def test_plot_uses_configured_defaults() -> None:
     wrapper.fitted = True
     wrapper.calibrated = True
     wrapper.mc = lambda data: np.arange(len(np.asarray(data)))
-    wrapper.explainer = _PlotRecorder()
+    wrapper.explainer = PlotRecorder()
 
     x = np.zeros((3, 1))
     wrapper.plot(x)
@@ -378,10 +378,10 @@ def test_serialise_preprocessor_value_handles_none_and_objects(
 ) -> None:
     assert wrapper._serialise_preprocessor_value(None) is None
 
-    class _Custom:
+    class Custom:
         pass
 
-    custom = _Custom()
+    custom = Custom()
     assert wrapper._serialise_preprocessor_value(custom) == str(custom)
 
 
@@ -395,7 +395,7 @@ def test_pre_fit_preprocess_without_configured_preprocessor(
 
 
 def test_pre_fit_preprocess_uses_two_step_transform(wrapper: WrapCalibratedExplainer) -> None:
-    class _TwoStep:
+    class TwoStep:
         def __init__(self) -> None:
             self.fit_args: list[Any] = []
 
@@ -405,7 +405,7 @@ def test_pre_fit_preprocess_uses_two_step_transform(wrapper: WrapCalibratedExpla
         def transform(self, x: Any) -> Any:
             return np.asarray(x) + 5
 
-    preprocessor = _TwoStep()
+    preprocessor = TwoStep()
     wrapper._preprocessor = preprocessor
     data = np.array([[1, 2]])
 
