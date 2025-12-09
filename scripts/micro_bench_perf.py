@@ -38,7 +38,7 @@ def fib(n: int) -> int:
 
 
 def measure_map_throughput() -> dict[str, float]:
-    from calibrated_explanations.perf import ParallelConfig, ParallelExecutor
+    from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
 
     items = [30] * 2000  # small, deterministic CPU work
 

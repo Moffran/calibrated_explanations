@@ -51,36 +51,31 @@ class ShapHelper:
 
     def preload(self, num_test: Optional[int] = None) -> Tuple[Any, Any]:
         """Materialize the SHAP explainer when :mod:`shap` is available."""
-        # If already enabled and cached, return immediately to avoid importing optional deps
         if self._enabled and self._explainer_instance is not None:
-            return self._explainer_instance, self._reference_explanation
+            if num_test is None:
+                return self._explainer_instance, self._reference_explanation
+            shape = getattr(self._reference_explanation, "shape", None)
+            if shape is not None and shape[0] == num_test:
+                return self._explainer_instance, self._reference_explanation
 
         shap_module = safe_import("shap")
         if not shap_module:
             return None, None
 
-        needs_refresh = not self._enabled or self._explainer_instance is None
-        if not needs_refresh and num_test is not None:
-            shape = getattr(self._reference_explanation, "shape", None)
-            if shape is None or shape[0] != num_test:
-                needs_refresh = True
+        def _predict(x):
+            return self.explainer._predict(x)[0]  # pylint: disable=protected-access
 
-        if needs_refresh:
-
-            def _predict(x):
-                return self.explainer._predict(x)[0]  # pylint: disable=protected-access
-
-            self._explainer_instance = shap_module.Explainer(
-                _predict,
-                self.explainer.x_cal,
-                feature_names=self.explainer.feature_names,
-            )
-            self._reference_explanation = (
-                self._explainer_instance(self.explainer.x_cal[0, :].reshape(1, -1))
-                if num_test is None
-                else self._explainer_instance(self.explainer.x_cal[:num_test, :])
-            )
-            self._enabled = self._explainer_instance is not None
+        self._explainer_instance = shap_module.Explainer(
+            _predict,
+            self.explainer.x_cal,
+            feature_names=self.explainer.feature_names,
+        )
+        self._reference_explanation = (
+            self._explainer_instance(self.explainer.x_cal[0, :].reshape(1, -1))
+            if num_test is None
+            else self._explainer_instance(self.explainer.x_cal[:num_test, :])
+        )
+        self._enabled = self._explainer_instance is not None
 
         return self._explainer_instance, self._reference_explanation
 

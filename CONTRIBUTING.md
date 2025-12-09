@@ -107,3 +107,45 @@ Two practical helpers when working on plugins:
 - Inline smoke tests live under `tests/integration/plugins/test_cli_smoke.py`.
   Keep them green when adding new commands or metadata fields so the CLI output
   remains stable for operators.
+
+## Local CI pre-checks
+
+We provide a helper to preview and run the repository's CI steps locally. This
+is useful to catch CI failures (lint, doc checks, coverage gates, etc.) before
+opening a pull request.
+
+- Dry-run (lists CI steps discovered from `.github/workflows`):
+
+  ```pwsh
+  python scripts/run_ci_locally.py --dry-run
+  ```
+
+- Run a specific workflow (for example `lint` and `test`) using your native
+  shell. On Windows the script defaults to PowerShell; on Unix it defaults to
+  bash.
+
+  ```pwsh
+  # PowerShell on Windows
+  python scripts/run_ci_locally.py --shell pwsh --workflow lint --workflow test
+
+  # Bash (recommended when CI steps use bashisms; use WSL/Git-Bash on Windows)
+  python scripts/run_ci_locally.py --shell bash --workflow lint --workflow test
+  ```
+
+- There is also a Makefile target `ci-local` that invokes the helper in dry-run
+  mode for a quick check:
+
+  ```pwsh
+  make ci-local
+  ```
+
+Notes and safety:
+
+- The helper extracts `run:` blocks from workflows and skips `uses:` steps
+  (GitHub Actions) — you must ensure any required setup (Python versions,
+  checkout, secrets) is provided locally before executing steps.
+- Some CI steps install dependencies and run tests — expect potentially slow
+  runs when executing full `test` workflow. Use `--workflow lint` first for a
+  quicker pre-check.
+- The script defaults to a dry-run; only run commands when you're ready and
+  understand their effects.

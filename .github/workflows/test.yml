@@ -123,9 +123,7 @@ jobs:
 
       - name: Compare micro metrics with baseline thresholds
         run: |
-          BASELINE=$(ls benchmarks/micro_*.json | sort | tail -n 1)
-          echo "Using baseline: $BASELINE"
-          python scripts/check_perf_micro.py "$BASELINE" micro_current.json benchmarks/perf_thresholds.json
+          python scripts/check_perf_micro.py micro_current.json benchmarks/perf_thresholds.json
 
   anti-pattern-audit:
     name: Anti-pattern Audit
