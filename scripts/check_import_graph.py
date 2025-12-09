@@ -228,7 +228,6 @@ def resolve_relative_import(source_file: Path, relative_import: str) -> Optional
         # Assume source is under src/calibrated_explanations/
         rel_path = source_file.relative_to(Path('src/calibrated_explanations'))
         source_parts = ['calibrated_explanations'] + list(rel_path.parent.parts)
-        source_parts = [p for p in source_parts if p != '__pycache__']
     except ValueError:
         return None
 
