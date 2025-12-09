@@ -21,6 +21,7 @@ import threading
 from dataclasses import dataclass as _dataclass
 from dataclasses import field
 from hashlib import blake2b
+from time import monotonic
 from typing import (
     Any,
     Callable,
@@ -34,7 +35,6 @@ from typing import (
 
 import cachetools
 import numpy as np
-from time import monotonic
 
 logger = logging.getLogger(__name__)
 

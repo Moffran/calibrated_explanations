@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import numpy as np
@@ -10,8 +9,6 @@ from calibrated_explanations.explanations import explanation as explanation_modu
 import math
 import warnings
 
-import numpy as np
-import pytest
 
 from calibrated_explanations.explanations.explanation import (
     CalibratedExplanation,

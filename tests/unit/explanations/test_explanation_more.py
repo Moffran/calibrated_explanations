@@ -1,6 +1,5 @@
 import types
 import sys
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -100,7 +99,7 @@ def test_to_narrative_handles_output_formats(monkeypatch):
     d = Dummy()
     # dict
     out = d.to_narrative(output_format="dict")
-    assert isinstance(out, dict) or isinstance(out, list)
+    assert isinstance(out, (dict, list))
     # text
     out_text = d.to_narrative(output_format="text")
     assert isinstance(out_text, str) and "narrative" in out_text
@@ -111,8 +110,9 @@ def test_to_narrative_handles_output_formats(monkeypatch):
 
 def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
     container, explainer = _make_container_and_explainer()
+
     # Ensure explanation module's discretizer classes are present as simple dummies
-    class _DUMMY_DISCRETIZER:
+    class DummyDiscretizer:
         def __init__(self):
             # simple names for one feature
             self.names = [["f0 <= 0.2", "f0 > 0.2"]]
@@ -120,10 +120,11 @@ def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
         def discretize(self, x):
             # return a single-bin index per column
             return np.asarray(x).reshape(-1)[0:1] * 0 + 0
-    monkeypatch.setattr(explanation_module, "BinaryRegressorDiscretizer", _DUMMY_DISCRETIZER)
-    monkeypatch.setattr(explanation_module, "BinaryEntropyDiscretizer", _DUMMY_DISCRETIZER)
+
+    monkeypatch.setattr(explanation_module, "BinaryRegressorDiscretizer", DummyDiscretizer)
+    monkeypatch.setattr(explanation_module, "BinaryEntropyDiscretizer", DummyDiscretizer)
     # ensure explainer has a discretizer instance to satisfy isinstance checks
-    container._explainer.discretizer = _DUMMY_DISCRETIZER()
+    container._explainer.discretizer = DummyDiscretizer()
     # build small arrays for constructor of FactualExplanation
     x = np.array([[0.1]])
     rule_values = np.empty((1, 1), dtype=object)
@@ -134,13 +135,32 @@ def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
         "high": np.array([[0.3]]),
         "rule_values": rule_values,
     }
-    feature_weights = {"predict": np.array([[0.1]]), "low": np.array([[0.05]]), "high": np.array([[0.15]])}
-    feature_predict = {"predict": np.array([[0.5]]), "low": np.array([[0.4]]), "high": np.array([[0.6]])}
-    prediction = {"predict": np.array([0.2]), "low": np.array([0.1]), "high": np.array([0.4]), "classes": np.array([1])}
+    feature_weights = {
+        "predict": np.array([[0.1]]),
+        "low": np.array([[0.05]]),
+        "high": np.array([[0.15]]),
+    }
+    feature_predict = {
+        "predict": np.array([[0.5]]),
+        "low": np.array([[0.4]]),
+        "high": np.array([[0.6]]),
+    }
+    prediction = {
+        "predict": np.array([0.2]),
+        "low": np.array([0.1]),
+        "high": np.array([0.4]),
+        "classes": np.array([1]),
+    }
 
     # instantiate FactualExplanation
     factual = explanation_module.FactualExplanation(
-        container, index=0, x=x, binned=binned, feature_weights=feature_weights, feature_predict=feature_predict, prediction=prediction
+        container,
+        index=0,
+        x=x,
+        binned=binned,
+        feature_weights=feature_weights,
+        feature_predict=feature_predict,
+        prediction=prediction,
     )
 
     # monkeypatch plotting functions to raise RuntimeError with 'Agg' in message
@@ -161,18 +181,30 @@ def test_fast_explanation_repr_and_build_payload():
     x = np.array([[1.0]])
     rule_values = np.empty((1, 1), dtype=object)
     rule_values[0, 0] = np.array([[1.0]])
-    binned = {
-        "predict": np.array([[0.2]]),
-        "low": np.array([[0.1]]),
-        "high": np.array([[0.3]]),
-        "rule_values": rule_values,
+    feature_weights = {
+        "predict": np.array([[0.1]]),
+        "low": np.array([[0.05]]),
+        "high": np.array([[0.15]]),
     }
-    feature_weights = {"predict": np.array([[0.1]]), "low": np.array([[0.05]]), "high": np.array([[0.15]])}
-    feature_predict = {"predict": np.array([[0.5]]), "low": np.array([[0.4]]), "high": np.array([[0.6]])}
-    prediction = {"predict": np.array([0.25]), "low": np.array([0.2]), "high": np.array([0.3]), "classes": np.array([1])}
+    feature_predict = {
+        "predict": np.array([[0.5]]),
+        "low": np.array([[0.4]]),
+        "high": np.array([[0.6]]),
+    }
+    prediction = {
+        "predict": np.array([0.25]),
+        "low": np.array([0.2]),
+        "high": np.array([0.3]),
+        "classes": np.array([1]),
+    }
 
     fast = explanation_module.FastExplanation(
-        container, index=0, x=x, feature_weights=feature_weights, feature_predict=feature_predict, prediction=prediction
+        container,
+        index=0,
+        x=x,
+        feature_weights=feature_weights,
+        feature_predict=feature_predict,
+        prediction=prediction,
     )
 
     # inject a minimal rules payload so repr has something to format

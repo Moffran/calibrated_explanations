@@ -10,6 +10,7 @@ These tests verify that:
 import pytest
 import warnings
 import sys
+import contextlib
 
 
 class TestSanctionedPublicApiSymbols:
@@ -66,10 +67,8 @@ class TestDeprecatedExplanationSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("AlternativeExplanation", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "AlternativeExplanation")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -88,10 +87,8 @@ class TestDeprecatedExplanationSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("FactualExplanation", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "FactualExplanation")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -106,10 +103,8 @@ class TestDeprecatedExplanationSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("FastExplanation", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "FastExplanation")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -124,10 +119,8 @@ class TestDeprecatedExplanationSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("AlternativeExplanations", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "AlternativeExplanations")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -143,10 +136,8 @@ class TestDeprecatedExplanationSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("CalibratedExplanations", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "CalibratedExplanations")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -166,10 +157,8 @@ class TestDeprecatedDiscretizerSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("EntropyDiscretizer", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "EntropyDiscretizer")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -185,10 +174,8 @@ class TestDeprecatedDiscretizerSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("RegressorDiscretizer", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "RegressorDiscretizer")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -203,10 +190,8 @@ class TestDeprecatedDiscretizerSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("BinaryEntropyDiscretizer", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "BinaryEntropyDiscretizer")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -221,10 +206,8 @@ class TestDeprecatedDiscretizerSymbols:
 
             ce = importlib.reload(importlib.import_module("calibrated_explanations"))
             ce.__dict__.pop("BinaryRegressorDiscretizer", None)
-            try:
+            with contextlib.suppress(Exception):
                 _ = getattr(ce, "BinaryRegressorDiscretizer")
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -244,10 +227,8 @@ class TestDeprecatedCalibratorSymbols:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            try:
+            with contextlib.suppress(Exception):
                 _ = ce.IntervalRegressor
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -264,10 +245,8 @@ class TestDeprecatedCalibratorSymbols:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            try:
+            with contextlib.suppress(Exception):
                 _ = ce.VennAbers
-            except Exception:
-                pass
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)

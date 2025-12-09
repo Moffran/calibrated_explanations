@@ -9,6 +9,7 @@ by Helena Löfström et al.
 
 import importlib
 import logging as _logging
+from contextlib import suppress
 
 # Expose viz namespace lazily via __getattr__ (avoid importing heavy backends eagerly)
 # Note: avoid eager imports of explanation, viz and discretizer modules here.
@@ -35,12 +36,12 @@ __all__ = [
 # top-level symbols. Tests in the suite expect these deprecations to be
 # available when symbols are resolved. Importing the small helper here
 # keeps messages consistent across the codebase.
-try:
+with suppress(Exception):
     from .utils import deprecate_public_api_symbol  # type: ignore
 
     # Emit deprecations for documented unsanctioned exports. These are
     # intentionally informational and follow ADR-011 guidance.
-    try:
+    with suppress(Exception):
         deprecate_public_api_symbol(
             "viz",
             "from calibrated_explanations import viz",
@@ -51,32 +52,69 @@ try:
             ),
         )
         for sym, cur, rec in [
-            ("AlternativeExplanation", "from calibrated_explanations import AlternativeExplanation", "from calibrated_explanations.explanations.explanation import AlternativeExplanation"),
-            ("FactualExplanation", "from calibrated_explanations import FactualExplanation", "from calibrated_explanations.explanations.explanation import FactualExplanation"),
-            ("FastExplanation", "from calibrated_explanations import FastExplanation", "from calibrated_explanations.explanations.explanation import FastExplanation"),
-            ("AlternativeExplanations", "from calibrated_explanations import AlternativeExplanations", "from calibrated_explanations.explanations import AlternativeExplanations"),
-            ("CalibratedExplanations", "from calibrated_explanations import CalibratedExplanations", "from calibrated_explanations.explanations import CalibratedExplanations"),
-            ("BinaryEntropyDiscretizer", "from calibrated_explanations import BinaryEntropyDiscretizer", "from calibrated_explanations.utils import BinaryEntropyDiscretizer"),
-            ("BinaryRegressorDiscretizer", "from calibrated_explanations import BinaryRegressorDiscretizer", "from calibrated_explanations.utils import BinaryRegressorDiscretizer"),
-            ("EntropyDiscretizer", "from calibrated_explanations import EntropyDiscretizer", "from calibrated_explanations.utils import EntropyDiscretizer"),
-            ("RegressorDiscretizer", "from calibrated_explanations import RegressorDiscretizer", "from calibrated_explanations.utils import RegressorDiscretizer"),
-            ("IntervalRegressor", "from calibrated_explanations import IntervalRegressor", "from calibrated_explanations.calibration import IntervalRegressor"),
-            ("VennAbers", "from calibrated_explanations import VennAbers", "from calibrated_explanations.calibration import VennAbers"),
-            ("plotting", "from calibrated_explanations import plotting", "from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter"),
+            (
+                "AlternativeExplanation",
+                "from calibrated_explanations import AlternativeExplanation",
+                "from calibrated_explanations.explanations.explanation import AlternativeExplanation",
+            ),
+            (
+                "FactualExplanation",
+                "from calibrated_explanations import FactualExplanation",
+                "from calibrated_explanations.explanations.explanation import FactualExplanation",
+            ),
+            (
+                "FastExplanation",
+                "from calibrated_explanations import FastExplanation",
+                "from calibrated_explanations.explanations.explanation import FastExplanation",
+            ),
+            (
+                "AlternativeExplanations",
+                "from calibrated_explanations import AlternativeExplanations",
+                "from calibrated_explanations.explanations import AlternativeExplanations",
+            ),
+            (
+                "CalibratedExplanations",
+                "from calibrated_explanations import CalibratedExplanations",
+                "from calibrated_explanations.explanations import CalibratedExplanations",
+            ),
+            (
+                "BinaryEntropyDiscretizer",
+                "from calibrated_explanations import BinaryEntropyDiscretizer",
+                "from calibrated_explanations.utils import BinaryEntropyDiscretizer",
+            ),
+            (
+                "BinaryRegressorDiscretizer",
+                "from calibrated_explanations import BinaryRegressorDiscretizer",
+                "from calibrated_explanations.utils import BinaryRegressorDiscretizer",
+            ),
+            (
+                "EntropyDiscretizer",
+                "from calibrated_explanations import EntropyDiscretizer",
+                "from calibrated_explanations.utils import EntropyDiscretizer",
+            ),
+            (
+                "RegressorDiscretizer",
+                "from calibrated_explanations import RegressorDiscretizer",
+                "from calibrated_explanations.utils import RegressorDiscretizer",
+            ),
+            (
+                "IntervalRegressor",
+                "from calibrated_explanations import IntervalRegressor",
+                "from calibrated_explanations.calibration import IntervalRegressor",
+            ),
+            (
+                "VennAbers",
+                "from calibrated_explanations import VennAbers",
+                "from calibrated_explanations.calibration import VennAbers",
+            ),
+            (
+                "plotting",
+                "from calibrated_explanations import plotting",
+                "from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter",
+            ),
         ]:
-            try:
+            with suppress(Exception):
                 deprecate_public_api_symbol(sym, cur, rec)
-            except Exception:
-                # Best-effort: do not break import-time behaviour for users.
-                pass
-    except Exception:
-        # If anything about emitting warnings fails, avoid breaking package import
-        # so consumers are not impacted by test-time assumptions.
-        pass
-except Exception:
-    # Do not hard-fail package import if utils cannot be imported in weird test
-    # environments; tests will still exercise `__getattr__` paths.
-    pass
 
 
 def __getattr__(name: str):
