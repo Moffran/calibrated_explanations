@@ -383,8 +383,10 @@ authors should treat these as shared infrastructure:
   in the cache must be deterministic, pickle-safe, and process independent.
 - When you spawn subprocesses (for example inside a plugin), call
   ``explainer._perf_cache.forksafe_reset()`` or reuse the provided
-  :class:`~calibrated_explanations.perf.parallel.ParallelExecutor` to inherit the
-  built-in fork guards.
+  :class:`~calibrated_explanations.parallel.ParallelExecutor` to inherit the
+  built-in fork guards. The ``calibrated_explanations.perf.parallel`` and
+  ``calibrated_explanations.perf.cache`` shims remain temporarily for
+  compatibility and will be removed after v1.1.0.
 - Respect ``CE_CACHE``/``CE_PARALLEL`` overrides documented in
   {doc}`../foundations/how-to/tune_runtime_performance`. Plugins should not force
   their own worker settings—delegate to the executor attached to the explainer

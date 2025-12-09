@@ -109,25 +109,54 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
     the matplotlib adapter and tests.
     """
     if not isinstance(obj, dict):
-        raise ValueError("PlotSpec payload must be a dict")
+        from ..core.exceptions import ValidationError
+
+        raise ValidationError(
+            "PlotSpec payload must be a dict",
+            details={"expected_type": "dict", "actual_type": type(obj).__name__},
+        )
 
     version = obj.get("plotspec_version")
     if version != PLOTSPEC_VERSION:
-        # allow missing version but warn by raising so callers can decide
-        raise ValueError(f"unsupported or missing plotspec_version: {version}")
+        from ..core.exceptions import ValidationError
+
+        raise ValidationError(
+            f"unsupported or missing plotspec_version: {version}",
+            details={"expected_version": PLOTSPEC_VERSION, "actual_version": version},
+        )
 
     # Basic body validation for bar-panel specs
     body = obj.get("body")
     if body is None:
-        # header-only plots are allowed in principle, but body is required for the
-        # regression bar MVP and tests.
-        raise ValueError("PlotSpec body is required for bar plots")
+        from ..core.exceptions import ValidationError
+
+        raise ValidationError(
+            "PlotSpec body is required for bar plots",
+            details={"section": "body", "requirement": "required for bar plots"},
+        )
     bars = body.get("bars")
     if not isinstance(bars, list):
-        raise ValueError("PlotSpec body.bars must be a list")
+        from ..core.exceptions import ValidationError
+
+        raise ValidationError(
+            "PlotSpec body.bars must be a list",
+            details={
+                "field": "body.bars",
+                "expected_type": "list",
+                "actual_type": type(bars).__name__,
+            },
+        )
     for i, b in enumerate(bars):
         if "label" not in b or "value" not in b:
-            raise ValueError(f"bar at index {i} missing required fields 'label' or 'value'")
+            from ..core.exceptions import ValidationError
+
+            raise ValidationError(
+                f"bar at index {i} missing required fields 'label' or 'value'",
+                details={
+                    "bar_index": i,
+                    "missing_fields": [f for f in ["label", "value"] if f not in b],
+                },
+            )
 
 
 __all__ = ["plotspec_to_dict", "plotspec_from_dict", "validate_plotspec", "PLOTSPEC_VERSION"]

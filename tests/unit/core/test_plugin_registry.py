@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 
@@ -48,10 +49,10 @@ def test_register_validation():
 
     try:
         registry.register(Bad())
-    except ValueError as e:
+    except ValidationError as e:
         assert "schema_version" in str(e)
     else:
-        assert False, "ValueError expected for missing schema_version"
+        assert False, "ValidationError expected for missing schema_version"
 
 
 def test_unregister():

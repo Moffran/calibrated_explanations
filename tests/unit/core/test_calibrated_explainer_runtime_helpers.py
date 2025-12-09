@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import sys
 import types
+from typing import Any
 
 import numpy as np
 import pytest
@@ -11,7 +13,7 @@ from calibrated_explanations.core.prediction import orchestrator as prediction_o
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
 )
-from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
+from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.plugins.predict_monitor import (
     PredictBridgeMonitor as _PredictBridgeMonitor,
 )
@@ -73,10 +75,12 @@ def test_categorical_features_default_to_label_keys(explainer_factory):
 
 
 def test_require_plugin_manager_raises_when_missing(explainer_factory):
+    from calibrated_explanations.core.exceptions import NotFittedError
+
     explainer = _stub_explainer(explainer_factory)
     explainer._plugin_manager = None
 
-    with pytest.raises(RuntimeError, match="PluginManager is not initialized"):
+    with pytest.raises(NotFittedError, match="PluginManager is not initialized"):
         explainer._require_plugin_manager()
 
 
@@ -488,7 +492,14 @@ def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch
         means: dict[int, list[float]] = {}
 
     def _fake_instantiate(
-        discretizer, x_cal, not_to_discretize, feature_names, y_cal, seed, old_discretizer
+        discretizer,
+        x_cal,
+        not_to_discretize,
+        feature_names,
+        y_cal,
+        seed,
+        old_discretizer,
+        **_kwargs,
     ):
         called["not_to_discretize"] = not_to_discretize
         return FakeDiscretizer()
@@ -502,6 +513,45 @@ def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch
 
     assert isinstance(explainer.discretizer, FakeDiscretizer)
     assert 1 in called["not_to_discretize"]
+
+
+def test_set_discretizer_prediction_condition_source(explainer_factory, monkeypatch):
+    class _DummyTTLCache:
+        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
+            pass
+
+    monkeypatch.setitem(sys.modules, "cachetools", types.SimpleNamespace(TTLCache=_DummyTTLCache))
+
+    explainer = explainer_factory()
+    explainer.condition_source = "prediction"
+
+    captured: dict[str, Any] = {}
+
+    def _instantiate(
+        discretizer, x_cal, not_to_discretize, feature_names, y_cal, seed, old, **kwargs
+    ):
+        captured["labels"] = kwargs.get("condition_labels")
+        captured["source"] = kwargs.get("condition_source")
+        return "disc"
+
+    def _setup(self, discretizer, x_cal, num_features):
+        return {}, np.zeros_like(x_cal)
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.discretizer_config.instantiate_discretizer", _instantiate
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.core.discretizer_config.setup_discretized_data", _setup
+    )
+
+    explainer.set_discretizer("entropy")
+
+    expected = explainer.predict(explainer.x_cal, calibrated=True, uq_interval=False)
+    if isinstance(expected, tuple):
+        expected = expected[0]
+
+    assert captured["source"] == "prediction"
+    np.testing.assert_array_equal(captured["labels"], expected)
 
 
 def test_predict_proba_uncalibrated_interval(explainer_factory):
@@ -617,7 +667,7 @@ def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory
         return sentinel
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_learner.update_interval_learner",
+        "calibrated_explanations.calibration.interval_learner.update_interval_learner",
         _update_interval,
     )
 
@@ -777,7 +827,7 @@ def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory)
 
 def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
     """_infer_explanation_mode should detect alternative mode when EntropyDiscretizer is set."""
-    from calibrated_explanations.utils.discretizers import EntropyDiscretizer
+    from calibrated_explanations.utils import EntropyDiscretizer
 
     explainer = _stub_explainer(explainer_factory)
     x_cal = np.asarray([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
@@ -795,7 +845,7 @@ def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
 
 def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory):
     """_infer_explanation_mode should detect alternative mode when RegressorDiscretizer is set."""
-    from calibrated_explanations.utils.discretizers import RegressorDiscretizer
+    from calibrated_explanations.utils import RegressorDiscretizer
 
     explainer = _stub_explainer(explainer_factory, mode="regression")
     x_cal = np.asarray([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
@@ -945,9 +995,7 @@ def test_explain_counterfactual_deprecates_and_delegates(monkeypatch, explainer_
     explainer = explainer_factory()
     sentinel = object()
 
-    monkeypatch.setattr(
-        "calibrated_explanations.utils.deprecations.deprecate", lambda *args, **kwargs: None
-    )
+    monkeypatch.setattr("calibrated_explanations.utils.deprecate", lambda *args, **kwargs: None)
     explainer.explore_alternatives = lambda *args, **kwargs: sentinel
 
     assert (
@@ -1026,7 +1074,8 @@ def test_set_discretizer_defaults_and_populates(monkeypatch, explainer_factory):
         lambda choice, mode: f"validated:{choice}:{mode}",
     )
 
-    def _instantiate(choice, x_cal, not_to_discretize, feature_names, y_cal, seed, old):
+    def _instantiate(choice, x_cal, not_to_discretize, feature_names, y_cal, seed, old, **kwargs):
+        assert kwargs.get("condition_source") == "observed"
         return f"disc:{choice}:{tuple(not_to_discretize)}:{old}"
 
     def _setup(self, discretizer, x_cal, num_features):

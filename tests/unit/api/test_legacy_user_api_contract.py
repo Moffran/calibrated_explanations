@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 
 import calibrated_explanations as ce
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.explanations import CalibratedExplanations
 
 
 def _param_names(func):
@@ -66,8 +66,16 @@ def test_calibrated_explainer_factories_support_expected_keywords():
         assert "threshold" in params
         assert "low_high_percentiles" in params
         assert "bins" in params
-        assert params[-2] == "features_to_ignore"
-        assert params[-1].startswith("_use_plugin") or params[-1] == "kwargs"
+
+        # Handle optional kwargs and _use_plugin
+        if params[-1] == "kwargs":
+            if params[-2] == "_use_plugin":
+                assert params[-3] == "features_to_ignore"
+            else:
+                assert params[-2] == "features_to_ignore"
+        else:
+            assert params[-2] == "features_to_ignore"
+            assert params[-1].startswith("_use_plugin")
 
 
 def test_explanation_collection_api_is_stable():

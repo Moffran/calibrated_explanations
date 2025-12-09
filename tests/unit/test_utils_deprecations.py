@@ -4,13 +4,15 @@ import os
 
 import pytest
 
+import calibrated_explanations.utils as utils_mod
+
 
 def _reload_module():
-    # Import the helper module freshly to reset module-level state
-    import calibrated_explanations.utils.deprecations as dep_mod
-
-    importlib.reload(dep_mod)
-    return dep_mod
+    """Reload the utils package and its deprecation helpers."""
+    # Ensure the underlying deprecations module picks up a clean slate
+    importlib.reload(importlib.import_module("calibrated_explanations.utils.deprecations"))
+    importlib.reload(utils_mod)
+    return utils_mod
 
 
 def test_deprecate_emits_once(monkeypatch):

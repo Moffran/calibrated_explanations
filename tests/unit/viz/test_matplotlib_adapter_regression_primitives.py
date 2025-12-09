@@ -1,5 +1,5 @@
-from calibrated_explanations.viz.builders import build_regression_bars_spec
-from calibrated_explanations.viz.matplotlib_adapter import render
+from calibrated_explanations.viz import build_regression_bars_spec
+from calibrated_explanations.viz import render
 
 
 def _make_regression_interval_weights():

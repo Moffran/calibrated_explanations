@@ -53,7 +53,7 @@ class TestHelloIntervalCalibratorPlugin:
     def test_plugin_registration(self):
         """Verify the interval plugin can be registered."""
         from calibrated_explanations.plugins.base import validate_plugin_meta
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_interval_plugin,
             _INTERVAL_PLUGINS,
         )
@@ -146,7 +146,7 @@ class TestHelloExplanationPlugin:
         """Verify the explanation plugin can be registered."""
         from dataclasses import dataclass
         from calibrated_explanations.plugins.base import validate_plugin_meta
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_explanation_plugin,
             _EXPLANATION_PLUGINS,
         )
@@ -275,7 +275,7 @@ class TestHelloPlotPlugin:
             PlotRenderer,
             PlotRenderResult,
         )
-        from calibrated_explanations.plugins.registry import (
+        from calibrated_explanations.plugins import (
             register_plot_builder,
             register_plot_renderer,
             register_plot_style,
@@ -448,7 +448,7 @@ class TestPluginDependencyPropagation:
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
         from calibrated_explanations import CalibratedExplainer
-        from calibrated_explanations.plugins.registry import ensure_builtin_plugins
+        from calibrated_explanations.plugins import ensure_builtin_plugins
 
         ensure_builtin_plugins()
 

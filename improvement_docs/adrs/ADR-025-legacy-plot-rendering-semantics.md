@@ -24,6 +24,9 @@ implementations and automated checks can validate parity.
 
 ## Decision
 
+### Scope: Legacy Matplotlib Renderer Only
+This specification applies **strictly** to the default/legacy Matplotlib renderer. Other adapters (governed by ADR-016) are not required to implement these pixel-level details unless they explicitly claim "Legacy Emulation" mode.
+
 ### Shared rendering rules
 
 * Every helper begins by calling `__require_matplotlib()` unless it can exit

@@ -20,10 +20,7 @@ from calibrated_explanations.core.exceptions import (
 )
 from calibrated_explanations.explanations import CalibratedExplanations
 from calibrated_explanations.integrations.lime import LimeHelper
-from calibrated_explanations.utils.helper import (
-    assert_threshold,
-    safe_isinstance,
-)
+from calibrated_explanations.utils import assert_threshold, safe_isinstance
 
 if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
@@ -161,7 +158,13 @@ class LimePipeline:
                 )
 
         # Create explanation object
-        explanation = CalibratedExplanations(self.explainer, x_test, threshold, bins)
+        explanation = CalibratedExplanations(
+            self.explainer,
+            x_test,
+            threshold,
+            bins,
+            condition_source=getattr(self.explainer, "condition_source", "observed"),
+        )
 
         # Validate and set threshold if provided
         if threshold is not None:

@@ -16,7 +16,7 @@ from pytest import MonkeyPatch
 
 from calibrated_explanations import plotting as plotspec_plotting
 from calibrated_explanations.legacy import plotting as legacy_plotting
-from calibrated_explanations.viz.builders import (
+from calibrated_explanations.viz import (
     REGRESSION_BASE_COLOR,
     REGRESSION_BAR_COLOR,
 )

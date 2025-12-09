@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 
 import numpy as np
 
-from ..utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
-from ..utils.helper import prepare_for_saving
+from ..core.exceptions import ValidationError
+from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
 from .models import Explanation as DomainExplanation
@@ -47,7 +47,16 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     and accessing explanations for test instances.
     """
 
-    def __init__(self, calibrated_explainer, x, y_threshold, bins, features_to_ignore=None) -> None:
+    def __init__(
+        self,
+        calibrated_explainer,
+        x,
+        y_threshold,
+        bins,
+        features_to_ignore=None,
+        *,
+        condition_source: str = "observed",
+    ) -> None:
         """Initialize the explanation collection for a calibrated explainer.
 
         Parameters
@@ -61,9 +70,16 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         bins : array-like
             The bins for conditional explanations.
         """
+        if condition_source not in {"observed", "prediction"}:
+            raise ValidationError(
+                "condition_source must be 'observed' or 'prediction'",
+                details={"param": "condition_source", "value": condition_source},
+            )
+
         self.calibrated_explainer: FrozenCalibratedExplainer = FrozenCalibratedExplainer(
             calibrated_explainer
         )
+        self.condition_source: str = condition_source
         self.x_test: np.ndarray = x
         self.y_threshold: Optional[Union[float, Tuple[float, float], List[Tuple[float, float]]]] = (
             y_threshold
@@ -184,11 +200,23 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_batch(cls, batch):
         """Reconstruct a collection from an :class:`ExplanationBatch`."""
+        from ..core.exceptions import SerializationError, ValidationError
+
         container = batch.collection_metadata.get("container")
         if container is None:
-            raise ValueError("ExplanationBatch is missing container metadata")
+            raise SerializationError(
+                "ExplanationBatch is missing container metadata",
+                details={"artifact": "ExplanationBatch", "field": "container"},
+            )
         if not isinstance(container, cls):
-            raise TypeError("ExplanationBatch container metadata has unexpected type")
+            raise ValidationError(
+                "ExplanationBatch container metadata has unexpected type",
+                details={
+                    "param": "container",
+                    "expected_type": cls.__name__,
+                    "actual_type": type(container).__name__,
+                },
+            )
         return container
 
     # ------------------------------------------------------------------
@@ -552,6 +580,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     prediction,
                     self.y_threshold,
                     instance_bin=instance_bin,
+                    condition_source=self.condition_source,
                 )
             else:
                 explanation = FactualExplanation(
@@ -564,6 +593,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     prediction,
                     self.y_threshold,
                     instance_bin=instance_bin,
+                    condition_source=self.condition_source,
                 )
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
@@ -618,6 +648,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 prediction,
                 self.y_threshold,
                 instance_bin=instance_bin,
+                condition_source=self.condition_source,
             )
             explanation.explain_time = instance_time[i] if instance_time is not None else None
             self.explanations.append(explanation)
@@ -687,7 +718,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
-        from ..utils.deprecations import deprecate
+        from ..core.exceptions import ValidationError
+        from ..utils import deprecate
 
         deprecate(
             "This method is deprecated and may be removed in future versions. Use indexing instead.",
@@ -695,11 +727,29 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             stacklevel=3,
         )
         if not isinstance(index, int):
-            raise TypeError("index must be an integer")
+            raise ValidationError(
+                "index must be an integer",
+                details={
+                    "param": "index",
+                    "expected_type": "int",
+                    "actual_type": type(index).__name__,
+                },
+            )
         if index < 0:
-            raise ValueError("index must be greater than or equal to 0")
+            raise ValidationError(
+                "index must be greater than or equal to 0",
+                details={"param": "index", "value": index, "requirement": "non-negative"},
+            )
         if index >= len(self.x_test):
-            raise ValueError("index must be less than the number of test instances")
+            raise ValidationError(
+                "index must be less than the number of test instances",
+                details={
+                    "param": "index",
+                    "value": index,
+                    "max_index": len(self.x_test) - 1,
+                    "n_instances": len(self.x_test),
+                },
+            )
         return self.explanations[index]
 
     def _is_alternative(self):

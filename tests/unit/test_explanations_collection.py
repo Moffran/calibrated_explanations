@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.explanations import explanations as explanations_mod
-from calibrated_explanations.explanations.explanations import (
+from calibrated_explanations.explanations import (
     AlternativeExplanations,
     CalibratedExplanations,
     FrozenCalibratedExplainer,
@@ -282,6 +282,7 @@ class FakeFactual(DummyExplanation):
         prediction,
         y_threshold,
         instance_bin=None,
+        condition_source="observed",
     ):
         super().__init__(
             index,
@@ -297,6 +298,7 @@ class FakeFactual(DummyExplanation):
             "feature_predict": feature_predict,
             "threshold": y_threshold,
             "instance_bin": instance_bin,
+            "condition_source": condition_source,
         }
 
 
@@ -315,6 +317,7 @@ class FakeFast(DummyExplanation):
         prediction,
         y_threshold,
         instance_bin=None,
+        condition_source="observed",
     ):
         super().__init__(
             index,
@@ -329,6 +332,7 @@ class FakeFast(DummyExplanation):
             "feature_predict": feature_predict,
             "threshold": y_threshold,
             "instance_bin": instance_bin,
+            "condition_source": condition_source,
         }
 
 
@@ -370,6 +374,8 @@ def test_finalize_variants(calibrated_collection, monkeypatch):
 
 
 def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
+    from calibrated_explanations.core import SerializationError, ValidationError
+
     called = {}
 
     def fake_collection_to_batch(collection):
@@ -390,10 +396,10 @@ def test_to_batch_and_from_batch(monkeypatch, calibrated_collection):
     restored = CalibratedExplanations.from_batch(DummyBatch(calibrated_collection))
     assert restored is calibrated_collection
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SerializationError):
         CalibratedExplanations.from_batch(DummyBatch(None))
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         CalibratedExplanations.from_batch(DummyBatch(object()))
 
 
@@ -425,13 +431,15 @@ def test_plot_routing(monkeypatch, calibrated_collection):
 
 
 def test_get_explanation_validations(calibrated_collection):
+    from calibrated_explanations.core import ValidationError
+
     with pytest.warns(DeprecationWarning):
         assert calibrated_collection.get_explanation(0) is calibrated_collection.explanations[0]
-    with pytest.warns(DeprecationWarning), pytest.raises(TypeError):
+    with pytest.warns(DeprecationWarning), pytest.raises(ValidationError):
         calibrated_collection.get_explanation("one")
-    with pytest.warns(DeprecationWarning), pytest.raises(ValueError):
+    with pytest.warns(DeprecationWarning), pytest.raises(ValidationError):
         calibrated_collection.get_explanation(-1)
-    with pytest.warns(DeprecationWarning), pytest.raises(ValueError):
+    with pytest.warns(DeprecationWarning), pytest.raises(ValidationError):
         calibrated_collection.get_explanation(100)
 
 

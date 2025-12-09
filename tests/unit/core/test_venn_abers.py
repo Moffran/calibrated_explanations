@@ -5,8 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.calibrated_explanations.core import venn_abers as venn_abers_module
-from src.calibrated_explanations.core.calibration.venn_abers import VennAbers
+from calibrated_explanations.core import ConfigurationError
+from calibrated_explanations.calibration import venn_abers as venn_abers_module
+from calibrated_explanations.calibration import VennAbers
 
 
 class _StubVennAbers:
@@ -122,7 +123,7 @@ def test_predict_proba_requires_bins_for_mondrian_multiclass():
     calibrator = VennAbers(x_cal, y_cal, learner, bins=bins)
 
     test_bins = np.array([0, 1])
-    with pytest.raises(ValueError, match="bins must be provided if Mondrian"):
+    with pytest.raises(ConfigurationError, match="bins must be provided if Mondrian"):
         calibrator.predict_proba(np.array([[1.0], [2.0]]))
 
     probs, predicted_classes = calibrator.predict_proba(np.array([[1.0], [2.0]]), bins=test_bins)
@@ -149,7 +150,7 @@ def test_predict_proba_requires_bins_for_mondrian_binary():
     calibrator = VennAbers(x_cal, y_cal, learner, bins=bins)
 
     test_bins = np.array([0, 1])
-    with pytest.raises(ValueError, match="bins must be provided if Mondrian"):
+    with pytest.raises(ConfigurationError, match="bins must be provided if Mondrian"):
         calibrator.predict_proba(np.array([[1.0], [2.0]]))
 
     probs = calibrator.predict_proba(np.array([[1.0], [2.0]]), bins=test_bins)

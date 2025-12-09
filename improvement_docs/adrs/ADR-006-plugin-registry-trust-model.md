@@ -24,6 +24,7 @@ Implement a conservative, opt-in plugin registry:
 - Provide `list_plugins(include_untrusted=True)` API for diagnostics.
 - Optional integrity field: author may supply SHA256 of source dist; library can verify if hash file present (best-effort, not security grade initially).
 - Isolation: no sandboxing initially (document risk); future ADR may explore subprocess / WASM.
+- **Delegation & Ownership:** The `PluginManager` serves as the single source of truth for plugin resolution and defaults. `CalibratedExplainer` delegates all explanation requests to this manager, ensuring that trust and opt-in rules are consistently enforced regardless of the entry point.
 
 ## Alternatives Considered
 

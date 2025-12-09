@@ -160,26 +160,51 @@ def validate_explanation_batch(
 
     metadata = batch.collection_metadata
     if not isinstance(metadata, MutableMappingABC):
-        raise TypeError("batch.collection_metadata must be a mutable mapping")
+        from ..core.exceptions import ValidationError
+
+        raise ValidationError(
+            "batch.collection_metadata must be a mutable mapping",
+            details={
+                "param": "batch.collection_metadata",
+                "expected_type": "MutableMapping",
+                "actual_type": type(metadata).__name__,
+            },
+        )
 
     mode_hint = metadata.get("mode")
     if expected_mode is not None and mode_hint is not None and str(mode_hint) != expected_mode:
-        raise ValueError(
+        from ..core.exceptions import ValidationError
+
+        raise ValidationError(
             "ExplanationBatch metadata reports mode '"
             + str(mode_hint)
             + "' but runtime expected '"
             + expected_mode
-            + "'"
+            + "'",
+            details={
+                "param": "mode",
+                "expected": expected_mode,
+                "actual": str(mode_hint),
+                "source": "batch.collection_metadata",
+            },
         )
 
     task_hint = metadata.get("task")
     if expected_task is not None and task_hint is not None and str(task_hint) != expected_task:
-        raise ValueError(
+        from ..core.exceptions import ValidationError
+
+        raise ValidationError(
             "ExplanationBatch metadata reports task '"
             + str(task_hint)
             + "' but runtime expected '"
             + expected_task
-            + "'"
+            + "'",
+            details={
+                "param": "task",
+                "expected": expected_task,
+                "actual": str(task_hint),
+                "source": "batch.collection_metadata",
+            },
         )
 
     container = metadata.get("container")

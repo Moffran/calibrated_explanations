@@ -8,6 +8,10 @@ import types
 import numpy as np
 import pytest
 
+from calibrated_explanations.core import (
+    ConfigurationError,
+    NotFittedError,
+)
 from calibrated_explanations.plugins import builtins
 from calibrated_explanations.plugins.explanations import (
     ExplanationBatch,
@@ -177,9 +181,7 @@ def test_interval_calibrator_create_for_regression(monkeypatch):
         def __init__(self, explainer):
             created_with["explainer"] = explainer
 
-    interval_module = types.ModuleType(
-        "calibrated_explanations.core.calibration.interval_regressor"
-    )
+    interval_module = types.ModuleType("calibrated_explanations.calibration.interval_regressor")
     interval_module.IntervalRegressor = DummyIntervalRegressor
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
@@ -201,7 +203,7 @@ def test_interval_calibrator_create_for_classification(monkeypatch):
             created_args["args"] = args
             created_args["kwargs"] = kwargs
 
-    venn_module = types.ModuleType("calibrated_explanations.core.calibration.venn_abers")
+    venn_module = types.ModuleType("calibrated_explanations.calibration.venn_abers")
     venn_module.VennAbers = DummyVennAbers
     monkeypatch.setitem(sys.modules, venn_module.__name__, venn_module)
 
@@ -219,7 +221,7 @@ def test_interval_calibrator_create_for_classification(monkeypatch):
 
 
 def test_interval_calibrator_requires_predict_function(monkeypatch):
-    venn_module = types.ModuleType("calibrated_explanations.core.calibration.venn_abers")
+    venn_module = types.ModuleType("calibrated_explanations.calibration.venn_abers")
     venn_module.VennAbers = object
     monkeypatch.setitem(sys.modules, venn_module.__name__, venn_module)
 
@@ -227,26 +229,24 @@ def test_interval_calibrator_requires_predict_function(monkeypatch):
         metadata={"task": "classification"},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.create(context)
 
 
 def test_interval_calibrator_requires_explainer_for_regression(monkeypatch):
-    interval_module = types.ModuleType(
-        "calibrated_explanations.core.calibration.interval_regressor"
-    )
+    interval_module = types.ModuleType("calibrated_explanations.calibration.interval_regressor")
     interval_module.IntervalRegressor = object
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
     context = _make_interval_context(metadata={"task": "regression"})
     plugin = builtins.LegacyIntervalCalibratorPlugin()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.create(context)
 
 
 def test_explanation_plugin_requires_initialisation():
     plugin = builtins.LegacyFactualExplanationPlugin()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.explain_batch("x", ExplanationRequest(None, None, None, (), {}))
 
 
@@ -255,7 +255,7 @@ def test_explanation_initialise_requires_explainer():
     context = _make_explanation_context(
         explainer=None, predict_bridge=builtins.LegacyPredictBridge(_SentinelExplainer([1]))
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         plugin.initialize(context)
 
 
@@ -324,7 +324,7 @@ def test_explanation_rejects_unsupported_model(monkeypatch):
         def explain_factual(self, x, **kwargs):  # pragma: no cover - shouldn't run
             raise AssertionError
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ConfigurationError):
         plugin.explain(DummyModel(), "x")
 
 
@@ -367,11 +367,11 @@ def test_plotspec_builder_global_payload(monkeypatch):
 
 def test_plotspec_builder_rejects_non_mapping_payloads():
     builder = builtins.PlotSpecDefaultBuilder()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         builder.build(_make_plot_context(intent={"type": "global"}, options={"payload": 3}))
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         builder.build(_make_plot_context(intent={"type": "alternative"}, options={"payload": 3}))
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         builder.build(
             _make_plot_context(
                 intent={"type": "alternative"},
@@ -617,7 +617,7 @@ def test_plotspec_builder_regression_without_threshold(monkeypatch):
 
 def test_plotspec_builder_requires_supported_intent():
     builder = builtins.PlotSpecDefaultBuilder()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ConfigurationError):
         builder.build(_make_plot_context(intent={"type": "unsupported"}))
 
 

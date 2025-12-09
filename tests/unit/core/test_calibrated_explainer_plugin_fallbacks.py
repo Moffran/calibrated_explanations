@@ -22,10 +22,11 @@ def _minimal_explainer() -> CalibratedExplainer:
 
 def test_require_plugin_manager_raises_when_missing():
     """_require_plugin_manager should raise when the manager is absent."""
+    from calibrated_explanations.core.exceptions import NotFittedError
 
     explainer = _minimal_explainer()
 
-    with pytest.raises(RuntimeError, match="PluginManager is not initialized"):
+    with pytest.raises(NotFittedError, match="PluginManager is not initialized"):
         explainer._require_plugin_manager()
 
 

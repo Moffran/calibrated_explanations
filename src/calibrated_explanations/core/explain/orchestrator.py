@@ -19,16 +19,18 @@ import copy
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 from ...core.config_helpers import coerce_string_tuple
-from ...plugins import ExplanationContext, ExplanationRequest, validate_explanation_batch
-from ...plugins.predict_monitor import PredictBridgeMonitor
-from ...plugins.registry import (
+from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
+    ExplanationContext,
+    ExplanationRequest,
     ensure_builtin_plugins,
     find_explanation_descriptor,
     find_explanation_plugin,
     is_identifier_denied,
+    validate_explanation_batch,
 )
-from ...utils.discretizers import EntropyDiscretizer, RegressorDiscretizer
+from ...plugins.predict_monitor import PredictBridgeMonitor
+from ...utils import EntropyDiscretizer, RegressorDiscretizer
 from ..exceptions import ConfigurationError
 
 if TYPE_CHECKING:
@@ -93,6 +95,120 @@ class ExplanationOrchestrator:
             return self.explainer._plugin_manager._build_plot_chain()
         # Fallback for test stubs: return empty tuple
         return ()
+
+    def set_discretizer(
+        self,
+        discretizer: str | Any,
+        x_cal: Any | None = None,
+        y_cal: Any | None = None,
+        features_to_ignore: List[int] | None = None,
+        *,
+        condition_source: str | None = None,
+    ) -> None:
+        """Assign the discretizer to be used.
+
+        Parameters
+        ----------
+        discretizer : str or discretizer object
+            The discretizer to be used.
+        x_cal : array-like, optional
+            The calibration data for the discretizer.
+        y_cal : array-like, optional
+            The calibration target data for the discretizer.
+        features_to_ignore : list of int, optional
+            Features to ignore during discretization.
+        condition_source : str, optional
+            Source for condition labels ('observed' or 'prediction').
+        """
+        import numpy as np
+
+        from ...core.discretizer_config import (
+            instantiate_discretizer,
+            setup_discretized_data,
+            validate_discretizer_choice,
+        )
+        from ..exceptions import ValidationError
+
+        if x_cal is None:
+            x_cal = self.explainer.x_cal
+        if y_cal is None:
+            y_cal = self.explainer.y_cal
+
+        selected_condition_source = condition_source or self.explainer.condition_source
+        if selected_condition_source not in {"observed", "prediction"}:
+            raise ValidationError(
+                "condition_source must be either 'observed' or 'prediction'",
+                details={
+                    "param": "condition_source",
+                    "value": selected_condition_source,
+                    "allowed": ("observed", "prediction"),
+                },
+            )
+        condition_labels = None
+        if selected_condition_source == "prediction":
+            predictions = self.explainer.predict(
+                x_cal, calibrated=True, uq_interval=False, bins=self.explainer.bins
+            )
+            if isinstance(predictions, tuple):
+                predictions = predictions[0]
+            condition_labels = np.asarray(predictions)
+
+            # Filter out NaNs
+            if (
+                np.issubdtype(condition_labels.dtype, np.number)
+                and np.isnan(condition_labels).any()
+            ):
+                mask = ~np.isnan(condition_labels)
+                x_cal = x_cal[mask]
+                condition_labels = condition_labels[mask]
+
+        # Validate and potentially default the discretizer choice
+        discretizer = validate_discretizer_choice(discretizer, self.explainer.mode)
+
+        if features_to_ignore is None:
+            features_to_ignore = []
+
+        not_to_discretize = np.union1d(
+            np.union1d(self.explainer.categorical_features, self.explainer.features_to_ignore),
+            features_to_ignore,
+        )
+
+        # Store old discretizer to check if we can cache
+        old_discretizer = self.explainer.discretizer
+
+        # Instantiate the discretizer (may return cached instance if type matches)
+        self.explainer.discretizer = instantiate_discretizer(
+            discretizer,
+            x_cal,
+            not_to_discretize,
+            self.explainer.feature_names,
+            y_cal,
+            self.explainer.seed,
+            old_discretizer,
+            condition_labels=condition_labels,
+            condition_source=selected_condition_source,
+        )
+
+        # If discretizer is unchanged, skip recomputation
+        if self.explainer.discretizer is old_discretizer and hasattr(
+            self.explainer, "discretized_X_cal"
+        ):
+            return
+
+        # Setup discretized data and build feature caches
+        feature_data, self.explainer.discretized_X_cal = setup_discretized_data(
+            self.explainer,
+            self.explainer.discretizer,
+            self.explainer.x_cal,
+            self.explainer.num_features,
+        )
+
+        # Populate feature_values and feature_frequencies from the setup data
+        self.explainer.feature_values = {}
+        self.explainer.feature_frequencies = {}
+        for feature, data in feature_data.items():
+            self.explainer.feature_values[feature] = data["values"]
+            self.explainer.feature_frequencies[feature] = data["frequencies"]
 
     def infer_mode(self) -> str:
         """Infer the explanation mode based on the active discretizer.
@@ -245,6 +361,7 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         discretizer: str | None = None,
         _use_plugin: bool = True,
+        **kwargs: Any,
     ) -> Any:
         """Execute factual explanation with automatic discretizer setting.
 
@@ -267,6 +384,8 @@ class ExplanationOrchestrator:
             Discretizer type to set (e.g., "binaryEntropy" for classification).
         _use_plugin : bool, default=True
             Whether to use the plugin system.
+        **kwargs : Any
+            Additional arguments passed to the explanation plugin.
 
         Returns
         -------
@@ -298,6 +417,7 @@ class ExplanationOrchestrator:
             low_high_percentiles=low_high_percentiles,
             bins=bins,
             features_to_ignore=features_to_ignore,
+            extras=kwargs,
         )
 
     def invoke_alternative(  # pylint: disable=invalid-name
@@ -309,6 +429,7 @@ class ExplanationOrchestrator:
         features_to_ignore: Any,
         discretizer: str | None = None,
         _use_plugin: bool = True,
+        **kwargs: Any,
     ) -> Any:
         """Execute alternative explanation with automatic discretizer setting.
 
@@ -331,6 +452,8 @@ class ExplanationOrchestrator:
             Discretizer type to set (e.g., "entropy" for classification).
         _use_plugin : bool, default=True
             Whether to use the plugin system.
+        **kwargs : Any
+            Additional arguments passed to the explanation plugin.
 
         Returns
         -------
@@ -362,6 +485,7 @@ class ExplanationOrchestrator:
             low_high_percentiles=low_high_percentiles,
             bins=bins,
             features_to_ignore=features_to_ignore,
+            extras=kwargs,
         )
 
     def _ensure_plugin(self, mode: str) -> Tuple[Any, str | None]:

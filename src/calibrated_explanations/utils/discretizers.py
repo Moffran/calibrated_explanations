@@ -12,7 +12,8 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import check_random_state
 
-from ..utils.helper import safe_mean
+from ..core.exceptions import ValidationError
+from .helper import safe_mean
 
 
 # pylint: disable=too-many-instance-attributes
@@ -154,9 +155,9 @@ class EntropyDiscretizer(BaseDiscretizer):
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initialize the EntropyDiscretizer."""
         if labels is None:
-            raise ValueError(
-                "Labels must be not None when using \
-                            EntropyDiscretizer"
+            raise ValidationError(
+                "Labels must not be None when using EntropyDiscretizer.",
+                details={"param": "labels", "requirement": "non-null", "discretizer": "Entropy"},
             )
         BaseDiscretizer.__init__(
             self,
@@ -220,7 +221,14 @@ class BinaryEntropyDiscretizer(BaseDiscretizer):
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initialize the BinaryEntropyDiscretizer."""
         if labels is None:
-            raise ValueError("Labels must not be None when using " + "BinaryEntropyDiscretizer")
+            raise ValidationError(
+                "Labels must not be None when using BinaryEntropyDiscretizer.",
+                details={
+                    "param": "labels",
+                    "requirement": "non-null",
+                    "discretizer": "BinaryEntropy",
+                },
+            )
         BaseDiscretizer.__init__(
             self,
             data,
@@ -284,7 +292,10 @@ class RegressorDiscretizer(BaseDiscretizer):
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initialize the RegressorDiscretizer."""
         if labels is None:
-            raise ValueError("Labels must not be None when using " + "RegressorDiscretizer")
+            raise ValidationError(
+                "Labels must not be None when using RegressorDiscretizer.",
+                details={"param": "labels", "requirement": "non-null", "discretizer": "Regressor"},
+            )
         BaseDiscretizer.__init__(
             self,
             data,
@@ -348,7 +359,14 @@ class BinaryRegressorDiscretizer(BaseDiscretizer):
     def __init__(self, data, categorical_features, feature_names, labels=None, random_state=None):
         """Initialize the BinaryRegressorDiscretizer."""
         if labels is None:
-            raise ValueError("Labels must not be None when using " + "BinaryRegressorDiscretizer")
+            raise ValidationError(
+                "Labels must not be None when using BinaryRegressorDiscretizer.",
+                details={
+                    "param": "labels",
+                    "requirement": "non-null",
+                    "discretizer": "BinaryRegressor",
+                },
+            )
         BaseDiscretizer.__init__(
             self,
             data,

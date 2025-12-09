@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from calibrated_explanations.utils.helper import safe_import, safe_isinstance
+from calibrated_explanations.utils import safe_import, safe_isinstance
 
 
 class TestSafeImportInPluginLoading:
@@ -199,7 +199,7 @@ class TestPluginDiscoveryWithSafeImport:
         # The plugin system should be able to ensure builtin plugins are loaded
         # without crashing if optional dependencies are missing
         try:
-            from calibrated_explanations.plugins.registry import (
+            from calibrated_explanations.plugins import (
                 ensure_builtin_plugins,
             )
 

@@ -1,5 +1,5 @@
 from calibrated_explanations.serialization import to_json, from_json
-from calibrated_explanations.explanations.adapters import legacy_to_domain
+from calibrated_explanations.explanations import legacy_to_domain
 from tests._helpers import initiate_explainer
 
 import numpy as np

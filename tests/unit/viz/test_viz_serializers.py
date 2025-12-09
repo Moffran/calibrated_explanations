@@ -1,17 +1,17 @@
 """Tests for PlotSpec serializers: to_dict and from_dict.
 
 Focuses on semantic assertions (domain invariants) and roundtrip
-verification. See TEST_GUIDELINES_ENHANCED.md for patterns.
+verification. See .github/tests-guidance.md for patterns.
 """
 
 import pytest
 
-from calibrated_explanations.viz.serializers import (
+from calibrated_explanations.viz import (
     plotspec_to_dict,
     plotspec_from_dict,
     validate_plotspec,
 )
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import (
     PlotSpec,
     IntervalHeaderSpec,
     BarHPanelSpec,
@@ -55,15 +55,17 @@ def test_plotspec_roundtrip_and_validate__should_preserve_semantics():
 
 def test_validate_rejects_bad_payload():
     """Verify that validation rejects malformed payloads."""
-    with pytest.raises(ValueError):
+    from calibrated_explanations.core.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
         validate_plotspec(["not", "a", "dict"])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         validate_plotspec({})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         validate_plotspec({"plotspec_version": "1.0.0", "body": {"bars": "notalist"}})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         validate_plotspec({"plotspec_version": "1.0.0", "title": "missing body"})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         validate_plotspec(
             {
                 "plotspec_version": "1.0.0",

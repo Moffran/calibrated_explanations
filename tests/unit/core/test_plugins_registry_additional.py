@@ -130,9 +130,11 @@ def test_resolve_plugin_module_file_branches(tmp_path):
 
 
 def test_verify_plugin_checksum_warnings_and_errors(monkeypatch, tmp_path):
+    from calibrated_explanations.core.exceptions import ValidationError
+
     plugin = SimpleNamespace()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._verify_plugin_checksum(plugin, {"checksum": {"sha256": 123}})
 
     missing_path = tmp_path / "missing.py"
@@ -158,7 +160,7 @@ def test_verify_plugin_checksum_warnings_and_errors(monkeypatch, tmp_path):
     registry._verify_plugin_checksum(plugin, {"checksum": {"sha256": digest}})
 
     monkeypatch.setattr(registry, "_resolve_plugin_module_file", lambda p: module_file)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._verify_plugin_checksum(plugin, {"checksum": "not-the-digest"})
 
 
@@ -181,6 +183,8 @@ def test_validate_explanation_metadata_from_mapping():
 
 
 def test_validate_interval_metadata_requires_trust():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     meta = {
         "modes": ("classification",),
         "capabilities": ["interval:classification"],
@@ -189,36 +193,38 @@ def test_validate_interval_metadata_requires_trust():
         "requires_bins": False,
         "confidence_source": "legacy",
     }
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_interval_metadata(meta)
 
 
 def test_sequence_and_collection_validation_errors():
-    with pytest.raises(ValueError):
+    from calibrated_explanations.core.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": "single"}, "values")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": [1]}, "values")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": []}, "values")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": ["foo"]}, "values", allowed={"bar"})
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._coerce_string_collection([1], key="items")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._coerce_string_collection(42, key="items")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._coerce_string_collection((), key="items")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._normalise_dependency_field({}, "missing")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._normalise_tasks({"tasks": ["invalid"]})
 
     bad_meta = {
@@ -231,7 +237,7 @@ def test_sequence_and_collection_validation_errors():
         "tasks": ["classification"],
         "dependencies": [],
     }
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_explanation_metadata(bad_meta)
 
     missing_trust = {
@@ -244,19 +250,19 @@ def test_sequence_and_collection_validation_errors():
         "tasks": ["classification"],
         "dependencies": [],
     }
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_explanation_metadata(missing_trust)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_bool({}, "flag")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_bool({"flag": "yes"}, "flag")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_string({}, "name")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_string({"name": ""}, "name")
 
     interval_meta = {
@@ -268,7 +274,7 @@ def test_sequence_and_collection_validation_errors():
         "confidence_source": "legacy",
         "trust": False,
     }
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_interval_metadata(interval_meta)
 
     proxy_meta = MappingProxyType(
@@ -308,7 +314,7 @@ def test_sequence_and_collection_validation_errors():
     )
     assert isinstance(registry.validate_plot_renderer_metadata(proxy_renderer), dict)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_plot_style_metadata(
             {
                 "style": "s",
@@ -318,7 +324,7 @@ def test_sequence_and_collection_validation_errors():
             }
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_plot_style_metadata(
             {
                 "style": "s",
@@ -359,12 +365,14 @@ def test_register_explanation_plugin_updates_raw_meta():
 
 
 def test_register_interval_plugin_requires_metadata():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_interval_plugins()
 
     class MissingMetaInterval:
         plugin_meta = None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_interval_plugin("missing", MissingMetaInterval())
 
 
@@ -386,6 +394,8 @@ class ExampleIntervalPlugin:
 
 
 def test_register_plot_builder_renderer_require_metadata():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_plot_plugins()
 
     class NoMetaBuilder:
@@ -394,44 +404,48 @@ def test_register_plot_builder_renderer_require_metadata():
     class NoMetaRenderer:
         plugin_meta = None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_plot_builder("builder", NoMetaBuilder())
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_plot_renderer("renderer", NoMetaRenderer())
 
 
 def test_register_helpers_validate_identifiers():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("", _SimpleExplanationPlugin())
 
     class NoMetaPlugin:
         plugin_meta = None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("ok", NoMetaPlugin())
 
     registry.clear_interval_plugins()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_interval_plugin("", ExampleIntervalPlugin())
 
     registry.clear_plot_plugins()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_plot_builder("", _Builder())
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_plot_renderer("", _Renderer())
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_plot_style(
             "", metadata={"style": "", "builder_id": "b", "renderer_id": "r"}
         )
 
 
 def test_register_plot_style_validation():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_plot_plugins()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_plot_style("style", metadata=None)  # type: ignore[arg-type]
 
     meta = {
@@ -757,6 +771,8 @@ def test_resolve_plugin_from_name_and_safe_supports():
 
 
 def test_refresh_descriptor_and_register_errors():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
     plugin = _SimpleExplanationPlugin()
     descriptor = registry.register_explanation_plugin("simple.extra", plugin)
@@ -771,7 +787,7 @@ def test_refresh_descriptor_and_register_errors():
     class NoMeta:
         plugin_meta = None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register(NoMeta())
 
     class FailingMeta(MutableMapping):

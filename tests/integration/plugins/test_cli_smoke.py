@@ -14,7 +14,7 @@ import pytest
 
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins.cli import main
-from calibrated_explanations.plugins.registry import (
+from calibrated_explanations.plugins import (
     clear_explanation_plugins,
     ensure_builtin_plugins,
     find_explanation_descriptor,

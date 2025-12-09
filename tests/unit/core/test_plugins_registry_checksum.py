@@ -84,7 +84,8 @@ def test_register_explanation_plugin_verifies_checksum(tmp_path, monkeypatch):
 
 
 def test_register_explanation_plugin_rejects_checksum_mismatch(tmp_path, monkeypatch):
-    """An incorrect checksum raises a ValueError to prevent tampering."""
+    """An incorrect checksum raises a ValidationError to prevent tampering."""
+    from calibrated_explanations.core.exceptions import ValidationError
 
     module_name = _write_checksum_plugin(tmp_path)
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -98,7 +99,7 @@ def test_register_explanation_plugin_rejects_checksum_mismatch(tmp_path, monkeyp
         plugin.plugin_meta = dict(module.PLUGIN.plugin_meta)
         plugin.plugin_meta["checksum"] = "0" * 64
 
-        with pytest.raises(ValueError, match="Checksum mismatch"):
+        with pytest.raises(ValidationError, match="Checksum mismatch"):
             registry.register_explanation_plugin("checksum.invalid", plugin)
     finally:
         registry.clear()

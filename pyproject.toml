@@ -14,6 +14,8 @@ authors = [
   { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },
 ]
 dependencies = [
+  'cachetools',
+  'pympler',
   'crepes',
   'venn-abers',
   'ipython',
@@ -22,6 +24,7 @@ dependencies = [
   'numpy',
   'pandas',
   'scikit-learn',
+  'pyyaml',
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",

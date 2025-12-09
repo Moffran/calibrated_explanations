@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 
@@ -108,7 +109,7 @@ def test_validate_plugin_meta_rejects_bad_meta():
         def explain(self, model, x, **kwargs):
             return {}
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register(BadPlugin())
 
 
@@ -131,6 +132,8 @@ class DummyPlugin:
 
 
 def test_register_and_trust_flow(tmp_path):
+    from calibrated_explanations.core.exceptions import ValidationError
+
     p = DummyPlugin()
     # ensure clean start
     registry.clear()
@@ -139,7 +142,7 @@ def test_register_and_trust_flow(tmp_path):
     assert p not in registry.list_plugins(include_untrusted=False)
 
     # trusting unregistered plugin raises
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.trust_plugin(object())
 
     # trust and find
@@ -199,6 +202,8 @@ def test_register_explanation_plugin_descriptor():
 
 
 def test_register_explanation_plugin_requires_modes():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
 
     class BadExplanationPlugin:
@@ -213,11 +218,13 @@ def test_register_explanation_plugin_requires_modes():
             "trust": False,
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("bad", BadExplanationPlugin())
 
 
 def test_register_explanation_plugin_requires_tasks():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
 
     class NoTasksExplanationPlugin:
@@ -232,7 +239,7 @@ def test_register_explanation_plugin_requires_tasks():
             "trust": False,
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("bad.tasks", NoTasksExplanationPlugin())
 
 
@@ -259,6 +266,8 @@ def test_register_explanation_plugin_translates_aliases():
 
 
 def test_register_explanation_plugin_schema_version_future():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_explanation_plugins()
 
     class FuturePlugin:
@@ -274,7 +283,7 @@ def test_register_explanation_plugin_schema_version_future():
             "trust": False,
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("future", FuturePlugin())
 
 
@@ -366,6 +375,8 @@ def test_register_interval_plugin_descriptor():
 
 
 def test_register_interval_plugin_requires_modes():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_interval_plugins()
 
     class BadIntervalPlugin:
@@ -382,7 +393,7 @@ def test_register_interval_plugin_requires_modes():
             "confidence_source": "legacy",
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_interval_plugin("bad.interval", BadIntervalPlugin())
 
 
@@ -439,6 +450,8 @@ def test_register_plot_components():
 
 
 def test_register_plot_builder_requires_style():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     registry.clear_plot_plugins()
 
     class BadPlotPlugin:
@@ -454,7 +467,7 @@ def test_register_plot_builder_requires_style():
             "legacy_compatible": False,
         }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_plot_builder("bad.plot", BadPlotPlugin())
 
 
@@ -566,6 +579,8 @@ def test_find_plot_plugin_trusted_requires_trusted_components():
 
 
 def test_verify_plugin_checksum_success_and_failure(monkeypatch):
+    from calibrated_explanations.core.exceptions import ValidationError
+
     plugin = ExamplePlotBuilder()
     module_path = Path(__file__)
     good_digest = hashlib.sha256(module_path.read_bytes()).hexdigest()
@@ -578,7 +593,7 @@ def test_verify_plugin_checksum_success_and_failure(monkeypatch):
     registry._verify_plugin_checksum(plugin, dict(meta_string))
 
     bad_meta = {"checksum": {"sha256": "00" * 32}, "name": "example.plot.builder"}
-    with pytest.raises(ValueError, match="Checksum mismatch"):
+    with pytest.raises(ValidationError, match="Checksum mismatch"):
         registry._verify_plugin_checksum(plugin, bad_meta)
 
     # Simulate a plugin whose module file cannot be resolved
@@ -591,7 +606,7 @@ def test_verify_plugin_checksum_success_and_failure(monkeypatch):
     with pytest.warns(RuntimeWarning):
         registry._verify_plugin_checksum(object(), meta_missing)
 
-    with pytest.raises(ValueError, match="must be a string or mapping"):
+    with pytest.raises(ValidationError, match="must be a string or mapping"):
         registry._verify_plugin_checksum(plugin, {"checksum": 123, "name": "bad"})
 
 

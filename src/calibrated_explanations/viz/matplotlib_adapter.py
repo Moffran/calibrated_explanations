@@ -12,6 +12,7 @@ import math
 
 import numpy as np
 
+from ..core.exceptions import ValidationError
 from ..plotting import _MATPLOTLIB_IMPORT_ERROR  # noqa: F401  (exported indirectly)
 from ..plotting import __require_matplotlib as _require_mpl  # reuse lazy guard
 from ..plotting import __setup_plot_style as _setup_style
@@ -224,7 +225,10 @@ def render(
         try:
             x0f, x1f = float(xlim[0]), float(xlim[1])
             if not math.isfinite(x0f) or not math.isfinite(x1f):
-                raise ValueError
+                raise ValidationError(
+                    "xlim bounds must be finite numbers",
+                    details={"param": "xlim", "lower": xlim[0], "upper": xlim[1]},
+                )
             if math.isclose(x0f, x1f, rel_tol=1e-12, abs_tol=1e-12):
                 eps = abs(x0f) * 1e-3 if x0f != 0 else 1e-3
                 x0f -= eps

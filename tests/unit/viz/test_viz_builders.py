@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from calibrated_explanations.viz.builders import (
+from calibrated_explanations.viz import (
     build_regression_bars_spec,
     build_probabilistic_bars_spec,
     is_valid_probability_values,

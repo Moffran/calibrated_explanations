@@ -1,7 +1,7 @@
 import pytest
 
 from calibrated_explanations.viz import matplotlib_adapter as mpl_adapter
-from calibrated_explanations.viz.builders import (
+from calibrated_explanations.viz import (
     REGRESSION_BAR_COLOR,
     REGRESSION_BASE_COLOR,
 )

@@ -17,12 +17,8 @@ from unittest.mock import patch
 
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.utils.helper import (
-    check_is_fitted,
-    is_notebook,
-    make_directory,
-    safe_import,
-)
+from calibrated_explanations.core.exceptions import NotFittedError
+from calibrated_explanations.utils import check_is_fitted, is_notebook, make_directory, safe_import
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestClassifier
 
@@ -33,7 +29,7 @@ def test_failure():
     """
     Tests the failure case for initializing `CalibratedExplainer`.
     """
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         CalibratedExplainer(RandomForestClassifier(), [], [])
 
 
@@ -49,15 +45,15 @@ def test_check_is_fitted_with_fitted_model(binary_dataset):
         check_is_fitted(model)
     except TypeError:
         pytest.fail("check_is_fitted raised TypeError unexpectedly!")
-    except RuntimeError:
-        pytest.fail("check_is_fitted raised RuntimeError unexpectedly!")
+    except NotFittedError:
+        pytest.fail("check_is_fitted raised NotFittedError unexpectedly!")
 
 
 def test_check_is_fitted_with_non_fitted_model():
     """
     Tests `check_is_fitted` with a non-fitted model.
     """
-    with pytest.raises(RuntimeError):
+    with pytest.raises(NotFittedError):
         check_is_fitted(RandomForestClassifier())
     with pytest.raises(TypeError):
         check_is_fitted(RandomForestClassifier)

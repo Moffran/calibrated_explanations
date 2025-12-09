@@ -24,7 +24,7 @@ from calibrated_explanations.plugins.registry import (
     register_explanation_plugin,
     register_interval_plugin,
 )
-from calibrated_explanations.utils.perturbation import perturb_dataset
+from calibrated_explanations.utils import perturb_dataset
 
 
 class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
@@ -85,7 +85,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         calibrators: list[Any] = []
         num_features = int(metadata.get("num_features", 0) or 0)
         if "classification" in task:
-            from calibrated_explanations.core.venn_abers import (
+            from calibrated_explanations.calibration import (
                 VennAbers,
             )  # local import to avoid circular dependency
 
@@ -102,7 +102,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                     )
                 )
         else:
-            from calibrated_explanations.core.calibration.interval_regressor import (
+            from calibrated_explanations.calibration import (
                 IntervalRegressor,
             )  # local import to avoid circular dependency
 
@@ -118,7 +118,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
         explainer.bins = original_bins
 
         if "classification" in task:
-            from calibrated_explanations.core.venn_abers import (
+            from calibrated_explanations.calibration import (
                 VennAbers,
             )  # local import to avoid circular dependency
 
@@ -137,7 +137,7 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
                 )
             )
         else:
-            from calibrated_explanations.core.calibration.interval_regressor import (
+            from calibrated_explanations.calibration import (
                 IntervalRegressor,
             )  # local import to avoid circular dependency
 

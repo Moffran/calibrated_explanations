@@ -118,7 +118,7 @@ def binary_dataset():
 @pytest.fixture
 def multiclass_dataset():
     """Shared multiclass dataset fixture."""
-    from calibrated_explanations.utils.helper import transform_to_numeric
+    from calibrated_explanations.utils import transform_to_numeric
 
     dataset_name = "glass"
     delimiter = ","

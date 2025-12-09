@@ -224,9 +224,11 @@ def test_compose_save_target_handles_directories(tmp_path):
 
 
 def test_require_matplotlib_reports_original_error(monkeypatch):
+    from calibrated_explanations.core.exceptions import ConfigurationError
+
     monkeypatch.setattr(plotting, "plt", None)
     monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("boom"))
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(ConfigurationError) as exc_info:
         plotting.__require_matplotlib()
     assert "Original import error: boom" in str(exc_info.value)
 

@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from calibrated_explanations.core import NotFittedError, ValidationError
 from calibrated_explanations.utils import helper
 
 
@@ -50,8 +51,8 @@ def test_safe_isinstance_variants(monkeypatch):
     # `None` input produces False without errors
     assert helper.safe_isinstance(HelperExample(), None) is False
 
-    # Missing dot raises ValueError
-    with pytest.raises(ValueError):
+    # Missing dot raises ValidationError
+    with pytest.raises(ValidationError):
         helper.safe_isinstance(HelperExample(), "notadottedpath")
 
 
@@ -105,7 +106,7 @@ def test_check_is_fitted_paths(tmp_path):
     assert helper.check_is_fitted(DummyAttr(), attributes=["coef_"]) is None
 
     estimator = DummyNeedsFit()
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(NotFittedError) as excinfo:
         helper.check_is_fitted(estimator)
     assert "DummyNeedsFit" in str(excinfo.value)
 
@@ -159,11 +160,11 @@ def test_assert_threshold_handles_nested_structures():
     thresholds = [(0.1, 0.9), (0.2, 0.8)]
     assert helper.assert_threshold(thresholds, np.array([[1], [2]])) == thresholds
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         helper.assert_threshold((0.1,), [1])
     with pytest.raises(AssertionError):
         helper.assert_threshold([0.1, 0.2, 0.3], [1, 2])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         helper.assert_threshold({1: 2}, [1])
 
 
@@ -187,10 +188,10 @@ def test_calculate_metrics_behaviour():
     expected_normalized = np.zeros_like(expected_ensured)
     assert np.allclose(normalized, expected_normalized)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         helper.calculate_metrics(uncertainty, None)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         helper.calculate_metrics(uncertainty, prediction, w=2)
 
 

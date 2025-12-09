@@ -1,10 +1,9 @@
+from __future__ import annotations
 from functools import partial
 
-from calibrated_explanations.perf.parallel import (
-    ParallelConfig,
-    ParallelExecutor,
-    ParallelMetrics,
-)
+from typing import Any
+
+from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
 
 
 class DummyCache:
@@ -26,7 +25,7 @@ class DummyPool:
     def __exit__(self, exc_type, exc, tb):
         return False
 
-    def map(self, fn, items):
+    def map(self, fn, items, chunksize=None):
         self.mapped = list(items)
         return [fn(item) for item in items]
 
@@ -90,9 +89,16 @@ def test_map_uses_strategy_and_updates_metrics(monkeypatch):
     def telemetry(event, payload):
         events.append((event, payload))
 
-    config = ParallelConfig(enabled=True, strategy="threads", min_batch_size=1, telemetry=telemetry)
+    config = ParallelConfig(
+        enabled=True,
+        strategy="threads",
+        min_batch_size=1,
+        telemetry=telemetry,
+        force_serial_on_failure=True,
+    )
+    print(f"DEBUG: config.force_serial_on_failure={config.force_serial_on_failure}")
     executor = ParallelExecutor(config)
-    monkeypatch.setattr(executor, "_resolve_strategy", lambda: failing_strategy)
+    monkeypatch.setattr(executor, "_resolve_strategy", lambda **k: failing_strategy)
     assert executor.map(lambda x: x + 1, [1]) == [2]
     assert executor.metrics.failures == 1
     assert executor.metrics.fallbacks == 1
@@ -119,7 +125,7 @@ def test_resolve_strategy_variants(monkeypatch):
     assert strategy.func.__name__ == "_serial_strategy"
 
     config.strategy = "auto"
-    monkeypatch.setattr(executor, "_auto_strategy", lambda: "threads")
+    monkeypatch.setattr(executor, "_auto_strategy", lambda **k: "threads")
     assert executor._resolve_strategy().func.__name__ == "_thread_strategy"
 
 
@@ -127,27 +133,93 @@ def test_auto_strategy(monkeypatch):
     config = ParallelConfig(enabled=True, strategy="auto")
     executor = ParallelExecutor(config)
 
-    monkeypatch.setattr("calibrated_explanations.perf.parallel.os.name", "nt", raising=False)
+    import os
+
+    class MockOS:
+        name = "nt"
+
+        @staticmethod
+        def cpu_count():
+            return os.cpu_count()
+
+    monkeypatch.setattr("calibrated_explanations.parallel.parallel.os", MockOS, raising=False)
     assert executor._auto_strategy() == "threads"
 
-    monkeypatch.setattr("calibrated_explanations.perf.parallel.os.name", "posix", raising=False)
-    monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel.os.cpu_count", lambda: 1, raising=False
-    )
+    MockOS.name = "posix"
+    MockOS.cpu_count = lambda: 1
     assert executor._auto_strategy() == "threads"
 
+    MockOS.cpu_count = lambda: 8
     monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel.os.cpu_count", lambda: 8, raising=False
-    )
-    monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel._JoblibParallel", object(), raising=False
+        "calibrated_explanations.parallel.parallel._JoblibParallel", object(), raising=False
     )
     assert executor._auto_strategy() == "joblib"
 
     monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel._JoblibParallel", None, raising=False
+        "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
     )
     assert executor._auto_strategy() == "processes"
+
+
+def test_auto_strategy_work_items(monkeypatch):
+    config = ParallelConfig(enabled=True, strategy="auto", min_batch_size=16)
+    executor = ParallelExecutor(config)
+
+    assert executor._auto_strategy(work_items=10) == "sequential"
+    assert executor._auto_strategy(work_items=4000) == "threads"
+
+    import os
+
+    class MockOS:
+        name = "posix"
+
+        @staticmethod
+        def cpu_count():
+            return os.cpu_count()
+
+    monkeypatch.setattr("calibrated_explanations.parallel.parallel.os", MockOS, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
+    )
+    executor.config.granularity = "instance"
+    assert executor._auto_strategy(work_items=60000) == "processes"
+
+
+def test_resolve_strategy_forwards_work_items(monkeypatch):
+    config = ParallelConfig(enabled=True, strategy="auto")
+    executor = ParallelExecutor(config)
+
+    captured: dict[str, int | None] = {"work_items": None}
+
+    def fake_auto_strategy(*, work_items: int | None = None) -> str:
+        captured["work_items"] = work_items
+        return "threads"
+
+    monkeypatch.setattr(executor, "_auto_strategy", fake_auto_strategy)
+    strategy = executor._resolve_strategy(work_items=123)
+
+    assert captured["work_items"] == 123
+    assert strategy.func.__name__ == "_thread_strategy"
+
+
+def test_map_passes_work_items_to_resolver(monkeypatch):
+    config = ParallelConfig(enabled=True, min_batch_size=1)
+    executor = ParallelExecutor(config)
+
+    captured: dict[str, int | None] = {"work_items": None}
+
+    def fake_resolve_strategy(*, work_items: int | None = None):
+        captured["work_items"] = work_items
+
+        def _runner(fn, items, **_: Any):
+            return [fn(item) for item in items]
+
+        return _runner
+
+    monkeypatch.setattr(executor, "_resolve_strategy", fake_resolve_strategy)
+    executor.map(lambda x: x + 1, [1, 2, 3], work_items=99)
+
+    assert captured["work_items"] == 99
 
 
 def test_thread_strategy(monkeypatch):
@@ -159,7 +231,7 @@ def test_thread_strategy(monkeypatch):
             return super().__exit__(exc_type, exc, tb)
 
     monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel.ThreadPoolExecutor",
+        "calibrated_explanations.parallel.parallel.ThreadPoolExecutor",
         RecordingPool,
         raising=False,
     )
@@ -180,7 +252,7 @@ def test_process_strategy(monkeypatch):
             return super().__exit__(exc_type, exc, tb)
 
     monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel.ProcessPoolExecutor",
+        "calibrated_explanations.parallel.parallel.ProcessPoolExecutor",
         RecordingPool,
         raising=False,
     )
@@ -198,21 +270,22 @@ def test_joblib_strategy(monkeypatch):
 
     calls = {}
 
-    def fake_thread(fn, items, workers=None):
+    def fake_thread(fn, items, workers=None, chunksize=None):
         calls["thread"] = True
         return [fn(item) for item in items]
 
     monkeypatch.setattr(executor, "_thread_strategy", fake_thread)
     monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel._JoblibParallel", None, raising=False
+        "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
     )
     assert executor._joblib_strategy(echo, [1, 2]) == [1, 2]
     assert calls["thread"]
 
     class FakeParallel:
-        def __init__(self, *, n_jobs, prefer):
+        def __init__(self, *, n_jobs, prefer, batch_size="auto"):
             self.n_jobs = n_jobs
             self.prefer = prefer
+            self.batch_size = batch_size
 
         def __call__(self, iterator):
             return list(iterator)
@@ -221,10 +294,10 @@ def test_joblib_strategy(monkeypatch):
         return lambda value: fn(value)
 
     monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel._JoblibParallel", FakeParallel, raising=False
+        "calibrated_explanations.parallel.parallel._JoblibParallel", FakeParallel, raising=False
     )
     monkeypatch.setattr(
-        "calibrated_explanations.perf.parallel._joblib_delayed", fake_delayed, raising=False
+        "calibrated_explanations.parallel.parallel._joblib_delayed", fake_delayed, raising=False
     )
     result = executor._joblib_strategy(echo, [1, 2, 3])
     assert result == [1, 2, 3]

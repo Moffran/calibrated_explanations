@@ -6,7 +6,7 @@ import pytest
 
 import numpy as np
 
-from calibrated_explanations.explanations.adapters import domain_to_legacy, legacy_to_domain
+from calibrated_explanations.explanations import domain_to_legacy, legacy_to_domain
 from calibrated_explanations.explanations import models
 
 

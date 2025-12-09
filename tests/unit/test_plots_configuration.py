@@ -42,11 +42,13 @@ def test_split_csv_handles_strings_sequences_and_invalid_values():
 
 
 def test_require_matplotlib_raises_helpful_error(monkeypatch):
+    from calibrated_explanations.core.exceptions import ConfigurationError
+
     monkeypatch.setattr(plotting, "plt", None)
     monkeypatch.setattr(plotting, "mcolors", None)
     monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", RuntimeError("missing"))
 
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(ConfigurationError) as excinfo:
         plotting.__require_matplotlib()
 
     message = str(excinfo.value)

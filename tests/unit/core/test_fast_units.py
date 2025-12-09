@@ -1,6 +1,6 @@
-from calibrated_explanations.perf.cache import LRUCache, make_key
+from calibrated_explanations.cache import LRUCache, make_key
 from calibrated_explanations.plugins import registry
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import (
     PlotSpec,
     IntervalHeaderSpec,
     BarHPanelSpec,

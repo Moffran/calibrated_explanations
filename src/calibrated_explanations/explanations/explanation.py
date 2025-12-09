@@ -33,13 +33,16 @@ from calibrated_explanations.core.explain.feature_task import (
 )
 
 from ..plotting import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
-from ..utils.discretizers import (
+from ..utils import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
     EntropyDiscretizer,
     RegressorDiscretizer,
+    calculate_metrics,
+    prepare_for_saving,
+    safe_first_element,
+    safe_mean,
 )
-from ..utils.helper import calculate_metrics, prepare_for_saving, safe_first_element, safe_mean
 
 # @dataclass
 # class PredictionInterval:
@@ -115,6 +118,7 @@ class CalibratedExplanation(ABC):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Abstract base class for storing and visualizing calibrated explanations.
 
@@ -182,6 +186,7 @@ class CalibratedExplanation(ABC):
         self._has_conjunctive_rules = False
         self.bin = [instance_bin] if instance_bin is not None else None
         self.explain_time = None
+        self.condition_source = condition_source
         # reduce dependence on Explainer class
         if not isinstance(self._get_explainer().y_cal, Categorical):
             self.y_minmax = [
@@ -257,7 +262,17 @@ class CalibratedExplanation(ABC):
             The sorted indices of the features.
         """
         if not (feature_weights is not None or width is not None):
-            raise ValueError("Either feature_weights or width (or both) must not be None")
+            from ..core.exceptions import ValidationError
+
+            raise ValidationError(
+                "Either feature_weights or width (or both) must not be None",
+                details={
+                    "param": "feature_weights/width",
+                    "requirement": "at least one must be provided",
+                    "feature_weights": feature_weights is not None,
+                    "width": width is not None,
+                },
+            )
         num_features = len(feature_weights) if feature_weights is not None else len(width)
         if num_to_show is None or num_to_show > num_features:
             num_to_show = num_features
@@ -769,7 +784,16 @@ class CalibratedExplanation(ABC):
             The predicted value, lower bound, upper bound, and count.
         """
         if len(original_features) < 2:
-            raise ValueError("Conjunctive rules require at least two features")
+            from ..core.exceptions import ValidationError
+
+            raise ValidationError(
+                "Conjunctive rules require at least two features",
+                details={
+                    "param": "original_features",
+                    "count": len(original_features),
+                    "requirement": "minimum 2 features",
+                },
+            )
 
         predict_fn = self._get_explainer()._predict  # pylint: disable=protected-access
         # Ensure perturbed is a writable copy to avoid "read-only" errors
@@ -1061,6 +1085,7 @@ class FactualExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Class for storing and visualizing factual explanations.
 
@@ -1099,6 +1124,7 @@ class FactualExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
         self._get_rules()
@@ -1337,7 +1363,16 @@ class FactualExplanation(CalibratedExplanation):
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """Add conjunctive factual rules."""
         if max_rule_size >= 4:
-            raise ValueError("max_rule_size must be 2 or 3")
+            from ..core.exceptions import ConfigurationError
+
+            raise ConfigurationError(
+                "max_rule_size must be 2 or 3",
+                details={
+                    "param": "max_rule_size",
+                    "value": max_rule_size,
+                    "valid_range": [2, 3],
+                },
+            )
         if max_rule_size < 2:
             return self
 
@@ -1619,9 +1654,16 @@ class FactualExplanation(CalibratedExplanation):
                 )
         except RuntimeError as e:
             if "Agg" in str(e):
-                raise RuntimeError(
+                from ..core.exceptions import ConfigurationError
+
+                raise ConfigurationError(
                     "Matplotlib backend 'Agg' does not support show(). "
-                    "Either set show=False or switch to a different backend."
+                    "Either set show=False or switch to a different backend.",
+                    details={
+                        "backend": "Agg",
+                        "operation": "show()",
+                        "solution": "set show=False or use interactive backend",
+                    },
                 ) from e
             raise  # core-only test runs do not fail when visualization extras are
             # unavailable. Tests that require viz should use pytest.importorskip.
@@ -1659,6 +1701,7 @@ class AlternativeExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source: str = "observed",
     ):
         """Class representing an alternative explanation for a given instance.
 
@@ -1697,6 +1740,7 @@ class AlternativeExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
         self._has_rules = False
@@ -2233,7 +2277,16 @@ class AlternativeExplanation(CalibratedExplanation):
             Returns a self reference, to allow for method chaining
         """
         if max_rule_size >= 4:
-            raise ValueError("max_rule_size must be 2 or 3")
+            from ..core.exceptions import ConfigurationError
+
+            raise ConfigurationError(
+                "max_rule_size must be 2 or 3",
+                details={
+                    "param": "max_rule_size",
+                    "value": max_rule_size,
+                    "valid_range": [2, 3],
+                },
+            )
         if max_rule_size < 2:
             return self
 
@@ -2552,6 +2605,7 @@ class FastExplanation(CalibratedExplanation):
         prediction,
         y_threshold=None,
         instance_bin=None,
+        condition_source="observed",
     ):
         """Class representing fast explanations.
 
@@ -2577,6 +2631,8 @@ class FastExplanation(CalibratedExplanation):
             The threshold for binary classification or regression explanations.
         instance_bin : int, optional
             The bin index of the instance.
+        condition_source : str, default="observed"
+            The source of the conditions for the explanation.
         """
         super().__init__(
             calibrated_explanations,
@@ -2588,6 +2644,7 @@ class FastExplanation(CalibratedExplanation):
             prediction,
             y_threshold,
             instance_bin,
+            condition_source=condition_source,
         )
         self._check_preconditions()
         self._get_rules()

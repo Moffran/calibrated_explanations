@@ -9,7 +9,7 @@ from typing import List, Sequence
 import numpy as np
 import pytest
 
-from calibrated_explanations.explanations.explanations import (
+from calibrated_explanations.explanations import (
     AlternativeExplanations,
     CalibratedExplanations,
 )
@@ -215,13 +215,15 @@ def test_get_low_high_percentile_validation(collection: CalibratedExplanations) 
 
 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
+    from calibrated_explanations.core.exceptions import ValidationError
+
     with pytest.warns(DeprecationWarning):
         assert collection.get_explanation(1) is collection.explanations[1]
-    with pytest.raises(TypeError), pytest.warns(DeprecationWarning):
+    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
         collection.get_explanation("1")  # type: ignore[arg-type]
-    with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
+    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
         collection.get_explanation(-1)
-    with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
+    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
         collection.get_explanation(len(collection.x_test))
 
 
@@ -268,11 +270,13 @@ def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> 
 
 
 def test_from_batch_validation_errors(collection: CalibratedExplanations) -> None:
+    from calibrated_explanations.core.exceptions import SerializationError, ValidationError
+
     batch_missing = SimpleNamespace(collection_metadata={})
-    with pytest.raises(ValueError):
+    with pytest.raises(SerializationError):
         CalibratedExplanations.from_batch(batch_missing)
     batch_wrong = SimpleNamespace(collection_metadata={"container": object()})
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         CalibratedExplanations.from_batch(batch_wrong)
 
 

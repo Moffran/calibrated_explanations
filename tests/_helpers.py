@@ -25,7 +25,7 @@ def generic_test(cal_exp, x_prop_train, y_prop_train, x, y):
     learner = cal_exp.learner
     explainer = cal_exp.explainer
 
-    from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+    from calibrated_explanations.core import WrapCalibratedExplainer
 
     new_exp = WrapCalibratedExplainer(learner)
     assert new_exp.fitted
@@ -87,9 +87,10 @@ def initiate_explainer(
     bins=None,
     fast=False,
     verbose=False,
+    **kwargs,
 ):
     """Initialize a CalibratedExplainer instance."""
-    from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+    from calibrated_explanations.core import CalibratedExplainer
 
     return CalibratedExplainer(
         model,
@@ -103,4 +104,5 @@ def initiate_explainer(
         fast=fast,
         difficulty_estimator=difficulty_estimator,
         verbose=verbose,
+        **kwargs,
     )

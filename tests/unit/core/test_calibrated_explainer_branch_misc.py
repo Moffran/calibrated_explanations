@@ -12,7 +12,7 @@ from calibrated_explanations.core.exceptions import (
     DataShapeError,
     ValidationError,
 )
-from calibrated_explanations.utils.discretizers import RegressorDiscretizer
+from calibrated_explanations.utils import RegressorDiscretizer
 
 
 def test_slice_threshold_branches_exercised():
@@ -123,7 +123,7 @@ def test_reinitialize_updates_state(monkeypatch, explainer_factory):
         update_calls.append((self, xs, ys, bins))
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_learner.update_interval_learner",
+        "calibrated_explanations.calibration.interval_learner.update_interval_learner",
         fake_update,
     )
 
@@ -149,7 +149,7 @@ def test_reinitialize_updates_state(monkeypatch, explainer_factory):
         init_calls.append((self,))
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner",
+        "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",
         fake_init,
     )
 

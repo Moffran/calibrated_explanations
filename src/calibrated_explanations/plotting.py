@@ -228,6 +228,8 @@ def update_plot_config(new_config):
 
 def __require_matplotlib() -> None:
     """Ensure matplotlib is available before using plotting functions."""
+    from .core.exceptions import ConfigurationError
+
     if plt is None or mcolors is None:
         msg = (
             "Plotting requires matplotlib. Install the 'viz' extra: "
@@ -235,7 +237,15 @@ def __require_matplotlib() -> None:
         )
         if _MATPLOTLIB_IMPORT_ERROR is not None:
             msg += f"\nOriginal import error: {_MATPLOTLIB_IMPORT_ERROR}"
-        raise RuntimeError(msg)
+        raise ConfigurationError(
+            msg,
+            details={
+                "requirement": "matplotlib",
+                "extra": "viz",
+                "reason": "import_failed" if _MATPLOTLIB_IMPORT_ERROR else "not_installed",
+                "error": str(_MATPLOTLIB_IMPORT_ERROR) if _MATPLOTLIB_IMPORT_ERROR else None,
+            },
+        )
 
 
 def __setup_plot_style(style_override=None):
@@ -1355,8 +1365,8 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
         "threshold": threshold,
     }
 
-    from .plugins import PlotRenderContext
-    from .plugins.registry import (
+    from .plugins import (
+        PlotRenderContext,
         ensure_builtin_plugins,
         find_plot_plugin,
         find_plot_plugin_trusted,

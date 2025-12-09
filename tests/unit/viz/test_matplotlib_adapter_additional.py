@@ -6,8 +6,8 @@ import math
 
 import pytest
 
-from calibrated_explanations.viz.matplotlib_adapter import render
-from calibrated_explanations.viz.plotspec import (
+from calibrated_explanations.viz import render
+from calibrated_explanations.viz import (
     BarHPanelSpec,
     BarItem,
     IntervalHeaderSpec,

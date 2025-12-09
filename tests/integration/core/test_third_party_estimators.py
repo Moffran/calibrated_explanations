@@ -16,7 +16,7 @@ import warnings
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
+from calibrated_explanations.core import CalibratedExplainer
 
 
 # Tests run with `error::FutureWarning` in `pytest.ini` which makes
@@ -114,6 +114,8 @@ def test_lightgbm_classifier_basic_integration():
         subsample=0.9,
         colsample_bytree=0.9,
         random_state=42,
+        n_jobs=1,
+        force_col_wise=True,
     )
     clf.fit(x_train, y_train)
 

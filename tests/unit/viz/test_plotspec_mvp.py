@@ -554,7 +554,7 @@ def test_regression_builder_rejects_short_instance_vector():
 
 
 def test_probabilistic_builder_clamps_infinite_bounds():
-    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
     predict = {"predict": 0.6, "low": -np.inf, "high": np.inf}
     fw = {
@@ -580,7 +580,7 @@ def test_probabilistic_builder_clamps_infinite_bounds():
 
 
 def test_probabilistic_builder_rejects_truncated_labels():
-    from calibrated_explanations.viz.builders import build_probabilistic_bars_spec
+    from calibrated_explanations.viz import build_probabilistic_bars_spec
 
     predict = {"predict": 0.4}
     with pytest.raises(ValueError):

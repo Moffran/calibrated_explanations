@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional, Tuple
 
-from ..utils.helper import safe_import
+from ..utils import safe_import
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard
     from ..core.calibrated_explainer import CalibratedExplainer
@@ -52,6 +52,10 @@ class LimeHelper:
 
     def preload(self, x_cal: Optional[Any] = None) -> Tuple[Any, Any]:
         """Materialize and cache the LIME explainer if the dependency is present."""
+        # If already enabled and we have a cached instance, return it
+        if self._enabled and self._explainer_instance is not None:
+            return self._explainer_instance, self._reference_explanation
+
         lime_cls = safe_import("lime.lime_tabular", "LimeTabularExplainer")
         if not lime_cls:
             return None, None

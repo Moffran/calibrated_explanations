@@ -44,8 +44,8 @@ from calibrated_explanations.plugins.predict_monitor import (
 )
 from calibrated_explanations.core.exceptions import DataShapeError
 from calibrated_explanations.plugins.predict import PredictBridge
-from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
+from calibrated_explanations.explanations import CalibratedExplanations
 
 
 class DummyLearner:
@@ -117,11 +117,11 @@ def _patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
         explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner",
+        "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",
         _initialize,
     )
     monkeypatch.setattr(
-        "calibrated_explanations.core.calibration.interval_learner.initialize_interval_learner_for_fast_explainer",
+        "calibrated_explanations.calibration.interval_learner.initialize_interval_learner_for_fast_explainer",
         _initialize,
     )
 
@@ -689,6 +689,7 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         class Config:
             enabled = True
             min_batch_size = 1
+            instance_chunk_size = None
 
         def __init__(self):
             self.config = self.Config()
@@ -700,7 +701,8 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         executor=EmptyExec(),
         num_features=explainer.num_features,
         categorical_features=(),
-        feature_values={},
+        feature_values={0: np.array([]), 1: np.array([])},
+        chunk_size=1,  # Ensure consistent chunk sizing
     )
     plugin = InstanceParallelExplainExecutor()
 
@@ -715,6 +717,8 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         class Config:
             enabled = True
             min_batch_size = 1
+            chunk_size = 1  # Force multiple chunks: 3 instances -> 3 chunks
+            instance_chunk_size = 1
 
         def __init__(self, results):
             self.config = self.Config()
@@ -744,7 +748,8 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
         executor=exec_for_chunks,
         num_features=explainer.num_features,
         categorical_features=(),
-        feature_values={},
+        feature_values={0: np.array([]), 1: np.array([])},
+        chunk_size=1,  # Force multiple chunks
     )
 
     combined = plugin.execute(req, cfg, explainer)
@@ -792,7 +797,9 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
             "E",
             (),
             {
-                "config": type("C", (), {"enabled": True, "min_batch_size": 2}),
+                "config": type(
+                    "C", (), {"enabled": True, "min_batch_size": 2, "instance_chunk_size": None}
+                ),
                 "map": lambda *_a, **_k: [],
             },
         )(),

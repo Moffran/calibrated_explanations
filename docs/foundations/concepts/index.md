@@ -17,6 +17,7 @@ guides.
 | [Architecture overview](architecture.md) | Connects runtime components, caching, and plugin guardrails. |
 | [Error handling](error_handling.md) | Summarises runtime safeguards and expected exceptions. |
 | [Explanation structures](explanation_structures.md) | Documents the internal data structures used by CalibratedExplanation classes. |
+| [Terminology: thresholded vs probabilistic regression](terminology_thresholded_vs_probabilistic_regression.md) | Clarifies language used across ADR-021 and user-facing regression docs. |
 
 ```{toctree}
 :maxdepth: 1
@@ -26,4 +27,5 @@ alternatives
 architecture
 error_handling
 explanation_structures
+terminology_thresholded_vs_probabilistic_regression
 ```

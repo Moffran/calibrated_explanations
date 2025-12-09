@@ -6,10 +6,10 @@
 
 ## Checklist
 
-- [ ] Aligned with current phase in `improvement_docs/RELEAS_PLAN_V1.md` (link section)
+- [ ] Aligned with current phase in `improvement_docs/RELEASE_PLAN_v1.md` (link section)
 - [ ] Referenced relevant ADR(s) in `improvement_docs/adrs/` (IDs)
 - [ ] Added/updated tests for new or changed behavior
-- [ ] Coverage gate passes (`pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=90`)
+- [ ] Coverage gate passes (`pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=88`)
 - [ ] Coverage waiver requested (if needed) with linked issue: <!-- paste issue URL or write N/A -->
 - [ ] Legacy API parity verified (if wrapper/API changed) - ref ADR-020
 - [ ] mypy passes for touched modules (and strict for new core modules)

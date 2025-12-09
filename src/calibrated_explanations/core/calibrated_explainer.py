@@ -13,10 +13,17 @@ conformal predictive systems (regression).
 # pylint: disable=invalid-name, line-too-long, too-many-lines, too-many-positional-arguments, too-many-public-methods
 from __future__ import annotations
 
+import copy
 from time import time
+from typing import TYPE_CHECKING
 
 import numpy as np
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+
+if TYPE_CHECKING:
+    from ..plugins import IntervalCalibratorContext
+    from ..explanations import AlternativeExplanations, CalibratedExplanations
+    from ..plugins.manager import PluginManager
 
 try:
     import tomllib as _tomllib
@@ -26,30 +33,23 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
     except ModuleNotFoundError:  # pragma: no cover - tomllib unavailable
         _tomllib = None  # type: ignore[assignment]
 
-from ..perf import CalibratorCache, ParallelExecutor
-from ..plotting import _plot_global
-from ..explanations import AlternativeExplanations, CalibratedExplanations
-from ..integrations import LimeHelper, ShapHelper
-from ..utils.discretizers import (
-    EntropyDiscretizer,
-    RegressorDiscretizer,
-)
-from ..utils.helper import (
-    check_is_fitted,
-    convert_targets_to_numeric,
-    safe_isinstance,
-)
-from ..api.params import canonicalize_kwargs, validate_param_combination, warn_on_aliases
-from ..plugins import (
-    IntervalCalibratorContext,
-)
-from ..plugins.builtins import LegacyPredictBridge
+# Core imports (no cross-sibling dependencies)
+from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
 from .exceptions import (
     DataShapeError,
     ValidationError,
 )
-from ..plugins.manager import PluginManager
+
+# Lazy imports deferred to avoid cross-sibling coupling
+# These are imported inside methods/properties where used
+# - perf (CalibratorCache, ParallelExecutor) - lazy in __init__
+# - plotting (_plot_global) - lazy in plotting methods
+# - explanations (AlternativeExplanations, CalibratedExplanations) - lazy as needed
+# - integrations (LimeHelper, ShapHelper) - lazy in __init__
+# - api.params (canonicalize_kwargs, etc.) - lazy in param handling
+# - plugins (IntervalCalibratorContext, PluginManager, LegacyPredictBridge) - lazy in __init__
+# - utils.discretizers (EntropyDiscretizer, RegressorDiscretizer) - lazy in validation
 
 
 class CalibratedExplainer:
@@ -166,7 +166,7 @@ class CalibratedExplainer:
         self.y_cal = y_cal
 
         # Initialize RNG with seed
-        from ..utils.rng import set_rng_seed  # pylint: disable=import-outside-toplevel
+        from ..utils import set_rng_seed  # pylint: disable=import-outside-toplevel
 
         seed = kwargs.get("seed", 42)
         self.seed = seed
@@ -180,6 +180,16 @@ class CalibratedExplainer:
         self.__noise_type = kwargs.get("noise_type", "uniform")
         self.__scale_factor = kwargs.get("scale_factor", 5)
         self.__severity = kwargs.get("severity", 1)
+        self.condition_source = kwargs.get("condition_source", "observed")
+        if self.condition_source not in {"observed", "prediction"}:
+            raise ValidationError(
+                "condition_source must be either 'observed' or 'prediction'",
+                details={
+                    "param": "condition_source",
+                    "value": self.condition_source,
+                    "allowed": ("observed", "prediction"),
+                },
+            )
 
         self.categorical_labels = categorical_labels
         self.class_labels = class_labels
@@ -230,6 +240,10 @@ class CalibratedExplainer:
 
         self.feature_values: Dict[int, List[Any]] = {}
         self.feature_frequencies: Dict[int, np.ndarray] = {}
+
+        # Lazy import helper integrations (deferred from module level)
+        from ..integrations import LimeHelper, ShapHelper
+
         self.latest_explanation: Optional[CalibratedExplanations] = None
         self._lime_helper = LimeHelper(self)
         self._shap_helper = ShapHelper(self)
@@ -237,6 +251,11 @@ class CalibratedExplainer:
 
         self.set_difficulty_estimator(difficulty_estimator, initialize=False)
         self.__set_mode(str.lower(mode), initialize=False)
+
+        # Lazy import orchestrator and plugin management (deferred from module level)
+        from ..plugins.manager import PluginManager
+        from ..plugins.builtins import LegacyPredictBridge
+        from ..cache import CalibratorCache
 
         # Initialize plugin manager (SINGLE SOURCE OF TRUTH for plugin management)
         # PluginManager handles ALL plugin initialization including:
@@ -249,7 +268,9 @@ class CalibratedExplainer:
         self._plugin_manager.initialize_orchestrators()
 
         self._perf_cache: CalibratorCache[Any] | None = perf_cache
-        self._perf_parallel: ParallelExecutor | None = perf_parallel
+
+        # Initialize parallel executor (ADR-004: Honor CE_PARALLEL overrides)
+        self._perf_parallel: Any | None = self._resolve_parallel_executor(perf_parallel)
 
         # Orchestrator references are now accessed via properties that delegate to PluginManager
         # No direct assignment needed - properties handle the delegation
@@ -263,17 +284,70 @@ class CalibratedExplainer:
 
         self.init_time = time() - init_time
 
+    # TODO: Needs to be
+    def __deepcopy__(self, memo):
+        """Safely deepcopy the explainer, handling circular references."""
+        if id(self) in memo:
+            return memo[id(self)]
+        # Create a shallow copy without calling __init__
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        # Manually copy attributes
+        for k, v in self.__dict__.items():
+            try:
+                setattr(result, k, copy.deepcopy(v, memo))
+            except TypeError:
+                # Fallback for uncopyable objects
+                setattr(result, k, v)
+
+        return result
+
+    def __getstate__(self):
+        """Exclude runtime helpers when pickling."""
+        state = self.__dict__.copy()
+        state["_perf_cache"] = None
+        state["_perf_parallel"] = None
+        return state
+
+    def __setstate__(self, state):
+        """Restore state after pickling without restoring helpers."""
+        self.__dict__.update(state)
+
     def _require_plugin_manager(self) -> PluginManager:
         """Return the plugin manager or raise if the explainer is not initialized."""
+        from .exceptions import NotFittedError
+
         manager = getattr(self, "_plugin_manager", None)
         if manager is None:
-            raise RuntimeError(
-                "PluginManager is not initialized. Instantiate CalibratedExplainer via __init__."
+            raise NotFittedError(
+                "PluginManager is not initialized. Instantiate CalibratedExplainer via __init__.",
+                details={
+                    "state": "uninitialized",
+                    "reason": "plugin_manager_missing",
+                    "required_method": "__init__",
+                },
             )
         return manager
 
+    def _resolve_parallel_executor(self, explicit_executor: Any | None) -> Any | None:
+        """Resolve the parallel executor honoring overrides and environment config."""
+        from ..parallel import ParallelConfig, ParallelExecutor
+
+        if explicit_executor is not None:
+            return explicit_executor
+
+        env_config = ParallelConfig.from_env()
+        if env_config.enabled:
+            return ParallelExecutor(env_config)
+
+        return None
+
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode from runtime state."""
+        # Lazy import discretizers (deferred from module level)
+        from ..utils import EntropyDiscretizer, RegressorDiscretizer
+
         # Check discretizer type to infer mode
         discretizer = self.discretizer if hasattr(self, "discretizer") else None
         if discretizer is not None and isinstance(
@@ -777,7 +851,7 @@ class CalibratedExplainer:
         array-like
             The calibration input data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         return CalibrationState.get_x_cal(self)
 
@@ -795,7 +869,7 @@ class CalibratedExplainer:
         ValueError
             If the number of features in value does not match the existing calibration data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.set_x_cal(self, value)
 
@@ -808,7 +882,7 @@ class CalibratedExplainer:
         array-like
             The calibration target data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         return CalibrationState.get_y_cal(self)
 
@@ -821,7 +895,7 @@ class CalibratedExplainer:
         value : array-like of shape (n_samples,)
             The new calibration target data.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.set_y_cal(self, value)
 
@@ -835,7 +909,7 @@ class CalibratedExplainer:
         y : array-like of shape (n_samples,)
             The new calibration target data to append.
         """
-        from .calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
+        from ..calibration.state import CalibrationState  # pylint: disable=import-outside-toplevel
 
         CalibrationState.append_calibration(self, x, y)
 
@@ -844,7 +918,7 @@ class CalibratedExplainer:
 
         Delegates to the calibration.summaries module which manages the cache.
         """
-        from .calibration.summaries import (  # pylint: disable=import-outside-toplevel
+        from ..calibration.summaries import (  # pylint: disable=import-outside-toplevel
             invalidate_calibration_summaries as _invalidate,
         )
 
@@ -858,7 +932,7 @@ class CalibratedExplainer:
         Delegates to the calibration.summaries module which manages caching of
         statistical summaries used during explanation generation.
         """
-        from .calibration.summaries import (  # pylint: disable=import-outside-toplevel
+        from ..calibration.summaries import (  # pylint: disable=import-outside-toplevel
             get_calibration_summaries as _get,
         )
 
@@ -990,11 +1064,11 @@ class CalibratedExplainer:
                     )
                 self.bins = np.concatenate((self.bins, bins)) if self.bins is not None else bins
             # update interval learner via helper
-            from .calibration.interval_learner import update_interval_learner as _upd_il
+            from ..calibration.interval_learner import update_interval_learner as _upd_il
 
             _upd_il(self, xs, ys, bins=bins)
         else:
-            from .calibration.interval_learner import initialize_interval_learner as _init_il
+            from ..calibration.interval_learner import initialize_interval_learner as _init_il
 
             _init_il(self)
         self.__initialized = True
@@ -1050,6 +1124,7 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         _use_plugin: bool = True,
+        **kwargs,
     ) -> CalibratedExplanations:
         """Create a :class:`.CalibratedExplanations` object for the test data with the discretizer automatically assigned for factual explanations.
 
@@ -1065,6 +1140,8 @@ class CalibratedExplainer:
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        **kwargs : dict
+            Additional arguments passed to the explanation orchestrator.
 
         Returns
         -------
@@ -1081,6 +1158,7 @@ class CalibratedExplainer:
             features_to_ignore,
             discretizer=discretizer,
             _use_plugin=_use_plugin,
+            **kwargs,
         )
 
     def explain_counterfactual(
@@ -1108,7 +1186,7 @@ class CalibratedExplainer:
 
         Both the deprecated method and its test must be removed together to avoid orphaned tests.
         """
-        from ..utils.deprecations import deprecate
+        from ..utils import deprecate
 
         deprecate(
             "The `explain_counterfactual` method is deprecated and may be removed in future versions. Use `explore_alternatives` instead.",
@@ -1128,6 +1206,7 @@ class CalibratedExplainer:
         features_to_ignore=None,
         *,
         _use_plugin: bool = True,
+        **kwargs,
     ) -> AlternativeExplanations:
         """Create a :class:`.AlternativeExplanations` object for the test data with the discretizer automatically assigned for alternative explanations.
 
@@ -1143,6 +1222,8 @@ class CalibratedExplainer:
             The low and high percentile used to calculate the interval. Applicable to regression.
         bins : array-like of shape (n_samples,), default=None
             Mondrian categories
+        **kwargs : dict
+            Additional arguments passed to the explanation orchestrator.
 
         Returns
         -------
@@ -1163,6 +1244,7 @@ class CalibratedExplainer:
             features_to_ignore,
             discretizer=discretizer,
             _use_plugin=_use_plugin,
+            **kwargs,
         )  # type: ignore[return-value]
 
     def __call__(
@@ -1565,7 +1647,15 @@ class CalibratedExplainer:
         return self._reject_orchestrator.predict_reject(x, bins=bins, confidence=confidence)
 
     # pylint: disable=too-many-branches
-    def set_discretizer(self, discretizer, x_cal=None, y_cal=None, features_to_ignore=None) -> None:
+    def set_discretizer(
+        self,
+        discretizer,
+        x_cal=None,
+        y_cal=None,
+        features_to_ignore=None,
+        *,
+        condition_source: Optional[str] = None,
+    ) -> None:
         """Assign the discretizer to be used.
 
         Parameters
@@ -1577,55 +1667,13 @@ class CalibratedExplainer:
         y_cal : array-like, optional
             The calibration target data for the discretizer.
         """
-        from .discretizer_config import (  # pylint: disable=import-outside-toplevel
-            validate_discretizer_choice,
-            instantiate_discretizer,
-            setup_discretized_data,
-        )
-
-        if x_cal is None:
-            x_cal = self.x_cal
-        if y_cal is None:
-            y_cal = self.y_cal
-
-        # Validate and potentially default the discretizer choice
-        discretizer = validate_discretizer_choice(discretizer, self.mode)
-
-        if features_to_ignore is None:
-            features_to_ignore = []
-        not_to_discretize = np.union1d(
-            np.union1d(self.categorical_features, self.features_to_ignore), features_to_ignore
-        )
-
-        # Store old discretizer to check if we can cache
-        old_discretizer = self.discretizer
-
-        # Instantiate the discretizer (may return cached instance if type matches)
-        self.discretizer = instantiate_discretizer(
+        self._explanation_orchestrator.set_discretizer(
             discretizer,
-            x_cal,
-            not_to_discretize,
-            self.feature_names,
-            y_cal,
-            self.seed,
-            old_discretizer,
+            x_cal=x_cal,
+            y_cal=y_cal,
+            features_to_ignore=features_to_ignore,
+            condition_source=condition_source,
         )
-
-        # If discretizer is unchanged, skip recomputation
-        if self.discretizer is old_discretizer and hasattr(self, "discretized_X_cal"):
-            return
-
-        # Setup discretized data and build feature caches
-        feature_data, self.discretized_X_cal = setup_discretized_data(
-            self, self.discretizer, self.x_cal, self.num_features
-        )
-
-        # Populate feature_values and feature_frequencies from the setup data
-        self.feature_values = {}
-        self.feature_frequencies = {}
-        for feature, data in feature_data.items():
-            self.feature_values[feature] = data["values"]
-            self.feature_frequencies[feature] = data["frequencies"]
 
     # pylint: disable=duplicate-code, too-many-branches, too-many-statements, too-many-locals
     def predict(self, x, uq_interval=False, calibrated=True, **kwargs):
@@ -1691,6 +1739,13 @@ class CalibratedExplainer:
             handle_uncalibrated_classification_prediction,
             format_regression_prediction,
             format_classification_prediction,
+        )
+
+        # Lazy import API params functions (deferred from module level)
+        from ..api.params import (
+            canonicalize_kwargs,
+            validate_param_combination,
+            warn_on_aliases,
         )
 
         # emit deprecation warnings for aliases and normalize kwargs
@@ -1785,6 +1840,13 @@ class CalibratedExplainer:
         # strip plotting-only keys that callers may pass
         kwargs.pop("show", None)
         kwargs.pop("style_override", None)
+        # Lazy import API params functions (deferred from module level)
+        from ..api.params import (
+            canonicalize_kwargs,
+            validate_param_combination,
+            warn_on_aliases,
+        )
+
         # emit deprecation warnings for aliases and normalize kwargs
         warn_on_aliases(kwargs)
         kwargs = canonicalize_kwargs(kwargs)
@@ -1948,6 +2010,9 @@ class CalibratedExplainer:
         # Pass any style overrides along to the plotting function
         style_override = kwargs.pop("style_override", None)
         kwargs["style_override"] = style_override
+        # Lazy import plotting function (deferred from module level)
+        from ..plotting import _plot_global
+
         _plot_global(self, x, y=y, threshold=threshold, **kwargs)
 
     def calibrated_confusion_matrix(self):

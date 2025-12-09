@@ -84,8 +84,17 @@ pygments_style = "sphinx"
 # Enable extended MyST features for directive fences (e.g. mermaid diagrams)
 myst_enable_extensions = [
     "colon_fence",
-    "linkify",
+    # Linkify caused spurious detection of code/path fragments as external
+    # links (e.g. `DESIGN.md` -> http://DESIGN.md). Disable it and rely
+    # on explicit links in the docs instead.
 ]
+
+# MyST parser configuration: disable fuzzy linkify so plain code/path
+# fragments like `external_plugins/shap_lime/DESIGN.md` are not treated
+# as external links (which produces false positives in linkcheck).
+myst_config = {
+    "linkify_fuzzy_links": False,
+}
 
 _SHARED_FRAGMENT_DIR = Path(__file__).parent / "_shared"
 

@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
-from ...utils.helper import safe_mean
+from ...utils import safe_mean
 
 # Type alias for the aggregated result of processing a single feature
 FeatureTaskResult = Tuple[

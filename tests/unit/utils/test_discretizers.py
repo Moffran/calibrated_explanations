@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from calibrated_explanations.utils.discretizers import (
+from calibrated_explanations.utils import (
     BinaryEntropyDiscretizer,
     BinaryRegressorDiscretizer,
     EntropyDiscretizer,
@@ -45,9 +45,11 @@ def test_entropy_discretizer_discretizes_and_preserves_categoricals():
 
 
 def test_binary_entropy_discretizer_requires_labels():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     data = np.array([[0.1], [0.2]])
     feature_names = ("feat",)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         BinaryEntropyDiscretizer(
             data,
             categorical_features=[],
@@ -107,10 +109,12 @@ def test_regressor_discretizer_discretize_vector_input():
 
 
 def test_binary_regressor_discretizer_requires_labels():
+    from calibrated_explanations.core.exceptions import ValidationError
+
     data = np.array([[0.1], [0.2]])
     feature_names = ("feat",)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         BinaryRegressorDiscretizer(
             data,
             categorical_features=[],

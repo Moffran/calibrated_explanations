@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from calibrated_explanations.explanations.explanations import CalibratedExplanations
+from calibrated_explanations.explanations import CalibratedExplanations
 from calibrated_explanations.plugins.builtins import (
     LegacyAlternativeExplanationPlugin,
     LegacyFactualExplanationPlugin,

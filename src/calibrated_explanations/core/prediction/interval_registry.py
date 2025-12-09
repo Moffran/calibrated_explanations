@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ...core.calibration.interval_learner import (
+from ...calibration.interval_learner import (
     initialize_interval_learner,
     initialize_interval_learner_for_fast_explainer,
 )

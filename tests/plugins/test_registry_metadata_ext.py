@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 
@@ -106,7 +107,7 @@ def test_verify_plugin_checksum_handles_success_failure_and_missing(tmp_path, mo
 
     registry._verify_plugin_checksum(plugin, {"checksum": {"sha256": digest}, "name": "ok"})
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._verify_plugin_checksum(plugin, {"checksum": "deadbeef", "name": "broken"})
 
     module_path.unlink()
@@ -119,15 +120,15 @@ def test_verify_plugin_checksum_handles_success_failure_and_missing(tmp_path, mo
 def test_ensure_sequence_validates_inputs():
     assert registry._ensure_sequence({"values": ["a", "b"]}, "values") == ("a", "b")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({}, "values")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": "single"}, "values")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": ["a", 1]}, "values")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": []}, "values")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_sequence({"values": ["x"]}, "values", allowed={"y"})
 
 
@@ -142,18 +143,18 @@ def test_normalise_dependency_field_optional_and_empty():
 
     assert registry._normalise_dependency_field({}, "missing", optional=True) is None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._normalise_dependency_field({}, "required")
 
 
 def test_coerce_string_collection_rejects_invalid():
     assert registry._coerce_string_collection(["a", "b"], key="k") == ("a", "b")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._coerce_string_collection(1, key="k")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._coerce_string_collection(["a", 2], key="k")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._coerce_string_collection([], key="k")
 
 
@@ -161,9 +162,9 @@ def test_normalise_tasks_requires_known_values():
     meta = {"tasks": ("classification", "regression")}
     assert registry._normalise_tasks(meta) == ("classification", "regression")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._normalise_tasks({"tasks": ("unknown",)})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._normalise_tasks({})
 
 
@@ -174,7 +175,7 @@ def test_validate_explanation_metadata_requires_trust_key():
         dependencies=(),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_explanation_metadata(meta)
 
 
@@ -200,7 +201,7 @@ def test_validate_interval_metadata_handles_trust(monkeypatch):
     assert meta_with_trusted["trust"] is True
 
     del meta_with_trusted["trust"]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_interval_metadata(meta_with_trusted)
 
 
@@ -229,7 +230,7 @@ def test_validate_plot_builder_and_renderer_metadata():
     )
     registry.validate_plot_renderer_metadata(renderer_meta)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_plot_renderer_metadata(
             {"capabilities": (), "dependencies": (), "output_formats": (), "trust": False}
         )
@@ -239,9 +240,9 @@ def test_ensure_string_and_bool_validation():
     assert registry._ensure_string({"name": "value"}, "name") == "value"
     assert registry._ensure_bool({"flag": True}, "flag") is True
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_string({}, "missing")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry._ensure_bool({}, "missing")
 
 
@@ -467,7 +468,7 @@ def test_register_explanation_plugin_invalid_identifier():
     class Plugin:
         plugin_meta = _base_meta()
 
-    with pytest.raises(ValueError, match="identifier must be a non-empty string"):
+    with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_explanation_plugin("", Plugin())
 
 
@@ -475,7 +476,7 @@ def test_register_explanation_plugin_no_metadata():
     class Plugin:
         pass
 
-    with pytest.raises(ValueError, match="plugin must expose plugin_meta metadata"):
+    with pytest.raises(ValidationError, match="plugin must expose plugin_meta metadata"):
         registry.register_explanation_plugin("test", Plugin())
 
 
@@ -483,7 +484,7 @@ def test_register_explanation_plugin_invalid_metadata():
     class Plugin:
         plugin_meta = {"invalid": "meta"}
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.register_explanation_plugin("test", Plugin())
 
 
@@ -491,7 +492,7 @@ def test_register_interval_plugin_invalid_identifier():
     class Plugin:
         plugin_meta = _base_meta(capabilities=["interval"])
 
-    with pytest.raises(ValueError, match="identifier must be a non-empty string"):
+    with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_interval_plugin("", Plugin())
 
 
@@ -499,14 +500,14 @@ def test_register_plot_builder_invalid_identifier():
     class Plugin:
         plugin_meta = _base_meta(capabilities=["plot"])
 
-    with pytest.raises(ValueError, match="identifier must be a non-empty string"):
+    with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_plot_builder("", Plugin())
 
 
 def test_validate_interval_metadata_missing_modes():
     meta = _base_meta(capabilities=["interval"])
 
-    with pytest.raises(ValueError, match="plugin_meta missing required key: modes"):
+    with pytest.raises(ValidationError, match="plugin_meta missing required key: modes"):
         registry.validate_interval_metadata(meta)
 
 
@@ -514,7 +515,7 @@ def test_validate_interval_metadata_invalid_modes():
     meta = _base_meta(capabilities=["interval"])
     meta["modes"] = ("invalid",)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_interval_metadata(meta)
 
 
@@ -522,7 +523,7 @@ def test_validate_interval_metadata_missing_capabilities():
     meta = _base_meta(capabilities=["interval"])
     del meta["capabilities"]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_interval_metadata(meta)
 
 
@@ -530,5 +531,5 @@ def test_validate_plot_builder_metadata_missing_capabilities():
     meta = _base_meta(capabilities=["plot"])
     del meta["capabilities"]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         registry.validate_plot_builder_metadata(meta)

@@ -77,7 +77,17 @@ def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index:
     except TypeError:  # pragma: no cover - defensive: non-sized sequences
         return
     if length <= max_index:
-        raise ValueError(f"{name} length {length} does not cover feature index {max_index}")
+        from ..core.exceptions import ValidationError
+
+        raise ValidationError(
+            f"{name} length {length} does not cover feature index {max_index}",
+            details={
+                "param": name,
+                "length": length,
+                "required_to_cover": max_index,
+                "shortfall": max_index - length + 1,
+            },
+        )
 
 
 def _normalize_interval_bounds(

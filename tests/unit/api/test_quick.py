@@ -1,7 +1,7 @@
 import pytest
 
 from calibrated_explanations.api.quick import quick_explain
-from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
+from calibrated_explanations.core import WrapCalibratedExplainer
 
 
 class DummyWrapper:

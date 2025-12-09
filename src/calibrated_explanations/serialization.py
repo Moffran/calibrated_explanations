@@ -3,29 +3,19 @@
 Round-trip domain model <-> JSON using a stable envelope aligned to ADR-005.
 Schema validation is optional to avoid hard dependency; when `jsonschema`
 is installed, `validate=True` will verify the payload against the v1 schema.
+
+Part of ADR-001: Core Decomposition Boundaries (Stage 1c).
+Note: Schema validation has been moved to calibrated_explanations.schema.
 """
 
 from __future__ import annotations
 
-from importlib import resources
 from typing import Any, Mapping
 
-try:  # optional validator
-    import jsonschema  # type: ignore
-except Exception:  # pragma: no cover - optional
-    jsonschema = None  # type: ignore
-
-from .explanations.models import Explanation, FeatureRule
-
-
-def _schema_json() -> dict[str, Any]:  # pragma: no cover - tiny IO
-    """Load the bundled explanation schema as a Python dictionary."""
-    with resources.files("calibrated_explanations.schemas").joinpath(
-        "explanation_schema_v1.json"
-    ).open("r", encoding="utf-8") as f:
-        import json
-
-        return json.load(f)
+from .explanations import Explanation, FeatureRule
+from .schema import (
+    validate_payload as _schema_validate_payload,  # noqa: F401 - re-exported under alias
+)
 
 
 def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]:
@@ -90,11 +80,12 @@ def from_json(obj: Mapping[str, Any]) -> Explanation:
 
 
 def validate_payload(obj: Mapping[str, Any]) -> None:
-    """Validate a JSON payload against schema v1 if validator is available."""
-    if jsonschema is None:  # pragma: no cover
-        return
-    schema = _schema_json()
-    jsonschema.validate(instance=obj, schema=schema)  # type: ignore[attr-defined]
+    """Validate a JSON payload against schema v1 if validator is available.
+
+    DEPRECATED: Use calibrated_explanations.schema.validate_payload instead.
+    """
+    # Delegate to the schema module's validator (kept as a compatibility wrapper)
+    return _schema_validate_payload(obj)
 
 
 __all__ = ["to_json", "from_json", "validate_payload"]

@@ -7,7 +7,7 @@ from typing import Any, Dict
 import numpy as np
 import pytest
 
-from calibrated_explanations.plugins.registry import EXPLANATION_PROTOCOL_VERSION
+from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.core.config_helpers import (
     coerce_string_tuple as _coerce_string_tuple,
     read_pyproject_section as _read_pyproject_section,

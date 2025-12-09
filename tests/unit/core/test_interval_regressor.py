@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import builtins
-
 import numpy as np
 import pytest
 
-from calibrated_explanations.core.calibration import interval_regressor as interval_module
-from calibrated_explanations.utils import helper as helper_module
+import calibrated_explanations.utils as utils_module
+from calibrated_explanations.calibration import interval_regressor as interval_module
+from calibrated_explanations.core import ConfigurationError, DataShapeError
 
 
 class DummyCPS:
@@ -246,30 +245,18 @@ def test_predict_probability_requires_calibration_bins_when_test_bins_provided(m
     regressor = _make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1]])
 
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
+    with pytest.raises(ConfigurationError, match="Calibration bins must be assigned"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
-def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
-    original_import = builtins.__import__  # capture original before any monkeypatching
-
+def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch):
     regressor = _make_regressor(monkeypatch)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.4, 0.6])
 
     import importlib
 
-    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
-    import_attempts: list[tuple[str, int]] = []
-
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):  # noqa: D401 - test helper
-        import_attempts.append((name, level))
-        if level > 0 and name.endswith("utils.helper"):
-            raise ImportError("relative helper unavailable")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-
+    _utils_module = importlib.import_module("calibrated_explanations.utils")
     calls: list[int] = []
 
     def stub_safe_first_element(values, *, col=0):
@@ -279,7 +266,11 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
             return arr[0, col]
         return arr.ravel()[0]
 
-    monkeypatch.setattr(helper_module, "safe_first_element", stub_safe_first_element, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        stub_safe_first_element,
+        raising=False,
+    )
 
     proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
 
@@ -294,9 +285,7 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.25, 0.35])
 
-    import importlib
-
-    helper_module = importlib.import_module("calibrated_explanations.utils.helper")
+    _utils_module = importlib.import_module("calibrated_explanations.utils")
     calls: list[tuple[np.ndarray, int | None]] = []
 
     def fake_safe_first_element(values, col=None):
@@ -306,16 +295,10 @@ def test_predict_probability_vector_threshold_uses_absolute_import(monkeypatch):
             return array[0, col]
         return array.flat[0]
 
-    monkeypatch.setattr(helper_module, "safe_first_element", fake_safe_first_element)
-
-    def failing_import(
-        name, globals=None, locals=None, fromlist=(), level=0
-    ):  # pragma: no cover - helper
-        if name.endswith("utils.helper") and level == 1:
-            raise ImportError("forced failure")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", failing_import)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        fake_safe_first_element,
+    )
 
     proba, low, high, extra = regressor.predict_probability(x, y_threshold=thresholds)
 
@@ -375,7 +358,7 @@ def test_predict_probability_requires_calibration_bins(monkeypatch):
     regressor = _make_regressor(monkeypatch)
     x = np.array([[0.1, 0.2]])
 
-    with pytest.raises(ValueError, match="Calibration bins must be assigned"):
+    with pytest.raises(ConfigurationError, match="Calibration bins must be assigned"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
@@ -384,7 +367,7 @@ def test_predict_probability_rejects_mismatched_bin_length(monkeypatch):
     regressor = _make_regressor(monkeypatch, bins=calibration_bins)
     x = np.array([[0.1, 0.2], [0.2, 0.3]])
 
-    with pytest.raises(ValueError, match="length of test bins"):
+    with pytest.raises(DataShapeError, match="length of test bins"):
         regressor.predict_probability(x, y_threshold=0.5, bins=np.array([0]))
 
 
@@ -405,7 +388,9 @@ def test_insert_calibration_requires_bins_when_existing_none(monkeypatch):
     xs = np.array([[0.1, 0.2], [0.2, 0.3]])
     ys = np.array([0.5, 0.6])
 
-    with pytest.raises(ValueError, match="Cannot mix calibration instances with and without bins"):
+    with pytest.raises(
+        ConfigurationError, match="Cannot mix calibration instances with and without bins"
+    ):
         regressor.insert_calibration(xs, ys, bins=np.array([0, 1]))
 
 
@@ -415,41 +400,42 @@ def test_insert_calibration_validates_bin_length(monkeypatch):
     xs = np.array([[0.1, 0.2], [0.2, 0.3]])
     ys = np.array([0.5, 0.6])
 
-    with pytest.raises(ValueError, match="length of bins"):
+    with pytest.raises(DataShapeError, match="length of bins"):
         regressor.insert_calibration(xs, ys, bins=np.array([0]))
 
 
 def test_predict_probability_uses_fallback_safe_first_element(monkeypatch):
+    """Verify fallback import mechanism for safe_first_element when relative import fails.
+
+    Note: With the refactored structure where interval_regressor lives in the top-level
+    calibration package (not core.calibration), the relative import from ..utils.helper
+    now resolves correctly and doesn't require fallback. This test validates that
+    safe_first_element is called correctly in the new structure.
+    """
     regressor = _make_regressor(monkeypatch)
     regressor.split["cps"].predict_queue = [0.4, 0.6]
     x = np.array([[0.5, 0.1], [0.6, 0.2]])
     thresholds = np.array([0.3, 0.7])
 
     calls: list[tuple[int | None, float]] = []
-    original_safe_first = helper_module.safe_first_element
+    original_safe_first = utils_module.safe_first_element
 
     def tracking_safe_first(values, default=0.0, col=None):
         result = original_safe_first(values, default=default, col=col)
         calls.append((col, result))
         return result
 
-    monkeypatch.setattr(helper_module, "safe_first_element", tracking_safe_first, raising=False)
-
-    original_import = builtins.__import__
-    failures = {"count": 0}
-
-    def failing_relative_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if level == 1 and name == "utils.helper":
-            failures["count"] += 1
-            raise ImportError("simulated relative failure")
-        return original_import(name, globals, locals, fromlist, level)
-
-    monkeypatch.setattr(builtins, "__import__", failing_relative_import)
+    monkeypatch.setattr(
+        "calibrated_explanations.calibration.interval_regressor.safe_first_element",
+        tracking_safe_first,
+        raising=False,
+    )
 
     proba, _, _, _ = regressor.predict_probability(x, y_threshold=thresholds)
 
     assert np.allclose(proba, 0.7)
-    assert failures["count"] >= thresholds.size
+    # With the new structure, the relative import succeeds correctly from calibration/utils.
+    # Verify that safe_first_element is still called the expected number of times.
     assert len(calls) == thresholds.size * 3
     for offset in range(0, len(calls), 3):
         cols = [calls[offset + i][0] for i in range(3)]
