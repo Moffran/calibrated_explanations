@@ -48,7 +48,6 @@ class FastIntervalCalibratorPlugin(IntervalCalibratorPlugin):
 
     def create(self, context: IntervalCalibratorContext, *, fast: bool = True) -> Any:
         """Return the FAST calibrator list already prepared by the explainer."""
-
         metadata = context.metadata
         task = str(metadata.get("task") or metadata.get("mode") or "")
         explainer = metadata.get("explainer")
@@ -178,7 +177,6 @@ class FastExplanationPlugin(_LegacyExplanationBase):
 
 def register() -> None:
     """Register the FAST interval and explanation plugins with the core registry."""
-
     register_interval_plugin("core.interval.fast", FastIntervalCalibratorPlugin())
     register_explanation_plugin("core.explanation.fast", FastExplanationPlugin())
 
