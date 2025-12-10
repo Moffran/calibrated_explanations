@@ -15,7 +15,7 @@
   - **Stage 4 — Namespace Documentation:** All namespaces classified with rationale, deprecation timelines, and migration paths
   - **Stage 5 — Import Graph Linting:** AST-based static analyzer detects violations; 17 enforcement tests; CI-ready with baseline
     - **Updated Linter**: `scripts/check_import_graph.py` now enforces a strict allow-list of cross-sibling imports.
-    - **Defined Exceptions**: Created `improvement_docs/adr mending/ADR-001/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` documenting the 6 allowed architectural patterns (Exception Hierarchy, Orchestrator, Interfaces, Shared Utils, Visualization, Legacy).
+    - **Defined Exceptions**: Created `docs/improvement/adr mending/ADR-001/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` documenting the 6 allowed architectural patterns (Exception Hierarchy, Orchestrator, Interfaces, Shared Utils, Visualization, Legacy).
     - **Package restructuring**: Defined and implemented top-level internal packages (`core`, `calibration`, `explanations`, `cache`, `parallel`, `schema`, `plugins`, `viz`, `utils`)
     - **Boundary enforcement**: Implemented `scripts/check_import_graph.py` to enforce strict import boundaries and allow-listed exceptions
     - **CI Integration**: Added ADR-001 boundary check to `lint.yml` workflow to prevent regression
@@ -69,10 +69,10 @@
     - Added `test_lru_cache_forksafe_reset_clears_state()` – validates fork-safety operation
     - Test count: 19 → 23 tests (added 4 gap-fixing tests)
   - **ADR-003 status updated** (was Proposed):
-    - Updated `improvement_docs/adrs/ADR-003-caching-key-and-eviction.md` from Status: Proposed → Status: Accepted
+    - Updated `docs/improvement/adrs/ADR-003-caching-key-and-eviction.md` from Status: Proposed → Status: Accepted
     - Updated implementation note reflecting completion and pympler inclusion
   - **Documentation updated**:
-    - `improvement_docs/adr\ mending/ADR-003/IMPLEMENTATION_SUMMARY.md` – Comprehensive gap resolution notes with before/after validation
+    - `docs/improvement/adr\ mending/ADR-003/IMPLEMENTATION_SUMMARY.md` – Comprehensive gap resolution notes with before/after validation
     - RELEASE_PLAN_v1.md – ADR-003 section marked ✅ COMPLETED
   - **Test results**: All 23 cache tests passing (100%)
   - **Impact**: Zero breaking changes; all integrations backward compatible; opt-in caching remains default
@@ -209,7 +209,7 @@
   reference calibrated prediction with uncertainty interval, feature weights in factual
   rules have calibrated intervals, and all `[low, high]` pairs must satisfy the inclusive
   bounds invariant. This audit ensures consistency across all explanation generation paths
-  and provides explicit guidance for plugin developers.【F:improvement_docs/adrs/ADR-008-explanation-domain-model-and-compat.md†L45-L75】【F:improvement_docs/adrs/ADR-013-interval-calibrator-plugin-strategy.md†L80-L110】【F:improvement_docs/adrs/ADR-015-explanation-plugin.md†L151-L210】【F:improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md†L120-L150】【F:improvement_docs/adrs/ADR-026-explanation-plugin-semantics.md†L84-L165】
+  and provides explicit guidance for plugin developers.【F:docs/improvement/adrs/ADR-008-explanation-domain-model-and-compat.md†L45-L75】【F:docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md†L80-L110】【F:docs/improvement/adrs/ADR-015-explanation-plugin.md†L151-L210】【F:docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md†L120-L150】【F:docs/improvement/adrs/ADR-026-explanation-plugin-semantics.md†L84-L165】
 
 - **Plugin-based explain architecture.** All explain logic (sequential,
   feature-parallel, instance-parallel) now lives in dedicated plugins under
@@ -232,7 +232,7 @@
 ### Release plan alignment
 
 - **Explanation schema v1 and ADR-005/008 compliance:** Updated explanation JSON schema v1 to include
-  `explanation_type` field distinguishing factual and alternative explanations, aligned ADR-005 with paper-compliant semantics from ADR-008, and ensured all domain models, serialization, and adapters preserve the calibrated prediction baseline for both explanation types. This establishes stable round-trip serialization for instance-based explanations as defined in the CE papers.【F:docs/schema_v1.md†L1-L50】【F:improvement_docs/adrs/ADR-005-explanation-json-schema-versioning.md†L1-L80】【F:improvement_docs/adrs/ADR-008-explanation-domain-model-and-compat.md†L1-L60】【F:src/calibrated_explanations/schemas/explanation_schema_v1.json†L1-L40】
+  `explanation_type` field distinguishing factual and alternative explanations, aligned ADR-005 with paper-compliant semantics from ADR-008, and ensured all domain models, serialization, and adapters preserve the calibrated prediction baseline for both explanation types. This establishes stable round-trip serialization for instance-based explanations as defined in the CE papers.【F:docs/schema_v1.md†L1-L50】【F:docs/improvement/adrs/ADR-005-explanation-json-schema-versioning.md†L1-L80】【F:docs/improvement/adrs/ADR-008-explanation-domain-model-and-compat.md†L1-L60】【F:src/calibrated_explanations/schemas/explanation_schema_v1.json†L1-L40】
 - **Explain executor decomposition (ADR-004 compliance):** Moved all explain execution
   strategies into a plugin system (`src/calibrated_explanations/core/explain/`)
   with three implementations: `SequentialExplainExecutor` (single-threaded fallback),
@@ -278,7 +278,7 @@
   can persist schema v1 collections with calibrated metadata intact.【F:src/calibrated_explanations/explanations/explanations.py†L180-L247】【F:docs/how-to/export_explanations.md†L1-L86】
 - **Streaming-friendly delivery status (Task 15):** Recorded the deferral and
   interim batching guidance in the OSS scope inventory, closing the release gate
-  while signalling follow-up expectations.【F:improvement_docs/OSS_CE_scope_and_gaps.md†L1-L18】
+  while signalling follow-up expectations.【F:docs/improvement/OSS_CE_scope_and_gaps.md†L1-L18】
 
 ### Runtime
 

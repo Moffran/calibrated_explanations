@@ -288,8 +288,8 @@ def validate(
     exc_cls
         If condition is False.
 
-    Example
-    -------
+    Examples
+    --------
     >>> from calibrated_explanations.core.validation import validate
     >>> from calibrated_explanations.core.exceptions import ValidationError
     >>> validate(len(x) > 0, ValidationError, "x must not be empty", details={"param": "x"})

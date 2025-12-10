@@ -87,8 +87,8 @@ def explain_exception(e: Exception) -> str:
         Multi-line human-readable message.
         For CalibratedError, includes class name, message, and details dict if present.
 
-    Example
-    -------
+    Examples
+    --------
     >>> from calibrated_explanations.core.exceptions import ValidationError, explain_exception
     >>> e = ValidationError("x must not be empty", details={"param": "x", "requirement": "non-empty"})
     >>> print(explain_exception(e))

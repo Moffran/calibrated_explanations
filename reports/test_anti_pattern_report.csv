@@ -217,15 +217,15 @@ plugins\test_cli_additional.py,157,private helper call,exit_code = cli._cmd_trus
 plugins\test_external_plugins_extra.py,40,private helper call,extras = _parse_external_plugins_from_pyproject()
 plugins\test_external_plugins_extra.py,43,private helper call,extras = _parse_external_plugins_from_pyproject()
 plugins\test_external_plugins_extra.py,51,private helper call,extras = _parse_external_plugins_from_pyproject()
-plugins\test_registry.py,29,private helper call,meta = _base_metadata()
+plugins\test_registry.py,28,private helper call,meta = _base_metadata()
 plugins\test_registry.py,37,private helper call,meta = _base_metadata()
-plugins\test_registry.py,58,private helper call,meta = _base_metadata()
-plugins\test_registry.py,69,private helper call,meta = _base_metadata()
-plugins\test_registry.py,76,private helper call,meta_invalid = _base_metadata()
-plugins\test_registry.py,86,private helper call,meta = _base_metadata()
-plugins\test_registry.py,111,private helper call,meta = _base_metadata()
-plugins\test_registry.py,121,private helper call,meta = _base_metadata()
-plugins\test_registry.py,131,private helper call,meta = _base_metadata()
+plugins\test_registry.py,56,private helper call,meta = _base_metadata()
+plugins\test_registry.py,67,private helper call,meta = _base_metadata()
+plugins\test_registry.py,74,private helper call,meta_invalid = _base_metadata()
+plugins\test_registry.py,84,private helper call,meta = _base_metadata()
+plugins\test_registry.py,109,private helper call,meta = _base_metadata()
+plugins\test_registry.py,119,private helper call,meta = _base_metadata()
+plugins\test_registry.py,129,private helper call,meta = _base_metadata()
 plugins\test_registry_metadata_ext.py,49,private helper call,names = registry._env_trusted_names()
 plugins\test_registry_metadata_ext.py,54,private helper call,"assert registry._env_trusted_names() == {""alpha"", ""beta"", ""gamma""}"
 plugins\test_registry_metadata_ext.py,61,private helper call,assert registry._should_trust(meta) is True
@@ -264,13 +264,13 @@ plugins\test_registry_metadata_ext.py,240,private helper call,"assert registry._
 plugins\test_registry_metadata_ext.py,241,private helper call,"assert registry._ensure_bool({""flag"": True}, ""flag"") is True"
 plugins\test_registry_metadata_ext.py,244,private helper call,"registry._ensure_string({}, ""missing"")"
 plugins\test_registry_metadata_ext.py,246,private helper call,"registry._ensure_bool({}, ""missing"")"
-plugins\test_registry_metadata_ext.py,469,private helper call,plugin_meta = _base_meta()
-plugins\test_registry_metadata_ext.py,493,private helper call,"plugin_meta = _base_meta(capabilities=[""interval""])"
-plugins\test_registry_metadata_ext.py,501,private helper call,"plugin_meta = _base_meta(capabilities=[""plot""])"
-plugins\test_registry_metadata_ext.py,508,private helper call,"meta = _base_meta(capabilities=[""interval""])"
-plugins\test_registry_metadata_ext.py,515,private helper call,"meta = _base_meta(capabilities=[""interval""])"
-plugins\test_registry_metadata_ext.py,523,private helper call,"meta = _base_meta(capabilities=[""interval""])"
-plugins\test_registry_metadata_ext.py,531,private helper call,"meta = _base_meta(capabilities=[""plot""])"
+plugins\test_registry_metadata_ext.py,470,private helper call,plugin_meta = _base_meta()
+plugins\test_registry_metadata_ext.py,494,private helper call,"plugin_meta = _base_meta(capabilities=[""interval""])"
+plugins\test_registry_metadata_ext.py,502,private helper call,"plugin_meta = _base_meta(capabilities=[""plot""])"
+plugins\test_registry_metadata_ext.py,509,private helper call,"meta = _base_meta(capabilities=[""interval""])"
+plugins\test_registry_metadata_ext.py,516,private helper call,"meta = _base_meta(capabilities=[""interval""])"
+plugins\test_registry_metadata_ext.py,524,private helper call,"meta = _base_meta(capabilities=[""interval""])"
+plugins\test_registry_metadata_ext.py,532,private helper call,"meta = _base_meta(capabilities=[""plot""])"
 scripts\test_check_perf_micro.py,34,private helper call,"_write(baseline_path, baseline)"
 scripts\test_check_perf_micro.py,35,private helper call,"_write(current_path, current)"
 scripts\test_check_perf_micro.py,69,private helper call,"_write(baseline_path, baseline)"

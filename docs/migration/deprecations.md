@@ -71,7 +71,7 @@ Use `from calibrated_explanations.utils.deprecations import deprecate, deprecate
 ## For maintainers
 
 - When introducing a deprecation, use `deprecate(message, key="unique:key", stacklevel=3)` and prefer a stable `key` value.
-- Add a line to this document and update the release plan (`improvement_docs/RELEASE_PLAN_V1.md`) under ADR-011 when new items are introduced.
+- Add a line to this document and update the release plan (`docs/improvement/RELEASE_PLAN_v1.md`) under ADR-011 when new items are introduced.
 - Add a unit test in `tests/unit/` validating the desired behaviour of `deprecate()` if you change its semantics.
 
 ## Troubleshooting

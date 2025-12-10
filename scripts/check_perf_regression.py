@@ -3,9 +3,9 @@
 
 Usage:
   python scripts/check_perf_regression.py \
-      --baseline benchmarks/baseline_20250816.json \
-      --thresholds benchmarks/perf_thresholds.json \
-      --current benchmarks/new_baseline.json
+      --baseline tests/benchmarks/baseline_20250816.json \
+      --thresholds tests/benchmarks/perf_thresholds.json \
+      --current tests/benchmarks/new_baseline.json
 
 If --current is omitted, the script will invoke collect_baseline internally
 into a temp file.

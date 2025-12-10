@@ -100,5 +100,5 @@ Ideal for feature-dense explain workloads with modest instance counts.
   executor and cache.
 - {doc}`../../foundations/concepts/telemetry` – instrument runtime metrics when
   you opt in to parallel execution.
-- `improvement_docs/parallel_execution_improvement_plan.md` – internal task
+- `docs/improvement/parallel_execution_improvement_plan.md` – internal task
   breakdown tracking the ADR-004 remediation.

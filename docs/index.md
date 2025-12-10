@@ -111,3 +111,10 @@ appendices/external_plugins
 appendices/changelog_links
 citing
 ```
+
+```{toctree}
+:maxdepth: 1
+:caption: Project Management
+
+improvement/index
+```

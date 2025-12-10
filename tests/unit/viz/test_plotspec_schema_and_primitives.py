@@ -4,7 +4,7 @@ import os
 import pytest
 
 HERE = os.path.dirname(__file__)
-SCHEMA_DIR = os.path.abspath(os.path.join(HERE, "../../..", "improvement_docs", "plot_spec"))
+SCHEMA_DIR = os.path.abspath(os.path.join(HERE, "../../..", "docs", "improvement", "plot_spec"))
 
 
 def load_schema(path):

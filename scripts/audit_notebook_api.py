@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from typing import List, Set, Dict
 
-# Documented legacy API methods from improvement_docs/legacy_user_api_contract.md
+# Documented legacy API methods from docs/improvement/legacy_user_api_contract.md
 LEGACY_API_WRAPPER = {
     "fit", "calibrate", "predict", "predict_proba",
     "explain_factual", "explore_alternatives", "set_difficulty_estimator"

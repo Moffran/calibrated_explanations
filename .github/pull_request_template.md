@@ -6,8 +6,8 @@
 
 ## Checklist
 
-- [ ] Aligned with current phase in `improvement_docs/RELEASE_PLAN_v1.md` (link section)
-- [ ] Referenced relevant ADR(s) in `improvement_docs/adrs/` (IDs)
+- [ ] Aligned with current phase in `docs/improvement/RELEASE_PLAN_v1.md` (link section)
+- [ ] Referenced relevant ADR(s) in `docs/improvement/adrs/` (IDs)
 - [ ] Added/updated tests for new or changed behavior
 - [ ] Coverage gate passes (`pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=88`)
 - [ ] Coverage waiver requested (if needed) with linked issue: <!-- paste issue URL or write N/A -->

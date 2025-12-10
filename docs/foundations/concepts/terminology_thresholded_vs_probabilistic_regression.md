@@ -48,7 +48,7 @@ probabilities, probability_interval = explainer.predict_proba(
 
 ### 1.2 What Does "Thresholded Regression" Mean?
 
-**Definition from:** `improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md` (lines 23-24, 83-104)
+**Definition from:** `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` (lines 23-24, 83-104)
 
 > "Thresholded regression returns calibrated probabilities for threshold events (`y \leq t` or `t_0 < y \leq t_1`) and is the only regression path that relies on both conformal predictive systems (CPS) *and* Venn-Abers."
 
@@ -71,7 +71,7 @@ va = VennAbers(None, (self.ce.y_cal[cal_va] <= y_threshold).astype(int), ...)
 
 #### 1.3.1 ADR-021 Lines 195 and 204 (SEMANTIC EQUIVALENCE)
 
-From `improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md`:
+From `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md`:
 
 ```markdown
 ### 3. Thresholded regression: CPS probabilities calibrated by Venn-Abers
@@ -150,10 +150,10 @@ Both terms describe **regression with a threshold**, but emphasize different asp
 | `perturbation2.md:99` | Experiment description | "thresholded regression task (turn regression score into a decision)" |
 | `perturbation3.md:195` | Results summary | "regression/thresholded regression (CPS)" |
 | `perturbation_evaluation.md:44, 67` | Evaluation metrics | "Regression / thresholded regression oracle" |
-| `improvement_docs/adrs/ADR-021:23, 83, 85, 167, 183, 185` | **Core ADR** (multiple sections) | Technical architecture using "thresholded regression" consistently |
-| `improvement_docs/archived/ADR-analysis.md:1343, 1350` | ADR review | "percentile regression, and thresholded regression" |
-| `improvement_docs/legacy_user_api_contract.md:36, 173` | Legacy API | "thresholded regression predictions for probabilistic labels" |
-| `improvement_docs/LEGACY_TO_PLOTSPEC_MAPPING.md:104` | Plotting metadata | "is_probabilistic: boolean (True when classification or thresholded regression)" |
+| `docs/improvement/adrs/ADR-021:23, 83, 85, 167, 183, 185` | **Core ADR** (multiple sections) | Technical architecture using "thresholded regression" consistently |
+| `docs/improvement/archived/ADR-analysis.md:1343, 1350` | ADR review | "percentile regression, and thresholded regression" |
+| `docs/improvement/legacy_user_api_contract.md:36, 173` | Legacy API | "thresholded regression predictions for probabilistic labels" |
+| `docs/improvement/LEGACY_TO_PLOTSPEC_MAPPING.md:104` | Plotting metadata | "is_probabilistic: boolean (True when classification or thresholded regression)" |
 | `docs/foundations/governance/optional_telemetry.md:66` | Telemetry docs | "thresholded regression runs remain auditable" |
 
 #### Total: **~22 documentation references** to "thresholded regression"
@@ -183,7 +183,7 @@ Both terms describe **regression with a threshold**, but emphasize different asp
 |----------|------|-------|
 | `src/calibrated_explanations/core/interval_regressor.py:136-155` | Docstring | "Predict the probabilities for each instance...being above the threshold(s)" |
 | `src/calibrated_explanations/core/calibrated_explainer.py:1987-2000` | Docstring | "For regression: Returns predictions and uncertainty intervals. Can return probability predictions when threshold is provided" |
-| `improvement_docs/adrs/ADR-021:83-104` | Section title | "### 3. Thresholded regression: CPS probabilities calibrated by Venn-Abers" |
+| `docs/improvement/adrs/ADR-021:83-104` | Section title | "### 3. Thresholded regression: CPS probabilities calibrated by Venn-Abers" |
 
 ### 2.4 Test Names and Test Coverage
 
@@ -240,7 +240,7 @@ def test_probabilistic_regression_threshold(self):
 
 **Examples:**
 - `ADR-021-calibrated-interval-semantics.md` – Uses "thresholded regression" in section 3 to describe the technical pathway
-- `improvement_docs/adrs/ADR-013` – References "thresholded regression" in comments about CPS/Venn-Abers composition
+- `docs/improvement/adrs/ADR-013` – References "thresholded regression" in comments about CPS/Venn-Abers composition
 - `external_plugins/shap_lime/DESIGN.md:21` – States "Probabilistic regression requests (non-None threshold)" = same meaning
 
 **Rationale:** More precise for implementation details; describes the specific operation (threshold) and calibration strategy. Technical readers understand the operation vs. the user outcome.
@@ -409,9 +409,9 @@ def test_lime_plugin_probabilistic_regression():
 | `src/calibrated_explanations/api/config.py` | 35, 100 | Parameter docstring | Code |
 | `src/calibrated_explanations/core/calibrated_explainer.py` | 3243 | Comment | Code |
 | `tests/integration/core/test_regression.py` | **~10 test functions** | Test names | Test |
-| `improvement_docs/legacy_user_api_contract.md` | 127, 138 | API examples | Tech doc |
-| `improvement_docs/documentation_*.md` | **multiple** | Doc architecture | Tech doc |
-| `improvement_docs/RELEASE_PLAN_v1.md` | **multiple** | Release planning | Tech doc |
+| `docs/improvement/legacy_user_api_contract.md` | 127, 138 | API examples | Tech doc |
+| `docs/improvement/documentation_*.md` | **multiple** | Doc architecture | Tech doc |
+| `docs/improvement/RELEASE_PLAN_v1.md` | **multiple** | Release planning | Tech doc |
 
 **Total: ~60 references**
 
@@ -422,10 +422,10 @@ def test_lime_plugin_probabilistic_regression():
 | `perturbation2.md` | 99 | Experiment description | Research doc |
 | `perturbation3.md` | 195 | Results summary | Research doc |
 | `perturbation_evaluation.md` | 44, 67 | Metrics | Research doc |
-| `improvement_docs/adrs/ADR-021` | 23, 83–104, 167, 183, 185 | **Core architecture** | ADR |
-| `improvement_docs/archived/ADR-analysis.md` | 1343, 1350 | ADR review | Tech doc |
-| `improvement_docs/legacy_user_api_contract.md` | 36, 173 | Legacy API | Tech doc |
-| `improvement_docs/LEGACY_TO_PLOTSPEC_MAPPING.md` | 104 | Plotting metadata | Tech doc |
+| `docs/improvement/adrs/ADR-021` | 23, 83–104, 167, 183, 185 | **Core architecture** | ADR |
+| `docs/improvement/archived/ADR-analysis.md` | 1343, 1350 | ADR review | Tech doc |
+| `docs/improvement/legacy_user_api_contract.md` | 36, 173 | Legacy API | Tech doc |
+| `docs/improvement/LEGACY_TO_PLOTSPEC_MAPPING.md` | 104 | Plotting metadata | Tech doc |
 | `docs/foundations/governance/optional_telemetry.md` | 66 | Telemetry docs | Tech doc |
 | `src/calibrated_explanations/explanations/explanations.py` | **multiple** | Property `_is_thresholded()` | Code |
 | `src/calibrated_explanations/core/interval_regressor.py` | 136, 158 | Method parameter names | Code |
@@ -573,7 +573,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 
 # Just documentation
 grep -r "thresholded.*regression\|probabilistic.*regression" \
-  --include="*.md" docs/ improvement_docs/ external_plugins/
+  --include="*.md" docs/ docs/improvement/ external_plugins/
 
 # Just code
 grep -r "thresholded.*regression\|probabilistic.*regression" \
@@ -585,8 +585,8 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 ## Appendix B: Files Requiring Updates Under Recommended Action
 
 ### Must-Update Files:
-1. `improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md` – Add terminology section
-2. `improvement_docs/adrs/ADR-013-interval-calibrator-plugin-strategy.md` – Add cross-reference
+1. `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` – Add terminology section
+2. `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` – Add cross-reference
 3. `src/calibrated_explanations/explanations/explanations.py` – Rename `_is_thresholded()`
 4. `CHANGELOG.md` – Document terminology standardization
 
@@ -609,12 +609,12 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 
 ### Completed Tasks
 
-- ✅ **ADR-021 Terminology Section Added** (improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md)
+- ✅ **ADR-021 Terminology Section Added** (docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md)
   - Added formal "Terminology: Probabilistic Regression vs. Thresholded Regression" section
   - Defines equivalence and clarifies audience/context for each term
   - Provides implementation guidance for contributors
 
-- ✅ **ADR-013 Cross-Reference Added** (improvement_docs/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
+- ✅ **ADR-013 Cross-Reference Added** (docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md)
   - Added explicit note referencing ADR-021 terminology section
   - Links to official terminology guidance
 
@@ -667,8 +667,8 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 
 | File | Changes |
 |------|---------|
-| `improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md` | Added terminology section (lines 119-159) |
-| `improvement_docs/adrs/ADR-013-interval-calibrator-plugin-strategy.md` | Added cross-reference note |
+| `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` | Added terminology section (lines 119-159) |
+| `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` | Added cross-reference note |
 | `src/calibrated_explanations/explanations/explanations.py` | Added `_is_probabilistic_regression()` method and backward-compatible `_is_thresholded()` alias (lines 446-459) |
 | `src/calibrated_explanations/core/interval_regressor.py` | Updated `predict_probability()` docstring |
 | `src/calibrated_explanations/core/calibrated_explainer.py` | Updated docstrings and comments (lines 1980-1995, 3243, 3725-3730) |

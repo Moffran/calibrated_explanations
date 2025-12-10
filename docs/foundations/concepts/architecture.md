@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This page summarizes the high-level component and data flow for the library. See `improvement_docs/component_diagram.md` for the development version; this page is the user-facing snapshot.
+This page summarizes the high-level component and data flow for the library. See `docs/improvement/component_diagram.md` for the development version; this page is the user-facing snapshot.
 
 ## Explain Flow
 

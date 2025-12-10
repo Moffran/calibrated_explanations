@@ -5,7 +5,7 @@ Exits with non-zero status if thresholds are exceeded.
 Inputs:
 - baseline JSON produced by scripts/micro_bench_perf.py
 - current JSON produced by scripts/micro_bench_perf.py
-- thresholds JSON (benchmarks/perf_thresholds.json)
+- thresholds JSON (tests/benchmarks/perf_thresholds.json)
 
 Currently enforced:
 - import_time_seconds: relative increase <= max_relative_increase
@@ -29,11 +29,11 @@ def load_json(path: Path) -> dict:
 
 
 def find_latest_baseline(directory: Path | None = None) -> Path:
-    """Locate the most recent micro benchmark baseline JSON in the benchmarks folder."""
-    base_dir = (directory or Path("benchmarks")).resolve()
+    """Locate the most recent micro benchmark baseline JSON in the tests/benchmarks folder."""
+    base_dir = (directory or Path("tests/benchmarks")).resolve()
     candidates = sorted(base_dir.glob("micro_*.json"))
     if not candidates:
-        raise FileNotFoundError("No baseline micro benchmark JSON files found under benchmarks/")
+        raise FileNotFoundError("No baseline micro benchmark JSON files found under tests/benchmarks/")
     return candidates[-1]
 
 

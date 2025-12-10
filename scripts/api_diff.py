@@ -2,7 +2,7 @@
 """Compare exported public API symbols between two baseline JSON files.
 
 Usage:
-  python scripts/api_diff.py --old benchmarks/baseline_20250816.json --new benchmarks/baseline_20250901.json
+  python scripts/api_diff.py --old tests/benchmarks/baseline_20250816.json --new tests/benchmarks/baseline_20250901.json
 """
 
 from __future__ import annotations

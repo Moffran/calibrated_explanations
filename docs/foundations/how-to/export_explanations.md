@@ -70,7 +70,7 @@ Streaming delivery remains deferred for v0.9.0 while we monitor batch sizes.
 The OSS scope inventory captures the decision and memory profiling notes so the
 runtime team can revisit chunked exports post-release.
 
-- Status: deferred (tracked in `improvement_docs/OSS_CE_scope_and_gaps.md`).
+- Status: deferred (tracked in `docs/improvement/OSS_CE_scope_and_gaps.md`).
 - Interim guidance: use `to_json()` in manageable batches and persist the
   resulting files or database rows according to your governance requirements.
 

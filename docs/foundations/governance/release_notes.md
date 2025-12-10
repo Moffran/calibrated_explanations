@@ -17,7 +17,7 @@ changes see the project changelog on GitHub.
   honour the new ``CE_CACHE``/``CE_PARALLEL`` environment overrides, and record
   rollback steps in your change log.
 - For the full milestone scope—including calibrated-explanations-first messaging
-  and governance updates—see the `v0.9.0 release plan <https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/RELEASE_PLAN_v1.md#v090-documentation-realignment--targeted-runtime-polish>`_.
+  and governance updates—see the `v0.9.0 release plan <https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/RELEASE_PLAN_v1.md#v090-documentation-realignment--targeted-runtime-polish>`_.
 
 ## v0.8.0
 

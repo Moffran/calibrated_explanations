@@ -57,17 +57,18 @@ class NarrativePlotPlugin:
 
     @staticmethod
     def _get_default_template_path() -> str:
-        """Get the default template path from the project root.
+        """Get the default template path from the package resources.
 
         Returns
         -------
         str
             Absolute path to the default explain_template.yaml file.
         """
-        # Navigate from viz/ to project root
+        # Navigate from viz/ to templates/
         current_file = Path(__file__).resolve()
-        project_root = current_file.parent.parent.parent.parent
-        default_template = project_root / "explain_template.yaml"
+        # src/calibrated_explanations/viz -> src/calibrated_explanations/templates
+        package_root = current_file.parent.parent
+        default_template = package_root / "templates" / "explain_template.yaml"
         return str(default_template)
 
     def plot(

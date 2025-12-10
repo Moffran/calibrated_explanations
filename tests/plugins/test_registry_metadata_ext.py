@@ -294,6 +294,7 @@ def test_list_plot_builder_descriptors_respects_trust(monkeypatch):
     assert trusted_ids == ["a"]
 
 
+@pytest.mark.filterwarnings("ignore:register_plot_plugin is deprecated")
 def test_register_plot_plugin_registers_all_components():
     class PlotPlugin:
         plugin_meta = {
@@ -318,7 +319,7 @@ def test_register_plot_plugin_registers_all_components():
 
     plugin = PlotPlugin()
 
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(DeprecationWarning, match="register_plot_plugin is deprecated"):
         descriptor = registry.register_plot_plugin("combo", plugin)
 
     assert descriptor.identifier == "combo"

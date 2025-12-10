@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-
 import pytest
 
 from calibrated_explanations.plugins import (
@@ -38,11 +37,11 @@ def test_validate_alias_emits_warning_and_normalises() -> None:
     meta["modes"] = ("explanation:factual", "factual")
 
     with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", category=DeprecationWarning)
+        warnings.simplefilter("always")
         normalised = validate_explanation_metadata(meta)
 
     assert normalised["modes"] == ("factual",)
-    assert any(isinstance(item.message, DeprecationWarning) for item in caught)
+    assert any("explanation mode alias" in str(w.message) for w in caught)
 
 
 @pytest.mark.parametrize(

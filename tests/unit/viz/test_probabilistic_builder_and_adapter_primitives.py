@@ -7,7 +7,7 @@ from calibrated_explanations.viz import render as mpl_render
 from calibrated_explanations.viz import build_probabilistic_bars_spec
 
 HERE = os.path.dirname(__file__)
-SCHEMA_DIR = os.path.abspath(os.path.join(HERE, "../../..", "improvement_docs", "plot_spec"))
+SCHEMA_DIR = os.path.abspath(os.path.join(HERE, "../../..", "docs", "improvement", "plot_spec"))
 
 
 def test_builder_outputs_valid_shape():
