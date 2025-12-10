@@ -49,7 +49,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 - **ADR-018 – Documentation Standardisation:** Docstring uplift plan is consolidated in `code_documentation_uplift.md`; appendix gap tracking only.
 - **ADR-019 – Test Coverage Standard:** Coverage uplift runs through v0.9.1–v0.11.0 milestones; appendix table is the authoritative gap log.
 - **ADR-020 – Legacy User API Stability:** Legacy contract enforcement is tracked against v0.9.1–v0.10.x release gates; appendix retains the severity table.
-- **ADR-021 – Calibrated Interval Semantics:** Interval invariant enforcement continues through v0.10.x; appendix captures the outstanding semantics gaps.
+- **ADR-021 – Calibrated Interval Semantics:** Interval invariant enforcement completed in v0.10.0; appendix captures the outstanding semantics gaps.
 - **ADR-022 – Documentation Information Architecture:** Superseded by ADR-027; gap tracking removed. See ADR-027 entry for current IA expectations.
 - **ADR-023 – Matplotlib Coverage Exemption:** Visualization coverage enforcement aligns with v0.9.1; appendix table holds the remaining coverage deltas.
 - **ADR-024 – Legacy Plot Input Contracts:** Legacy plotting fixes ship in v0.10.1; appendix retains the per-gap list.

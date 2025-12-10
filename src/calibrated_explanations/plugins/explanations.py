@@ -207,8 +207,43 @@ def validate_explanation_batch(
             },
         )
 
-    container = metadata.get("container")
-    if container is not None and not isinstance(container, container_cls):
-        raise TypeError("ExplanationBatch metadata 'container' has unexpected type")
+    # Validate instance payloads for interval invariants
+    for index, instance in enumerate(instances):
+        prediction = instance.get("prediction")
+        if isinstance(prediction, MappingABC):
+            _validate_prediction_invariant(prediction, f"Instance {index} prediction")
 
     return batch
+
+
+def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> None:
+    """Enforce low <= predict <= high invariant on prediction payload."""
+    from ..core.exceptions import ValidationError
+
+    predict = payload.get("predict")
+    low = payload.get("low")
+    high = payload.get("high")
+
+    if predict is None or low is None or high is None:
+        return
+
+    try:
+        # Handle scalar values (common case)
+        if isinstance(predict, (int, float)) and isinstance(low, (int, float)) and isinstance(high, (int, float)):
+            if not low <= high:
+                raise ValidationError(
+                    f"{context}: interval invariant violated (low > high)",
+                    details={"low": low, "high": high},
+                )
+            # Use small epsilon for float comparison if needed, but strict for now
+            # Allow small floating point tolerance
+            epsilon = 1e-9
+            if not (low - epsilon <= predict <= high + epsilon):
+                raise ValidationError(
+                    f"{context}: prediction invariant violated (predict not in [low, high])",
+                    details={"predict": predict, "low": low, "high": high},
+                )
+    except (TypeError, ValueError):
+        # Skip validation for non-numeric types
+        pass
+

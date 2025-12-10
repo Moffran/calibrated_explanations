@@ -183,7 +183,44 @@ class PredictionOrchestrator:
 
         if cache_enabled and key_parts is not None:
             cache.set(stage="predict", parts=key_parts, value=result)
+        
+        self._validate_prediction_result(result)
         return result
+
+    def _validate_prediction_result(self, result):
+        """Enforce low <= predict <= high invariant on prediction results."""
+        from ..exceptions import ValidationError
+        
+        predict, low, high, _ = result
+        
+        # Skip validation if any component is None or empty
+        if predict is None or low is None or high is None:
+            return
+        
+        try:
+            predict = np.asanyarray(predict)
+            low = np.asanyarray(low)
+            high = np.asanyarray(high)
+            
+            if predict.size == 0 or low.size == 0 or high.size == 0:
+                return
+                
+            # Check low <= high
+            if not np.all(low <= high):
+                raise ValidationError(
+                    "Prediction interval invariant violated: low > high",
+                    details={"low": low, "high": high},
+                )
+
+            # Check low <= predict <= high
+            if not np.all((low <= predict) & (predict <= high)):
+                raise ValidationError(
+                    "Prediction invariant violated: predict not in [low, high]",
+                    details={"predict": predict, "low": low, "high": high},
+                )
+        except (TypeError, ValueError):
+            # Skip validation if conversion to array fails or types are incompatible
+            pass
 
     def _predict_impl(
         self,
