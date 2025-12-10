@@ -2,7 +2,7 @@
 
 # Release Plan to v1.0.0
 
-### Current released version: v0.9.1
+## Current released version: v0.9.1
 
 > Status: v0.9.1 shipped on 2025-11-27.
 
@@ -248,7 +248,7 @@ Release gate: Domain/preprocessing pipelines operate on ADR-compliant models wit
    ongoing maintenance workflow in the RC changelog section.【F:docs/improvement/code_documentation_uplift.md†L24-L92】【F:docs/improvement/adrs/ADR-018-code-documentation-standard.md†L43-L62】
 5. Validate the new caching/parallel toggles in staging, document safe defaults
    for RC adopters, and ensure telemetry captures cache hits/misses and worker
-   utilisation metrics for release sign-off.【F:docs/improvement/adrs/ADR-003-caching-key-and-eviction.md†L28-L64】【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L25-L64】 See [Parallel Execution Improvement Plan – Phase 5](parallel_execution_improvement_plan.md#phase-5--rollout--documentation-week-15-16) for rollout and documentation activities.
+   utilisation metrics for release sign-off.【F:docs/improvement/adrs/ADR-003-caching-key-and-eviction.md†L28-L64】【F:docs/improvement/adrs/ADR-004-parallel-backend-abstraction.md†L25-L64】
 6. Institutionalise ADR-019 by baking coverage checks into release branch
    policies, publishing a health dashboard (Codecov badge + waiver log), and
    enforcing `--cov-fail-under=90` in CI.【F:docs/improvement/adrs/ADR-019-test-coverage-standard.md†L34-L74】【F:docs/improvement/coverage_uplift_plan.md†L24-L33】

@@ -76,7 +76,7 @@ templates_path = ["_templates"]
 language = "en"
 
 # Patterns to ignore when looking for source files
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_shared/**", "improvement"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_shared/**", "improvement/ignore", "improvement/archived"]
 
 # Skip specific GitHub targets that consistently hit rate limits during local linkcheck runs.
 linkcheck_ignore = [
@@ -97,6 +97,7 @@ myst_enable_extensions = [
 # MyST parser configuration: disable fuzzy linkify so plain code/path
 # fragments like `external_plugins/shap_lime/DESIGN.md` are not treated
 # as external links (which produces false positives in linkcheck).
+myst_heading_anchors = 3
 myst_config = {
     "linkify_fuzzy_links": False,
 }

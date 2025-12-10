@@ -5,4 +5,6 @@
 :maxdepth: 1
 
 adrs/*
+plot_spec/*
+*
 ```
