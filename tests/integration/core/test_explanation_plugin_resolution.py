@@ -12,10 +12,8 @@ from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins.manager import DEFAULT_EXPLANATION_IDENTIFIERS
 from calibrated_explanations.plugins import (
-    clear_explanation_plugins,
     ensure_builtin_plugins,
     register_explanation_plugin,
-    unregister,
 )
 
 from tests._helpers import (
@@ -23,6 +21,7 @@ from tests._helpers import (
     get_regression_model,
     initiate_explainer,
 )
+from tests.helpers.plugin_utils import cleanup_plugin
 
 
 class ClassificationOnlyFactualPlugin(LegacyFactualExplanationPlugin):
@@ -83,10 +82,8 @@ class FutureSchemaFactualPlugin(LegacyFactualExplanationPlugin):
     }
 
 
-def _cleanup_plugin(plugin) -> None:
-    unregister(plugin)
-    clear_explanation_plugins()
-    ensure_builtin_plugins()
+def cleanup_local_plugin(plugin) -> None:
+    cleanup_plugin(plugin)
     ClassificationOnlyFactualPlugin.last_initialised = None
     DependencyReportingFactualPlugin.last_context = None
 
@@ -190,7 +187,7 @@ def test_dependency_metadata_populates_context(monkeypatch, binary_dataset):
         )
     finally:
         monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL", raising=False)
-        _cleanup_plugin(plugin)
+        cleanup_local_plugin(plugin)
 
 
 def test_future_schema_plugin_rejected(binary_dataset):

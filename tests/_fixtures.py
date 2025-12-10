@@ -1,23 +1,7 @@
 import numpy as np
-import pandas as pd
 import pytest
 
-# Simple in-memory CSV read cache to avoid repeated expensive disk reads during tests.
-# Keys are (path, sorted kwargs repr) so callers can pass delimiter/dtype when needed.
-_CSV_CACHE = {}
-
-
-def _read_csv_cached(path: str, **kwargs) -> pd.DataFrame:
-    """Read CSV with simple caching. Returns a new DataFrame copy for safety.
-
-    The cache key stringifies kwargs to keep keys hashable. Returns a copy so
-    tests can mutate the returned DataFrame safely without affecting the cache.
-    """
-    key = (path, tuple((k, repr(v)) for k, v in sorted(kwargs.items())))
-    if key not in _CSV_CACHE:
-        _CSV_CACHE[key] = pd.read_csv(path, **kwargs)
-    # Return a copy to make sure tests don't mutate the cached object
-    return _CSV_CACHE[key].copy()
+from tests.helpers.dataset_utils import read_csv_cached
 
 
 @pytest.fixture
@@ -31,7 +15,7 @@ def regression_dataset(sample_limit):
     num_to_test = 2
     dataset = "abalone.txt"
 
-    ds = _read_csv_cached(f"data/reg/{dataset}")
+    ds = read_csv_cached(f"data/reg/{dataset}")
     max_rows = sample_limit
     x = ds.drop("REGRESSION", axis=1).values[:max_rows, :]
     y = ds["REGRESSION"].values[:max_rows]
@@ -69,7 +53,7 @@ def binary_dataset():
     target_column = "Y"
 
     filename = f"data/{dataset}.csv"
-    df = _read_csv_cached(filename, delimiter=delimiter, dtype=np.float64)
+    df = read_csv_cached(filename, delimiter=delimiter, dtype=np.float64)
 
     columns = df.drop(target_column, axis=1).columns
     num_classes = len(np.unique(df[target_column]))
@@ -125,7 +109,7 @@ def multiclass_dataset():
     num_test_samples = 6
     file_path = f"data/Multiclass/{dataset_name}.csv"
 
-    df = _read_csv_cached(file_path, delimiter=delimiter).dropna()
+    df = read_csv_cached(file_path, delimiter=delimiter).dropna()
     target_column = "Type"
 
     df, categorical_features, categorical_labels, target_labels, _ = transform_to_numeric(

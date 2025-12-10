@@ -4,7 +4,7 @@ from calibrated_explanations.viz import plots as plotting
 
 
 @pytest.fixture(autouse=True)
-def _clear_env(monkeypatch):
+def clear_env(monkeypatch):
     """Ensure environment variables are cleaned between tests."""
     monkeypatch.delenv("CE_PLOT_STYLE", raising=False)
     monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)

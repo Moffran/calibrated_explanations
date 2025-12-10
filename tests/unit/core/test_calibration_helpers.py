@@ -73,7 +73,7 @@ def test_fast_calibration_helper_delegates(monkeypatch):
     assert captured_calls[-1]["metadata"].get("operation") == "initialize_fast"
 
 
-class _BaseStubExplainer:
+class BaseStubExplainer:
     """Utility stub exposing the minimal CalibratedExplainer surface for tests."""
 
     mode: str
@@ -87,7 +87,7 @@ class _BaseStubExplainer:
 
 
 def test_update_interval_learner__should_reject_fast_mode_updates():
-    class FastExplainer(_BaseStubExplainer):
+    class FastExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="classification")
 
@@ -101,7 +101,7 @@ def test_update_interval_learner__should_reject_fast_mode_updates():
 
 
 def test_update_interval_learner__should_raise_when_regression_interval_is_list():
-    class RegressionListExplainer(_BaseStubExplainer):
+    class RegressionListExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="regression")
             self.interval_learner = []  # fast-mode sentinel from runtime helpers
@@ -123,7 +123,7 @@ def test_update_interval_learner__should_insert_calibration_for_regression_inter
         def insert_calibration(self, xs, ys, bins=None):
             self.calls.append((tuple(xs), tuple(ys), bins))
 
-    class RegressionExplainer(_BaseStubExplainer):
+    class RegressionExplainer(BaseStubExplainer):
         def __init__(self):
             super().__init__(mode="regression")
             self.interval_learner = TrackingInterval()
@@ -175,17 +175,23 @@ def test_calibration_helpers_deprecation_and_delegate(monkeypatch):
         sys.modules, "calibrated_explanations.calibration.interval_learner", fake_interval
     )
 
-    with warnings.catch_warnings(record=True) as rec:
-        warnings.simplefilter("always")
-        func = ch_helpers.assign_threshold
+    from tests.helpers.deprecation import deprecations_error_enabled
 
-    assert any(
-        issubclass(w.category, DeprecationWarning) for w in rec
-    ), "expected DeprecationWarning"
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning):
+            _ = ch_helpers.assign_threshold
+    else:
+        with warnings.catch_warnings(record=True) as rec:
+            warnings.simplefilter("always")
+            func = ch_helpers.assign_threshold
 
-    # Calling the delegated function should return the fake result
-    res = func(object(), 0.5)
-    assert res == "ok"
+        assert any(
+            issubclass(w.category, DeprecationWarning) for w in rec
+        ), "expected DeprecationWarning"
+
+        # Calling the delegated function should return the fake result
+        res = func(object(), 0.5)
+        assert res == "ok"
 
 
 def test_calibration_helpers_unknown_attribute_raises():

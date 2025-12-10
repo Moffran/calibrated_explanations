@@ -78,6 +78,11 @@ language = "en"
 # Patterns to ignore when looking for source files
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_shared/**"]
 
+# Skip specific GitHub targets that consistently hit rate limits during local linkcheck runs.
+linkcheck_ignore = [
+    r"https://github.com/Moffran/calibrated_explanations/blob/main/CHANGELOG\.md",
+]
+
 # Pygments style for syntax highlighting
 pygments_style = "sphinx"
 

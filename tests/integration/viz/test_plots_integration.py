@@ -6,42 +6,7 @@ import numpy as np
 from calibrated_explanations.viz import plots as _plots
 
 
-class _FakeExplanation:
-    def __init__(self, mode="regression"):
-        self._mode = mode
-        self.y_minmax = (0.0, 1.0)
-
-        class _CE:
-            def get_confidence(self):
-                return 95
-
-        self.calibrated_explanations = _CE()
-
-    def get_mode(self):
-        return self._mode
-
-    def is_thresholded(self):
-        return False
-
-    def get_class_labels(self):
-        return None
-
-
-class _FakeExplainer:
-    def __init__(self):
-        self.learner = object()  # no predict_proba -> non-regularized branch
-        # sample calibration values
-        self.y_cal = np.array([0.1, 0.2, 0.3])
-
-    def predict(self, x, uq_interval=False, bins=None):
-        # return (predictions, (low, high)) similar shape to usage
-        preds = np.zeros(len(x))
-        low = np.zeros(len(x))
-        high = np.ones(len(x))
-        return preds, (low, high)
-
-    def is_multiclass(self):
-        return False
+from tests.helpers.explainer_utils import FakeExplanation, FakeExplainer
 
 
 def test_plot_regression_writes_file(tmp_path):
@@ -57,7 +22,7 @@ def test_plot_regression_writes_file(tmp_path):
         "low": np.array([0.05, -0.25, 0.25, -0.05]),
         "high": np.array([0.15, -0.15, 0.35, 0.05]),
     }
-    expl = _FakeExplanation(mode="regression")
+    expl = FakeExplanation(mode="regression")
     outdir = str(tmp_path)
     title = "reg_test"
     # call with save_ext to force render+save behavior
@@ -92,7 +57,7 @@ def test_plot_alternative_writes_file(tmp_path):
     Refactored to use pathlib.Path and semantic assertions.
     """
     # n is implied by feature_predict length
-    expl = _FakeExplanation(mode="regression")
+    expl = FakeExplanation(mode="regression")
     feature_predict = {
         "predict": np.array([0.2, 0.8, 0.4]),
         "low": np.array([0.1, 0.7, 0.35]),
@@ -120,7 +85,7 @@ def test_plot_alternative_writes_file(tmp_path):
 
 
 def test_plot_global_non_probabilistic_runs_without_error():
-    expl = _FakeExplainer()
+    expl = FakeExplainer()
     # small x_test
     x_test = np.zeros((3, 2))
     # should not raise
@@ -139,7 +104,7 @@ def test_plot_alternative_thresholded_writes_file(tmp_path):
      Thresholded explanation should hit the label/xticks/xlim branch.
     """
 
-    class _FakeExplanationThresh(_FakeExplanation):
+    class FakeExplanationThresh(FakeExplanation):
         def __init__(self):
             super().__init__(mode="regression")
             self.y_threshold = 0.25
@@ -148,7 +113,7 @@ def test_plot_alternative_thresholded_writes_file(tmp_path):
             return True
 
     # n is implied by feature_predict length
-    expl = _FakeExplanationThresh()
+    expl = FakeExplanationThresh()
     feature_predict = {
         "predict": np.array([0.2, 0.8]),
         "low": np.array([0.1, 0.7]),
@@ -177,7 +142,7 @@ def test_plot_alternative_thresholded_writes_file(tmp_path):
 
 def test_plot_global_probabilistic_branch_runs():
     # fake explainer with predict_proba to exercise probabilistic branch
-    class _FakeExplainerProba:
+    class FakeExplainerProba:
         def __init__(self):
             # the plotting helper checks explainer.learner for predict_proba
             self.learner = self
@@ -196,7 +161,7 @@ def test_plot_global_probabilistic_branch_runs():
         def predict(self, x, uq_interval=False, bins=None):
             return np.zeros(len(x)), (np.zeros(len(x)), np.ones(len(x)))
 
-    expl = _FakeExplainerProba()
+    expl = FakeExplainerProba()
     x_test = np.zeros((3, 2))
     # should not raise
     _plots._plot_global(expl, x_test, y_test=None, threshold=None, show=False, use_legacy=False)
@@ -204,7 +169,7 @@ def test_plot_global_probabilistic_branch_runs():
 
 def test_plot_alternative_early_noop_when_not_saving():
     # if not showing and save_ext is None, function returns early without matplotlib
-    expl = _FakeExplanation(mode="regression")
+    expl = FakeExplanation(mode="regression")
     feature_predict = {
         "predict": np.array([0.2]),
         "low": np.array([0.1]),
@@ -228,7 +193,7 @@ def test_plot_alternative_early_noop_when_not_saving():
 
 
 def test_plot_alternative_probabilistic_headless_noop():
-    class _ProbabilisticExplanation(_FakeExplanation):
+    class ProbabilisticExplanation(FakeExplanation):
         def __init__(self):
             super().__init__(mode="classification")
             self.prediction = {"classes": 1}
@@ -243,7 +208,7 @@ def test_plot_alternative_probabilistic_headless_noop():
     }
 
     _plots._plot_alternative(
-        explanation=_ProbabilisticExplanation(),
+        explanation=ProbabilisticExplanation(),
         instance=[0.1, 0.2],
         predict={"predict": 0.55, "low": 0.4, "high": 0.7},
         feature_predict=feature_predict,
@@ -263,7 +228,7 @@ def test_plot_alternative_infers_features_to_plot(tmp_path):
 
     Refactored to use pathlib.Path and semantic assertions.
     """
-    expl = _FakeExplanation(mode="regression")
+    expl = FakeExplanation(mode="regression")
     feature_predict = {
         "predict": np.array([0.2, 0.8, 0.4]),
         "low": np.array([0.1, 0.7, 0.35]),

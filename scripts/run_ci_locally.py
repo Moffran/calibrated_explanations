@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import glob
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -74,6 +75,16 @@ def extract_run_steps(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
     for job_name, job in jobs.items():
         steps = job.get("steps") or []
         job_env = job.get("env") or {}
+        runs_on = job.get("runs-on") or ""
+        job_shell = "bash"
+        if isinstance(runs_on, str):
+            runs_key = runs_on.lower()
+        elif isinstance(runs_on, list):
+            runs_key = " ".join(str(v) for v in runs_on).lower()
+        else:
+            runs_key = ""
+        if "windows" in runs_key:
+            job_shell = "pwsh"
         # Track whether this job used actions/setup-python earlier
         setup_python_found = False
         for idx, step in enumerate(steps):
@@ -93,9 +104,12 @@ def extract_run_steps(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
                     {
                         "job": job_name,
                         "step_idx": idx,
+                        "id": step.get("id"),
                         "name": step.get("name") or f"step_{idx}",
                         "env": step_env,
                         "run": step["run"],
+                        "shell": step.get("shell"),
+                        "job_shell": job_shell,
                         "setup_python": setup_python_found,
                     }
                 )
@@ -120,39 +134,98 @@ def collect_all_runs(workflow_files: List[str], selected: Optional[List[str]] = 
     return collected
 
 
-def run_script_block(script: str, env: Dict[str, str], shell: str, cwd: Optional[str] = None) -> int:
+STEP_OUTPUT_PATTERN = re.compile(r"\${{\s*steps\.([^.}\s]+)\.outputs\.([^.}\s]+)\s*}}")
+
+
+def render_step_expressions(script: str, step_outputs: Dict[str, Dict[str, str]]) -> str:
+    """Replace `${{ steps.X.outputs.Y }}` placeholders with recorded outputs."""
+    missing: set[str] = set()
+
+    def _replace(match: re.Match[str]) -> str:
+        step_id, key = match.group(1), match.group(2)
+        value = step_outputs.get(step_id, {}).get(key)
+        if value is None:
+            identifier = f"{step_id}.{key}"
+            if identifier not in missing:
+                print(f"Warning: missing output for steps.{step_id}.outputs.{key}")
+                missing.add(identifier)
+            return ""
+        return value
+
+    return STEP_OUTPUT_PATTERN.sub(_replace, script)
+
+
+def parse_github_output(path: str) -> Dict[str, str]:
+    """Read outputs that a step wrote to $GITHUB_OUTPUT."""
+    outputs: Dict[str, str] = {}
+    if not os.path.exists(path):
+        return outputs
+    with open(path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            outputs[key] = value
+    return outputs
+
+
+def run_script_block(
+    script: str,
+    env: Dict[str, str],
+    shell: str,
+    cwd: Optional[str] = None,
+    capture_outputs: bool = False,
+) -> tuple[int, Dict[str, str]]:
     # Write script to a temporary file and execute with chosen shell.
     # When running under Windows+bash, create the temp file inside the
     # requested working directory so we can invoke it by a relative path
     # (avoids path conversion/mount issues with MSYS/MinGW).
     temp_dir = cwd or os.getcwd()
-    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".sh", dir=temp_dir) as fh:
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".sh", dir=temp_dir, newline="\n") as fh:
         fh.write(script)
         tmp = fh.name
-    try:
-        if shell == "bash":
-            if os.name == "nt":
-                # Use a relative path from the cwd so bash will resolve it
-                # correctly when invoked with cwd set to the repo root.
-                rel = os.path.relpath(tmp, start=temp_dir)
-                cmd = ["bash", rel]
-            else:
-                cmd = ["bash", tmp]
-        else:
-            # PowerShell expects a .ps1 file. Rewrite extension and invoke pwsh.
-            ps_tmp = tmp + ".ps1"
-            os.rename(tmp, ps_tmp)
-            tmp = ps_tmp
-            cmd = ["pwsh", "-NoProfile", "-NonInteractive", "-File", tmp]
+    gh_output_path = None
+    if capture_outputs:
+        with tempfile.NamedTemporaryFile("w", delete=False, dir=temp_dir) as out_fh:
+            gh_output_path = out_fh.name
 
-        print("-> Executing:", cmd)
-        proc = subprocess.run(cmd, env={**os.environ, **env}, cwd=cwd)
-        return proc.returncode
+    full_env = dict(os.environ)
+    full_env.update(env)
+    if gh_output_path:
+        full_env["GITHUB_OUTPUT"] = gh_output_path
+
+    script_path = tmp
+    if shell == "bash":
+        if os.name == "nt":
+            rel = os.path.relpath(script_path, start=temp_dir)
+            quoted = shlex.quote(rel)
+            cmd = ["bash", "-lc", f". {quoted}"]
+        else:
+            cmd = ["bash", script_path]
+    else:
+        ps_tmp = script_path + ".ps1"
+        os.rename(script_path, ps_tmp)
+        script_path = ps_tmp
+        cmd = ["pwsh", "-NoProfile", "-NonInteractive", "-File", script_path]
+
+    print("-> Executing:", cmd)
+    try:
+        proc = subprocess.run(cmd, env=full_env, cwd=cwd)
+        outputs: Dict[str, str] = {}
+        if gh_output_path:
+            outputs = parse_github_output(gh_output_path)
+        return proc.returncode, outputs
     finally:
         try:
-            os.unlink(tmp)
+            os.unlink(script_path)
         except Exception:
             pass
+        if gh_output_path:
+            try:
+                os.unlink(gh_output_path)
+            except Exception:
+                pass
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -195,20 +268,29 @@ def main(argv: Optional[List[str]] = None) -> int:
     results: List[Dict[str, Any]] = []
     abort = False
     first_nonzero_rc = 0
+    step_outputs: Dict[str, Dict[str, str]] = {}
     for wf_name, steps in collected.items():
         print(f"\n=== Workflow: {wf_name} ===")
         for s in steps:
             print(f"\n--- Job: {s['job']} | Step: {s['name']} ---")
-            rc = run_script_block(
-                s["run"], {k: str(v) for k, v in (s.get("env") or {}).items()}, args.shell, cwd=args.cwd
-            )
+            env_vars = {k: str(v) for k, v in (s.get("env") or {}).items()}
+            # Prioritize the local shell (args.shell) over the workflow's inferred shell (job_shell)
+            # so that we can run Linux workflows on Windows (pwsh) and vice versa.
+            step_shell = s.get("shell") or args.shell
+            script = render_step_expressions(s['run'], step_outputs)
+            capture = bool(s.get("id"))
+            rc, outputs = run_script_block(script, env_vars, step_shell, cwd=args.cwd, capture_outputs=capture)
+            step_id = s.get("id")
+            if step_id is not None:
+                step_outputs[step_id] = outputs
             results.append({
                 "workflow": wf_name,
                 "job": s["job"],
                 "step": s["name"],
                 "rc": rc,
-                "run": s["run"],
+                "run": script,
                 "setup_python": s.get("setup_python", False),
+                "shell": step_shell,
             })
             if rc != 0:
                 print(f"Step failed with exit code {rc}: {s['name']}")

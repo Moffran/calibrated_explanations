@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any, List, Mapping, Sequence, Tuple
 import numpy as np
 
 from ...utils import safe_isinstance
-from ..prediction_helpers import initialize_explanation as _ih
 from ._computation import explain_predict_step  # Re-export for backward compatibility
 from .feature_task import FeatureTaskResult
 
@@ -115,6 +114,8 @@ def initialize_explanation(
     Delegates to the prediction_helpers module which contains the
     authoritative initialization logic.
     """
+    from ..prediction_helpers import initialize_explanation as _ih
+
     return _ih(explainer, x, low_high_percentiles, threshold, bins, features_to_ignore)
 
 

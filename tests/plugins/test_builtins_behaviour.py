@@ -19,10 +19,10 @@ from calibrated_explanations.plugins.explanations import (
     ExplanationRequest,
 )
 from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
-from calibrated_explanations.plugins.plots import PlotRenderContext
+from tests.helpers.plugin_utils import make_plot_context
 
 
-class _SentinelExplainer:
+class SentinelExplainer:
     """Minimal stub exposing the interfaces exercised by the legacy bridge."""
 
     def __init__(self, prediction, *, calibrated_classes=None):
@@ -72,21 +72,6 @@ def _make_explanation_context(explainer, predict_bridge, **overrides):
     return ExplanationContext(**context)
 
 
-def _make_plot_context(**overrides):
-    context = {
-        "explanation": None,
-        "instance_metadata": {},
-        "style": "plot_spec.default",
-        "intent": {},
-        "show": False,
-        "path": None,
-        "save_ext": None,
-        "options": {},
-    }
-    context.update(overrides)
-    return PlotRenderContext(**context)
-
-
 def test_derive_threshold_labels_handles_sequences():
     labels = builtins._derive_threshold_labels([1, 3.75])
     assert labels == ("1.00 <= Y < 3.75", "Outside interval")
@@ -109,9 +94,7 @@ def test_derive_threshold_labels_logs_interval_failure(caplog):
 
 
 def test_legacy_predict_bridge_handles_tuple_payload_for_classification():
-    bridge = builtins.LegacyPredictBridge(
-        _SentinelExplainer(([1.0, 2.0], ([0.1, 0.2], [0.3, 0.4])))
-    )
+    bridge = builtins.LegacyPredictBridge(SentinelExplainer(([1.0, 2.0], ([0.1, 0.2], [0.3, 0.4]))))
     payload = bridge.predict(
         np.asarray([[1.0]]), mode="factual", task="classification", bins="hist"
     )
@@ -123,7 +106,7 @@ def test_legacy_predict_bridge_handles_tuple_payload_for_classification():
 
 
 def test_legacy_predict_bridge_handles_scalar_prediction():
-    bridge = builtins.LegacyPredictBridge(_SentinelExplainer([4.0, 5.0]))
+    bridge = builtins.LegacyPredictBridge(SentinelExplainer([4.0, 5.0]))
     payload = bridge.predict(np.asarray([[1.0]]), mode="fast", task="regression")
     assert set(payload) == {"predict", "mode", "task"}
     np.testing.assert_array_equal(payload["predict"], [4.0, 5.0])
@@ -253,7 +236,7 @@ def test_explanation_plugin_requires_initialisation():
 def test_explanation_initialise_requires_explainer():
     plugin = builtins.LegacyFactualExplanationPlugin()
     context = _make_explanation_context(
-        explainer=None, predict_bridge=builtins.LegacyPredictBridge(_SentinelExplainer([1]))
+        explainer=None, predict_bridge=builtins.LegacyPredictBridge(SentinelExplainer([1]))
     )
     with pytest.raises(NotFittedError):
         plugin.initialize(context)
@@ -329,14 +312,14 @@ def test_explanation_rejects_unsupported_model(monkeypatch):
 
 
 def test_legacy_plot_builder_round_trips_context():
-    context = _make_plot_context(intent={"type": "anything"})
+    context = make_plot_context(intent={"type": "anything"})
     builder = builtins.LegacyPlotBuilder()
     assert builder.build(context)["context"] is context
 
 
 def test_legacy_plot_renderer_produces_empty_result():
     renderer = builtins.LegacyPlotRenderer()
-    context = _make_plot_context()
+    context = make_plot_context()
     result = renderer.render({"context": context}, context=context)
     assert result.saved_paths == ()
     assert result.figure is None
@@ -354,7 +337,7 @@ def test_plotspec_builder_global_payload(monkeypatch):
         fake_builder,
     )
 
-    context = _make_plot_context(
+    context = make_plot_context(
         intent={"type": "global", "title": "Global"},
         options={"payload": {"y": [1, 2], "threshold": 0.5, "extra": 1}},
     )
@@ -368,12 +351,12 @@ def test_plotspec_builder_global_payload(monkeypatch):
 def test_plotspec_builder_rejects_non_mapping_payloads():
     builder = builtins.PlotSpecDefaultBuilder()
     with pytest.raises(ConfigurationError):
-        builder.build(_make_plot_context(intent={"type": "global"}, options={"payload": 3}))
+        builder.build(make_plot_context(intent={"type": "global"}, options={"payload": 3}))
     with pytest.raises(ConfigurationError):
-        builder.build(_make_plot_context(intent={"type": "alternative"}, options={"payload": 3}))
+        builder.build(make_plot_context(intent={"type": "alternative"}, options={"payload": 3}))
     with pytest.raises(ConfigurationError):
         builder.build(
-            _make_plot_context(
+            make_plot_context(
                 intent={"type": "alternative"},
                 options={"payload": {"feature_predict": None, "feature_weights": None}},
             )
@@ -407,7 +390,7 @@ def test_plotspec_builder_handles_non_mapping_predict_payload(monkeypatch):
         def get_mode(self):
             return "classification"
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative"},
         options={
@@ -457,7 +440,7 @@ def test_plotspec_builder_alternative_regression_threshold(monkeypatch):
         y_minmax = (0.1, 0.9)
         y_threshold = (0.25, 0.5)
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative", "title": "Alt"},
         options={
@@ -508,7 +491,7 @@ def test_plotspec_builder_alternative_probability_fallback(monkeypatch):
 
         y_threshold = 0.7
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative"},
         options={
@@ -554,7 +537,7 @@ def test_plotspec_builder_handles_invalid_sequences(monkeypatch):
 
         y_threshold = object()  # not convertible
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative"},
         options={
@@ -599,7 +582,7 @@ def test_plotspec_builder_regression_without_threshold(monkeypatch):
         def get_mode(self):
             return "regression"
 
-    context = _make_plot_context(
+    context = make_plot_context(
         explanation=Explanation(),
         intent={"type": "alternative"},
         options={
@@ -618,7 +601,7 @@ def test_plotspec_builder_regression_without_threshold(monkeypatch):
 def test_plotspec_builder_requires_supported_intent():
     builder = builtins.PlotSpecDefaultBuilder()
     with pytest.raises(ConfigurationError):
-        builder.build(_make_plot_context(intent={"type": "unsupported"}))
+        builder.build(make_plot_context(intent={"type": "unsupported"}))
 
 
 def test_plotspec_renderer_handles_multiple_outputs(monkeypatch):
@@ -632,7 +615,7 @@ def test_plotspec_renderer_handles_multiple_outputs(monkeypatch):
         fake_render,
     )
 
-    context = _make_plot_context(show=True, save_ext=(".png", ".svg"), path="/tmp/plot")
+    context = make_plot_context(show=True, save_ext=(".png", ".svg"), path="/tmp/plot")
     renderer = builtins.PlotSpecDefaultRenderer()
     result = renderer.render({"kind": "prob"}, context=context)
     assert result.saved_paths == ("/tmp/plot.png", "/tmp/plot.svg")
@@ -650,7 +633,7 @@ def test_plotspec_renderer_without_save(monkeypatch):
         fake_render,
     )
 
-    context = _make_plot_context(show=False, path="base")
+    context = make_plot_context(show=False, path="base")
     renderer = builtins.PlotSpecDefaultRenderer()
     renderer.render({"kind": "prob"}, context=context)
     assert calls == [({"kind": "prob"}, False, "base")]

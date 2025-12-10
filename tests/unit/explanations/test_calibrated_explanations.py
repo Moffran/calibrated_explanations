@@ -13,10 +13,11 @@ from calibrated_explanations.explanations import (
     AlternativeExplanations,
     CalibratedExplanations,
 )
+from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
 
 @dataclass
-class _DummyOriginalExplainer:
+class DummyOriginalExplainer:
     """Lightweight stand-in for :class:`CalibratedExplainer`."""
 
     feature_names: Sequence[str]
@@ -66,7 +67,7 @@ class _DummyOriginalExplainer:
         return None, shap_exp
 
 
-class _DummyExplanation:
+class DummyExplanation:
     """Minimal explanation object exercising list-handling logic."""
 
     def __init__(
@@ -131,17 +132,15 @@ class _DummyExplanation:
 
 @pytest.fixture()
 def collection() -> CalibratedExplanations:
-    explainer = _DummyOriginalExplainer(
-        feature_names=("f0", "f1"), class_labels={0: "no", 1: "yes"}
-    )
+    explainer = DummyOriginalExplainer(feature_names=("f0", "f1"), class_labels={0: "no", 1: "yes"})
     x = np.arange(6, dtype=float).reshape(3, 2)
     thresholds = [(0.1, 0.9), (0.2, 0.8), (0.3, 0.7)]
     bins = ["bin0", "bin1", "bin2"]
     coll = CalibratedExplanations(explainer, x, thresholds, bins)
     coll.explanations = [
-        _DummyExplanation(0, 0.1, probabilities=np.array([0.9, 0.1]), interval=(0.0, 0.2)),
-        _DummyExplanation(1, 0.2, probabilities=np.array([0.8, 0.2]), interval=(0.1, 0.3)),
-        _DummyExplanation(2, 0.3, probabilities=np.array([0.7, 0.3]), interval=(0.2, 0.4)),
+        DummyExplanation(0, 0.1, probabilities=np.array([0.9, 0.1]), interval=(0.0, 0.2)),
+        DummyExplanation(1, 0.2, probabilities=np.array([0.8, 0.2]), interval=(0.1, 0.3)),
+        DummyExplanation(2, 0.3, probabilities=np.array([0.7, 0.3]), interval=(0.2, 0.4)),
     ]
     return coll
 
@@ -217,14 +216,26 @@ def test_get_low_high_percentile_validation(collection: CalibratedExplanations) 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
     from calibrated_explanations.core.exceptions import ValidationError
 
-    with pytest.warns(DeprecationWarning):
-        assert collection.get_explanation(1) is collection.explanations[1]
-    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
-        collection.get_explanation("1")  # type: ignore[arg-type]
-    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
-        collection.get_explanation(-1)
-    with pytest.raises(ValidationError), pytest.warns(DeprecationWarning):
-        collection.get_explanation(len(collection.x_test))
+    if deprecations_error_enabled():
+        # In raise-mode deprecations trigger before the validation checks;
+        # assert that the deprecation is raised instead of the ValidationError.
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(1)
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation("1")  # type: ignore[arg-type]
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(-1)
+        with pytest.raises(DeprecationWarning):
+            collection.get_explanation(len(collection.x_test))
+    else:
+        with warns_or_raises():
+            assert collection.get_explanation(1) is collection.explanations[1]
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation("1")  # type: ignore[arg-type]
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation(-1)
+        with pytest.raises(ValidationError), warns_or_raises():
+            collection.get_explanation(len(collection.x_test))
 
 
 def test_plot_routes_calls(monkeypatch, tmp_path, collection: CalibratedExplanations) -> None:

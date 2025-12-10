@@ -8,7 +8,7 @@ from calibrated_explanations.calibration import IntervalRegressor, VennAbers
 from calibrated_explanations.core import ConfigurationError, DataShapeError
 
 
-class _MockModel:
+class MockModel:
     """Mock model supporting predict_proba and basic attributes."""
 
     def __init__(self):
@@ -32,7 +32,7 @@ def test_venn_abers_mondrian_without_bins_raises_configuration_error():
     y_cal = rng.integers(0, 2, 50)
     bins = np.repeat([1, 2], 25)  # Mondrian categories
 
-    model = _MockModel()
+    model = MockModel()
     calibrator = VennAbers(x_cal, y_cal, model, bins=bins)
 
     # Test: predict_proba without bins should raise ConfigurationError

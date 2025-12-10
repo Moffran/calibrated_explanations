@@ -12,7 +12,7 @@ matplotlib = pytest.importorskip(
 matplotlib.use("Agg", force=True)
 
 
-class _CalibratedStub:
+class CalibratedStub:
     def __init__(self, confidence=95):
         self._confidence = confidence
 
@@ -20,7 +20,7 @@ class _CalibratedStub:
         return self._confidence
 
 
-class _InnerExplainer:
+class InnerExplainer:
     def __init__(self, multiclass=False):
         self._multiclass = multiclass
 
@@ -56,10 +56,10 @@ class DummyExplanation:
         if class_labels is _DEFAULT_LABELS:
             class_labels = ["neg", "pos"]
         self._class_labels = class_labels
-        self.calibrated_explanations = _CalibratedStub(confidence)
+        self.calibrated_explanations = CalibratedStub(confidence)
         if inner_multiclass is None:
             inner_multiclass = multiclass
-        self._explainer = _InnerExplainer(inner_multiclass)
+        self._explainer = InnerExplainer(inner_multiclass)
         self._one_sided = one_sided
 
     def is_one_sided(self):
@@ -331,7 +331,7 @@ def test_probabilistic_returns_without_output():
 
 
 def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
-    class _ThresholdWrapper:
+    class ThresholdWrapper:
         def __init__(self):
             self.learner = types.SimpleNamespace()
             self.y_cal = np.array([0.1, 0.2, 0.3])
@@ -350,7 +350,7 @@ def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
         def is_multiclass(self):  # pragma: no cover - deterministic helper
             return False
 
-    explainer = _ThresholdWrapper()
+    explainer = ThresholdWrapper()
     x_vals = np.zeros((3, 1))
     y_vals = np.array([0, 1, 0])
 
@@ -489,7 +489,7 @@ def test_interval_requires_idx_and_two_sided(tmp_path):
 
 
 def test_plot_global_threshold_requires_scalar():
-    class _NonProbExplainer:
+    class NonProbExplainer:
         def __init__(self):
             self.learner = object()
 
@@ -506,7 +506,7 @@ def test_plot_global_threshold_requires_scalar():
         def is_multiclass(self):
             return False
 
-    explainer = _NonProbExplainer()
+    explainer = NonProbExplainer()
     x = np.zeros((3, 1))
     y = np.array([0.1, 0.2, 0.3])
 
@@ -739,12 +739,12 @@ def test_probabilistic_figsize_scales_with_num_to_show(monkeypatch, tmp_path, di
 
 
 def test_plot_global_non_probabilistic(monkeypatch):
-    class _Learner:
+    class Learner:
         pass
 
-    class _Explainer:
+    class Explainer:
         def __init__(self):
-            self.learner = _Learner()
+            self.learner = Learner()
             self.y_cal = np.array([0.1, 0.4, 0.9])
 
         def predict(self, x, uq_interval=True, **kwargs):
@@ -754,7 +754,7 @@ def test_plot_global_non_probabilistic(monkeypatch):
             high = np.array([0.3, 0.9])
             return predict, (low, high)
 
-    explainer = _Explainer()
+    explainer = Explainer()
 
     monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
 
@@ -762,12 +762,12 @@ def test_plot_global_non_probabilistic(monkeypatch):
 
 
 def test_plot_global_threshold_branch(monkeypatch):
-    class _Learner:
+    class Learner:
         pass
 
-    class _Explainer:
+    class Explainer:
         def __init__(self):
-            self.learner = _Learner()
+            self.learner = Learner()
             self.y_cal = np.array([0.2, 0.5, 0.9])
             self.class_labels = None
 
@@ -778,7 +778,7 @@ def test_plot_global_threshold_branch(monkeypatch):
             high = np.array([0.4, 0.5, 0.6])
             return proba, (low, high)
 
-    explainer = _Explainer()
+    explainer = Explainer()
     monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
 
     plotting._plot_global(
@@ -791,13 +791,13 @@ def test_plot_global_threshold_branch(monkeypatch):
 
 
 def test_plot_global_probabilistic_variants(monkeypatch):
-    class _Learner:
+    class Learner:
         def predict_proba(self, *args, **kwargs):  # pragma: no cover - interface placeholder
             return None
 
-    class _MultiExplainer:
+    class MultiExplainer:
         def __init__(self):
-            self.learner = _Learner()
+            self.learner = Learner()
             self.y_cal = np.array([0.1, 0.4, 0.7])
             self.class_labels = {0: "zero", 1: "one", 2: "two"}
 
@@ -817,9 +817,9 @@ def test_plot_global_probabilistic_variants(monkeypatch):
         def is_multiclass(self):
             return True
 
-    class _BinaryExplainer:
+    class BinaryExplainer:
         def __init__(self):
-            self.learner = _Learner()
+            self.learner = Learner()
             self.y_cal = np.array([0.2, 0.6])
             self.class_labels = None
 
@@ -835,7 +835,7 @@ def test_plot_global_probabilistic_variants(monkeypatch):
 
     monkeypatch.setattr(plotting.plt, "show", lambda *args, **kwargs: None)
 
-    multi_explainer = _MultiExplainer()
+    multi_explainer = MultiExplainer()
     plotting._plot_global(multi_explainer, x=np.zeros((3, 1)), show=True)
     plotting._plot_global(
         multi_explainer,
@@ -844,7 +844,7 @@ def test_plot_global_probabilistic_variants(monkeypatch):
         show=True,
     )
 
-    binary_explainer = _BinaryExplainer()
+    binary_explainer = BinaryExplainer()
     plotting._plot_global(
         binary_explainer,
         x=np.zeros((2, 1)),
@@ -866,7 +866,7 @@ def test_plot_global_headless_short_circuit(monkeypatch):
 
 
 def test_plot_global_requires_scalar_threshold_for_predict_only(disable_show):
-    class _PredictOnlyExplainer:
+    class PredictOnlyExplainer:
         def __init__(self):
             self.learner = types.SimpleNamespace()
             self.y_cal = np.array([0.1, 0.2, 0.3])
@@ -884,7 +884,7 @@ def test_plot_global_requires_scalar_threshold_for_predict_only(disable_show):
         def is_multiclass(self):
             return False
 
-    explainer = _PredictOnlyExplainer()
+    explainer = PredictOnlyExplainer()
     x = np.zeros((3, 1))
     y = np.array([0.1, 0.2, 0.3])
 

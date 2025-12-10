@@ -2,19 +2,19 @@ from __future__ import annotations
 
 from typing import Any
 import pytest
+from tests.helpers.explainer_utils import make_explainer_from_dataset
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 from calibrated_explanations.core.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins import (
-    clear_explanation_plugins,
     ensure_builtin_plugins,
     register_explanation_plugin,
-    unregister,
 )
+from tests.helpers.plugin_utils import cleanup_plugin
 
 
-class _RegressionOnlyFactualPlugin(LegacyFactualExplanationPlugin):
+class RegressionOnlyFactualPlugin(LegacyFactualExplanationPlugin):
     """Legacy factual plugin constrained to regression tasks only."""
 
     plugin_meta = {
@@ -30,7 +30,7 @@ class _RegressionOnlyFactualPlugin(LegacyFactualExplanationPlugin):
     }
 
 
-class _RecordingFactualPlugin(LegacyFactualExplanationPlugin):
+class RecordingFactualPlugin(LegacyFactualExplanationPlugin):
     """Plugin that records its context to assert dependency propagation."""
 
     plugin_meta = {
@@ -59,7 +59,7 @@ class _RecordingFactualPlugin(LegacyFactualExplanationPlugin):
         return super().explain_batch(x, request)
 
 
-class _LegacySchemaFactualPlugin(LegacyFactualExplanationPlugin):
+class LegacySchemaFactualPlugin(LegacyFactualExplanationPlugin):
     """Plugin declaring an outdated schema version for runtime checks."""
 
     plugin_meta = {
@@ -70,37 +70,7 @@ class _LegacySchemaFactualPlugin(LegacyFactualExplanationPlugin):
     }
 
 
-def _make_explainer(binary_dataset, **overrides):
-    from tests._helpers import get_classification_model
-
-    (
-        x_prop_train,
-        y_prop_train,
-        x_cal,
-        y_cal,
-        x_test,
-        _y_test,
-        _num_classes,
-        _num_features,
-        categorical_features,
-        feature_names,
-    ) = binary_dataset
-
-    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    explainer = CalibratedExplainer(
-        model,
-        x_cal,
-        y_cal,
-        mode="classification",
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        class_labels=["No", "Yes"],
-        **overrides,
-    )
-    return explainer, x_test
-
-
-def _make_regression_explainer(regression_dataset, **overrides):
+def make_regression_explainer(regression_dataset, **overrides):
     from tests._helpers import get_regression_model
 
     (
@@ -128,31 +98,40 @@ def _make_regression_explainer(regression_dataset, **overrides):
     return explainer, x_test
 
 
-def _cleanup_plugin(plugin):
-    unregister(plugin)
-    clear_explanation_plugins()
-    ensure_builtin_plugins()
-
-
 def test_dependency_propagation_and_context_hints(binary_dataset):
     ensure_builtin_plugins()
-    plugin = _RecordingFactualPlugin()
+    plugin = RecordingFactualPlugin()
     register_explanation_plugin("tests.recording.factual", plugin)
 
     try:
-        explainer, x_test = _make_explainer(
+        explainer, x_test = make_explainer_from_dataset(
             binary_dataset, factual_plugin="tests.recording.factual"
         )
         explanations = explainer.explain_factual(x_test)
         assert explanations is not None
 
-        assert explainer._explanation_plugin_identifiers["factual"] == ("tests.recording.factual")
+        assert explainer._interval_plugin_hints["factual"] == ("tests.interval.pref",)
+        assert explainer._explanation_plugin_identifiers["factual"] == "tests.recording.factual"
+    finally:
+        cleanup_plugin(plugin)
+
+
+def test_plugin_override_via_env_var(binary_dataset, monkeypatch):
+    ensure_builtin_plugins()
+    plugin = RecordingFactualPlugin()
+    register_explanation_plugin("tests.recording.factual", plugin)
+    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL", "tests.recording.factual")
+
+    try:
+        explainer, x_test = make_explainer_from_dataset(binary_dataset)
+        explanations = explainer.explain_factual(x_test)
+        assert explainer._explanation_plugin_identifiers["factual"] == "tests.recording.factual"
         assert explainer._interval_plugin_hints["factual"] == ("tests.interval.pref",)
         fallback_chain = explainer._plot_plugin_fallbacks["factual"]
         assert fallback_chain[0] == "tests.plot.pref"
         assert fallback_chain[-1] == "legacy"
         runtime_plugin = explainer._explanation_plugin_instances["factual"]
-        assert isinstance(runtime_plugin, _RecordingFactualPlugin)
+        assert isinstance(runtime_plugin, RecordingFactualPlugin)
         assert runtime_plugin.initialized_context is not None
         assert runtime_plugin.initialized_context.interval_settings["dependencies"] == (
             "tests.interval.pref",
@@ -174,35 +153,38 @@ def test_dependency_propagation_and_context_hints(binary_dataset):
         assert batch_fallbacks[0] == "tests.plot.pref"
         assert batch_fallbacks[-1] == "legacy"
     finally:
-        _cleanup_plugin(plugin)
+        monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL", raising=False)
+        cleanup_plugin(plugin)
 
 
 def test_schema_version_override_errors(binary_dataset):
     ensure_builtin_plugins()
-    plugin = _LegacySchemaFactualPlugin()
+    plugin = LegacySchemaFactualPlugin()
     register_explanation_plugin("tests.legacy_schema.factual", plugin)
 
     try:
-        explainer, x_test = _make_explainer(
+        explainer, x_test = make_explainer_from_dataset(
             binary_dataset, factual_plugin="tests.legacy_schema.factual"
         )
         with pytest.raises(ConfigurationError, match="schema_version 0"):
             explainer.explain_factual(x_test)
     finally:
-        _cleanup_plugin(plugin)
+        cleanup_plugin(plugin)
 
 
 def test_missing_plugin_override_raises(monkeypatch, binary_dataset):
     monkeypatch.delenv("CE_EXPLANATION_PLUGIN_FACTUAL", raising=False)
 
-    explainer, x_test = _make_explainer(binary_dataset, factual_plugin="tests.missing.plugin")
+    explainer, x_test = make_explainer_from_dataset(
+        binary_dataset, factual_plugin="tests.missing.plugin"
+    )
     with pytest.raises(ConfigurationError, match="not registered"):
         explainer.explain_factual(x_test)
 
 
 def test_alternative_classification_records_plot_fallbacks(binary_dataset):
     ensure_builtin_plugins()
-    explainer, x_test = _make_explainer(binary_dataset)
+    explainer, x_test = make_explainer_from_dataset(binary_dataset)
 
     alternatives = explainer.explore_alternatives(x_test[:2])
     assert alternatives is not None
@@ -223,7 +205,7 @@ def test_alternative_classification_records_plot_fallbacks(binary_dataset):
 
 def test_alternative_regression_records_plot_fallbacks(regression_dataset):
     ensure_builtin_plugins()
-    explainer, x_test = _make_regression_explainer(regression_dataset)
+    explainer, x_test = make_regression_explainer(regression_dataset)
 
     alternatives = explainer.explore_alternatives(x_test[:2])
     assert alternatives is not None
@@ -246,6 +228,6 @@ def test_interval_override_missing_identifier(monkeypatch, binary_dataset):
     monkeypatch.setenv("CE_INTERVAL_PLUGIN", "tests.missing.interval")
     try:
         with pytest.raises(ConfigurationError, match="not registered"):
-            _make_explainer(binary_dataset)
+            make_explainer_from_dataset(binary_dataset)
     finally:
         monkeypatch.delenv("CE_INTERVAL_PLUGIN", raising=False)

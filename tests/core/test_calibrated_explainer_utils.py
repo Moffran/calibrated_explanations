@@ -16,7 +16,7 @@ from calibrated_explanations.core.config_helpers import (
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 
 
-class _DummyBridge:
+class DummyBridge:
     """Simple bridge to validate monitoring behaviour."""
 
     def __init__(self) -> None:
@@ -74,7 +74,7 @@ def test_coerce_string_tuple_handles_iterables():
 
 def test_predict_bridge_monitor_tracks_usage():
     """Test that PredictBridgeMonitor correctly tracks bridge method calls."""
-    bridge = _DummyBridge()
+    bridge = DummyBridge()
     monitor = PredictBridgeMonitor(bridge)
 
     predict_result = monitor.predict(np.array([[1.0]]), mode="factual", task="classification")

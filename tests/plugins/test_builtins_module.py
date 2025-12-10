@@ -64,11 +64,11 @@ class DummyPredictBridge(LegacyPredictBridge):
     def __init__(self) -> None:
         self.calls: list[tuple[Any, Dict[str, Any]]] = []
 
-        class _Explainer:
+        class Explainer:
             def predict(self, *args: Any, **kwargs: Any) -> Any:
                 return np.asarray([0.5])
 
-        super().__init__(_Explainer())
+        super().__init__(Explainer())
 
     def predict(self, x: Any, *, mode: str, task: str, bins: Any | None = None) -> Dict[str, Any]:
         payload = {"x": x, "mode": mode, "task": task, "bins": bins}
@@ -82,7 +82,7 @@ class DummyExplanation(SimpleNamespace):
 
 @pytest.fixture
 def explanation_context(monkeypatch: pytest.MonkeyPatch) -> ExplanationContext:
-    class _Explainer:
+    class Explainer:
         def __init__(self) -> None:
             self.calls: list[Dict[str, Any]] = []
 
@@ -99,7 +99,7 @@ def explanation_context(monkeypatch: pytest.MonkeyPatch) -> ExplanationContext:
         categorical_features=(),
         categorical_labels={},
         discretizer=None,
-        helper_handles={"explainer": _Explainer()},
+        helper_handles={"explainer": Explainer()},
         predict_bridge=bridge,
         interval_settings={},
         plot_settings={},
@@ -130,7 +130,7 @@ def _make_collection(*, with_instances: bool) -> builtins_mod.CalibratedExplanat
     return collection
 
 
-def _make_plot_context(**kwargs: Any) -> PlotRenderContext:
+def make_local_plot_context(**kwargs: Any) -> PlotRenderContext:
     base_kwargs = {
         "explanation": None,
         "instance_metadata": MappingProxyType({"type": "alternative"}),
@@ -164,7 +164,7 @@ def test_derive_threshold_labels_interval_branch():
 
 
 def test_legacy_predict_bridge_includes_intervals_and_classes():
-    class _Explainer:
+    class Explainer:
         def __init__(self) -> None:
             self.predict_calls: list[Dict[str, Any]] = []
 
@@ -177,7 +177,7 @@ def test_legacy_predict_bridge_includes_intervals_and_classes():
                 (np.asarray([0.0, 0.5]), np.asarray([0.2, 1.0])),
             )
 
-    bridge = LegacyPredictBridge(_Explainer())
+    bridge = LegacyPredictBridge(Explainer())
     payload = bridge.predict("item", mode="alt", task="classification", bins="b")
 
     assert payload["mode"] == "alt"
@@ -188,11 +188,11 @@ def test_legacy_predict_bridge_includes_intervals_and_classes():
 
 
 def test_legacy_predict_bridge_handles_scalar_predictions():
-    class _Explainer:
+    class Explainer:
         def predict(self, *args: Any, **kwargs: Any) -> Any:
             return np.asarray([0.42])
 
-    bridge = LegacyPredictBridge(_Explainer())
+    bridge = LegacyPredictBridge(Explainer())
     payload = bridge.predict(123, mode="factual", task="regression", bins=None)
 
     np.testing.assert_allclose(payload["predict"], [0.42])
@@ -200,7 +200,7 @@ def test_legacy_predict_bridge_handles_scalar_predictions():
 
 
 def test_predict_bridge_interval_and_proba():
-    class _Explainer:
+    class Explainer:
         def __init__(self) -> None:
             self.interval_called = False
 
@@ -215,7 +215,7 @@ def test_predict_bridge_interval_and_proba():
         def predict_proba(self, *args: Any, **kwargs: Any) -> Any:
             return np.asarray([0.1, 0.9])
 
-    bridge = LegacyPredictBridge(_Explainer())
+    bridge = LegacyPredictBridge(Explainer())
     interval = bridge.predict_interval([1], task="classification")
     proba = bridge.predict_proba([1])
     assert np.allclose(interval, [0.9])
@@ -260,7 +260,7 @@ def test_collection_to_batch_handles_empty_and_populated_collections():
 
 def test_legacy_plot_renderer_creates_result():
     renderer = LegacyPlotRenderer()
-    ctx = _make_plot_context()
+    ctx = make_local_plot_context()
     result = renderer.render({"artifact": 1}, context=ctx)
     assert getattr(result, "artifact", None) == {"artifact": 1}
     assert result.saved_paths == ()
@@ -375,7 +375,7 @@ def test_explanation_plugin_missing_explainer_raises(explanation_context: Explan
 
 def test_plot_builder_and_renderer_behaviour(monkeypatch: pytest.MonkeyPatch):
     builder = LegacyPlotBuilder()
-    context = _make_plot_context()
+    context = make_local_plot_context()
     assert builder.build(context)["context"] is context
 
     renderer_calls: list[Dict[str, Any]] = []
@@ -389,7 +389,7 @@ def test_plot_builder_and_renderer_behaviour(monkeypatch: pytest.MonkeyPatch):
         raising=False,
     )
     renderer = PlotSpecDefaultRenderer()
-    ctx = _make_plot_context(save_ext=[".png", ".svg"], path="/tmp/output", show=True)
+    ctx = make_local_plot_context(save_ext=[".png", ".svg"], path="/tmp/output", show=True)
     result = renderer.render({"spec": 1}, context=ctx)
 
     assert len(renderer_calls) == 3
@@ -403,26 +403,26 @@ def test_plot_spec_builder_global_and_error_paths(monkeypatch: pytest.MonkeyPatc
         lambda **kwargs: kwargs,
         raising=False,
     )
-    ctx = _make_plot_context()
+    ctx = make_local_plot_context()
     payload = builder.build(ctx)
     assert isinstance(payload, dict)
     assert "y_test" in payload
     assert payload.get("title") == "demo"
 
-    bad_ctx = _make_plot_context(
+    bad_ctx = make_local_plot_context(
         options=MappingProxyType({"payload": 1}), intent=MappingProxyType({"type": "global"})
     )
     with pytest.raises(ConfigurationError):
         builder.build(bad_ctx)
 
-    alt_ctx = _make_plot_context(
+    alt_ctx = make_local_plot_context(
         intent=MappingProxyType({"type": "alternative", "title": "alt"}),
         options=MappingProxyType({"payload": {"predict": {}}}),
     )
     with pytest.raises(ConfigurationError):
         builder.build(alt_ctx)
 
-    alt_bad_payload = _make_plot_context(
+    alt_bad_payload = make_local_plot_context(
         intent=MappingProxyType({"type": "alternative", "title": "alt"}),
         options=MappingProxyType({"payload": 1}),
     )
@@ -452,7 +452,7 @@ def test_plot_spec_builder_thresholded_classification(monkeypatch: pytest.Monkey
         y_threshold=(0.1, 0.9),
         get_mode=lambda: "regression",
     )
-    ctx = _make_plot_context(
+    ctx = make_local_plot_context(
         intent=MappingProxyType({"type": "alternative", "mode": "regression", "title": "alt"}),
         options=MappingProxyType(
             {
@@ -508,7 +508,7 @@ def test_plot_spec_builder_handles_full_feature_payload(monkeypatch: pytest.Monk
         is_thresholded=lambda: False,
         get_mode=lambda: "classification",
     )
-    ctx = _make_plot_context(
+    ctx = make_local_plot_context(
         intent=MappingProxyType({"type": "alternative", "title": "full"}),
         options=MappingProxyType({"payload": payload}),
         explanation=explanation,
@@ -545,7 +545,7 @@ def test_plot_spec_builder_uses_context_minmax(monkeypatch: pytest.MonkeyPatch):
         "features_to_plot": ["no", "bad"],
         "instance": [1, 2, 3],
     }
-    ctx = _make_plot_context(
+    ctx = make_local_plot_context(
         intent=MappingProxyType({"type": "alternative", "title": "ctx"}),
         options=MappingProxyType({"payload": payload}),
         explanation=explanation,
@@ -578,7 +578,7 @@ def test_plot_spec_builder_regression_without_threshold(monkeypatch: pytest.Monk
         "predict": {"predict": 0.1},
         "feature_predict": {"predict": [0.1]},
     }
-    ctx = _make_plot_context(
+    ctx = make_local_plot_context(
         intent=MappingProxyType({"type": "alternative", "mode": "regression"}),
         options=MappingProxyType({"payload": payload}),
         explanation=explanation,
@@ -590,7 +590,7 @@ def test_plot_spec_builder_regression_without_threshold(monkeypatch: pytest.Monk
 
 def test_plot_spec_builder_unsupported_intent():
     builder = PlotSpecDefaultBuilder()
-    ctx = _make_plot_context(intent=MappingProxyType({"type": "other"}))
+    ctx = make_local_plot_context(intent=MappingProxyType({"type": "other"}))
     with pytest.raises(ConfigurationError):
         builder.build(ctx)
 
@@ -636,7 +636,7 @@ def test_plot_spec_renderer_without_save(monkeypatch: pytest.MonkeyPatch):
         fake_render,
         raising=False,
     )
-    ctx = _make_plot_context(save_ext=None, path=None, show=False)
+    ctx = make_local_plot_context(save_ext=None, path=None, show=False)
     result = renderer.render({"spec": 1}, context=ctx)
     assert result.saved_paths == ()
 
@@ -652,7 +652,7 @@ def test_plot_spec_renderer_raises_runtime_error(monkeypatch: pytest.MonkeyPatch
         blow_up,
         raising=False,
     )
-    ctx = _make_plot_context(save_ext=[".png"], path="bad", show=False)
+    ctx = make_local_plot_context(save_ext=[".png"], path="bad", show=False)
     with pytest.raises(ConfigurationError):
         renderer.render({"spec": 1}, context=ctx)
 

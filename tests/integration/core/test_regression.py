@@ -44,7 +44,7 @@ def safe_fit_difficulty(x, y, scaler=True):
         return DifficultyEstimator().fit(X=x, y=y, scaler=scaler)
     except Exception:
         # Fallback stub: minimal API used by CalibratedExplainer (fit + predict-like method)
-        class _StubDifficulty:
+        class StubDifficulty:
             def __init__(self):
                 # indicate 'fitted' so CalibratedExplainer accepts it
                 self.fitted = True
@@ -67,7 +67,7 @@ def safe_fit_difficulty(x, y, scaler=True):
             def __call__(self, x_data):
                 return self.apply(x_data)
 
-        return _StubDifficulty().fit()
+        return StubDifficulty().fit()
 
 
 def test_safe_fit_difficulty_fallback(monkeypatch):

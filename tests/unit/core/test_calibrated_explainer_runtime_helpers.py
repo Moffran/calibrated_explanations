@@ -24,7 +24,7 @@ from calibrated_explanations.core.exceptions import (
 )
 
 
-def _stub_explainer(explainer_factory, mode: str = "classification") -> CalibratedExplainer:
+def stub_explainer(explainer_factory, mode: str = "classification") -> CalibratedExplainer:
     """Construct a fully initialized explainer instance for unit tests."""
 
     explainer = explainer_factory(mode=mode)
@@ -77,7 +77,7 @@ def test_categorical_features_default_to_label_keys(explainer_factory):
 def test_require_plugin_manager_raises_when_missing(explainer_factory):
     from calibrated_explanations.core.exceptions import NotFittedError
 
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     explainer._plugin_manager = None
 
     with pytest.raises(NotFittedError, match="PluginManager is not initialized"):
@@ -85,7 +85,7 @@ def test_require_plugin_manager_raises_when_missing(explainer_factory):
 
 
 def test_build_chains_fall_back_without_plugin_manager(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     delattr(explainer, "_plugin_manager")
 
     assert explainer._build_explanation_chain("factual") == ()
@@ -94,7 +94,7 @@ def test_build_chains_fall_back_without_plugin_manager(explainer_factory):
 
 
 def test_build_instance_telemetry_payload_delegates(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     sentinel = object()
 
     class StubOrchestrator:
@@ -136,7 +136,7 @@ def test_categorical_features_inferred_from_labels(explainer_factory):
 
 
 def test_instance_telemetry_payload_delegates(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     sentinel = object()
 
     class StubOrchestrator:
@@ -149,7 +149,7 @@ def test_instance_telemetry_payload_delegates(explainer_factory):
 
 
 def test_property_caches_when_plugin_manager_missing(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     delattr(explainer, "_plugin_manager")
 
     assert explainer._explanation_contexts == {}
@@ -206,7 +206,7 @@ def test_predict_bridge_monitor_tracks_usage():
 
 
 def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     class DummyManager:
         def __init__(self) -> None:
@@ -238,7 +238,7 @@ def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
 
 
 def test_check_explanation_runtime_metadata_reports_errors(explainer_factory):
-    explainer = _stub_explainer(explainer_factory, mode="classification")
+    explainer = stub_explainer(explainer_factory, mode="classification")
 
     assert (
         explainer._check_explanation_runtime_metadata(None, identifier="missing", mode="factual")
@@ -284,7 +284,7 @@ def test_check_explanation_runtime_metadata_reports_errors(explainer_factory):
 
 
 def test_check_interval_runtime_metadata_validates_requirements(explainer_factory):
-    explainer = _stub_explainer(explainer_factory, mode="regression")
+    explainer = stub_explainer(explainer_factory, mode="regression")
 
     assert (
         explainer._check_interval_runtime_metadata(None, identifier="missing", fast=False)
@@ -334,7 +334,7 @@ def test_check_interval_runtime_metadata_validates_requirements(explainer_factor
 
 
 def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     class StubManager:
         def __init__(self) -> None:
@@ -367,7 +367,7 @@ def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
 
 
 def test_cached_fields_are_tracked_without_plugin_manager(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     del explainer._plugin_manager
 
     assert explainer._explanation_contexts == {}
@@ -473,10 +473,15 @@ def test_explain_counterfactual_delegates(explainer_factory):
     sentinel = object()
     explainer.explore_alternatives = lambda *args, **kwargs: (args, kwargs, sentinel)
 
-    with pytest.warns(DeprecationWarning):
-        result = explainer.explain_counterfactual("x", threshold=1.0)
+    from tests.helpers.deprecation import deprecations_error_enabled
 
-    assert result[2] is sentinel
+    if deprecations_error_enabled():
+        with pytest.raises(DeprecationWarning):
+            explainer.explain_counterfactual("x", threshold=1.0)
+    else:
+        with pytest.warns(DeprecationWarning):
+            result = explainer.explain_counterfactual("x", threshold=1.0)
+        assert result[2] is sentinel
 
 
 def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch):
@@ -516,11 +521,11 @@ def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch
 
 
 def test_set_discretizer_prediction_condition_source(explainer_factory, monkeypatch):
-    class _DummyTTLCache:
+    class DummyTTLCache:
         def __init__(self, *_args: Any, **_kwargs: Any) -> None:
             pass
 
-    monkeypatch.setitem(sys.modules, "cachetools", types.SimpleNamespace(TTLCache=_DummyTTLCache))
+    monkeypatch.setitem(sys.modules, "cachetools", types.SimpleNamespace(TTLCache=DummyTTLCache))
 
     explainer = explainer_factory()
     explainer.condition_source = "prediction"
@@ -601,7 +606,7 @@ def test_verbose_repr_includes_metadata(explainer_factory):
 
 
 def test_instantiate_plugin_handles_multiple_paths(monkeypatch, explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     class CallableWithMeta:
         plugin_meta = {}
@@ -683,7 +688,7 @@ def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory
 
 
 def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explainer_factory):
-    explainer = _stub_explainer(explainer_factory, mode="regression")
+    explainer = stub_explainer(explainer_factory, mode="regression")
     explainer._interval_plugin_fallbacks = {"default": ("denied.plugin", "ok.plugin"), "fast": ()}
     explainer._instantiate_plugin = lambda plugin: plugin
     explainer._check_interval_runtime_metadata = lambda metadata, **_: None
@@ -725,7 +730,7 @@ def test_resolve_interval_plugin_handles_denied_and_success(monkeypatch, explain
 
 
 def test_resolve_interval_plugin_denied_override_raises(monkeypatch, explainer_factory):
-    explainer = _stub_explainer(explainer_factory, mode="regression")
+    explainer = stub_explainer(explainer_factory, mode="regression")
     explainer._interval_plugin_override = "denied.plugin"
     explainer._interval_plugin_fallbacks = {"default": ("denied.plugin",), "fast": ()}
 
@@ -743,7 +748,7 @@ def test_resolve_interval_plugin_denied_override_raises(monkeypatch, explainer_f
 
 
 def test_build_interval_context_enriches_metadata(explainer_factory):
-    explainer = _stub_explainer(explainer_factory, mode="regression")
+    explainer = stub_explainer(explainer_factory, mode="regression")
     explainer.x_cal = np.asarray([[1.0, 2.0]])
     explainer.y_cal = np.asarray([1.5])
     explainer._X_cal = explainer.x_cal
@@ -771,7 +776,7 @@ def test_build_interval_context_enriches_metadata(explainer_factory):
 
 
 def test_get_calibration_summaries_caches_results(explainer_factory):
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     explainer.x_cal = np.asarray([[0, "a"], [1, "b"], [0, "a"]], dtype=object)
     explainer._X_cal = explainer.x_cal
     explainer.categorical_features = [1]
@@ -791,7 +796,7 @@ def test_get_calibration_summaries_caches_results(explainer_factory):
     assert numeric_cached is numeric
 
 
-class _RaisingInterval:
+class RaisingInterval:
     def predict_uncertainty(self, *_, **__):
         raise RuntimeError("boom")
 
@@ -800,10 +805,10 @@ class _RaisingInterval:
 
 
 def test_predict_impl_returns_degraded_arrays_when_suppressed(explainer_factory):
-    explainer = _stub_explainer(explainer_factory, mode="regression")
+    explainer = stub_explainer(explainer_factory, mode="regression")
     explainer._CalibratedExplainer__initialized = True
     explainer._CalibratedExplainer__fast = False
-    explainer.interval_learner = _RaisingInterval()
+    explainer.interval_learner = RaisingInterval()
     explainer.suppress_crepes_errors = True
     explainer._X_cal = np.zeros((1, 1))
 
@@ -829,7 +834,7 @@ def test_infer_explanation_mode_detects_entropy_discretizer(explainer_factory):
     """_infer_explanation_mode should detect alternative mode when EntropyDiscretizer is set."""
     from calibrated_explanations.utils import EntropyDiscretizer
 
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     x_cal = np.asarray([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     y_cal = np.asarray([0, 1, 0])
     explainer.discretizer = EntropyDiscretizer(
@@ -847,7 +852,7 @@ def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory)
     """_infer_explanation_mode should detect alternative mode when RegressorDiscretizer is set."""
     from calibrated_explanations.utils import RegressorDiscretizer
 
-    explainer = _stub_explainer(explainer_factory, mode="regression")
+    explainer = stub_explainer(explainer_factory, mode="regression")
     x_cal = np.asarray([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     y_cal = np.asarray([1.0, 2.0, 3.0])
     explainer.discretizer = RegressorDiscretizer(
@@ -863,13 +868,13 @@ def test_infer_explanation_mode_detects_regressor_discretizer(explainer_factory)
 
 def test_infer_explanation_mode_defaults_to_factual(explainer_factory):
     """_infer_explanation_mode should return 'factual' for None or other discretizers."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     assert explainer._infer_explanation_mode() == "factual"
 
 
 def test_preprocessor_metadata_round_trip(explainer_factory):
     """preprocessor_metadata property should preserve and return metadata dict."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     metadata = {"scaling": "StandardScaler", "features": 10}
     explainer.set_preprocessor_metadata(metadata)
@@ -880,7 +885,7 @@ def test_preprocessor_metadata_round_trip(explainer_factory):
 
 def test_preprocessor_metadata_none_handling(explainer_factory):
     """set_preprocessor_metadata(None) should clear metadata."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     explainer.set_preprocessor_metadata({"key": "value"})
     explainer.set_preprocessor_metadata(None)
 
@@ -889,7 +894,7 @@ def test_preprocessor_metadata_none_handling(explainer_factory):
 
 def test_prediction_orchestrator_raises_when_missing_attribute(explainer_factory):
     """_prediction_orchestrator should raise when manager lacks the attribute."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     class BrokenManager:
         pass
@@ -902,7 +907,7 @@ def test_prediction_orchestrator_raises_when_missing_attribute(explainer_factory
 
 def test_explanation_orchestrator_raises_when_missing_attribute(explainer_factory):
     """_explanation_orchestrator should raise when manager lacks the attribute."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     class BrokenManager:
         pass
@@ -915,7 +920,7 @@ def test_explanation_orchestrator_raises_when_missing_attribute(explainer_factor
 
 def test_reject_orchestrator_raises_when_missing_attribute(explainer_factory):
     """_reject_orchestrator should raise when manager lacks the attribute."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     class BrokenManager:
         pass
@@ -928,7 +933,7 @@ def test_reject_orchestrator_raises_when_missing_attribute(explainer_factory):
 
 def test_explanation_plugin_instances_empty_without_manager(explainer_factory):
     """_explanation_plugin_instances should return empty dict without manager."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     delattr(explainer, "_plugin_manager")
 
     assert explainer._explanation_plugin_instances == {}
@@ -936,7 +941,7 @@ def test_explanation_plugin_instances_empty_without_manager(explainer_factory):
 
 def test_explanation_plugin_identifiers_empty_without_manager(explainer_factory):
     """_explanation_plugin_identifiers should return empty dict without manager."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
     delattr(explainer, "_plugin_manager")
 
     assert explainer._explanation_plugin_identifiers == {}
@@ -944,7 +949,7 @@ def test_explanation_plugin_identifiers_empty_without_manager(explainer_factory)
 
 def test_interval_plugin_hints_property_operations(explainer_factory):
     """_interval_plugin_hints property should get/set via manager."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     # Create a mock manager
     class MockManager:
@@ -961,7 +966,7 @@ def test_interval_plugin_hints_property_operations(explainer_factory):
 
 def test_explanation_plugin_fallbacks_property_operations(explainer_factory):
     """_explanation_plugin_fallbacks property should get/set via manager."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     class MockManager:
         def __init__(self):
@@ -977,7 +982,7 @@ def test_explanation_plugin_fallbacks_property_operations(explainer_factory):
 
 def test_plot_plugin_fallbacks_property_operations(explainer_factory):
     """_plot_plugin_fallbacks property should get/set via manager."""
-    explainer = _stub_explainer(explainer_factory)
+    explainer = stub_explainer(explainer_factory)
 
     class MockManager:
         def __init__(self):
@@ -1095,7 +1100,7 @@ def test_set_discretizer_defaults_and_populates(monkeypatch, explainer_factory):
     assert "validated" in explainer.discretizer
 
 
-class _ListInterval:
+class ListInterval:
     def __init__(self, proba=None, low=None, high=None):
         self.proba = proba
         self.low = low
@@ -1119,7 +1124,7 @@ def test_predict_variants_cover_branches(explainer_factory):
     explainer._CalibratedExplainer__set_mode("regression", initialize=False)
     explainer._CalibratedExplainer__initialized = True
     explainer.interval_learner = [
-        _ListInterval(proba=np.array([0.2, 0.4]), low=np.zeros(2), high=np.ones(2))
+        ListInterval(proba=np.array([0.2, 0.4]), low=np.zeros(2), high=np.ones(2))
     ]
     preds = explainer.predict_proba(np.zeros((2, 2)), calibrated=True, uq_interval=False)
     assert preds.shape == (2, 2)
@@ -1127,7 +1132,7 @@ def test_predict_variants_cover_branches(explainer_factory):
     explainer._CalibratedExplainer__set_mode("classification", initialize=False)
     explainer._CalibratedExplainer__initialized = True
     explainer.num_classes = 3
-    explainer.interval_learner = _ListInterval(
+    explainer.interval_learner = ListInterval(
         proba=np.full((2, 3), 1 / 3), low=np.zeros((2, 3)), high=np.ones((2, 3))
     )
     probs_multi = explainer.predict_proba(np.zeros((2, 2)), calibrated=True, uq_interval=True)

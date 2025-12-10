@@ -211,10 +211,10 @@ def test_map_passes_work_items_to_resolver(monkeypatch):
     def fake_resolve_strategy(*, work_items: int | None = None):
         captured["work_items"] = work_items
 
-        def _runner(fn, items, **_: Any):
+        def runner(fn, items, **_: Any):
             return [fn(item) for item in items]
 
-        return _runner
+        return runner
 
     monkeypatch.setattr(executor, "_resolve_strategy", fake_resolve_strategy)
     executor.map(lambda x: x + 1, [1, 2, 3], work_items=99)

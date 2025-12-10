@@ -19,11 +19,6 @@ from tests.unit.viz.test_plot_parity_fixtures import (
 )
 
 
-def _role_alpha(pr):
-    v = pr.get("visual", {})
-    return v.get("color_role"), v.get("alpha")
-
-
 REG_BAR_COLOR = REGRESSION_BAR_COLOR
 REG_BASE_COLOR = REGRESSION_BASE_COLOR
 

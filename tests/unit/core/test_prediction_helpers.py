@@ -50,7 +50,7 @@ def test_prediction_helpers_round_trip():
     assert len(prediction["__full_probabilities__"]) == len(x_valid)
 
 
-class _StubExplainer:
+class StubExplainer:
     """Lightweight implementation of ``_ExplainerProtocol`` for unit tests."""
 
     def __init__(
@@ -78,7 +78,7 @@ class _StubExplainer:
         self.discretizer = None  # Required by explain_predict_step
 
     def _build_interval_learner(self):
-        class _Learner:
+        class Learner:
             def __init__(self, *, as_list: bool) -> None:
                 self.as_list = as_list
                 self.calls = []
@@ -87,7 +87,7 @@ class _StubExplainer:
                 self.calls.append((np.asarray(x), bins))
                 return np.full((len(x), 2), 0.5)
 
-        learner = _Learner(as_list=self._fast)
+        learner = Learner(as_list=self._fast)
         if self._fast:
             # ``explain_predict_step`` indexes the learner list by ``num_features``
             return [learner for _ in range(self.num_features + 1)]
@@ -122,7 +122,7 @@ class _StubExplainer:
 
 
 def test_validate_and_prepare_input_reshapes_vector():
-    explainer = _StubExplainer(num_features=3)
+    explainer = StubExplainer(num_features=3)
     vector = np.array([1.0, 2.0, 3.0])
 
     prepared = ph.validate_and_prepare_input(explainer, vector)
@@ -132,7 +132,7 @@ def test_validate_and_prepare_input_reshapes_vector():
 
 
 def test_validate_and_prepare_input_rejects_wrong_width():
-    explainer = _StubExplainer(num_features=4)
+    explainer = StubExplainer(num_features=4)
     matrix = np.ones((2, 3))
 
     with pytest.raises(DataShapeError):
@@ -140,18 +140,18 @@ def test_validate_and_prepare_input_rejects_wrong_width():
 
 
 def test_initialize_explanation_requires_bins_for_mondrian(monkeypatch):
-    explainer = _StubExplainer(mondrian=True)
+    explainer = StubExplainer(mondrian=True)
     x = np.ones((2, explainer.num_features))
 
     # Avoid constructing the heavy ``CalibratedExplanations`` implementation.
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     # Patch the import inside the initialize_explanation function
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
 
     with pytest.raises(ValidationError):
         ph.initialize_explanation(
@@ -165,16 +165,16 @@ def test_initialize_explanation_requires_bins_for_mondrian(monkeypatch):
 
 
 def test_initialize_explanation_validates_bin_length(monkeypatch):
-    explainer = _StubExplainer(mondrian=True)
+    explainer = StubExplainer(mondrian=True)
     x = np.ones((2, explainer.num_features))
 
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
 
     with pytest.raises(DataShapeError):
         ph.initialize_explanation(
@@ -188,16 +188,16 @@ def test_initialize_explanation_validates_bin_length(monkeypatch):
 
 
 def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch):
-    explainer = _StubExplainer(mode="classification")
+    explainer = StubExplainer(mode="classification")
     x = np.ones((2, explainer.num_features))
 
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
 
     with pytest.raises(ValidationError):
         ph.initialize_explanation(
@@ -211,7 +211,7 @@ def test_initialize_explanation_rejects_threshold_for_classification(monkeypatch
 
 
 def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
-    explainer = _StubExplainer(mode="regression")
+    explainer = StubExplainer(mode="regression")
     x = np.ones((2, explainer.num_features))
     bins = np.ones((2,))
     threshold = [(0.1, 0.2), (0.3, 0.4)]
@@ -222,13 +222,13 @@ def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
         recorded_calls.append((thresh, np.asarray(data).shape))
         return thresh
 
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
     monkeypatch.setattr(ph, "assert_threshold", _fake_assert)
 
     with pytest.warns(UserWarning, match="list of interval thresholds"):
@@ -246,16 +246,16 @@ def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
 
 
 def test_initialize_explanation_sets_percentiles_without_threshold(monkeypatch):
-    explainer = _StubExplainer(mode="regression")
+    explainer = StubExplainer(mode="regression")
     x = np.ones((3, explainer.num_features))
 
-    class _Collection:
+    class Collection:
         def __init__(self, *_args, **_kwargs) -> None:
             self.low_high_percentiles = None
 
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
-    monkeypatch.setattr(exp_module, "CalibratedExplanations", _Collection)
+    monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
 
     explanation = ph.initialize_explanation(
         explainer,
@@ -270,7 +270,7 @@ def test_initialize_explanation_sets_percentiles_without_threshold(monkeypatch):
 
 
 def test_predict_internal_delegates_to_underlying_protocol():
-    explainer = _StubExplainer(multiclass=False)
+    explainer = StubExplainer(multiclass=False)
     x = np.ones((2, explainer.num_features))
 
     result = ph.predict_internal(

@@ -9,7 +9,7 @@ from calibrated_explanations.explanations import explanation as explanation_modu
 from calibrated_explanations.explanations.explanation import CalibratedExplanation
 
 
-def _make_container_and_explainer():
+def make_container_and_explainer():
     class ExplainerStub:
         def __init__(self):
             self.mode = "regression"
@@ -109,7 +109,7 @@ def test_to_narrative_handles_output_formats(monkeypatch):
 
 
 def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
-    container, explainer = _make_container_and_explainer()
+    container, explainer = make_container_and_explainer()
 
     # Ensure explanation module's discretizer classes are present as simple dummies
     class DummyDiscretizer:
@@ -177,7 +177,7 @@ def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
 
 
 def test_fast_explanation_repr_and_build_payload():
-    container, explainer = _make_container_and_explainer()
+    container, explainer = make_container_and_explainer()
     x = np.array([[1.0]])
     rule_values = np.empty((1, 1), dtype=object)
     rule_values[0, 0] = np.array([[1.0]])

@@ -7,7 +7,7 @@ HERE = os.path.dirname(__file__)
 SCHEMA_DIR = os.path.abspath(os.path.join(HERE, "../../..", "improvement_docs", "plot_spec"))
 
 
-def _load(path):
+def load_schema(path):
     with open(path, "r", encoding="utf-8") as fh:
         return json.load(fh)
 
@@ -20,7 +20,7 @@ def test_plotspec_and_primitives_schemas_exist():
 
 
 def test_schema_declares_interval_and_save_requirements():
-    plotspec = _load(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
+    plotspec = load_schema(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
     required = set(plotspec.get("required", ()))
     assert {"header", "body", "feature_order"}.issubset(required)
     feature_entries = (
@@ -36,7 +36,7 @@ def test_schema_declares_interval_and_save_requirements():
 
 
 def test_plotspec_schema_declares_feature_entry_requirements():
-    schema = _load(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
+    schema = load_schema(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
     props = schema.get("properties", {})
     assert "feature_entries" in props
     feature_entries = props["feature_entries"]
@@ -46,7 +46,7 @@ def test_plotspec_schema_declares_feature_entry_requirements():
 
 
 def test_plotspec_schema_defines_feature_contract():
-    schema = _load(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
+    schema = load_schema(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
 
     assert "feature_order" in schema["required"]
     feature_order = schema["properties"]["feature_order"]
@@ -70,8 +70,8 @@ def test_example_plotspec_validates():
     # This test is skipped by default; enable locally if jsonschema is available.
     import jsonschema
 
-    plotspec_schema = _load(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
-    primitives_schema = _load(os.path.join(SCHEMA_DIR, "primitives_schema.json"))
+    plotspec_schema = load_schema(os.path.join(SCHEMA_DIR, "plotspec_schema.json"))
+    primitives_schema = load_schema(os.path.join(SCHEMA_DIR, "primitives_schema.json"))
 
     # Minimal factual_probabilistic example
     example = {

@@ -24,10 +24,10 @@ from calibrated_explanations.core.exceptions import (
 def fake_pandas(monkeypatch):
     """Register lightweight stand-ins for the ``pandas`` modules used by ``safe_isinstance``."""
 
-    class _FakeSeries:
+    class FakeSeries:
         def __init__(self, values: Iterable[float]):
             self._values = np.array(list(values))
-            self.iloc = _FakeILoc(self)
+            self.iloc = FakeILoc(self)
 
         def __len__(self) -> int:  # pragma: no cover - defensive completeness
             return len(self._values)
@@ -38,29 +38,29 @@ def fake_pandas(monkeypatch):
         def to_numpy(self):
             return np.array(self._values)
 
-    class _FakeILoc:
-        def __init__(self, series: _FakeSeries):
+    class FakeILoc:
+        def __init__(self, series: FakeSeries):
             self._series = series
 
         def __getitem__(self, key):
-            return _FakeSeries(self._series._values[key])
+            return FakeSeries(self._series._values[key])
 
-    class _FakeDataFrame:
+    class FakeDataFrame:
         def __init__(self, values: Iterable[Iterable[float]]):
             self.values = np.array(list(values))
 
-    class _FakeCategorical:  # pragma: no cover - required for safe_isinstance lookups
+    class FakeCategorical:  # pragma: no cover - required for safe_isinstance lookups
         pass
 
     pandas_mod = ModuleType("pandas")
     pandas_core = ModuleType("pandas.core")
     pandas_series = ModuleType("pandas.core.series")
-    pandas_series.Series = _FakeSeries
+    pandas_series.Series = FakeSeries
     pandas_frame = ModuleType("pandas.core.frame")
-    pandas_frame.DataFrame = _FakeDataFrame
+    pandas_frame.DataFrame = FakeDataFrame
     pandas_arrays = ModuleType("pandas.core.arrays")
     pandas_categorical = ModuleType("pandas.core.arrays.categorical")
-    pandas_categorical.Categorical = _FakeCategorical
+    pandas_categorical.Categorical = FakeCategorical
 
     pandas_mod.core = pandas_core
     pandas_core.series = pandas_series
@@ -75,7 +75,7 @@ def fake_pandas(monkeypatch):
     monkeypatch.setitem(sys.modules, "pandas.core.arrays", pandas_arrays)
     monkeypatch.setitem(sys.modules, "pandas.core.arrays.categorical", pandas_categorical)
 
-    return SimpleNamespace(Series=_FakeSeries, DataFrame=_FakeDataFrame)
+    return SimpleNamespace(Series=FakeSeries, DataFrame=FakeDataFrame)
 
 
 def test_slice_helpers_support_multiple_input_types(fake_pandas):

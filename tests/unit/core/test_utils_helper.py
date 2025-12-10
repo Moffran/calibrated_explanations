@@ -110,11 +110,11 @@ def test_check_is_fitted_paths(tmp_path):
         helper.check_is_fitted(estimator)
     assert "DummyNeedsFit" in str(excinfo.value)
 
-    class _BadEstimator:
+    class BadEstimator:
         pass
 
     with pytest.raises(TypeError):
-        helper.check_is_fitted(_BadEstimator())
+        helper.check_is_fitted(BadEstimator())
 
     with pytest.raises(TypeError):
         helper.check_is_fitted(DummyNeedsFit)
