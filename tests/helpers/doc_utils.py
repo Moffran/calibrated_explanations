@@ -1,3 +1,5 @@
+"""Support utilities for documentation quickstarts used in tests."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,6 +17,7 @@ DOCS = ROOT / "docs"
 
 
 def resolve_doc(slug: str) -> Path:
+    """Return the documentation file path for `slug`, preferring Markdown then reStructuredText."""
     slug = slug.lstrip("./")
     candidate = DOCS / slug
     if candidate.suffix:
@@ -27,6 +30,7 @@ def resolve_doc(slug: str) -> Path:
 
 
 def extract_threshold_value(threshold: Any) -> float | None:
+    """Extract a numeric value from threshold structures used in docs/tests."""
     if threshold is None:
         return None
     if isinstance(threshold, dict):
@@ -47,6 +51,7 @@ def extract_threshold_value(threshold: Any) -> float | None:
 
 
 def run_quickstart_classification() -> SimpleNamespace:
+    """Build the classification quickstart explainer fixture returned to tests."""
     # Binary classification dataset (malignant vs benign tumours)
     dataset = load_breast_cancer()
     x = dataset.data
@@ -87,6 +92,7 @@ def run_quickstart_classification() -> SimpleNamespace:
 
 
 def run_quickstart_regression() -> SimpleNamespace:
+    """Build the regression quickstart explainer fixture returned to tests."""
     dataset = load_diabetes()
     x = dataset.data
     y = dataset.target

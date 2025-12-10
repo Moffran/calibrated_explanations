@@ -1,3 +1,5 @@
+"""Minimal model helpers used throughout tests."""
+
 import os
 from typing import Optional, Any
 import numpy as np
@@ -21,12 +23,15 @@ class DummyLearner:
         self.oob_prediction_ = oob_prediction
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> "DummyLearner":  # pragma: no cover - unused
+        """Return self without modifying the learner."""
         return self
 
     def predict(self, x: np.ndarray) -> np.ndarray:
+        """Return zeros for every provided sample."""
         return np.zeros(len(x))
 
     def predict_proba(self, x: np.ndarray) -> np.ndarray:
+        """Return constant probabilities that sum to one for classification."""
         x = np.atleast_2d(x)
         if self.mode == "classification":
             probs = np.zeros((len(x), 2))
@@ -42,6 +47,7 @@ class DummyIntervalLearner:
     def predict_uncertainty(
         self, x: np.ndarray, *_args: Any, **_kwargs: Any
     ) -> tuple[np.ndarray, ...]:
+        """Return zero uncertainty bands for every input."""
         n = np.atleast_2d(x).shape[0]
         zeros = np.zeros(n)
         return zeros, zeros, zeros, None
@@ -49,6 +55,7 @@ class DummyIntervalLearner:
     def predict_probability(
         self, x: np.ndarray, *_args: Any, **_kwargs: Any
     ) -> tuple[np.ndarray, ...]:
+        """Return zero probability bands while remaining API-compatible."""
         n = np.atleast_2d(x).shape[0]
         zeros = np.zeros(n)
         return zeros, zeros, zeros, None

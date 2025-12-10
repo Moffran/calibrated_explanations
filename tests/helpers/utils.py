@@ -1,3 +1,5 @@
+"""General utility helpers for the test suite."""
+
 import os
 
 

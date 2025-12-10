@@ -1,3 +1,5 @@
+"""Dataset helpers reused across calibration tests."""
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -21,12 +23,7 @@ def read_csv_cached(path: str, **kwargs) -> pd.DataFrame:
 
 
 def make_binary_dataset():
-    """
-    Lightweight version of the project's binary_dataset fixture used for parity tests.
-
-    Returns:
-        tuple: (x_prop_train, y_prop_train, x_cal, y_cal, x_test, y_test, no_of_features, feature_names, categorical_features)
-    """
+    """Return the diabetes slice used for parity tests with train/cal/test splits."""
     dataset = "diabetes_full"
     # Assuming data is in the root data/ folder relative to execution context
     # Adjust path if necessary or make it robust

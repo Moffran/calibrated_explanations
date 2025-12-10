@@ -274,8 +274,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         for s in steps:
             print(f"\n--- Job: {s['job']} | Step: {s['name']} ---")
             env_vars = {k: str(v) for k, v in (s.get("env") or {}).items()}
-            step_shell = s.get("shell") or s.get("job_shell") or args.shell
-            script = render_step_expressions(s["run"], step_outputs)
+            # Prioritize the local shell (args.shell) over the workflow's inferred shell (job_shell)
+            # so that we can run Linux workflows on Windows (pwsh) and vice versa.
+            step_shell = s.get("shell") or args.shell
+            script = render_step_expressions(s['run'], step_outputs)
             capture = bool(s.get("id"))
             rc, outputs = run_script_block(script, env_vars, step_shell, cwd=args.cwd, capture_outputs=capture)
             step_id = s.get("id")

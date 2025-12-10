@@ -8,6 +8,7 @@ import pytest
 
 
 def env_flag_deprecations_error() -> bool:
+    """Return True when CE_DEPRECATIONS forces errors for deprecated features."""
     val = os.getenv("CE_DEPRECATIONS", "").strip().lower()
     return val in ("1", "true", "error", "raise")
 

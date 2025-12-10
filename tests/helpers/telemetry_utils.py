@@ -1,3 +1,5 @@
+"""Telemetry helpers used by tests."""
+
 import pytest
 
 
@@ -22,6 +24,7 @@ def extract_percentile_values(raw_percentiles):
 def assert_uncertainty_schema(
     payload, representation: str, expect_percentiles: bool, threshold_value=None
 ):
+    """Assert that a telemetry payload complies with the uncertainty schema."""
     expected_keys = {
         "representation",
         "calibrated_value",
