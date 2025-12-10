@@ -144,7 +144,7 @@ jobs:
           python scripts/detect_test_anti_patterns.py --output reports/test_anti_pattern_report.csv
 
       - name: Upload anti-pattern report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: anti-pattern-report
           path: reports/test_anti_pattern_report.csv
