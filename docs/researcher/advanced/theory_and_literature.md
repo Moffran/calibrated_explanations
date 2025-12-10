@@ -14,13 +14,13 @@ papers, benchmark references, and funding acknowledgements.
   University repository.
 - **Expert Systems with Applications (2024):** Binary-classification study with
   calibrated factual and alternative rules across 25 benchmarks. DOI:
-  [`10.1016/j.eswa.2024.123154`](https://doi.org/10.1016/j.eswa.2024.123154).
+  [`10.1016/j.eswa.2024.123154`](https://linkinghub.elsevier.com/retrieve/pii/S0957417424000198).
 - **Machine Learning journal (2025):** Regression and probabilistic regression
   extension with interval guarantees mirroring the classification workflow. DOI:
-  [`10.1007/s10994-024-06642-8`](https://doi.org/10.1007/s10994-024-06642-8).
+  [`10.1007/s10994-024-06642-8`](https://link.springer.com/article/10.1007/s10994-024-06642-8).
 - **xAI 2024 proceedings:** Conditional calibrated explanations for fairness-aware
   deployments. DOI:
-  [`10.1007/978-3-031-63787-2_17`](https://doi.org/10.1007/978-3-031-63787-2_17).
+  [`10.1007/978-3-031-63787-2_17`](https://link.springer.com/chapter/10.1007/978-3-031-63787-2_17).
 - **PMLR 230 (2024):** Multiclass calibration analysis with empirical guarantees
   and tutorial material. Proceedings and artefacts available through the
   [PMLR volume](https://proceedings.mlr.press/v230/lofstrom24a.html) and
@@ -35,7 +35,7 @@ papers, benchmark references, and funding acknowledgements.
   [`arXiv:2410.05479`](https://arxiv.org/abs/2410.05479).
 - **Fast calibrated explanations (2024):** Plugin-oriented acceleration of rule
   generation while preserving uncertainty guarantees. DOI:
-  [`10.1007/978-3-032-08333-3_16`](https://doi.org/10.1007/978-3-032-08333-3_16).
+  [`10.1007/978-3-032-08333-3_16`](https://link.springer.com/chapter/10.1007/978-3-032-08333-3_16).
 
 ## Benchmarks and evaluations
 

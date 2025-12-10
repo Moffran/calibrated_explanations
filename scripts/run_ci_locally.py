@@ -75,6 +75,16 @@ def extract_run_steps(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
     for job_name, job in jobs.items():
         steps = job.get("steps") or []
         job_env = job.get("env") or {}
+        runs_on = job.get("runs-on") or ""
+        job_shell = "bash"
+        if isinstance(runs_on, str):
+            runs_key = runs_on.lower()
+        elif isinstance(runs_on, list):
+            runs_key = " ".join(str(v) for v in runs_on).lower()
+        else:
+            runs_key = ""
+        if "windows" in runs_key:
+            job_shell = "pwsh"
         # Track whether this job used actions/setup-python earlier
         setup_python_found = False
         for idx, step in enumerate(steps):
@@ -99,6 +109,7 @@ def extract_run_steps(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
                         "env": step_env,
                         "run": step["run"],
                         "shell": step.get("shell"),
+                        "job_shell": job_shell,
                         "setup_python": setup_python_found,
                     }
                 )
@@ -263,7 +274,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         for s in steps:
             print(f"\n--- Job: {s['job']} | Step: {s['name']} ---")
             env_vars = {k: str(v) for k, v in (s.get("env") or {}).items()}
-            step_shell = s.get("shell") or args.shell
+            step_shell = s.get("shell") or s.get("job_shell") or args.shell
             script = render_step_expressions(s["run"], step_outputs)
             capture = bool(s.get("id"))
             rc, outputs = run_script_block(script, env_vars, step_shell, cwd=args.cwd, capture_outputs=capture)
