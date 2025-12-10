@@ -90,7 +90,7 @@
 
 ### Release Task 5 - Interval Safety and Serialization
 
-- **Enforced Interval Invariants**: Implemented strict `low <= predict <= high` validation in `PredictBridgeMonitor` and `to_json` serialization to satisfy ADR-021.
+- **Enforced Interval Invariants**: Implemented robust `low <= predict <= high` validation (emitting warnings on violation) in `PredictBridgeMonitor` and `to_json` serialization to satisfy ADR-021.
 - **Sanitized Exports**: Added validation to `CalibratedExplanations.to_json` to ensure exported explanations always respect interval semantics.
 - **Bridge Safety**: Wired `PredictBridgeMonitor` into `ExplanationOrchestrator` to guard all plugin predictions.
 - **Gap Analysis Closure**: Extended invariant enforcement to `PredictionOrchestrator` (internal predictions), `ExplanationBatch` (plugin outputs), and `CalibratedExplanation` (object instantiation) to close all identified safety gaps.

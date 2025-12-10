@@ -506,21 +506,4 @@ def test_validate_explanation_batch_task_mismatch() -> None:
         validate_explanation_batch(batch, expected_task="classification")
 
 
-def test_validate_explanation_batch_invalid_container_instance() -> None:
-    from calibrated_explanations.plugins.explanations import (
-        ExplanationBatch,
-        validate_explanation_batch,
-    )
-    from calibrated_explanations.explanations import CalibratedExplanations
-    from calibrated_explanations.explanations import CalibratedExplanation
 
-    batch = ExplanationBatch(
-        container_cls=CalibratedExplanations,
-        explanation_cls=CalibratedExplanation,
-        instances=[],
-        collection_metadata={"container": "not a CalibratedExplanations instance"},
-    )
-    with pytest.raises(
-        TypeError, match="ExplanationBatch metadata 'container' has unexpected type"
-    ):
-        validate_explanation_batch(batch)

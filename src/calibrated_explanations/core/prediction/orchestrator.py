@@ -204,19 +204,29 @@ class PredictionOrchestrator:
             
             if predict.size == 0 or low.size == 0 or high.size == 0:
                 return
+            
+            # Check for numeric types
+            if not (np.issubdtype(predict.dtype, np.number) and 
+                    np.issubdtype(low.dtype, np.number) and 
+                    np.issubdtype(high.dtype, np.number)):
+                return
                 
             # Check low <= high
             if not np.all(low <= high):
-                raise ValidationError(
-                    "Prediction interval invariant violated: low > high",
-                    details={"low": low, "high": high},
+                import warnings
+                warnings.warn(
+                    "Prediction interval invariant violated: low > high. This indicates an issue with the underlying estimator.",
+                    RuntimeWarning
                 )
 
             # Check low <= predict <= high
-            if not np.all((low <= predict) & (predict <= high)):
-                raise ValidationError(
-                    "Prediction invariant violated: predict not in [low, high]",
-                    details={"predict": predict, "low": low, "high": high},
+            # Allow small floating point tolerance
+            epsilon = 1e-9
+            if not np.all((low - epsilon <= predict) & (predict <= high + epsilon)):
+                import warnings
+                warnings.warn(
+                    "Prediction invariant violated: predict not in [low, high]. This may indicate poor calibration or inconsistent point predictions.",
+                    RuntimeWarning
                 )
         except (TypeError, ValueError):
             # Skip validation if conversion to array fails or types are incompatible

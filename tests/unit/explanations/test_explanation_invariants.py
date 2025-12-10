@@ -50,7 +50,7 @@ class TestCalibratedExplanationInvariants:
             "low": [0.7],
             "high": [0.6]
         }
-        with pytest.raises(ValidationError, match="low > high"):
+        with pytest.warns(RuntimeWarning, match="low > high"):
             self.create_explanation(prediction)
 
     def test_init_invalid_predict_lt_low(self):
@@ -59,7 +59,7 @@ class TestCalibratedExplanationInvariants:
             "low": [0.4],
             "high": [0.6]
         }
-        with pytest.raises(ValidationError, match="predict not in"):
+        with pytest.warns(RuntimeWarning, match="predict not in"):
             self.create_explanation(prediction)
 
     def test_init_invalid_predict_gt_high(self):
@@ -68,5 +68,5 @@ class TestCalibratedExplanationInvariants:
             "low": [0.4],
             "high": [0.6]
         }
-        with pytest.raises(ValidationError, match="predict not in"):
+        with pytest.warns(RuntimeWarning, match="predict not in"):
             self.create_explanation(prediction)

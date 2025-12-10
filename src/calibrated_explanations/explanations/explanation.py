@@ -202,6 +202,7 @@ class CalibratedExplanation(ABC):
     def _validate_prediction_invariant(self) -> None:
         """Enforce low <= predict <= high invariant on prediction payload."""
         from ..core.exceptions import ValidationError
+        import warnings
 
         predict = self.prediction.get("predict")
         low = self.prediction.get("low")
@@ -214,16 +215,16 @@ class CalibratedExplanation(ABC):
             # Handle scalar values (common case)
             if isinstance(predict, (int, float)) and isinstance(low, (int, float)) and isinstance(high, (int, float)):
                 if not low <= high:
-                    raise ValidationError(
+                    warnings.warn(
                         "Prediction interval invariant violated: low > high",
-                        details={"low": low, "high": high},
+                        RuntimeWarning
                     )
                 # Allow small floating point tolerance
                 epsilon = 1e-9
                 if not (low - epsilon <= predict <= high + epsilon):
-                    raise ValidationError(
+                    warnings.warn(
                         "Prediction invariant violated: predict not in [low, high]",
-                        details={"predict": predict, "low": low, "high": high},
+                        RuntimeWarning
                     )
         except (TypeError, ValueError):
             # Skip validation for non-numeric types

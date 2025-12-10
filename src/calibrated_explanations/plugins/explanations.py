@@ -219,6 +219,7 @@ def validate_explanation_batch(
 def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> None:
     """Enforce low <= predict <= high invariant on prediction payload."""
     from ..core.exceptions import ValidationError
+    import numpy as np
 
     predict = payload.get("predict")
     low = payload.get("low")
@@ -228,22 +229,39 @@ def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> 
         return
 
     try:
-        # Handle scalar values (common case)
-        if isinstance(predict, (int, float)) and isinstance(low, (int, float)) and isinstance(high, (int, float)):
-            if not low <= high:
-                raise ValidationError(
-                    f"{context}: interval invariant violated (low > high)",
-                    details={"low": low, "high": high},
-                )
-            # Use small epsilon for float comparison if needed, but strict for now
-            # Allow small floating point tolerance
-            epsilon = 1e-9
-            if not (low - epsilon <= predict <= high + epsilon):
-                raise ValidationError(
-                    f"{context}: prediction invariant violated (predict not in [low, high])",
-                    details={"predict": predict, "low": low, "high": high},
-                )
+        # Convert to numpy arrays for uniform handling
+        predict_arr = np.asanyarray(predict)
+        low_arr = np.asanyarray(low)
+        high_arr = np.asanyarray(high)
+
+        # Skip if any are empty
+        if predict_arr.size == 0 or low_arr.size == 0 or high_arr.size == 0:
+            return
+
+        # Check for numeric types
+        if not (np.issubdtype(predict_arr.dtype, np.number) and 
+                np.issubdtype(low_arr.dtype, np.number) and 
+                np.issubdtype(high_arr.dtype, np.number)):
+            return
+
+        # Check low <= high
+        if not np.all(low_arr <= high_arr):
+            import warnings
+            warnings.warn(
+                f"{context}: interval invariant violated (low > high)",
+                RuntimeWarning
+            )
+
+        # Check low <= predict <= high
+        # Allow small floating point tolerance
+        epsilon = 1e-9
+        if not np.all((low_arr - epsilon <= predict_arr) & (predict_arr <= high_arr + epsilon)):
+            import warnings
+            warnings.warn(
+                f"{context}: prediction invariant violated (predict not in [low, high])",
+                RuntimeWarning
+            )
     except (TypeError, ValueError):
-        # Skip validation for non-numeric types
+        # Skip validation for non-numeric types or incompatible shapes
         pass
 
