@@ -30,7 +30,7 @@ def test_missing_explain_metrics_fails(tmp_path):
     }
     baseline_path = tmp_path / "baseline.json"
     current_path = tmp_path / "current.json"
-    thresholds_path = Path("benchmarks/perf_thresholds.json")
+    thresholds_path = Path("tests/benchmarks/perf_thresholds.json")
     _write(baseline_path, baseline)
     _write(current_path, current)
 
@@ -65,7 +65,7 @@ def test_explain_metrics_pass_when_within_threshold(tmp_path, capsys):
     }
     baseline_path = tmp_path / "baseline.json"
     current_path = tmp_path / "current.json"
-    thresholds_path = Path("benchmarks/perf_thresholds.json")
+    thresholds_path = Path("tests/benchmarks/perf_thresholds.json")
     _write(baseline_path, baseline)
     _write(current_path, current)
 
@@ -79,7 +79,7 @@ def test_explain_metrics_pass_when_within_threshold(tmp_path, capsys):
 
 
 def test_committed_micro_baseline_includes_explain_metrics():
-    micro_files = sorted(Path("benchmarks").glob("micro_*.json"))
+    micro_files = sorted(Path("tests/benchmarks").glob("micro_*.json"))
     assert micro_files, "expected at least one micro baseline file"
     latest = micro_files[-1]
     payload = json.loads(latest.read_text(encoding="utf-8"))

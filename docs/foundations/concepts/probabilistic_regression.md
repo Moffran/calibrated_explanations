@@ -9,7 +9,7 @@ notebooks to keep probabilistic and interval narratives aligned.
 > ℹ️ **Terminology note:** You may encounter both "probabilistic regression" and
 > "thresholded regression" in documentation and code. These terms are synonymous
 > and refer to the same feature: regression with calibrated probability predictions
-> and threshold-based decision boundaries. See the [ADR-021 Terminology section](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/adrs/ADR-021-calibrated-interval-semantics.md)
+> and threshold-based decision boundaries. See the [ADR-021 Terminology section](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md)
 > for terminology guidance.
 
 ## Calibrated probabilities and intervals

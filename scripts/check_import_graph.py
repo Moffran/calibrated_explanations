@@ -56,7 +56,7 @@ class BoundaryConfig:
 
     # Intentional cross-sibling imports (allowed exceptions)
     # Format: (from_package, to_package) → [allowed_module_paths]
-    # See improvement_docs/ADR-001-EXCEPTIONS-AND-CONTRACTS.md for rationale
+    # See docs/improvement/ADR-001-EXCEPTIONS-AND-CONTRACTS.md for rationale
     allowed_cross_sibling: Dict[Tuple[str, str], List[str]] = field(default_factory=lambda: {
         # --- Pattern 1: Exception Hierarchy (ADR-002) ---
         # Core defines base exceptions used by everyone

@@ -52,7 +52,7 @@ v0.9.0 release plan:
     :doc:`../OWNERS`, including the runtime tech lead acknowledgement from step 8.
 12. **Release notes** – summarise highlights, note telemetry/plugin optionality,
     cite the cache & parallel toggles as opt-in, and link to the release plan
-    milestone (`improvement_docs/RELEASE_PLAN_v1.md`).
+    milestone (`docs/improvement/RELEASE_PLAN_v1.md`).
 
 Document completion in the release issue template so regressions surface quickly
 in future audits.

@@ -17,7 +17,7 @@ The documentation set has grown organically, mixing audience needs (users, contr
 
 ## Decision
 
-Adopt the role-based documentation information architecture defined in `improvement_docs/documentation_information_architecture.md` with the following commitments:
+Adopt the role-based documentation information architecture defined in `docs/improvement/documentation_information_architecture.md` with the following commitments:
 
 1. Restructure the Sphinx toctree into seven top-level sections: Overview, Get Started, How-to Guides, Concepts & Architecture, Reference, Extending the Library, Governance & Support.
 2. Split quickstart material into runnable classification/regression guides with validated code snippets and environment troubleshooting.
@@ -51,6 +51,6 @@ Adopt the role-based documentation information architecture defined in `improvem
 
 ## References
 
-- `improvement_docs/documentation_information_architecture.md`
+- `docs/improvement/documentation_information_architecture.md`
 - ADR-012: Documentation & Gallery Build Policy
 - ADR-018: Code Documentation Standard

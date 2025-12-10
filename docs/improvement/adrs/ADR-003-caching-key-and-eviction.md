@@ -1,4 +1,4 @@
-> **Status note (2025-11-29):** Last edited 2025-11-29 · Archive after: v1.0.0 GA · Implementation: Fully completed in v0.10.0 · All ADR-003 gates satisfied per `improvement_docs/adr\ mending/ADR-003/COMPLETION_REPORT.md`.
+> **Status note (2025-11-29):** Last edited 2025-11-29 · Archive after: v1.0.0 GA · Implementation: Fully completed in v0.10.0 · All ADR-003 gates satisfied per `docs/improvement/adr\ mending/ADR-003/COMPLETION_REPORT.md`.
 
 # ADR-003: Caching Key & Eviction Strategy
 
@@ -71,6 +71,6 @@ Negative / Risks:
 ## Implementation status (2025-10-07)
 
 - Prototype cache scaffolding must land by v0.9.0 with unit/integration tests and
-  documentation updates per the release plan.【F:improvement_docs/RELEASE_PLAN_v1.md†L120-L176】
+  documentation updates per the release plan.【F:docs/improvement/RELEASE_PLAN_v1.md†L120-L176】
 - No cache layer has been introduced in v0.6.0 yet; the implementation work
   tracks the v0.9.0 milestone and remains outstanding.【F:src/calibrated_explanations/api/config.py†L33-L52】

@@ -8,9 +8,9 @@ Since we are now open to contributions, we welcome your feedback, suggestions, a
 
 This project follows a written release plan and Architecture Decision Records (ADRs):
 
-- Release Plan: see `improvement_docs/RELEASE_PLAN_v1.md`. It defines the remaining milestones and gates on the path to v1.0.0. Please align PRs with the current milestone and its scope.
-- ADRs: see `improvement_docs/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
-- Documentation: Follow [ADR-027](improvement_docs/adrs/ADR-027-documentation-standard.md) for all documentation structure and audience guidelines.
+- Release Plan: see `docs/improvement/RELEASE_PLAN_v1.md`. It defines the remaining milestones and gates on the path to v1.0.0. Please align PRs with the current milestone and its scope.
+- ADRs: see `docs/improvement/adrs/`. If your change affects architecture, public API, serialization schema, or cross-cutting behavior, add/update an ADR (status `Proposed` → `Accepted` on merge).
+- Documentation: Follow [ADR-027](docs/improvement/adrs/ADR-027-documentation-standard.md) for all documentation structure and audience guidelines.
 
 Current highlights coming from reported issues and the release plan:
 
@@ -43,9 +43,9 @@ PR expectations:
 - Keep changes scoped to a single slice/milestone. Write a brief checklist in the PR description referencing the relevant release-plan milestone.
 - Add/adjust tests: unit tests for new modules/paths, and keep golden/API snapshot tests unchanged unless the release plan explicitly calls for a public change (then update snapshots intentionally).
 - Quality gates should pass: ruff lint/format, pytest, and mypy. New modules may be subject to stricter mypy settings (see `pyproject.toml`).
-- If touching performance-sensitive paths, run or reference the perf guard and baseline scripts in `benchmarks/` and `scripts/`.
-- For architectural/public changes, include/modify an ADR in `improvement_docs/adrs/` and link it in the PR.
-- **Legacy API compatibility**: Changes to `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods must preserve the documented contract in `improvement_docs/legacy_user_api_contract.md`. The PR template includes a parity review checkpoint; regression tests in `tests/unit/api/test_legacy_user_api_contract.py` enforce this guardrail (ADR-020).
+- If touching performance-sensitive paths, run or reference the perf guard and baseline scripts in `tests/benchmarks/` and `scripts/`.
+- For architectural/public changes, include/modify an ADR in `docs/improvement/adrs/` and link it in the PR.
+- **Legacy API compatibility**: Changes to `WrapCalibratedExplainer`, `CalibratedExplainer`, or explanation collection methods must preserve the documented contract in `docs/improvement/legacy_user_api_contract.md`. The PR template includes a parity review checkpoint; regression tests in `tests/unit/api/test_legacy_user_api_contract.py` enforce this guardrail (ADR-020).
 
 
 
@@ -68,14 +68,14 @@ Additional checks:
 - Docstring guardrails: run `pydocstyle --convention=numpy src tests` to surface ADR-018 numpydoc issues; CI runs the same checks in blocking mode, so fix violations before opening a pull request.
 - Docstring coverage: `python scripts/check_docstring_coverage.py` prints the current module/class/function/method coverage mix and accepts `--fail-under` for teams that want to experiment with stricter thresholds.
 - Type checking via mypy. During Phase 1B, new core modules (e.g., `core/exceptions.py`, `core/validation.py`) are checked with stricter settings.
-- Performance guard: see `scripts/check_perf_regression.py` and `benchmarks/perf_thresholds.json`.
+- Performance guard: see `scripts/check_perf_regression.py` and `tests/benchmarks/perf_thresholds.json`.
 
 ## Naming and documentation style quick reference
 
 ADR-017 and ADR-018 define the internal style rules that keep the plugin-first
 architecture consistent. The cheat-sheet below summarises what reviewers expect
 in day-to-day contributions; consult the ADRs for the full context and
-motivation.【F:improvement_docs/adrs/ADR-017-nomenclature-standardization.md†L1-L37】【F:improvement_docs/adrs/ADR-018-code-documentation-standard.md†L1-L62】
+motivation.【F:docs/improvement/adrs/ADR-017-nomenclature-standardization.md†L1-L37】【F:docs/improvement/adrs/ADR-018-code-documentation-standard.md†L1-L62】
 
 ### Naming conventions (ADR-017)
 

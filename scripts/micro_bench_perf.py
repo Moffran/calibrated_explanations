@@ -6,7 +6,7 @@ Measures:
 - Factual and alternative explanation timings for simple classifiers/regressors
 
 Usage (optional): run as a script to print JSON metrics. CI integration can
-parse this later and compare to thresholds in benchmarks/perf_thresholds.json.
+parse this later and compare to thresholds in tests/benchmarks/perf_thresholds.json.
 """
 
 from __future__ import annotations

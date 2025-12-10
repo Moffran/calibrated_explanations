@@ -142,9 +142,9 @@ underlying estimator and read the returned intervals.
 - Track release readiness through the
   [release checklist](https://calibrated-explanations.readthedocs.io/en/latest/governance/release_checklist.html)
   and roadmap in
-  [improvement_docs/RELEASE_PLAN_v1.md](https://github.com/Moffran/calibrated_explanations/blob/main/improvement_docs/RELEASE_PLAN_v1.md).
+  [docs/improvement/RELEASE_PLAN_v1.md](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/RELEASE_PLAN_v1.md).
 - Confirm ADR alignment via
-  [improvement_docs/adrs/](https://github.com/Moffran/calibrated_explanations/tree/main/improvement_docs/adrs)
+  [docs/improvement/adrs/](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/adrs)
   and keep docs navigation synced with the
   [IA crosswalk](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/nav_crosswalk.html).
 
@@ -202,7 +202,7 @@ stays lightweight.
    Result archives (`*.pkl`, `.zip`) sit beside each run for quick comparison.
 4. **Keep results traceable** – preserve the random seeds baked into the scripts
    (typically `42` or `0`) and record any deviations alongside the active ADRs
-   noted in [`improvement_docs/adrs/`](https://github.com/Moffran/calibrated_explanations/tree/main/improvement_docs/adrs).
+   noted in [`docs/improvement/adrs/`](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/adrs).
 5. **Cite the sources** – the
    [theory & literature overview](https://calibrated-explanations.readthedocs.io/en/latest/research/theory_and_literature.html)
    lists DOIs, arXiv IDs, and funding acknowledgements to include in your work.

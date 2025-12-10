@@ -1,3 +1,0 @@
-[codespell]
-skip = docs/_build,docs_old/_build,build,dist,benchmarks,evaluation,notebooks
-ignore-words-list = dataframe,nd

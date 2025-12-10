@@ -119,11 +119,11 @@ jobs:
 
       - name: Run micro benchmark
         run: |
-          python scripts/micro_bench_perf.py > micro_current.json
+          python scripts/micro_bench_perf.py > tests/benchmarks/micro_current.json
 
       - name: Compare micro metrics with baseline thresholds
         run: |
-          python scripts/check_perf_micro.py micro_current.json benchmarks/perf_thresholds.json
+          python scripts/check_perf_micro.py tests/benchmarks/micro_current.json tests/benchmarks/perf_thresholds.json
 
   anti-pattern-audit:
     name: Anti-pattern Audit

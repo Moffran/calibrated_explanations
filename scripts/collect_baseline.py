@@ -1,9 +1,9 @@
 # pylint: disable=line-too-long, missing-function-docstring, too-many-locals, import-outside-toplevel, invalid-name, no-member, unused-import
 """Collect baseline performance, memory, and API surface metrics.
 
-Run: python scripts/collect_baseline.py --output benchmarks/baseline_$(date +%Y%m%d).json
+Run: python scripts/collect_baseline.py --output tests/benchmarks/baseline_$(date +%Y%m%d).json
 Windows PowerShell example:
-  python scripts/collect_baseline.py --output benchmarks/baseline_$(Get-Date -Format yyyyMMdd).json
+  python scripts/collect_baseline.py --output tests/benchmarks/baseline_$(Get-Date -Format yyyyMMdd).json
 """
 
 from __future__ import annotations

@@ -17,23 +17,23 @@ points on `WrapCalibratedExplainer`, `CalibratedExplainer`, and the explanation
 collections, but we have no architectural record or regression tests pinning
 that surface in place. As a result, seemingly innocuous refactors risk breaking
 core capabilities such as probabilistic regression thresholds, interval tuning,
-and conjunction tooling without warning.【F:docs/getting_started.md†L5-L413】【F:README.md†L150-L198】【F:improvement_docs/legacy_user_api_contract.md†L9-L93】
+and conjunction tooling without warning.【F:docs/getting_started.md†L5-L413】【F:README.md†L150-L198】【F:docs/improvement/legacy_user_api_contract.md†L9-L93】
 
 ## Decision
 
 Adopt a layered guardrail strategy that freezes the documented legacy API:
 
-1. **Canonical contract.** The new `improvement_docs/legacy_user_api_contract.md`
+1. **Canonical contract.** The new `docs/improvement/legacy_user_api_contract.md`
    captures every method and parameter combination currently exercised in the
    README and notebooks. This document becomes the single source of truth for
-   legacy-support decisions and must accompany any future user-facing change.【F:improvement_docs/legacy_user_api_contract.md†L1-L103】
+   legacy-support decisions and must accompany any future user-facing change.【F:docs/improvement/legacy_user_api_contract.md†L1-L103】
 2. **Signature regression tests.** Add unit tests that inspect the signatures of
    key methods on `WrapCalibratedExplainer`, `CalibratedExplainer`, and
    explanation collections to ensure required parameters (e.g.,
    `uq_interval`, `threshold`, `low_high_percentiles`, `filter_top`,
    `max_rule_size`, `n_top_features`) remain available. Tests also assert the
    presence of lifecycle helpers such as `.set_difficulty_estimator` and core capabilities such as
-   `.explore_alternatives` so accidental removals fail fast.【F:improvement_docs/legacy_user_api_contract.md†L15-L93】
+   `.explore_alternatives` so accidental removals fail fast.【F:docs/improvement/legacy_user_api_contract.md†L15-L93】
 3. **Release checklist hook.** During release planning, changelog reviewers must
    confirm whether the legacy contract is affected. Any intentional API change
    requires updating the contract document and the signature tests in the same

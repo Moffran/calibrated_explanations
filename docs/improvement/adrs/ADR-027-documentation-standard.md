@@ -46,7 +46,7 @@ Adopt an audience-led documentation structure anchored on three journeys—pract
 5. Maintain parity in future changes by requiring PR reviewers to verify classification/regression coverage and interpretation-first framing.
 
 ## References
-- Documentation Overhaul Blueprint (improvement_docs/documentation_overhaul.md)
+- Documentation Overhaul Blueprint (docs/improvement/documentation_overhaul.md)
 - ADR-012: Documentation & Gallery Build Policy
 - ADR-018: Code Documentation Standard
 - ADR-026: Explanation Plugin Semantics
