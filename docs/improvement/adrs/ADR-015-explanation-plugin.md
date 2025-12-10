@@ -10,7 +10,7 @@ Authors: Core maintainers
 
 Supersedes: N/A
 
-Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-014-plot-plugin-strategy
+Related: ADR-006-plugin-registry-trust-model, ADR-013-interval-calibrator-plugin-strategy, ADR-014-plot-plugin-strategy, ADR-026-explanation-plugin-semantics
 
 ## Context
 
@@ -42,17 +42,19 @@ interval and plot plugins.
 
 ### 1. Single orchestrator with mode-aware plugin resolution
 
-`CalibratedExplainer.explain` becomes the canonical orchestration entry. It
+`CalibratedExplainer.explain` (renamed to `_explain` in v0.10.0 per ADR-026) becomes the canonical orchestration entry. It
 prepares the perturbation context, resolves an explanation plugin for the
 requested mode, and delegates batch construction. Public helpers remain thin
 wrappers:
 
-- `explain_factual(...)` forwards to `explain(..., mode="factual")` and seeds
+- `explain_factual(...)` forwards to `_explain(..., mode="factual")` and seeds
 the resolution chain with `core.explanation.factual`.
-- `explore_alternatives(...)` calls `explain(..., mode="alternative")` with a
+- `explore_alternatives(...)` calls `_explain(..., mode="alternative")` with a
 fallback to `core.explanation.alternative`.
-- `explain_fast(...)` invokes `explain(..., mode="fast")` and prefers
+- `explain_fast(...)` invokes `_explain(..., mode="fast")` and prefers
 `core.explanation.fast`.
+
+**Note on Visibility:** While this ADR defines the plugin architecture and orchestration mechanics, **ADR-026** defines the visibility policy. `CalibratedExplainer.explain` is strictly an internal primitive (`_explain`) and is not part of the public API.
 
 Resolution precedence mirrors ADR-006: explicit keyword arguments on the call
 (e.g. `explanation_plugin`, `fast_explanation_plugin`) > environment variables

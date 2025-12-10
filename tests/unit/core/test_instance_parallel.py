@@ -24,7 +24,7 @@ def test_instance_parallel_matches_sequential_output() -> None:
 
     baseline = CalibratedExplainer(learner, x_cal, y_cal, mode="classification")
     baseline.set_discretizer(None)
-    baseline_result = baseline.explain(x_test, _use_plugin=False)
+    baseline_result = baseline._explain(x_test, _use_plugin=False)
 
     parallel_executor = ParallelExecutor(
         ParallelConfig(
@@ -43,7 +43,7 @@ def test_instance_parallel_matches_sequential_output() -> None:
         perf_parallel=parallel_executor,
     )
     parallel.set_discretizer(None)
-    parallel_result = parallel.explain(x_test, _use_plugin=False)
+    parallel_result = parallel._explain(x_test, _use_plugin=False)
 
     assert len(parallel_result) == len(baseline_result)
 

@@ -88,6 +88,13 @@
   - **Fallback Logic**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures.
   - **Verification**: Added comprehensive lifecycle tests in `tests/unit/core/explain/test_parallel_lifecycle.py` covering strategies, context management, chunking, and fallback scenarios.
 
+### Release Task 6 - ADR-026 Explanation Plugin Semantics
+
+- **Internalized `CalibratedExplainer.explain`**: Renamed to `_explain` to enforce the facade pattern and prevent public access, as mandated by ADR-026.
+- **Implemented Invariant Checks**: Added runtime validation in `PredictBridgeMonitor` to enforce `low <= predict <= high` for all plugin predictions.
+- **Hardened Contexts**: Verified `ExplanationContext` immutability and read-only helper handles.
+- **ADR Alignment**: Updated ADR-015 to cross-reference ADR-026 for visibility policy; Accepted ADR-026.
+
 ### Release Task 8 - Condition Source Support
 
 - **`condition_source` implemented:** Added support for the `condition_source` configuration used by calibrators and explanation plugins to select conditioning data sources; wired into the public API, covered by unit tests, and documented in the practitioner guides.

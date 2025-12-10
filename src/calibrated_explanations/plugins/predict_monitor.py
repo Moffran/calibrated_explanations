@@ -9,7 +9,10 @@ from __future__ import annotations
 
 from typing import Any, List, Mapping, Sequence, Tuple
 
+import numpy as np
+
 from ..plugins.predict import PredictBridge
+from ..core.exceptions import ValidationError
 
 
 class PredictBridgeMonitor(PredictBridge):
@@ -84,7 +87,9 @@ class PredictBridgeMonitor(PredictBridge):
             Prediction results from the wrapped bridge.
         """
         self._calls.append("predict")
-        return self._bridge.predict(x, mode=mode, task=task, bins=bins)
+        result = self._bridge.predict(x, mode=mode, task=task, bins=bins)
+        self._validate_invariants(result)
+        return result
 
     def predict_interval(
         self,
@@ -100,17 +105,70 @@ class PredictBridgeMonitor(PredictBridge):
         x : Any
             Input features.
         task : str
-            Task type ("classification", "regression").
+            Task type.
         bins : Any, optional
             Binning configuration.
 
         Returns
         -------
         Sequence[Any]
-            Interval predictions from the wrapped bridge.
+            Interval prediction results.
         """
         self._calls.append("predict_interval")
-        return self._bridge.predict_interval(x, task=task, bins=bins)
+        result = self._bridge.predict_interval(x, task=task, bins=bins)
+        # Result is typically (predict, low, high, classes) or similar tuple
+        if isinstance(result, (tuple, list)) and len(result) >= 3:
+            # Map tuple to dict-like structure for validation
+            # Assuming standard order: predict, low, high
+            payload = {
+                "predict": result[0],
+                "low": result[1],
+                "high": result[2],
+            }
+            self._validate_invariants(payload)
+        return result
+
+    def _validate_invariants(self, payload: Mapping[str, Any]) -> None:
+        """Enforce low <= predict <= high invariant.
+
+        Parameters
+        ----------
+        payload : dict
+            Prediction payload containing 'predict', 'low', 'high'.
+
+        Raises
+        ------
+        ValidationError
+            If the invariant is violated.
+        """
+        if "predict" not in payload or "low" not in payload or "high" not in payload:
+            return
+
+        predict = np.asanyarray(payload["predict"])
+        low = np.asanyarray(payload["low"])
+        high = np.asanyarray(payload["high"])
+
+        # Skip validation if any component is None (e.g. classification without interval)
+        if predict.size == 0 or low.size == 0 or high.size == 0:
+            return
+        if np.any(predict == None) or np.any(low == None) or np.any(high == None):  # noqa: E711
+            return
+
+        # Check low <= high
+        if not np.all(low <= high):
+            raise ValidationError(
+                "Prediction interval invariant violated: low > high",
+                details={"low": low, "high": high},
+            )
+
+        # Check low <= predict <= high
+        # Note: We use a small epsilon for float comparison if needed, but strict inequality is safer for now
+        if not np.all((low <= predict) & (predict <= high)):
+            raise ValidationError(
+                "Prediction invariant violated: predict not in [low, high]",
+                details={"predict": predict, "low": low, "high": high},
+            )
+
 
     def predict_proba(self, x: Any, bins: Any | None = None) -> Sequence[Any]:
         """Delegate ``predict_proba`` while tracking usage.

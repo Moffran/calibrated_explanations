@@ -1260,9 +1260,9 @@ class CalibratedExplainer:
     ) -> CalibratedExplanations:
         """Call self as a function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
 
-        Since v0.4.0, this method is equivalent to the `explain` method.
+        Since v0.4.0, this method is equivalent to the `_explain` method.
         """
-        return self.explain(
+        return self._explain(
             x,
             threshold,
             low_high_percentiles,
@@ -1271,7 +1271,7 @@ class CalibratedExplainer:
             _use_plugin=_use_plugin,
         )
 
-    def explain(
+    def _explain(
         self,
         x,
         threshold=None,
@@ -1284,7 +1284,8 @@ class CalibratedExplainer:
     ) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
 
-        This is a thin delegator that delegates to the explanation orchestrator.
+        This is an internal orchestration primitive that delegates to the explanation orchestrator.
+        It is NOT part of the public API and should not be called directly.
 
         This method:
         1. Makes predictions on original test instances

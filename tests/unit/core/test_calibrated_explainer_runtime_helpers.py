@@ -426,7 +426,7 @@ def test_call_delegates_to_explain(explainer_factory, monkeypatch):
         captured["kwargs"] = kwargs
         return "explained"
 
-    monkeypatch.setattr(explainer, "explain", _fake_explain)
+    monkeypatch.setattr(explainer, "_explain", _fake_explain)
 
     assert explainer("x", threshold=0.5) == "explained"
     assert captured["args"] == ("x", 0.5, (5, 95), None, None)
@@ -449,7 +449,7 @@ def test_explain_uses_plugin_orchestrator(explainer_factory):
     explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=orchestrator)
     explainer._infer_explanation_mode = lambda: "factual"
 
-    result = explainer.explain("x", threshold=0.2, bins="bins", features_to_ignore=[1])
+    result = explainer._explain("x", threshold=0.2, bins="bins", features_to_ignore=[1])
 
     assert result is sentinel
     assert orchestrator.calls[0][0][0] == "factual"
@@ -1049,7 +1049,7 @@ def test_legacy_explain_path(monkeypatch, explainer_factory):
         "calibrated_explanations.core.explain._legacy_explain.explain", _legacy_explain
     )
 
-    result = explainer.explain(np.zeros((1, 2)), _use_plugin=False)
+    result = explainer._explain(np.zeros((1, 2)), _use_plugin=False)
 
     assert result[0] is explainer
     assert result[-1] is sentinel
