@@ -28,7 +28,7 @@ Establish a versioned explanation envelope:
     "parameters_hash": "<blake2-short>"
   },
   "meta": {"dataset_hash": "...", "n_features": 42, "created_at": "ISO8601"},
-  "payload": { "task": "classification", "index": 0, "prediction": {"predict": 0.8, "low": 0.7, "high": 0.9}, "rules": [...] }
+  "payload": { "task": "classification", "index": 0, "prediction": {"predict": 0.8, "low": 0.7, "high": 0.9}, "rules": ["..."] }
 }
 ```
 
