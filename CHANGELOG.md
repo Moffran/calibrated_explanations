@@ -5,6 +5,12 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
+### Release Task 5 - ADR-021 Interval Safety
+
+- **Completed ADR-021 interval safety for v0.10.0 release**
+  - **FAST explanation parity**: Updated `FastExplanationPipeline` to include `__full_probabilities__` in prediction output, ensuring consistency with standard explanation path.
+  - **Safe JSON serialization**: Updated `_jsonify` helper to safely handle callables by converting them to string representation, preventing `TypeError` during JSON export of explanation collections containing live objects.
+
 ### Release Task 1 - ADR-001 Package and Boundary Layout
 
 - **Completed ADR-001 core decomposition boundaries for v0.10.0 release**

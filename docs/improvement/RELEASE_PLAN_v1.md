@@ -575,8 +575,8 @@ boundaries. ADR-004 now documents this expectation.
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | Interval invariants never enforced | 0 | 0 | 0 | **COMPLETED.** Invariant enforcement implemented in `PredictBridgeMonitor`, `PredictionOrchestrator`, and `CalibratedExplanation` (with warnings for violations). |
-| 2 | FAST explanations drop probability cubes | 4 | 3 | 12 | `explain_fast` omits `__full_probabilities__`, so ADR-promised metadata is missing for FAST runs. |
-| 3 | JSON export stores live callables | 3 | 2 | 6 | `_collection_metadata` serializes `assign_threshold` functions, breaking downstream tooling expectations. |
+| 2 | FAST explanations drop probability cubes | 0 | 0 | 0 | **COMPLETED.** `FastExplanationPipeline` updated to include `__full_probabilities__` in prediction output. |
+| 3 | JSON export stores live callables | 0 | 0 | 0 | **COMPLETED.** `_jsonify` helper updated to safely handle callables during serialization. |
 
 ## ADR-022 – Documentation Information Architecture (Superseded)
 

@@ -37,6 +37,8 @@ def _jsonify(value: Any) -> Any:
         return {str(key): _jsonify(val) for key, val in value.items()}
     if isinstance(value, np.generic):  # numpy scalars
         return value.item()
+    if callable(value):
+        return str(value)
     return value
 
 
