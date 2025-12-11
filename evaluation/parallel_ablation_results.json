@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "timestamp": 1765433679.3720253,
+    "platform": "nt",
+    "cpu_count": 12
+  },
+  "classification": {
+    "sequential": 2.624661445617676,
+    "threads": 2.1072945594787598,
+    "processes": 2.419245481491089,
+    "joblib": 2.6473231315612793
+  },
+  "regression": {
+    "sequential": 2.2258799076080322,
+    "threads": 2.3727855682373047,
+    "processes": 2.235633134841919,
+    "joblib": 2.220329523086548
+  }
+}

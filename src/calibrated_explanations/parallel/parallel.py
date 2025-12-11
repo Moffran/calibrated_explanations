@@ -33,14 +33,18 @@ class ParallelMetrics:
     completed: int = 0
     fallbacks: int = 0
     failures: int = 0
+    total_duration: float = 0.0
+    max_workers: int = 0
 
-    def snapshot(self) -> Mapping[str, int]:
+    def snapshot(self) -> Mapping[str, int | float]:
         """Return the metrics as a serialisable mapping."""
         return {
             "submitted": self.submitted,
             "completed": self.completed,
             "fallbacks": self.fallbacks,
             "failures": self.failures,
+            "total_duration": self.total_duration,
+            "max_workers": self.max_workers,
         }
 
 
@@ -156,9 +160,26 @@ class ParallelExecutor:
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Shutdown the execution pool."""
+        if exc_type is not None:
+            self.cancel()
+            return
+
         if self._pool is not None:
             if hasattr(self._pool, "shutdown"):
                 self._pool.shutdown(wait=True)
+            self._pool = None
+        self._active_strategy_name = None
+
+    def cancel(self) -> None:
+        """Cancel all pending tasks and shutdown the pool immediately."""
+        if self._pool is not None:
+            if hasattr(self._pool, "shutdown"):
+                try:
+                    # Python 3.9+ supports cancel_futures
+                    self._pool.shutdown(wait=False, cancel_futures=True)
+                except TypeError:
+                    # Fallback for older Pythons or executors without cancel_futures
+                    self._pool.shutdown(wait=False)
             self._pool = None
         self._active_strategy_name = None
 
@@ -199,13 +220,21 @@ class ParallelExecutor:
         else:
             self.metrics.completed += len(results)
             duration = time.perf_counter() - start_time
+            self.metrics.total_duration += duration
+            
+            # Estimate workers used
+            current_workers = workers or self.config.max_workers or 1
+            if self._pool is not None and hasattr(self._pool, "_max_workers"):
+                current_workers = self._pool._max_workers
+            self.metrics.max_workers = max(self.metrics.max_workers, current_workers)
+
             self._emit(
                 "parallel_execution",
                 {
                     "strategy": self._active_strategy_name or self.config.strategy,
                     "items": len(items_list),
                     "duration": duration,
-                    "workers": workers or self.config.max_workers,
+                    "workers": current_workers,
                     "work_items": candidate,
                     "task_size_hint_bytes": self.config.task_size_hint_bytes,
                     "granularity": self.config.granularity,

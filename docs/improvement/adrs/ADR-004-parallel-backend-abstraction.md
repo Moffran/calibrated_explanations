@@ -2,7 +2,7 @@
 
 # ADR-004: Parallel Backend Abstraction
 
-Status: Proposed (targeting v0.9.0 opt-in release)
+Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD

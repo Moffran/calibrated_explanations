@@ -14,7 +14,11 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
-from calibrated_explanations import CalibratedExplainer, WrapCalibratedExplainer
+import warnings
+# Suppress noisy top-level deprecation warnings from the library
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning, module="calibrated_explanations")
+    from calibrated_explanations import CalibratedExplainer, WrapCalibratedExplainer
 
 RESULTS_FILE = "evaluation/parallel_ablation_results.json"
 
@@ -79,6 +83,31 @@ def run_benchmark(
     return results
 
 
+def print_summary(results: Dict[str, Any]):
+    """Print a human-readable summary of the results."""
+    print("\n" + "=" * 60)
+    print(f"{'BENCHMARK SUMMARY':^60}")
+    print("=" * 60)
+    
+    for mode in ["classification", "regression"]:
+        if mode not in results:
+            continue
+            
+        print(f"\nMode: {mode.upper()}")
+        print(f"{'Strategy':<15} | {'Duration (s)':<12} | {'Speedup':<10}")
+        print("-" * 43)
+        
+        mode_results = results[mode]
+        baseline = mode_results.get("sequential", 1.0)
+        
+        # Sort by duration (fastest first)
+        sorted_strategies = sorted(mode_results.items(), key=lambda x: x[1])
+        
+        for strategy, duration in sorted_strategies:
+            speedup = baseline / duration if duration > 0 else 0.0
+            print(f"{strategy:<15} | {duration:<12.4f} | {speedup:<10.2f}x")
+
+
 def main():
     """Execute benchmarks and save results."""
     results = {
@@ -91,7 +120,9 @@ def main():
         "regression": run_benchmark("regression"),
     }
 
-    print(f"Saving results to {RESULTS_FILE}...")
+    print_summary(results)
+
+    print(f"\nSaving results to {RESULTS_FILE}...")
     with open(RESULTS_FILE, "w") as f:
         json.dump(results, f, indent=2)
     print("Done.")
