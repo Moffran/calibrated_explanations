@@ -14,6 +14,7 @@ conformal predictive systems (regression).
 from __future__ import annotations
 
 import copy
+import sys
 from time import time
 from typing import TYPE_CHECKING
 
@@ -140,23 +141,20 @@ class CalibratedExplainer:
         self._numeric_sorted_cache: Dict[int, np.ndarray] | None = None
         self._calibration_summary_shape: Tuple[int, int] | None = None
         if self.oob:
-            try:
-                if mode == "classification":
-                    y_oob_proba = self.learner.oob_decision_function_
-                    if (
-                        len(y_oob_proba.shape) == 1 or y_oob_proba.shape[1] == 1
-                    ):  # Binary classification
-                        y_oob = (y_oob_proba > 0.5).astype(np.dtype(y_cal.dtype))
-                    else:  # Multiclass classification
-                        y_oob = np.argmax(y_oob_proba, axis=1)
-                        if safe_isinstance(y_cal, "pandas.core.arrays.categorical.Categorical"):
-                            y_oob = y_cal.categories[y_oob]
-                        else:
-                            y_oob = y_oob.astype(np.dtype(y_cal.dtype))
-                else:
-                    y_oob = self.learner.oob_prediction_
-            except Exception as exc:
-                raise exc
+            if mode == "classification":
+                y_oob_proba = self.learner.oob_decision_function_
+                if (
+                    len(y_oob_proba.shape) == 1 or y_oob_proba.shape[1] == 1
+                ):  # Binary classification
+                    y_oob = (y_oob_proba > 0.5).astype(np.dtype(y_cal.dtype))
+                else:  # Multiclass classification
+                    y_oob = np.argmax(y_oob_proba, axis=1)
+                    if safe_isinstance(y_cal, "pandas.core.arrays.categorical.Categorical"):
+                        y_oob = y_cal.categories[y_oob]
+                    else:
+                        y_oob = y_oob.astype(np.dtype(y_cal.dtype))
+            else:
+                y_oob = self.learner.oob_prediction_
             if len(x_cal) != len(y_oob):
                 raise DataShapeError(
                     "The length of the out-of-bag predictions does not match the length of X_cal."
@@ -297,7 +295,9 @@ class CalibratedExplainer:
         for k, v in self.__dict__.items():
             try:
                 setattr(result, k, copy.deepcopy(v, memo))
-            except TypeError:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], TypeError):
+                    raise
                 # Fallback for uncopyable objects
                 setattr(result, k, v)
 

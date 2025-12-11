@@ -6,6 +6,8 @@ from calibrated explanations instead of traditional visualizations.
 
 from __future__ import annotations
 
+import contextlib
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -208,7 +210,10 @@ class NarrativePlotPlugin:
                         feature_names=feature_names,
                     )
                     row[f"{explanation_type}_explanation_{level}"] = narrative
-                except Exception as e:
+                except:
+                    e = sys.exc_info()[1]
+                    if not isinstance(e, Exception):
+                        raise
                     # Include error message in output for debugging
                     row[f"{explanation_type}_explanation_{level}"] = (
                         f"Error generating narrative: {e}"
@@ -250,7 +255,9 @@ class NarrativePlotPlugin:
                 # Check if multiclass
                 try:
                     is_multiclass = explainer.is_multiclass()
-                except Exception:
+                except:
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     is_multiclass = getattr(explainer, "is_multiclass", False)
 
                 if is_multiclass:
@@ -263,7 +270,9 @@ class NarrativePlotPlugin:
             # Default fallback
             return "regression"
 
-        except Exception:
+        except:
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             # Fallback to regression if detection fails
             return "regression"
 
@@ -295,7 +304,9 @@ class NarrativePlotPlugin:
 
             return None
 
-        except Exception:
+        except:
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             return None
 
     def _is_alternative(self, explanations) -> bool:
@@ -318,10 +329,9 @@ class NarrativePlotPlugin:
 
         # Check if the explanations have the _is_alternative method
         if hasattr(explanations, "_is_alternative"):
-            try:
+            with contextlib.suppress(AttributeError, TypeError):
                 return explanations._is_alternative()
-            except (AttributeError, TypeError):
-                return False
+            return False
 
         return False
 

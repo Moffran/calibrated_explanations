@@ -59,9 +59,10 @@ def slice_threshold(threshold: Any, start: int, stop: int, total_len: int) -> An
     """
     if threshold is None or np.isscalar(threshold):
         return threshold
-    try:
+    length = None
+    with contextlib.suppress(TypeError):
         length = len(threshold)
-    except TypeError:
+    if length is None:
         return threshold
     if length != total_len:
         return threshold
@@ -228,19 +229,19 @@ def compute_weight_delta(baseline, perturbed) -> np.ndarray:
         with contextlib.suppress(ValueError):
             baseline_arr = np.broadcast_to(baseline_arr, perturbed_arr.shape)
 
-    try:
+    with contextlib.suppress(TypeError, ValueError):
         return np.asarray(baseline_arr - perturbed_arr, dtype=float)
-    except (TypeError, ValueError):
-        # Fallback to element-wise assignment via explainer semantics
-        baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
-        perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
-        deltas = np.empty_like(perturbed_flat, dtype=float)
-        for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
-            # Use scalar helper from module-level implementation
-            delta_value = base_value - pert_value
-            delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
-            deltas[idx] = float(delta_array[0])
-        return deltas.reshape(perturbed_arr.shape)
+
+    # Fallback to element-wise assignment via explainer semantics
+    baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
+    perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
+    deltas = np.empty_like(perturbed_flat, dtype=float)
+    for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
+        # Use scalar helper from module-level implementation
+        delta_value = base_value - pert_value
+        delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
+        deltas[idx] = float(delta_array[0])
+    return deltas.reshape(perturbed_arr.shape)
 
 
 def feature_effect_for_index(

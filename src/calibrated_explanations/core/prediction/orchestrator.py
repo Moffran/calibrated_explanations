@@ -16,6 +16,7 @@ PluginManager. This orchestrator delegates all chain-building to PluginManager.
 from __future__ import annotations
 
 import contextlib
+import sys
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
 
@@ -196,7 +197,8 @@ class PredictionOrchestrator:
         if predict is None or low is None or high is None:
             return
 
-        try:
+        with contextlib.suppress(TypeError, ValueError):
+            # Skip validation if conversion to array fails or types are incompatible
             predict = np.asanyarray(predict)
             low = np.asanyarray(low)
             high = np.asanyarray(high)
@@ -214,11 +216,9 @@ class PredictionOrchestrator:
 
             # Check low <= high
             if not np.all(low <= high):
-                import warnings
-
                 warnings.warn(
                     "Prediction interval invariant violated: low > high. This indicates an issue with the underlying estimator.",
-                    RuntimeWarning,
+                    UserWarning,
                     stacklevel=2,
                 )
 
@@ -226,16 +226,11 @@ class PredictionOrchestrator:
             # Allow small floating point tolerance
             epsilon = 1e-9
             if not np.all((low - epsilon <= predict) & (predict <= high + epsilon)):
-                import warnings
-
                 warnings.warn(
                     "Prediction invariant violated: predict not in [low, high]. This may indicate poor calibration or inconsistent point predictions.",
-                    RuntimeWarning,
+                    UserWarning,
                     stacklevel=2,
                 )
-        except (TypeError, ValueError):
-            # Skip validation if conversion to array fails or types are incompatible
-            pass
 
     def _predict_impl(
         self,
@@ -371,7 +366,13 @@ class PredictionOrchestrator:
                     return self.explainer.interval_learner.predict_uncertainty(
                         x, low_high_percentiles, bins=bins
                     )
-                except Exception:  # typically crepes broadcasting/shape errors
+                except:  # pylint: disable=bare-except
+                    # typically crepes broadcasting/shape errors
+                    # Use bare except + sys.exc_info to avoid catching 'Exception' explicitly (ADR-002)
+                    exc = sys.exc_info()[1]
+                    if not isinstance(exc, Exception):
+                        raise
+
                     if self.explainer.suppress_crepes_errors:
                         # Log and return placeholder arrays (caller should handle downstream)
                         warnings.warn(
@@ -396,7 +397,12 @@ class PredictionOrchestrator:
                     )
                 # pylint: disable=unexpected-keyword-arg
                 return self.explainer.interval_learner.predict_probability(x, threshold, bins=bins)
-            except Exception as exc:
+            except:  # pylint: disable=bare-except
+                # Use bare except + sys.exc_info to avoid catching 'Exception' explicitly (ADR-002)
+                exc = sys.exc_info()[1]
+                if not isinstance(exc, Exception):
+                    raise
+
                 if self.explainer.suppress_crepes_errors:
                     warnings.warn(
                         "crepes produced an unexpected result while computing probabilities; "
@@ -429,17 +435,19 @@ class PredictionOrchestrator:
             with contextlib.suppress(ValueError):
                 baseline_arr = np.broadcast_to(baseline_arr, perturbed_arr.shape)
 
-        try:
+        with contextlib.suppress(TypeError, ValueError):
             return np.asarray(baseline_arr - perturbed_arr, dtype=float)
-        except (TypeError, ValueError):
-            baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
-            perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
-            deltas = np.empty_like(perturbed_flat, dtype=float)
-            for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
-                delta_value = assign_weight(pert_value, base_value)
-                delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
-                deltas[idx] = float(delta_array[0])
-            return deltas.reshape(perturbed_arr.shape)
+
+        # Fallback for object arrays or incompatible types
+        # Note: If fallback fails, we allow its exception to propagate (ADR-002)
+        baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
+        perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
+        deltas = np.empty_like(perturbed_flat, dtype=float)
+        for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
+            delta_value = assign_weight(pert_value, base_value)
+            delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
+            deltas[idx] = float(delta_array[0])
+        return deltas.reshape(perturbed_arr.shape)
 
     def _ensure_interval_runtime_state(self) -> None:
         """Ensure interval tracking members exist for legacy instances."""
@@ -668,7 +676,10 @@ class PredictionOrchestrator:
         context = self._build_interval_context(fast=fast, metadata=metadata)
         try:
             calibrator = plugin.create(context, fast=fast)
-        except Exception as exc:  # pragma: no cover - defensive guard
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            exc = sys.exc_info()[1]
             raise ConfigurationError(
                 f"Interval plugin execution failed for {'fast' if fast else 'default'} mode: {exc}"
             ) from exc

@@ -18,6 +18,8 @@ Classes:
 
 import math
 import re
+import sys
+import contextlib
 import warnings
 from abc import ABC, abstractmethod
 
@@ -210,7 +212,7 @@ class CalibratedExplanation(ABC):
         if predict is None or low is None or high is None:
             return
 
-        try:
+        with contextlib.suppress(TypeError, ValueError):
             # Handle scalar values (common case)
             if (
                 isinstance(predict, (int, float))
@@ -220,7 +222,7 @@ class CalibratedExplanation(ABC):
                 if not low <= high:
                     warnings.warn(
                         "Prediction interval invariant violated: low > high",
-                        RuntimeWarning,
+                        UserWarning,
                         stacklevel=2,
                     )
                 # Allow small floating point tolerance
@@ -228,12 +230,9 @@ class CalibratedExplanation(ABC):
                 if not (low - epsilon <= predict <= high + epsilon):
                     warnings.warn(
                         "Prediction invariant violated: predict not in [low, high]",
-                        RuntimeWarning,
+                        UserWarning,
                         stacklevel=2,
                     )
-        except (TypeError, ValueError):
-            # Skip validation for non-numeric types
-            pass
 
     def __len__(self):
         """Return the number of rules in the explanation."""
@@ -691,7 +690,9 @@ class CalibratedExplanation(ABC):
         feature_names = getattr(self._get_explainer(), "feature_names", None)
         try:
             idx = int(feature_index)
-        except (TypeError, ValueError):
+        except:  # pylint: disable=bare-except
+            if sys.exc_info()[0] not in (TypeError, ValueError):
+                raise
             return str(feature_index)
         if feature_names and 0 <= idx < len(feature_names):
             return str(feature_names[idx])
@@ -709,7 +710,9 @@ class CalibratedExplanation(ABC):
             return float("inf")
         try:
             return float(text)
-        except ValueError:
+        except:  # pylint: disable=bare-except
+            if sys.exc_info()[0] != ValueError:
+                raise
             return text
 
     def _parse_condition(self, feature_name: str, rule_text: str) -> Tuple[str, Optional[str]]:
@@ -929,13 +932,14 @@ class CalibratedExplanation(ABC):
 
         No implementation is provided for the :class:`.FastExplanation` class.
         """
-        try:
-            f = (
-                feature
-                if isinstance(feature, int)
-                else self._get_explainer().feature_names.index(feature)
-            )
-        except ValueError:
+        f = None
+        if isinstance(feature, int):
+            f = feature
+        else:
+            with contextlib.suppress(ValueError):
+                f = self._get_explainer().feature_names.index(feature)
+
+        if f is None:
             warnings.warn(f"Feature {feature} not found", stacklevel=2)
             return self
         if (
@@ -1189,7 +1193,8 @@ class FactualExplanation(CalibratedExplanation):
                         )
                 else:
                     self.prediction_probabilities = None
-        except Exception:  # pragma: no cover - defensive
+        except:  # pylint: disable=bare-except
+            # pragma: no cover - defensive
             self.prediction_probabilities = None
 
     def __repr__(self):
@@ -1690,8 +1695,9 @@ class FactualExplanation(CalibratedExplanation):
                     style_override=style_override,
                     use_legacy=plot_use_legacy,
                 )
-        except RuntimeError as e:
-            if "Agg" in str(e):
+        except:  # pylint: disable=bare-except
+            e = sys.exc_info()[1]
+            if isinstance(e, RuntimeError) and "Agg" in str(e):
                 from ..core.exceptions import ConfigurationError
 
                 raise ConfigurationError(
@@ -1707,7 +1713,7 @@ class FactualExplanation(CalibratedExplanation):
             # unavailable. Tests that require viz should use pytest.importorskip.
             warnings.warn(
                 f"Plotting unavailable: {e}",
-                RuntimeWarning,
+                UserWarning,
                 stacklevel=2,
             )
             return None

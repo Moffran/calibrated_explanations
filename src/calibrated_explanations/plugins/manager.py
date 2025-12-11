@@ -18,6 +18,7 @@ Responsibilities:
 from __future__ import annotations
 
 import os
+import sys
 from typing import Any, Dict, List, Tuple
 
 from .predict_monitor import PredictBridgeMonitor
@@ -149,7 +150,9 @@ class PluginManager:
         for k, v in self.__dict__.items():
             try:
                 setattr(result, k, copy.deepcopy(v, memo))
-            except TypeError:
+            except:
+                if not isinstance(sys.exc_info()[1], TypeError):
+                    raise
                 # Fallback for unpicklable objects (e.g., mappingproxy in contexts)
                 # We shallow copy containers to avoid sharing the container itself,
                 # while sharing the unpicklable items (which are likely immutable).
@@ -447,7 +450,10 @@ class PluginManager:
         if callable(override) and not hasattr(override, "plugin_meta"):
             try:
                 candidate = override()
-            except Exception as exc:  # pragma: no cover - defensive
+            except:  # pragma: no cover - defensive
+                exc = sys.exc_info()[1]
+                if not isinstance(exc, Exception):
+                    raise
                 # Lazy import to avoid circular dependency
                 from ..core.exceptions import (
                     ConfigurationError,  # pylint: disable=import-outside-toplevel

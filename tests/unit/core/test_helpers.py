@@ -184,14 +184,18 @@ def test_check_is_fitted_with_custom_message():
 
 def test_check_is_fitted_with_class():
     """Test check_is_fitted with a class instead of an instance."""
-    with pytest.raises(TypeError) as excinfo:
+    from calibrated_explanations.core.exceptions import ValidationError
+
+    with pytest.raises(ValidationError) as excinfo:
         check_is_fitted(LinearRegression, attributes="coef_")
     assert "is a class, not an instance." in str(excinfo.value)
 
 
 def test_check_is_fitted_with_non_estimator():
     """Test check_is_fitted with a non-estimator instance."""
-    with pytest.raises(TypeError) as excinfo:
+    from calibrated_explanations.core.exceptions import ValidationError
+
+    with pytest.raises(ValidationError) as excinfo:
         check_is_fitted("not_an_estimator", attributes="coef_")
     assert "is not an estimator instance." in str(excinfo.value)
 

@@ -56,15 +56,15 @@ class TestCalibratedExplanationInvariants:
 
     def test_init_invalid_low_gt_high(self):
         prediction = {"predict": [0.5], "low": [0.7], "high": [0.6]}
-        with pytest.warns(RuntimeWarning, match="low > high"):
+        with pytest.warns(UserWarning, match="low > high"):
             self.create_explanation(prediction)
 
     def test_init_invalid_predict_lt_low(self):
         prediction = {"predict": [0.3], "low": [0.4], "high": [0.6]}
-        with pytest.warns(RuntimeWarning, match="predict not in"):
+        with pytest.warns(UserWarning, match="predict not in"):
             self.create_explanation(prediction)
 
     def test_init_invalid_predict_gt_high(self):
         prediction = {"predict": [0.7], "low": [0.4], "high": [0.6]}
-        with pytest.warns(RuntimeWarning, match="predict not in"):
+        with pytest.warns(UserWarning, match="predict not in"):
             self.create_explanation(prediction)

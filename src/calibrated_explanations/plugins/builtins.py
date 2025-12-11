@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import sys
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
@@ -68,11 +69,16 @@ def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
             lo = float(threshold[0])
             hi = float(threshold[1])
             return (f"{lo:.2f} <= Y < {hi:.2f}", "Outside interval")
-    except Exception as exc:
+    except:
+        exc = sys.exc_info()[1]
+        if not isinstance(exc, Exception):
+            raise
         logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", exc)
     try:
         value = float(threshold)
-    except Exception:
+    except:
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         return ("Target within threshold", "Outside threshold")
     return (f"Y < {value:.2f}", f"Y ≥ {value:.2f}")
 
@@ -397,7 +403,10 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             )
             collection = plugin.execute(explain_request, explain_config, self._explainer)
 
-        except Exception as exc:
+        except:
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             # Fallback to legacy implementation with warning
             _logger = logging.getLogger(__name__)
             _logger.warning(
@@ -789,7 +798,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             def _safe_float(value: Any) -> float | None:
                 try:
                     val = float(value)
-                except Exception:
+                except:
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     return None
                 if not np.isfinite(val):
                     return None
@@ -797,7 +808,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
 
             y_minmax = payload.get("y_minmax")
             if y_minmax is None and context.explanation is not None:
-                with contextlib.suppress(Exception):
+                with contextlib.suppress(AttributeError, TypeError, ValueError, RuntimeError):
                     candidate = getattr(context.explanation, "y_minmax", None)
                     if candidate is not None:
                         y_minmax = candidate
@@ -805,7 +816,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             if isinstance(y_minmax, Sequence) and len(y_minmax) >= 2:
                 try:
                     y0, y1 = float(y_minmax[0]), float(y_minmax[1])
-                except Exception:
+                except:
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     normalised_y_minmax = None
                 else:
                     if np.isfinite(y0) and np.isfinite(y1):
@@ -865,7 +878,10 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 for idx in features_to_plot_raw:
                     try:
                         value = int(idx)
-                    except Exception as exc:
+                    except:
+                        exc = sys.exc_info()[1]
+                        if not isinstance(exc, Exception):
+                            raise
                         logging.getLogger(__name__).debug(
                             "Failed to convert feature index to int: %s", exc
                         )
@@ -906,7 +922,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             is_thresholded = False
             threshold_label: str | None = None
             if context.explanation is not None:
-                with contextlib.suppress(Exception):
+                with contextlib.suppress(AttributeError, TypeError, ValueError, RuntimeError):
                     is_thresholded = bool(context.explanation.is_thresholded())
                 if is_thresholded:
                     y_threshold = getattr(context.explanation, "y_threshold", None)
@@ -914,7 +930,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                         try:
                             lo_val = float(y_threshold[0])
                             hi_val = float(y_threshold[1])
-                        except Exception:
+                        except:
+                            if not isinstance(sys.exc_info()[1], Exception):
+                                raise
                             threshold_label = None
                         else:
                             threshold_label = (
@@ -923,7 +941,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                     elif y_threshold is not None:
                         try:
                             thr = float(y_threshold)
-                        except Exception:
+                        except:
+                            if not isinstance(sys.exc_info()[1], Exception):
+                                raise
                             threshold_label = None
                         else:
                             threshold_label = f"Probability of target being below {thr:.2f}"
@@ -938,7 +958,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 or ""
             ).lower()
             if not variant_hint and context.explanation is not None:
-                with contextlib.suppress(Exception):
+                with contextlib.suppress(AttributeError, TypeError, ValueError, RuntimeError):
                     maybe_mode = context.explanation.get_mode()
                     if isinstance(maybe_mode, str):
                         variant_hint = maybe_mode.lower()
@@ -1047,7 +1067,10 @@ class PlotSpecDefaultRenderer(PlotRenderer):
                     render_plotspec(artifact, show=True, save_path=None)
             else:
                 render_plotspec(artifact, show=context.show, save_path=base_path)
-        except Exception as exc:  # pragma: no cover - defensive fallback
+        except:  # pragma: no cover - defensive fallback
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             raise ConfigurationError(
                 f"PlotSpec renderer failed: {exc}",
                 details={"context": "plot_rendering", "original_error": str(exc)},

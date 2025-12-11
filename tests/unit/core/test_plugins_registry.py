@@ -326,7 +326,7 @@ def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
         lambda: fake_entries,
     )
 
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         loaded = registry.load_entrypoint_plugins()
 
     assert loaded == ()
@@ -612,7 +612,7 @@ def test_verify_plugin_checksum_success_and_failure(monkeypatch):
         "_resolve_plugin_module_file",
         lambda plugin: module_path.with_name("nonexistent_file"),
     )
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         registry._verify_plugin_checksum(object(), meta_missing)
 
     with pytest.raises(ValidationError, match="must be a string or mapping"):
@@ -873,7 +873,7 @@ def test_trust_normalisation_helpers(monkeypatch):
     assert registry._should_trust(meta_env) is True
 
     meta_untrusted = {"name": "manual", "provider": "tests"}
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         registry._warn_untrusted_plugin(meta_untrusted, source="entry")
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("error", RuntimeWarning)
@@ -947,7 +947,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entry_points)
 
     try:
-        with pytest.warns(RuntimeWarning):
+        with pytest.warns(UserWarning):
             loaded = registry.load_entrypoint_plugins()
         assert {plugin.plugin_meta["name"] for plugin in loaded} == {"entry.trusted", "entry.attr"}
         # untrusted plugin should not be registered when include_untrusted is False

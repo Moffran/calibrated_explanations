@@ -168,7 +168,8 @@ def test_getitem_slice_singleton_returns_explanation(collection: CalibratedExpla
 
 
 def test_getitem_invalid_type_raises(collection: CalibratedExplanations) -> None:
-    with pytest.raises(TypeError):
+    from calibrated_explanations.core.exceptions import ValidationError
+    with pytest.raises(ValidationError):
         _ = collection[1.5]  # type: ignore[index]
 
 

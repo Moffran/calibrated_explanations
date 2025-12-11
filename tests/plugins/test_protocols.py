@@ -7,6 +7,8 @@ from typing import Any, Mapping
 
 import pytest
 
+from calibrated_explanations.core.exceptions import ValidationError
+
 from calibrated_explanations.plugins import (
     ClassificationIntervalCalibrator,
     ExplanationBatch,
@@ -344,8 +346,10 @@ def test_plot_protocol_runtime_checks() -> None:
 def test_validate_explanation_batch_invalid_batch_type() -> None:
     from calibrated_explanations.plugins.explanations import validate_explanation_batch
 
+    from calibrated_explanations.core.exceptions import ValidationError
+
     with pytest.raises(
-        TypeError, match="explanation plugins must return an ExplanationBatch instance"
+        ValidationError, match="explanation plugins must return an ExplanationBatch instance"
     ):
         validate_explanation_batch("not a batch")
 
@@ -363,7 +367,7 @@ def test_validate_explanation_batch_invalid_container_cls() -> None:
         instances=[],
         collection_metadata={},
     )
-    with pytest.raises(TypeError, match="batch.container_cls must be a class"):
+    with pytest.raises(ValidationError, match="batch.container_cls must be a class"):
         validate_explanation_batch(batch)
 
 
@@ -381,7 +385,7 @@ def test_validate_explanation_batch_invalid_container_inheritance() -> None:
         collection_metadata={},
     )
     with pytest.raises(
-        TypeError, match="batch.container_cls must inherit from CalibratedExplanations"
+        ValidationError, match="batch.container_cls must inherit from CalibratedExplanations"
     ):
         validate_explanation_batch(batch)
 
@@ -399,7 +403,7 @@ def test_validate_explanation_batch_invalid_explanation_cls() -> None:
         instances=[],
         collection_metadata={},
     )
-    with pytest.raises(TypeError, match="batch.explanation_cls must be a class"):
+    with pytest.raises(ValidationError, match="batch.explanation_cls must be a class"):
         validate_explanation_batch(batch)
 
 
@@ -417,7 +421,7 @@ def test_validate_explanation_batch_invalid_instances_type() -> None:
         instances="not a sequence",
         collection_metadata={},
     )
-    with pytest.raises(TypeError, match="batch.instances must be a sequence of mappings"):
+    with pytest.raises(ValidationError, match="batch.instances must be a sequence of mappings"):
         validate_explanation_batch(batch)
 
 
@@ -436,7 +440,7 @@ def test_validate_explanation_batch_invalid_instance_mapping() -> None:
         collection_metadata={},
     )
     with pytest.raises(
-        TypeError, match="batch.instances\\[0\\] must be a mapping describing the instance"
+        ValidationError, match="batch.instances\\[0\\] must be a mapping describing the instance"
     ):
         validate_explanation_batch(batch)
 

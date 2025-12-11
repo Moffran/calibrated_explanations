@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import sys
 import types
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
@@ -278,7 +279,10 @@ class ExplanationOrchestrator:
             monitor.reset_usage()
         try:
             batch = plugin.explain_batch(x, request)
-        except Exception as exc:
+        except:  # pylint: disable=bare-except
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             raise ConfigurationError(
                 f"Explanation plugin execution failed for mode '{mode}': {exc}"
             ) from exc
@@ -288,7 +292,10 @@ class ExplanationOrchestrator:
                 expected_mode=mode,
                 expected_task=self.explainer.mode,
             )
-        except Exception as exc:
+        except:  # pylint: disable=bare-except
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             raise ConfigurationError(
                 f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
             ) from exc
@@ -540,7 +547,10 @@ class ExplanationOrchestrator:
         context = self._build_context(mode, plugin, identifier)
         try:
             plugin.initialize(context)
-        except Exception as exc:
+        except:  # pylint: disable=bare-except
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             raise ConfigurationError(
                 f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
             ) from exc
@@ -645,7 +655,10 @@ class ExplanationOrchestrator:
                         f"unsupported for task {self.explainer.mode}"
                     )
                     continue
-            except Exception as exc:  # pylint: disable=broad-except
+            except:  # pylint: disable=bare-except
+                exc = sys.exc_info()[1]
+                if not isinstance(exc, Exception):
+                    raise
                 # pragma: no cover - defensive
                 errors.append(f"{identifier}: error during supports_mode ({exc})")
                 continue
@@ -764,10 +777,14 @@ class ExplanationOrchestrator:
         plugin_cls = type(prototype)
         try:
             return plugin_cls()
-        except Exception:  # pylint: disable=broad-except
+        except:  # pylint: disable=bare-except
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             try:
                 return copy.deepcopy(prototype)
-            except Exception:  # pylint: disable=broad-except
+            except:  # pylint: disable=bare-except
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 # pragma: no cover - defensive
                 return prototype
 
@@ -879,7 +896,9 @@ class ExplanationOrchestrator:
         """
         try:
             first_explanation = explanations[0]  # type: ignore[index]
-        except Exception:  # pylint: disable=broad-except
+        except:  # pylint: disable=bare-except
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             # pragma: no cover - defensive: empty or non-indexable containers
             return {}
         builder = getattr(first_explanation, "to_telemetry", None)

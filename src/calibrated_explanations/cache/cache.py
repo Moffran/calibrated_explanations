@@ -37,7 +37,9 @@ try:  # pragma: no cover - behaviour varies by environment
     import cachetools
 
     _HAVE_CACHETOOLS = True
-except Exception:  # pragma: no cover - tested indirectly in CI when missing
+except:  # noqa: E722
+    if not isinstance(sys.exc_info()[1], Exception):
+        raise
     cachetools = None  # type: ignore
     _HAVE_CACHETOOLS = False
     # Provide a tiny, well-tested fallback for environments where
@@ -179,14 +181,18 @@ def _default_size_estimator(value: Any) -> int:
     if hasattr(value, "nbytes"):
         try:
             return int(value.nbytes)  # type: ignore[arg-type]
-        except Exception as exc:  # pragma: no cover - extremely defensive
-            logger.debug("Failed to read nbytes attribute for %s: %s", type(value).__name__, exc)
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            logger.debug("Failed to read nbytes attribute for %s: %s", type(value).__name__, sys.exc_info()[1])
     if hasattr(value, "__array_interface__"):
         try:
             view = np.asarray(value)
             return int(view.nbytes)
-        except Exception as exc:  # pragma: no cover - extremely defensive
-            logger.debug("Failed to coerce array interface for %s: %s", type(value).__name__, exc)
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            logger.debug("Failed to coerce array interface for %s: %s", type(value).__name__, sys.exc_info()[1])
     # Fallback constant that biases towards early eviction instead of OOM
     return 256
 
@@ -465,7 +471,9 @@ class LRUCache(Generic[K, V]):
         """Best-effort estimate of object size, swallowing estimator errors."""
         try:
             return int(self._size_estimator(value))
-        except Exception:  # pragma: no cover - defensive fall-back
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             return 0
 
     def _evict_oldest(self) -> None:
@@ -492,8 +500,10 @@ class LRUCache(Generic[K, V]):
             return
         try:  # pragma: no cover - telemetry is optional best effort
             self._telemetry(event, {"namespace": self.namespace, **payload})
-        except Exception as exc:
-            logger.debug("Telemetry callback failed for %s: %s", event, exc)
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            logger.debug("Telemetry callback failed for %s: %s", event, sys.exc_info()[1])
 
 
 @dataclass

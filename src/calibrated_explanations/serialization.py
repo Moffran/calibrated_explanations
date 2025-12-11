@@ -10,6 +10,7 @@ Note: Schema validation has been moved to calibrated_explanations.schema.
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any, Mapping
 
 from .core.exceptions import ValidationError
@@ -67,7 +68,7 @@ def _validate_invariants(payload: dict[str, Any]) -> None:
         if predict is None or low is None or high is None:
             return
 
-        try:
+        with contextlib.suppress(TypeError, ValueError):
             # Handle scalar values (common case)
             if (
                 isinstance(predict, (int, float))
@@ -88,9 +89,6 @@ def _validate_invariants(payload: dict[str, Any]) -> None:
                             f"{context}: prediction invariant violated (predict not in [low, high])",
                             details={"predict": predict, "low": low, "high": high},
                         )
-        except (TypeError, ValueError):
-            # Skip validation for non-numeric types (e.g. class labels in predict)
-            pass
 
     check(payload.get("prediction"), "Global prediction")
     for i, rule in enumerate(payload.get("rules", []) or []):

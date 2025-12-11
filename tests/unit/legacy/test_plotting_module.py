@@ -666,7 +666,7 @@ def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
     x_vals = np.zeros((3, 1))
     y_vals = np.array([0.1, 0.3, 0.5])
 
-    with pytest.warns(RuntimeWarning), pytest.raises(AssertionError):
+    with pytest.warns(UserWarning), pytest.raises(AssertionError):
         legacy_plotting._plot_global(
             explainer,
             x_vals,
@@ -709,7 +709,7 @@ def test_plot_global_requires_scalar_threshold():
     x_values = np.zeros((3, 1))
     y = np.array([0.1, 0.2, 0.3])
 
-    with pytest.warns(RuntimeWarning), pytest.raises(AssertionError):
+    with pytest.warns(UserWarning), pytest.raises(AssertionError):
         legacy_plotting._plot_global(
             explainer,
             x_values,

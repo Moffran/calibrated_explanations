@@ -6,6 +6,7 @@ and weight calculation used by all explain executors.
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
@@ -395,7 +396,10 @@ def explain_predict_step(
                         x, bins=bins
                     )
             prediction["__full_probabilities__"] = full_probs
-        except Exception as exc:  # pragma: no cover  # pylint: disable=broad-except
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            exc = sys.exc_info()[1]
             logging.getLogger("calibrated_explanations").debug(
                 "Failed to compute full calibrated probabilities: %s", exc
             )

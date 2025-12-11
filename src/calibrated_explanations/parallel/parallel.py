@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
@@ -13,7 +14,9 @@ from typing import Any, Callable, Iterable, List, Literal, Mapping, Sequence, Ty
 try:  # pragma: no cover - optional dependency
     from joblib import Parallel as _JoblibParallel
     from joblib import delayed as _joblib_delayed
-except Exception:  # pragma: no cover - joblib remains optional
+except:  # pragma: no cover - joblib remains optional
+    if not isinstance(sys.exc_info()[1], Exception):
+        raise
     _JoblibParallel = None  # type: ignore[assignment]
     _joblib_delayed = None  # type: ignore[assignment]
 
@@ -151,7 +154,10 @@ class ParallelExecutor:
                 if _JoblibParallel is not None:
                     n_jobs = self.config.max_workers or -1
                     self._pool = _JoblibParallel(n_jobs=n_jobs, prefer="processes")
-        except Exception as exc:
+        except:
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             logger.warning("Failed to initialize parallel pool: %s. Falling back to serial.", exc)
             self._pool = None
             self._active_strategy_name = "sequential"
@@ -177,7 +183,9 @@ class ParallelExecutor:
                 try:
                     # Python 3.9+ supports cancel_futures
                     self._pool.shutdown(wait=False, cancel_futures=True)
-                except TypeError:
+                except:
+                    if not isinstance(sys.exc_info()[1], TypeError):
+                        raise
                     # Fallback for older Pythons or executors without cancel_futures
                     self._pool.shutdown(wait=False)
             self._pool = None
@@ -209,7 +217,10 @@ class ParallelExecutor:
         try:
             strategy = self._resolve_strategy(work_items=candidate)
             results = strategy(fn, items_list, workers=workers, chunksize=chunksize)
-        except Exception as exc:  # pragma: no cover - best effort fallback
+        except:  # pragma: no cover - best effort fallback
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             self.metrics.failures += 1
             self.metrics.fallbacks += 1
             self._emit("parallel_fallback", {"error": repr(exc)})
@@ -386,7 +397,10 @@ class ParallelExecutor:
             return
         try:  # pragma: no cover - telemetry best effort
             self.config.telemetry(event, payload)
-        except Exception as exc:
+        except:
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             logger.debug("Parallel telemetry callback failed for %s: %s", event, exc)
 
 

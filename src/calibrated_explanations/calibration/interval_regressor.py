@@ -13,7 +13,7 @@ from functools import singledispatchmethod
 import crepes
 import numpy as np
 
-from calibrated_explanations.core import ConfigurationError, DataShapeError
+from calibrated_explanations.core import ConfigurationError, DataShapeError, ValidationError
 
 from ..utils import safe_first_element
 from .venn_abers import VennAbers
@@ -340,7 +340,7 @@ class IntervalRegressor:
             y_threshold : float or tuple
                 Threshold defining the calibration target event.
         """
-        raise TypeError("y_threshold must be a float or a tuple.")
+        raise ValidationError("y_threshold must be a float or a tuple.")
 
     @compute_proba_cal.register(numbers.Real)
     def _(self, y_threshold: numbers.Real):

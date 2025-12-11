@@ -142,7 +142,7 @@ def test_register_explanation_plugin_warns_when_module_missing(tmp_path):
     MissingFilePlugin.__module__ = module_name
 
     try:
-        with pytest.warns(RuntimeWarning, match="Cannot verify checksum"):
+        with pytest.warns(UserWarning, match="Cannot verify checksum"):
             registry.register_explanation_plugin("checksum.missing", MissingFilePlugin())
     finally:
         registry.clear()

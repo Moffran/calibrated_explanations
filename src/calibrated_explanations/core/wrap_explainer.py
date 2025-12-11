@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging as _logging
+import sys
 import warnings as _warnings
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping
@@ -73,11 +74,10 @@ class WrapCalibratedExplainer:
         self.calibrated = False
 
         # Check if the learner is already fitted
-        try:
+        self.fitted = False
+        with suppress(TypeError, RuntimeError, NotFittedError):
             check_is_fitted(learner)
             self.fitted = True
-        except (TypeError, RuntimeError, NotFittedError):
-            self.fitted = False
 
     def __repr__(self) -> str:
         """Return the string representation of the WrapCalibratedExplainer."""
@@ -124,7 +124,10 @@ class WrapCalibratedExplainer:
             else:
                 w._perf_cache = None
                 w._perf_parallel = None
-        except Exception as exc:  # pragma: no cover - defensive
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            exc = sys.exc_info()[1]
             w._perf_cache = None
             w._perf_parallel = None
             w._logger.debug("Failed to initialize perf primitives from config: %s", exc)
@@ -133,7 +136,10 @@ class WrapCalibratedExplainer:
             w._preprocessor = cfg.preprocessor  # type: ignore[attr-defined]
             w._auto_encode = cfg.auto_encode  # type: ignore[attr-defined]
             w._unseen_category_policy = cfg.unseen_category_policy  # type: ignore[attr-defined]
-        except Exception as exc:  # pragma: no cover - defensive
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            exc = sys.exc_info()[1]
             _logging.getLogger(__name__).warning(
                 "Failed to transfer preprocessing config to wrapper: %s", exc
             )
@@ -735,7 +741,9 @@ class WrapCalibratedExplainer:
         if hasattr(value, "tolist"):
             try:
                 return value.tolist()  # numpy/pandas friendly
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 return str(value)
         if isinstance(value, (str, int, float, bool)):
             return value
@@ -748,7 +756,9 @@ class WrapCalibratedExplainer:
         if callable(getter):
             try:
                 custom_snapshot = getter()
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 custom_snapshot = None
             if custom_snapshot is not None:
                 snapshot["custom"] = self._serialise_preprocessor_value(custom_snapshot)
@@ -816,7 +826,10 @@ class WrapCalibratedExplainer:
                 x_out = self._preprocessor.transform(x)
             self._pre_fitted = True
             return x_out
-        except Exception as exc:  # pragma: no cover - defensive guard
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            exc = sys.exc_info()[1]
             self._logger.warning("Preprocessor failed; proceeding without it: %s", exc)
             return x
 
@@ -826,7 +839,10 @@ class WrapCalibratedExplainer:
             if self._preprocessor is None or not self._pre_fitted:
                 return x
             return self._preprocessor.transform(x)
-        except Exception as exc:  # pragma: no cover
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            exc = sys.exc_info()[1]
             self._logger.warning("Preprocessor transform failed at %s; bypassing: %s", stage, exc)
             return x
 

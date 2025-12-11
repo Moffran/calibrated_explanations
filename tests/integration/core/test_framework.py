@@ -55,7 +55,9 @@ def test_check_is_fitted_with_non_fitted_model():
     """
     with pytest.raises(NotFittedError):
         check_is_fitted(RandomForestClassifier())
-    with pytest.raises(TypeError):
+    from calibrated_explanations.core.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
         check_is_fitted(RandomForestClassifier)
 
 

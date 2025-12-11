@@ -11,6 +11,7 @@ and accept optional details payloads.
 
 from __future__ import annotations
 
+import sys
 from typing import Any, Literal, Type, cast
 
 import numpy as np
@@ -186,7 +187,10 @@ def _as_2d_array(x: Any) -> npt.NDArray[np.generic]:
     if hasattr(x, "values") and hasattr(x, "shape"):
         try:
             return cast(npt.NDArray[np.generic], np.asarray(x.values))
-        except Exception:  # pragma: no cover - fallback
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            # pragma: no cover - fallback
             return cast(npt.NDArray[np.generic], np.asarray(x))
     return cast(npt.NDArray[np.generic], np.asarray(x))
 

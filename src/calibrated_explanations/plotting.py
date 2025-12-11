@@ -11,6 +11,7 @@ import configparser
 import contextlib
 import logging
 import os
+import sys
 import warnings
 from pathlib import Path, PurePath
 from types import MappingProxyType
@@ -34,11 +35,15 @@ def _derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
             lo = float(threshold[0])
             hi = float(threshold[1])
             return (f"{lo:.2f} <= Y < {hi:.2f}", "Outside interval")
-    except Exception as exc:
-        logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", exc)
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
+        logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", sys.exc_info()[1])
     try:
         value = float(threshold)
-    except Exception:
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         return ("Target within threshold", "Outside threshold")
     return (f"Y < {value:.2f}", f"Y >= {value:.2f}")
 
@@ -59,10 +64,12 @@ try:
     # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
     import matplotlib.image  # noqa: F401
     import matplotlib.pyplot as plt
-except Exception as _e:  # pragma: no cover - optional dependency guard
+except:  # pragma: no cover - optional dependency guard
+    if not isinstance(sys.exc_info()[1], Exception):
+        raise
     mcolors = None  # type: ignore[assignment]
     plt = None  # type: ignore[assignment]
-    _MATPLOTLIB_IMPORT_ERROR = _e
+    _MATPLOTLIB_IMPORT_ERROR = sys.exc_info()[1]
 else:
     _MATPLOTLIB_IMPORT_ERROR = None
 
@@ -78,7 +85,9 @@ def _read_plot_pyproject() -> Dict[str, Any]:
     try:
         with candidate.open("rb") as fh:  # type: ignore[arg-type]
             data = _plot_tomllib.load(fh)
-    except Exception:  # pragma: no cover - permissive fallback
+    except:  # pragma: no cover - permissive fallback
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         return {}
 
     cursor: Any = data
@@ -344,7 +353,9 @@ def _plot_probabilistic(
     if use_legacy is None:
         try:
             explainer = explanation._get_explainer()
-        except Exception:  # pragma: no cover - defensive
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             explainer = getattr(explanation, "calibrated_explanations", None)
             if explainer is not None:
                 explainer = getattr(explainer, "calibrated_explainer", None)
@@ -392,7 +403,9 @@ def _plot_probabilistic(
     def _finite_or(value: Any, fallback: float) -> float:
         try:
             val = float(value)
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             return fallback
         if not np.isfinite(val):
             return fallback
@@ -408,7 +421,9 @@ def _plot_probabilistic(
         try:
             low_fallback = float(y_minmax[0])
             high_fallback = float(y_minmax[1])
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             low_fallback = base_pred
             high_fallback = base_pred
 
@@ -421,10 +436,8 @@ def _plot_probabilistic(
 
     # Attempt to extract class labels for header annotation and captioning
     class_labels = None
-    try:
+    with contextlib.suppress(Exception):
         class_labels = explanation.get_class_labels()
-    except Exception:
-        class_labels = None
 
     neg_caption: str | None = None
     pos_caption: str | None = None
@@ -438,14 +451,14 @@ def _plot_probabilistic(
     def _format_class(value: Any) -> str:
         try:
             return str(value)
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             return ""
 
     is_thresholded = False
-    try:
+    with contextlib.suppress(Exception):
         is_thresholded = explanation.is_thresholded()
-    except Exception:
-        is_thresholded = False
 
     if is_thresholded:
         threshold = getattr(explanation, "y_threshold", None)
@@ -462,14 +475,18 @@ def _plot_probabilistic(
             else:
                 neg_caption = "P(y>threshold)"
                 pos_caption = "P(y<=threshold)"
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             neg_caption = "P(y>threshold)"
             pos_caption = "P(y<=threshold)"
     else:
         is_multiclass = False
         try:
             is_multiclass = explanation._get_explainer().is_multiclass()  # type: ignore[attr-defined]
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             is_multiclass = bool(getattr(explanation, "is_multiclass", False))
 
         if class_labels is None:
@@ -485,11 +502,15 @@ def _plot_probabilistic(
             if prediction_classes is not None:
                 try:
                     pred_idx = int(prediction_classes)
-                except Exception:
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     pred_idx = 0
             try:
                 label_val = class_labels[pred_idx]
-            except Exception:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 label_val = prediction_classes
             label_str = _format_class(label_val)
             neg_caption = f"P(y!={label_str})"
@@ -498,7 +519,9 @@ def _plot_probabilistic(
             try:
                 neg_label = class_labels[0]
                 pos_label = class_labels[1]
-            except Exception:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 neg_label = class_labels[0] if class_labels else None
                 pos_label = class_labels[1] if class_labels and len(class_labels) > 1 else None
             if neg_label is not None:
@@ -542,9 +565,11 @@ def _plot_probabilistic(
 
             for ext in save_ext:
                 _render(spec, show=False, save_path=_format_save_path(path, title + ext))
-    except Exception as exc:  # pragma: no cover - fallback path
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         warnings.warn(
-            f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
             stacklevel=2,
         )
         legacy._plot_probabilistic(
@@ -621,15 +646,19 @@ def _plot_regression(
                 raise Warning("Interval plot is not supported for one-sided explanations.")
         except Warning:
             raise
-        except Exception as exc:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             # If the guard fails unexpectedly, defer to legacy parity by proceeding.
-            logging.getLogger(__name__).debug("Guard check failed: %s", exc)
+            logging.getLogger(__name__).debug("Guard check failed: %s", sys.exc_info()[1])
 
     explainer = None
     if use_legacy is None:
         try:
             explainer = explanation._get_explainer()
-        except Exception:  # pragma: no cover - defensive
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             explainer = getattr(explanation, "calibrated_explanations", None)
             if explainer is not None:
                 explainer = getattr(explainer, "calibrated_explainer", None)
@@ -678,7 +707,9 @@ def _plot_regression(
         calibrated = getattr(explanation, "calibrated_explanations", None)
         if calibrated is not None:
             confidence = calibrated.get_confidence()
-    except Exception:
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         confidence = None
 
     spec = build_regression_bars_spec(
@@ -702,9 +733,11 @@ def _plot_regression(
         if save_ext is not None and len(save_ext) > 0 and path is not None and title is not None:
             for ext in save_ext:
                 render_plotspec(spec, show=False, save_path=_format_save_path(path, title + ext))
-    except Exception as exc:  # pragma: no cover - fallback path
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         warnings.warn(
-            f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
             stacklevel=2,
         )
         legacy._plot_regression(
@@ -888,7 +921,9 @@ def _plot_alternative(
     if use_legacy is None:
         try:
             explainer = explanation._get_explainer()
-        except Exception:  # pragma: no cover - defensive
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             explainer = getattr(explanation, "calibrated_explanations", None)
             if explainer is not None:
                 explainer = getattr(explainer, "calibrated_explainer", None)
@@ -937,7 +972,9 @@ def _plot_alternative(
     if isinstance(y_minmax, Sequence) and len(y_minmax) >= 2:
         try:
             y0, y1 = float(y_minmax[0]), float(y_minmax[1])
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             normalised_y_minmax = None
         else:
             if np.isfinite(y0) and np.isfinite(y1):
@@ -946,7 +983,9 @@ def _plot_alternative(
     def _safe_float(value: Any) -> float | None:
         try:
             val = float(value)
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             return None
         if not np.isfinite(val):
             return None
@@ -1012,22 +1051,28 @@ def _plot_alternative(
             if isinstance(values, Sequence):
                 try:
                     feature_count = max(feature_count, len(values))
-                except TypeError:  # pragma: no cover - defensive
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], TypeError):
+                        raise
                     continue
                 if feature_count:
                     break
     elif isinstance(feature_payload, Sequence):
         try:
             feature_count = len(feature_payload)
-        except TypeError:  # pragma: no cover - defensive
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], TypeError):
+                raise
             feature_count = 0
 
     normalised_indices: list[int] = []
     for idx in features_to_plot:
         try:
             value = int(idx)
-        except Exception as exc:
-            logging.getLogger(__name__).debug("Failed to convert feature index to int: %s", exc)
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            logging.getLogger(__name__).debug("Failed to convert feature index to int: %s", sys.exc_info()[1])
             continue
         if value < 0:
             continue
@@ -1053,7 +1098,9 @@ def _plot_alternative(
         mode = ""
         try:
             mode = str(explanation.get_mode() or "")
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             mode = ""
         is_regression = "regression" in mode
 
@@ -1065,10 +1112,8 @@ def _plot_alternative(
         is_thresholded = False
         if not is_regression:
             class_labels = None
-            try:
+            with contextlib.suppress(Exception):
                 class_labels = explanation.get_class_labels()
-            except Exception:
-                class_labels = None
             if class_labels is not None and len(class_labels) >= 2:
                 try:
                     prediction = getattr(explanation, "prediction", {})
@@ -1078,16 +1123,16 @@ def _plot_alternative(
                     pos_label = class_labels[cls_idx]
                     neg_idx = 0 if cls_idx != 0 else 1
                     neg_label = class_labels[neg_idx]
-                except Exception:
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     neg_label = None
                     pos_label = None
             # Legacy plots fixed the probability axis to [0,1] with evenly spaced ticks
             xlim_override = (0.0, 1.0)
             xticks_override = [float(x) for x in np.linspace(0.0, 1.0, 11)]
-            try:
+            with contextlib.suppress(Exception):
                 is_thresholded = bool(explanation.is_thresholded())
-            except Exception:
-                is_thresholded = False
             if is_thresholded:
                 threshold_value = getattr(explanation, "y_threshold", None)
                 if np.isscalar(threshold_value):
@@ -1095,7 +1140,9 @@ def _plot_alternative(
                         x_axis_label = (
                             f"Probability of target being below {float(threshold_value):.2f}"
                         )
-                    except Exception:
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
                         x_axis_label = "Probability"
                 elif isinstance(threshold_value, tuple) and len(threshold_value) >= 2:
                     try:
@@ -1103,14 +1150,18 @@ def _plot_alternative(
                             "Probability of target being between "
                             f"{float(threshold_value[0]):.3f} and {float(threshold_value[1]):.3f}"
                         )
-                    except Exception:
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
                         x_axis_label = "Probability"
                 else:
                     try:
                         x_axis_label = (
                             f"Probability of target being below {float(threshold_value):.2f}"
                         )
-                    except Exception:
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
                         x_axis_label = "Probability"
             else:
                 predicted_idx = None
@@ -1118,7 +1169,9 @@ def _plot_alternative(
                     prediction = getattr(explanation, "prediction", None)
                     if isinstance(prediction, Mapping):
                         predicted_idx = prediction.get("classes")
-                except Exception:
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     predicted_idx = None
                 idx_value = None
                 if predicted_idx is not None:
@@ -1143,17 +1196,17 @@ def _plot_alternative(
                 if x_axis_label is None:
                     x_axis_label = "Probability"
         else:
-            try:
+            with contextlib.suppress(Exception):
                 is_thresholded = bool(explanation.is_thresholded())
-            except Exception:
-                is_thresholded = False
             if normalised_y_minmax is not None:
                 try:
                     xlim_override = (
                         float(normalised_y_minmax[0]),
                         float(normalised_y_minmax[1]),
                     )
-                except Exception:
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     xlim_override = None
             if xlim_override is None:
                 try:
@@ -1161,14 +1214,18 @@ def _plot_alternative(
                         float(predict_payload.get("low", 0.0)),
                         float(predict_payload.get("high", 0.0)),
                     )
-                except Exception:
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     xlim_override = None
             confidence = None
             try:
                 calibrated = getattr(explanation, "calibrated_explanations", None)
                 if calibrated is not None:
                     confidence = calibrated.get_confidence()
-            except Exception:
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 confidence = None
             if is_thresholded:
                 xlim_override = (0.0, 1.0)
@@ -1179,7 +1236,9 @@ def _plot_alternative(
                         x_axis_label = (
                             f"Probability of target being below {float(threshold_value):.2f}"
                         )
-                    except Exception:
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
                         x_axis_label = "Probability"
                 elif isinstance(threshold_value, tuple) and len(threshold_value) >= 2:
                     try:
@@ -1187,14 +1246,18 @@ def _plot_alternative(
                             "Probability of target being between "
                             f"{float(threshold_value[0]):.3f} and {float(threshold_value[1]):.3f}"
                         )
-                    except Exception:
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
                         x_axis_label = "Probability"
                 else:
                     try:
                         x_axis_label = (
                             f"Probability of target being below {float(threshold_value):.2f}"
                         )
-                    except Exception:
+                    except:  # noqa: E722
+                        if not isinstance(sys.exc_info()[1], Exception):
+                            raise
                         x_axis_label = "Probability"
             else:
                 if confidence is not None:
@@ -1262,9 +1325,11 @@ def _plot_alternative(
                     render_plotspec(
                         spec, show=False, save_path=_format_save_path(path, title + ext)
                     )
-        except Exception as exc:  # pragma: no cover - fallback path
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             warnings.warn(
-                f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
+                f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
                 stacklevel=2,
             )
             legacy._plot_alternative(
@@ -1280,9 +1345,11 @@ def _plot_alternative(
                 show,
                 save_ext,
             )
-    except Exception as exc:  # pragma: no cover - fallback path
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         warnings.warn(
-            f"PlotSpec rendering failed with '{exc}'. Falling back to legacy plot.",
+            f"PlotSpec rendering failed with '{sys.exc_info()[1]}'. Falling back to legacy plot.",
             stacklevel=2,
         )
         legacy._plot_alternative(
@@ -1412,8 +1479,10 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
         try:
             artifact = plugin.build(context)
             result = plugin.render(artifact, context=context)
-        except Exception as exc:  # pragma: no cover - plugin failures
-            errors.append(f"{identifier}: {exc}")
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            errors.append(f"{identifier}: {sys.exc_info()[1]}")
             continue
         return result
 

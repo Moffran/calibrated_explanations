@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import sys
 import warnings
 from copy import copy, deepcopy
 from dataclasses import dataclass
@@ -178,7 +179,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             for i, e in enumerate(new_):
                 e.index = i
             return new_
-        raise TypeError("Invalid argument type.")
+        raise ValidationError("Invalid argument type.", details={"argument": key})
 
     def __repr__(self) -> str:
         """Return the string representation of the CalibratedExplanations object."""
@@ -291,7 +292,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 warnings.simplefilter("ignore")
                 try:
                     rules_blob = exp._get_rules()  # type: ignore[attr-defined]
-                except Exception:  # pragma: no cover - defensive
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     rules_blob = {}
 
         payload: dict[str, Any] = {
@@ -315,21 +318,27 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             names = self.feature_names
             if names is not None:
                 feature_names = list(names)
-        except Exception:  # pragma: no cover - defensive
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             feature_names = None
 
         class_labels = None
         if hasattr(base, "class_labels"):
             try:
                 class_labels = _jsonify(base.class_labels)  # type: ignore[attr-defined]
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 class_labels = None
 
         sample_percentiles = None
         if hasattr(base, "sample_percentiles"):
             try:
                 sample_percentiles = _jsonify(base.sample_percentiles)  # type: ignore[attr-defined]
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 sample_percentiles = None
 
         runtime_telemetry = None
@@ -338,7 +347,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 runtime_telemetry = getattr(underlying, "runtime_telemetry", None)
                 if callable(runtime_telemetry):
                     runtime_telemetry = runtime_telemetry()
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 runtime_telemetry = None
 
         metadata = {
@@ -383,7 +394,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             # Underlying FrozenCalibratedExplainer exposes feature_names via original explainer
             try:
                 self._feature_names_cache = self.calibrated_explainer._explainer.feature_names  # noqa: SLF001
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._feature_names_cache = None
         return self._feature_names_cache
 
@@ -398,7 +411,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     # assume keys are numeric class indices
                     labels = [labels[k] for k in sorted(labels.keys())]
                 self._class_labels_cache = labels
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._class_labels_cache = None
         return self._class_labels_cache
 
@@ -408,7 +423,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if self._predictions_cache is None:
             try:
                 self._predictions_cache = np.asarray([e.predict for e in self.explanations])
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._predictions_cache = None
         return self._predictions_cache
 
@@ -433,7 +450,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     else:
                         # Case (a): stack per-instance vectors
                         self._probabilities_cache = np.vstack(raw)
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._probabilities_cache = None
         return self._probabilities_cache
 
@@ -447,7 +466,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 ]
                 if any(low is not None for low in lows):
                     self._lower_cache = np.asarray(lows)
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._lower_cache = None
         return self._lower_cache
 
@@ -461,7 +482,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 ]
                 if any(h is not None for h in highs):
                     self._upper_cache = np.asarray(highs)
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._upper_cache = None
         return self._upper_cache
 

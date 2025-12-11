@@ -6,6 +6,7 @@ and instance-parallel explain executors per the plugin decomposition strategy.
 
 from __future__ import annotations
 
+import contextlib
 from collections import defaultdict
 from dataclasses import dataclass, field
 from time import time
@@ -75,26 +76,23 @@ def build_feature_tasks(
         if isinstance(lesser_values, Mapping):
             lesser_feature = lesser_values.get(feature_idx, {})
         else:
-            try:
+            lesser_feature = {}
+            with contextlib.suppress(IndexError, KeyError, TypeError):
                 lesser_feature = lesser_values[feature_idx]
-            except (IndexError, KeyError, TypeError):
-                lesser_feature = {}
 
         if isinstance(greater_values, Mapping):
             greater_feature = greater_values.get(feature_idx, {})
         else:
-            try:
+            greater_feature = {}
+            with contextlib.suppress(IndexError, KeyError, TypeError):
                 greater_feature = greater_values[feature_idx]
-            except (IndexError, KeyError, TypeError):
-                greater_feature = {}
 
         if isinstance(covered_values, Mapping):
             covered_feature = covered_values.get(feature_idx, {})
         else:
-            try:
+            covered_feature = {}
+            with contextlib.suppress(IndexError, KeyError, TypeError):
                 covered_feature = covered_values[feature_idx]
-            except (IndexError, KeyError, TypeError):
-                covered_feature = {}
 
         value_counts_cache = categorical_value_counts.get(int(feature_idx), {})
         numeric_sorted_values = numeric_sorted_cache.get(feature_idx)

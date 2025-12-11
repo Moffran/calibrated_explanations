@@ -50,7 +50,7 @@ class TestPredictionOrchestratorInvariants:
 
         with (
             patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result),
-            pytest.warns(RuntimeWarning, match="low > high"),
+            pytest.warns(UserWarning, match="low > high"),
         ):
             self.orchestrator._predict(np.array([[1]]))
 
@@ -60,7 +60,7 @@ class TestPredictionOrchestratorInvariants:
 
         with (
             patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result),
-            pytest.warns(RuntimeWarning, match="predict not in"),
+            pytest.warns(UserWarning, match="predict not in"),
         ):
             self.orchestrator._predict(np.array([[1]]))
 
@@ -70,7 +70,7 @@ class TestPredictionOrchestratorInvariants:
 
         with (
             patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result),
-            pytest.warns(RuntimeWarning, match="predict not in"),
+            pytest.warns(UserWarning, match="predict not in"),
         ):
             self.orchestrator._predict(np.array([[1]]))
 
@@ -93,7 +93,7 @@ class TestExplanationBatchInvariants:
             instances=[{"prediction": {"predict": 0.5, "low": 0.7, "high": 0.6}}],
             collection_metadata={"task": "regression", "mode": "test"},
         )
-        with pytest.warns(RuntimeWarning, match="low > high"):
+        with pytest.warns(UserWarning, match="low > high"):
             validate_explanation_batch(batch, expected_task="regression", expected_mode="test")
 
     def test_validate_batch_invalid_predict_out_of_bounds(self):
@@ -103,5 +103,5 @@ class TestExplanationBatchInvariants:
             instances=[{"prediction": {"predict": 0.3, "low": 0.4, "high": 0.6}}],
             collection_metadata={"task": "regression", "mode": "test"},
         )
-        with pytest.warns(RuntimeWarning, match="predict not in"):
+        with pytest.warns(UserWarning, match="predict not in"):
             validate_explanation_batch(batch, expected_task="regression", expected_mode="test")

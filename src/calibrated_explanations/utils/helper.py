@@ -125,7 +125,10 @@ def safe_import(module_name, class_name=None):
             f"The required module '{module_name}' is not installed. "
             f"Please install it using 'pip install {module_name}' or another method."
         ) from exc
-    except AttributeError as exc:
+    except:
+        exc = sys.exc_info()[1]
+        if not isinstance(exc, AttributeError):
+            raise
         raise ImportError(
             f"The class or function '{class_name}' does "
             + f"not exist in the module '{module_name}'."
@@ -180,10 +183,10 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
     NotFittedError
         If the attributes are not found.
     """
-    from calibrated_explanations.core import NotFittedError
+    from calibrated_explanations.core import NotFittedError, ValidationError
 
     if isclass(estimator):
-        raise TypeError(f"{estimator} is a class, not an instance.")
+        raise ValidationError(f"{estimator} is a class, not an instance.")
     if msg is None:
         msg = (
             "This %(name)s instance is not fitted yet. Call 'fit' with "
@@ -200,7 +203,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         or hasattr(estimator, "partial_fit")  # handle online models
         or hasattr(estimator, "learn_initial_training_set")
     ):  # handle online_cp package
-        raise TypeError(f"{estimator} is not an estimator instance.")
+        raise ValidationError(f"{estimator} is not an estimator instance.")
 
     if attributes is not None:
         if not isinstance(attributes, (list, tuple)):
@@ -225,7 +228,9 @@ def is_notebook():
 
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             return False
-    except (ImportError, AttributeError):
+    except:
+        if not isinstance(sys.exc_info()[1], (ImportError, AttributeError)):
+            raise
         return False
     return True
 
@@ -623,7 +628,9 @@ def safe_mean(values, default=0.0):
         if arr.size == 0:
             return default
         return float(np.mean(arr))
-    except Exception:
+    except:
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         return default
 
 
@@ -658,7 +665,9 @@ def safe_first_element(values, default=0.0, col=None):
         if arr.shape[0] > 0 and arr.shape[1] > col:
             return float(arr[0, col])
         return float(default)
-    except Exception:
+    except:
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         return float(default)
 
 

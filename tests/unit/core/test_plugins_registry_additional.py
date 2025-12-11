@@ -139,7 +139,7 @@ def test_verify_plugin_checksum_warnings_and_errors(monkeypatch, tmp_path):
 
     missing_path = tmp_path / "missing.py"
     monkeypatch.setattr(registry, "_resolve_plugin_module_file", lambda p: missing_path)
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         registry._verify_plugin_checksum(plugin, {"checksum": "deadbeef"})
 
     class FailingPath:
@@ -150,7 +150,7 @@ def test_verify_plugin_checksum_warnings_and_errors(monkeypatch, tmp_path):
             raise OSError("boom")
 
     monkeypatch.setattr(registry, "_resolve_plugin_module_file", lambda p: FailingPath())
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         registry._verify_plugin_checksum(plugin, {"checksum": "deadbeef"})
 
     module_file = tmp_path / "module.py"
@@ -618,7 +618,7 @@ def test_load_entrypoint_plugins_errors(monkeypatch):
         raise RuntimeError("boom")
 
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", boom)
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         assert registry.load_entrypoint_plugins() == ()
 
     class LegacyEntryPoints(list):
@@ -640,7 +640,7 @@ def test_load_entrypoint_plugins_errors(monkeypatch):
     monkeypatch.setattr(
         registry.importlib_metadata, "entry_points", lambda: LegacyEntryPoints([LegacyEntryPoint()])
     )
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         registry.load_entrypoint_plugins()
 
 

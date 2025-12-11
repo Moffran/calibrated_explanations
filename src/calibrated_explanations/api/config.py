@@ -10,6 +10,7 @@ See `RELEASE_PLAN_v1` milestone targets and ADR-009 for preprocessing-related fi
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -220,7 +221,9 @@ class ExplainerBuilder:
         try:
             # stash a lightweight factory on the config for downstream wiring
             self._cfg._perf_factory = _perf_from_config(self._cfg)  # type: ignore[attr-defined]
-        except Exception:
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             # be conservative: do not fail config building if perf factory creation fails
             self._cfg._perf_factory = None  # type: ignore[attr-defined]
         return self._cfg

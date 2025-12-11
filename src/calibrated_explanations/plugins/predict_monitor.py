@@ -7,6 +7,7 @@ Used for debugging, validation, and usage analytics.
 
 from __future__ import annotations
 
+import sys
 from typing import Any, List, Mapping, Sequence, Tuple
 
 import numpy as np
@@ -171,7 +172,7 @@ class PredictBridgeMonitor(PredictBridge):
 
                 warnings.warn(
                     "Prediction interval invariant violated: low > high. This indicates an issue with the underlying estimator.",
-                    RuntimeWarning,
+                    UserWarning,
                     stacklevel=2,
                 )
 
@@ -183,10 +184,12 @@ class PredictBridgeMonitor(PredictBridge):
 
                 warnings.warn(
                     "Prediction invariant violated: predict not in [low, high]. This may indicate poor calibration or inconsistent point predictions.",
-                    RuntimeWarning,
+                    UserWarning,
                     stacklevel=2,
                 )
-        except (TypeError, ValueError):
+        except:
+            if not isinstance(sys.exc_info()[1], (TypeError, ValueError)):
+                raise
             # Skip validation if type conversion or comparison fails
             pass
 

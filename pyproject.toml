@@ -10,9 +10,10 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "BSD-3-Clause"}
 authors = [
-  { name="Helena Löfström", email="helena.lofstrom@ju.se" },
-  { name="Tuwe Löfström", email="tuwe.lofstrom@ju.se" },
+  { name = "Helena Löfström", email = "helena.lofstrom@ju.se" },
+  { name = "Tuwe Löfström", email = "tuwe.lofstrom@ju.se" },
 ]
+
 dependencies = [
   'cachetools',
   'pympler',

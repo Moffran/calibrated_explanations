@@ -139,7 +139,10 @@ def _propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
     try:
         raw_meta["trusted"] = trusted_value
         raw_meta["trust"] = trust_value
-    except Exception:  # pragma: no cover - defensive
+    except:  # pylint: disable=bare-except
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
+        # pragma: no cover - defensive
         _LOGGER.debug(
             "Failed to propagate trust metadata for plugin %r",
             plugin,
@@ -157,7 +160,7 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
         "Skipping untrusted plugin '%s' from %s discovered via %s. "
         "Set CE_TRUST_PLUGIN or call trust_plugin('%s') to load it."
         % (name, provider, source, name),
-        RuntimeWarning,
+        UserWarning,
         stacklevel=3,
     )
     _WARNED_UNTRUSTED.add(name)
@@ -210,7 +213,7 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
         warnings.warn(
             "Cannot verify checksum for plugin '%s'; module file missing."
             % meta.get("name", "<unknown>"),
-            RuntimeWarning,
+            UserWarning,
             stacklevel=3,
         )
         return
@@ -221,7 +224,7 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
         warnings.warn(
             "Cannot read module for checksum verification for plugin '%s'."
             % meta.get("name", "<unknown>"),
-            RuntimeWarning,
+            UserWarning,
             stacklevel=3,
         )
         return
@@ -1240,10 +1243,14 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
     loaded: list[ExplainerPlugin] = []
     try:
         entry_points = importlib_metadata.entry_points()
-    except Exception as exc:  # pragma: no cover - defensive
+    except:  # pylint: disable=bare-except
+        exc = sys.exc_info()[1]
+        if not isinstance(exc, Exception):
+            raise
+        # pragma: no cover - defensive
         warnings.warn(
             f"Failed to enumerate plugin entry points: {exc}",
-            RuntimeWarning,
+            UserWarning,
             stacklevel=2,
         )
         return ()
@@ -1261,19 +1268,21 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
         )
         try:
             plugin = entry_point.load()
-        except Exception as exc:
+        except:  # pylint: disable=bare-except
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, Exception):
+                raise
             warnings.warn(
                 f"Failed to load plugin entry point {identifier!r}: {exc}",
-                RuntimeWarning,
+                UserWarning,
                 stacklevel=2,
             )
             continue
-
         raw_meta = getattr(plugin, "plugin_meta", None)
         if raw_meta is None:
             warnings.warn(
                 f"Plugin {identifier!r} does not expose plugin_meta; skipping.",
-                RuntimeWarning,
+                UserWarning,
                 stacklevel=2,
             )
             continue
@@ -1281,10 +1290,13 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
         meta: Dict[str, Any] = dict(raw_meta)
         try:
             validate_plugin_meta(meta)
-        except (ValueError, ValidationError) as exc:
+        except:  # pylint: disable=bare-except
+            exc = sys.exc_info()[1]
+            if not isinstance(exc, (ValueError, ValidationError)):
+                raise
             warnings.warn(
                 f"Invalid metadata for plugin {identifier!r}: {exc}",
-                RuntimeWarning,
+                UserWarning,
                 stacklevel=2,
             )
             continue
@@ -1539,7 +1551,10 @@ def register(plugin: ExplainerPlugin) -> None:
         try:
             raw_meta["trusted"] = meta["trusted"]
             raw_meta["trust"] = meta["trust"]
-        except Exception:  # pragma: no cover - defensive
+        except:  # pylint: disable=bare-except
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            # pragma: no cover - defensive
             _LOGGER.debug(
                 "Failed to propagate trust metadata for plugin %r",
                 plugin,
@@ -1585,7 +1600,10 @@ def _resolve_plugin_from_name(name: str) -> ExplainerPlugin:
             continue
         try:
             plugin_name = getter("name")
-        except Exception:  # pragma: no cover - defensive
+        except:  # pylint: disable=bare-except
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            # pragma: no cover - defensive
             _LOGGER.debug(
                 "Failed to read plugin name for %r",
                 plugin,
@@ -1652,7 +1670,9 @@ def _safe_supports(plugin: ExplainerPlugin, model: Any) -> bool:
     """Return True when a plugin reports support for *model* without raising."""
     try:
         return bool(plugin.supports(model))
-    except Exception:
+    except:  # pylint: disable=bare-except
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         return False
 
 

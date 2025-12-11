@@ -354,7 +354,7 @@ def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
     x_vals = np.zeros((3, 1))
     y_vals = np.array([0, 1, 0])
 
-    with pytest.warns(RuntimeWarning), pytest.raises(AssertionError):
+    with pytest.warns(UserWarning), pytest.raises(AssertionError):
         plotting._plot_global(
             explainer,
             x_vals,
