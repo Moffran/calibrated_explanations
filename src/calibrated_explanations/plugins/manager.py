@@ -142,6 +142,7 @@ class PluginManager:
     def __deepcopy__(self, memo):
         """Deepcopy the plugin manager, handling circular references and unpicklable objects."""
         import copy
+
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result

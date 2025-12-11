@@ -69,7 +69,11 @@ def _validate_invariants(payload: dict[str, Any]) -> None:
 
         try:
             # Handle scalar values (common case)
-            if isinstance(predict, (int, float)) and isinstance(low, (int, float)) and isinstance(high, (int, float)):
+            if (
+                isinstance(predict, (int, float))
+                and isinstance(low, (int, float))
+                and isinstance(high, (int, float))
+            ):
                 if not low <= high:
                     raise ValidationError(
                         f"{context}: interval invariant violated (low > high)",
@@ -92,7 +96,6 @@ def _validate_invariants(payload: dict[str, Any]) -> None:
     for i, rule in enumerate(payload.get("rules", []) or []):
         check(rule.get("rule_prediction"), f"Rule {i} prediction")
         check(rule.get("instance_prediction"), f"Rule {i} instance prediction")
-
 
 
 def from_json(obj: Mapping[str, Any]) -> Explanation:

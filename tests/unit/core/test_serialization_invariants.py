@@ -12,6 +12,7 @@ from calibrated_explanations import serialization
 from calibrated_explanations.core.exceptions import ValidationError
 from calibrated_explanations.explanations import Explanation, FeatureRule
 
+
 @pytest.fixture
 def base_explanation() -> Explanation:
     """Minimal valid explanation fixture."""
@@ -25,6 +26,7 @@ def base_explanation() -> Explanation:
         metadata=None,
     )
 
+
 def test_should_raise_validation_error_when_global_prediction_violates_low_high(
     base_explanation: Explanation,
 ) -> None:
@@ -35,6 +37,7 @@ def test_should_raise_validation_error_when_global_prediction_violates_low_high(
     # Act & Assert
     with pytest.raises(ValidationError, match="Global prediction: interval invariant violated"):
         serialization.to_json(base_explanation)
+
 
 def test_should_raise_validation_error_when_global_prediction_outside_interval(
     base_explanation: Explanation,
@@ -47,6 +50,7 @@ def test_should_raise_validation_error_when_global_prediction_outside_interval(
     with pytest.raises(ValidationError, match="Global prediction: prediction invariant violated"):
         serialization.to_json(base_explanation)
 
+
 def test_should_raise_validation_error_when_rule_prediction_violates_invariant(
     base_explanation: Explanation,
 ) -> None:
@@ -56,7 +60,7 @@ def test_should_raise_validation_error_when_rule_prediction_violates_invariant(
         feature=1,
         rule="x > 0",
         rule_weight={},
-        rule_prediction={"predict": 0.5, "low": 0.7, "high": 0.6}, # Invalid
+        rule_prediction={"predict": 0.5, "low": 0.7, "high": 0.6},  # Invalid
         instance_prediction=None,
         feature_value=1.0,
         is_conjunctive=False,
@@ -68,6 +72,7 @@ def test_should_raise_validation_error_when_rule_prediction_violates_invariant(
     # Act & Assert
     with pytest.raises(ValidationError, match="Rule 0 prediction: interval invariant violated"):
         serialization.to_json(base_explanation)
+
 
 def test_should_pass_when_invariants_are_satisfied(
     base_explanation: Explanation,

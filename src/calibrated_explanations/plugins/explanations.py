@@ -218,7 +218,6 @@ def validate_explanation_batch(
 
 def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> None:
     """Enforce low <= predict <= high invariant on prediction payload."""
-    from ..core.exceptions import ValidationError
     import numpy as np
 
     predict = payload.get("predict")
@@ -239,17 +238,21 @@ def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> 
             return
 
         # Check for numeric types
-        if not (np.issubdtype(predict_arr.dtype, np.number) and 
-                np.issubdtype(low_arr.dtype, np.number) and 
-                np.issubdtype(high_arr.dtype, np.number)):
+        if not (
+            np.issubdtype(predict_arr.dtype, np.number)
+            and np.issubdtype(low_arr.dtype, np.number)
+            and np.issubdtype(high_arr.dtype, np.number)
+        ):
             return
 
         # Check low <= high
         if not np.all(low_arr <= high_arr):
             import warnings
+
             warnings.warn(
                 f"{context}: interval invariant violated (low > high)",
-                RuntimeWarning
+                RuntimeWarning,
+                stacklevel=2,
             )
 
         # Check low <= predict <= high
@@ -257,11 +260,12 @@ def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> 
         epsilon = 1e-9
         if not np.all((low_arr - epsilon <= predict_arr) & (predict_arr <= high_arr + epsilon)):
             import warnings
+
             warnings.warn(
                 f"{context}: prediction invariant violated (predict not in [low, high])",
-                RuntimeWarning
+                RuntimeWarning,
+                stacklevel=2,
             )
     except (TypeError, ValueError):
         # Skip validation for non-numeric types or incompatible shapes
         pass
-

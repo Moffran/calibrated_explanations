@@ -12,7 +12,6 @@ from typing import Any, List, Mapping, Sequence, Tuple
 import numpy as np
 
 from ..plugins.predict import PredictBridge
-from ..core.exceptions import ValidationError
 
 
 class PredictBridgeMonitor(PredictBridge):
@@ -142,6 +141,7 @@ class PredictBridgeMonitor(PredictBridge):
             If the invariant is violated.
         """
         from collections.abc import Mapping
+
         if not isinstance(payload, Mapping):
             return
 
@@ -156,19 +156,23 @@ class PredictBridgeMonitor(PredictBridge):
             # Skip validation if any component is None (e.g. classification without interval)
             if predict.size == 0 or low.size == 0 or high.size == 0:
                 return
-            
+
             # Check for numeric types to avoid ufunc errors with strings/objects
-            if not (np.issubdtype(predict.dtype, np.number) and 
-                    np.issubdtype(low.dtype, np.number) and 
-                    np.issubdtype(high.dtype, np.number)):
+            if not (
+                np.issubdtype(predict.dtype, np.number)
+                and np.issubdtype(low.dtype, np.number)
+                and np.issubdtype(high.dtype, np.number)
+            ):
                 return
 
             # Check low <= high
             if not np.all(low <= high):
                 import warnings
+
                 warnings.warn(
                     "Prediction interval invariant violated: low > high. This indicates an issue with the underlying estimator.",
-                    RuntimeWarning
+                    RuntimeWarning,
+                    stacklevel=2,
                 )
 
             # Check low <= predict <= high
@@ -176,14 +180,15 @@ class PredictBridgeMonitor(PredictBridge):
             epsilon = 1e-9
             if not np.all((low - epsilon <= predict) & (predict <= high + epsilon)):
                 import warnings
+
                 warnings.warn(
                     "Prediction invariant violated: predict not in [low, high]. This may indicate poor calibration or inconsistent point predictions.",
-                    RuntimeWarning
+                    RuntimeWarning,
+                    stacklevel=2,
                 )
         except (TypeError, ValueError):
             # Skip validation if type conversion or comparison fails
             pass
-
 
     def predict_proba(self, x: Any, bins: Any | None = None) -> Sequence[Any]:
         """Delegate ``predict_proba`` while tracking usage.

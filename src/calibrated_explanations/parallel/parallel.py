@@ -221,7 +221,7 @@ class ParallelExecutor:
             self.metrics.completed += len(results)
             duration = time.perf_counter() - start_time
             self.metrics.total_duration += duration
-            
+
             # Estimate workers used
             current_workers = workers or self.config.max_workers or 1
             if self._pool is not None and hasattr(self._pool, "_max_workers"):

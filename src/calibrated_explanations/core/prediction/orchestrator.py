@@ -183,40 +183,43 @@ class PredictionOrchestrator:
 
         if cache_enabled and key_parts is not None:
             cache.set(stage="predict", parts=key_parts, value=result)
-        
+
         self._validate_prediction_result(result)
         return result
 
     def _validate_prediction_result(self, result):
         """Enforce low <= predict <= high invariant on prediction results."""
-        from ..exceptions import ValidationError
-        
+
         predict, low, high, _ = result
-        
+
         # Skip validation if any component is None or empty
         if predict is None or low is None or high is None:
             return
-        
+
         try:
             predict = np.asanyarray(predict)
             low = np.asanyarray(low)
             high = np.asanyarray(high)
-            
+
             if predict.size == 0 or low.size == 0 or high.size == 0:
                 return
-            
+
             # Check for numeric types
-            if not (np.issubdtype(predict.dtype, np.number) and 
-                    np.issubdtype(low.dtype, np.number) and 
-                    np.issubdtype(high.dtype, np.number)):
+            if not (
+                np.issubdtype(predict.dtype, np.number)
+                and np.issubdtype(low.dtype, np.number)
+                and np.issubdtype(high.dtype, np.number)
+            ):
                 return
-                
+
             # Check low <= high
             if not np.all(low <= high):
                 import warnings
+
                 warnings.warn(
                     "Prediction interval invariant violated: low > high. This indicates an issue with the underlying estimator.",
-                    RuntimeWarning
+                    RuntimeWarning,
+                    stacklevel=2,
                 )
 
             # Check low <= predict <= high
@@ -224,9 +227,11 @@ class PredictionOrchestrator:
             epsilon = 1e-9
             if not np.all((low - epsilon <= predict) & (predict <= high + epsilon)):
                 import warnings
+
                 warnings.warn(
                     "Prediction invariant violated: predict not in [low, high]. This may indicate poor calibration or inconsistent point predictions.",
-                    RuntimeWarning
+                    RuntimeWarning,
+                    stacklevel=2,
                 )
         except (TypeError, ValueError):
             # Skip validation if conversion to array fails or types are incompatible

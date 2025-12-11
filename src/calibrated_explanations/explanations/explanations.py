@@ -473,7 +473,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
-
     def _is_one_sided(self) -> bool:
         """Check if the explanations are one-sided."""
         if self.low_high_percentiles is None:

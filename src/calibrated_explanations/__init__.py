@@ -9,7 +9,6 @@ by Helena Löfström et al.
 
 import importlib
 import logging as _logging
-from contextlib import suppress
 
 # Expose viz namespace lazily via __getattr__ (avoid importing heavy backends eagerly)
 # Note: avoid eager imports of explanation, viz and discretizer modules here.

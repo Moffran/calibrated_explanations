@@ -812,7 +812,10 @@ class ExplanationOrchestrator:
             feature_names=tuple(self.explainer.feature_names),
             categorical_features=tuple(self.explainer.categorical_features),
             categorical_labels=types.MappingProxyType(
-                {k: types.MappingProxyType(dict(v)) for k, v in (self.explainer.categorical_labels or {}).items()}
+                {
+                    k: types.MappingProxyType(dict(v))
+                    for k, v in (self.explainer.categorical_labels or {}).items()
+                }
                 if self.explainer.categorical_labels
                 else {}
             ),

@@ -9,6 +9,7 @@ discretization, and rule extraction.
 
 from __future__ import annotations
 
+from contextlib import suppress
 from time import time
 from typing import TYPE_CHECKING, Any, Dict, List
 
@@ -197,7 +198,7 @@ class FastExplanationPipeline:
         }
 
         if self.explainer.mode == "classification":
-            try:
+            with suppress(Exception):
                 if self.explainer.is_multiclass():
                     full_probs = self.explainer.interval_learner[  # pylint: disable=protected-access
                         self.explainer.num_features
@@ -207,8 +208,6 @@ class FastExplanationPipeline:
                         self.explainer.num_features
                     ].predict_proba(x_test, bins=bins)
                 prediction["__full_probabilities__"] = full_probs
-            except Exception:  # pylint: disable=broad-except
-                pass
 
         # Temporarily swap calibration targets for feature computation
         y_cal = self.explainer.y_cal

@@ -295,18 +295,20 @@ class TestPluginManagerDeepCopy:
         """should_handle_mappingproxy_when_deepcopied."""
         mock_explainer = Mock()
         manager = PluginManager(mock_explainer)
-        
+
         # Simulate the state that causes issues (mappingproxy in a dict)
-        unpicklable_dict = types.MappingProxyType({'a': 1})
-        manager._explanation_contexts = {'test_context': unpicklable_dict}
-        
+        unpicklable_dict = types.MappingProxyType({"a": 1})
+        manager._explanation_contexts = {"test_context": unpicklable_dict}
+
         # This should not raise TypeError
         copied_manager = copy.deepcopy(manager)
-        
+
         # Verify the copy has the data (shallow copied or reference)
-        assert copied_manager._explanation_contexts['test_context'] == unpicklable_dict
-        assert isinstance(copied_manager._explanation_contexts['test_context'], types.MappingProxyType)
-        
+        assert copied_manager._explanation_contexts["test_context"] == unpicklable_dict
+        assert isinstance(
+            copied_manager._explanation_contexts["test_context"], types.MappingProxyType
+        )
+
         # Verify it's a different manager instance
         assert copied_manager is not manager
         assert manager._interval_context_metadata["fast"] == {}

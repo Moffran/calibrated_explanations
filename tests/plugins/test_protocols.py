@@ -504,6 +504,3 @@ def test_validate_explanation_batch_task_mismatch() -> None:
         match="ExplanationBatch metadata reports task 'regression' but runtime expected 'classification'",
     ):
         validate_explanation_batch(batch, expected_task="classification")
-
-
-
