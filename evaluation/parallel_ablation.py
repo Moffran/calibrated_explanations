@@ -14,11 +14,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 
-import warnings
-# Suppress noisy top-level deprecation warnings from the library
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning, module="calibrated_explanations")
-    from calibrated_explanations import CalibratedExplainer, WrapCalibratedExplainer
+from calibrated_explanations import CalibratedExplainer, WrapCalibratedExplainer
 
 RESULTS_FILE = "evaluation/parallel_ablation_results.json"
 
