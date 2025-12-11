@@ -76,7 +76,15 @@ templates_path = ["_templates"]
 language = "en"
 
 # Patterns to ignore when looking for source files
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "_shared/**", "improvement/ignore", "improvement/archived", "improvement/adr_mending"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "_shared/**",
+    "improvement/ignore",
+    "improvement/archived",
+    "improvement/adr_mending",
+]
 
 # Skip specific GitHub targets that consistently hit rate limits during local linkcheck runs.
 linkcheck_ignore = [

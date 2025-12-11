@@ -118,6 +118,9 @@
 
 - **`condition_source` implemented:** Added support for the `condition_source` configuration used by calibrators and explanation plugins to select conditioning data sources; wired into the public API, covered by unit tests, and documented in the practitioner guides.
 
+### Release Task 9 - Documentation Improvements
+
+- **Comprehensive API Reference**: Updated `docs/api/calibrated_explainer.md` and `docs/api/calibrated_explanations.md` with `autoclass` directives to automatically generate comprehensive API documentation for public classes (`CalibratedExplainer`, `WrapCalibratedExplainer`, `CalibratedExplanations`, `CalibratedExplanation`, `FactualExplanation`, `AlternativeExplanation`), including methods, parameters, and return types.
 
 ### Release Task 10 - Test Suite Improvements
 - Renamed private test helpers (e.g., `_helper`) to public snake_case helpers (`helper`) across the test suite to improve readability and maintainability.
