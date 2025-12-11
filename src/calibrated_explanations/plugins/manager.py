@@ -139,6 +139,27 @@ class PluginManager:
         self._prediction_orchestrator: Any = None
         self._reject_orchestrator: Any = None
 
+    def __deepcopy__(self, memo):
+        """Deepcopy the plugin manager, handling circular references and unpicklable objects."""
+        import copy
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            try:
+                setattr(result, k, copy.deepcopy(v, memo))
+            except TypeError:
+                # Fallback for unpicklable objects (e.g., mappingproxy in contexts)
+                # We shallow copy containers to avoid sharing the container itself,
+                # while sharing the unpicklable items (which are likely immutable).
+                if isinstance(v, dict):
+                    setattr(result, k, v.copy())
+                elif isinstance(v, list):
+                    setattr(result, k, v[:])
+                else:
+                    setattr(result, k, v)
+        return result
+
     def initialize_from_kwargs(self, kwargs: Dict[str, Any]) -> None:
         """Initialize plugin overrides from keyword arguments.
 

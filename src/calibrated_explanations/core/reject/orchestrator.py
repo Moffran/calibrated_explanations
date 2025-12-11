@@ -48,6 +48,8 @@ class RejectOrchestrator:
 
     def predict_reject(self, x, bins=None, confidence=0.95):
         """Predict whether to reject the explanations for the test data."""
+        if bins is not None:
+            bins = np.asarray(bins)
         if self.explainer.mode in "regression":
             if self.explainer.reject_threshold is None:
                 raise ValidationError(

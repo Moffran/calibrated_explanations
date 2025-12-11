@@ -290,6 +290,8 @@ class PredictionOrchestrator:
         # strip plotting-only keys that callers may pass
         kwargs.pop("show", None)
         kwargs.pop("style_override", None)
+        if bins is not None:
+            bins = np.asarray(bins)
         if not self.explainer._CalibratedExplainer__initialized:
             raise NotFittedError("The learner must be initialized before calling predict.")
         if feature is None and self.explainer.is_fast():

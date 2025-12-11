@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import types
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 from ...core.config_helpers import coerce_string_tuple
@@ -268,9 +269,9 @@ class ExplanationOrchestrator:
             low_high_percentiles=(
                 tuple(low_high_percentiles) if low_high_percentiles is not None else None
             ),
-            bins=bins,
+            bins=tuple(bins) if bins is not None else None,
             features_to_ignore=tuple(features_to_ignore or []),
-            extras=dict(extras or {}),
+            extras=types.MappingProxyType(dict(extras or {})),
         )
         monitor = self.explainer._bridge_monitors.get(mode)
         if monitor is not None:
@@ -315,6 +316,7 @@ class ExplanationOrchestrator:
             "mode": mode,
             "task": self.explainer.mode,
             "interval_source": interval_source,
+            "interval_dependencies": metadata.get("interval_dependencies"),
             "proba_source": metadata.get("proba_source"),
             "plot_source": metadata.get("plot_source"),
             "plot_fallbacks": tuple(plot_chain or ()),
@@ -809,16 +811,16 @@ class ExplanationOrchestrator:
             mode=mode,
             feature_names=tuple(self.explainer.feature_names),
             categorical_features=tuple(self.explainer.categorical_features),
-            categorical_labels=(
-                {k: dict(v) for k, v in (self.explainer.categorical_labels or {}).items()}
+            categorical_labels=types.MappingProxyType(
+                {k: types.MappingProxyType(dict(v)) for k, v in (self.explainer.categorical_labels or {}).items()}
                 if self.explainer.categorical_labels
                 else {}
             ),
             discretizer=self.explainer.discretizer,
-            helper_handles=helper_handles,
+            helper_handles=types.MappingProxyType(helper_handles),
             predict_bridge=monitor,
-            interval_settings=interval_settings,
-            plot_settings=plot_settings,
+            interval_settings=types.MappingProxyType(interval_settings),
+            plot_settings=types.MappingProxyType(plot_settings),
         )
         return context
 

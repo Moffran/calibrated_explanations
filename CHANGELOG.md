@@ -5,12 +5,6 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
-### Release Task 5 - ADR-021 Interval Safety
-
-- **Completed ADR-021 interval safety for v0.10.0 release**
-  - **FAST explanation parity**: Updated `FastExplanationPipeline` to include `__full_probabilities__` in prediction output, ensuring consistency with standard explanation path.
-  - **Safe JSON serialization**: Updated `_jsonify` helper to safely handle callables by converting them to string representation, preventing `TypeError` during JSON export of explanation collections containing live objects.
-
 ### Release Task 1 - ADR-001 Package and Boundary Layout
 
 - **Completed ADR-001 core decomposition boundaries for v0.10.0 release**
@@ -100,6 +94,8 @@
 - **Sanitized Exports**: Added validation to `CalibratedExplanations.to_json` to ensure exported explanations always respect interval semantics.
 - **Bridge Safety**: Wired `PredictBridgeMonitor` into `ExplanationOrchestrator` to guard all plugin predictions.
 - **Gap Analysis Closure**: Extended invariant enforcement to `PredictionOrchestrator` (internal predictions), `ExplanationBatch` (plugin outputs), and `CalibratedExplanation` (object instantiation) to close all identified safety gaps.
+- **FAST explanation parity**: Updated `FastExplanationPipeline` to include `__full_probabilities__` in prediction output, ensuring consistency with standard explanation path.
+- **Safe JSON serialization**: Updated `_jsonify` helper to safely handle callables by converting them to string representation, preventing `TypeError` during JSON export of explanation collections containing live objects.
 
 ### Release Task 6 - ADR-026 Explanation Plugin Semantics
 
@@ -107,6 +103,10 @@
 - **Implemented Invariant Checks**: Added runtime validation in `PredictBridgeMonitor` to enforce `low <= predict <= high` for all plugin predictions.
 - **Hardened Contexts**: Verified `ExplanationContext` immutability and read-only helper handles.
 - **ADR Alignment**: Updated ADR-015 to cross-reference ADR-026 for visibility policy; Accepted ADR-026.
+- **Immutable Contexts**: `ExplanationContext` and `ExplanationRequest` now use `MappingProxyType` and frozen dataclasses to enforce immutability of shared state.
+- **Mondrian Bins**: `ExplanationRequest` now normalizes `bins` to a tuple, ensuring consistent immutable access across plugins.
+- **Telemetry**: Added `interval_dependencies` to the telemetry payload in `ExplanationOrchestrator`, ensuring full traceability of interval sources.
+- **Internalized Explain**: Verified `CalibratedExplainer.explain` is not present (replaced by internal `_explain` and `__call__` delegation), reinforcing the facade pattern.
 
 ### Release Task 8 - Condition Source Support
 

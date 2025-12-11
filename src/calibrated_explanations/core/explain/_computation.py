@@ -360,6 +360,9 @@ def explain_predict_step(
     if features_to_ignore is None:
         features_to_ignore = ()
 
+    if bins is not None:
+        bins = np.asarray(bins)
+
     x_cal = explainer.x_cal
     base_predict, base_low, base_high, predicted_class = explainer._predict(  # pylint: disable=protected-access
         x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins

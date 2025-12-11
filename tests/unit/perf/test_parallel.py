@@ -41,6 +41,8 @@ def test_parallel_metrics_snapshot():
         "completed": 2,
         "fallbacks": 1,
         "failures": 0,
+        "total_duration": 0.0,
+        "max_workers": 0,
     }
 
 

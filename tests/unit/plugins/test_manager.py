@@ -5,6 +5,8 @@ override configuration, and instance caching.
 """
 
 import pytest
+import copy
+import types
 from unittest.mock import Mock
 
 from calibrated_explanations.core.exceptions import ConfigurationError
@@ -283,4 +285,28 @@ class TestIntervalPluginState:
         assert "default" in manager._interval_context_metadata
         assert "fast" in manager._interval_context_metadata
         assert manager._interval_context_metadata["default"] == {}
+        assert manager._interval_context_metadata["fast"] == {}
+
+
+class TestPluginManagerDeepCopy:
+    """Tests for PluginManager deepcopy behavior."""
+
+    def test_deepcopy_handles_mappingproxy(self):
+        """should_handle_mappingproxy_when_deepcopied."""
+        mock_explainer = Mock()
+        manager = PluginManager(mock_explainer)
+        
+        # Simulate the state that causes issues (mappingproxy in a dict)
+        unpicklable_dict = types.MappingProxyType({'a': 1})
+        manager._explanation_contexts = {'test_context': unpicklable_dict}
+        
+        # This should not raise TypeError
+        copied_manager = copy.deepcopy(manager)
+        
+        # Verify the copy has the data (shallow copied or reference)
+        assert copied_manager._explanation_contexts['test_context'] == unpicklable_dict
+        assert isinstance(copied_manager._explanation_contexts['test_context'], types.MappingProxyType)
+        
+        # Verify it's a different manager instance
+        assert copied_manager is not manager
         assert manager._interval_context_metadata["fast"] == {}
