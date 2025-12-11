@@ -658,6 +658,12 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 - ✅ `threshold` and `y_threshold` parameter names **preserved** (describe values, not modes)
 - ✅ **Zero breaking changes** to public API
 - ✅ Backward compatibility maintained for private methods (via delegation)
+
+### v0.10.0 Update
+
+- ✅ **Removed Deprecated Alias** (src/calibrated_explanations/explanations/explanations.py)
+  - Removed `_is_thresholded()` alias as scheduled.
+  - Updated documentation to reflect removal.
 - ✅ No behavior changes; terminology-only cleanup
 - ✅ ADRs updated with explicit guidance
 - ✅ Documentation and tests clarified

@@ -108,6 +108,12 @@
 - **Telemetry**: Added `interval_dependencies` to the telemetry payload in `ExplanationOrchestrator`, ensuring full traceability of interval sources.
 - **Internalized Explain**: Verified `CalibratedExplainer.explain` is not present (replaced by internal `_explain` and `__call__` delegation), reinforcing the facade pattern.
 
+### Release Task 7 - Terminology Standardization (ADR-021)
+
+- **Removed deprecated alias `_is_thresholded()`**
+  - Removed `_is_thresholded()` from `CalibratedExplanations` class (superseded by `_is_probabilistic_regression()`)
+  - Updated documentation to reflect removal
+
 ### Release Task 8 - Condition Source Support
 
 - **`condition_source` implemented:** Added support for the `condition_source` configuration used by calibrators and explanation plugins to select conditioning data sources; wired into the public API, covered by unit tests, and documented in the practitioner guides.
