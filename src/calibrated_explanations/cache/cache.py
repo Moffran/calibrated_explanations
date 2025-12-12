@@ -341,7 +341,7 @@ class LRUCache(Generic[K, V]):
         size_estimator: Callable[[Any], int],
     ) -> None:
         """Initialize cache with cachetools backend."""
-        from calibrated_explanations.core import ValidationError
+        from ..utils.exceptions import ValidationError
 
         if max_items <= 0:
             raise ValidationError(

@@ -181,7 +181,7 @@ def perturb_dataset(
     scaled_x_cal = perturbed_x_cal.copy()
     scaled_y_cal = np.tile(y_cal.copy(), scale_factor)
     categorical_feature_set = set() if categorical_features is None else set(categorical_features)
-    from calibrated_explanations.core import ValidationError
+    from .exceptions import ValidationError
 
     if noise_type not in [
         "uniform",

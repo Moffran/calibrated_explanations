@@ -19,9 +19,7 @@ from .feature_task import (
 from .feature_task import (
     _feature_task as feature_task,
 )
-from .feature_task import (
-    assign_threshold as normalize_threshold,
-)
+from ...utils.helper import assign_threshold as normalize_threshold
 
 if TYPE_CHECKING:
     from ...explanations import CalibratedExplanations

@@ -11,6 +11,7 @@
   - **Stage 0 — Scope Confirmation:** Core ADR-001 boundaries confirmed; 5 intentional deviations documented (legacy, api, plotting, perf, integrations)
   - **Stage 1 — Package Extraction:** Calibration, cache/parallel, and schema extraction complete; backward compatibility shims in place
   - **Stage 2 — Cross-Sibling Decoupling:** 14 module-level imports from core converted to lazy/TYPE_CHECKING; transitive dependency reduction
+    - **Refinement**: Moved exceptions and helpers from `core` to `utils` to eliminate circular dependencies from `calibration`.
   - **Stage 3 — Public API Narrowing:** Unsanctioned symbols (13) now emit DeprecationWarning; API locked to 3 sanctioned entry points for v0.11.0
   - **Stage 4 — Namespace Documentation:** All namespaces classified with rationale, deprecation timelines, and migration paths
   - **Stage 5 — Import Graph Linting:** AST-based static analyzer detects violations; 17 enforcement tests; CI-ready with baseline

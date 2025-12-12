@@ -3,13 +3,15 @@
 Provides a compact, opinionated path to fit, calibrate, and generate
 factual explanations in one call using the existing wrapper/config.
 
-Kept minimal and backward-compatible with current public surface.
+Moved to core to avoid circular dependencies.
 """
 
 from __future__ import annotations
 
-import importlib
 from typing import Any, Literal
+
+from ..api.config import ExplainerConfig
+from .wrap_explainer import WrapCalibratedExplainer
 
 
 def quick_explain(
@@ -51,21 +53,21 @@ def quick_explain(
     Any
         A CalibratedExplanations-like object from `explain_factual`.
     """
-    # Import from core to avoid circular dependency (api -> core)
-    # This shim allows keeping the API surface while moving implementation to core.
-    module = importlib.import_module("calibrated_explanations.core.quick")
-    return module.quick_explain(
+    cfg = ExplainerConfig(
         model=model,
-        x_train=x_train,
-        y_train=y_train,
-        x_cal=x_cal,
-        y_cal=y_cal,
-        x=x,
-        task=task,
-        threshold=threshold,
         low_high_percentiles=low_high_percentiles,
+        threshold=threshold,
         preprocessor=preprocessor,
     )
+    w = WrapCalibratedExplainer._from_config(cfg)  # private constructor by design
+    w.fit(x_train, y_train)
+    # Calibrate; pass explicit mode if provided
+    cal_kwargs: dict[str, Any] = {}
+    if task is not None:
+        cal_kwargs["mode"] = task
+    w.calibrate(x_cal, y_cal, **cal_kwargs)
+    # Use cfg defaults implicitly for factual explanations
+    return w.explain_factual(x)
 
 
 __all__ = ["quick_explain"]

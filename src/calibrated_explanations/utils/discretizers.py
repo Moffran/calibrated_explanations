@@ -12,7 +12,7 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import check_random_state
 
-from ..core.exceptions import ValidationError
+from .exceptions import ValidationError
 from .helper import safe_mean
 
 

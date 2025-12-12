@@ -63,7 +63,7 @@ def __getattr__(name: str) -> Any:
         return WrapCalibratedExplainer
 
     if name == "assign_threshold":
-        from .explain.feature_task import assign_threshold
+        from ..utils.helper import assign_threshold
 
         globals()[name] = assign_threshold
         return assign_threshold

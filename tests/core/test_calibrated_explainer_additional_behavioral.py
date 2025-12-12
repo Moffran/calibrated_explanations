@@ -9,9 +9,7 @@ from typing import Iterable
 import numpy as np
 import pytest
 
-from calibrated_explanations.core.explain.feature_task import (
-    assign_threshold as normalize_threshold,
-)
+from calibrated_explanations.utils.helper import assign_threshold as normalize_threshold
 from calibrated_explanations.core.explain.feature_task import assign_weight
 from calibrated_explanations.core.exceptions import (
     DataShapeError,

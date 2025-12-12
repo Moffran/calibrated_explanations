@@ -30,9 +30,7 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from pandas import Categorical
 
-from calibrated_explanations.core.explain.feature_task import (
-    assign_threshold as normalize_threshold,
-)
+from ..utils.helper import assign_threshold as normalize_threshold
 
 from ..plotting import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 from ..utils import (

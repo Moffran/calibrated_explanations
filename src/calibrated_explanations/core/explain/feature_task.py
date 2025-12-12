@@ -122,50 +122,6 @@ def assign_weight(
     return [prediction[i] - ip for i, ip in enumerate(instance_predict)]
 
 
-def assign_threshold(threshold: Any) -> Any:
-    """Normalize regression threshold for prediction tasks.
-
-    Returns empty containers for list/array inputs to prevent
-    threshold broadcast errors. For scalar thresholds, returns the
-    value unchanged. Used in probabilistic regression to validate
-    and prepare thresholds before making predictions.
-
-    Parameters
-    ----------
-    threshold : scalar, list, array-like, or None
-        Optional threshold value for regression explanations.
-
-    Returns
-    -------
-    None, scalar, or empty array
-        For None: returns None.
-        For scalar: returns the scalar unchanged.
-        For list/array: returns empty array (no threshold broadcast).
-
-    Examples
-    --------
-    Scalar threshold (valid for single prediction):
-
-    >>> assign_threshold(5.0)
-    5.0
-
-    List/array threshold (invalid broadcast):
-
-    >>> assign_threshold([1, 2, 3])
-    array([], dtype=float64)
-
-    None threshold:
-
-    >>> assign_threshold(None)
-    None
-    """
-    if threshold is None:
-        return None
-    if isinstance(threshold, (list, np.ndarray)):
-        # Return empty array to signal invalid threshold list for broadcast
-        return np.empty((0,), dtype=tuple) if isinstance(threshold[0], tuple) else np.empty((0,))
-    return threshold
-
 
 def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""

@@ -14,7 +14,7 @@ import warnings
 import numpy as np
 import venn_abers as va
 
-from calibrated_explanations.core import ConfigurationError
+from ..utils.exceptions import ConfigurationError
 
 from ..utils import convert_targets_to_numeric
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from calibrated_explanations.core.exceptions import ConfigurationError
+from ..utils.exceptions import ConfigurationError
 
 # Guard optional dependency imports so importing this module doesn't fail in
 # environments without matplotlib (tests/CI where viz extras aren't installed).
