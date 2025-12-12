@@ -5,17 +5,17 @@ Tests verify that:
 - Metadata declares correct fallback chains
 - Wrapper plugins delegate to execution plugins
 - Fallback to legacy implementation works when execution fails
+- Internal FAST-based feature filtering integrates without breaking behaviour
 """
 
 from __future__ import annotations
 
-
+import numpy as np
 import pytest
 
+from calibrated_explanations.explanations.explanations import CalibratedExplanations
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
 from calibrated_explanations.plugins.explanations import ExplanationContext, ExplanationRequest
-
-
 from calibrated_explanations.plugins import registry
 from calibrated_explanations.plugins.builtins import (
     FeatureParallelAlternativeExplanationPlugin,
@@ -25,6 +25,7 @@ from calibrated_explanations.plugins.builtins import (
     SequentialAlternativeExplanationPlugin,
     SequentialExplanationPlugin,
 )
+from calibrated_explanations.core.explain._feature_filter import FeatureFilterConfig
 
 
 class TestExecutionStrategyPluginRegistration:
@@ -330,3 +331,223 @@ def test_should_enter_parallel_executor_once_during_explain_batch(
     plugin.explain_batch("x", request)
 
     assert len(created_pools) == 1
+
+
+def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.MonkeyPatch) -> None:
+    """FAST-based feature filter should narrow features_to_ignore per batch."""
+
+    # Clear env-based overrides for deterministic behaviour
+    monkeypatch.delenv("CE_FEATURE_FILTER", raising=False)
+
+    # Build a minimal CalibratedExplanations container with dummy per-instance weights
+    num_features = 4
+    x_fast = np.zeros((2, num_features))
+
+    class DummyExplainerForFrozen:
+        def __init__(self, n_features: int):
+            self.x_cal = np.zeros((1, n_features))
+            self.y_cal = np.zeros(1)
+            self.num_features = n_features
+
+    fast_collection = CalibratedExplanations(
+        DummyExplainerForFrozen(num_features), x_fast, None, None
+    )
+
+    class DummyFastExplanation:
+        def __init__(self, weights: np.ndarray):
+            self.feature_weights = {"predict": np.asarray(weights, dtype=float)}
+
+    # Instance 0 strongly prefers feature 0; instance 1 prefers feature 1
+    fast_collection.explanations = [
+        DummyFastExplanation(np.array([10.0, 0.0, 0.0, 0.0])),
+        DummyFastExplanation(np.array([0.0, 5.0, 0.3, 1.0])),
+    ]
+
+    # Dummy explainer exposing only the attributes used by the wrapper
+    class DummyExplainer:
+        def __init__(self):
+            # No baseline ignore; all filtering comes from FAST + request.
+            self.features_to_ignore = np.array([], dtype=int)
+            self.num_features = num_features
+            self._feature_filter_config = FeatureFilterConfig(enabled=True, per_instance_top_k=1)
+            self._explanation_orchestrator = self  # self-invoke for FAST
+
+        # Orchestrator-like interface used by the wrapper
+        def invoke(
+            self,
+            mode: str,
+            x: object,
+            threshold: object,
+            low_high_percentiles: object,
+            bins: object,
+            features_to_ignore: object,
+            *,
+            extras: object | None = None,
+        ) -> CalibratedExplanations:
+            assert mode == "fast"
+            # For this unit test we ignore the arguments and return the prebuilt FAST collection
+            return fast_collection
+
+    recorded_request: dict[str, tuple[int, ...]] = {}
+
+    def fake_build_explain_execution_plan(_explainer, _x, req: ExplanationRequest):  # noqa: ARG001
+        """Capture the features_to_ignore after filtering and return a stub plan."""
+        from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
+
+        recorded_request["features_to_ignore"] = tuple(req.features_to_ignore or ())
+        return (
+            ExplainRequest(
+                x=None,
+                threshold=None,
+                low_high_percentiles=(0.05, 0.95),
+                bins=None,
+                features_to_ignore=np.asarray(req.features_to_ignore or (), dtype=int),
+                use_plugin=False,
+                skip_instance_parallel=False,
+            ),
+            ExplainConfig(
+                executor=None,
+                granularity="feature",
+                min_instances_for_parallel=1,
+                chunk_size=1,
+                num_features=num_features,
+                features_to_ignore_default=(),
+                categorical_features=(),
+                feature_values={},
+                mode="classification",
+            ),
+        )
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.explain.parallel_runtime.build_explain_execution_plan",
+        fake_build_explain_execution_plan,
+    )
+
+    explainer = DummyExplainer()
+    plugin = FeatureParallelExplanationPlugin()
+
+    context = ExplanationContext(
+        task="classification",
+        mode="factual",
+        feature_names=("f0", "f1", "f2", "f3"),
+        categorical_features=(),
+        categorical_labels={},
+        discretizer=None,
+        helper_handles={"explainer": explainer},
+        predict_bridge=object(),
+        interval_settings={},
+        plot_settings={},
+    )
+    plugin.initialize(context)
+
+    # User has explicitly requested to ignore feature 2
+    request = ExplanationRequest(
+        threshold=None,
+        low_high_percentiles=(0.05, 0.95),
+        bins=None,
+        features_to_ignore=(2,),
+        extras={},
+    )
+
+    class NoopExecutionPlugin:
+        def execute(self, *args, **kwargs):  # noqa: ARG002
+            class DummyCollection:
+                mode = "factual"
+                explanations = []
+
+            return DummyCollection()
+
+    plugin._execution_plugin_class = NoopExecutionPlugin  # type: ignore[assignment]
+
+    plugin.explain_batch("x", request)
+
+    # With per_instance_top_k=1 and the chosen weights, instance 0 keeps
+    # feature 0 and instance 1 keeps feature 1. Feature 2 is ignored by the
+    # user request, and FAST decides that feature 3 is never among the
+    # per-instance top-k set, so it can be globally ignored for this batch.
+    assert recorded_request["features_to_ignore"] == (2, 3)
+
+
+def test_should_warn_and_fallback_to_legacy_when_execution_plugin_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Wrapper plugins should warn and use legacy path on execution failure."""
+
+    class DummyLegacyCollection:
+        mode = "factual"
+        explanations: list[object] = []
+
+    class DummyExplainer:
+        def __init__(self) -> None:
+            self.called_kwargs: dict[str, object] | None = None
+
+        def explain_factual(self, x, **kwargs):  # noqa: ANN001
+            self.called_kwargs = kwargs
+            return DummyLegacyCollection()
+
+    def fake_build_explain_execution_plan(_explainer, _x, _request):  # noqa: ARG001
+        from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
+
+        return (
+            ExplainRequest(
+                x=None,
+                threshold=None,
+                low_high_percentiles=(0.05, 0.95),
+                bins=None,
+                features_to_ignore=np.array([], dtype=int),
+                use_plugin=False,
+                skip_instance_parallel=False,
+            ),
+            ExplainConfig(
+                executor=None,
+                granularity="feature",
+                min_instances_for_parallel=1,
+                chunk_size=1,
+                num_features=1,
+                features_to_ignore_default=(),
+                categorical_features=(),
+                feature_values={},
+                mode="classification",
+            ),
+        )
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.explain.parallel_runtime.build_explain_execution_plan",
+        fake_build_explain_execution_plan,
+    )
+
+    class RaisingExecutionPlugin:
+        def execute(self, *args, **kwargs):  # noqa: ARG002
+            raise RuntimeError("boom")
+
+    plugin = FeatureParallelExplanationPlugin()
+    plugin._execution_plugin_class = RaisingExecutionPlugin  # type: ignore[assignment]
+
+    explainer = DummyExplainer()
+    context = ExplanationContext(
+        task="classification",
+        mode="factual",
+        feature_names=("f0",),
+        categorical_features=(),
+        categorical_labels={},
+        discretizer=None,
+        helper_handles={"explainer": explainer},
+        predict_bridge=object(),
+        interval_settings={},
+        plot_settings={},
+    )
+    plugin.initialize(context)
+
+    request = ExplanationRequest(
+        threshold=None,
+        low_high_percentiles=(0.05, 0.95),
+        bins=None,
+        features_to_ignore=(),
+        extras={},
+    )
+
+    with pytest.warns(UserWarning, match="falling back to legacy"):
+        plugin.explain_batch("x", request)
+
+    assert explainer.called_kwargs is not None
+    assert explainer.called_kwargs.get("_use_plugin") is False

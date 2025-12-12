@@ -203,6 +203,17 @@ def finalize_explanation(
         total_time=total_time,
     )
 
+    # Attach per-instance feature ignore information when provided by the
+    # FAST-based feature filter. This is stored on the explainer by the
+    # execution wrapper and propagated here to the explanation container.
+    per_instance_ignore = getattr(explainer, "_feature_filter_per_instance_ignore", None)
+    if per_instance_ignore is not None:
+        with contextlib.suppress(Exception):
+            setattr(explanation, "features_to_ignore_per_instance", per_instance_ignore)
+    # Clear transient state to avoid accidental reuse across subsequent runs.
+    with contextlib.suppress(AttributeError):
+        delattr(explainer, "_feature_filter_per_instance_ignore")
+
     # Update explainer state
     explainer.latest_explanation = explanation
     explainer._last_explanation_mode = explainer._infer_explanation_mode()

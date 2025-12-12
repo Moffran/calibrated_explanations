@@ -43,7 +43,7 @@ class ExplainerConfig:
     # Parallelism placeholder (not wired yet)
     parallel_workers: int | None = None
 
-    # Performance feature flags (ADR-003/ADR-004) – disabled by default
+    # Performance feature flags (ADR-003/ADR-004) - disabled by default
     perf_cache_enabled: bool = False
     perf_cache_max_items: int = 512
     perf_cache_max_bytes: int | None = 32 * 1024 * 1024
@@ -58,6 +58,10 @@ class ExplainerConfig:
     perf_parallel_tiny_workload: int | None = None
     perf_parallel_granularity: Literal["feature", "instance"] = "feature"
     perf_telemetry: Any | None = None
+
+    # Internal FAST-based feature filtering (disabled by default)
+    perf_feature_filter_enabled: bool = False
+    perf_feature_filter_per_instance_top_k: int = 8
 
 
 class ExplainerBuilder:
@@ -219,6 +223,26 @@ class ExplainerBuilder:
     def perf_telemetry(self, callback: Any | None) -> ExplainerBuilder:
         """Register a telemetry callback shared by cache and parallel executors."""
         self._cfg.perf_telemetry = callback
+        return self
+
+    def perf_feature_filter(
+        self,
+        enabled: bool,
+        *,
+        per_instance_top_k: int | None = None,
+    ) -> ExplainerBuilder:
+        """Configure internal FAST-based feature filtering.
+
+        Parameters
+        ----------
+        enabled : bool
+            Flag indicating whether the internal FAST-based feature filter is enabled.
+        per_instance_top_k : int, optional
+            Maximum number of features to keep per instance based on FAST weights.
+        """
+        self._cfg.perf_feature_filter_enabled = enabled
+        if per_instance_top_k is not None:
+            self._cfg.perf_feature_filter_per_instance_top_k = max(1, int(per_instance_top_k))
         return self
 
     def build_config(self) -> ExplainerConfig:

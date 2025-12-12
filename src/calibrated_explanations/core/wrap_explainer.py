@@ -131,6 +131,27 @@ class WrapCalibratedExplainer:
             w._perf_cache = None
             w._perf_parallel = None
             w._logger.debug("Failed to initialize perf primitives from config: %s", exc)
+        # Wire internal feature filter config (FAST-based) when present
+        try:
+            from .explain._feature_filter import (  # pylint: disable=import-outside-toplevel
+                FeatureFilterConfig,
+            )
+
+            enabled = getattr(cfg, "perf_feature_filter_enabled", False)
+            per_instance_top_k = getattr(
+                cfg, "perf_feature_filter_per_instance_top_k", 8
+            )
+            w._feature_filter_config = FeatureFilterConfig(  # type: ignore[attr-defined]
+                enabled=bool(enabled),
+                per_instance_top_k=max(1, int(per_instance_top_k)),
+            )
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            exc = sys.exc_info()[1]
+            _logging.getLogger(__name__).debug(
+                "Failed to initialize feature filter config from ExplainerConfig: %s", exc
+            )
         # Wire optional preprocessing in a controlled way (only if provided)
         try:
             w._preprocessor = cfg.preprocessor  # type: ignore[attr-defined]
@@ -276,6 +297,14 @@ class WrapCalibratedExplainer:
                 perf_parallel=getattr(self, "_perf_parallel", None),
                 **kwargs,
             )
+        # Propagate internal feature filter config to explainer when available
+        if self.explainer is not None and hasattr(self, "_feature_filter_config"):
+            try:
+                setattr(self.explainer, "_feature_filter_config", self._feature_filter_config)
+            except Exception:  # pragma: no cover - defensive
+                self._logger.debug(
+                    "Failed to attach feature filter config to explainer", exc_info=True
+                )
         self.calibrated = True
         if preprocessor_metadata is not None and self.explainer is not None:
             with suppress(AttributeError):

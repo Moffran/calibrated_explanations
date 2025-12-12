@@ -279,6 +279,41 @@ class CalibratedExplanation(ABC):
         """Return the explainer object."""
         return self.calibrated_explanations._get_explainer()  # pylint: disable=protected-access
 
+    def _ignored_features_for_instance(self):
+        """Return the set of feature indices ignored for this instance.
+
+        Combines collection-level ``features_to_ignore`` with any
+        per-instance mask exposed via ``features_to_ignore_per_instance``.
+        """
+        ignored: set[int] = set()
+        try:
+            global_ignore = getattr(self.calibrated_explanations, "features_to_ignore", []) or []
+            ignored.update(int(f) for f in global_ignore)
+        except Exception:  # pragma: no cover - defensive
+            pass
+
+        per_instance = getattr(
+            self.calibrated_explanations, "features_to_ignore_per_instance", None
+        )
+        if per_instance is not None:
+            try:
+                instance_mask = per_instance[self.index]
+            except Exception:  # pragma: no cover - defensive
+                instance_mask = None
+            if instance_mask is not None:
+                try:
+                    for f in instance_mask:
+                        try:
+                            ignored.add(int(f))
+                        except (TypeError, ValueError):
+                            continue
+                except TypeError:  # not iterable
+                    try:
+                        ignored.add(int(instance_mask))
+                    except (TypeError, ValueError):  # pragma: no cover - defensive
+                        pass
+        return ignored
+
     def _rank_features(self, feature_weights=None, width=None, num_to_show=None):
         """Rank the features based on their weights.
 
@@ -772,8 +807,9 @@ class CalibratedExplanation(ABC):
         self.conditions = []
         # pylint: disable=invalid-name
         x = self._get_explainer().discretizer.discretize(self.x_test)
+        ignored = self._ignored_features_for_instance()
         for f in range(self._get_explainer().num_features):
-            if f in self.calibrated_explanations.features_to_ignore:
+            if f in ignored:
                 self.conditions.append("")
                 continue
             if f in self._get_explainer().categorical_features:
@@ -1371,8 +1407,9 @@ class FactualExplanation(CalibratedExplanation):
         factual["base_predict_low"].append(self.prediction["low"])
         factual["base_predict_high"].append(self.prediction["high"])
         rules = self._define_conditions()
+        ignored = self._ignored_features_for_instance()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
-            if f in self.calibrated_explanations.features_to_ignore:
+            if f in ignored:
                 continue
             if self.prediction["predict"] == self.feature_predict["predict"][f]:
                 continue
@@ -1934,8 +1971,9 @@ class AlternativeExplanation(CalibratedExplanation):
         instance_high = self.binned["high"]
         alternative = self.__set_up_result()
         rule_boundaries = self._get_explainer().rule_boundaries(instance)
+        ignored = self._ignored_features_for_instance()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
-            if f in self.calibrated_explanations.features_to_ignore:
+            if f in ignored:
                 continue
             if f in self._get_explainer().categorical_features:
                 values = np.array(self._get_explainer().feature_values[f])

@@ -641,3 +641,74 @@ def test_finalize_explanation_aggregation():
     fw = out.finalized["feature_weights"]["predict"]
     assert np.allclose(fw[0], weights_predict[0])
     assert np.allclose(fw[1], weights_predict[1])
+
+
+def test_finalize_explanation_attaches_per_instance_ignore():
+    """finalize_explanation should propagate per-instance ignore masks from explainer."""
+    from calibrated_explanations.core.explain._shared import finalize_explanation
+
+    n_instances = 2
+    num_features = 2
+
+    weights_predict = np.zeros((n_instances, num_features))
+    weights_low = np.zeros_like(weights_predict)
+    weights_high = np.zeros_like(weights_predict)
+    predict_matrix = np.zeros_like(weights_predict)
+    low_matrix = np.zeros_like(weights_predict)
+    high_matrix = np.zeros_like(weights_predict)
+
+    rule_values = [{} for _ in range(n_instances)]
+    instance_binned = [
+        {"predict": {}, "low": {}, "high": {}, "current_bin": {}, "counts": {}, "fractions": {}},
+        {"predict": {}, "low": {}, "high": {}, "current_bin": {}, "counts": {}, "fractions": {}},
+    ]
+    rule_boundaries = np.zeros((n_instances, num_features, 2))
+    prediction = {"predict": np.zeros(n_instances)}
+
+    class SimpleExplanationWithIgnore:
+        def __init__(self):
+            self.finalized = None
+
+        def finalize(self, binned_predict, feature_weights, feature_predict, prediction, **kwargs):
+            self.finalized = {
+                "binned_predict": binned_predict,
+                "feature_weights": feature_weights,
+                "feature_predict": feature_predict,
+                "prediction": prediction,
+                "kwargs": kwargs,
+            }
+            return self
+
+    explanation = SimpleExplanationWithIgnore()
+
+    # explainer stub with feature-filter state
+    per_instance_ignore = [np.array([0], dtype=int), np.array([1], dtype=int)]
+
+    class ExplainerWithFilterState:
+        def __init__(self):
+            self._feature_filter_per_instance_ignore = per_instance_ignore
+
+        def _infer_explanation_mode(self):
+            return "factual"
+
+    explainer = ExplainerWithFilterState()
+
+    out = finalize_explanation(
+        explanation,
+        weights_predict,
+        weights_low,
+        weights_high,
+        predict_matrix,
+        low_matrix,
+        high_matrix,
+        rule_values,
+        instance_binned,
+        rule_boundaries,
+        prediction,
+        instance_start_time=0.0,
+        total_start_time=0.0,
+        explainer=explainer,
+    )
+
+    assert hasattr(out, "features_to_ignore_per_instance")
+    assert out.features_to_ignore_per_instance == per_instance_ignore

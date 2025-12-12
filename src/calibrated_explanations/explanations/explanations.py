@@ -99,6 +99,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self.features_to_ignore: List[int] = (
             features_to_ignore if features_to_ignore is not None else []
         )
+        # Optional per-instance feature ignore masks produced by the internal
+        # FAST-based feature filter. When present, each entry corresponds to
+        # the indices ignored for that instance on top of any global ignore.
+        self.features_to_ignore_per_instance: Optional[Sequence[Sequence[int]]] = None
         # Derived caches (set during finalize of individual explanations)
         self._feature_names_cache: Optional[Sequence[str]] = None  # populated lazily
         self._predictions_cache: Optional[np.ndarray] = None
@@ -169,6 +173,14 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             else:
                 # assume list of tuples aligned with instances
                 new_.y_threshold = [self.y_threshold[e.index] for e in new_]
+            # Preserve per-instance feature ignore masks when present by slicing
+            # them in the same way as bins/x_test/y_threshold.
+            if getattr(self, "features_to_ignore_per_instance", None) is not None:
+                try:
+                    masks = list(cast(Sequence[Sequence[int]], self.features_to_ignore_per_instance))
+                    new_.features_to_ignore_per_instance = [masks[e.index] for e in new_]
+                except Exception:  # pragma: no cover - defensive fallback
+                    new_.features_to_ignore_per_instance = None
             # Reset cached aggregates to avoid referencing stale state from the source
             new_._feature_names_cache = None
             new_._predictions_cache = None

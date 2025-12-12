@@ -507,6 +507,25 @@ def test_build_uncertainty_payload_controls_percentiles():
     assert no_percentiles["confidence_level"] is None
 
 
+def test_ignored_features_for_instance_combines_global_and_per_instance(simple_explanation):
+    """_ignored_features_for_instance should merge collection and per-instance masks."""
+    explanation = simple_explanation
+    container = explanation.calibrated_explanations
+
+    # Global ignore only
+    container.features_to_ignore = [0]
+    container.features_to_ignore_per_instance = [[], []]
+    ignored = explanation._ignored_features_for_instance()
+    assert 0 in ignored
+
+    # Per-instance ignore for this index should be honoured
+    container.features_to_ignore = []
+    container.features_to_ignore_per_instance = [[], [1]]
+    ignored = explanation._ignored_features_for_instance()
+    assert 1 in ignored
+    assert 0 not in ignored
+
+
 def test_build_instance_uncertainty_for_modes():
     base = _make_explanation()
     payload = base._build_instance_uncertainty()

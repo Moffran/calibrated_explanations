@@ -18,6 +18,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import sys
+import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
@@ -55,6 +56,11 @@ from .registry import (
     register_plot_builder,
     register_plot_renderer,
     register_plot_style,
+)
+from ..core.explain._feature_filter import (  # type: ignore[attr-defined]
+    FeatureFilterConfig,
+    FeatureFilterResult,
+    compute_filtered_features_to_ignore,
 )
 
 
@@ -372,10 +378,11 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
     _execution_plugin_class: type | None = None
 
     def explain_batch(self, x: Any, request: ExplanationRequest) -> ExplanationBatch:
-        """Execute the explanation call with fallback to legacy.
+        """Execute the explanation call with optional FAST-based filtering.
 
-        Attempts to use the execution plugin class, then falls back to the
-        legacy explanation path if the executor is unavailable or execution fails.
+        Attempts to use the execution plugin class (with an internal FAST-based
+        feature filter when enabled), then falls back to the legacy explanation
+        path if the executor is unavailable or execution fails.
         """
         if self._context is None or self._bridge is None or self._explainer is None:
             raise NotFittedError(
@@ -398,9 +405,166 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
 
             # Instantiate and execute the plugin
             plugin = self._execution_plugin_class()
+
+            # Optional FAST-based feature filtering (per-batch, per-instance).
+            # This uses the same executor context as the main explain call and
+            # never mutates CalibratedExplainer behaviour beyond narrowing the
+            # feature set for this batch.
+            filtered_request = request
+            try:
+                # Determine base configuration from explainer and environment.
+                base_cfg = getattr(self._explainer, "_feature_filter_config", None)
+                cfg = FeatureFilterConfig.from_base_and_env(base_cfg)
+                use_filter = (
+                    cfg.enabled
+                    and cfg.per_instance_top_k > 0
+                    and self._mode in ("factual", "alternative")
+                )
+                if use_filter:
+                    explainer = self._explainer
+                    # Baseline ignore set: explainer defaults + request-specific.
+                    base_explainer_ignore = np.asarray(
+                        getattr(explainer, "features_to_ignore", ()), dtype=int
+                    )
+                    request_ignore = (
+                        np.asarray(request.features_to_ignore, dtype=int)
+                        if request.features_to_ignore is not None
+                        else np.array([], dtype=int)
+                    )
+                    base_ignore_union = np.union1d(base_explainer_ignore, request_ignore)
+
+                    # Run internal FAST pass on the same batch to obtain per-instance weights.
+                    try:
+                        fast_collection = explainer._explanation_orchestrator.invoke(  # type: ignore[attr-defined]
+                            "fast",
+                            x,
+                            request.threshold,
+                            request.low_high_percentiles,
+                            request.bins,
+                            tuple(int(f) for f in base_ignore_union.tolist()),
+                            extras={"mode": "fast", "invoked_by": "feature_filter"},
+                        )
+                        if not isinstance(fast_collection, CalibratedExplanations):
+                            raise ConfigurationError(
+                                "FAST feature filter expected CalibratedExplanations container",
+                                details={
+                                    "mode": "fast",
+                                    "actual_type": type(fast_collection).__name__,
+                                },
+                            )
+                        num_features = getattr(explainer, "num_features", None)
+                        filter_result: FeatureFilterResult = compute_filtered_features_to_ignore(
+                            fast_collection,
+                            num_features=num_features,
+                            base_ignore=base_ignore_union,
+                            config=cfg,
+                        )
+                        # Stash per-instance ignore information on the explainer so that
+                        # the final CalibratedExplanations container can expose it.
+                        try:
+                            setattr(
+                                explainer,
+                                "_feature_filter_per_instance_ignore",
+                                filter_result.per_instance_ignore,
+                            )
+                        except Exception:  # pragma: no cover - defensive
+                            logging.getLogger(__name__).debug(
+                                "Unable to attach per-instance feature filter state to explainer",
+                                exc_info=True,
+                            )
+                        # Only propagate the additional ignore indices beyond the explainer defaults.
+                        extra_ignore = np.setdiff1d(
+                            filter_result.global_ignore,
+                            base_explainer_ignore,
+                            assume_unique=False,
+                        )
+                        new_request_ignore = np.union1d(request_ignore, extra_ignore)
+                        filtered_request = ExplanationRequest(
+                            threshold=request.threshold,
+                            low_high_percentiles=request.low_high_percentiles,
+                            bins=request.bins,
+                            features_to_ignore=tuple(int(f) for f in new_request_ignore.tolist()),
+                            extras=request.extras,
+                        )
+                    except:
+                        exc_inner = sys.exc_info()[1]
+                        if not isinstance(exc_inner, Exception):
+                            raise
+                        logging.getLogger(__name__).warning(
+                            "FAST-based feature filter disabled for mode '%s': %s",
+                            self._mode,
+                            exc_inner,
+                        )
+                        # Ensure no stale per-instance state is kept on the explainer.
+                        with contextlib.suppress(AttributeError):
+                            delattr(explainer, "_feature_filter_per_instance_ignore")
+                        filtered_request = request
+            except:
+                exc_cfg = sys.exc_info()[1]
+                if not isinstance(exc_cfg, Exception):
+                    raise
+                logging.getLogger(__name__).debug(
+                    "FAST feature filter configuration failed for mode '%s': %s",
+                    self._mode,
+                    exc_cfg,
+                )
+                with contextlib.suppress(AttributeError):
+                    delattr(self._explainer, "_feature_filter_per_instance_ignore")
+                filtered_request = request
+
             explain_request, explain_config = build_explain_execution_plan(
-                self._explainer, x, request
+                self._explainer, x, filtered_request
             )
+
+            # Respect the execution plugin's own capability check when present.
+            # This avoids over-eager legacy fallback when tests (or downstream
+            # users) inject a custom execution plugin that does not require a
+            # parallel executor.
+            supports = getattr(plugin, "supports", None)
+            if callable(supports):
+                try:
+                    if not supports(explain_request, explain_config):
+                        warnings.warn(
+                            f"Execution plugin does not support request/config for mode '{self._mode}'; falling back to legacy sequential execution.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                        explanation_callable = getattr(self._explainer, self._explanation_attr)
+                        kwargs = {
+                            "threshold": request.threshold,
+                            "low_high_percentiles": request.low_high_percentiles,
+                            "bins": request.bins,
+                        }
+                        if self._mode != "fast":
+                            kwargs["features_to_ignore"] = request.features_to_ignore
+                        kwargs["_use_plugin"] = False
+                        collection = explanation_callable(x, **kwargs)
+                        return _collection_to_batch(collection)
+                except:
+                    exc_supports = sys.exc_info()[1]
+                    if not isinstance(exc_supports, Exception):
+                        raise
+                    logging.getLogger(__name__).warning(
+                        "Execution plugin supports() check failed for mode '%s': %s; falling back to legacy",
+                        self._mode,
+                        exc_supports,
+                    )
+                    warnings.warn(
+                        f"Execution plugin supports() check failed for mode '{self._mode}' ({exc_supports!r}); falling back to legacy sequential execution.",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    explanation_callable = getattr(self._explainer, self._explanation_attr)
+                    kwargs = {
+                        "threshold": request.threshold,
+                        "low_high_percentiles": request.low_high_percentiles,
+                        "bins": request.bins,
+                    }
+                    if self._mode != "fast":
+                        kwargs["features_to_ignore"] = request.features_to_ignore
+                    kwargs["_use_plugin"] = False
+                    collection = explanation_callable(x, **kwargs)
+                    return _collection_to_batch(collection)
 
             # Manage executor lifetime across explain runs.
             # Enter the executor once on first use so the worker pool can be reused
@@ -427,6 +591,11 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 "Execution plugin failed for mode '%s': %s; falling back to legacy",
                 self._mode,
                 exc,
+            )
+            warnings.warn(
+                f"Execution plugin failed for mode '{self._mode}' ({exc!r}); falling back to legacy sequential execution.",
+                UserWarning,
+                stacklevel=2,
             )
             explanation_callable = getattr(self._explainer, self._explanation_attr)
             kwargs = {

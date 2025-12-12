@@ -109,6 +109,45 @@ you benefit immediately when the cache or parallel executor is enabled. The
 ``explain_fast`` plugin continues to offer additional heuristics, but it is no
 longer required for SIMD-friendly perturbation handling.
 
+## Filter features using internal FAST explanations
+
+When the number of features is large, you can reduce compute by using internal
+FAST explanations to discard unimportant features before running the full
+factual/alternative explainers.
+
+Enable this at build time:
+
+```python
+from calibrated_explanations import WrapCalibratedExplainer
+from calibrated_explanations.api.config import ExplainerBuilder
+
+builder = ExplainerBuilder(model)
+config = (
+    builder
+    .perf_parallel(True, backend="threads", workers=4, granularity="feature")
+    .perf_feature_filter(True, per_instance_top_k=8)
+    .build_config()
+)
+wrapper = WrapCalibratedExplainer._from_config(config)
+wrapper.calibrate(X_cal, y_cal)
+explanations = wrapper.explain_factual(X_test)
+```
+
+At runtime you can override or disable the filter via ``CE_FEATURE_FILTER``:
+
+```bash
+CE_FEATURE_FILTER="enable,top_k=8" python serve.py
+```
+
+Internally, each factual/alternative call:
+
+- runs an internal FAST pass on the same batch to obtain per-instance weights,
+- aggregates those weights and keeps at most ``top_k`` features for the batch,
+- passes the resulting ``features_to_ignore`` to the existing execution plugins.
+
+If the FAST plugin is not installed or fails, the filter is skipped and the
+behaviour falls back to the unfiltered explainers.
+
 ## Roll back to the baseline runtime
 
 1. Rebuild any configuration objects with ``perf_cache(False)`` and
