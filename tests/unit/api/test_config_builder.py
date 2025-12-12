@@ -56,6 +56,7 @@ def test_builder_allows_overriding_all_perf_cache_and_parallel_fields():
             backend="threads",
             workers=8,
             min_batch=4,
+            tiny_workload=12,
             granularity="instance",
         )
         .build_config()
@@ -71,6 +72,7 @@ def test_builder_allows_overriding_all_perf_cache_and_parallel_fields():
     assert cfg.perf_parallel_backend == "threads"
     assert cfg.perf_parallel_workers == 8
     assert cfg.perf_parallel_min_batch == 4
+    assert cfg.perf_parallel_tiny_workload == 12
     assert cfg.perf_parallel_granularity == "instance"
 
 

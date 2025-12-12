@@ -27,7 +27,6 @@ import pandas as pd
 import pytest
 from unittest.mock import create_autospec
 
-from tests.helpers.explainer_utils import make_mock_explainer
 from tests.helpers.model_utils import DummyLearner
 
 from calibrated_explanations.core.config_helpers import (
@@ -46,6 +45,7 @@ from calibrated_explanations.core.exceptions import DataShapeError
 from calibrated_explanations.plugins.predict import PredictBridge
 from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.explanations import CalibratedExplanations
+from tests.helpers.explainer_utils import make_mock_explainer
 
 
 def test_read_pyproject_section_handles_multiple_sources(

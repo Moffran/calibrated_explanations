@@ -80,7 +80,6 @@
 
 ### Release Task 4 - ADR-004 Parallel Execution Framework
 
-- **Completed ADR-004 parallel execution backlog for v0.9.1 release**
   - **Workload-aware auto strategy**: Implemented `_auto_strategy` with heuristics based on OS, CPU count, and task size (`task_size_hint_bytes`).
   - **Telemetry**: Enhanced `ParallelMetrics` to track `submitted`, `completed`, `fallbacks`, `failures`, and emit `parallel_execution` events with duration and worker counts.
   - **Context Management**: Implemented `__enter__` and `__exit__` for `ParallelExecutor` to support resource cleanup and pool reuse.
@@ -88,6 +87,17 @@
   - **Chunking Support**: Updated `ParallelExecutor` and plugins (`parallel_instance`, `parallel_feature`) to respect configured chunk sizes, defaulting to 1 for process pools to avoid pickling overhead on small tasks.
   - **Fallback Logic**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures.
   - **Verification**: Added comprehensive lifecycle tests in `tests/unit/core/explain/test_parallel_lifecycle.py` covering strategies, context management, chunking, and fallback scenarios.
+  - **Resource Guardrails**: Implemented `_auto_strategy` enhancements to respect container/cgroup limits and CI environment variables.
+    - Added `_get_cgroup_cpu_quota` to detect CPU limits in containerized environments.
+    - Added `_is_ci_environment` to detect CI environments and default to serial execution to prevent oversubscription.
+    - Added decision reasoning to telemetry events.
+  - **Benchmark Harness**: Enhanced `evaluation/parallel_ablation.py` to serve as a proper benchmark harness.
+    - Added support for multiple scenarios (classification/regression, small/large datasets).
+    - Generated baseline results in `evaluation/parallel_ablation_results.json`.
+  - **Telemetry Expansion**: Updated `ParallelMetrics` and `ParallelExecutor` to track utilization.
+    - Added `worker_utilisation_pct` metric to `ParallelMetrics`.
+    - Implemented utilization calculation in `ParallelExecutor.map`.
+  - **Windows Support**: Fixed pickling issues in `parallel_instance.py` and `parallel.py` to enable `processes` strategy on Windows.
 
 ### Release Task 5 - Interval Safety and Serialization
 

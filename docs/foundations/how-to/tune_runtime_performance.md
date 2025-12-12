@@ -84,11 +84,17 @@ explainer = WrapCalibratedExplainer._from_config(config)
 - ``workers`` caps the worker pool; omit it to use all logical CPUs.
 - ``min_batch`` skips the executor for very small workloads so sequential
   execution stays cheaper.
+- ``min_instances`` sets the floor for instance-parallel execution; defaults to
+  ``max(8, chunk_size)`` so small-but-parallel-worthy batches are not forced
+  to run serially.
+- ``tiny_workload`` overrides the tiny-workload guard used before spinning a
+  pool; omit it to rely on the adaptive per-granularity defaults (≈8–16 by
+  default).
 
 The ``CE_PARALLEL`` environment variable mirrors the builder options:
 
 ```bash
-CE_PARALLEL="enable,threads,workers=8,min_batch=4" python serve.py
+CE_PARALLEL="enable,threads,workers=8,min_batch=4,min_instances=8,tiny=12" python serve.py
 ```
 
 Set ``CE_PARALLEL=off`` to fall back to single-threaded execution without

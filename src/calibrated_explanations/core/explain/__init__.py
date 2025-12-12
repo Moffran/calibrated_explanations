@@ -17,8 +17,22 @@ from .orchestrator import ExplanationOrchestrator
 from .parallel_feature import FeatureParallelExplainExecutor
 from .parallel_instance import InstanceParallelExplainExecutor
 from .sequential import SequentialExplainExecutor
+import warnings as _warnings
+
+
+def explain(*args, **kwargs):
+    """Deprecated shim forwarding to legacy explain implementation."""
+    _warnings.warn(
+        "calibrated_explanations.core.explain.explain is deprecated; use CalibratedExplainer.explain_factual instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from ._legacy_explain import explain as _legacy_explain
+
+    return _legacy_explain(*args, **kwargs)
 
 __all__ = [
+    "explain",
     "BaseExplainExecutor",
     "ExplainConfig",
     "ExplainRequest",

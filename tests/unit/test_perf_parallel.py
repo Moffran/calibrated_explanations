@@ -48,7 +48,8 @@ class TestParallelConfig:
         cfg = ParallelConfig()
         assert not cfg.enabled
         assert cfg.strategy == "auto"
-        assert cfg.min_batch_size == 32
+        assert cfg.min_batch_size == 8
+        assert cfg.tiny_workload_threshold is None
         assert cfg.granularity == "feature"
 
     def test_from_env_enable_flag(self, clean_env):
@@ -75,11 +76,12 @@ class TestParallelConfig:
 
     def test_from_env_complex_string(self, clean_env):
         """Test parsing complex config strings."""
-        os.environ["CE_PARALLEL"] = "enable,workers=4,min_batch=100,joblib"
+        os.environ["CE_PARALLEL"] = "enable,workers=4,min_batch=100,tiny=24,joblib"
         cfg = ParallelConfig.from_env()
         assert cfg.enabled
         assert cfg.max_workers == 4
         assert cfg.min_batch_size == 100
+        assert cfg.tiny_workload_threshold == 24
         assert cfg.strategy == "joblib"
 
     def test_from_env_granularity(self, clean_env):

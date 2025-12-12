@@ -58,7 +58,9 @@ def from_config(cfg: Any) -> PerfFactory:  # pragma: no cover
         enabled=getattr(cfg, "perf_parallel_enabled", False),
         strategy=getattr(cfg, "perf_parallel_backend", "auto"),
         max_workers=getattr(cfg, "perf_parallel_workers", None),
-        min_batch_size=getattr(cfg, "perf_parallel_min_batch", 32),
+        min_batch_size=getattr(cfg, "perf_parallel_min_batch", 8),
+        min_instances_for_parallel=getattr(cfg, "perf_parallel_min_instances", None),
+        tiny_workload_threshold=getattr(cfg, "perf_parallel_tiny_workload", None),
         granularity=getattr(cfg, "perf_parallel_granularity", "feature"),
         telemetry=getattr(cfg, "perf_telemetry", None),
     )

@@ -1,5 +1,7 @@
 """Helper fixtures and mocks for explainer tests."""
 
+from __future__ import annotations
+
 import pytest
 import numpy as np
 from typing import Any, Iterable, Sequence, Tuple, Union, Mapping

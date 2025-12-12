@@ -54,10 +54,13 @@ class ExplainParallelRuntime:
         resolved_granularity = (
             granularity or getattr(explainer, "granularity", None) or parallel_config.granularity
         )
-        chunk_size = max(1, parallel_config.min_batch_size)
+        chunk_size = max(1, parallel_config.instance_chunk_size or parallel_config.min_batch_size)
+        default_min_instances = max(8, chunk_size)
         min_instances = max(
             1,
-            getattr(explainer, "min_instances_for_parallel", 0) or chunk_size,
+            getattr(explainer, "min_instances_for_parallel", None)
+            or parallel_config.min_instances_for_parallel
+            or default_min_instances,
         )
 
         return cls(

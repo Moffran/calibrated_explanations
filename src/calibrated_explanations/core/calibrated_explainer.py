@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import copy
 import sys
+import contextlib
 from time import time
 from typing import TYPE_CHECKING
 
@@ -1150,16 +1151,18 @@ class CalibratedExplainer:
         """
         # Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
-        return self._explanation_orchestrator.invoke_factual(
-            x,
-            threshold,
-            low_high_percentiles,
-            bins,
-            features_to_ignore,
-            discretizer=discretizer,
-            _use_plugin=_use_plugin,
-            **kwargs,
-        )
+        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+        with ctx:
+            return self._explanation_orchestrator.invoke_factual(
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                discretizer=discretizer,
+                _use_plugin=_use_plugin,
+                **kwargs,
+            )
 
     def explain_counterfactual(
         self,
@@ -1228,24 +1231,24 @@ class CalibratedExplainer:
         Returns
         -------
         AlternativeExplanations : :class:`.AlternativeExplanations`
-            An `AlternativeExplanations` containing one :class:`.AlternativeExplanation` for each instance.
-
         Notes
         -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
         """
         # Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "regressor" if "regression" in self.mode else "entropy"
-        return self._explanation_orchestrator.invoke_alternative(
-            x,
-            threshold,
-            low_high_percentiles,
-            bins,
-            features_to_ignore,
-            discretizer=discretizer,
-            _use_plugin=_use_plugin,
-            **kwargs,
-        )  # type: ignore[return-value]
+        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+        with ctx:
+            return self._explanation_orchestrator.invoke_alternative(
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                discretizer=discretizer,
+                _use_plugin=_use_plugin,
+                **kwargs,
+            )  # type: ignore[return-value]
 
     def __call__(
         self,

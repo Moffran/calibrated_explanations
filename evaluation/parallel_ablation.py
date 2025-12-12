@@ -4,6 +4,7 @@ This script runs a canonical workload (calibration + explanation) across differe
 parallel strategies and records wall-clock time. Results are saved to JSON for
 evidence-driven decision making for v0.10.
 """
+import argparse
 import json
 import os
 import time
@@ -17,7 +18,92 @@ from sklearn.model_selection import train_test_split
 from calibrated_explanations import CalibratedExplainer, WrapCalibratedExplainer
 
 RESULTS_FILE = "evaluation/parallel_ablation_results.json"
+PHYSICAL_CORES = 6
+LOGICAL_CORES = 12
+WORKERS = PHYSICAL_CORES  # default: optimize for physical cores
+SMALL_INSTANCE = 1000
+LARGE_INSTANCE = 10000
+SMALL_FEATURE = 10
+LARGE_FEATURE = 100
+SMALL_TEST = 100
+LARGE_TEST = 1000
 
+
+def _configure_parallel_env(
+    *,
+    enabled: bool,
+    strategy: str | None = None,
+    workers: int | None = None,
+    granularity: str | None = None,
+) -> None:
+    """Set CE_PARALLEL using the format expected by ParallelConfig.from_env."""
+    if not enabled:
+        os.environ["CE_PARALLEL"] = "off"
+        return
+
+    tokens: list[str] = ["enable"]
+    if strategy is not None:
+        tokens.append(strategy)
+    if workers is not None:
+        tokens.append(f"workers={workers}")
+    if granularity is not None:
+        tokens.append(f"granularity={granularity}")
+    os.environ["CE_PARALLEL"] = ",".join(tokens)
+
+
+def _expected_execution_plugin_identifier(granularity: str) -> str:
+    if granularity == "feature":
+        return "core.explanation.factual.feature_parallel"
+    if granularity == "instance":
+        return "core.explanation.factual.instance_parallel"
+    raise ValueError(f"Unknown granularity '{granularity}'")
+
+
+def _assert_parallel_wiring(
+    wrapper: WrapCalibratedExplainer,
+    *,
+    expected_strategy: str,
+    expected_workers: int,
+    expected_granularity: str,
+) -> None:
+    """Validate that the explainer used the intended parallel configuration."""
+    if wrapper.explainer is None:
+        raise AssertionError("Expected wrapper.explainer to be initialized")
+
+    explainer = wrapper.explainer
+    executor = getattr(explainer, "_perf_parallel", None)
+    if executor is None:
+        raise AssertionError("Expected explainer to have a parallel executor (_perf_parallel)")
+
+    config = getattr(executor, "config", None)
+    if config is None:
+        raise AssertionError("Expected executor to have a config")
+
+    if not getattr(config, "enabled", False):
+        raise AssertionError("Expected parallel executor to be enabled")
+
+    if getattr(config, "strategy", None) != expected_strategy:
+        raise AssertionError(
+            f"Expected strategy='{expected_strategy}', got '{getattr(config, 'strategy', None)}'"
+        )
+    if getattr(config, "max_workers", None) != expected_workers:
+        raise AssertionError(
+            f"Expected workers={expected_workers}, got {getattr(config, 'max_workers', None)}"
+        )
+    if getattr(config, "granularity", None) != expected_granularity:
+        raise AssertionError(
+            f"Expected granularity='{expected_granularity}', got '{getattr(config, 'granularity', None)}'"
+        )
+
+    expected_plugin = _expected_execution_plugin_identifier(expected_granularity)
+    resolved = getattr(explainer, "_explanation_plugin_identifiers", {}).get("factual")
+    if resolved != expected_plugin:
+        raise AssertionError(f"Expected factual plugin '{expected_plugin}', got '{resolved}'")
+
+    metrics = getattr(executor, "metrics", None)
+    submitted = getattr(metrics, "submitted", 0) if metrics is not None else 0
+    if submitted <= 0:
+        raise AssertionError("Expected executor to submit work (metrics.submitted > 0)")
 
 def run_benchmark(
     mode: str,
@@ -25,6 +111,8 @@ def run_benchmark(
     n_features: int = 20,
     n_test: int = 100,
     strategies: List[str] = None,
+    granularities: List[str] = None,
+    workers: int = WORKERS,
 ) -> Dict[str, Any]:
     """Run benchmark for a specific mode and return results."""
     print(f"Running {mode} benchmark (n_samples={n_samples}, n_features={n_features})...")
@@ -37,6 +125,9 @@ def run_benchmark(
             strategies.append("joblib")
         except ImportError:
             pass
+
+    if granularities is None:
+        granularities = ["instance", "feature"]
 
     # Generate synthetic data
     if mode == "classification":
@@ -54,23 +145,59 @@ def run_benchmark(
 
     results = {}
 
+    # Warm-up run (sequential) to avoid cold-start effects
+    print("  Warm-up run (sequential)...")
+    explainer = WrapCalibratedExplainer(learner)
+    explainer.calibrate(X_cal, y_cal)
+    _ = explainer.explain_factual(X_test[:3])
+
     for strategy in strategies:
         print(f"  Testing strategy: {strategy}")
-        # Set env var to force strategy
-        os.environ["CE_PARALLEL"] = f"enable,strategy={strategy}"
 
-        # Initialize explainer (wraps learner)
-        # We re-initialize to ensure fresh cache/executor state if any
-        start_time = time.time()
-        explainer = WrapCalibratedExplainer(learner)
-        explainer.calibrate(X_cal, y_cal)
+        # Baseline: ensure executor is disabled so the sequential explain plugin runs.
+        # (Granularity is irrelevant when parallel is disabled.)
+        if strategy == "sequential":
+            _configure_parallel_env(enabled=False)
+            start_time = time.time()
+            explainer = WrapCalibratedExplainer(learner)
+            explainer.calibrate(X_cal, y_cal)
+            _ = explainer.explain_factual(X_test)
+            duration = time.time() - start_time
+            results["sequential"] = duration
+            print(f"    Duration: {duration:.4f}s")
+            continue
 
-        # Explain
-        _ = explainer.explain_factual(X_test)
+        for granularity in granularities:
+            print(f"    Granularity: {granularity}")
+            # Enable parallelism. NOTE: strategy is a *token* (e.g. "threads"), not "strategy=threads".
+            _configure_parallel_env(
+                enabled=True,
+                strategy=strategy,
+                workers=workers,
+                granularity=granularity,
+            )
 
-        duration = time.time() - start_time
-        results[strategy] = duration
-        print(f"    Duration: {duration:.4f}s")
+            plugin_id = _expected_execution_plugin_identifier(granularity)
+
+            # Initialize explainer (wraps learner)
+            # We re-initialize to ensure fresh cache/executor state if any
+            start_time = time.time()
+            explainer = WrapCalibratedExplainer(learner)
+            explainer.calibrate(X_cal, y_cal, factual_plugin=plugin_id)
+
+            # Explain
+            _ = explainer.explain_factual(X_test)
+            duration = time.time() - start_time
+
+            _assert_parallel_wiring(
+                explainer,
+                expected_strategy=strategy,
+                expected_workers=workers,
+                expected_granularity=granularity,
+            )
+
+            results[f"{strategy}:{granularity}"] = duration
+            print(f"    Duration: {duration:.4f}s")
 
     # Cleanup env
     if "CE_PARALLEL" in os.environ:
@@ -85,35 +212,58 @@ def print_summary(results: Dict[str, Any]):
     print(f"{'BENCHMARK SUMMARY':^60}")
     print("=" * 60)
 
-    for mode in ["classification", "regression"]:
+    for mode in ["classification_small", "classification_feature", "classification_instance", "regression_small", "regression_feature", "regression_instance"]:
         if mode not in results:
             continue
 
         print(f"\nMode: {mode.upper()}")
-        print(f"{'Strategy':<15} | {'Duration (s)':<12} | {'Speedup':<10}")
-        print("-" * 43)
+        print(f"{'Strategy':<25} | {'Duration (s)':<12} | {'Speedup':<10}")
+        print("-" * 53)
 
         mode_results = results[mode]
-        baseline = mode_results.get("sequential", 1.0)
+
+        sequential_baseline = mode_results.get("sequential")
 
         # Sort by duration (fastest first)
         sorted_strategies = sorted(mode_results.items(), key=lambda x: x[1])
 
-        for strategy, duration in sorted_strategies:
+        for key, duration in sorted_strategies:
+            baseline = sequential_baseline if sequential_baseline is not None else duration
             speedup = baseline / duration if duration > 0 else 0.0
-            print(f"{strategy:<15} | {duration:<12.4f} | {speedup:<10.2f}x")
+            print(f"{key:<25} | {duration:<12.4f} | {speedup:<10.2f}x")
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="ParallelExecutor benchmark (strategies + granularity)")
+    parser.add_argument("--physical-cores", type=int, default=PHYSICAL_CORES)
+    parser.add_argument("--logical-cores", type=int, default=LOGICAL_CORES)
+    parser.add_argument("--workers", type=int, default=WORKERS)
+    return parser.parse_args()
 
 
 def main():
     """Execute benchmarks and save results."""
+    args = _parse_args()
+    global PHYSICAL_CORES, LOGICAL_CORES, WORKERS
+    PHYSICAL_CORES = int(args.physical_cores)
+    LOGICAL_CORES = int(args.logical_cores)
+    WORKERS = int(args.workers)
+
     results = {
         "meta": {
             "timestamp": time.time(),
             "platform": os.name,
             "cpu_count": os.cpu_count(),
+            "workers": WORKERS,
+            "physical_cores": PHYSICAL_CORES,
+            "logical_cores": LOGICAL_CORES,
         },
-        "classification": run_benchmark("classification"),
-        "regression": run_benchmark("regression"),
+        "classification_small": run_benchmark("classification", n_samples=SMALL_INSTANCE, n_features=SMALL_FEATURE, n_test=SMALL_TEST),
+        "classification_instance": run_benchmark("classification", n_samples=LARGE_INSTANCE, n_features=SMALL_FEATURE, n_test=LARGE_TEST),
+        "classification_feature": run_benchmark("classification", n_samples=SMALL_INSTANCE, n_features=LARGE_FEATURE, n_test=SMALL_TEST),
+        "regression_small": run_benchmark("regression", n_samples=SMALL_INSTANCE, n_features=SMALL_FEATURE, n_test=SMALL_TEST),
+        "regression_instance": run_benchmark("regression", n_samples=LARGE_INSTANCE, n_features=SMALL_FEATURE, n_test=LARGE_TEST),
+        "regression_feature": run_benchmark("regression", n_samples=SMALL_INSTANCE, n_features=LARGE_FEATURE, n_test=SMALL_TEST),
     }
 
     print_summary(results)

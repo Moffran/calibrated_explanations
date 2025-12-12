@@ -10,6 +10,12 @@ Tests verify that:
 from __future__ import annotations
 
 
+import pytest
+
+from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
+from calibrated_explanations.plugins.explanations import ExplanationContext, ExplanationRequest
+
+
 from calibrated_explanations.plugins import registry
 from calibrated_explanations.plugins.builtins import (
     FeatureParallelAlternativeExplanationPlugin,
@@ -226,3 +232,101 @@ class TestExecutionPluginClassConfiguration:
         assert plugin._execution_plugin_class is not None
         # Verify the class name matches
         assert "InstanceParallel" in plugin._execution_plugin_class.__name__
+
+
+def _inc(x: int) -> int:
+    return x + 1
+
+
+def test_should_enter_parallel_executor_once_during_explain_batch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import calibrated_explanations.parallel.parallel as parallel_mod
+
+    created_pools: list[int | None] = []
+
+    class CountingThreadPool:
+        def __init__(self, max_workers: int | None = None):
+            created_pools.append(max_workers)
+            self._max_workers = max_workers or 1
+
+        def map(self, fn, items, chunksize: int = 1):  # noqa: ARG002
+            return list(map(fn, items))
+
+        def shutdown(self, wait: bool = True, cancel_futures: bool = False):  # noqa: ARG002
+            return None
+
+    monkeypatch.setattr(parallel_mod, "ThreadPoolExecutor", CountingThreadPool)
+
+    cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
+    executor = ParallelExecutor(cfg)
+
+    class DummyExecutionPlugin:
+        def execute(self, explain_request, explain_config, explainer):  # noqa: ARG002
+            explain_config.executor.map(_inc, [1, 2], work_items=2)
+            explain_config.executor.map(_inc, [1, 2], work_items=2)
+
+            class DummyCollection:
+                mode = "factual"
+                explanations = []
+
+            return DummyCollection()
+
+    def fake_build_explain_execution_plan(_explainer, _x, _request):  # noqa: ARG001
+        from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
+
+        return (
+            ExplainRequest(
+                x=None,
+                threshold=None,
+                low_high_percentiles=(0.05, 0.95),
+                bins=None,
+                features_to_ignore=(),
+                use_plugin=False,
+                skip_instance_parallel=False,
+            ),
+            ExplainConfig(
+                executor=executor,
+                granularity="feature",
+                min_instances_for_parallel=1,
+                chunk_size=1,
+                num_features=1,
+                features_to_ignore_default=(),
+                categorical_features=(),
+                feature_values={},
+                mode="classification",
+            ),
+        )
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.explain.parallel_runtime.build_explain_execution_plan",
+        fake_build_explain_execution_plan,
+    )
+
+    plugin = FeatureParallelExplanationPlugin()
+    plugin._execution_plugin_class = DummyExecutionPlugin  # type: ignore[assignment]
+
+    context = ExplanationContext(
+        task="classification",
+        mode="factual",
+        feature_names=("f0",),
+        categorical_features=(),
+        categorical_labels={},
+        discretizer=object(),
+        helper_handles={"explainer": object()},
+        predict_bridge=object(),  # not used by execution wrapper
+        interval_settings={},
+        plot_settings={},
+    )
+    plugin.initialize(context)
+
+    request = ExplanationRequest(
+        threshold=None,
+        low_high_percentiles=(0.05, 0.95),
+        bins=None,
+        features_to_ignore=(),
+        extras={},
+    )
+    plugin.explain_batch("x", request)
+
+    assert len(created_pools) == 1

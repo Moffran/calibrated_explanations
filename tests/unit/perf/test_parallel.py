@@ -3,6 +3,8 @@ from functools import partial
 
 from typing import Any
 
+import pytest
+
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor, ParallelMetrics
 
 
@@ -43,6 +45,7 @@ def test_parallel_metrics_snapshot():
         "failures": 0,
         "total_duration": 0.0,
         "max_workers": 0,
+        "worker_utilisation_pct": 0.0,
     }
 
 
@@ -56,12 +59,13 @@ def test_parallel_config_from_env(monkeypatch):
     assert cfg.enabled is True
     assert cfg.strategy == "sequential"
 
-    monkeypatch.setenv("CE_PARALLEL", "off,threads,workers=10,min_batch=2,enable")
+    monkeypatch.setenv("CE_PARALLEL", "off,threads,workers=10,min_batch=2,tiny=11,enable")
     cfg = ParallelConfig.from_env(base)
     assert cfg.enabled is True
     assert cfg.strategy == "threads"
     assert cfg.max_workers == 10
     assert cfg.min_batch_size == 2
+    assert cfg.tiny_workload_threshold == 11
 
 
 def test_map_handles_disabled_and_small_batches():
@@ -101,7 +105,8 @@ def test_map_uses_strategy_and_updates_metrics(monkeypatch):
     print(f"DEBUG: config.force_serial_on_failure={config.force_serial_on_failure}")
     executor = ParallelExecutor(config)
     monkeypatch.setattr(executor, "_resolve_strategy", lambda **k: failing_strategy)
-    assert executor.map(lambda x: x + 1, [1]) == [2]
+    with pytest.warns(UserWarning, match="falling back to sequential"):
+        assert executor.map(lambda x: x + 1, [1]) == [2]
     assert executor.metrics.failures == 1
     assert executor.metrics.fallbacks == 1
     assert events and events[0][0] == "parallel_fallback"
@@ -131,6 +136,46 @@ def test_resolve_strategy_variants(monkeypatch):
     assert executor._resolve_strategy().func.__name__ == "_thread_strategy"
 
 
+def test_instance_minimum_overrides_min_batch(monkeypatch):
+    config = ParallelConfig(
+        enabled=True,
+        strategy="threads",
+        granularity="instance",
+        min_batch_size=32,
+        min_instances_for_parallel=8,
+    )
+    executor = ParallelExecutor(config)
+
+    def fake_strategy(fn, items, **_):
+        return [fn(item) for item in items]
+
+    monkeypatch.setattr(executor, "_resolve_strategy", lambda **_: fake_strategy)
+    results = executor.map(lambda x: x + 1, list(range(10)), work_items=10)
+
+    assert results == [i + 1 for i in range(10)]
+    assert executor.metrics.submitted == 10
+
+
+def test_tiny_threshold_override(monkeypatch):
+    config = ParallelConfig(
+        enabled=True,
+        strategy="threads",
+        min_batch_size=1,
+        tiny_workload_threshold=5,
+    )
+    executor = ParallelExecutor(config)
+
+    def fake_strategy(fn, items, **_):
+        return [fn(item) for item in items]
+
+    monkeypatch.setattr(executor, "_resolve_strategy", lambda **_: fake_strategy)
+
+    # 3 < tiny threshold forces sequential path
+    results = executor.map(lambda x: x, [1, 2, 3], work_items=3)
+    assert results == [1, 2, 3]
+    assert executor.metrics.submitted == 0
+
+
 def test_auto_strategy(monkeypatch):
     config = ParallelConfig(enabled=True, strategy="auto")
     executor = ParallelExecutor(config)
@@ -143,6 +188,10 @@ def test_auto_strategy(monkeypatch):
         @staticmethod
         def cpu_count():
             return os.cpu_count()
+
+        @staticmethod
+        def getenv(key, default=None):
+            return default
 
     monkeypatch.setattr("calibrated_explanations.parallel.parallel.os", MockOS, raising=False)
     assert executor._auto_strategy() == "threads"
@@ -178,6 +227,10 @@ def test_auto_strategy_work_items(monkeypatch):
         @staticmethod
         def cpu_count():
             return os.cpu_count()
+
+        @staticmethod
+        def getenv(key, default=None):
+            return default
 
     monkeypatch.setattr("calibrated_explanations.parallel.parallel.os", MockOS, raising=False)
     monkeypatch.setattr(

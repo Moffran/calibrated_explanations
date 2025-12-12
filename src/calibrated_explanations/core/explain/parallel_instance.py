@@ -24,6 +24,45 @@ else:
     CalibratedExplainer = object
 
 
+def _instance_parallel_task(
+    task: Tuple[int, np.ndarray, Any, Any, Any, Any, Any, Any],
+) -> Tuple[int, CalibratedExplanations]:
+    """Execute a single instance-chunk explanation task.
+
+    Top-level function to ensure picklability for process-based parallelism.
+    """
+    (
+        start_idx,
+        subset,
+        threshold_slice,
+        bins_slice,
+        low_high_percentiles,
+        features_to_ignore_array,
+        explainer,
+        config_state,
+    ) = task
+
+    # Reconstruct config
+    config = ExplainConfig(**config_state)
+    # Ensure executor is None to prevent recursion/pickling issues
+    config.executor = None
+
+    # Reconstruct request
+    chunk_request = ExplainRequest(
+        x=subset,
+        threshold=threshold_slice,
+        low_high_percentiles=low_high_percentiles,
+        bins=bins_slice,
+        features_to_ignore=features_to_ignore_array,
+        use_plugin=False,
+        skip_instance_parallel=True,
+    )
+
+    plugin = SequentialExplainExecutor()
+    result = plugin.execute(chunk_request, config, explainer)
+    return start_idx, result
+
+
 class InstanceParallelExplainExecutor(BaseExplainExecutor):
     """Instance-parallel explain execution strategy.
 
@@ -134,31 +173,28 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
             explainer._last_explanation_mode = explainer._infer_explanation_mode()
             return result
 
+        # Prepare sanitized config state (exclude executor to avoid pickling issues)
+        config_state = {
+            k: v for k, v in config.__dict__.items() if k != "executor"
+        }
+
         # Step 3: Build parallel tasks
-        tasks: List[Tuple[int, np.ndarray, Any, Any]] = [
-            (start, np.asarray(x_input[start:stop]), threshold_slice, bins_slice)
+        tasks: List[Tuple[int, np.ndarray, Any, Any, Any, Any, Any, Any]] = [
+            (
+                start,
+                np.asarray(x_input[start:stop]),
+                threshold_slice,
+                bins_slice,
+                request.low_high_percentiles,
+                features_to_ignore_array,
+                explainer,
+                config_state,
+            )
             for start, stop, threshold_slice, bins_slice in ranges
         ]
 
-        # Step 4: Define worker function that invokes sequential plugin
-        def _instance_parallel_task(
-            task: Tuple[int, np.ndarray, Any, Any],
-        ) -> Tuple[int, CalibratedExplanations]:
-            """Execute a single instance-chunk explanation task."""
-            start_idx, subset, threshold_slice, bins_slice = task
-            chunk_request = ExplainRequest(
-                x=subset,
-                threshold=threshold_slice,
-                low_high_percentiles=request.low_high_percentiles,
-                bins=bins_slice,
-                features_to_ignore=features_to_ignore_array,
-                use_plugin=False,
-                skip_instance_parallel=True,  # Prevent recursive parallelism
-            )
-            result = self._sequential_plugin.execute(chunk_request, config, explainer)
-            return start_idx, result
-
         # Step 5: Execute tasks in parallel
+        # Note: _instance_parallel_task is now top-level
         ordered_results = sorted(
             executor.map(_instance_parallel_task, tasks, work_items=n_instances),
             key=lambda item: item[0],

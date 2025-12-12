@@ -328,7 +328,7 @@ class ExplainConfig:
     granularity: str = "feature"
     """Parallelism granularity: 'feature', 'instance', or 'none'."""
 
-    min_instances_for_parallel: int = 4
+    min_instances_for_parallel: int = 8
     """Minimum instances required to trigger instance parallelism."""
 
     chunk_size: int = 100
