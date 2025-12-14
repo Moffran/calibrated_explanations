@@ -531,7 +531,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     extras=request.extras,
                 )
 
-            explain_request, explain_config = build_explain_execution_plan(
+            explain_request, explain_config, runtime = build_explain_execution_plan(
                 self._explainer, x, filtered_request
             )
 
@@ -585,20 +585,9 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                     collection = explanation_callable(x, **kwargs)
                     return _collection_to_batch(collection)
 
-            # Manage executor lifetime across explain runs.
-            # Enter the executor once on first use so the worker pool can be reused
-            # across repeated explain calls (critical for process backends).
-            executor = getattr(explain_config, "executor", None)
-            if executor is not None:
-                config = getattr(executor, "config", None)
-                if config is not None and getattr(config, "enabled", False):
-                    pool = getattr(executor, "_pool", None)
-                    if pool is None:
-                        enter = getattr(executor, "__enter__", None)
-                        if callable(enter):
-                            enter()
-
-            collection = plugin.execute(explain_request, explain_config, self._explainer)
+            # Manage executor lifetime across explain runs using the runtime context.
+            with runtime:
+                collection = plugin.execute(explain_request, explain_config, self._explainer)
 
         except:
             exc = sys.exc_info()[1]

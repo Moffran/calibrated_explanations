@@ -20,7 +20,6 @@
   - **Stage 4 — Namespace Documentation:** All namespaces classified with rationale, deprecation timelines, and migration paths
   - **Stage 5 — Import Graph Linting:** AST-based static analyzer detects violations; 17 enforcement tests; CI-ready with baseline
     - **Updated Linter**: `scripts/check_import_graph.py` now enforces a strict allow-list of cross-sibling imports.
-    - **Defined Exceptions**: Created `docs/improvement/adr mending/ADR-001/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` documenting the 6 allowed architectural patterns (Exception Hierarchy, Orchestrator, Interfaces, Shared Utils, Visualization, Legacy).
     - **Package restructuring**: Defined and implemented top-level internal packages (`core`, `calibration`, `explanations`, `cache`, `parallel`, `schema`, `plugins`, `viz`, `utils`)
     - **Boundary enforcement**: Implemented `scripts/check_import_graph.py` to enforce strict import boundaries and allow-listed exceptions
     - **CI Integration**: Added ADR-001 boundary check to `lint.yml` workflow to prevent regression
@@ -84,27 +83,24 @@
 
 ### Release Task 4 - ADR-004 Parallel Execution Framework
 
-  - **Workload-aware auto strategy**: Implemented `_auto_strategy` with heuristics based on OS, CPU count, and task size (`task_size_hint_bytes`).
-  - **Telemetry**: Enhanced `ParallelMetrics` to track `submitted`, `completed`, `fallbacks`, `failures`, and emit `parallel_execution` events with duration and worker counts.
-  - **Context Management**: Implemented `__enter__` and `__exit__` for `ParallelExecutor` to support resource cleanup and pool reuse.
-  - **Configuration Surface**: Added `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, and `feature_chunk_size` to `ParallelConfig`.
-  - **Chunking Support**: Updated `ParallelExecutor` and plugins (`parallel_instance`, `parallel_feature`) to respect configured chunk sizes, defaulting to 1 for process pools to avoid pickling overhead on small tasks.
-  - **Fallback Logic**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures.
-  - **Verification**: Added comprehensive lifecycle tests in `tests/unit/core/explain/test_parallel_lifecycle.py` covering strategies, context management, chunking, and fallback scenarios.
-  - **Resource Guardrails**: Implemented `_auto_strategy` enhancements to respect container/cgroup limits and CI environment variables.
-    - Added `_get_cgroup_cpu_quota` to detect CPU limits in containerized environments.
-    - Added `_is_ci_environment` to detect CI environments and default to serial execution to prevent oversubscription.
-    - Added decision reasoning to telemetry events.
-  - **Benchmark Harness**: Enhanced `evaluation/parallel_ablation.py` to serve as a proper benchmark harness.
-    - Added support for multiple scenarios (classification/regression, small/large datasets).
-    - Generated baseline results in `evaluation/parallel_ablation_results.json`.
-  - **Telemetry Expansion**: Updated `ParallelMetrics` and `ParallelExecutor` to track utilization.
-    - Added `worker_utilisation_pct` metric to `ParallelMetrics`.
-    - Implemented utilization calculation in `ParallelExecutor.map`.
-  - **Windows Support**: Fixed pickling issues in `parallel_instance.py` and `parallel.py` to enable `processes` strategy on Windows.
-  - **Feature Parallel Deprecation**: Deprecated `FeatureParallel` execution strategy due to high overhead.
-    - Replaced `FeatureParallelExplanationPlugin` and `FeatureParallelAlternativeExplanationPlugin` with shims that silently fall back to `InstanceParallelExplanationPlugin`.
-    - This ensures backward compatibility for existing configurations while avoiding performance regressions.
+- **Workload-aware auto strategy**: Implemented `_auto_strategy` with heuristics based on OS, CPU count, and task size (`task_size_hint_bytes`).
+- **Telemetry & Metrics**: Enhanced `ParallelMetrics` to track `submitted`, `completed`, `fallbacks`, `failures`, `worker_utilisation_pct`, and emit `parallel_execution` events with duration and worker counts.
+- **Context Management & Lifecycle**: Implemented `__enter__` and `__exit__` for `ParallelExecutor` and `ExplainParallelRuntime` to support resource cleanup, pool reuse, and efficient lifecycle management across batches.
+- **Configuration Surface**: Added `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, and `feature_chunk_size` to `ParallelConfig`.
+- **Chunking Support**: Updated `ParallelExecutor` and plugins (`parallel_instance`, `parallel_feature`) to respect configured chunk sizes, defaulting to 1 for process pools to avoid pickling overhead on small tasks.
+- **Fallback Logic & Warnings**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures, emitting clear user warnings when fallback occurs.
+- **Resource Guardrails**: Implemented `_auto_strategy` enhancements to respect container/cgroup limits and CI environment variables.
+  - Added `_get_cgroup_cpu_quota` to detect CPU limits in containerized environments.
+  - Added `_is_ci_environment` to detect CI environments and default to serial execution to prevent oversubscription.
+  - Added decision reasoning to telemetry events.
+- **Benchmark Harness**: Enhanced `evaluation/parallel_ablation.py` and added `src/calibrated_explanations/core/explain/benchmarks.py` to serve as proper benchmark harnesses for comparing parallel strategies.
+  - Added support for multiple scenarios (classification/regression, small/large datasets).
+  - Generated baseline results in `evaluation/parallel_ablation_results.json`.
+- **Windows Support**: Fixed pickling issues in `parallel_instance.py` and `parallel.py` to enable `processes` strategy on Windows.
+- **Feature Parallel Deprecation**: Deprecated `FeatureParallel` execution strategy due to high overhead.
+  - Replaced `FeatureParallelExplanationPlugin` and `FeatureParallelAlternativeExplanationPlugin` with shims that silently fall back to `InstanceParallelExplanationPlugin`.
+  - Removed deprecated `granularity` parameter from `ExplainParallelRuntime` to align with ADR-004.
+- **Integration**: Updated `builtins.py` to fully utilize the new runtime context manager, ensuring proper resource management and telemetry collection.
 
 ### Release Task 5 - Interval Safety and Serialization
 
@@ -128,9 +124,13 @@
 
 ### Release Task 7 - Terminology Standardization (ADR-021)
 
-- **Removed deprecated alias `_is_thresholded()`**
-  - Removed `_is_thresholded()` from `CalibratedExplanations` class (superseded by `_is_probabilistic_regression()`)
-  - Updated documentation to reflect removal
+- **Standardized on "probabilistic regression" as the canonical user-facing term** for regression with threshold-based probability predictions.
+  - Renamed internal method `_is_thresholded()` → `_is_probabilistic_regression()` in `CalibratedExplanations` class.
+  - **Removed deprecated alias `_is_thresholded()`** (superseded by `_is_probabilistic_regression()`).
+  - Public method `is_thresholded()` on `Explanation` objects **unchanged** for full backward compatibility.
+  - Updated ADR-021 with a "Terminology" section explaining the equivalence and usage guidance.
+  - Updated all docstrings to prefer "probabilistic regression" terminology.
+  - Created migration guide: `docs/migration/v0.9-to-v0.10-terminology.md`.
 
 ### Release Task 8 - Condition Source Support
 

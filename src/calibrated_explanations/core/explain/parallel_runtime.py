@@ -10,8 +10,11 @@ sprinkling parallel plumbing across sibling packages.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Tuple
+import logging
+import time
+import warnings
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Tuple, Dict
 
 from ...parallel import ParallelConfig, ParallelExecutor
 from ._helpers import merge_ignore_features, validate_and_prepare_input
@@ -21,6 +24,7 @@ if TYPE_CHECKING:
     from ...plugins import ExplanationRequest
 
 _DEFAULT_PERCENTILES: Tuple[float, float] = (5, 95)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -28,9 +32,49 @@ class ExplainParallelRuntime:
     """Bundle explain-specific parallel settings around the shared executor."""
 
     executor: ParallelExecutor | None
-    granularity: str
     min_instances_for_parallel: int
     chunk_size: int
+    _start_time: float | None = field(default=None, init=False, repr=False)
+
+    def __enter__(self) -> "ExplainParallelRuntime":
+        """Enter the runtime context, initializing the executor if present."""
+        self._start_time = time.perf_counter()
+        if self.executor:
+            self.executor.__enter__()
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit the runtime context, updating telemetry and handling cleanup."""
+        if self.executor:
+            self.executor.__exit__(exc_type, exc_val, exc_tb)
+            
+            # Update telemetry
+            duration = time.perf_counter() - (self._start_time or 0)
+            self.executor.metrics.total_duration += duration
+            
+            # Fallback warning
+            if (
+                self.executor.config.enabled 
+                and self.executor._active_strategy_name == "sequential"
+                and self.executor.config.strategy != "sequential"
+            ):
+                warnings.warn(
+                    "Parallel execution fell back to sequential. Check logs for details.",
+                    UserWarning,
+                    stacklevel=2
+                )
+
+    def cancel(self) -> None:
+        """Cancel any running parallel tasks."""
+        if self.executor:
+            self.executor.cancel()
+
+    @property
+    def telemetry(self) -> Dict[str, Any]:
+        """Return current telemetry snapshot."""
+        if self.executor:
+            return self.executor.metrics.snapshot()
+        return {}
 
     @classmethod
     def from_explainer(
@@ -51,9 +95,8 @@ class ExplainParallelRuntime:
             executor = None
 
         parallel_config = executor.config if executor is not None else ParallelConfig()
-        resolved_granularity = (
-            granularity or getattr(explainer, "granularity", None) or parallel_config.granularity
-        )
+        # Granularity is deprecated and not captured here.
+
         chunk_size = max(1, parallel_config.instance_chunk_size or parallel_config.min_batch_size)
         default_min_instances = max(8, chunk_size)
         min_instances = max(
@@ -65,16 +108,22 @@ class ExplainParallelRuntime:
 
         return cls(
             executor=executor,
-            granularity=resolved_granularity,
             min_instances_for_parallel=min_instances,
             chunk_size=chunk_size,
         )
 
     def build_config(self, explainer: Any) -> ExplainConfig:
         """Materialize an :class:`ExplainConfig` for executor dispatch."""
+        # Granularity is derived from executor config if present, else defaults to 'none'
+        # or whatever ExplainConfig defaults to if we passed None, but ExplainConfig expects str.
+        # We use executor config if available.
+        granularity = "none"
+        if self.executor:
+            granularity = self.executor.config.granularity
+
         return ExplainConfig(
             executor=self.executor,
-            granularity=self.granularity if self.executor is not None else "none",
+            granularity=granularity,
             min_instances_for_parallel=self.min_instances_for_parallel,
             chunk_size=self.chunk_size,
             num_features=explainer.num_features,
@@ -87,7 +136,7 @@ class ExplainParallelRuntime:
 
 def build_explain_execution_plan(
     explainer: Any, x: Any, request: "ExplanationRequest"
-) -> Tuple[ExplainRequest, ExplainConfig]:
+) -> Tuple[ExplainRequest, ExplainConfig, ExplainParallelRuntime]:
     """Prepare explain execution request and config using explain-local rules."""
     prepared_x = validate_and_prepare_input(explainer, x)
     features_to_ignore_array = merge_ignore_features(explainer, request.features_to_ignore)
@@ -115,12 +164,10 @@ def build_explain_execution_plan(
         skip_instance_parallel=False,
     )
 
-    runtime = ExplainParallelRuntime.from_explainer(
-        explainer, granularity=getattr(explainer, "granularity", None)
-    )
+    runtime = ExplainParallelRuntime.from_explainer(explainer)
     explain_config = runtime.build_config(explainer)
 
-    return explain_request, explain_config
+    return explain_request, explain_config, runtime
 
 
 __all__ = [
