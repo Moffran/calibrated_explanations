@@ -500,7 +500,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 self._upper_cache = None
         return self._upper_cache
 
-    def _is_probabilistic_regression(self) -> bool:
+    @property
+    def is_probabilistic_regression(self) -> bool:
         """Check if the explanations use probabilistic regression (thresholded).
 
         Probabilistic regression and thresholded regression are synonymous terms.
@@ -508,11 +509,28 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
-    def _is_one_sided(self) -> bool:
+    def _is_probabilistic_regression(self) -> bool:
+        """Check if the explanations use probabilistic regression (thresholded).
+
+        .. deprecated:: 0.10.0
+            Use :attr:`is_probabilistic_regression` instead.
+        """
+        return self.is_probabilistic_regression
+
+    @property
+    def is_one_sided(self) -> bool:
         """Check if the explanations are one-sided."""
         if self.low_high_percentiles is None:
             return False
         return np.isinf(self.get_low_percentile()) or np.isinf(self.get_high_percentile())
+
+    def _is_one_sided(self) -> bool:
+        """Check if the explanations are one-sided.
+
+        .. deprecated:: 0.10.0
+            Use :attr:`is_one_sided` instead.
+        """
+        return self.is_one_sided
 
     def get_confidence(self) -> float:
         """Return the confidence level of the explanations.
