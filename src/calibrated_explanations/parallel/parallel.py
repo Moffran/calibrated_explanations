@@ -67,7 +67,7 @@ class ParallelConfig:
     tiny_workload_threshold: int | None = None
     instance_chunk_size: int | None = None
     feature_chunk_size: int | None = None
-    granularity: Literal["feature", "instance"] = "feature"
+    granularity: Literal["instance"] = "instance"
     task_size_hint_bytes: int = 0
     force_serial_on_failure: bool = False
     telemetry: TelemetryCallback | None = None
@@ -121,8 +121,15 @@ class ParallelConfig:
                 continue
             if token.startswith("granularity="):
                 value = token.split("=", 1)[1].strip().lower()
-                if value in {"feature", "instance"}:
-                    cfg.granularity = value  # type: ignore[assignment]
+                if value == "feature":
+                    warnings.warn(
+                        "Feature parallelism is deprecated and removed. Using 'instance' parallelism instead.",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
+                    cfg.granularity = "instance"
+                elif value == "instance":
+                    cfg.granularity = "instance"
         return cfg
 
 
@@ -466,17 +473,12 @@ class ParallelExecutor:
                 )
                 return "sequential"
 
-        # 1. Platform constraints
-        if os.name == "nt":  # prefer threads on Windows for compatibility
-            self._emit("parallel_decision", {"decision": "threads", "reason": "windows_platform"})
-            return "threads"
-
-        # 2. CI Environment Guardrails
+        # 1. CI Environment Guardrails
         if self._is_ci_environment():
             self._emit("parallel_decision", {"decision": "sequential", "reason": "ci_environment"})
             return "sequential"
 
-        # 3. Resource constraints
+        # 2. Resource constraints
         cpu_count = os.cpu_count() or 1
         cgroup_limit = self._get_cgroup_cpu_quota()
         if cgroup_limit is not None:
@@ -486,7 +488,7 @@ class ParallelExecutor:
             self._emit("parallel_decision", {"decision": "threads", "reason": "low_cpu_count"})
             return "threads"
 
-        # 4. Workload heuristics
+        # 3. Workload heuristics
         # If tasks are very large, pickling overhead in processes might outweigh GIL benefits
         # Threshold: 10MB (arbitrary, but conservative)
         if self.config.task_size_hint_bytes > 10 * 1024 * 1024:
@@ -494,22 +496,28 @@ class ParallelExecutor:
             return "threads"
 
         if work_items is not None:
-            # Prefer threads when payloads are modest or when feature granularity favours
-            # in-process sharing; tilt toward processes only when the workload is heavy
-            # enough to amortise spin-up costs.
-            if work_items < 5000:
-                self._emit("parallel_decision", {"decision": "threads", "reason": "small_workload"})
-                return "threads"
+            # Benchmarks indicate sequential execution is faster for < 2500 instances
+            # due to process spawn/pickle overhead dominating the optimized sequential path.
+            if work_items < 2500:
+                self._emit("parallel_decision", {"decision": "sequential", "reason": "small_workload"})
+                return "sequential"
+
             if work_items > 50000 and self.config.granularity == "instance":
                 self._emit("parallel_decision", {"decision": "processes", "reason": "large_instance_workload"})
                 return "processes"
 
-        # 5. Library preference
+        # 4. Library preference
         # When joblib is available prefer it because of smarter chunking
         if _JoblibParallel is not None:
             self._emit("parallel_decision", {"decision": "joblib", "reason": "joblib_available"})
             return "joblib"
-        
+
+        # 5. Default fallback
+        if os.name == "nt":
+            # Windows multiprocessing is slow (spawn), so prefer threads if joblib is missing
+            self._emit("parallel_decision", {"decision": "threads", "reason": "windows_default"})
+            return "threads"
+
         self._emit("parallel_decision", {"decision": "processes", "reason": "default_fallback"})
         return "processes"
 

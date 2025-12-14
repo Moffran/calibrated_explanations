@@ -1,19 +1,46 @@
 {
   "meta": {
-    "timestamp": 1765433679.3720253,
+    "timestamp": 1765713638.590326,
     "platform": "nt",
-    "cpu_count": 12
+    "cpu_count": 12,
+    "workers": 6,
+    "physical_cores": 6,
+    "logical_cores": 12
   },
-  "classification": {
-    "sequential": 2.624661445617676,
-    "threads": 2.1072945594787598,
-    "processes": 2.419245481491089,
-    "joblib": 2.6473231315612793
+  "classification_small": {
+    "sequential": 1.9589695930480957,
+    "threads:instance": 1.2769463062286377,
+    "processes:instance": 1.3505809307098389,
+    "joblib:instance": 1.4858808517456055
   },
-  "regression": {
-    "sequential": 2.2258799076080322,
-    "threads": 2.3727855682373047,
-    "processes": 2.235633134841919,
-    "joblib": 2.220329523086548
+  "classification_feature": {
+    "sequential": 7.67167067527771,
+    "threads:instance": 6.141808986663818,
+    "processes:instance": 6.356510400772095,
+    "joblib:instance": 6.538298845291138
+  },
+  "classification_instance": {
+    "sequential": 12.767180681228638,
+    "threads:instance": 20.767533779144287,
+    "processes:instance": 10.95893120765686,
+    "joblib:instance": 11.772955417633057
+  },
+  "regression_small": {
+    "sequential": 1.4219064712524414,
+    "threads:instance": 1.4216041564941406,
+    "processes:instance": 1.6073870658874512,
+    "joblib:instance": 1.4246876239776611
+  },
+  "regression_feature": {
+    "sequential": 7.324219465255737,
+    "threads:instance": 7.186338424682617,
+    "processes:instance": 7.130581378936768,
+    "joblib:instance": 7.655355215072632
+  },
+  "regression_instance": {
+    "sequential": 15.605544805526733,
+    "threads:instance": 29.03667378425598,
+    "processes:instance": 13.335899114608765,
+    "joblib:instance": 8.210589408874512
   }
 }

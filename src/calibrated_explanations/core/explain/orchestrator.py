@@ -20,6 +20,8 @@ import sys
 import types
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
+import numpy as np
+
 from ...core.config_helpers import coerce_string_tuple
 from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
@@ -265,14 +267,27 @@ class ExplanationOrchestrator:
             If plugin resolution, initialization, or invocation fails.
         """
         plugin, _identifier = self._ensure_plugin(mode)
+        per_instance_ignore = None
+        features_arg = features_to_ignore or []
+        if features_arg and isinstance(features_arg, (list, tuple)) and isinstance(
+            features_arg[0], (list, tuple, np.ndarray)
+        ):
+            # User supplied per-instance masks
+            per_instance_ignore = tuple(tuple(int(f) for f in mask) for mask in features_arg)
+            flat_ignore = np.unique(np.concatenate([np.asarray(mask, dtype=int) for mask in features_arg]))
+            features_to_ignore_flat = tuple(int(f) for f in flat_ignore.tolist())
+        else:
+            features_to_ignore_flat = tuple(features_arg)
+
         request = ExplanationRequest(
             threshold=threshold,
             low_high_percentiles=(
                 tuple(low_high_percentiles) if low_high_percentiles is not None else None
             ),
             bins=tuple(bins) if bins is not None else None,
-            features_to_ignore=tuple(features_to_ignore or []),
-            extras=types.MappingProxyType(dict(extras or {})),
+            features_to_ignore=features_to_ignore_flat,
+            extras=dict(extras or {}),
+            features_to_ignore_per_instance=per_instance_ignore,
         )
         monitor = self.explainer._bridge_monitors.get(mode)
         if monitor is not None:
@@ -828,19 +843,17 @@ class ExplanationOrchestrator:
             mode=mode,
             feature_names=tuple(self.explainer.feature_names),
             categorical_features=tuple(self.explainer.categorical_features),
-            categorical_labels=types.MappingProxyType(
-                {
-                    k: types.MappingProxyType(dict(v))
-                    for k, v in (self.explainer.categorical_labels or {}).items()
-                }
-                if self.explainer.categorical_labels
-                else {}
-            ),
+            categorical_labels={
+                k: dict(v)
+                for k, v in (self.explainer.categorical_labels or {}).items()
+            }
+            if self.explainer.categorical_labels
+            else {},
             discretizer=self.explainer.discretizer,
-            helper_handles=types.MappingProxyType(helper_handles),
+            helper_handles=helper_handles,
             predict_bridge=monitor,
-            interval_settings=types.MappingProxyType(interval_settings),
-            plot_settings=types.MappingProxyType(plot_settings),
+            interval_settings=interval_settings,
+            plot_settings=plot_settings,
         )
         return context
 

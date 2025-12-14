@@ -288,6 +288,15 @@ class TestImportGraphRuntime:
 
         assert CalibratedExplainer is not None
 
+    def test_should_resolve_core_explain_subpackage_via_getattr(self):
+        """Verify that calibrated_explanations.core.explain is resolvable."""
+        import types
+
+        import calibrated_explanations.core as core
+
+        explain_mod = core.explain
+        assert isinstance(explain_mod, types.ModuleType)
+
 
 # ============================================================================
 # Package Boundary Tests (verify documented boundaries)

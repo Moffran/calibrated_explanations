@@ -18,8 +18,8 @@ from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
 from calibrated_explanations.plugins.explanations import ExplanationContext, ExplanationRequest
 from calibrated_explanations.plugins import registry
 from calibrated_explanations.plugins.builtins import (
-    FeatureParallelAlternativeExplanationPlugin,
-    FeatureParallelExplanationPlugin,
+    # FeatureParallelAlternativeExplanationPlugin,
+    # FeatureParallelExplanationPlugin,
     InstanceParallelAlternativeExplanationPlugin,
     InstanceParallelExplanationPlugin,
     SequentialAlternativeExplanationPlugin,
@@ -97,18 +97,18 @@ class TestExecutionStrategyPluginMetadata:
         assert "fallbacks" in plugin.plugin_meta
         assert "core.explanation.factual" in plugin.plugin_meta["fallbacks"]
 
-    def test_feature_parallel_factual_fallback_chain(self):
-        """Feature-parallel factual should have sequential and legacy fallbacks."""
-        plugin = FeatureParallelExplanationPlugin()
-        fallbacks = plugin.plugin_meta["fallbacks"]
-        assert "core.explanation.factual.sequential" in fallbacks
-        assert "core.explanation.factual" in fallbacks
+    # def test_feature_parallel_factual_fallback_chain(self):
+    #     """Feature-parallel factual should have sequential and legacy fallbacks."""
+    #     plugin = FeatureParallelExplanationPlugin()
+    #     fallbacks = plugin.plugin_meta["fallbacks"]
+    #     assert "core.explanation.factual.sequential" in fallbacks
+    #     assert "core.explanation.factual" in fallbacks
 
     def test_instance_parallel_factual_fallback_chain(self):
-        """Instance-parallel factual should have feature-parallel, sequential, and legacy fallbacks."""
+        """Instance-parallel factual should have sequential and legacy fallbacks."""
         plugin = InstanceParallelExplanationPlugin()
         fallbacks = plugin.plugin_meta["fallbacks"]
-        assert "core.explanation.factual.feature_parallel" in fallbacks
+        # Feature-parallel is deprecated and removed from fallback chain
         assert "core.explanation.factual.sequential" in fallbacks
         assert "core.explanation.factual" in fallbacks
 
@@ -118,18 +118,18 @@ class TestExecutionStrategyPluginMetadata:
         assert "fallbacks" in plugin.plugin_meta
         assert "core.explanation.alternative" in plugin.plugin_meta["fallbacks"]
 
-    def test_feature_parallel_alternative_fallback_chain(self):
-        """Feature-parallel alternative should have sequential and legacy fallbacks."""
-        plugin = FeatureParallelAlternativeExplanationPlugin()
-        fallbacks = plugin.plugin_meta["fallbacks"]
-        assert "core.explanation.alternative.sequential" in fallbacks
-        assert "core.explanation.alternative" in fallbacks
+    # def test_feature_parallel_alternative_fallback_chain(self):
+    #     """Feature-parallel alternative should have sequential and legacy fallbacks."""
+    #     plugin = FeatureParallelAlternativeExplanationPlugin()
+    #     fallbacks = plugin.plugin_meta["fallbacks"]
+    #     assert "core.explanation.alternative.sequential" in fallbacks
+    #     assert "core.explanation.alternative" in fallbacks
 
     def test_instance_parallel_alternative_fallback_chain(self):
-        """Instance-parallel alternative should have feature-parallel, sequential, and legacy fallbacks."""
+        """Instance-parallel alternative should have sequential and legacy fallbacks."""
         plugin = InstanceParallelAlternativeExplanationPlugin()
         fallbacks = plugin.plugin_meta["fallbacks"]
-        assert "core.explanation.alternative.feature_parallel" in fallbacks
+        # Feature-parallel is deprecated and removed from fallback chain
         assert "core.explanation.alternative.sequential" in fallbacks
         assert "core.explanation.alternative" in fallbacks
 
@@ -144,12 +144,12 @@ class TestExecutionStrategyPluginAttributes:
         assert plugin._explanation_attr == "explain_factual"
         assert plugin._execution_plugin_class is not None
 
-    def test_feature_parallel_factual_plugin_attributes(self):
-        """Feature-parallel factual plugin should have correct base attributes."""
-        plugin = FeatureParallelExplanationPlugin()
-        assert plugin._mode == "factual"
-        assert plugin._explanation_attr == "explain_factual"
-        assert plugin._execution_plugin_class is not None
+    # def test_feature_parallel_factual_plugin_attributes(self):
+    #     """Feature-parallel factual plugin should have correct base attributes."""
+    #     plugin = FeatureParallelExplanationPlugin()
+    #     assert plugin._mode == "factual"
+    #     assert plugin._explanation_attr == "explain_factual"
+    #     assert plugin._execution_plugin_class is not None
 
     def test_instance_parallel_factual_plugin_attributes(self):
         """Instance-parallel factual plugin should have correct base attributes."""
@@ -165,12 +165,12 @@ class TestExecutionStrategyPluginAttributes:
         assert plugin._explanation_attr == "explore_alternatives"
         assert plugin._execution_plugin_class is not None
 
-    def test_feature_parallel_alternative_plugin_attributes(self):
-        """Feature-parallel alternative plugin should have correct base attributes."""
-        plugin = FeatureParallelAlternativeExplanationPlugin()
-        assert plugin._mode == "alternative"
-        assert plugin._explanation_attr == "explore_alternatives"
-        assert plugin._execution_plugin_class is not None
+    # def test_feature_parallel_alternative_plugin_attributes(self):
+    #     """Feature-parallel alternative plugin should have correct base attributes."""
+    #     plugin = FeatureParallelAlternativeExplanationPlugin()
+    #     assert plugin._mode == "alternative"
+    #     assert plugin._explanation_attr == "explore_alternatives"
+    #     assert plugin._execution_plugin_class is not None
 
     def test_instance_parallel_alternative_plugin_attributes(self):
         """Instance-parallel alternative plugin should have correct base attributes."""
@@ -197,11 +197,11 @@ class TestPluginSupportsMode:
         assert plugin.supports_mode("alternative", task="regression")
         assert not plugin.supports_mode("factual", task="classification")
 
-    def test_feature_parallel_factual_supports_factual_mode(self):
-        """Feature-parallel factual plugin should support factual mode."""
-        plugin = FeatureParallelExplanationPlugin()
-        assert plugin.supports_mode("factual", task="classification")
-        assert not plugin.supports_mode("alternative", task="classification")
+    # def test_feature_parallel_factual_supports_factual_mode(self):
+    #     """Feature-parallel factual plugin should support factual mode."""
+    #     plugin = FeatureParallelExplanationPlugin()
+    #     assert plugin.supports_mode("factual", task="classification")
+    #     assert not plugin.supports_mode("alternative", task="classification")
 
     def test_instance_parallel_factual_supports_factual_mode(self):
         """Instance-parallel factual plugin should support factual mode."""
@@ -220,12 +220,12 @@ class TestExecutionPluginClassConfiguration:
         # Verify the class name matches
         assert "Sequential" in plugin._execution_plugin_class.__name__
 
-    def test_feature_parallel_loads_feature_executor_class(self):
-        """Feature-parallel wrapper should load FeatureParallelExplainExecutor."""
-        plugin = FeatureParallelExplanationPlugin()
-        assert plugin._execution_plugin_class is not None
-        # Verify the class name matches
-        assert "FeatureParallel" in plugin._execution_plugin_class.__name__
+    # def test_feature_parallel_loads_feature_executor_class(self):
+    #     """Feature-parallel wrapper should load FeatureParallelExplainExecutor."""
+    #     plugin = FeatureParallelExplanationPlugin()
+    #     assert plugin._execution_plugin_class is not None
+    #     # Verify the class name matches
+    #     assert "FeatureParallel" in plugin._execution_plugin_class.__name__
 
     def test_instance_parallel_loads_instance_executor_class(self):
         """Instance-parallel wrapper should load InstanceParallelExplainExecutor."""
@@ -304,7 +304,7 @@ def test_should_enter_parallel_executor_once_during_explain_batch(
         fake_build_explain_execution_plan,
     )
 
-    plugin = FeatureParallelExplanationPlugin()
+    plugin = InstanceParallelExplanationPlugin()
     plugin._execution_plugin_class = DummyExecutionPlugin  # type: ignore[assignment]
 
     context = ExplanationContext(
@@ -424,7 +424,7 @@ def test_fast_feature_filter_updates_features_to_ignore(monkeypatch: pytest.Monk
     )
 
     explainer = DummyExplainer()
-    plugin = FeatureParallelExplanationPlugin()
+    plugin = InstanceParallelExplanationPlugin()
 
     context = ExplanationContext(
         task="classification",
@@ -520,7 +520,7 @@ def test_should_warn_and_fallback_to_legacy_when_execution_plugin_raises(
         def execute(self, *args, **kwargs):  # noqa: ARG002
             raise RuntimeError("boom")
 
-    plugin = FeatureParallelExplanationPlugin()
+    plugin = InstanceParallelExplanationPlugin()
     plugin._execution_plugin_class = RaisingExecutionPlugin  # type: ignore[assignment]
 
     explainer = DummyExplainer()

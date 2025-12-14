@@ -6,7 +6,7 @@ import contextlib
 from collections.abc import Mapping as MappingABC
 from collections.abc import MutableMapping as MutableMappingABC
 from collections.abc import Sequence as SequenceABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -52,8 +52,9 @@ class ExplanationRequest:
     threshold: Optional[object]
     low_high_percentiles: Optional[Tuple[float, float]]
     bins: Optional[object]
-    features_to_ignore: Sequence[int]
-    extras: Mapping[str, object]
+    features_to_ignore: Sequence[int] | Sequence[Sequence[int]]
+    extras: Mapping[str, object] = field(default_factory=dict)
+    features_to_ignore_per_instance: Sequence[Sequence[int]] | None = None
 
 
 @dataclass

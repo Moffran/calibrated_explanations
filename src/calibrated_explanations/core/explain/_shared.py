@@ -245,6 +245,10 @@ class ExplainRequest:
 
     features_to_ignore: np.ndarray
     """Array of feature indices to skip during perturbation."""
+    extras: Any | None = None
+    """Opaque extras forwarded from the explanation request (unused by executors)."""
+    features_to_ignore_per_instance: Any | None = None
+    """Optional per-instance feature ignore masks."""
 
     # Control flags
     use_plugin: bool = True

@@ -58,7 +58,7 @@ class BaseDiscretizer:
         """
         self.to_discretize = [x for x in range(data.shape[1]) if x not in categorical_features]
         self.names = {}
-        self.lambdas = {}
+        self.bin_edges = {}
         self.means = {}
         self.stds = {}
         self.mins = {}
@@ -79,8 +79,8 @@ class BaseDiscretizer:
                 self.names[feature].append(f"{qts[i]:.2f} < {name} <= {qts[i + 1]:.2f}")
             self.names[feature].append(f"{name} > {qts[n_bins - 1]:.2f}")
 
-            self.lambdas[feature] = lambda x, qts=qts: np.searchsorted(qts, x)
-            discretized = self.lambdas[feature](data[:, feature])
+            self.bin_edges[feature] = qts
+            discretized = np.searchsorted(qts, data[:, feature])
 
             self.means[feature] = []
             self.stds[feature] = []
@@ -117,11 +117,11 @@ class BaseDiscretizer:
             numpy array of same dimension, discretized.
         """
         ret = data.copy()
-        for feature, value in self.lambdas.items():
+        for feature, qts in self.bin_edges.items():
             if len(data.shape) == 1:
-                ret[feature] = int(value(ret[feature]))
+                ret[feature] = int(np.searchsorted(qts, ret[feature]))
             else:
-                ret[:, feature] = value(ret[:, feature]).astype(int)
+                ret[:, feature] = np.searchsorted(qts, ret[:, feature]).astype(int)
         return ret
 
 

@@ -77,6 +77,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
+        features_to_ignore_per_instance = getattr(request, "features_to_ignore_per_instance", None)
 
         # Track total explanation time
         total_start_time = time()
@@ -116,6 +117,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
             request.low_high_percentiles,
             request.bins,
             features_to_ignore_array,
+            features_to_ignore_per_instance=features_to_ignore_per_instance,
         )
 
         # Step 2: Initialize data structures to store feature-level results

@@ -806,12 +806,27 @@ class CalibratedExplanation(ABC):
         """
         self.conditions = []
         # pylint: disable=invalid-name
-        x = self._get_explainer().discretizer.discretize(self.x_test)
+        explainer = self._get_explainer()
+        if explainer.discretizer is None:
+            # Handle missing discretizer (e.g. regression without discretization)
+            # For now, just use empty conditions or skip
+            # print("DEBUG: FactualExplanation._define_conditions: discretizer is None")
+            pass
+        else:
+            x = explainer.discretizer.discretize(self.x_test)
+        
         ignored = self._ignored_features_for_instance()
         for f in range(self._get_explainer().num_features):
             if f in ignored:
                 self.conditions.append("")
                 continue
+            
+            if explainer.discretizer is None:
+                val = self.x_test[f]
+                rule = f"{self._get_explainer().feature_names[f]} = {val}"
+                self.conditions.append(rule)
+                continue
+
             if f in self._get_explainer().categorical_features:
                 if self._get_explainer().categorical_labels is not None:
                     try:

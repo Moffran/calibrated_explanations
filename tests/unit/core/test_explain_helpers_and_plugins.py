@@ -2,7 +2,7 @@ import numpy as np
 
 from calibrated_explanations.core.explain import _computation as comp
 from calibrated_explanations.core.explain import _helpers as helpers
-from calibrated_explanations.core.explain import sequential, parallel_feature, parallel_instance
+from calibrated_explanations.core.explain import sequential, parallel_instance
 from calibrated_explanations.core.explain import feature_task as feature_task_module
 
 
@@ -112,7 +112,7 @@ def make_executor(enabled=True, min_batch_size=1):
 def test_sequential_plugin_execute_minimal(monkeypatch):
     # Monkeypatch explain_predict_step and initialize_explanation to return minimal data
     def fake_explain_predict_step(
-        explainer, x, threshold, low_high_percentiles, bins, features_to_ignore
+        explainer, x, threshold, low_high_percentiles, bins, features_to_ignore, *, features_to_ignore_per_instance=None
     ):
         n = x.shape[0]
         # predict, low, high arrays sized for the n instances (no perturbed entries)
@@ -254,7 +254,12 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
 
     execr = make_executor()
     cfg = ExplainConfig(
-        executor=execr, num_features=1, categorical_features=(), feature_values={0: np.array([])}
+        executor=execr,
+        num_features=1,
+        categorical_features=(),
+        feature_values={0: np.array([])},
+        granularity="instance",
+        min_instances_for_parallel=1,
     )
     req = ExplainRequest(
         x=np.zeros((1, 1)),
@@ -306,12 +311,14 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
         def finalize(self, *args, **kwargs):
             return self
 
-    monkeypatch.setattr(helpers, "explain_predict_step", fake_explain_predict_step)
-    monkeypatch.setattr(helpers, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1]))
-    # Also patch module-level references imported by plugins
-    monkeypatch.setattr(parallel_feature, "explain_predict_step", fake_explain_predict_step)
+        monkeypatch.setattr(helpers, "explain_predict_step", fake_explain_predict_step)
+        monkeypatch.setattr(sequential, "explain_predict_step", fake_explain_predict_step)
+        monkeypatch.setattr(helpers, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1]))
+        monkeypatch.setattr(sequential, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1]))
+        # Also patch module-level references imported by plugins
+
     monkeypatch.setattr(
-        parallel_feature, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
+        parallel_instance, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
     )
 
     # simple explainer stub
@@ -324,10 +331,16 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
             "_is_mondrian": lambda self: False,
             "mode": "factual",
             "_merge_feature_result": lambda self, *a, **k: helpers.merge_feature_result(*a, **k),
+            "num_features": 1,
+            "x_cal": np.zeros((1, 1)),
+            "_predict": lambda self, *a, **k: (np.zeros(1), np.zeros(1), np.zeros(1), np.zeros(1, dtype=int)),
+            "is_multiclass": lambda self: False,
+            "discretizer": None,
+            "sample_percentiles": [25, 50, 75],
         },
     )()
 
-    plugin = parallel_feature.FeatureParallelExplainExecutor()
+    plugin = parallel_instance.InstanceParallelExplainExecutor()
     assert plugin.supports(req, cfg)
     out = plugin.execute(req, cfg, explainer)
     assert hasattr(out, "explanations")
@@ -401,9 +414,8 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
     monkeypatch.setattr(
         sequential, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
     )
-    monkeypatch.setattr(parallel_feature, "explain_predict_step", fake_explain_predict_step)
     monkeypatch.setattr(
-        parallel_feature, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
+        parallel_instance, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
     )
 
     # Mock the internal _feature_task to produce deterministic per-feature tuples
@@ -481,7 +493,7 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
     )()
 
     seq_plugin = sequential.SequentialExplainExecutor()
-    par_plugin = parallel_feature.FeatureParallelExplainExecutor()
+    par_plugin = parallel_instance.InstanceParallelExplainExecutor()
 
     out_seq = seq_plugin.execute(req, cfg_seq, explainer)
     out_par = par_plugin.execute(req, cfg_par, explainer)

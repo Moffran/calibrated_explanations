@@ -14,7 +14,6 @@ from __future__ import annotations
 from ._base import BaseExplainExecutor
 from ._shared import ExplainConfig, ExplainRequest, ExplainResponse
 from .orchestrator import ExplanationOrchestrator
-from .parallel_feature import FeatureParallelExplainExecutor
 from .parallel_instance import InstanceParallelExplainExecutor
 from .sequential import SequentialExplainExecutor
 import warnings as _warnings
@@ -38,7 +37,6 @@ __all__ = [
     "ExplainRequest",
     "ExplainResponse",
     "ExplanationOrchestrator",
-    "FeatureParallelExplainExecutor",
     "InstanceParallelExplainExecutor",
     "SequentialExplainExecutor",
 ]

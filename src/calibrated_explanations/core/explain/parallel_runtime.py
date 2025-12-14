@@ -91,6 +91,17 @@ def build_explain_execution_plan(
     """Prepare explain execution request and config using explain-local rules."""
     prepared_x = validate_and_prepare_input(explainer, x)
     features_to_ignore_array = merge_ignore_features(explainer, request.features_to_ignore)
+    features_to_ignore_per_instance = getattr(request, "features_to_ignore_per_instance", None)
+    if features_to_ignore_per_instance is not None:
+        try:
+            merged_per_instance: list[np.ndarray] = []
+            for i, inst_mask in enumerate(features_to_ignore_per_instance):
+                inst_arr = np.asarray(inst_mask, dtype=int)
+                merged = np.union1d(features_to_ignore_array, inst_arr)
+                merged_per_instance.append(merged)
+            features_to_ignore_per_instance = merged_per_instance
+        except Exception:  # pragma: no cover - defensive
+            features_to_ignore_per_instance = None
     low_high_percentiles = tuple(request.low_high_percentiles or _DEFAULT_PERCENTILES)
 
     explain_request = ExplainRequest(
@@ -99,6 +110,7 @@ def build_explain_execution_plan(
         low_high_percentiles=low_high_percentiles,
         bins=request.bins,
         features_to_ignore=features_to_ignore_array,
+        features_to_ignore_per_instance=features_to_ignore_per_instance,
         use_plugin=False,
         skip_instance_parallel=False,
     )

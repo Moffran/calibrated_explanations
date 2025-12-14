@@ -33,6 +33,8 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 - **ADR-002 – Exception Taxonomy and Validation Contract:** Completed with taxonomy adoption and validator parity; appendix holds the consolidated gap status.
 - **ADR-003 – Caching Strategy:** Completed with cache governance and telemetry; appendix retains the unified gap table.
 - **ADR-004 – Parallel Execution Framework:** Phases tracked in the roadmap table in the the appendix; remaining heuristics/benchmarking items align to v0.10.0. Gap details are maintained only in the appendix.
+  - **Update (2025-12-13):** Feature-parallel execution strategy deprecated and shimmed to fall back to instance-parallel execution due to performance overhead.
+  - **Update (2025-12-14):** Granularity parameter and FeatureParallel strategy scheduled for removal in v1.0.0-rc as only instance granularity remains supported.
 - **ADR-005 – Explanation Envelope & Schema:** Scheduled for v0.10.1 schema & visualization contracts; appendix table captures the remaining envelope/schema gaps.
 - **ADR-006 – Plugin Trust Model:** Trust gating tasks land in v0.10.2; see appendix for the unified gap status.
 - **ADR-007 – PlotSpec Abstraction:** PlotSpec registry/validation rollout targets v0.10.1; appendix retains the per-gap severities.
@@ -402,7 +404,7 @@ descending order of this product within each ADR.
 | Phase 2 – Executor & Plugin Refactor | v0.10.0 runtime realignment | Payload sharing, batching hooks, and lifecycle management for ADR-004. | ✅ Context manager and pooling lifecycle complete; payload sharing hooks merged. |
 | Phase 3 – Workload-aware Strategy | v0.10.0 runtime realignment | Workload estimator and adaptive gating. | ✅ Auto strategy consumes work-item hints and size estimates, defaulting to serial for small batches. |
 | Phase 4 – Testing & Benchmarking | v0.10.0 runtime realignment | Spawn lifecycle coverage and automated benchmark reporting. | ✅ Auto-strategy heuristics covered by unit tests; perf harness implemented and baseline results generated. |
-| Phase 5 – Rollout & Documentation | v0.10.0 release prep / v1.0.0-RC readiness | User guidance, changelog, and telemetry artefacts for release checklists. | ✅ Practitioner playbook and release status updated for ADR-004 completion. |
+| Phase 5 – Rollout & Documentation | v0.10.0 release prep / v1.0.0-RC readiness | User guidance, changelog, and telemetry artefacts for release checklists. | ✅ Practitioner playbook and release status updated for ADR-004 completion. <br> ⚠️ **Update:** Granularity and FeatureParallel removal added to v1.0.0-rc scope. |
 
 Alignment note: Parallel is treated as a shared service with domain-specific runtime wrappers (e.g., explain) expected to wrap
 the shared `ParallelExecutor` so heuristics and chunking remain co-located with domain executors while respecting ADR-001

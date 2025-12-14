@@ -5,6 +5,10 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
+### Parallel runtime
+
+- Auto parallel backend now prefers joblib on all platforms (processes as fallback).
+
 ### Release Task 1 - ADR-001 Package and Boundary Layout
 
 - **Completed ADR-001 core decomposition boundaries for v0.10.0 release**
@@ -98,6 +102,9 @@
     - Added `worker_utilisation_pct` metric to `ParallelMetrics`.
     - Implemented utilization calculation in `ParallelExecutor.map`.
   - **Windows Support**: Fixed pickling issues in `parallel_instance.py` and `parallel.py` to enable `processes` strategy on Windows.
+  - **Feature Parallel Deprecation**: Deprecated `FeatureParallel` execution strategy due to high overhead.
+    - Replaced `FeatureParallelExplanationPlugin` and `FeatureParallelAlternativeExplanationPlugin` with shims that silently fall back to `InstanceParallelExplanationPlugin`.
+    - This ensures backward compatibility for existing configurations while avoiding performance regressions.
 
 ### Release Task 5 - Interval Safety and Serialization
 

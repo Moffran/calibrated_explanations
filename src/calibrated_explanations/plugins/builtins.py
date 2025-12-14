@@ -484,6 +484,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             low_high_percentiles=request.low_high_percentiles,
                             bins=request.bins,
                             features_to_ignore=tuple(int(f) for f in new_request_ignore.tolist()),
+                            features_to_ignore_per_instance=filter_result.per_instance_ignore,
                             extras=request.extras,
                         )
                     except:
@@ -498,7 +499,16 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                         # Ensure no stale per-instance state is kept on the explainer.
                         with contextlib.suppress(AttributeError):
                             delattr(explainer, "_feature_filter_per_instance_ignore")
-                        filtered_request = request
+                        filtered_request = ExplanationRequest(
+                            threshold=request.threshold,
+                            low_high_percentiles=request.low_high_percentiles,
+                            bins=request.bins,
+                            features_to_ignore=request.features_to_ignore,
+                            features_to_ignore_per_instance=getattr(
+                                request, "features_to_ignore_per_instance", None
+                            ),
+                            extras=request.extras,
+                        )
             except:
                 exc_cfg = sys.exc_info()[1]
                 if not isinstance(exc_cfg, Exception):
@@ -510,7 +520,16 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 )
                 with contextlib.suppress(AttributeError):
                     delattr(self._explainer, "_feature_filter_per_instance_ignore")
-                filtered_request = request
+                filtered_request = ExplanationRequest(
+                    threshold=request.threshold,
+                    low_high_percentiles=request.low_high_percentiles,
+                    bins=request.bins,
+                    features_to_ignore=request.features_to_ignore,
+                    features_to_ignore_per_instance=getattr(
+                        request, "features_to_ignore_per_instance", None
+                    ),
+                    extras=request.extras,
+                )
 
             explain_request, explain_config = build_explain_execution_plan(
                 self._explainer, x, filtered_request
@@ -653,10 +672,10 @@ class SequentialExplanationPlugin(_ExecutionExplanationPluginBase):
 
 
 class FeatureParallelExplanationPlugin(_ExecutionExplanationPluginBase):
-    """Wrapper for feature-parallel execution strategy (factual mode).
+    """Shim for feature-parallel execution strategy (factual mode).
 
-    Enables users to select feature-level parallelism through the plugin
-    configuration system. Falls back to sequential if executor unavailable.
+    Silently falls back to instance-parallel execution as feature-parallel
+    is deprecated and removed.
     """
 
     plugin_meta = {
@@ -677,14 +696,18 @@ class FeatureParallelExplanationPlugin(_ExecutionExplanationPluginBase):
         "plot_dependency": "plot_spec.default",
         "trusted": True,
         "trust": {"trusted": True},
-        "fallbacks": ("core.explanation.factual.sequential", "core.explanation.factual"),
+        "fallbacks": (
+            "core.explanation.factual.instance_parallel",
+            "core.explanation.factual.sequential",
+            "core.explanation.factual",
+        ),
     }
 
     def __init__(self) -> None:
-        """Configure the plugin to use feature-parallel execution."""
-        from ..core.explain.parallel_feature import FeatureParallelExplainExecutor
+        """Configure the plugin to use instance-parallel execution as fallback."""
+        from ..core.explain.parallel_instance import InstanceParallelExplainExecutor
 
-        self._execution_plugin_class = FeatureParallelExplainExecutor
+        self._execution_plugin_class = InstanceParallelExplainExecutor
         super().__init__(
             _mode="factual",
             _explanation_attr="explain_factual",
@@ -719,7 +742,6 @@ class InstanceParallelExplanationPlugin(_ExecutionExplanationPluginBase):
         "trusted": True,
         "trust": {"trusted": True},
         "fallbacks": (
-            "core.explanation.factual.feature_parallel",
             "core.explanation.factual.sequential",
             "core.explanation.factual",
         ),
@@ -780,10 +802,10 @@ class SequentialAlternativeExplanationPlugin(_ExecutionExplanationPluginBase):
 
 
 class FeatureParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBase):
-    """Wrapper for feature-parallel execution strategy (alternative mode).
+    """Shim for feature-parallel execution strategy (alternative mode).
 
-    Enables users to select feature-level parallelism for alternative explanations
-    through the plugin configuration system. Falls back to sequential if executor unavailable.
+    Silently falls back to instance-parallel execution as feature-parallel
+    is deprecated and removed.
     """
 
     plugin_meta = {
@@ -804,14 +826,18 @@ class FeatureParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBas
         "plot_dependency": "plot_spec.default",
         "trusted": True,
         "trust": {"trusted": True},
-        "fallbacks": ("core.explanation.alternative.sequential", "core.explanation.alternative"),
+        "fallbacks": (
+            "core.explanation.alternative.instance_parallel",
+            "core.explanation.alternative.sequential",
+            "core.explanation.alternative",
+        ),
     }
 
     def __init__(self) -> None:
-        """Configure the plugin to use feature-parallel execution."""
-        from ..core.explain.parallel_feature import FeatureParallelExplainExecutor
+        """Configure the plugin to use instance-parallel execution as fallback."""
+        from ..core.explain.parallel_instance import InstanceParallelExplainExecutor
 
-        self._execution_plugin_class = FeatureParallelExplainExecutor
+        self._execution_plugin_class = InstanceParallelExplainExecutor
         super().__init__(
             _mode="alternative",
             _explanation_attr="explore_alternatives",
@@ -846,7 +872,6 @@ class InstanceParallelAlternativeExplanationPlugin(_ExecutionExplanationPluginBa
         "trusted": True,
         "trust": {"trusted": True},
         "fallbacks": (
-            "core.explanation.alternative.feature_parallel",
             "core.explanation.alternative.sequential",
             "core.explanation.alternative",
         ),

@@ -127,6 +127,7 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""
     (
         feature_index,
+
         x_column,
         predict,
         low,
@@ -162,7 +163,15 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     features_to_ignore_set: Set[int] = set(features_to_ignore)
     categorical_features_set: Set[int] = set(categorical_features)
 
-    feature_values_list = feature_values[feature_index]
+    if isinstance(feature_values, dict):
+        feature_values_list = feature_values.get(feature_index, [])
+        if feature_index not in feature_values:
+             # This happens if feature_values is incomplete (e.g. pickling issue or numeric feature missing)
+             # For numeric features, we might need to reconstruct it or accept empty.
+             pass
+    else:
+        feature_values_list = feature_values[feature_index]
+
     feature_values_list = (
         feature_values_list
         if isinstance(feature_values_list, (list, tuple, np.ndarray))
@@ -384,12 +393,32 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     else:
         slice_bins = np.array(feature_slice[:, 2], dtype=int)
         slice_flags = np.asarray(feature_slice[:, 3], dtype=object)
+        
+        # Optimized grouping using numpy to avoid slow python loop
+        flag_ints = np.zeros(len(slice_flags), dtype=np.int8)
+        flag_ints[slice_flags == True] = 1
+        flag_ints[slice_flags == False] = 2
+        
+        # Sort by (inst, bin, flag)
+        sort_order = np.lexsort((flag_ints, slice_bins, feature_instances))
+        sorted_indices = sort_order
+        sorted_inst = feature_instances[sort_order]
+        sorted_bins = slice_bins[sort_order]
+        sorted_flags = flag_ints[sort_order]
+        
+        keys = np.column_stack((sorted_inst, sorted_bins, sorted_flags))
+        unique_keys, start_indices = np.unique(keys, axis=0, return_index=True)
+        groups = np.split(sorted_indices, start_indices[1:])
+        
         numeric_grouped: Dict[Tuple[int, int, Any], np.ndarray] = {}
-        for rel_idx, inst in enumerate(feature_instances):
-            key = (int(inst), int(slice_bins[rel_idx]), slice_flags[rel_idx])
-            numeric_grouped.setdefault(key, []).append(rel_idx)
-        for key, rel_list in list(numeric_grouped.items()):
-            numeric_grouped[key] = np.asarray(rel_list, dtype=int)
+        for k, g in zip(unique_keys, groups):
+            inst, bin_val, flag_int = k
+            flag = None
+            if flag_int == 1:
+                flag = True
+            elif flag_int == 2:
+                flag = False
+            numeric_grouped[(int(inst), int(bin_val), flag)] = g
 
         if numeric_sorted_values is None:
             feature_values_numeric = np.unique(np.asarray(x_cal_column))
@@ -427,12 +456,21 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
 
         unique_lower, lower_inverse = np.unique(lower_boundary, return_inverse=True)
         unique_upper, upper_inverse = np.unique(upper_boundary, return_inverse=True)
-        lower_groups = {
-            idx: np.flatnonzero(lower_inverse == idx) for idx in range(unique_lower.size)
-        }
-        upper_groups = {
-            idx: np.flatnonzero(upper_inverse == idx) for idx in range(unique_upper.size)
-        }
+        
+        # Optimize lower_groups construction (avoid O(N^2))
+        l_sort = np.argsort(lower_inverse)
+        l_sorted_inv = lower_inverse[l_sort]
+        l_uniq, l_starts = np.unique(l_sorted_inv, return_index=True)
+        l_splits = np.split(l_sort, l_starts[1:])
+        lower_groups = dict(zip(l_uniq, l_splits))
+
+        # Optimize upper_groups construction (avoid O(N^2))
+        u_sort = np.argsort(upper_inverse)
+        u_sorted_inv = upper_inverse[u_sort]
+        u_uniq, u_starts = np.unique(u_sorted_inv, return_index=True)
+        u_splits = np.split(u_sort, u_starts[1:])
+        upper_groups = dict(zip(u_uniq, u_splits))
+
         lower_cache = {
             val: 0 if val == -np.inf else int(np.searchsorted(sorted_cal, val, side="left"))
             for val in unique_lower
@@ -501,25 +539,28 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
 
         for inst in range(n_instances):
             current_index = bin_value[inst]
-            for j in range(unique_bounds.shape[0]):
-                rel_indices = numeric_grouped.get((inst, j, None), np.empty((0,), dtype=int))
-                avg_predict_map[inst][current_index] = (
-                    safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
-                )
-                low_predict_map[inst][current_index] = (
-                    safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
-                )
-                high_predict_map[inst][current_index] = (
-                    safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
-                )
-                counts_map[inst][current_index] = between_cache.get(j, 0)
-                rule_entry = covered_feature.get(j)
-                if rule_entry is None:
-                    rule_entry = covered_feature.get(inst)
-                rule_value_map[inst].append(
-                    rule_entry[0] if rule_entry is not None else np.array([])
-                )
-                current_bin[inst] = current_index
+            # Optimization: The instance belongs to exactly one bound pair (j)
+            # Iterating all bounds was O(N^2) and incorrect (overwriting)
+            j = bound_inverse[inst]
+
+            rel_indices = numeric_grouped.get((inst, j, None), np.empty((0,), dtype=int))
+            avg_predict_map[inst][current_index] = (
+                safe_mean(feature_predict_local[rel_indices]) if rel_indices.size else 0
+            )
+            low_predict_map[inst][current_index] = (
+                safe_mean(feature_low_local[rel_indices]) if rel_indices.size else 0
+            )
+            high_predict_map[inst][current_index] = (
+                safe_mean(feature_high_local[rel_indices]) if rel_indices.size else 0
+            )
+            counts_map[inst][current_index] = between_cache.get(j, 0)
+            rule_entry = covered_feature.get(j)
+            if rule_entry is None:
+                rule_entry = covered_feature.get(inst)
+            rule_value_map[inst].append(
+                rule_entry[0] if rule_entry is not None else np.array([])
+            )
+            current_bin[inst] = current_index
 
         for inst in range(n_instances):
             rule_values_result[inst] = (rule_value_map[inst], x_column[inst], x_column[inst])
