@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
-
+import os
 import pytest
+from pathlib import Path
+import warnings
 
-from calibrated_explanations.viz import plots as plotting
+# Suppress internal deprecation warning from viz.plots importing legacy plotting
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    from calibrated_explanations.viz import plots as plotting
 
 
 def test_read_plot_pyproject_handles_missing_file(tmp_path, monkeypatch):
@@ -40,30 +45,18 @@ def test_read_plot_pyproject_extracts_nested_plot_settings(tmp_path, monkeypatch
         ("first, second, third", ("first", "second", "third")),
         (["keep", "  also keep  ", 42, ""], ("keep", "also keep")),
         (None, ()),
+        ("", ()),
+        ("   ", ()),
+        ("only_one", ("only_one",)),
+        ("  spaced  ", ("spaced",)),
+        ("a,b,c,", ("a", "b", "c")),
+        (",a,b", ("a", "b")),
     ],
 )
 def test_split_csv_normalises_and_filters_values(value, expected):
     """``_split_csv`` should normalise whitespace and ignore non-string values."""
 
     assert plotting._split_csv(value) == expected
-
-
-def test_should_handle_empty_csv_string():
-    """Empty CSV string should return empty tuple."""
-    assert plotting._split_csv("") == ()
-    assert plotting._split_csv("   ") == ()
-
-
-def test_should_handle_single_value_csv():
-    """Single value CSV should return single-element tuple."""
-    assert plotting._split_csv("only_one") == ("only_one",)
-    assert plotting._split_csv("  spaced  ") == ("spaced",)
-
-
-def test_should_handle_csv_with_trailing_commas():
-    """CSV with trailing commas should ignore empty elements."""
-    assert plotting._split_csv("a,b,c,") == ("a", "b", "c")
-    assert plotting._split_csv(",a,b") == ("a", "b")
 
 
 def test_should_read_plot_pyproject_with_malformed_toml(tmp_path, monkeypatch):
@@ -109,60 +102,60 @@ def test_should_read_plot_pyproject_with_partial_settings(tmp_path, monkeypatch)
 def test_should_handle_derive_threshold_labels_with_none():
     """Derive labels should handle None threshold gracefully."""
     pos_label, neg_label = plotting._derive_threshold_labels(None)
-    assert isinstance(pos_label, str)
-    assert isinstance(neg_label, str)
+    assert pos_label == "Target within threshold"
+    assert neg_label == "Outside threshold"
 
 
 def test_should_handle_derive_threshold_labels_with_numeric():
     """Derive labels should handle numeric threshold."""
     pos_label, neg_label = plotting._derive_threshold_labels(0.5)
-    assert isinstance(pos_label, str)
-    assert isinstance(neg_label, str)
-    assert "0.5" in pos_label or ">=" in pos_label  # Should reflect threshold value
+    assert pos_label == "Y < 0.50"
+    assert neg_label == "Y >= 0.50"
 
 
 def test_should_handle_derive_threshold_labels_with_sequence():
     """Derive labels should handle sequence thresholds."""
     pos_label, neg_label = plotting._derive_threshold_labels([0.2, 0.8])
-    assert isinstance(pos_label, str)
-    assert isinstance(neg_label, str)
+    assert pos_label == "0.20 <= Y < 0.80"
+    assert neg_label == "Outside interval"
 
 
 def test_should_format_save_path_with_string():
     """_format_save_path should handle string paths."""
     result = plotting._format_save_path("/some/path", "file.png")
-    assert isinstance(result, str)
-    assert "file.png" in result
+    expected = str(Path("/some/path") / "file.png")
+    assert result == expected
 
 
 def test_should_format_save_path_with_pathlib():
     """_format_save_path should handle pathlib.Path objects."""
-    from pathlib import Path
-
     result = plotting._format_save_path(Path("/some/path"), "file.png")
-    assert isinstance(result, str)
-    assert "file.png" in result
+    expected = str(Path("/some/path") / "file.png")
+    assert result == expected
 
 
 def test_should_format_save_path_with_empty_string():
     """_format_save_path should handle empty string."""
     result = plotting._format_save_path("", "file.png")
-    assert isinstance(result, str)
-    assert "file.png" in result
+    assert result == "file.png"
 
 
 def test_should_format_save_path_with_slash_suffix():
     """_format_save_path should handle paths with trailing slash."""
+    # Note: This behavior depends on OS separator.
+    # The implementation checks for / or \ explicitly.
     result = plotting._format_save_path("/some/path/", "file.png")
-    assert isinstance(result, str)
-    assert "file.png" in result
+    assert result == "/some/path/file.png"
+    
+    # Test backslash on Windows if applicable, or just generic check
+    if os.sep == "\\":
+        result_win = plotting._format_save_path("C:\\some\\path\\", "file.png")
+        assert result_win == "C:\\some\\path\\file.png"
 
 
 def test_should_derive_threshold_labels_with_invalid_sequence():
     """Derive labels should handle invalid sequence thresholds gracefully."""
     # Pass invalid sequence (too short, not convertible to floats)
     pos_label, neg_label = plotting._derive_threshold_labels(["invalid"])
-    assert isinstance(pos_label, str)
-    assert isinstance(neg_label, str)
-    # Should fall back to default labels
-    assert "threshold" in pos_label.lower() or "target" in pos_label.lower()
+    assert pos_label == "Target within threshold"
+    assert neg_label == "Outside threshold"

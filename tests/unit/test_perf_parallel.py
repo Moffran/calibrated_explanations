@@ -114,7 +114,9 @@ class TestParallelExecutor:
 
     def test_map_parallel_execution(self):
         """Test actual parallel execution (using threads for simplicity)."""
-        cfg = ParallelConfig(enabled=True, strategy="threads", min_batch_size=1, min_instances_for_parallel=1)
+        cfg = ParallelConfig(
+            enabled=True, strategy="threads", min_batch_size=1, min_instances_for_parallel=1
+        )
         executor = ParallelExecutor(cfg)
         items = [1, 2, 3]
         results = executor.map(lambda x: x * 2, items)
@@ -127,7 +129,9 @@ class TestParallelExecutor:
         cfg = ParallelConfig(enabled=True, strategy="auto")
         executor = ParallelExecutor(cfg)
         # Mock joblib as missing so we test the OS fallback
-        with patch("os.name", "nt"), patch("calibrated_explanations.parallel.parallel._JoblibParallel", None):
+        with patch("os.name", "nt"), patch(
+            "calibrated_explanations.parallel.parallel._JoblibParallel", None
+        ):
             strategy = executor._resolve_strategy()
             # Should resolve to thread strategy partial
             assert strategy.func == executor._thread_strategy
@@ -202,7 +206,9 @@ class TestParallelExecutor:
 
     def test_metrics_tracking_submitted_and_completed(self):
         """Test that metrics accurately track submitted and completed items."""
-        cfg = ParallelConfig(enabled=True, strategy="threads", min_batch_size=1, min_instances_for_parallel=1)
+        cfg = ParallelConfig(
+            enabled=True, strategy="threads", min_batch_size=1, min_instances_for_parallel=1
+        )
         executor = ParallelExecutor(cfg)
 
         items = [1, 2, 3, 4, 5]
@@ -218,7 +224,11 @@ class TestParallelExecutor:
         """Test that metrics track failures correctly when strategy raises."""
         mock_telemetry = MagicMock()
         cfg = ParallelConfig(
-            enabled=True, strategy="threads", min_batch_size=1, min_instances_for_parallel=1, telemetry=mock_telemetry
+            enabled=True,
+            strategy="threads",
+            min_batch_size=1,
+            min_instances_for_parallel=1,
+            telemetry=mock_telemetry,
         )
         executor = ParallelExecutor(cfg)
 

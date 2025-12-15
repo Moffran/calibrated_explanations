@@ -199,6 +199,25 @@ def test_legacy_predict_bridge_handles_scalar_predictions():
     assert "low" not in payload and "classes" not in payload
 
 
+def test_legacy_predict_bridge_passes_through_expected_flags():
+    class Explainer:
+        def __init__(self) -> None:
+            self.calls: list[Dict[str, Any]] = []
+
+        def predict(self, *args: Any, **kwargs: Any) -> Any:
+            self.calls.append(kwargs)
+            if kwargs.get("calibrated"):
+                return np.asarray([1])
+            return (np.asarray([0.2]), (np.asarray([0.1]), np.asarray([0.3])))
+
+    explainer = Explainer()
+    bridge = LegacyPredictBridge(explainer)
+    bridge.predict("x", mode="factual", task="classification", bins="bucket")
+
+    assert explainer.calls[0] == {"uq_interval": True, "bins": "bucket"}
+    assert explainer.calls[1] == {"calibrated": True, "bins": "bucket"}
+
+
 def test_predict_bridge_interval_and_proba():
     class Explainer:
         def __init__(self) -> None:

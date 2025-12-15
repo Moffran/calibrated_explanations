@@ -80,7 +80,9 @@ def test_map_handles_disabled_and_small_batches():
 
 
 def test_map_uses_strategy_and_updates_metrics(monkeypatch):
-    config = ParallelConfig(enabled=True, strategy="sequential", min_batch_size=1, min_instances_for_parallel=1)
+    config = ParallelConfig(
+        enabled=True, strategy="sequential", min_batch_size=1, min_instances_for_parallel=1
+    )
     executor = ParallelExecutor(config)
     results = executor.map(lambda x: x * 2, [1, 2, 3])
     assert results == [2, 4, 6]
@@ -197,34 +199,45 @@ def test_auto_strategy(monkeypatch):
     monkeypatch.setattr("calibrated_explanations.parallel.parallel.os", MockOS, raising=False)
     # Low CPU counts stay on threads
     MockOS.cpu_count = lambda: 1
-    monkeypatch.setattr("calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
+    )
     assert executor._auto_strategy() == "threads"
 
     # Joblib is preferred even on Windows
     MockOS.cpu_count = lambda: 8
-    monkeypatch.setattr("calibrated_explanations.parallel.parallel._JoblibParallel", object(), raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._JoblibParallel", object(), raising=False
+    )
     assert executor._auto_strategy() == "joblib"
 
     # Without joblib fall back to threads on Windows (spawn is slow)
-    monkeypatch.setattr("calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False)
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
+    )
     assert executor._auto_strategy() == "threads"
 
 
 def test_auto_strategy_work_items(monkeypatch):
     # Ensure joblib doesn't preempt the logic
-    monkeypatch.setattr("calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False)
-    
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._JoblibParallel", None, raising=False
+    )
+
     # Mock OS as POSIX to test process fallback
     import os
+
     class MockOS:
         name = "posix"
+
         @staticmethod
         def cpu_count():
             return 8
+
         @staticmethod
         def getenv(key, default=None):
             return default
-            
+
     monkeypatch.setattr("calibrated_explanations.parallel.parallel.os", MockOS, raising=False)
 
     config = ParallelConfig(enabled=True, strategy="auto", min_batch_size=16)
@@ -232,8 +245,6 @@ def test_auto_strategy_work_items(monkeypatch):
 
     assert executor._auto_strategy(work_items=10) == "sequential"
     assert executor._auto_strategy(work_items=4000) == "processes"
-
-    import os
 
     class MockOS:
         name = "posix"

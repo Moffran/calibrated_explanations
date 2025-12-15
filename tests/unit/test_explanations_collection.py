@@ -167,7 +167,6 @@ def test_iteration_and_indexing_behaviours(calibrated_collection):
     single = collection[[2]]
     assert isinstance(single, DummyExplanation)
     assert "CalibratedExplanations" in repr(collection)
-    from calibrated_explanations.core.exceptions import ValidationError
 
     with pytest.raises(ValidationError):
         _ = collection["invalid"]

@@ -112,7 +112,14 @@ def make_executor(enabled=True, min_batch_size=1):
 def test_sequential_plugin_execute_minimal(monkeypatch):
     # Monkeypatch explain_predict_step and initialize_explanation to return minimal data
     def fake_explain_predict_step(
-        explainer, x, threshold, low_high_percentiles, bins, features_to_ignore, *, features_to_ignore_per_instance=None
+        explainer,
+        x,
+        threshold,
+        low_high_percentiles,
+        bins,
+        features_to_ignore,
+        *,
+        features_to_ignore_per_instance=None,
     ):
         n = x.shape[0]
         # predict, low, high arrays sized for the n instances (no perturbed entries)
@@ -313,8 +320,12 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
 
         monkeypatch.setattr(helpers, "explain_predict_step", fake_explain_predict_step)
         monkeypatch.setattr(sequential, "explain_predict_step", fake_explain_predict_step)
-        monkeypatch.setattr(helpers, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1]))
-        monkeypatch.setattr(sequential, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1]))
+        monkeypatch.setattr(
+            helpers, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
+        )
+        monkeypatch.setattr(
+            sequential, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
+        )
         # Also patch module-level references imported by plugins
 
     monkeypatch.setattr(
@@ -333,7 +344,12 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
             "_merge_feature_result": lambda self, *a, **k: helpers.merge_feature_result(*a, **k),
             "num_features": 1,
             "x_cal": np.zeros((1, 1)),
-            "_predict": lambda self, *a, **k: (np.zeros(1), np.zeros(1), np.zeros(1), np.zeros(1, dtype=int)),
+            "_predict": lambda self, *a, **k: (
+                np.zeros(1),
+                np.zeros(1),
+                np.zeros(1),
+                np.zeros(1, dtype=int),
+            ),
             "is_multiclass": lambda self: False,
             "discretizer": None,
             "sample_percentiles": [25, 50, 75],

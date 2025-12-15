@@ -11,6 +11,7 @@ from unittest.mock import MagicMock
 import numpy as np
 
 from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
+
 # from calibrated_explanations.core.explain.parallel_feature import FeatureParallelExplainExecutor
 from calibrated_explanations.core.explain.parallel_instance import InstanceParallelExplainExecutor
 

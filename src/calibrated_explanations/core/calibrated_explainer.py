@@ -797,9 +797,10 @@ class CalibratedExplainer:
     @property
     def _pyproject_intervals(self) -> Dict[str, Any] | None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
+        manager = getattr(self, "_plugin_manager", None)
+        if manager is None:
             return None
-        return self._plugin_manager._pyproject_intervals
+        return getattr(manager, "_pyproject_intervals", None)
 
     @_pyproject_intervals.setter
     def _pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
@@ -812,9 +813,10 @@ class CalibratedExplainer:
     @property
     def _pyproject_plots(self) -> Dict[str, Any] | None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
+        manager = getattr(self, "_plugin_manager", None)
+        if manager is None:
             return None
-        return self._plugin_manager._pyproject_plots
+        return getattr(manager, "_pyproject_plots", None)
 
     @_pyproject_plots.setter
     def _pyproject_plots(self, value: Dict[str, Any] | None) -> None:

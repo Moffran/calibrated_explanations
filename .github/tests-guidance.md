@@ -26,7 +26,7 @@ This repository uses a single source of truth for all test-related instructions.
 - **Performance:** keep unit tests <100 ms, integration tests <2 s when feasible. Mark slow tests using existing repo conventions.
 
 ## Coverage & Tooling Expectations
-- Local gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=88`.
+- Local gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=90`.
 - Lint/mypy requirements still apply to any touched modules; update docs when behavior changes.
 - For deep domain context, see the "Detailed Guidelines & Patterns" section below.
 

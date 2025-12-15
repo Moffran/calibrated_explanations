@@ -79,7 +79,7 @@ eval = [
 [tool.pytest.ini_options]
 minversion = "6.0"
 pythonpath = ["src"]
-addopts = "-q --ignore=tests/unit/viz/test_matplotlib_adapter_additional.py --ignore=tests/unit/viz/test_matplotlib_adapter_regression_primitives.py --ignore=tests/unit/viz/test_matplotlib_adapter_render.py --ignore=tests/unit/viz/test_plot_parity_adapter.py --ignore=tests/unit/viz/test_plotspec_mvp.py --ignore=tests/unit/viz/test_plotspec_render_behavior.py --ignore=tests/unit/viz/test_probabilistic_builder_and_adapter_primitives.py --ignore=tests/unit/viz/test_matplotlib_adapter_primitives.py --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml --cov-fail-under=88"
+addopts = "-q --ignore=tests/unit/viz/test_matplotlib_adapter_additional.py --ignore=tests/unit/viz/test_matplotlib_adapter_regression_primitives.py --ignore=tests/unit/viz/test_matplotlib_adapter_render.py --ignore=tests/unit/viz/test_plot_parity_adapter.py --ignore=tests/unit/viz/test_plotspec_mvp.py --ignore=tests/unit/viz/test_plotspec_render_behavior.py --ignore=tests/unit/viz/test_probabilistic_builder_and_adapter_primitives.py --ignore=tests/unit/viz/test_matplotlib_adapter_primitives.py --cov=src/calibrated_explanations --cov-config=pyproject.toml --cov-report=term-missing --cov-report=xml --cov-fail-under=90"
 testpaths = ["tests"]
 markers = [
     "slow: marks tests as slow (can be skipped in FAST_TESTS)",

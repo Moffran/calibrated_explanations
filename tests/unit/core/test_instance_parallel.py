@@ -109,8 +109,12 @@ def test_uses_process_like_strategy_on_windows_by_default(
 
         return DummyCombined(x_input)
 
-    monkeypatch.setattr(parallel_instance_mod, "_instance_parallel_task", fake_instance_parallel_task)
-    monkeypatch.setattr(parallel_instance_mod, "initialize_explanation", fake_initialize_explanation)
+    monkeypatch.setattr(
+        parallel_instance_mod, "_instance_parallel_task", fake_instance_parallel_task
+    )
+    monkeypatch.setattr(
+        parallel_instance_mod, "initialize_explanation", fake_initialize_explanation
+    )
     monkeypatch.setattr(parallel_instance_mod.os, "name", "nt", raising=False)
 
     class DummyExplainer:
@@ -180,7 +184,9 @@ def test_uses_process_like_strategy_on_windows_by_default(
 
         def _thread_strategy(self, *args, **kwargs):  # noqa: ANN001,ARG002
             self.thread_strategy_called = True
-            raise AssertionError("_thread_strategy should not be used when process backends are enabled by default")
+            raise AssertionError(
+                "_thread_strategy should not be used when process backends are enabled by default"
+            )
 
     executor = DummyExecutor()
     request = ExplainRequest(
@@ -215,6 +221,3 @@ def test_uses_process_like_strategy_on_windows_by_default(
     assert executor.thread_strategy_called is False
     assert len(result.explanations) == 2
     assert not any("Instance-parallel execution on Windows" in str(w.message) for w in recorded)
-
-
-

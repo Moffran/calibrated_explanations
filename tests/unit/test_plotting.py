@@ -1,0 +1,682 @@
+"""Tests for improving coverage in calibrated_explanations.plotting."""
+
+import warnings
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+# Suppress deprecation warning for importing plotting
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from calibrated_explanations import plotting
+
+pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
+
+
+def test_derive_threshold_labels_with_tuple():
+    """Should return interval labels when threshold is a tuple."""
+    labels = plotting._derive_threshold_labels((0.2, 0.8))
+    assert labels == ("0.20 <= Y < 0.80", "Outside interval")
+
+
+def test_derive_threshold_labels_with_scalar():
+    """Should return comparison labels when threshold is a scalar."""
+    labels = plotting._derive_threshold_labels(0.5)
+    assert labels == ("Y < 0.50", "Y >= 0.50")
+
+
+def test_derive_threshold_labels_with_invalid_tuple():
+    """Should fall back to scalar logic or default when tuple is invalid."""
+    # If tuple parsing fails, it tries scalar parsing.
+    # If scalar parsing fails, it returns default.
+    labels = plotting._derive_threshold_labels(("a", "b"))
+    assert labels == ("Target within threshold", "Outside threshold")
+
+
+def test_derive_threshold_labels_with_invalid_scalar():
+    """Should return default labels when threshold is invalid."""
+    labels = plotting._derive_threshold_labels("invalid")
+    assert labels == ("Target within threshold", "Outside threshold")
+
+
+def test_derive_threshold_labels_with_string_tuple():
+    """Should handle string tuple if it can be parsed as floats."""
+    labels = plotting._derive_threshold_labels(("0.2", "0.8"))
+    assert labels == ("0.20 <= Y < 0.80", "Outside interval")
+
+
+@patch("calibrated_explanations.viz.matplotlib_adapter.render")
+@patch("calibrated_explanations.plotting.__require_matplotlib")
+def test_plot_alternative_classification_labels(mock_require, mock_render):
+    """Should correctly determine axis labels for classification."""
+    explanation = MagicMock()
+    explanation.get_mode.return_value = "classification"
+    explanation.get_class_labels.return_value = ["No", "Yes"]
+    explanation.prediction = {"classes": 1}
+    explanation.is_thresholded.return_value = False
+    explanation.is_multiclass.return_value = False
+
+    # Mock other required args
+    instance = [0.5]
+    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    feature_predict = {"predict": [0.5], "low": [0.4], "high": [0.6]}
+    features_to_plot = [0]
+    num_to_show = 1
+    column_names = ["f1"]
+
+    plotting._plot_alternative(
+        explanation,
+        instance,
+        predict,
+        feature_predict,
+        features_to_plot,
+        num_to_show,
+        column_names,
+        "Title",
+        None,
+        True,
+        use_legacy=False,
+    )
+
+    # Verify render_plotspec was called with correct labels in spec
+    mock_render.assert_called_once()
+
+
+@patch("calibrated_explanations.viz.matplotlib_adapter.render")
+@patch("calibrated_explanations.plotting.__require_matplotlib")
+def test_plot_alternative_thresholded_scalar(mock_require, mock_render):
+    """Should correctly determine axis labels for thresholded classification (scalar)."""
+    explanation = MagicMock()
+    explanation.get_mode.return_value = "classification"
+    explanation.get_class_labels.return_value = ["No", "Yes"]
+    explanation.is_thresholded.return_value = True
+    explanation.y_threshold = 0.5
+
+    # Fix inputs
+    instance = [0.5]
+    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    feature_predict = {"predict": [0.5], "low": [0.4], "high": [0.6]}
+    features_to_plot = [0]
+    column_names = ["f1"]
+
+    plotting._plot_alternative(
+        explanation,
+        instance,
+        predict,
+        feature_predict,
+        features_to_plot,
+        1,
+        column_names,
+        "Title",
+        None,
+        True,
+        use_legacy=False,
+    )
+    mock_render.assert_called()
+
+
+@patch("calibrated_explanations.viz.matplotlib_adapter.render")
+@patch("calibrated_explanations.plotting.__require_matplotlib")
+def test_plot_alternative_thresholded_tuple(mock_require, mock_render):
+    """Should correctly determine axis labels for thresholded classification (tuple)."""
+    explanation = MagicMock()
+    explanation.get_mode.return_value = "classification"
+    explanation.get_class_labels.return_value = ["No", "Yes"]
+    explanation.is_thresholded.return_value = True
+    explanation.y_threshold = (0.4, 0.6)
+
+    # Fix inputs
+    instance = [0.5]
+    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    feature_predict = {"predict": [0.5], "low": [0.4], "high": [0.6]}
+    features_to_plot = [0]
+    column_names = ["f1"]
+
+    plotting._plot_alternative(
+        explanation,
+        instance,
+        predict,
+        feature_predict,
+        features_to_plot,
+        1,
+        column_names,
+        "Title",
+        None,
+        True,
+        use_legacy=False,
+    )
+    mock_render.assert_called()
+
+
+@patch("calibrated_explanations.viz.matplotlib_adapter.render")
+@patch("calibrated_explanations.plotting.__require_matplotlib")
+def test_plot_alternative_multiclass(mock_require, mock_render):
+    """Should correctly determine axis labels for multiclass."""
+    explanation = MagicMock()
+    explanation.get_mode.return_value = "classification"
+    explanation.get_class_labels.return_value = ["A", "B", "C"]
+    explanation.prediction = {"classes": 2}
+    explanation.is_thresholded.return_value = False
+
+    # Mock explainer for is_multiclass check
+    explainer = MagicMock()
+    explainer.is_multiclass.return_value = True
+    explanation._get_explainer.return_value = explainer
+
+    # Fix inputs
+    instance = [0.5]
+    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    feature_predict = {"predict": [0.5], "low": [0.4], "high": [0.6]}
+    features_to_plot = [0]
+    column_names = ["f1"]
+
+    plotting._plot_alternative(
+        explanation,
+        instance,
+        predict,
+        feature_predict,
+        features_to_plot,
+        1,
+        column_names,
+        "Title",
+        None,
+        True,
+        use_legacy=False,
+    )
+    mock_render.assert_called()
+
+
+@patch("calibrated_explanations.viz.matplotlib_adapter.render")
+@patch("calibrated_explanations.plotting.__require_matplotlib")
+@patch("calibrated_explanations.plotting.legacy._plot_alternative")
+def test_plot_alternative_fallback_on_error(mock_legacy, mock_require, mock_render):
+    """Should fall back to legacy plotting if render_plotspec raises exception."""
+    mock_render.side_effect = Exception("Rendering failed")
+
+    explanation = MagicMock()
+    explanation.get_mode.return_value = "classification"
+
+    # Fix inputs
+    instance = [0.5]
+    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    feature_predict = {"predict": [0.5], "low": [0.4], "high": [0.6]}
+    features_to_plot = [0]
+    column_names = ["f1"]
+
+    with pytest.warns(UserWarning, match="PlotSpec rendering failed"):
+        plotting._plot_alternative(
+            explanation,
+            instance,
+            predict,
+            feature_predict,
+            features_to_plot,
+            1,
+            column_names,
+            "Title",
+            None,
+            True,
+            use_legacy=False,
+        )
+
+    mock_legacy.assert_called_once()
+
+
+@patch("calibrated_explanations.viz.matplotlib_adapter.render")
+@patch("calibrated_explanations.plotting.__require_matplotlib")
+def test_plot_regression(mock_require, mock_render):
+    """Should correctly render regression plots."""
+    explanation = MagicMock()
+    explanation.get_mode.return_value = "regression"
+    explanation.y_minmax = [0, 1]
+
+    # Mock other required args
+    instance = [0.5]
+    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    # When interval=False (default), feature_weights is a list of values
+    feature_weights = [0.5]
+    features_to_plot = [0]
+    num_to_show = 1
+    column_names = ["f1"]
+
+    plotting._plot_regression(
+        explanation,
+        instance,
+        predict,
+        feature_weights,
+        features_to_plot,
+        num_to_show,
+        column_names,
+        "Title",
+        None,
+        True,
+        use_legacy=False,
+    )
+
+    mock_render.assert_called_once()
+
+
+@patch("calibrated_explanations.viz.matplotlib_adapter.render")
+@patch("calibrated_explanations.plotting.__require_matplotlib")
+@patch("calibrated_explanations.plotting.legacy._plot_regression")
+def test_plot_regression_fallback_on_error(mock_legacy, mock_require, mock_render):
+    """Should fall back to legacy plotting if render_plotspec raises exception in regression."""
+    mock_render.side_effect = Exception("Rendering failed")
+
+    explanation = MagicMock()
+    explanation.get_mode.return_value = "regression"
+    explanation.y_minmax = [0, 1]
+
+    # Mock other required args
+    instance = [0.5]
+    predict = {"predict": 0.5, "low": 0.4, "high": 0.6}
+    # When interval=False (default), feature_weights is a list of values
+    feature_weights = [0.5]
+    features_to_plot = [0]
+    num_to_show = 1
+    column_names = ["f1"]
+
+    with pytest.warns(UserWarning, match="PlotSpec rendering failed"):
+        plotting._plot_regression(
+            explanation,
+            instance,
+            predict,
+            feature_weights,
+            features_to_plot,
+            num_to_show,
+            column_names,
+            "Title",
+            None,
+            True,
+            use_legacy=False,
+        )
+
+    mock_legacy.assert_called_once()
+
+
+@patch("calibrated_explanations.viz.matplotlib_adapter.render")
+@patch("calibrated_explanations.plotting.__require_matplotlib")
+def test_plot_triangular(mock_require, mock_render):
+    """Should correctly render triangular plots."""
+    explanation = MagicMock()
+
+    # Mock required args
+    proba = [0.1, 0.9]
+    uncertainty = [0.05, 0.05]
+    rule_proba = [0.2, 0.8]
+    rule_uncertainty = [0.1, 0.1]
+    num_to_show = 1
+
+    plotting._plot_triangular(
+        explanation,
+        proba,
+        uncertainty,
+        rule_proba,
+        rule_uncertainty,
+        num_to_show,
+        "Title",
+        None,
+        True,
+        use_legacy=False,
+    )
+
+    mock_render.assert_called_once()
+
+
+def test_plot_probabilistic_prefers_legacy_when_style_requests(monkeypatch: pytest.MonkeyPatch):
+    """Should route to legacy plotting when the style chain selects it."""
+
+    explanation = MagicMock()
+    explanation._get_explainer.return_value = object()
+    monkeypatch.setattr(
+        plotting,
+        "_resolve_plot_style_chain",
+        lambda *_: ("legacy", "plot_spec.default"),
+    )
+
+    called = {}
+
+    def fake_legacy(*args, **kwargs):
+        called["args"] = args
+        called["kwargs"] = kwargs
+
+    monkeypatch.setattr(plotting.legacy, "_plot_probabilistic", fake_legacy)
+
+    plotting._plot_probabilistic(
+        explanation,
+        instance=[0.1],
+        predict={"predict": 0.2},
+        feature_weights={"predict": [0.2]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="demo",
+        path=None,
+        show=False,
+    )
+
+    assert called["args"][10] is False  # interval flag
+    assert called["args"][12] is None  # save_ext (default)
+
+
+def test_plot_probabilistic_noop_when_matplotlib_missing(monkeypatch: pytest.MonkeyPatch):
+    """Should exit early when matplotlib is unavailable and nothing is shown."""
+
+    explanation = MagicMock()
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", None)
+
+    fail_if_called = MagicMock(side_effect=AssertionError("Legacy plotting should not run"))
+    monkeypatch.setattr(plotting.legacy, "_plot_probabilistic", fail_if_called)
+
+    plotting._plot_probabilistic(
+        explanation,
+        instance=[1],
+        predict={"predict": 0.3},
+        feature_weights={"predict": [0.3]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="demo",
+        path="ignored",
+        show=False,
+        save_ext=[".svg"],
+        use_legacy=False,
+    )
+
+    fail_if_called.assert_not_called()
+
+
+def test_plot_probabilistic_noop_without_show_or_save(monkeypatch: pytest.MonkeyPatch):
+    """Should avoid building specs when no rendering or saving is requested."""
+
+    explanation = MagicMock()
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
+
+    plotting._plot_probabilistic(
+        explanation,
+        instance=[1],
+        predict={"predict": 0.3},
+        feature_weights={"predict": [0.3]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="demo",
+        path=None,
+        show=False,
+        save_ext=[],
+        use_legacy=False,
+    )
+
+
+def _probabilistic_explanation(
+    *,
+    explainer_multiclass: bool = False,
+    is_thresholded: bool = False,
+    y_threshold=None,
+    prediction: dict | None = None,
+    prediction_classes: int | str = 0,
+    y_minmax=(0.0, 1.0),
+    class_labels=("neg", "pos"),
+    class_label_error: bool = False,
+    explanation_multiclass: bool = False,
+) -> SimpleNamespace:
+    """Build a lightweight explanation stub for probabilistic plotting tests."""
+
+    explainer = SimpleNamespace(is_multiclass=lambda: explainer_multiclass)
+
+    def _get_labels():
+        if class_label_error:
+            raise RuntimeError("labels unavailable")
+        return class_labels
+
+    explanation = SimpleNamespace(
+        prediction=prediction or {"classes": prediction_classes},
+        y_minmax=y_minmax,
+        get_class_labels=_get_labels,
+        is_thresholded=lambda: is_thresholded,
+        y_threshold=y_threshold,
+    )
+    if explanation_multiclass:
+        explanation.is_multiclass = True
+    setattr(explanation, "_get_explainer", lambda: explainer)
+    return explanation
+
+
+def test_plot_probabilistic_renders_and_saves(monkeypatch: pytest.MonkeyPatch):
+    """Should render PlotSpecs once and save additional extensions."""
+
+    render_calls: list[dict[str, object]] = []
+
+    def fake_render(spec, *, show, save_path):
+        render_calls.append({"spec": spec, "show": show, "save_path": save_path})
+
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
+        lambda **kwargs: {"payload": kwargs["predict"]},
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        fake_render,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        plotting,
+        "_format_save_path",
+        lambda base, filename: f"{base}/{filename}",
+    )
+
+    explanation = _probabilistic_explanation()
+    plotting._plot_probabilistic(
+        explanation,
+        instance=[0.1],
+        predict={"predict": 0.4},
+        feature_weights={"predict": [0.4]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="demo",
+        path="out",
+        show=True,
+        save_ext=[".svg", ".png"],
+        use_legacy=False,
+    )
+
+    assert len(render_calls) == 3
+    assert render_calls[0]["show"] is True
+    assert render_calls[0]["save_path"] is None
+    assert [call["save_path"] for call in render_calls[1:]] == [
+        "out/demo.svg",
+        "out/demo.png",
+    ]
+
+
+def test_plot_probabilistic_falls_back_to_legacy(monkeypatch: pytest.MonkeyPatch):
+    """Should warn and invoke legacy plotting when rendering fails."""
+
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
+        lambda **kwargs: {"payload": kwargs["predict"]},
+    )
+
+    def blow_up(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        blow_up,
+        raising=False,
+    )
+
+    legacy_calls: list[dict[str, object]] = []
+
+    def fake_legacy(*args, **kwargs):
+        legacy_calls.append(kwargs)
+
+    monkeypatch.setattr(plotting.legacy, "_plot_probabilistic", fake_legacy)
+
+    explanation = _probabilistic_explanation(explainer_multiclass=True)
+
+    with pytest.warns(UserWarning, match="PlotSpec rendering failed"):
+        plotting._plot_probabilistic(
+            explanation,
+            instance=[0.2],
+            predict={"predict": 0.5},
+            feature_weights={"predict": [0.5]},
+            features_to_plot=[0],
+            num_to_show=1,
+            column_names=["f0"],
+            title="demo",
+            path="out",
+            show=True,
+            save_ext=[".svg"],
+            use_legacy=False,
+        )
+
+    assert legacy_calls, "Legacy plotting should have been invoked after the warning."
+
+
+def test_plot_probabilistic_thresholded_interval_captions(monkeypatch: pytest.MonkeyPatch):
+    """Should derive captions and fall back to y_minmax when bounds are invalid."""
+
+    captured: dict[str, object] = {}
+
+    def fake_builder(**kwargs):
+        captured.update(kwargs)
+        return kwargs
+
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
+        fake_builder,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        lambda *args, **kwargs: None,
+        raising=False,
+    )
+
+    explanation = _probabilistic_explanation(
+        is_thresholded=True,
+        y_threshold=(0.25, 0.75),
+        prediction={"predict": 0.6, "low": float("nan"), "high": None},
+        y_minmax=("0.1", "0.9"),
+    )
+
+    plotting._plot_probabilistic(
+        explanation,
+        instance=[0.4],
+        predict=explanation.prediction,
+        feature_weights={"predict": [0.4]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="interval",
+        path=None,
+        show=True,
+        use_legacy=False,
+    )
+
+    assert captured["neg_caption"] == "y_hat <= 0.250 || y_hat > 0.750"
+    assert captured["pos_caption"] == "0.250 < y_hat <= 0.750"
+    assert captured["predict"]["low"] == pytest.approx(0.1)
+    assert captured["predict"]["high"] == pytest.approx(0.9)
+
+
+def test_plot_probabilistic_multiclass_without_labels(monkeypatch: pytest.MonkeyPatch):
+    """Should fall back to prediction classes when no label map is provided."""
+
+    captured: dict[str, object] = {}
+
+    def fake_builder(**kwargs):
+        captured.update(kwargs)
+        return kwargs
+
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
+        fake_builder,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        lambda *args, **kwargs: None,
+        raising=False,
+    )
+
+    explanation = _probabilistic_explanation(
+        class_label_error=True,
+        prediction={"predict": 0.2, "classes": 2},
+        prediction_classes=2,
+        explainer_multiclass=True,
+    )
+
+    plotting._plot_probabilistic(
+        explanation,
+        instance=[0.1],
+        predict=explanation.prediction,
+        feature_weights={"predict": [0.2]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="multiclass",
+        path=None,
+        show=True,
+        use_legacy=False,
+    )
+
+    assert captured["neg_caption"] == "P(y!=2)"
+    assert captured["pos_caption"] == "P(y=2)"
+
+
+def test_plot_probabilistic_multiclass_label_lookup_fallback(monkeypatch: pytest.MonkeyPatch):
+    """Should fall back to prediction classes when label indexing fails."""
+
+    captured: dict[str, object] = {}
+
+    def fake_builder(**kwargs):
+        captured.update(kwargs)
+        return kwargs
+
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.builders.build_probabilistic_bars_spec",
+        fake_builder,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.viz.matplotlib_adapter.render",
+        lambda *args, **kwargs: None,
+        raising=False,
+    )
+
+    explanation = _probabilistic_explanation(
+        class_labels=("only-one",),
+        prediction_classes=5,
+        prediction={"predict": 0.3, "classes": 5},
+        explainer_multiclass=False,
+        explanation_multiclass=True,
+    )
+
+    plotting._plot_probabilistic(
+        explanation,
+        instance=[0.1],
+        predict=explanation.prediction,
+        feature_weights={"predict": [0.3]},
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title="fallback",
+        path=None,
+        show=True,
+        use_legacy=False,
+    )
+
+    assert captured["neg_caption"] == "P(y!=5)"
+    assert captured["pos_caption"] == "P(y=5)"

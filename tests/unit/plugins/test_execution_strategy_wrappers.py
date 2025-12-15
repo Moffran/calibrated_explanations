@@ -274,43 +274,43 @@ def test_should_enter_parallel_executor_once_during_explain_batch(
             return DummyCollection()
 
     def fake_build_explain_execution_plan(_explainer, _x, _request):  # noqa: ARG001
-            from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
-            from unittest.mock import MagicMock
+        from calibrated_explanations.core.explain._shared import ExplainConfig, ExplainRequest
+        from unittest.mock import MagicMock
 
-            runtime = MagicMock()
+        runtime = MagicMock()
 
-            def enter_runtime():
-                # Simulate the runtime entering the executor
-                if executor:
-                    executor.__enter__()
-                return runtime
+        def enter_runtime():
+            # Simulate the runtime entering the executor
+            if executor:
+                executor.__enter__()
+            return runtime
 
-            runtime.__enter__.side_effect = enter_runtime
-            runtime.__exit__.return_value = None
+        runtime.__enter__.side_effect = enter_runtime
+        runtime.__exit__.return_value = None
 
-            return (
-                ExplainRequest(
-                    x=None,
-                    threshold=None,
-                    low_high_percentiles=(0.05, 0.95),
-                    bins=None,
-                    features_to_ignore=(),
-                    use_plugin=False,
-                    skip_instance_parallel=False,
-                ),
-                ExplainConfig(
-                    executor=executor,
-                    granularity="feature",
-                    min_instances_for_parallel=1,
-                    chunk_size=1,
-                    num_features=1,
-                    features_to_ignore_default=(),
-                    categorical_features=(),
-                    feature_values={},
-                    mode="classification",
-                ),
-                runtime,
-            )
+        return (
+            ExplainRequest(
+                x=None,
+                threshold=None,
+                low_high_percentiles=(0.05, 0.95),
+                bins=None,
+                features_to_ignore=(),
+                use_plugin=False,
+                skip_instance_parallel=False,
+            ),
+            ExplainConfig(
+                executor=executor,
+                granularity="feature",
+                min_instances_for_parallel=1,
+                chunk_size=1,
+                num_features=1,
+                features_to_ignore_default=(),
+                categorical_features=(),
+                feature_values={},
+                mode="classification",
+            ),
+            runtime,
+        )
 
     monkeypatch.setattr(
         "calibrated_explanations.core.explain.parallel_runtime.build_explain_execution_plan",

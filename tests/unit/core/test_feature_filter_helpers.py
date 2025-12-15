@@ -39,7 +39,9 @@ def _make_fast_collection(weight_rows: list[np.ndarray]) -> CalibratedExplanatio
     return collection
 
 
-def test_compute_filtered_features_to_ignore_keeps_at_most_top_k_per_instance_no_base_ignore() -> None:
+def test_compute_filtered_features_to_ignore_keeps_at_most_top_k_per_instance_no_base_ignore() -> (
+    None
+):
     """Per-instance keep-set must be <= top_k when there is no baseline ignore."""
     weights = [
         np.array([10.0, 0.1, 0.2, 0.0]),
