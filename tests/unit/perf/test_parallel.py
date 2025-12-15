@@ -68,6 +68,23 @@ def test_parallel_config_from_env(monkeypatch):
     assert cfg.tiny_workload_threshold == 11
 
 
+def test_parallel_config_from_env_extended_tokens(monkeypatch):
+    base = ParallelConfig(enabled=True, min_batch_size=4)
+    monkeypatch.setenv(
+        "CE_PARALLEL",
+        "min_instances=3,instance_chunk=5,feature_chunk=7,task_bytes=1024,"
+        "force_serial=true,granularity=feature",
+    )
+    with pytest.warns(DeprecationWarning):
+        cfg = ParallelConfig.from_env(base)
+    assert cfg.min_instances_for_parallel == 3
+    assert cfg.instance_chunk_size == 5
+    assert cfg.feature_chunk_size == 7
+    assert cfg.task_size_hint_bytes == 1024
+    assert cfg.force_serial_on_failure is True
+    assert cfg.granularity == "instance"
+
+
 def test_map_handles_disabled_and_small_batches():
     config = ParallelConfig(enabled=False)
     executor = ParallelExecutor(config)
@@ -400,3 +417,243 @@ def test_emit_with_telemetry(monkeypatch):
     config = ParallelConfig(enabled=True, telemetry=broken)
     executor = ParallelExecutor(config)
     executor._emit("test", {"value": 2})  # should not raise
+
+
+def test_parallel_executor_context_manager_initializes_and_cleans_up(monkeypatch):
+    shutdown_calls: list[int] = []
+
+    class RecordingPool:
+        def __init__(self, max_workers):
+            self.max_workers = max_workers
+
+        def shutdown(self, wait=True):
+            shutdown_calls.append(int(wait))
+
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.ThreadPoolExecutor",
+        RecordingPool,
+        raising=False,
+    )
+    cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
+    with ParallelExecutor(cfg) as executor:
+        assert isinstance(executor._pool, RecordingPool)
+        assert executor._active_strategy_name == "threads"
+    assert shutdown_calls == [1]
+
+
+def test_parallel_executor_context_manager_handles_init_failure(monkeypatch):
+    class ExplodingPool:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.ThreadPoolExecutor",
+        ExplodingPool,
+        raising=False,
+    )
+    cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=1, min_batch_size=1)
+    executor = ParallelExecutor(cfg)
+    with pytest.warns(UserWarning, match="Failed to initialize parallel pool"):
+        with executor as ctx:
+            assert ctx._active_strategy_name == "sequential"
+            assert ctx._pool is None
+
+
+def test_parallel_executor_context_manager_cancels_on_error(monkeypatch):
+    cancel_calls = []
+
+    def fake_cancel(self):
+        cancel_calls.append(True)
+        if self._pool is not None and hasattr(self._pool, "shutdown"):
+            self._pool.shutdown(wait=False, cancel_futures=True)
+        self._pool = None
+
+    monkeypatch.setattr(ParallelExecutor, "cancel", fake_cancel)
+
+    class DummyPool:
+        def __init__(self, max_workers):
+            pass
+
+        def shutdown(self, wait=True, cancel_futures=None):
+            pass
+
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.ThreadPoolExecutor",
+        DummyPool,
+        raising=False,
+    )
+    cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=1, min_batch_size=1)
+    with pytest.raises(RuntimeError):
+        with ParallelExecutor(cfg):
+            raise RuntimeError("fail")
+    assert cancel_calls == [True]
+
+
+def test_parallel_executor_cancel_handles_missing_cancel_futures():
+    executor = ParallelExecutor(ParallelConfig(enabled=True))
+
+    class LegacyPool:
+        def __init__(self):
+            self.calls: list[tuple[bool, Any | None]] = []
+
+        def shutdown(self, wait=False, cancel_futures=None):
+            self.calls.append((wait, cancel_futures))
+            if cancel_futures is not None:
+                raise TypeError("unsupported")
+
+    pool = LegacyPool()
+    executor._pool = pool
+    executor.cancel()
+    assert pool.calls == [(False, True), (False, None)]
+    assert executor._pool is None
+
+
+def test_parallel_executor_joblib_pool_reuse(monkeypatch):
+    class FakeParallel:
+        def __init__(self, *, n_jobs, prefer, batch_size="auto"):
+            self.n_jobs = n_jobs
+            self.prefer = prefer
+            self.batch_size = batch_size
+            self.entered = False
+
+        def __enter__(self):
+            self.entered = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self.exited = True
+
+        def __call__(self, iterator):
+            return [job() for job in iterator]
+
+    def fake_delayed(fn):
+        def wrapper(*args, **kwargs):
+            return lambda: fn(*args, **kwargs)
+
+        return wrapper
+
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._JoblibParallel",
+        FakeParallel,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._joblib_delayed",
+        fake_delayed,
+        raising=False,
+    )
+
+    cfg = ParallelConfig(enabled=True, strategy="joblib", max_workers=2, min_batch_size=1)
+    executor = ParallelExecutor(cfg)
+    with executor as ctx:
+        assert isinstance(ctx._pool, FakeParallel)
+        assert ctx._pool.entered is True
+        result = ctx._joblib_strategy(lambda x: x + 1, [1, 2, 3])
+        assert result == [2, 3, 4]
+    assert executor._pool is None
+
+
+def _fake_path_factory(entries: dict[str, str]):
+    class FakePath:
+        def __init__(self, path: str):
+            self.path = path
+
+        def __truediv__(self, segment: str):
+            base = self.path.rstrip("/")
+            return FakePath(f"{base}/{segment}")
+
+        def exists(self) -> bool:
+            return self.path in entries
+
+        def read_text(self, encoding: str = "utf-8") -> str:
+            if self.path not in entries:
+                raise OSError(f"missing {self.path}")
+            return entries[self.path]
+
+    return FakePath
+
+
+def test_get_cgroup_cpu_quota_reads_v2(monkeypatch):
+    entries = {"/sys/fs/cgroup/cpu.max": "200000 100000"}
+    fake_path = _fake_path_factory(entries)
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.Path",
+        fake_path,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.os.name",
+        "posix",
+        raising=False,
+    )
+    quota = ParallelExecutor._get_cgroup_cpu_quota()
+    assert quota == 2
+
+
+def test_get_cgroup_cpu_quota_reads_v1(monkeypatch):
+    entries = {
+        "/sys/fs/cgroup/cpu/cpu.cfs_quota_us": "500000",
+        "/sys/fs/cgroup/cpu/cpu.cfs_period_us": "100000",
+    }
+    fake_path = _fake_path_factory(entries)
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.Path",
+        fake_path,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.os.name",
+        "posix",
+        raising=False,
+    )
+    assert ParallelExecutor._get_cgroup_cpu_quota() == 5
+
+
+def test_auto_strategy_respects_ci_and_workload(monkeypatch):
+    cfg = ParallelConfig(enabled=True, strategy="auto", min_batch_size=8)
+    executor = ParallelExecutor(cfg)
+    events: list[dict[str, Any]] = []
+
+    def capture(event, payload):
+        events.append(payload)
+
+    monkeypatch.setattr(executor, "_emit", capture)
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel._JoblibParallel",
+        None,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.os.name",
+        "posix",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "calibrated_explanations.parallel.parallel.os.cpu_count",
+        lambda: 8,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        ParallelExecutor,
+        "_get_cgroup_cpu_quota",
+        staticmethod(lambda: None),
+    )
+
+    assert executor._auto_strategy(work_items=1) == "sequential"
+    assert events[-1]["reason"] == "tiny_workload"
+
+    monkeypatch.setenv("CI", "true")
+    assert executor._auto_strategy() == "sequential"
+    assert events[-1]["reason"] == "ci_environment"
+    monkeypatch.delenv("CI")
+
+    cfg.task_size_hint_bytes = 12 * 1024 * 1024
+    assert executor._auto_strategy() == "threads"
+    assert events[-1]["reason"] == "large_task_size"
+    cfg.task_size_hint_bytes = 0
+
+    assert executor._auto_strategy(work_items=2000) == "sequential"
+    assert events[-1]["reason"] == "small_workload"
+
+    assert executor._auto_strategy(work_items=70000) == "processes"
+    assert events[-1]["reason"] == "large_instance_workload"

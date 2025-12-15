@@ -167,45 +167,6 @@ def test_plot_regression_default_save_paths_include_title(monkeypatch, tmp_path)
     ), f"Should find indicators for 3 formats, got {found_indicators}"
 
 
-@pytest.mark.platform_dependent
-def test_format_save_path_concatenates_title(tmp_path):
-    """Test that _format_save_path combines base directory and filename correctly.
-
-    Refactored to use pathlib.Path and semantic assertions.
-     Tests that the function:
-     - Concatenates base directory and filename
-     - Handles trailing slashes correctly
-     - Returns a valid path that can be converted back to Path
-
-     Note: Uses pathlib for cross-platform path handling; does not compare
-     exact string representations (platform-dependent).
-
-     Marked as @pytest.mark.platform_dependent because path handling
-     behavior may vary across Windows/POSIX systems.
-    """
-    base = tmp_path / "plots"
-    base.mkdir()
-
-    # Test 1: Base path as Path object
-    result1 = plotting._format_save_path(base, "figurepng")
-    result_path1 = Path(result1)
-    assert result_path1.name == "figurepng", "Filename should be in result"
-    assert result_path1.parent == base, "Parent directory should match base"
-
-    # Test 2: Base path as string with trailing slash
-    result2 = plotting._format_save_path(str(base) + "/", "figurepdf")
-    result_path2 = Path(result2)
-    assert result_path2.name == "figurepdf", "Filename should be in result"
-    # Normalize for comparison (pathlib handles trailing slashes)
-    assert (
-        result_path2.parent.resolve() == base.resolve()
-    ), f"Parent should match base: {result_path2.parent} vs {base}"
-
-    # Test 3: Empty base path should return filename only
-    result3 = plotting._format_save_path("", "figurepng")
-    assert result3 == "figurepng", "Empty base should return just filename"
-
-
 def test_plotspec_sorting_abs_desc():
     nfeat = 6
     predict = {"predict": 0.4, "low": 0.1, "high": 0.7}

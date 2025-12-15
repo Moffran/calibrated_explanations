@@ -13,10 +13,6 @@ from calibrated_explanations.core.prediction import orchestrator as prediction_o
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
 )
-from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-from calibrated_explanations.plugins.predict_monitor import (
-    PredictBridgeMonitor as _PredictBridgeMonitor,
-)
 from calibrated_explanations.core.exceptions import (
     ConfigurationError,
     DataShapeError,
@@ -147,12 +143,8 @@ def test_instance_telemetry_payload_delegates(explainer_factory):
 
     assert explainer._build_instance_telemetry_payload("payload") == ("payload", sentinel)
 
-
-
     assert explainer._pyproject_intervals is None
     assert explainer._pyproject_plots is None
-
-
 
 
 def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
@@ -185,8 +177,6 @@ def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
         "_interval_context_metadata",
     ):
         assert not hasattr(explainer._plugin_manager, attr)
-
-
 
 
 def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):

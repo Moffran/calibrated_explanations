@@ -1,9 +1,12 @@
-import pytest
-import numpy as np
+import warnings
 from unittest.mock import create_autospec
+
+import numpy as np
+import pytest
 
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.plugins.predict import PredictBridge
+
 
 class DummyBridge:
     def __init__(self) -> None:
@@ -11,7 +14,7 @@ class DummyBridge:
         self.predictions = {
             "predict": {"result": "predict"},
             "predict_interval": ("interval",),
-            "predict_proba": (0.1, 0.9)
+            "predict_proba": (0.1, 0.9),
         }
 
     def predict(self, x, *, mode, task, bins=None):
@@ -26,6 +29,7 @@ class DummyBridge:
         self.calls.append(("predict_proba", (bins,)))
         return self.predictions["predict_proba"]
 
+
 def test_predict_bridge_monitor_tracks_usage_and_passthrough():
     """Test that PredictBridgeMonitor correctly tracks bridge method calls and passes results."""
     bridge = DummyBridge()
@@ -39,15 +43,16 @@ def test_predict_bridge_monitor_tracks_usage_and_passthrough():
 
     assert monitor.calls == ("predict", "predict_interval", "predict_proba")
     assert monitor.used is True
-    
+
     # Ensure the wrapped bridge is called transparently.
     assert predict_result is bridge.predictions["predict"]
     assert interval_result is bridge.predictions["predict_interval"]
     assert proba_result is bridge.predictions["predict_proba"]
-    
+
     assert bridge.calls[0][0] == "predict"
     assert bridge.calls[1][0] == "predict_interval"
     assert bridge.calls[2][0] == "predict_proba"
+
 
 def test_predict_bridge_monitor_reset_usage():
     """Test that usage tracking can be reset."""
@@ -56,10 +61,71 @@ def test_predict_bridge_monitor_reset_usage():
 
     payload = {"x": np.ones((2, 2))}
     monitor.predict(payload, mode="factual", task="classification")
-    
+
     assert monitor.used
     assert len(monitor.calls) > 0
 
     monitor.reset_usage()
     assert monitor.calls == ()
     assert not monitor.used
+
+
+def test_predict_monitor_warns_when_low_exceeds_high():
+    class WarningBridge(DummyBridge):
+        def __init__(self) -> None:
+            super().__init__()
+            self.predictions["predict"] = {
+                "predict": np.asarray([0.4]),
+                "low": np.asarray([0.6]),
+                "high": np.asarray([0.5]),
+            }
+
+    monitor = PredictBridgeMonitor(WarningBridge())
+    with pytest.warns(UserWarning, match="low > high"):
+        monitor.predict(np.array([[1.0]]), mode="factual", task="regression")
+
+
+def test_predict_monitor_warns_when_predict_outside_interval():
+    class OutsideBridge(DummyBridge):
+        def __init__(self) -> None:
+            super().__init__()
+            self.predictions["predict"] = {
+                "predict": np.asarray([1.2]),
+                "low": np.asarray([0.0]),
+                "high": np.asarray([1.0]),
+            }
+
+    monitor = PredictBridgeMonitor(OutsideBridge())
+    with pytest.warns(UserWarning, match="predict not in"):
+        monitor.predict(np.array([[0.5]]), mode="factual", task="regression")
+
+
+def test_predict_monitor_interval_tuple_validation_warns():
+    class IntervalBridge(DummyBridge):
+        def predict_interval(self, x, *, task, bins=None):
+            return (
+                np.asarray([0.4]),
+                np.asarray([0.5]),
+                np.asarray([0.3]),
+            )
+
+    monitor = PredictBridgeMonitor(IntervalBridge())
+    with pytest.warns(UserWarning, match="low > high"):
+        monitor.predict_interval(np.array([[1.0]]), task="classification")
+
+
+def test_predict_monitor_handles_conversion_errors(monkeypatch: pytest.MonkeyPatch):
+    class StrangeBridge(DummyBridge):
+        def __init__(self) -> None:
+            super().__init__()
+            self.predictions["predict"] = {"predict": object(), "low": object(), "high": object()}
+
+    monitor = PredictBridgeMonitor(StrangeBridge())
+
+    def explode(*args, **kwargs):
+        raise TypeError("bad")
+
+    monkeypatch.setattr(np, "asanyarray", explode)
+    with warnings.catch_warnings(record=True) as captured:
+        monitor.predict(np.array([[1.0]]), mode="factual", task="regression")
+    assert captured == []

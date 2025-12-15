@@ -6,44 +6,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from calibrated_explanations.core.exceptions import ConfigurationError
+
 # Suppress deprecation warning for importing plotting
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     from calibrated_explanations import plotting
 
 pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
-
-
-def test_derive_threshold_labels_with_tuple():
-    """Should return interval labels when threshold is a tuple."""
-    labels = plotting._derive_threshold_labels((0.2, 0.8))
-    assert labels == ("0.20 <= Y < 0.80", "Outside interval")
-
-
-def test_derive_threshold_labels_with_scalar():
-    """Should return comparison labels when threshold is a scalar."""
-    labels = plotting._derive_threshold_labels(0.5)
-    assert labels == ("Y < 0.50", "Y >= 0.50")
-
-
-def test_derive_threshold_labels_with_invalid_tuple():
-    """Should fall back to scalar logic or default when tuple is invalid."""
-    # If tuple parsing fails, it tries scalar parsing.
-    # If scalar parsing fails, it returns default.
-    labels = plotting._derive_threshold_labels(("a", "b"))
-    assert labels == ("Target within threshold", "Outside threshold")
-
-
-def test_derive_threshold_labels_with_invalid_scalar():
-    """Should return default labels when threshold is invalid."""
-    labels = plotting._derive_threshold_labels("invalid")
-    assert labels == ("Target within threshold", "Outside threshold")
-
-
-def test_derive_threshold_labels_with_string_tuple():
-    """Should handle string tuple if it can be parsed as floats."""
-    labels = plotting._derive_threshold_labels(("0.2", "0.8"))
-    assert labels == ("0.20 <= Y < 0.80", "Outside interval")
 
 
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
@@ -680,3 +650,83 @@ def test_plot_probabilistic_multiclass_label_lookup_fallback(monkeypatch: pytest
 
     assert captured["neg_caption"] == "P(y!=5)"
     assert captured["pos_caption"] == "P(y=5)"
+
+
+def test_plot_global_uses_modern_plugin(monkeypatch: pytest.MonkeyPatch):
+    """Should invoke plot plugins when not using the legacy path."""
+
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
+    monkeypatch.setattr(
+        plotting,
+        "_resolve_plot_style_chain",
+        lambda explainer, style: ("plot_spec.default",),
+    )
+
+    class DummyExplainer:
+        def __init__(self):
+            self.learner = SimpleNamespace()
+            self._last_explanation_mode = "factual"
+            self.latest_explanation = SimpleNamespace()
+
+        def predict(self, x, uq_interval=True, bins=None):
+            return [0.42], ([0.1], [0.9])
+
+    output = plotting._plot_global(
+        DummyExplainer(), x=[1, 2], show=True, use_legacy=False, style="plot_spec.default"
+    )
+    assert hasattr(output, "artifact")
+    plot_spec = output.artifact.get("plot_spec")
+    assert plot_spec is not None
+    assert plot_spec["kind"] == "global_regression"
+
+
+def test_plot_global_raises_when_no_plugins(monkeypatch: pytest.MonkeyPatch):
+    """Should raise when no plot plugins are available."""
+
+    monkeypatch.setattr("calibrated_explanations.plugins.ensure_builtin_plugins", lambda: None)
+    monkeypatch.setattr(
+        "calibrated_explanations.plugins.find_plot_plugin_trusted",
+        lambda identifier: None,
+    )
+    monkeypatch.setattr("calibrated_explanations.plugins.find_plot_plugin", lambda identifier: None)
+    monkeypatch.setattr(
+        plotting, "_resolve_plot_style_chain", lambda explainer, style: ("missing",)
+    )
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", SimpleNamespace())
+
+    class DummyExplainer:
+        def __init__(self):
+            self.learner = SimpleNamespace()
+            self._last_explanation_mode = "factual"
+            self.latest_explanation = SimpleNamespace()
+
+        def predict(self, x, uq_interval=True, bins=None):
+            return [0.42], ([0.1], [0.9])
+
+    with pytest.raises(ConfigurationError):
+        plotting._plot_global(DummyExplainer(), x=[1], show=False, use_legacy=False)
+
+
+def test_plot_proba_triangle_invokes_matplotlib(monkeypatch: pytest.MonkeyPatch):
+    """Should build figures using the configured matplotlib shim."""
+
+    class FakePlt:
+        def __init__(self) -> None:
+            self.plots = []
+
+        def figure(self):
+            return "figure"
+
+        def plot(self, *args, **kwargs):
+            self.plots.append((args, kwargs))
+
+    fake = FakePlt()
+    monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)
+    monkeypatch.setattr(plotting, "plt", fake)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        fig = plotting._plot_proba_triangle()
+    assert fig == "figure"
+    assert fake.plots  # ensure plotting calls executed

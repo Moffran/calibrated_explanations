@@ -3,12 +3,49 @@
 import os
 from typing import Any
 import pytest
-from unittest.mock import create_autospec
 
 from calibrated_explanations.core.config_helpers import (
     coerce_string_tuple as _coerce_string_tuple,
     read_pyproject_section as _read_pyproject_section,
+    split_csv as _split_csv,
 )
+
+
+@pytest.mark.parametrize(
+    "input_value, expected",
+    [
+        (None, ()),
+        ("", ()),
+        ("   ", ()),
+        ("a", ("a",)),
+        ("a,b", ("a", "b")),
+        (" a , b ", ("a", "b")),
+        ("a, ,b", ("a", "b")),
+        ("a,b,c", ("a", "b", "c")),
+        (False, ()),
+    ],
+)
+def test_split_csv(input_value, expected):
+    """Test split_csv with various inputs."""
+    assert _split_csv(input_value) == expected
+
+
+@pytest.mark.parametrize(
+    "input_value, expected",
+    [
+        (None, ()),
+        ("", ()),
+        ("value", ("value",)),
+        (["a", "b"], ("a", "b")),
+        (("a", "b"), ("a", "b")),
+        (["a", "", "b", None], ("a", "b")),
+        ([1, "a", 2.5], ("a",)),
+    ],
+)
+def test_coerce_string_tuple(input_value, expected):
+    """Test coerce_string_tuple with various inputs."""
+    assert _coerce_string_tuple(input_value) == expected
+
 
 def test_read_pyproject_section_handles_multiple_sources(
     monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]"
@@ -63,7 +100,7 @@ def test_read_pyproject_section_integration(tmp_path, monkeypatch):
         factual = "py.identifier"
         factual_fallbacks = ["fb.one", "", "fb.two"]
         """.strip(),
-        encoding="utf-8"
+        encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
 
@@ -73,10 +110,3 @@ def test_read_pyproject_section_integration(tmp_path, monkeypatch):
         "factual": "py.identifier",
         "factual_fallbacks": ["fb.one", "", "fb.two"],
     }
-
-
-def test_coerce_string_tuple_variants() -> None:
-    """Test that coerce_string_tuple handles string and tuple inputs correctly."""
-    assert _coerce_string_tuple("alpha") == ("alpha",)
-    assert _coerce_string_tuple(("beta",)) == ("beta",)
-    assert _coerce_string_tuple(("gamma", "delta")) == ("gamma", "delta")

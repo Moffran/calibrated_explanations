@@ -7,7 +7,6 @@ explanation execution.
 
 from __future__ import annotations
 
-import contextlib
 import sys
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -58,13 +57,6 @@ def assign_weight_scalar(instance_predict: Any, prediction: Any) -> float:
     >>> assign_weight_scalar([0.5], [0.7])
     0.2
     """
-    if np.isscalar(prediction):
-        with contextlib.suppress(TypeError):
-            return float(prediction - instance_predict)
-        return float(
-            np.asarray(prediction, dtype=float) - np.asarray(instance_predict, dtype=float)
-        )
-
     base_arr = np.asarray(prediction)
     inst_arr = np.asarray(instance_predict)
     try:

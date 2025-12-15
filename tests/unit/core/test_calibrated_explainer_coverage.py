@@ -273,8 +273,8 @@ def test_infer_explanation_mode(mock_learner, mock_plugin_manager):
     assert explainer._infer_explanation_mode() == "factual"
 
     # Mock discretizer
-    with patch("calibrated_explanations.utils.EntropyDiscretizer") as MockEntropy:
-        explainer.discretizer = MockEntropy()
+    with patch("calibrated_explanations.utils.EntropyDiscretizer") as mock_entropy:
+        explainer.discretizer = mock_entropy()
         # We need to make isinstance work.
         # Since we can't easily patch isinstance check against a class defined inside the method,
         # we might need to rely on the fact that the method imports them.

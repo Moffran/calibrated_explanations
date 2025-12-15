@@ -5,15 +5,6 @@ from __future__ import annotations
 from typing import Any, Dict
 
 import numpy as np
-import pytest
-
-from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-from calibrated_explanations.core.config_helpers import (
-    coerce_string_tuple as _coerce_string_tuple,
-    read_pyproject_section as _read_pyproject_section,
-    split_csv as _split_csv,
-)
-from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 
 
 class DummyBridge:
@@ -34,32 +25,6 @@ class DummyBridge:
 
     def predict_proba(self, x: Any, bins: Any | None = None) -> Any:
         return self.predictions["predict_proba"], bins
-
-
-
-
-
-@pytest.mark.parametrize(
-    "value, expected",
-    [
-        (None, ()),
-        ("", ()),
-        ("a, b ,c", ("a", "b", "c")),
-    ],
-)
-def test_split_csv(value, expected):
-    assert _split_csv(value) == expected
-
-
-def test_coerce_string_tuple_handles_iterables():
-    assert _coerce_string_tuple("value") == ("value",)
-    assert _coerce_string_tuple(["x", "", "y", 1, None]) == ("x", "y")
-
-
-
-
-
-
 
 
 def test_instantiate_plugin_prefers_fresh_instances(explainer_factory):
@@ -84,5 +49,3 @@ def test_instantiate_plugin_prefers_fresh_instances(explainer_factory):
     assert isinstance(cloned, RequiresArgs)
     assert cloned is not original
     assert cloned.value == 3
-
-

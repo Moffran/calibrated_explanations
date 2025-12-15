@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 from ...parallel import ParallelConfig, ParallelExecutor
-from ..core.exceptions import CalibratedError
+from ..exceptions import CalibratedError
 
 logger = logging.getLogger(__name__)
 

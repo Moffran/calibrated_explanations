@@ -25,7 +25,6 @@ from calibrated_explanations.plugins.builtins import (
     PlotSpecDefaultBuilder,
     PlotSpecDefaultRenderer,
     _collection_to_batch,
-    _derive_threshold_labels,
     _register_builtins,
 )
 from calibrated_explanations.plugins.explanations import (
@@ -143,24 +142,6 @@ def make_local_plot_context(**kwargs: Any) -> PlotRenderContext:
     }
     base_kwargs.update(kwargs)
     return PlotRenderContext(**base_kwargs)
-
-
-def test_derive_threshold_labels_handles_sequences_and_errors():
-    labels = _derive_threshold_labels([0.5, 2])
-    assert labels == ("0.50 <= Y < 2.00", "Outside interval")
-
-    fallback = _derive_threshold_labels(["not", "numbers"])
-    assert fallback == ("Target within threshold", "Outside threshold")
-
-
-def test_derive_threshold_labels_numeric_branch():
-    labels = _derive_threshold_labels(3)
-    assert labels == ("Y < 3.00", "Y ≥ 3.00")
-
-
-def test_derive_threshold_labels_interval_branch():
-    labels = _derive_threshold_labels((1, 4))
-    assert labels == ("1.00 <= Y < 4.00", "Outside interval")
 
 
 def test_legacy_predict_bridge_includes_intervals_and_classes():

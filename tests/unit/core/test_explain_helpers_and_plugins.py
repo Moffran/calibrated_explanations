@@ -1,19 +1,8 @@
 import numpy as np
 
-from calibrated_explanations.core.explain import _computation as comp
 from calibrated_explanations.core.explain import _helpers as helpers
 from calibrated_explanations.core.explain import sequential, parallel_instance
 from calibrated_explanations.core.explain import feature_task as feature_task_module
-
-
-def test_assign_weight_scalar_variants():
-    # scalar
-    assert np.isclose(comp.assign_weight_scalar(0.1, 0.6), 0.5)
-
-    # array differences -> return first element
-    inst = np.array([0.2, 0.3])
-    pred = np.array([0.7, 0.8])
-    assert np.isclose(comp.assign_weight_scalar(inst, pred), 0.5)
 
 
 def test_merge_ignore_features_union():

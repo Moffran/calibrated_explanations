@@ -28,19 +28,19 @@ def mock_explainer():
 def orchestrator(mock_explainer):
     with patch(
         "calibrated_explanations.core.prediction.interval_registry.IntervalRegistry"
-    ) as MockRegistry:
+    ) as mock_registry:
         orchestrator = PredictionOrchestrator(mock_explainer)
-        orchestrator._interval_registry = MockRegistry.return_value
+        orchestrator._interval_registry = mock_registry.return_value
         return orchestrator
 
 
 def test_init(mock_explainer):
     with patch(
         "calibrated_explanations.core.prediction.interval_registry.IntervalRegistry"
-    ) as MockRegistry:
+    ) as mock_registry:
         orchestrator = PredictionOrchestrator(mock_explainer)
         assert orchestrator.explainer == mock_explainer
-        MockRegistry.assert_called_once_with(mock_explainer)
+        mock_registry.assert_called_once_with(mock_explainer)
 
 
 def test_initialize_chains(orchestrator, mock_explainer):

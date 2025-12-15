@@ -58,10 +58,10 @@ def test_update_fast_explainer_raises(registry, mock_explainer):
 def test_update_classification(registry, mock_explainer):
     mock_explainer.mode = "classification"
     # Patch the source where VennAbers is imported from in the method
-    with patch.object(venn_module, "VennAbers") as MockVennAbers:
+    with patch.object(venn_module, "VennAbers") as mock_venn_abers:
         registry.update(np.array([]), np.array([]))
-        MockVennAbers.assert_called_once()
-        assert registry.interval_learner == MockVennAbers.return_value
+        mock_venn_abers.assert_called_once()
+        assert registry.interval_learner == mock_venn_abers.return_value
 
 
 def test_update_regression(registry, mock_explainer):

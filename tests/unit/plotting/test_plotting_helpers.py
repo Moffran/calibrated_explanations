@@ -1,47 +1,17 @@
 import configparser
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from calibrated_explanations import plotting
 from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.viz import coloring
 
 
 class _DummyExplainer:
     def __init__(self):
         self._last_explanation_mode = "factual"
         self._plot_plugin_fallbacks = {"factual": ["fallback-mode"]}
-
-
-def test_derive_threshold_labels_handles_sequences_and_scalars():
-    assert plotting._derive_threshold_labels((1.0, 2.0)) == (
-        "1.00 <= Y < 2.00",
-        "Outside interval",
-    )
-    assert plotting._derive_threshold_labels(0.5) == ("Y < 0.50", "Y >= 0.50")
-    assert plotting._derive_threshold_labels("bad") == (
-        "Target within threshold",
-        "Outside threshold",
-    )
-
-
-def test_split_csv_normalizes_multiple_inputs():
-    assert plotting._split_csv("a,b , ,c") == ("a", "b", "c")
-    assert plotting._split_csv(["a", "", " b "]) == ("a", "b")
-    assert plotting._split_csv(None) == ()
-    assert plotting._split_csv(42) == ()
-
-
-def test_format_save_path_various_inputs():
-    path = plotting._format_save_path(Path("foo"), "bar.txt")
-    assert path.endswith("foo/bar.txt")
-    path = plotting._format_save_path("folder/", "baz")
-    assert path == "folder/baz"
-    path = plotting._format_save_path("folder\\", "baz")
-    assert path == "folder\\baz"
-    assert plotting._format_save_path("", "name") == "name"
-    assert plotting._format_save_path(123, "name").endswith("123/name")
 
 
 def test_resolve_plot_style_chain_respects_order(monkeypatch):
@@ -118,3 +88,12 @@ def test_setup_plot_style_applies_overrides(monkeypatch):
 
     assert config["style"]["base"] == "override"
     assert dummy_plt.rcParams["font.family"] == "Courier"
+
+
+def test_color_brew_and_fill_color_behaviour():
+    palette = coloring.color_brew(2)
+    assert palette == [[86, 57, 229], [229, 71, 57]]
+    assert coloring.get_fill_color({"predict": 0.75}) == "#ef8c83"
+    assert coloring.get_fill_color({"predict": 0.25}) == "#9583ef"
+    assert coloring.get_fill_color({"predict": "bad"}) == "#5639e5"
+    assert coloring.get_fill_color({"predict": 0.85}, reduction=0.5) == "#f2a39c"
