@@ -184,7 +184,11 @@ def _default_size_estimator(value: Any) -> int:
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
-            logger.debug("Failed to read nbytes attribute for %s: %s", type(value).__name__, sys.exc_info()[1])
+            logger.debug(
+                "Failed to read nbytes attribute for %s: %s",
+                type(value).__name__,
+                sys.exc_info()[1],
+            )
     if hasattr(value, "__array_interface__"):
         try:
             view = np.asarray(value)
@@ -192,7 +196,11 @@ def _default_size_estimator(value: Any) -> int:
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
-            logger.debug("Failed to coerce array interface for %s: %s", type(value).__name__, sys.exc_info()[1])
+            logger.debug(
+                "Failed to coerce array interface for %s: %s",
+                type(value).__name__,
+                sys.exc_info()[1],
+            )
     # Fallback constant that biases towards early eviction instead of OOM
     return 256
 

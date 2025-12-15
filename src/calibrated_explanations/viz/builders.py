@@ -6,9 +6,9 @@ render via the PlotSpec + matplotlib adapter for selected plots.
 
 from __future__ import annotations
 
+import contextlib
 import math
 import sys
-import contextlib
 from typing import Any, Sequence
 
 import numpy as np

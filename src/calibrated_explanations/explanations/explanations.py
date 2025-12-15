@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import sys
 import warnings
+from collections.abc import Sequence as ABCSequence
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from time import time
@@ -175,11 +176,11 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 new_.y_threshold = [self.y_threshold[e.index] for e in new_]
             # Preserve per-instance feature ignore masks when present by slicing
             # them in the same way as bins/x_test/y_threshold.
-            if getattr(self, "features_to_ignore_per_instance", None) is not None:
+            masks_value = getattr(self, "features_to_ignore_per_instance", None)
+            if isinstance(masks_value, ABCSequence):
                 try:
-                    masks = list(cast(Sequence[Sequence[int]], self.features_to_ignore_per_instance))
-                    new_.features_to_ignore_per_instance = [masks[e.index] for e in new_]
-                except Exception:  # pragma: no cover - defensive fallback
+                    new_.features_to_ignore_per_instance = [masks_value[e.index] for e in new_]
+                except IndexError:
                     new_.features_to_ignore_per_instance = None
             # Reset cached aggregates to avoid referencing stale state from the source
             new_._feature_names_cache = None

@@ -11,16 +11,17 @@ providing clean separation between orchestration and execution strategies.
 
 from __future__ import annotations
 
+import warnings as _warnings
+
 from ._base import BaseExplainExecutor
 from ._shared import ExplainConfig, ExplainRequest, ExplainResponse
 from .orchestrator import ExplanationOrchestrator
 from .parallel_instance import InstanceParallelExplainExecutor
 from .sequential import SequentialExplainExecutor
-import warnings as _warnings
 
 
 def explain(*args, **kwargs):
-    """Deprecated shim forwarding to legacy explain implementation."""
+    """Forward calls to the legacy explain implementation (deprecated)."""
     _warnings.warn(
         "calibrated_explanations.core.explain.explain is deprecated; use CalibratedExplainer.explain_factual instead.",
         DeprecationWarning,
@@ -29,6 +30,7 @@ def explain(*args, **kwargs):
     from ._legacy_explain import explain as _legacy_explain
 
     return _legacy_explain(*args, **kwargs)
+
 
 __all__ = [
     "explain",

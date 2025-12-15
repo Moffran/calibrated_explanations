@@ -205,6 +205,8 @@ def validate_explanation_batch(
             _validate_prediction_invariant(prediction, f"Instance {index} prediction")
 
     return batch
+
+
 def _validate_prediction_invariant(payload: Mapping[str, Any], context: str) -> None:
     """Enforce low <= predict <= high invariant on prediction payload."""
     import numpy as np

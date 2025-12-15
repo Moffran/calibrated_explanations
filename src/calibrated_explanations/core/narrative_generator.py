@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 import re
 import sys
-import contextlib
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 

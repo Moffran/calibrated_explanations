@@ -38,7 +38,9 @@ def _derive_threshold_labels(threshold: Any | None) -> tuple[str, str]:
     except:  # noqa: E722
         if not isinstance(sys.exc_info()[1], Exception):
             raise
-        logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", sys.exc_info()[1])
+        logging.getLogger(__name__).debug(
+            "Failed to parse threshold as interval: %s", sys.exc_info()[1]
+        )
     try:
         value = float(threshold)
     except:  # noqa: E722
@@ -1072,7 +1074,9 @@ def _plot_alternative(
         except:  # noqa: E722
             if not isinstance(sys.exc_info()[1], Exception):
                 raise
-            logging.getLogger(__name__).debug("Failed to convert feature index to int: %s", sys.exc_info()[1])
+            logging.getLogger(__name__).debug(
+                "Failed to convert feature index to int: %s", sys.exc_info()[1]
+            )
             continue
         if value < 0:
             continue

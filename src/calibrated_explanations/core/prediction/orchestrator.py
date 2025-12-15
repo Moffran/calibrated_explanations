@@ -190,7 +190,6 @@ class PredictionOrchestrator:
 
     def _validate_prediction_result(self, result):
         """Enforce low <= predict <= high invariant on prediction results."""
-
         predict, low, high, _ = result
 
         # Skip validation if any component is None or empty

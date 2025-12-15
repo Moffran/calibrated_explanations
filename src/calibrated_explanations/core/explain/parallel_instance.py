@@ -8,7 +8,6 @@ using the sequential plugin to avoid nested parallelism.
 from __future__ import annotations
 
 import os
-import warnings
 from time import time
 from typing import TYPE_CHECKING, Any, List, Tuple
 
@@ -24,7 +23,6 @@ if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
 else:
     CalibratedExplainer = object
-
 
 
 def _instance_parallel_task(
@@ -157,17 +155,17 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
                 # 2. Enforce a minimum chunk size (e.g. 200) to amortize overhead
                 # 3. But don't exceed the default config.chunk_size if it was explicitly set?
                 #    Actually, config.chunk_size is just a default (100). We should override it.
-                
+
                 n_workers = getattr(executor.config, "max_workers", None) or os.cpu_count() or 1
                 # Use a larger minimum chunk to avoid tiny tasks that are dominated by pickling/spawn overhead
                 # Sequential execution is now very fast (~5ms/instance), so we need substantial chunks.
                 min_chunk = 200
-                
+
                 # Calculate ideal chunk size to split work evenly
                 if n_workers > 0:
                     dynamic_chunk = n_instances // n_workers
                     # Ensure we have at least min_chunk, unless that would result in fewer chunks than workers?
-                    # No, if dynamic_chunk < min_chunk, it means we don't have enough work to justify 
+                    # No, if dynamic_chunk < min_chunk, it means we don't have enough work to justify
                     # splitting into n_workers chunks of size min_chunk.
                     # In that case, we should just use min_chunk (resulting in fewer active workers),
                     # or even larger.
@@ -206,9 +204,7 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
             return result
 
         # Prepare sanitized config state (exclude executor to avoid pickling issues)
-        config_state = {
-            k: v for k, v in config.__dict__.items() if k != "executor"
-        }
+        config_state = {k: v for k, v in config.__dict__.items() if k != "executor"}
 
         # Step 3: Build parallel tasks
         tasks: List[Tuple[int, np.ndarray, Any, Any, Any, Any, Any, Any, Any]] = [
@@ -219,7 +215,9 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
                 bins_slice,
                 request.low_high_percentiles,
                 features_to_ignore_array,
-                features_to_ignore_per_instance[start:stop] if features_to_ignore_per_instance is not None else None,
+                features_to_ignore_per_instance[start:stop]
+                if features_to_ignore_per_instance is not None
+                else None,
                 explainer,
                 config_state,
             )

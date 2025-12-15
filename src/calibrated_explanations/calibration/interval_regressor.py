@@ -13,9 +13,8 @@ from functools import singledispatchmethod
 import crepes
 import numpy as np
 
-from ..utils.exceptions import ConfigurationError, DataShapeError, ValidationError
-
 from ..utils import safe_first_element
+from ..utils.exceptions import ConfigurationError, DataShapeError, ValidationError
 from .venn_abers import VennAbers
 
 

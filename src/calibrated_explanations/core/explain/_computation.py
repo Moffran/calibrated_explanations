@@ -6,12 +6,15 @@ and weight calculation used by all explain executors.
 
 from __future__ import annotations
 
-import sys
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
 
 from ...utils import concatenate_thresholds
+from ...utils.helper import assign_threshold as normalize_threshold
+from ...utils.int_utils import as_int_array
+from ..exceptions import CalibratedError
 from .feature_task import (
     FeatureTaskResult,
     assign_weight_scalar,
@@ -19,7 +22,6 @@ from .feature_task import (
 from .feature_task import (
     _feature_task as feature_task,
 )
-from ...utils.helper import assign_threshold as normalize_threshold
 
 if TYPE_CHECKING:
     from ...explanations import CalibratedExplanations
@@ -366,18 +368,18 @@ def explain_predict_step(
     n_instances = x.shape[0]
     num_features = explainer.num_features
     ignore_mask = np.zeros((n_instances, num_features), dtype=bool)
-    try:
-        ignore_mask[:, np.asarray(features_to_ignore, dtype=int)] = True
-    except Exception:  # pragma: no cover - defensive
-        ignore_mask[:] = False
-    if features_to_ignore_per_instance is not None:
-        try:
-            for idx, inst_mask in enumerate(features_to_ignore_per_instance):
-                if idx >= n_instances:
-                    break
-                ignore_mask[idx, np.asarray(inst_mask, dtype=int)] = True
-        except Exception:  # pragma: no cover - defensive
-            pass
+    ignore_indices = as_int_array(features_to_ignore)
+    if ignore_indices.size:
+        ignore_mask[:, ignore_indices] = True
+    if isinstance(features_to_ignore_per_instance, Iterable) and not isinstance(
+        features_to_ignore_per_instance, (str, bytes)
+    ):
+        for idx, inst_mask in enumerate(features_to_ignore_per_instance):
+            if idx >= n_instances:
+                break
+            inst_indices = as_int_array(inst_mask)
+            if inst_indices.size:
+                ignore_mask[idx, inst_indices] = True
 
     x_cal = explainer.x_cal
     base_predict, base_low, base_high, predicted_class = explainer._predict(  # pylint: disable=protected-access
@@ -411,10 +413,7 @@ def explain_predict_step(
                         x, bins=bins
                     )
             prediction["__full_probabilities__"] = full_probs
-        except:  # noqa: E722
-            if not isinstance(sys.exc_info()[1], Exception):
-                raise
-            exc = sys.exc_info()[1]
+        except (AttributeError, CalibratedError) as exc:
             logging.getLogger("calibrated_explanations").debug(
                 "Failed to compute full calibrated probabilities: %s", exc
             )
@@ -427,7 +426,7 @@ def explain_predict_step(
     perturbed_x_list = []
     perturbed_feature_list = []
     perturbed_class_list = []
-    
+
     x_perturbed = discretize(explainer, x)
     rule_boundaries_result = rule_boundaries(explainer, x, x_perturbed)
 
@@ -449,16 +448,20 @@ def explain_predict_step(
                 x_local[:, f] = value
                 perturbed_x_list.append(x_local)
                 perturbed_feature_list.append([(f, int(i), value, None) for i in active_indices])
-                
+
                 if bins is not None:
-                    selected_bins = bins[active_indices] if len(active_indices) > 1 else [bins[active_indices[0]]]
+                    selected_bins = (
+                        bins[active_indices]
+                        if len(active_indices) > 1
+                        else [bins[active_indices[0]]]
+                    )
                     perturbed_bins_list.append(selected_bins)
-                
+
                 p_class = prediction.get("predict", np.zeros_like(active_indices))[active_indices]
                 if not hasattr(p_class, "__len__"):
                     p_class = np.full(len(active_indices), p_class)
                 perturbed_class_list.append(p_class)
-                
+
                 perturbed_threshold = concatenate_thresholds(
                     perturbed_threshold, threshold, active_indices
                 )
@@ -496,13 +499,13 @@ def explain_predict_step(
                     x_local[:, f] = value
                     perturbed_x_list.append(x_local)
                     perturbed_feature_list.append([(f, int(i), j, True) for i in indices])
-                    
+
                     if bins is not None:
                         selected_bins = bins[indices] if len(indices) > 1 else [bins[indices[0]]]
                         perturbed_bins_list.append(selected_bins)
-                    
+
                     perturbed_class_list.append(prediction["classes"][indices])
-                    
+
                     perturbed_threshold = concatenate_thresholds(
                         perturbed_threshold, threshold, indices
                     )
@@ -520,13 +523,13 @@ def explain_predict_step(
                     x_local[:, f] = value
                     perturbed_x_list.append(x_local)
                     perturbed_feature_list.append([(f, int(i), j, False) for i in indices])
-                    
+
                     if bins is not None:
                         selected_bins = bins[indices] if len(indices) > 1 else [bins[indices[0]]]
                         perturbed_bins_list.append(selected_bins)
-                    
+
                     perturbed_class_list.append(prediction["classes"][indices])
-                    
+
                     perturbed_threshold = concatenate_thresholds(
                         perturbed_threshold, threshold, indices
                     )
@@ -540,12 +543,12 @@ def explain_predict_step(
                     x_local[f] = value
                     perturbed_x_list.append(x_local.reshape(1, -1))
                     perturbed_feature_list.append([(f, int(i), int(i), None)])
-                    
+
                     if bins is not None:
                         perturbed_bins_list.append([bins[int(i)]])
-                    
+
                     perturbed_class_list.append([prediction["classes"][int(i)]])
-                    
+
                     if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                         if isinstance(threshold[0], tuple) and len(perturbed_threshold) == 0:
                             perturbed_threshold = [threshold[int(i)]]

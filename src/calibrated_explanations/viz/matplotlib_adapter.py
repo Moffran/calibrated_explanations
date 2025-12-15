@@ -6,7 +6,6 @@ lazy matplotlib import. This keeps plotting optional behind the 'viz' extra.
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import math
 import sys

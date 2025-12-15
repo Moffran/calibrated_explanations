@@ -13,10 +13,12 @@ from __future__ import annotations
 import logging
 import time
 import warnings
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Tuple, Dict
+from typing import TYPE_CHECKING, Any, Dict, Tuple
 
 from ...parallel import ParallelConfig, ParallelExecutor
+from ...utils.int_utils import as_int_array
 from ._helpers import merge_ignore_features, validate_and_prepare_input
 from ._shared import ExplainConfig, ExplainRequest
 
@@ -47,21 +49,21 @@ class ExplainParallelRuntime:
         """Exit the runtime context, updating telemetry and handling cleanup."""
         if self.executor:
             self.executor.__exit__(exc_type, exc_val, exc_tb)
-            
+
             # Update telemetry
             duration = time.perf_counter() - (self._start_time or 0)
             self.executor.metrics.total_duration += duration
-            
+
             # Fallback warning
             if (
-                self.executor.config.enabled 
+                self.executor.config.enabled
                 and self.executor._active_strategy_name == "sequential"
                 and self.executor.config.strategy != "sequential"
             ):
                 warnings.warn(
                     "Parallel execution fell back to sequential. Check logs for details.",
                     UserWarning,
-                    stacklevel=2
+                    stacklevel=2,
                 )
 
     def cancel(self) -> None:
@@ -141,16 +143,17 @@ def build_explain_execution_plan(
     prepared_x = validate_and_prepare_input(explainer, x)
     features_to_ignore_array = merge_ignore_features(explainer, request.features_to_ignore)
     features_to_ignore_per_instance = getattr(request, "features_to_ignore_per_instance", None)
-    if features_to_ignore_per_instance is not None:
-        try:
-            merged_per_instance: list[np.ndarray] = []
-            for i, inst_mask in enumerate(features_to_ignore_per_instance):
-                inst_arr = np.asarray(inst_mask, dtype=int)
-                merged = np.union1d(features_to_ignore_array, inst_arr)
-                merged_per_instance.append(merged)
-            features_to_ignore_per_instance = merged_per_instance
-        except Exception:  # pragma: no cover - defensive
-            features_to_ignore_per_instance = None
+    if isinstance(features_to_ignore_per_instance, Iterable) and not isinstance(
+        features_to_ignore_per_instance, (str, bytes)
+    ):
+        merged_per_instance: list[np.ndarray] = []
+        for i, inst_mask in enumerate(features_to_ignore_per_instance):
+            if i >= len(prepared_x):
+                break
+            inst_arr = as_int_array(inst_mask)
+            merged = np.union1d(features_to_ignore_array, inst_arr)
+            merged_per_instance.append(merged)
+        features_to_ignore_per_instance = merged_per_instance
     low_high_percentiles = tuple(request.low_high_percentiles or _DEFAULT_PERCENTILES)
 
     explain_request = ExplainRequest(

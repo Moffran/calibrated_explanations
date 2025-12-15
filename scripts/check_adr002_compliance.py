@@ -27,12 +27,12 @@ def check_file(filepath):
             exc_name = None
             if node.exc is None:
                 continue # bare raise is okay (re-raise)
-                
+
             if isinstance(node.exc, ast.Call) and isinstance(node.exc.func, ast.Name):
                 exc_name = node.exc.func.id
             elif isinstance(node.exc, ast.Name):
                 exc_name = node.exc.id
-            
+
             if exc_name in DISALLOWED_EXCEPTIONS:
                 violations.append((node.lineno, f"Raised disallowed exception: {exc_name}. Use CalibratedError or subclasses per ADR-002."))
 
@@ -40,7 +40,7 @@ def check_file(filepath):
         if isinstance(node, ast.ExceptHandler):
             if node.type is None:
                 continue
-            
+
             names_to_check = []
             if isinstance(node.type, ast.Name):
                 names_to_check.append(node.type.id)
@@ -48,7 +48,7 @@ def check_file(filepath):
                 for elt in node.type.elts:
                     if isinstance(elt, ast.Name):
                         names_to_check.append(elt.id)
-            
+
             for name in names_to_check:
                 if name in DISALLOWED_EXCEPTIONS:
                     violations.append((node.lineno, f"Caught disallowed exception: {name}. This may mask root causes; prefer specific handling or CalibratedError types if applicable."))
@@ -57,14 +57,14 @@ def check_file(filepath):
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Attribute) and node.func.attr == 'warn':
                 # Check if it's warnings.warn (heuristic)
-                
+
                 # Check keywords for stacklevel
                 has_stacklevel = False
                 for keyword in node.keywords:
                     if keyword.arg == 'stacklevel':
                         has_stacklevel = True
                         break
-                
+
                 if not has_stacklevel:
                      violations.append((node.lineno, "warnings.warn() called without 'stacklevel' argument (ADR-002 best practice)."))
 
@@ -73,24 +73,24 @@ def check_file(filepath):
                 if len(node.args) > 1:
                     if isinstance(node.args[1], ast.Name):
                         category = node.args[1].id
-                
+
                 # Check keywords for category
                 for keyword in node.keywords:
                     if keyword.arg == 'category':
                         if isinstance(keyword.value, ast.Name):
                             category = keyword.value.id
-                
+
 
                 if category in DISALLOWED_WARNINGS:
                     violations.append((node.lineno, f"Used disallowed warning category: {category}. Use specific warnings or CalibratedError types."))
-    
+
     return violations
 
 
 def main():
     src_dir = Path("src/calibrated_explanations")
     all_violations = {}
-    
+
     print(f"Scanning {src_dir.resolve()}...")
     count = 0
     for filepath in src_dir.rglob("*.py"):

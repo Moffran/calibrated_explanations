@@ -122,12 +122,10 @@ def assign_weight(
     return [prediction[i] - ip for i, ip in enumerate(instance_predict)]
 
 
-
 def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     """Execute the per-feature aggregation logic for ``CalibratedExplainer``."""
     (
         feature_index,
-
         x_column,
         predict,
         low,
@@ -166,9 +164,9 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     if isinstance(feature_values, dict):
         feature_values_list = feature_values.get(feature_index, [])
         if feature_index not in feature_values:
-             # This happens if feature_values is incomplete (e.g. pickling issue or numeric feature missing)
-             # For numeric features, we might need to reconstruct it or accept empty.
-             pass
+            # This happens if feature_values is incomplete (e.g. pickling issue or numeric feature missing)
+            # For numeric features, we might need to reconstruct it or accept empty.
+            pass
     else:
         feature_values_list = feature_values[feature_index]
 
@@ -393,23 +391,23 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
     else:
         slice_bins = np.array(feature_slice[:, 2], dtype=int)
         slice_flags = np.asarray(feature_slice[:, 3], dtype=object)
-        
+
         # Optimized grouping using numpy to avoid slow python loop
         flag_ints = np.zeros(len(slice_flags), dtype=np.int8)
         flag_ints[slice_flags == True] = 1
         flag_ints[slice_flags == False] = 2
-        
+
         # Sort by (inst, bin, flag)
         sort_order = np.lexsort((flag_ints, slice_bins, feature_instances))
         sorted_indices = sort_order
         sorted_inst = feature_instances[sort_order]
         sorted_bins = slice_bins[sort_order]
         sorted_flags = flag_ints[sort_order]
-        
+
         keys = np.column_stack((sorted_inst, sorted_bins, sorted_flags))
         unique_keys, start_indices = np.unique(keys, axis=0, return_index=True)
         groups = np.split(sorted_indices, start_indices[1:])
-        
+
         numeric_grouped: Dict[Tuple[int, int, Any], np.ndarray] = {}
         for k, g in zip(unique_keys, groups):
             inst, bin_val, flag_int = k
@@ -456,7 +454,7 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
 
         unique_lower, lower_inverse = np.unique(lower_boundary, return_inverse=True)
         unique_upper, upper_inverse = np.unique(upper_boundary, return_inverse=True)
-        
+
         # Optimize lower_groups construction (avoid O(N^2))
         l_sort = np.argsort(lower_inverse)
         l_sorted_inv = lower_inverse[l_sort]
@@ -557,9 +555,7 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
             rule_entry = covered_feature.get(j)
             if rule_entry is None:
                 rule_entry = covered_feature.get(inst)
-            rule_value_map[inst].append(
-                rule_entry[0] if rule_entry is not None else np.array([])
-            )
+            rule_value_map[inst].append(rule_entry[0] if rule_entry is not None else np.array([]))
             current_bin[inst] = current_index
 
         for inst in range(n_instances):

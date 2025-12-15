@@ -138,9 +138,7 @@ class WrapCalibratedExplainer:
             )
 
             enabled = getattr(cfg, "perf_feature_filter_enabled", False)
-            per_instance_top_k = getattr(
-                cfg, "perf_feature_filter_per_instance_top_k", 8
-            )
+            per_instance_top_k = getattr(cfg, "perf_feature_filter_per_instance_top_k", 8)
             w._feature_filter_config = FeatureFilterConfig(  # type: ignore[attr-defined]
                 enabled=bool(enabled),
                 per_instance_top_k=max(1, int(per_instance_top_k)),
@@ -300,8 +298,8 @@ class WrapCalibratedExplainer:
         # Propagate internal feature filter config to explainer when available
         if self.explainer is not None and hasattr(self, "_feature_filter_config"):
             try:
-                setattr(self.explainer, "_feature_filter_config", self._feature_filter_config)
-            except Exception:  # pragma: no cover - defensive
+                self.explainer._feature_filter_config = self._feature_filter_config
+            except AttributeError:  # pragma: no cover - defensive
                 self._logger.debug(
                     "Failed to attach feature filter config to explainer", exc_info=True
                 )

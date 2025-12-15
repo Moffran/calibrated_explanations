@@ -9,13 +9,13 @@ from __future__ import annotations
 
 from ..utils.exceptions import (
     CalibratedError,
-    ValidationError,
-    DataShapeError,
     ConfigurationError,
+    ConvergenceError,
+    DataShapeError,
     ModelNotSupportedError,
     NotFittedError,
-    ConvergenceError,
     SerializationError,
+    ValidationError,
     explain_exception,
 )
 
@@ -30,4 +30,3 @@ __all__ = [
     "SerializationError",
     "explain_exception",
 ]
-

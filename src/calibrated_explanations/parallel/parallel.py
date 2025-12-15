@@ -244,7 +244,9 @@ class ParallelExecutor:
             return self._effective_min_instances()
         return max(1, self.config.min_batch_size)
 
-    def _tiny_workload_threshold(self, min_batch_threshold: int, *, work_items: int | None = None) -> int:
+    def _tiny_workload_threshold(
+        self, min_batch_threshold: int, *, work_items: int | None = None
+    ) -> int:
         """Compute the tiny-workload guard threshold, respecting overrides."""
         if self.config.tiny_workload_threshold is not None:
             return max(min_batch_threshold, self.config.tiny_workload_threshold)
@@ -412,6 +414,8 @@ class ParallelExecutor:
     @staticmethod
     def _get_cgroup_cpu_quota() -> float | None:
         """Read the CPU quota from cgroup v2 or v1 interface."""
+        if os.name == "nt":
+            return None
         try:
             cgroup_root = Path("/sys/fs/cgroup")
         except NotImplementedError:
@@ -442,7 +446,9 @@ class ParallelExecutor:
                 return None
 
             # allow -1 sentinel for quota
-            if (quota_s.isdigit() or (quota_s.startswith("-") and quota_s[1:].isdigit())) and period_s.isdigit():
+            if (
+                quota_s.isdigit() or (quota_s.startswith("-") and quota_s[1:].isdigit())
+            ) and period_s.isdigit():
                 quota = int(quota_s)
                 period = int(period_s)
                 if quota != -1 and period > 0:
@@ -453,14 +459,19 @@ class ParallelExecutor:
     @staticmethod
     def _is_ci_environment() -> bool:
         """Detect if running in a CI environment."""
-        return os.getenv("CI", "").lower() == "true" or os.getenv("GITHUB_ACTIONS", "").lower() == "true"
+        return (
+            os.getenv("CI", "").lower() == "true"
+            or os.getenv("GITHUB_ACTIONS", "").lower() == "true"
+        )
 
     def _auto_strategy(self, *, work_items: int | None = None) -> str:
         """Choose a sensible default backend for the current platform."""
         # 0. Honour explicit hints to stay serial for tiny workloads
         if work_items is not None:
             min_batch_threshold = self._effective_min_batch_threshold()
-            tiny_threshold = self._tiny_workload_threshold(min_batch_threshold, work_items=work_items)
+            tiny_threshold = self._tiny_workload_threshold(
+                min_batch_threshold, work_items=work_items
+            )
             if work_items < tiny_threshold:
                 self._emit(
                     "parallel_decision",
@@ -499,11 +510,16 @@ class ParallelExecutor:
             # Benchmarks indicate sequential execution is faster for < 2500 instances
             # due to process spawn/pickle overhead dominating the optimized sequential path.
             if work_items < 2500:
-                self._emit("parallel_decision", {"decision": "sequential", "reason": "small_workload"})
+                self._emit(
+                    "parallel_decision", {"decision": "sequential", "reason": "small_workload"}
+                )
                 return "sequential"
 
             if work_items > 50000 and self.config.granularity == "instance":
-                self._emit("parallel_decision", {"decision": "processes", "reason": "large_instance_workload"})
+                self._emit(
+                    "parallel_decision",
+                    {"decision": "processes", "reason": "large_instance_workload"},
+                )
                 return "processes"
 
         # 4. Library preference

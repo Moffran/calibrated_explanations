@@ -114,7 +114,7 @@ class IntervalRegistry:
             # pylint: disable=fixme
             # TODO: change so that existing calibrators are extended with new calibration instances
             # Import here to allow monkeypatching in tests
-            from ..calibration.venn_abers import VennAbers
+            from ...calibration.venn_abers import VennAbers
 
             self.interval_learner = VennAbers(
                 self.explainer.x_cal,

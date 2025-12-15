@@ -6,29 +6,29 @@ The aim is to reduce compute by skipping unimportant features while preserving p
 
 ## Goals and constraints
 
-- **Per-batch, per-instance filtering**  
-  - For each call to `explain_factual(x, ...)` or `explore_alternatives(x, ...)`, run an internal FAST pass on the *same* batch `x`.  
+- **Per-batch, per-instance filtering**
+  - For each call to `explain_factual(x, ...)` or `explore_alternatives(x, ...)`, run an internal FAST pass on the *same* batch `x`.
   - Use the per-instance feature weights from this FAST batch to decide which features to keep for that batch; no global or cross-batch ranking.
 
-- **No new helpers on `CalibratedExplainer`**  
-  - All new logic lives in orchestrators, plugins, or new internal modules (e.g. `core.explain._feature_filter`).  
+- **No new helpers on `CalibratedExplainer`**
+  - All new logic lives in orchestrators, plugins, or new internal modules (e.g. `core.explain._feature_filter`).
   - `CalibratedExplainer` methods (`explain_factual`, `explore_alternatives`, `explain_fast`) remain thin delegators.
 
-- **Coexistence of modes**  
-  - A single explainer must continue to support `explain_factual`, `explore_alternatives`, and `explain_fast` concurrently.  
+- **Coexistence of modes**
+  - A single explainer must continue to support `explain_factual`, `explore_alternatives`, and `explain_fast` concurrently.
   - The internal filter uses FAST via the plugin/orchestrator system; it must not preclude user-facing FAST calls.
 
-- **Executor lifetime & performance**  
-  - Reuse the same `ParallelExecutor` for both the internal FAST pass and the factual/alternative execution, matching the “enter once, reuse pool” guidance from `parallel_parallelism_analysis.md`.  
+- **Executor lifetime & performance**
+  - Reuse the same `ParallelExecutor` for both the internal FAST pass and the factual/alternative execution, matching the “enter once, reuse pool” guidance from `parallel_parallelism_analysis.md`.
   - Never spin up a new pool per `map` call inside the filter.
 
-- **Graceful degradation**  
-  - If the FAST plugin is unavailable (not installed, denied via `CE_DENY_PLUGIN`, misconfigured) or fails at runtime, fall back to the current behaviour with no filtering and omit a UserWarning and log message.  
+- **Graceful degradation**
+  - If the FAST plugin is unavailable (not installed, denied via `CE_DENY_PLUGIN`, misconfigured) or fails at runtime, fall back to the current behaviour with no filtering and omit a UserWarning and log message.
   - Feature filtering must never break or change the semantics of existing calls beyond skipping unimportant features.
 
-- **Telemetry and testing**  
-  - Add unit tests for the new filter module and plugin integration.  
-  - Add integration tests to verify executor reuse across both stages.  
+- **Telemetry and testing**
+  - Add unit tests for the new filter module and plugin integration.
+  - Add integration tests to verify executor reuse across both stages.
   - Optionally log telemetry events:
     - feature filtering is enabled,
     - skipped due to errors,
@@ -91,4 +91,3 @@ The aim is to reduce compute by skipping unimportant features while preserving p
    - Add a short section to `docs/foundations/how-to/tune_runtime_performance.md` describing:
      - The new feature-filter toggle and its intended use (large-`p` settings where many features are uninformative).
      - How it interacts with `CE_PARALLEL` and the FAST plugin (internal use, no change to user-facing FAST API).
-

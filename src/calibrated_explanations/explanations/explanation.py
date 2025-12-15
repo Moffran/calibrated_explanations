@@ -16,21 +16,18 @@ Classes:
         Represents fast explanations, enabling efficient interpretation of model behavior for large datasets.
 """
 
+import contextlib
 import math
 import re
 import sys
-import contextlib
 import warnings
 from abc import ABC, abstractmethod
-
-# from dataclasses import dataclass
+from collections.abc import Sequence
 from types import MappingProxyType
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from pandas import Categorical
-
-from ..utils.helper import assign_threshold as normalize_threshold
 
 from ..plotting import _plot_alternative, _plot_probabilistic, _plot_regression, _plot_triangular
 from ..utils import (
@@ -43,6 +40,8 @@ from ..utils import (
     safe_first_element,
     safe_mean,
 )
+from ..utils.helper import assign_threshold as normalize_threshold
+from ..utils.int_utils import collect_ints
 
 # @dataclass
 # class PredictionInterval:
@@ -286,32 +285,20 @@ class CalibratedExplanation(ABC):
         per-instance mask exposed via ``features_to_ignore_per_instance``.
         """
         ignored: set[int] = set()
-        try:
-            global_ignore = getattr(self.calibrated_explanations, "features_to_ignore", []) or []
-            ignored.update(int(f) for f in global_ignore)
-        except Exception:  # pragma: no cover - defensive
-            pass
+        global_ignore = getattr(self.calibrated_explanations, "features_to_ignore", None)
+        if global_ignore is None:
+            global_ignore = ()
+        ignored.update(collect_ints(global_ignore))
 
         per_instance = getattr(
             self.calibrated_explanations, "features_to_ignore_per_instance", None
         )
-        if per_instance is not None:
-            try:
+        instance_mask = None
+        if isinstance(per_instance, Sequence):
+            if 0 <= self.index < len(per_instance):
                 instance_mask = per_instance[self.index]
-            except Exception:  # pragma: no cover - defensive
-                instance_mask = None
-            if instance_mask is not None:
-                try:
-                    for f in instance_mask:
-                        try:
-                            ignored.add(int(f))
-                        except (TypeError, ValueError):
-                            continue
-                except TypeError:  # not iterable
-                    try:
-                        ignored.add(int(instance_mask))
-                    except (TypeError, ValueError):  # pragma: no cover - defensive
-                        pass
+        if instance_mask is not None:
+            ignored.update(collect_ints(instance_mask))
         return ignored
 
     def _rank_features(self, feature_weights=None, width=None, num_to_show=None):
@@ -814,13 +801,13 @@ class CalibratedExplanation(ABC):
             pass
         else:
             x = explainer.discretizer.discretize(self.x_test)
-        
+
         ignored = self._ignored_features_for_instance()
         for f in range(self._get_explainer().num_features):
             if f in ignored:
                 self.conditions.append("")
                 continue
-            
+
             if explainer.discretizer is None:
                 val = self.x_test[f]
                 rule = f"{self._get_explainer().feature_names[f]} = {val}"

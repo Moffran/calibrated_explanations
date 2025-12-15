@@ -13,9 +13,8 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ..utils.exceptions import DataShapeError
-
 from ..utils import safe_isinstance
+from ..utils.exceptions import DataShapeError
 
 if TYPE_CHECKING:
     from calibrated_explanations.core import CalibratedExplainer

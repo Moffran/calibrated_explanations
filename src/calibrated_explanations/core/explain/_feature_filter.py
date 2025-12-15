@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any, Iterable, Sequence, List
+from typing import List
 
 import numpy as np
 
-from ...core.exceptions import ConfigurationError
 from ...explanations.explanations import CalibratedExplanations
 
 
@@ -56,12 +55,10 @@ class FeatureFilterConfig:
                 cfg.enabled = True
                 continue
             if token.startswith("top_k="):
-                try:
-                    value = int(token.split("=", 1)[1])
-                except ValueError:
-                    # Ignore malformed values; keep previous setting
-                    continue
-                cfg.per_instance_top_k = max(1, value)
+                value_str = token.split("=", 1)[1].strip()
+                normalized = value_str.lstrip("+-")
+                if normalized.isdigit():
+                    cfg.per_instance_top_k = max(1, int(value_str))
                 continue
 
         return cfg
@@ -134,9 +131,7 @@ def compute_filtered_features_to_ignore(
     # Normalise baseline ignore set and instance count so that even when
     # filtering is effectively disabled we can return a consistent shape.
     base_ignore_arr = (
-        np.asarray(base_ignore, dtype=int)
-        if base_ignore is not None
-        else np.array([], dtype=int)
+        np.asarray(base_ignore, dtype=int) if base_ignore is not None else np.array([], dtype=int)
     )
     num_instances = len(fast_explanations.explanations)
 

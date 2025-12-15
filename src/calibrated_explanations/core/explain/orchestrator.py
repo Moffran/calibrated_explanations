@@ -17,7 +17,6 @@ from __future__ import annotations
 import contextlib
 import copy
 import sys
-import types
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 import numpy as np
@@ -269,12 +268,16 @@ class ExplanationOrchestrator:
         plugin, _identifier = self._ensure_plugin(mode)
         per_instance_ignore = None
         features_arg = features_to_ignore or []
-        if features_arg and isinstance(features_arg, (list, tuple)) and isinstance(
-            features_arg[0], (list, tuple, np.ndarray)
+        if (
+            features_arg
+            and isinstance(features_arg, (list, tuple))
+            and isinstance(features_arg[0], (list, tuple, np.ndarray))
         ):
             # User supplied per-instance masks
             per_instance_ignore = tuple(tuple(int(f) for f in mask) for mask in features_arg)
-            flat_ignore = np.unique(np.concatenate([np.asarray(mask, dtype=int) for mask in features_arg]))
+            flat_ignore = np.unique(
+                np.concatenate([np.asarray(mask, dtype=int) for mask in features_arg])
+            )
             features_to_ignore_flat = tuple(int(f) for f in flat_ignore.tolist())
         else:
             features_to_ignore_flat = tuple(features_arg)
@@ -844,8 +847,7 @@ class ExplanationOrchestrator:
             feature_names=tuple(self.explainer.feature_names),
             categorical_features=tuple(self.explainer.categorical_features),
             categorical_labels={
-                k: dict(v)
-                for k, v in (self.explainer.categorical_labels or {}).items()
+                k: dict(v) for k, v in (self.explainer.categorical_labels or {}).items()
             }
             if self.explainer.categorical_labels
             else {},

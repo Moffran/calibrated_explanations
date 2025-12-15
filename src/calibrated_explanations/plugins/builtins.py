@@ -25,10 +25,15 @@ from typing import TYPE_CHECKING, Any, Mapping, Sequence
 import numpy as np
 
 from .. import __version__ as package_version
-from ..core.exceptions import ConfigurationError, NotFittedError
+from ..core.exceptions import CalibratedError, ConfigurationError, NotFittedError
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
     pass
+from ..core.explain._feature_filter import (  # type: ignore[attr-defined]
+    FeatureFilterConfig,
+    FeatureFilterResult,
+    compute_filtered_features_to_ignore,
+)
 from ..explanations.explanation import (
     AlternativeExplanation,
     FactualExplanation,
@@ -56,11 +61,6 @@ from .registry import (
     register_plot_builder,
     register_plot_renderer,
     register_plot_style,
-)
-from ..core.explain._feature_filter import (  # type: ignore[attr-defined]
-    FeatureFilterConfig,
-    FeatureFilterResult,
-    compute_filtered_features_to_ignore,
 )
 
 
@@ -462,12 +462,10 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                         # Stash per-instance ignore information on the explainer so that
                         # the final CalibratedExplanations container can expose it.
                         try:
-                            setattr(
-                                explainer,
-                                "_feature_filter_per_instance_ignore",
-                                filter_result.per_instance_ignore,
+                            explainer._feature_filter_per_instance_ignore = (
+                                filter_result.per_instance_ignore
                             )
-                        except Exception:  # pragma: no cover - defensive
+                        except AttributeError:
                             logging.getLogger(__name__).debug(
                                 "Unable to attach per-instance feature filter state to explainer",
                                 exc_info=True,
@@ -487,10 +485,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             features_to_ignore_per_instance=filter_result.per_instance_ignore,
                             extras=request.extras,
                         )
-                    except:
-                        exc_inner = sys.exc_info()[1]
-                        if not isinstance(exc_inner, Exception):
-                            raise
+                    except (AttributeError, CalibratedError, ConfigurationError) as exc_inner:
                         logging.getLogger(__name__).warning(
                             "FAST-based feature filter disabled for mode '%s': %s",
                             self._mode,
