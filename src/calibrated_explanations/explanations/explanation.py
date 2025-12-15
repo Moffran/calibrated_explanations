@@ -319,7 +319,7 @@ class CalibratedExplanation(ABC):
             The sorted indices of the features.
         """
         if not (feature_weights is not None or width is not None):
-            from ..core.exceptions import ValidationError
+            from ..utils.exceptions import ValidationError
 
             raise ValidationError(
                 "Either feature_weights or width (or both) must not be None",
@@ -861,7 +861,7 @@ class CalibratedExplanation(ABC):
             The predicted value, lower bound, upper bound, and count.
         """
         if len(original_features) < 2:
-            from ..core.exceptions import ValidationError
+            from ..utils.exceptions import ValidationError
 
             raise ValidationError(
                 "Conjunctive rules require at least two features",
@@ -1443,7 +1443,7 @@ class FactualExplanation(CalibratedExplanation):
     def add_conjunctions(self, n_top_features=5, max_rule_size=2):
         """Add conjunctive factual rules."""
         if max_rule_size >= 4:
-            from ..core.exceptions import ConfigurationError
+            from ..utils.exceptions import ConfigurationError
 
             raise ConfigurationError(
                 "max_rule_size must be 2 or 3",
@@ -1735,7 +1735,7 @@ class FactualExplanation(CalibratedExplanation):
         except:  # pylint: disable=bare-except
             e = sys.exc_info()[1]
             if isinstance(e, RuntimeError) and "Agg" in str(e):
-                from ..core.exceptions import ConfigurationError
+                from ..utils.exceptions import ConfigurationError
 
                 raise ConfigurationError(
                     "Matplotlib backend 'Agg' does not support show(). "
@@ -2359,7 +2359,7 @@ class AlternativeExplanation(CalibratedExplanation):
             Returns a self reference, to allow for method chaining
         """
         if max_rule_size >= 4:
-            from ..core.exceptions import ConfigurationError
+            from ..utils.exceptions import ConfigurationError
 
             raise ConfigurationError(
                 "max_rule_size must be 2 or 3",

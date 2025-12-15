@@ -12,7 +12,7 @@ with warnings.catch_warnings():
     from calibrated_explanations.viz import plots as plotting
 
 from calibrated_explanations.viz import build_regression_bars_spec, matplotlib_adapter
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 
 
 pytest.importorskip("matplotlib")

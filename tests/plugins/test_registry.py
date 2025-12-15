@@ -63,7 +63,7 @@ def test_dependency_fields_are_normalised(field: str, value, expected) -> None:
 
 
 def test_tasks_field_required_and_validated() -> None:
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     meta = _base_metadata()
     meta["tasks"] = ("classification", "regression")
@@ -80,7 +80,7 @@ def test_tasks_field_required_and_validated() -> None:
 
 
 def test_schema_version_future_rejected() -> None:
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     meta = _base_metadata()
     meta["schema_version"] = 999
@@ -105,7 +105,7 @@ def test_list_descriptors_respects_trust_state() -> None:
 
 
 def test_validate_explanation_metadata_invalid_modes():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     meta = _base_metadata()
     meta["modes"] = ("invalid_mode",)
@@ -115,7 +115,7 @@ def test_validate_explanation_metadata_invalid_modes():
 
 
 def test_validate_explanation_metadata_no_modes():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     meta = _base_metadata()
     del meta["modes"]
@@ -125,7 +125,7 @@ def test_validate_explanation_metadata_no_modes():
 
 
 def test_validate_explanation_metadata_missing_trust():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     meta = _base_metadata()
     del meta["trust"]

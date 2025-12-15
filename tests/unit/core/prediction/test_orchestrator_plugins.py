@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 @pytest.fixture

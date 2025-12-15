@@ -7,7 +7,7 @@ from typing import Any, Mapping
 
 import pytest
 
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 
 from calibrated_explanations.plugins import (
     ClassificationIntervalCalibrator,
@@ -346,7 +346,7 @@ def test_plot_protocol_runtime_checks() -> None:
 def test_validate_explanation_batch_invalid_batch_type() -> None:
     from calibrated_explanations.plugins.explanations import validate_explanation_batch
 
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(
         ValidationError, match="explanation plugins must return an ExplanationBatch instance"
@@ -452,7 +452,7 @@ def test_validate_explanation_batch_invalid_metadata_type() -> None:
     )
     from calibrated_explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations import CalibratedExplanation
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
@@ -473,7 +473,7 @@ def test_validate_explanation_batch_mode_mismatch() -> None:
     )
     from calibrated_explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations import CalibratedExplanation
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,
@@ -495,7 +495,7 @@ def test_validate_explanation_batch_task_mismatch() -> None:
     )
     from calibrated_explanations.explanations import CalibratedExplanations
     from calibrated_explanations.explanations import CalibratedExplanation
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     batch = ExplanationBatch(
         container_cls=CalibratedExplanations,

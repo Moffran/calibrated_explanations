@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.integrations.shap import ShapHelper
 
 if TYPE_CHECKING:

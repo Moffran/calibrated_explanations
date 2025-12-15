@@ -38,7 +38,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 # Core imports (no cross-sibling dependencies)
 from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
-from .exceptions import (
+from ..utils.exceptions import (
     DataShapeError,
     ValidationError,
 )
@@ -317,7 +317,7 @@ class CalibratedExplainer:
 
     def _require_plugin_manager(self) -> PluginManager:
         """Return the plugin manager or raise if the explainer is not initialized."""
-        from .exceptions import NotFittedError
+        from ..utils.exceptions import NotFittedError
 
         manager = getattr(self, "_plugin_manager", None)
         if manager is None:

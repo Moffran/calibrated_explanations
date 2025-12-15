@@ -13,7 +13,7 @@ from __future__ import annotations
 import contextlib
 from typing import Any, Mapping
 
-from .core.exceptions import ValidationError
+from .utils.exceptions import ValidationError
 from .explanations import Explanation, FeatureRule
 from .schema import (
     validate_payload as _schema_validate_payload,  # noqa: F401 - re-exported under alias

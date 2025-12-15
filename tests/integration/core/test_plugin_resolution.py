@@ -5,7 +5,7 @@ import pytest
 from tests.helpers.explainer_utils import make_explainer_from_dataset
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins import (
     ensure_builtin_plugins,

@@ -99,7 +99,7 @@ def test_safe_isinstance_class_not_imported():
 
 def test_safe_isinstance_invalid_class_path():
     """Test safe_isinstance with an invalid class path string."""
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     model = RandomForestRegressor()
     with pytest.raises(ValidationError) as excinfo:
@@ -184,7 +184,7 @@ def test_check_is_fitted_with_custom_message():
 
 def test_check_is_fitted_with_class():
     """Test check_is_fitted with a class instead of an instance."""
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError) as excinfo:
         check_is_fitted(LinearRegression, attributes="coef_")
@@ -193,7 +193,7 @@ def test_check_is_fitted_with_class():
 
 def test_check_is_fitted_with_non_estimator():
     """Test check_is_fitted with a non-estimator instance."""
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError) as excinfo:
         check_is_fitted("not_an_estimator", attributes="coef_")
@@ -271,7 +271,7 @@ def test_calculate_metrics_with_normalization():
 
 def test_calculate_metrics_invalid_weight():
     """Test calculate_metrics with an invalid weight."""
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     uncertainty = [0.1, 0.2, 0.3]
     prediction = [0.9, 0.8, 0.7]
@@ -282,7 +282,7 @@ def test_calculate_metrics_invalid_weight():
 
 def test_calculate_metrics_missing_arguments():
     """Test calculate_metrics with missing uncertainty or prediction."""
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError) as excinfo:
         calculate_metrics(uncertainty=[0.1, 0.2, 0.3])

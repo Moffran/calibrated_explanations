@@ -11,7 +11,7 @@ from ..utils import (
     RegressorDiscretizer,
     immutable_array,
 )
-from .exceptions import ValidationError
+from ..utils.exceptions import ValidationError
 from .explain._computation import discretize as _discretize_func
 
 

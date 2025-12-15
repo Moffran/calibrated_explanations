@@ -204,6 +204,94 @@ def test_cache_config_from_env_parses_tokens(monkeypatch: pytest.MonkeyPatch) ->
     assert config_enabled.enabled is True
 
 
+def test_cache_forksafe_reset_clears_state_and_emits_telemetry() -> None:
+    events: list[tuple[str, dict[str, object]]] = []
+
+    def _telemetry(event: str, payload: dict[str, object]) -> None:
+        events.append((event, payload))
+
+    cache = LRUCache[str, str](
+        namespace="telemetry",
+        version="v1",
+        max_items=4,
+        max_bytes=64,
+        ttl_seconds=None,
+        telemetry=_telemetry,
+        size_estimator=lambda value: len(value.encode("utf8")),
+    )
+
+    cache.set("alpha", "payload")
+    assert cache.get("alpha") == "payload"
+
+    cache.forksafe_reset()
+    assert cache.get("alpha") is None
+    assert cache.metrics.resets == 1
+    assert any(
+        event == "cache_reset" and payload["namespace"] == "telemetry" and payload["reason"] == "forksafe"
+        for event, payload in events
+    )
+
+
+def test_cache_skips_oversized_values_and_emits_skip_event() -> None:
+    events: list[tuple[str, dict[str, object]]] = []
+
+    cache = LRUCache[str, bytes](
+        namespace="skip",
+        version="v1",
+        max_items=2,
+        max_bytes=8,
+        ttl_seconds=None,
+        telemetry=lambda event, payload: events.append((event, payload)),
+        size_estimator=lambda value: len(value),
+    )
+
+    cache.set("fit", b"1234")
+    assert cache.get("fit") == b"1234"
+
+    cache.set("oversized", b"0123456789")
+    assert cache.get("oversized") is None
+    assert cache.metrics.misses >= 1
+    assert any(
+        event == "cache_skip" and payload["reason"] == "oversize" for event, payload in events
+    )
+
+
+def test_cache_round_trips_none_values() -> None:
+    cache = LRUCache[str, object](
+        namespace="nullable",
+        version="v1",
+        max_items=2,
+        max_bytes=None,
+        ttl_seconds=None,
+        telemetry=None,
+        size_estimator=lambda _: 1,
+    )
+
+    cache.set("maybe", None)
+    assert cache.get("maybe") is None
+    assert cache.metrics.hits == 1
+
+
+def test_cache_telemetry_errors_do_not_raise() -> None:
+    def _noisy(event: str, payload: dict[str, object]) -> None:
+        raise RuntimeError(f"fail {event} {payload}")
+
+    cache = LRUCache[str, int](
+        namespace="errors",
+        version="v1",
+        max_items=2,
+        max_bytes=None,
+        ttl_seconds=None,
+        telemetry=_noisy,
+        size_estimator=lambda _: 1,
+    )
+
+    cache.set("key", 1)
+    assert cache.metrics.sets == 1
+    assert cache.get("key") == 1
+    assert cache.metrics.hits == 1
+
+
 def test_lru_cache_updates_existing_and_enforces_limits() -> None:
     events: List[str] = []
 

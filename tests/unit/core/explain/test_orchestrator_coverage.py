@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch, PropertyMock
 import numpy as np
 from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
-from calibrated_explanations.core.exceptions import ValidationError, ConfigurationError
+from calibrated_explanations.utils.exceptions import ValidationError, ConfigurationError
 
 
 @pytest.fixture

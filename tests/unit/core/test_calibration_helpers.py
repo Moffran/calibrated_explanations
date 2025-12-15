@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 
 from calibrated_explanations.calibration import interval_learner as ch
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 def test_calibration_helpers_round_trip():

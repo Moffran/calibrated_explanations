@@ -5,7 +5,7 @@ from tests.helpers.explainer_utils import make_explainer_from_dataset
 
 import calibrated_explanations.calibration as ch
 from calibrated_explanations.calibration import VennAbers
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.intervals import IntervalCalibratorPlugin
 from calibrated_explanations.plugins import (
     clear_interval_plugins,

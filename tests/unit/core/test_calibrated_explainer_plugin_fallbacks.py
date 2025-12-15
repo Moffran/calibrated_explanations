@@ -22,7 +22,7 @@ def minimal_explainer() -> CalibratedExplainer:
 
 def test_require_plugin_manager_raises_when_missing():
     """_require_plugin_manager should raise when the manager is absent."""
-    from calibrated_explanations.core.exceptions import NotFittedError
+    from calibrated_explanations.utils.exceptions import NotFittedError
 
     explainer = minimal_explainer()
 

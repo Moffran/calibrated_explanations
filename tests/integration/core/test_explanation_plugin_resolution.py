@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.builtins import LegacyFactualExplanationPlugin
 from calibrated_explanations.plugins.manager import DEFAULT_EXPLANATION_IDENTIFIERS
 from calibrated_explanations.plugins import (

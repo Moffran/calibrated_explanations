@@ -17,7 +17,7 @@ from typing import Any, Literal, Type, cast
 import numpy as np
 import numpy.typing as npt
 
-from .exceptions import (
+from ..utils.exceptions import (
     CalibratedError,
     DataShapeError,
     ModelNotSupportedError,
@@ -295,7 +295,7 @@ def validate(
     Examples
     --------
     >>> from calibrated_explanations.core.validation import validate
-    >>> from calibrated_explanations.core.exceptions import ValidationError
+    >>> from calibrated_explanations.utils.exceptions import ValidationError
     >>> validate(len(x) > 0, ValidationError, "x must not be empty", details={"param": "x"})
     """
     if not condition:

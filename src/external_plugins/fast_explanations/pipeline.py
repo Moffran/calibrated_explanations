@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.utils.exceptions import (
     ConfigurationError,
     DataShapeError,
     ValidationError,

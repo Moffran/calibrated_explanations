@@ -90,7 +90,7 @@ def __getattr__(name: str) -> Any:
         "SerializationError",
         "explain_exception",
     }:
-        from .exceptions import (
+        from ..utils.exceptions import (
             CalibratedError,
             ConfigurationError,
             ConvergenceError,

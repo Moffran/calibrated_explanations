@@ -13,7 +13,7 @@ from calibrated_explanations.core.prediction import orchestrator as prediction_o
 from calibrated_explanations.core.calibrated_explainer import (
     CalibratedExplainer,
 )
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.utils.exceptions import (
     ConfigurationError,
     DataShapeError,
     ValidationError,
@@ -71,7 +71,7 @@ def test_categorical_features_default_to_label_keys(explainer_factory):
 
 
 def test_require_plugin_manager_raises_when_missing(explainer_factory):
-    from calibrated_explanations.core.exceptions import NotFittedError
+    from calibrated_explanations.utils.exceptions import NotFittedError
 
     explainer = stub_explainer(explainer_factory)
     explainer._plugin_manager = None

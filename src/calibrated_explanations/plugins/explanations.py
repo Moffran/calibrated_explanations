@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from ..explanations.explanations import CalibratedExplanations as CalibratedExplanationsType
 else:
     CalibratedExplanationsType = object
-from ..core.exceptions import ValidationError
+from ..utils.exceptions import ValidationError
 from .base import ExplainerPlugin, PluginMeta
 from .predict import PredictBridge
 

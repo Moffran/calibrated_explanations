@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 import numpy as np
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import ValidationError, DataShapeError
+from calibrated_explanations.utils.exceptions import ValidationError, DataShapeError
 
 
 @pytest.fixture

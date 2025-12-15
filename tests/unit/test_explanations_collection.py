@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.explanations import explanations as explanations_mod
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.explanations import (
     AlternativeExplanations,
     CalibratedExplanations,

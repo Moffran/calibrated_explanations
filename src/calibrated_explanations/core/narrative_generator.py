@@ -28,7 +28,7 @@ except ImportError:
 
 def load_template_file(filepath: str) -> Dict[str, Any]:
     """Load template file - supports both JSON and YAML formats."""
-    from .exceptions import SerializationError
+    from ..utils.exceptions import SerializationError
 
     path = Path(filepath)
 
@@ -182,7 +182,7 @@ class NarrativeGenerator:
         feature_names: Optional[List[str]] = None,
     ) -> str:
         """Generate narrative for a single explanation."""
-        from .exceptions import ValidationError
+        from ..utils.exceptions import ValidationError
 
         if self.templates is None:
             raise ValidationError(

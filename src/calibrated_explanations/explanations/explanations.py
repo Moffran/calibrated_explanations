@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 
 import numpy as np
 
-from ..core.exceptions import ValidationError
+from ..utils.exceptions import ValidationError
 from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
 from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
@@ -216,7 +216,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_batch(cls, batch):
         """Reconstruct a collection from an :class:`ExplanationBatch`."""
-        from ..core.exceptions import SerializationError, ValidationError
+        from ..utils.exceptions import SerializationError, ValidationError
 
         container = batch.collection_metadata.get("container")
         if container is None:
@@ -766,7 +766,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
-        from ..core.exceptions import ValidationError
+        from ..utils.exceptions import ValidationError
         from ..utils import deprecate
 
         deprecate(

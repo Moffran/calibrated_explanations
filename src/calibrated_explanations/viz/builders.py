@@ -79,7 +79,7 @@ def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index:
     with contextlib.suppress(TypeError):
         length = len(seq)
         if length <= max_index:
-            from ..core.exceptions import ValidationError
+            from ..utils.exceptions import ValidationError
 
             raise ValidationError(
                 f"{name} length {length} does not cover feature index {max_index}",

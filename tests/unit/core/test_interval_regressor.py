@@ -476,7 +476,7 @@ def test_predict_proba_handles_interval_threshold(monkeypatch):
 
 
 def test_compute_proba_cal_rejects_invalid_threshold(monkeypatch):
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     regressor = make_regressor(monkeypatch)
 
@@ -556,7 +556,7 @@ def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
 
 
 def test_compute_proba_cal_rejects_unsupported_type(monkeypatch):
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     regressor = make_regressor(monkeypatch)
 
@@ -612,7 +612,7 @@ def test_insert_calibration_updates_alphas_without_bins(monkeypatch):
 
 
 def test_compute_proba_cal_invalid_type(monkeypatch):
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     regressor = make_regressor(monkeypatch)
 

@@ -9,6 +9,6 @@
 2. **Respect scope + naming.** Use `tests/unit|integration|e2e/...` paths with `test_<module>.py` naming. Never fork new structures.
 3. **Content rubric.** Output deterministic, AAA-structured pytest tests named `should_<behavior>_when_<condition>`, mirroring fixtures and style already in the file.
 4. **Mocking & snapshots.** Mock only to avoid slow I/O and always assert behaviors, not mock-call details. Pair snapshots with semantic checks.
-5. **Coverage context.** Prioritize edge cases tied to the change and keep an eye on the `pytest --cov=... --cov-fail-under=88` expectation from the PR checklist.
+5. **Coverage context.** Prioritize edge cases tied to the change and keep an eye on the `pytest --cov=... --cov-fail-under=90` expectation from the PR checklist.
 
 These reminders intentionally mirror the centralized document so Copilot stays in sync with humans and automation.

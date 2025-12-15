@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 
 from calibrated_explanations import CalibratedExplainer
 from calibrated_explanations.viz import NarrativePlotPlugin
-from calibrated_explanations.core.exceptions import SerializationError, ValidationError
+from calibrated_explanations.utils.exceptions import SerializationError, ValidationError
 from calibrated_explanations.core.narrative_generator import NarrativeGenerator, load_template_file
 
 
@@ -316,7 +316,7 @@ def test_narrative_plugin_html_output(classification_explainer, iris_data):
 # Test error handling
 def test_narrative_plugin_invalid_expertise_level(classification_explainer, iris_data):
     """Test error handling for invalid expertise level."""
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     _, x_test, _, _ = iris_data
     x_test_binary = x_test[iris_data[3] < 2][:1]
@@ -335,7 +335,7 @@ def test_narrative_plugin_invalid_expertise_level(classification_explainer, iris
 
 def test_narrative_plugin_invalid_output_format(classification_explainer, iris_data):
     """Test error handling for invalid output format."""
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     _, x_test, _, _ = iris_data
     x_test_binary = x_test[iris_data[3] < 2][:1]

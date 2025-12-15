@@ -173,9 +173,9 @@ Both terms describe **regression with a threshold**, but emphasize different asp
 
 | Location | Method | Context |
 |----------|--------|---------|
-| `src/calibrated_explanations/explanations/explanations.py:395` | `_is_thresholded()` | Property check in `CalibratedExplanations` |
-| `tests/plugins/test_builtins_behaviour.py:400, 447, 499, 545, 592` | `is_thresholded()` | Mock explainer property |
-| `tests/unit/test_explanations_collection.py:262` | `_is_thresholded()` | Test assertion |
+| `src/calibrated_explanations/explanations/explanations.py:504` | `is_probabilistic_regression` | Canonical property on `CalibratedExplanations` |
+| `src/calibrated_explanations/explanations/explanations.py:513` | `_is_probabilistic_regression` | Deprecated shim kept for backward compatibility |
+| `tests/unit/test_explanations_collection.py:264` | `is_probabilistic_regression` | Test assertion after v0.10.0 rename |
 
 #### 2.3.3 Comments and Docstrings
 
@@ -283,7 +283,7 @@ def test_lime_plugin_probabilistic_regression():
 
 ### 4.3 Gap #3: Method Names Vary Without Explanation
 
-**Problem:** The codebase uses both `y_threshold` and `threshold` parameters, and `_is_thresholded()` method, but never explains why "thresholded" is used in code while users interact with "probabilistic regression."
+**Problem:** The codebase uses both `y_threshold` and `threshold` parameters and previously exposed a private helper with thresholded terminology, but never explained why "thresholded" appeared in code while users interacted with "probabilistic regression."
 
 ### 4.4 Gap #4: No Glossary or Migration Path
 
@@ -367,7 +367,8 @@ def test_lime_plugin_probabilistic_regression():
 - Add cross-references in `ADR-013` (interval plugin strategy)
 
 **Tier 3: Code Changes (v0.9.1+ implementation phase)**
-- Rename internal `_is_thresholded()` → `_is_probabilistic_regression()` for consistency
+- ✅ Standardized the probabilistic-regression helper name and promoted public `is_probabilistic_regression`
+  property in v0.10.0
 - Keep parameter names `threshold` and `y_threshold` (these describe the value, not the mode)
 - Update method docstrings to use "probabilistic regression" while mentioning the threshold mechanism
 - Update all inline comments to prefer "probabilistic regression" with technical clarifications
@@ -427,10 +428,7 @@ def test_lime_plugin_probabilistic_regression():
 | `docs/improvement/legacy_user_api_contract.md` | 36, 173 | Legacy API | Tech doc |
 | `docs/improvement/LEGACY_TO_PLOTSPEC_MAPPING.md` | 104 | Plotting metadata | Tech doc |
 | `docs/foundations/governance/optional_telemetry.md` | 66 | Telemetry docs | Tech doc |
-| `src/calibrated_explanations/explanations/explanations.py` | **multiple** | Property `_is_thresholded()` | Code |
-| `src/calibrated_explanations/core/interval_regressor.py` | 136, 158 | Method parameter names | Code |
-| `tests/plugins/test_builtins_behaviour.py` | 400, 447, 499, 545, 592 | Mock property `is_thresholded()` | Test |
-| `tests/unit/test_explanations_collection.py` | 262 | Test assertion | Test |
+| _Deprecated references removed in v0.10.0_ | — | Legacy thresholded helper eliminated; see `is_probabilistic_regression` | Code/Test |
 
 **Total: ~40 references**
 
@@ -460,7 +458,7 @@ def test_lime_plugin_probabilistic_regression():
 ### Phase 2: Code Naming (v0.9.1)
 
 **Renames:**
-- `_is_thresholded()` → `_is_probabilistic_regression()`
+- Legacy thresholded helper renamed to `_is_probabilistic_regression()`
 - Update docstrings to use "probabilistic regression" as primary term
 
 **Deprecations (optional):**
@@ -493,7 +491,7 @@ def test_lime_plugin_probabilistic_regression():
 - **Breaking change (naming only):** Standardized terminology across documentation
   and code. "Probabilistic regression" is now the canonical user-facing term;
   "thresholded regression" is used in technical architecture documents.
-  - `_is_thresholded()` renamed to `_is_probabilistic_regression()`
+  - Legacy threshold helper renamed to `_is_probabilistic_regression()`
   - `is_thresholded` parameter/property renamed where user-facing
   - All docstrings updated to prefer "probabilistic regression"
   - See ADR-021 and migration guide for details.
@@ -501,36 +499,13 @@ def test_lime_plugin_probabilistic_regression():
 - No API changes; internal renaming only.
 ```
 
-### Phase 5: Migration Guide
+### Phase 5: Migration Guide (completed)
 
-**Create:** `docs/migration/v0.9-to-v0.10-terminology.md`
-
-```markdown
-# v0.8 → v0.9 Terminology Changes
-
-## Summary
-
-Terminology was standardized around "probabilistic regression" for user-facing
-documentation and "thresholded regression" for technical architecture docs.
-
-## What Changed
-
-### For End Users
-- No changes. The `threshold` parameter and `predict_proba(threshold=...)` API remain identical.
-- Documentation now consistently uses "probabilistic regression."
-
-### For Contributors & Plugin Developers
-- Method `_is_thresholded()` renamed to `_is_probabilistic_regression()`
-  - Old name kept as deprecated alias (will be removed in v0.10)
-  - Update any custom plugins/code to use new name
-- Parameter names (`threshold`, `y_threshold`) unchanged
-- ADR-021 clarifies technical terminology
-
-## No Deprecation Policy
-
-This is a documentation and code naming cleanup with no runtime behavior changes.
-The deprecation alias for `_is_thresholded()` will be removed in v0.10.
-```
+- Published `docs/migration/v0.9-to-v0.10-terminology.md` covering the rename to
+  ``is_probabilistic_regression`` and documenting the short-lived
+  ``_is_probabilistic_regression`` shim for private callers.
+- Former thresholded alias removed in v0.10.0; migration note retained only
+  for historical context.
 
 ---
 
@@ -554,13 +529,13 @@ The deprecation alias for `_is_thresholded()` will be removed in v0.10.
 
 ### Implementation Checklist
 
-- [ ] **ADR-021:** Add "Terminology" section clarifying the relationship
-- [ ] **ADR-013:** Add cross-reference
-- [ ] **Code:** Rename `_is_thresholded()` → `_is_probabilistic_regression()`
-- [ ] **Docstrings:** Update to prefer "probabilistic regression"
-- [ ] **Tests:** Update test docstrings for consistency
-- [ ] **CHANGELOG:** Document terminology standardization
-- [ ] **Migration guide:** Create `docs/migration/v0.9-to-v0.10-terminology.md`
+- [x] **ADR-021:** Terminology section clarifying the relationship
+- [x] **ADR-013:** Cross-reference to ADR-021 terminology
+- [x] **Code:** Public `is_probabilistic_regression` property promoted; shim retained as `_is_probabilistic_regression`
+- [x] **Docstrings:** Updated to prefer "probabilistic regression"
+- [x] **Tests:** Updated to assert against probabilistic regression mode
+- [x] **CHANGELOG:** Documented terminology standardization
+- [x] **Migration guide:** `docs/migration/v0.9-to-v0.10-terminology.md`
 
 ---
 
@@ -585,10 +560,10 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 ## Appendix B: Files Requiring Updates Under Recommended Action
 
 ### Must-Update Files:
-1. `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` – Add terminology section
-2. `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` – Add cross-reference
-3. `src/calibrated_explanations/explanations/explanations.py` – Rename `_is_thresholded()`
-4. `CHANGELOG.md` – Document terminology standardization
+1. `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` – Terminology section present
+2. `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` – Cross-reference present
+3. `src/calibrated_explanations/explanations/explanations.py` – `is_probabilistic_regression` property exposed; shim `_is_probabilistic_regression` kept for compatibility
+4. `CHANGELOG.md` – Terminology standardization documented
 
 ### Should-Update Files (docstring clarity):
 1. `src/calibrated_explanations/core/interval_regressor.py` – Method docstrings
@@ -596,7 +571,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 3. `tests/integration/core/test_regression.py` – Test docstrings
 
 ### Can-Deprecate (optional):
-1. `src/calibrated_explanations/explanations/explanations.py` – Keep `is_thresholded()` as deprecated alias
+1. `src/calibrated_explanations/explanations/explanations.py` – Private `_is_probabilistic_regression` shim can be removed once downstream callers migrate
 
 ### Create New:
 1. `docs/migration/v0.9-to-v0.10-terminology.md` – Migration guide
@@ -605,7 +580,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 
 ## Section 10: Implementation Status
 
-**Status:** ✅ **COMPLETE** (November 9, 2025)
+**Status:** ✅ **COMPLETE** (November 9, 2025; refreshed for v0.10.0 alias removal)
 
 ### Completed Tasks
 
@@ -618,14 +593,10 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
   - Added explicit note referencing ADR-021 terminology section
   - Links to official terminology guidance
 
-- ✅ **Code Refactoring: Method Rename** (src/calibrated_explanations/explanations/explanations.py)
-  - Renamed `_is_thresholded()` → `_is_probabilistic_regression()` (primary method)
-  - Added backward-compatible alias `_is_thresholded()` → delegates to `_is_probabilistic_regression()`
-  - Alias will be removed in v0.10.0 when v0.9.0 reaches end-of-life
-  - Updated 6 usages to call the new name directly:
-    - tests/unit/test_explanations_collection.py (1)
-    - tests/integration/core/test_framework.py (4)
-    - src/calibrated_explanations/legacy/plotting.py (1, commented)
+  - ✅ **Code Refactoring: Method Rename** (src/calibrated_explanations/explanations/explanations.py)
+    - Introduced `is_probabilistic_regression` property and compatibility shim `_is_probabilistic_regression`
+    - Removed the legacy thresholded alias in v0.10.0
+    - Updated dependent tests to use the new name directly
 
 - ✅ **Docstring Updates** (src/calibrated_explanations/core/)
   - `interval_regressor.py`: Updated `predict_probability()` docstring with probabilistic regression explanation
@@ -651,9 +622,8 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 
 ### Verification Checklist
 
-- ✅ Internal method `_is_thresholded()` successfully renamed to `_is_probabilistic_regression()`
-- ✅ Backward compatibility alias `_is_thresholded()` added (delegates to new method)
-- ✅ All usages of `_is_thresholded()` in code updated to call new method directly
+- ✅ Public `is_probabilistic_regression` property available; `_is_probabilistic_regression` retained as private shim
+- ✅ All usages updated to the new terminology
 - ✅ Public method `is_thresholded()` on Explanation class **preserved** and unchanged
 - ✅ `threshold` and `y_threshold` parameter names **preserved** (describe values, not modes)
 - ✅ **Zero breaking changes** to public API
@@ -661,9 +631,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 
 ### v0.10.0 Update
 
-- ✅ **Removed Deprecated Alias** (src/calibrated_explanations/explanations/explanations.py)
-  - Removed `_is_thresholded()` alias as scheduled.
-  - Updated documentation to reflect removal.
+- ✅ Deprecated thresholded alias removed in favor of `is_probabilistic_regression`
 - ✅ No behavior changes; terminology-only cleanup
 - ✅ ADRs updated with explicit guidance
 - ✅ Documentation and tests clarified
@@ -675,7 +643,7 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 |------|---------|
 | `docs/improvement/adrs/ADR-021-calibrated-interval-semantics.md` | Added terminology section (lines 119-159) |
 | `docs/improvement/adrs/ADR-013-interval-calibrator-plugin-strategy.md` | Added cross-reference note |
-| `src/calibrated_explanations/explanations/explanations.py` | Added `_is_probabilistic_regression()` method and backward-compatible `_is_thresholded()` alias (lines 446-459) |
+| `src/calibrated_explanations/explanations/explanations.py` | `is_probabilistic_regression` property with `_is_probabilistic_regression` shim (lines 504-519) |
 | `src/calibrated_explanations/core/interval_regressor.py` | Updated `predict_probability()` docstring |
 | `src/calibrated_explanations/core/calibrated_explainer.py` | Updated docstrings and comments (lines 1980-1995, 3243, 3725-3730) |
 | `tests/unit/test_explanations_collection.py` | Updated method call (line 262) |
@@ -693,10 +661,10 @@ grep -r "thresholded.*regression\|probabilistic.*regression" \
 - **Public API Breaking:** None ✅
 - **Private API Breaking:** No (backward-compatible alias provided) ✅
 - **Behavior Changes:** None ✅
-- **Terminology Changes:** Internal method naming only
-  - Affects: Contributors and test code accessing `_is_thresholded()` (private method)
-  - Mitigation: Backward-compatible alias provided; existing code continues to work
-  - Deprecation: Alias will be removed in v0.10.0
+  - **Terminology Changes:** Internal method naming only
+    - Affects: Contributors and test code accessing private probabilistic-regression helpers
+    - Mitigation: `_is_probabilistic_regression` shim available through v0.10.0
+    - Deprecation: Legacy thresholded alias removed in this release
 
 - **User Impact:** Minimal (documentation clarity improvement)
 - **Backward Compatibility:** ✅ 100% compatible with v0.9.0

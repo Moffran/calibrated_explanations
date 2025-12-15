@@ -33,7 +33,7 @@ from calibrated_explanations.core.explain.feature_task import (
     _feature_task,
 )
 from calibrated_explanations.core.calibration_metrics import compute_calibrated_confusion_matrix
-from calibrated_explanations.core.exceptions import DataShapeError, ValidationError
+from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.explanations import CalibratedExplanations
 from tests.helpers.explainer_utils import make_mock_explainer

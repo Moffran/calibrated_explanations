@@ -1,6 +1,6 @@
 {
   "meta": {
-    "timestamp": 1765753797.6360528,
+    "timestamp": 1765803163.9247687,
     "platform": "posix",
     "cpu_count": 12,
     "workers": 6,
@@ -8,39 +8,39 @@
     "logical_cores": 12
   },
   "classification_small": {
-    "sequential": 1.1327974796295166,
-    "threads:instance": 1.0526561737060547,
-    "processes:instance": 1.1225764751434326,
-    "joblib:instance": 1.3261096477508545
+    "sequential": 0.8587980270385742,
+    "threads:instance": 0.9525907039642334,
+    "processes:instance": 0.8632376194000244,
+    "joblib:instance": 0.9564540386199951
   },
   "classification_feature": {
-    "sequential": 5.115317106246948,
-    "threads:instance": 4.983419895172119,
-    "processes:instance": 5.5717926025390625,
-    "joblib:instance": 4.865046977996826
+    "sequential": 4.431158065795898,
+    "threads:instance": 5.0963733196258545,
+    "processes:instance": 4.325615882873535,
+    "joblib:instance": 4.689345121383667
   },
   "classification_instance": {
-    "sequential": 8.76272988319397,
-    "threads:instance": 19.55629587173462,
-    "processes:instance": 3.4671573638916016,
-    "joblib:instance": 18.166992664337158
+    "sequential": 8.636322259902954,
+    "threads:instance": 20.831153869628906,
+    "processes:instance": 3.6380233764648438,
+    "joblib:instance": 20.279661655426025
   },
   "regression_small": {
-    "sequential": 0.8531098365783691,
-    "threads:instance": 0.8707907199859619,
-    "processes:instance": 0.8010678291320801,
-    "joblib:instance": 1.209207534790039
+    "sequential": 0.9369604587554932,
+    "threads:instance": 1.213426113128662,
+    "processes:instance": 0.9550023078918457,
+    "joblib:instance": 1.3348362445831299
   },
   "regression_feature": {
-    "sequential": 4.595021724700928,
-    "threads:instance": 4.228187799453735,
-    "processes:instance": 4.18918251991272,
-    "joblib:instance": 4.404909372329712
+    "sequential": 4.75234580039978,
+    "threads:instance": 4.8237268924713135,
+    "processes:instance": 4.961409330368042,
+    "joblib:instance": 6.108025312423706
   },
   "regression_instance": {
-    "sequential": 8.200965404510498,
-    "threads:instance": 19.87993288040161,
-    "processes:instance": 3.755711555480957,
-    "joblib:instance": 5.420508861541748
+    "sequential": 12.592541456222534,
+    "threads:instance": 24.314255714416504,
+    "processes:instance": 6.486704587936401,
+    "joblib:instance": 8.113684892654419
   }
 }

@@ -3,7 +3,7 @@
 import pytest
 
 from calibrated_explanations.api.params import validate_param_combination
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 
 
 def test_validate_param_combination_no_conflicts():

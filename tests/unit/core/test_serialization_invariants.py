@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 from calibrated_explanations import serialization
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.explanations import Explanation, FeatureRule
 
 

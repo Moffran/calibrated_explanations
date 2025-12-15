@@ -1,4 +1,4 @@
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.utils.exceptions import (
     CalibratedError,
     ConfigurationError,
     ConvergenceError,

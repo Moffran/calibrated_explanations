@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Any, Mapping, Sequence
 import numpy as np
 
 from .. import __version__ as package_version
-from ..core.exceptions import CalibratedError, ConfigurationError, NotFittedError
+from ..utils.exceptions import CalibratedError, ConfigurationError, NotFittedError, ValidationError
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only for type checking
     pass
@@ -118,8 +118,26 @@ class LegacyPredictBridge(PredictBridge):
             "task": task,
         }
         if low is not None and high is not None:
-            payload["low"] = np.asarray(low)
-            payload["high"] = np.asarray(high)
+            low_arr = np.asarray(low)
+            high_arr = np.asarray(high)
+            payload["low"] = low_arr
+            payload["high"] = high_arr
+
+            # ADR-021: Enforce interval invariants
+            epsilon = 1e-9
+            # Ignore NaNs in the check
+            valid_mask = ~np.isnan(low_arr) & ~np.isnan(high_arr)
+            if np.any(valid_mask) and not np.all(low_arr[valid_mask] <= high_arr[valid_mask] + epsilon):
+                diff = np.max(low_arr[valid_mask] - high_arr[valid_mask])
+                raise ValidationError(f"Interval invariant violated: low > high (max diff: {diff})")
+
+            # Check prediction is within bounds (with epsilon tolerance)
+            if task == "regression":
+                preds_arr = np.asarray(preds)
+                valid_pred_mask = valid_mask & ~np.isnan(preds_arr)
+                if np.any(valid_pred_mask) and not np.all((low_arr[valid_pred_mask] - epsilon <= preds_arr[valid_pred_mask]) & (preds_arr[valid_pred_mask] <= high_arr[valid_pred_mask] + epsilon)):
+                    raise ValidationError("Prediction invariant violated: predict not in [low, high]")
+
         if task == "classification":
             payload["classes"] = np.asarray(self._explainer.predict(x, calibrated=True, bins=bins))
         return payload

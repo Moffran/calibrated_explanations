@@ -455,7 +455,7 @@ class PluginManager:
                 if not isinstance(exc, Exception):
                     raise
                 # Lazy import to avoid circular dependency
-                from ..core.exceptions import (
+                from ..utils.exceptions import (
                     ConfigurationError,  # pylint: disable=import-outside-toplevel
                 )
 
@@ -483,7 +483,8 @@ class PluginManager:
             Bridge monitor instance.
         """
         if identifier not in self._bridge_monitors:
-            self._bridge_monitors[identifier] = PredictBridgeMonitor(identifier)
+            # Use the explainer's predict bridge as the target
+            self._bridge_monitors[identifier] = PredictBridgeMonitor(self.explainer._predict_bridge)
         return self._bridge_monitors[identifier]
 
     def clear_bridge_monitors(self) -> None:

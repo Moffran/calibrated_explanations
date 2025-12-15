@@ -3,13 +3,13 @@ import warnings
 from unittest.mock import MagicMock, patch
 import numpy as np
 from calibrated_explanations.core.prediction.orchestrator import PredictionOrchestrator
-from calibrated_explanations.core.exceptions import NotFittedError
+from calibrated_explanations.utils.exceptions import NotFittedError
 from calibrated_explanations.utils.exceptions import (
     DataShapeError,
     ConfigurationError,
     ValidationError,
 )
-from calibrated_explanations.core import exceptions as core_exceptions
+from calibrated_explanations.utils import exceptions as core_exceptions
 
 
 @pytest.fixture
@@ -270,7 +270,7 @@ def test_predict_impl_regression_invalid_percentiles(orchestrator, mock_explaine
     mock_explainer.mode = "regression"
     mock_explainer.is_fast.return_value = False
 
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError, match="low percentile must be smaller"):
         orchestrator._predict_impl(np.array([[1]]), low_high_percentiles=(95, 5))

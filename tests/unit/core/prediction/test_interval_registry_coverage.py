@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 import numpy as np
 from calibrated_explanations.core.prediction.interval_registry import IntervalRegistry
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 import calibrated_explanations.calibration.venn_abers as venn_module
 
 

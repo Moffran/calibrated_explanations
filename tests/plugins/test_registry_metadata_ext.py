@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 

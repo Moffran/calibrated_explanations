@@ -8,7 +8,7 @@ import numpy as np
 from crepes import ConformalClassifier
 from crepes.extras import hinge
 
-from ..exceptions import ValidationError
+from ...utils.exceptions import ValidationError
 
 
 class RejectOrchestrator:

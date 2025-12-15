@@ -239,7 +239,7 @@ def update_plot_config(new_config):
 
 def __require_matplotlib() -> None:
     """Ensure matplotlib is available before using plotting functions."""
-    from .core.exceptions import ConfigurationError
+    from .utils.exceptions import ConfigurationError
 
     if plt is None or mcolors is None:
         msg = (
@@ -1490,7 +1490,7 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
             continue
         return result
 
-    from .core.exceptions import ConfigurationError as _PlotConfigurationError
+    from .utils.exceptions import ConfigurationError as _PlotConfigurationError
 
     raise _PlotConfigurationError(
         "Unable to resolve plot plugin for global explanations; "

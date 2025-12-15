@@ -18,7 +18,7 @@ from ...calibration.interval_learner import (
     initialize_interval_learner,
     initialize_interval_learner_for_fast_explainer,
 )
-from ..exceptions import ConfigurationError
+from ...utils.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer

@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable
 import numpy as np
 import pytest
 
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.utils.exceptions import (
     ConfigurationError,
     NotFittedError,
 )

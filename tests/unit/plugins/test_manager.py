@@ -9,7 +9,7 @@ import copy
 import types
 from unittest.mock import Mock
 
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.plugins.manager import PluginManager
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 

@@ -36,10 +36,13 @@
 - **Legacy Exceptions**: Replaced numerous legacy `ValueError` and `RuntimeError` raises with specific, informative exceptions.
 - **Windows Compatibility**: Fixed pickling issues to enable process-based parallelism on Windows.
 - **Serialization**: Fixed JSON serialization for explanation collections containing live objects.
+- **Interval Invariants**: Fixed `LegacyPredictBridge` to enforce `low <= predict <= high` invariants for regression tasks, raising `ValidationError` on violation (ADR-021).
+- **Plugin Semantics**: Fixed `PluginManager` to correctly wrap the predict bridge with `PredictBridgeMonitor` (ADR-026).
 
 ### Removed
 
 - **Feature Parallelism**: Deprecated `FeatureParallel` execution strategy in favor of more efficient instance-based parallelism.
+- **Legacy Shim**: Removed `src/calibrated_explanations/core/exceptions.py` shim as part of ADR-001 completion.
 
 ## [v0.9.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.1) - 2025-11-27
 

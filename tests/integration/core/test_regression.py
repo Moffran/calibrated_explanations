@@ -29,7 +29,7 @@ Functions:
 import numpy as np
 import pytest
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 from crepes.extras import DifficultyEstimator
 
 from tests._helpers import get_regression_model, initiate_explainer

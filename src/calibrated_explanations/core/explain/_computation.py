@@ -14,7 +14,7 @@ import numpy as np
 from ...utils import concatenate_thresholds
 from ...utils.helper import assign_threshold as normalize_threshold
 from ...utils.int_utils import as_int_array
-from ..exceptions import CalibratedError
+from ...utils.exceptions import CalibratedError
 from .feature_task import (
     FeatureTaskResult,
     assign_weight_scalar,

@@ -34,7 +34,7 @@ from ...plugins import (
 )
 from ...plugins.predict_monitor import PredictBridgeMonitor
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
-from ..exceptions import ConfigurationError
+from ...utils.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -130,7 +130,7 @@ class ExplanationOrchestrator:
             setup_discretized_data,
             validate_discretizer_choice,
         )
-        from ..exceptions import ValidationError
+        from ...utils.exceptions import ValidationError
 
         if x_cal is None:
             x_cal = self.explainer.x_cal

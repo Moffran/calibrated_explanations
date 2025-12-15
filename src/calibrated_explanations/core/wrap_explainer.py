@@ -17,7 +17,7 @@ from calibrated_explanations.api.params import (
     validate_param_combination,
     warn_on_aliases,
 )
-from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import DataShapeError, NotFittedError, ValidationError
 from calibrated_explanations.core.validation import validate_inputs_matrix, validate_model
 
 from ..utils import check_is_fitted, safe_isinstance  # noqa: F401

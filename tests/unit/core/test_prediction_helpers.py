@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 from calibrated_explanations.core import prediction_helpers as ph
 from calibrated_explanations.core.explain._computation import explain_predict_step
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import DataShapeError, ValidationError
+from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 
 
 def test_prediction_helpers_round_trip():

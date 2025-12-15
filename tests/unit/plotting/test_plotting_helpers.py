@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from calibrated_explanations import plotting
-from calibrated_explanations.core.exceptions import ConfigurationError
+from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.viz import coloring
 
 

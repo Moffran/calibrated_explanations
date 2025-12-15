@@ -16,7 +16,7 @@ import numpy as np
 if TYPE_CHECKING:
     from ..explanations import CalibratedExplanations
 
-from .exceptions import (
+from ..utils.exceptions import (
     ValidationError,
     DataShapeError,
 )

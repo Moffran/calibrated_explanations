@@ -113,7 +113,7 @@ def test_check_is_fitted_paths(tmp_path):
     class BadEstimator:
         pass
 
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError):
         helper.check_is_fitted(BadEstimator())

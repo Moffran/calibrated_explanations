@@ -32,7 +32,7 @@ from ...plugins import (
     is_identifier_denied,
 )
 from ...utils import assert_threshold
-from ..exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
+from ...utils.exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
 from ..explain.feature_task import assign_weight
 
 if TYPE_CHECKING:
