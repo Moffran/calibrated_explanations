@@ -9,7 +9,6 @@ See ADR-008 for rationale.
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
@@ -78,9 +77,7 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
             def _safe_pick(arr, idx):
                 try:
                     return arr[idx]
-                except:
-                    if not isinstance(sys.exc_info()[1], Exception):
-                        raise
+                except (IndexError, KeyError, TypeError, AttributeError):
                     if len(arr) > 0:
                         return arr[-1]
                     return None
@@ -93,9 +90,7 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
                 arr = rules_block.get(key, [])
                 try:
                     return arr[idx]
-                except:
-                    if not isinstance(sys.exc_info()[1], Exception):
-                        raise
+                except (IndexError, KeyError, TypeError, AttributeError):
                     return arr[-1] if len(arr) > 0 else None
 
             is_conj = bool(_rb_pick("is_conjunctive", i) or isinstance(feat, list))

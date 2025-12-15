@@ -141,16 +141,17 @@ def test_invoke_plugin_failure(orchestrator):
     mock_plugin = MagicMock()
     mock_plugin.explain_batch.side_effect = ValueError("Plugin error")
 
-    with patch.object(orchestrator, "_ensure_plugin", return_value=(mock_plugin, "test_plugin")):
-        with pytest.raises(ConfigurationError, match="Explanation plugin execution failed"):
-            orchestrator.invoke(
-                mode="factual",
-                x=np.array([[1, 2]]),
-                threshold=None,
-                low_high_percentiles=None,
-                bins=None,
-                features_to_ignore=None,
-            )
+    with patch.object(
+        orchestrator, "_ensure_plugin", return_value=(mock_plugin, "test_plugin")
+    ), pytest.raises(ConfigurationError, match="Explanation plugin execution failed"):
+        orchestrator.invoke(
+            mode="factual",
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=None,
+        )
 
 
 def test_invoke_validation_failure(orchestrator):
@@ -164,16 +165,15 @@ def test_invoke_validation_failure(orchestrator):
     ), patch(
         "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch",
         side_effect=ValueError("Validation error"),
-    ):
-        with pytest.raises(ConfigurationError, match="returned an invalid batch"):
-            orchestrator.invoke(
-                mode="factual",
-                x=np.array([[1, 2]]),
-                threshold=None,
-                low_high_percentiles=None,
-                bins=None,
-                features_to_ignore=None,
-            )
+    ), pytest.raises(ConfigurationError, match="returned an invalid batch"):
+        orchestrator.invoke(
+            mode="factual",
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=None,
+        )
 
 
 def test_invoke_bridge_monitor_failure(orchestrator, mock_explainer):
@@ -188,16 +188,17 @@ def test_invoke_bridge_monitor_failure(orchestrator, mock_explainer):
 
     with patch.object(
         orchestrator, "_ensure_plugin", return_value=(mock_plugin, "custom_plugin")
-    ), patch("calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"):
-        with pytest.raises(ConfigurationError, match="did not use the calibrated predict bridge"):
-            orchestrator.invoke(
-                mode="factual",
-                x=np.array([[1, 2]]),
-                threshold=None,
-                low_high_percentiles=None,
-                bins=None,
-                features_to_ignore=None,
-            )
+    ), patch(
+        "calibrated_explanations.core.explain.orchestrator.validate_explanation_batch"
+    ), pytest.raises(ConfigurationError, match="did not use the calibrated predict bridge"):
+        orchestrator.invoke(
+            mode="factual",
+            x=np.array([[1, 2]]),
+            threshold=None,
+            low_high_percentiles=None,
+            bins=None,
+            features_to_ignore=None,
+        )
 
 
 def test_ensure_plugin_cached(orchestrator, mock_explainer):
@@ -241,9 +242,8 @@ def test_ensure_plugin_init_failure(orchestrator, mock_explainer):
         orchestrator, "_resolve_plugin", return_value=(mock_plugin, "test_plugin")
     ), patch.object(orchestrator, "_check_metadata", return_value=None), patch.object(
         orchestrator, "_build_context", return_value=MagicMock()
-    ):
-        with pytest.raises(ConfigurationError, match="Explanation plugin initialisation failed"):
-            orchestrator._ensure_plugin("factual")
+    ), pytest.raises(ConfigurationError, match="Explanation plugin initialisation failed"):
+        orchestrator._ensure_plugin("factual")
 
 
 def test_invoke_factual_delegation(orchestrator):
@@ -316,9 +316,8 @@ def test_resolve_plugin_denied(orchestrator, mock_explainer):
 
     with patch(
         "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=True
-    ):
-        with pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
-            orchestrator._resolve_plugin("factual")
+    ), pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
+        orchestrator._resolve_plugin("factual")
 
 
 def test_resolve_plugin_not_registered(orchestrator, mock_explainer):
@@ -335,9 +334,8 @@ def test_resolve_plugin_not_registered(orchestrator, mock_explainer):
     ), patch(
         "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
         return_value=None,
-    ):
-        with pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
-            orchestrator._resolve_plugin("factual")
+    ), pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
+        orchestrator._resolve_plugin("factual")
 
 
 def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
@@ -357,9 +355,8 @@ def test_resolve_plugin_metadata_error(orchestrator, mock_explainer):
     ), patch(
         "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
         return_value=mock_plugin,
-    ):
-        with pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
-            orchestrator._resolve_plugin("factual")
+    ), pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
+        orchestrator._resolve_plugin("factual")
 
 
 def test_resolve_plugin_supports_mode_failure(orchestrator, mock_explainer):
@@ -380,9 +377,10 @@ def test_resolve_plugin_supports_mode_failure(orchestrator, mock_explainer):
     ), patch(
         "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
         return_value=mock_plugin,
-    ), patch.object(orchestrator, "_check_metadata", return_value=None):
-        with pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
-            orchestrator._resolve_plugin("factual")
+    ), patch.object(orchestrator, "_check_metadata", return_value=None), pytest.raises(
+        ConfigurationError, match="Unable to resolve explanation plugin"
+    ):
+        orchestrator._resolve_plugin("factual")
 
 
 def test_check_metadata_valid(orchestrator, mock_explainer):

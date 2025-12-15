@@ -453,10 +453,9 @@ def test_parallel_executor_context_manager_handles_init_failure(monkeypatch):
     )
     cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=1, min_batch_size=1)
     executor = ParallelExecutor(cfg)
-    with pytest.warns(UserWarning, match="Failed to initialize parallel pool"):
-        with executor as ctx:
-            assert ctx._active_strategy_name == "sequential"
-            assert ctx._pool is None
+    with pytest.warns(UserWarning, match="Failed to initialize parallel pool"), executor as ctx:
+        assert ctx._active_strategy_name == "sequential"
+        assert ctx._pool is None
 
 
 def test_parallel_executor_context_manager_cancels_on_error(monkeypatch):
@@ -483,9 +482,8 @@ def test_parallel_executor_context_manager_cancels_on_error(monkeypatch):
         raising=False,
     )
     cfg = ParallelConfig(enabled=True, strategy="threads", max_workers=1, min_batch_size=1)
-    with pytest.raises(RuntimeError):
-        with ParallelExecutor(cfg):
-            raise RuntimeError("fail")
+    with pytest.raises(RuntimeError), ParallelExecutor(cfg):
+        raise RuntimeError("fail")
     assert cancel_calls == [True]
 
 

@@ -34,7 +34,6 @@ def _configure_parallel_env(
     enabled: bool,
     strategy: str | None = None,
     workers: int | None = None,
-    granularity: str | None = None,
 ) -> None:
     """Set CE_PARALLEL using the format expected by ParallelConfig.from_env."""
     if not enabled:
@@ -46,25 +45,13 @@ def _configure_parallel_env(
         tokens.append(strategy)
     if workers is not None:
         tokens.append(f"workers={workers}")
-    if granularity is not None:
-        tokens.append(f"granularity={granularity}")
     os.environ["CE_PARALLEL"] = ",".join(tokens)
-
-
-def _expected_execution_plugin_identifier(granularity: str) -> str:
-    if granularity == "feature":
-        return "core.explanation.factual.feature_parallel"
-    if granularity == "instance":
-        return "core.explanation.factual.instance_parallel"
-    raise ValueError(f"Unknown granularity '{granularity}'")
-
 
 def _assert_parallel_wiring(
     wrapper: WrapCalibratedExplainer,
     *,
     expected_strategy: str,
     expected_workers: int,
-    expected_granularity: str,
 ) -> None:
     """Validate that the explainer used the intended parallel configuration."""
     if wrapper.explainer is None:
@@ -90,12 +77,8 @@ def _assert_parallel_wiring(
         raise AssertionError(
             f"Expected workers={expected_workers}, got {getattr(config, 'max_workers', None)}"
         )
-    if getattr(config, "granularity", None) != expected_granularity:
-        raise AssertionError(
-            f"Expected granularity='{expected_granularity}', got '{getattr(config, 'granularity', None)}'"
-        )
 
-    expected_plugin = _expected_execution_plugin_identifier(expected_granularity)
+    expected_plugin = _expected_execution_plugin_identifier()
     resolved = getattr(explainer, "_explanation_plugin_identifiers", {}).get("factual")
     if resolved != expected_plugin:
         raise AssertionError(f"Expected factual plugin '{expected_plugin}', got '{resolved}'")
@@ -118,7 +101,6 @@ def run_benchmark(
     n_features: int = 20,
     n_test: int = 100,
     strategies: List[str] = None,
-    granularities: List[str] = None,
     workers: int = WORKERS,
 ) -> Dict[str, Any]:
     """Run benchmark for a specific mode and return results."""
@@ -132,9 +114,6 @@ def run_benchmark(
             strategies.append("joblib")
         except ImportError:
             pass
-
-    if granularities is None:
-        granularities = ["instance", ]#"feature"
 
     # Generate synthetic data
     if mode == "classification":
@@ -174,45 +153,36 @@ def run_benchmark(
             print(f"    Duration: {duration:.2f}s (Duration/instance: {duration/n_test:.5f}s) (Duration/instance/feature: {duration/(n_test*n_features):.5f}s)")
             continue
 
-        for granularity in granularities:
-            print(f"    Granularity: {granularity}")
-            # On Windows, the library defaults to guarding instance-parallel
-            # process backends because spawn/pickling overhead can dominate.
-            # For the ablation we explicitly allow the real backend so that
-            # comparisons remain meaningful.
+        try:
+            # Enable parallelism. NOTE: strategy is a *token* (e.g. "threads"), not "strategy=threads".
+            _configure_parallel_env(
+                enabled=True,
+                strategy=strategy,
+                workers=workers,
+            )
 
-            try:
-                # Enable parallelism. NOTE: strategy is a *token* (e.g. "threads"), not "strategy=threads".
-                _configure_parallel_env(
-                    enabled=True,
-                    strategy=strategy,
-                    workers=workers,
-                    granularity=granularity,
-                )
+            plugin_id = _expected_execution_plugin_identifier()
 
-                plugin_id = _expected_execution_plugin_identifier(granularity)
+            # Initialize explainer (wraps learner)
+            # We re-initialize to ensure fresh cache/executor state if any
+            start_time = time.time()
+            explainer = WrapCalibratedExplainer(learner)
+            explainer.calibrate(x_cal, y_cal, factual_plugin=plugin_id)
 
-                # Initialize explainer (wraps learner)
-                # We re-initialize to ensure fresh cache/executor state if any
-                start_time = time.time()
-                explainer = WrapCalibratedExplainer(learner)
-                explainer.calibrate(x_cal, y_cal, factual_plugin=plugin_id)
+            # Explain
+            _ = explainer.explain_factual(x_test)
+            duration = time.time() - start_time
 
-                # Explain
-                _ = explainer.explain_factual(x_test)
-                duration = time.time() - start_time
+            _assert_parallel_wiring(
+                explainer,
+                expected_strategy=strategy,
+                expected_workers=workers,
+            )
 
-                _assert_parallel_wiring(
-                    explainer,
-                    expected_strategy=strategy,
-                    expected_workers=workers,
-                    expected_granularity=granularity,
-                )
-
-                results[f"{strategy}:{granularity}"] = duration
-                print(f"    Duration: {duration:.2f}s (Duration/instance: {duration/n_test:.5f}s) (Duration/instance/feature: {duration/(n_test*n_features):.5f}s)")
-            finally:
-                pass
+            results[f"{strategy}"] = duration
+            print(f"    Duration: {duration:.2f}s (Duration/instance: {duration/n_test:.5f}s) (Duration/instance/feature: {duration/(n_test*n_features):.5f}s)")
+        finally:
+            pass
 
     # Cleanup env
     if "CE_PARALLEL" in os.environ:
@@ -249,7 +219,7 @@ def print_summary(results: Dict[str, Any]):
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="ParallelExecutor benchmark (strategies + granularity)")
+    parser = argparse.ArgumentParser(description="ParallelExecutor benchmark (strategies)")
     parser.add_argument("--physical-cores", type=int, default=PHYSICAL_CORES)
     parser.add_argument("--logical-cores", type=int, default=LOGICAL_CORES)
     parser.add_argument("--workers", type=int, default=WORKERS)

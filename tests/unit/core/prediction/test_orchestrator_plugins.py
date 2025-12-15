@@ -186,20 +186,17 @@ def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
 
     with patch.object(
         orchestrator, "_resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
-    ):
-        with patch.object(orchestrator, "_build_interval_context") as mock_build_context:
-            mock_context = MagicMock()
-            mock_context.metadata = {}
-            mock_build_context.return_value = mock_context
+    ), patch.object(orchestrator, "_build_interval_context") as mock_build_context:
+        mock_context = MagicMock()
+        mock_context.metadata = {}
+        mock_build_context.return_value = mock_context
 
-            calibrator, identifier = orchestrator._obtain_interval_calibrator(
-                fast=False, metadata={}
-            )
+        calibrator, identifier = orchestrator._obtain_interval_calibrator(fast=False, metadata={})
 
-            assert calibrator == mock_calibrator
-            assert identifier == "test_plugin"
-            mock_plugin.create.assert_called_once()
-            assert mock_explainer._interval_plugin_identifiers["default"] == "test_plugin"
+        assert calibrator == mock_calibrator
+        assert identifier == "test_plugin"
+        mock_plugin.create.assert_called_once()
+        assert mock_explainer._interval_plugin_identifiers["default"] == "test_plugin"
 
 
 def test_obtain_interval_calibrator_failure(orchestrator, mock_explainer):
@@ -208,10 +205,10 @@ def test_obtain_interval_calibrator_failure(orchestrator, mock_explainer):
 
     with patch.object(
         orchestrator, "_resolve_interval_plugin", return_value=(mock_plugin, "test_plugin")
+    ), patch.object(orchestrator, "_build_interval_context"), pytest.raises(
+        ConfigurationError, match="Interval plugin execution failed"
     ):
-        with patch.object(orchestrator, "_build_interval_context"):
-            with pytest.raises(ConfigurationError, match="Interval plugin execution failed"):
-                orchestrator._obtain_interval_calibrator(fast=False, metadata={})
+        orchestrator._obtain_interval_calibrator(fast=False, metadata={})
 
 
 def test_check_interval_runtime_metadata_errors(orchestrator, mock_explainer):

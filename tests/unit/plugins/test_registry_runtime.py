@@ -87,18 +87,18 @@ def test_mark_plot_renderer_trusted_untrusted():
         identifier="test.renderer",
         metadata={"name": "Test Renderer", "trust": {"trusted": False}},
         trusted=False,
-        renderer=lambda: None  # Add dummy renderer
+        renderer=lambda: None,  # Add dummy renderer
     )
-    
+
     # Mock the internal registry lists
     registry._PLOT_RENDERERS["test.renderer"] = descriptor
-    
+
     # Mark trusted
     updated_descriptor = registry.mark_plot_renderer_trusted("test.renderer")
     assert updated_descriptor.trusted is True
     assert updated_descriptor.metadata["trust"]["trusted"] is True
     assert "test.renderer" in registry._TRUSTED_PLOT_RENDERERS
-    
+
     # Mark untrusted
     updated_descriptor_2 = registry.mark_plot_renderer_untrusted("test.renderer")
     assert updated_descriptor_2.trusted is False

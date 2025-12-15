@@ -147,10 +147,11 @@ def test_binary_regressor_discretizer_handles_constant_feature():
 def test_entropy_discretizer_is_picklable():
     import pickle
 
-    data = np.random.rand(100, 5)
+    rng = np.random.default_rng(42)
+    data = rng.random((100, 5))
     categorical_features = [0]
     feature_names = [f"f{i}" for i in range(5)]
-    labels = np.random.randint(0, 2, 100)
+    labels = rng.integers(0, 2, 100)
 
     discretizer = EntropyDiscretizer(data, categorical_features, feature_names, labels=labels)
 
@@ -164,10 +165,11 @@ def test_entropy_discretizer_is_picklable():
 def test_regressor_discretizer_is_picklable():
     import pickle
 
-    data = np.random.rand(100, 5)
+    rng = np.random.default_rng(42)
+    data = rng.random((100, 5))
     categorical_features = [0]
     feature_names = [f"f{i}" for i in range(5)]
-    labels = np.random.rand(100)
+    labels = rng.random(100)
 
     discretizer = RegressorDiscretizer(data, categorical_features, feature_names, labels=labels)
 

@@ -10,10 +10,6 @@ def clear_env(monkeypatch):
     monkeypatch.delenv("CE_PLOT_STYLE_FALLBACKS", raising=False)
 
 
-import pytest
-from calibrated_explanations import plotting
-
-
 @pytest.fixture
 def pyproject_factory(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)

@@ -143,10 +143,7 @@ def compute_filtered_features_to_ignore(
         )
 
     inferred_num_features = _safe_len_feature_weights(fast_explanations)
-    if num_features is None:
-        num_features = inferred_num_features
-    else:
-        num_features = int(num_features)
+    num_features = inferred_num_features if num_features is None else int(num_features)
     if num_features <= 0 or inferred_num_features == 0:
         per_instance = [base_ignore_arr.copy() for _ in range(num_instances)]
         return FeatureFilterResult(
@@ -158,6 +155,7 @@ def compute_filtered_features_to_ignore(
     all_features = set(range(num_features))
     per_instance_ignore: list[np.ndarray] = []
     per_instance_keep: list[set[int]] = []
+    keep_counts = np.zeros(num_features, dtype=int)
 
     per_instance_top_k = max(1, int(config.per_instance_top_k))
 
@@ -165,23 +163,32 @@ def compute_filtered_features_to_ignore(
     for exp in fast_explanations.explanations:
         weights_mapping = getattr(exp, "feature_weights", None)
         if not isinstance(weights_mapping, dict):
-            # No usable weights; fall back to baseline ignore only for this instance.
+            # No usable weights; keep all non-baseline features for this instance.
             ignore_set = sorted(base_ignore_set)
             per_instance_ignore.append(np.asarray(ignore_set, dtype=int))
-            per_instance_keep.append(all_features - base_ignore_set)
+            keep_set = all_features - base_ignore_set
+            for feature in keep_set:
+                keep_counts[int(feature)] += 1
+            per_instance_keep.append(keep_set)
             continue
         predict_weights = weights_mapping.get("predict")
         if predict_weights is None:
             ignore_set = sorted(base_ignore_set)
             per_instance_ignore.append(np.asarray(ignore_set, dtype=int))
-            per_instance_keep.append(all_features - base_ignore_set)
+            keep_set = all_features - base_ignore_set
+            for feature in keep_set:
+                keep_counts[int(feature)] += 1
+            per_instance_keep.append(keep_set)
             continue
 
         weights_arr = np.asarray(predict_weights, dtype=float).reshape(-1)
         if weights_arr.size == 0:
             ignore_set = sorted(base_ignore_set)
             per_instance_ignore.append(np.asarray(ignore_set, dtype=int))
-            per_instance_keep.append(all_features - base_ignore_set)
+            keep_set = all_features - base_ignore_set
+            for feature in keep_set:
+                keep_counts[int(feature)] += 1
+            per_instance_keep.append(keep_set)
             continue
 
         # Align to num_features by truncation or padding with zeros as needed.
@@ -203,27 +210,79 @@ def compute_filtered_features_to_ignore(
         candidate_scores = np.abs(weights_arr[candidate_indices])
 
         k = min(per_instance_top_k, candidate_indices.size)
-        ranking = np.argsort(candidate_scores)
-        top_indices = candidate_indices[ranking[-k:]]
-        keep_features = {int(f) for f in top_indices.tolist()}
+        if k <= 0:
+            keep_features = set()
+        else:
+            ranking = np.argsort(candidate_scores, kind="mergesort")
+            top_indices = candidate_indices[ranking[-k:]]
+            keep_features = {int(f) for f in top_indices.tolist()}
         extra_ignore = candidates_for_filter - keep_features
 
+        for feature in keep_features:
+            keep_counts[int(feature)] += 1
         per_instance_keep.append(keep_features)
         ignore_total = sorted(set(extra_ignore) | base_ignore_set)
         per_instance_ignore.append(np.asarray(ignore_total, dtype=int))
 
-    # Derive a conservative global ignore set: skip only features that are not
-    # needed by any instance in the batch (beyond the baseline ignore).
+    # Derive a batch-level global ignore set using per-instance keep coverage.
+    # Only features observed in every FAST explanation are eligible for
+    # filtering so that padded/truncated zeros do not force removals.
     candidates_for_filter = all_features - base_ignore_set
     if not candidates_for_filter:
         global_ignore = np.asarray(sorted(base_ignore_set), dtype=int)
     else:
-        union_keep: set[int] = set()
-        for keep_set in per_instance_keep:
-            union_keep.update(int(f) for f in keep_set)
-        extra_global_ignore = candidates_for_filter - union_keep
-        final_ignore = sorted(set(extra_global_ignore) | base_ignore_set)
-        global_ignore = np.asarray(final_ignore, dtype=int)
+        observed_counts = np.zeros(num_features, dtype=int)
+
+        for exp in fast_explanations.explanations:
+            weights = getattr(exp, "feature_weights", None) or {}
+            predict = weights.get("predict")
+            if predict is None:
+                continue
+            arr = np.asarray(predict, dtype=float).reshape(-1)
+            observed_len = min(arr.size, num_features)
+            if observed_len == 0:
+                continue
+            if arr.size > num_features:
+                arr = arr[:num_features]
+            elif arr.size < num_features:
+                padded = np.zeros(num_features, dtype=float)
+                padded[: arr.size] = arr
+                arr = padded
+            observed_counts[:observed_len] += 1
+
+        eligible_features = {
+            int(f)
+            for f in candidates_for_filter
+            if observed_counts[int(f)] == num_instances and num_instances > 0
+        }
+        if not eligible_features:
+            global_ignore = np.asarray(sorted(base_ignore_set), dtype=int)
+        else:
+            candidate_indices = np.asarray(sorted(eligible_features), dtype=int)
+            candidate_counts = keep_counts[candidate_indices]
+            positive_mask = candidate_counts > 0
+            positive_indices = candidate_indices[positive_mask]
+            positive_counts = candidate_counts[positive_mask]
+
+            global_keep: set[int] = set()
+            if positive_indices.size:
+                k = min(per_instance_top_k, positive_indices.size)
+                order = np.argsort(positive_counts, kind="mergesort")
+                threshold_idx = max(0, positive_indices.size - k)
+                threshold_count = positive_counts[order[threshold_idx]]
+                keep_mask = positive_counts >= threshold_count
+                global_keep = {int(f) for f in positive_indices[keep_mask].tolist()}
+
+            removable_features = eligible_features - global_keep
+            final_global = sorted(set(base_ignore_set) | removable_features)
+            global_ignore = np.asarray(final_global, dtype=int)
+
+    if global_ignore.size:
+        global_ignore_set = set(global_ignore.tolist())
+        per_instance_ignore = [
+            np.asarray(sorted(global_ignore_set | set(arr.tolist())), dtype=int)
+            for arr in per_instance_ignore
+        ]
 
     return FeatureFilterResult(global_ignore=global_ignore, per_instance_ignore=per_instance_ignore)
 

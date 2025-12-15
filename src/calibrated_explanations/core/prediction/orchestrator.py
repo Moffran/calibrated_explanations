@@ -396,8 +396,7 @@ class PredictionOrchestrator:
                     )
                 # pylint: disable=unexpected-keyword-arg
                 return self.explainer.interval_learner.predict_probability(x, threshold, bins=bins)
-            except:  # pylint: disable=bare-except
-                # Use bare except + sys.exc_info to avoid catching 'Exception' explicitly (ADR-002)
+            except:  # noqa: E722 - ADR-002: Use bare except + sys.exc_info to avoid catching 'Exception' explicitly
                 exc = sys.exc_info()[1]
                 if not isinstance(exc, Exception):
                     raise

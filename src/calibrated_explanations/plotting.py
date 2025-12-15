@@ -66,7 +66,7 @@ try:
     # Preload lazy-loaded submodules to avoid AttributeError when coverage runs
     import matplotlib.image  # noqa: F401
     import matplotlib.pyplot as plt
-except:  # pragma: no cover - optional dependency guard
+except BaseException:  # pragma: no cover - optional dependency guard; ADR-002
     if not isinstance(sys.exc_info()[1], Exception):
         raise
     mcolors = None  # type: ignore[assignment]
@@ -87,7 +87,7 @@ def _read_plot_pyproject() -> Dict[str, Any]:
     try:
         with candidate.open("rb") as fh:  # type: ignore[arg-type]
             data = _plot_tomllib.load(fh)
-    except:  # pragma: no cover - permissive fallback
+    except BaseException:  # pragma: no cover - permissive fallback; ADR-002
         if not isinstance(sys.exc_info()[1], Exception):
             raise
         return {}

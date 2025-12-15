@@ -49,8 +49,9 @@ def is_valid_probability_values(*values: float) -> bool:
     for value in values:
         try:
             numeric = float(value)
-        except:
-            if not isinstance(sys.exc_info()[1], Exception):
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
                 raise
             return False
         if not math.isfinite(numeric):
@@ -247,8 +248,9 @@ def build_regression_bars_spec(
     if confidence is not None:
         try:
             confidence_label = f"Prediction interval with {confidence}% confidence"
-        except:
-            if not isinstance(sys.exc_info()[1], Exception):
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
                 raise
             confidence_label = "Prediction interval"
     else:
@@ -962,8 +964,9 @@ def build_global_plotspec_dict(
         if arr:
             min_x = float(min(arr))
             max_x = float(max(arr))
-    except:
-        if not isinstance(sys.exc_info()[1], Exception):
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
             raise
         min_x = 0.0
         max_x = 1.0
@@ -971,8 +974,9 @@ def build_global_plotspec_dict(
         if uncertainty is not None:
             min_y = float(min(uncertainty))
             max_y = float(max(uncertainty))
-    except:
-        if not isinstance(sys.exc_info()[1], Exception):
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
             raise
         min_y = 0.0
         max_y = 1.0

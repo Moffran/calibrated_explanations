@@ -227,7 +227,9 @@ def test_cache_forksafe_reset_clears_state_and_emits_telemetry() -> None:
     assert cache.get("alpha") is None
     assert cache.metrics.resets == 1
     assert any(
-        event == "cache_reset" and payload["namespace"] == "telemetry" and payload["reason"] == "forksafe"
+        event == "cache_reset"
+        and payload["namespace"] == "telemetry"
+        and payload["reason"] == "forksafe"
         for event, payload in events
     )
 

@@ -89,7 +89,6 @@ def test_cli_untrust_command(monkeypatch, capsys):
 
 
 def test_cli_trust_missing(monkeypatch, capsys):
-    
     def mark(identifier):
         raise KeyError(f"Plugin '{identifier}' not found")
 

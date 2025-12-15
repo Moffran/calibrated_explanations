@@ -1155,7 +1155,7 @@ def test_probabilistic_short_circuits_without_show_or_save(monkeypatch):
 
 def test_compose_save_target_parity():
     from calibrated_explanations.legacy.plotting import _compose_save_target
-    
+
     # Test prefix behavior (when path is not a dir and doesn't end with separator)
     target = _compose_save_target("prefix_", "plot", ".png")
     assert target == "prefix_plot.png"
@@ -1163,9 +1163,8 @@ def test_compose_save_target_parity():
 
 def test_compose_save_target_directory(tmp_path):
     from calibrated_explanations.legacy.plotting import _compose_save_target
-    
+
     # Test with actual directory
     target = _compose_save_target(tmp_path, "plot", ".png")
     expected = tmp_path / "plot.png"
     assert str(target) == str(expected)
-

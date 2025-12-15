@@ -1,6 +1,4 @@
 import logging
-import os
-import sys
 import warnings
 from pathlib import Path
 from typing import Any, Tuple
@@ -42,7 +40,7 @@ def test_derive_threshold_labels(threshold: Any, expected: Tuple[str, str], capl
     # Capture logs to verify debug logging for invalid intervals
     with caplog.at_level(logging.DEBUG):
         labels = plotting._derive_threshold_labels(threshold)
-    
+
     assert labels == expected
 
     # Check for logging on invalid interval attempts that fall back
@@ -81,6 +79,3 @@ def test_format_save_path(base_path: Any, filename: str, expected_rule: str):
             assert result == f"{base_path}{filename}"
         else:
             assert result == str(Path(base_path) / filename)
-
-
-

@@ -210,7 +210,7 @@ class NarrativePlotPlugin:
                         feature_names=feature_names,
                     )
                     row[f"{explanation_type}_explanation_{level}"] = narrative
-                except:
+                except BaseException:
                     e = sys.exc_info()[1]
                     if not isinstance(e, Exception):
                         raise
@@ -255,8 +255,9 @@ class NarrativePlotPlugin:
                 # Check if multiclass
                 try:
                     is_multiclass = explainer.is_multiclass()
-                except:
-                    if not isinstance(sys.exc_info()[1], Exception):
+                except BaseException:
+                    exc_info = sys.exc_info()[1]
+                    if not isinstance(exc_info, Exception):
                         raise
                     is_multiclass = getattr(explainer, "is_multiclass", False)
 
@@ -270,8 +271,9 @@ class NarrativePlotPlugin:
             # Default fallback
             return "regression"
 
-        except:
-            if not isinstance(sys.exc_info()[1], Exception):
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
                 raise
             # Fallback to regression if detection fails
             return "regression"
@@ -304,8 +306,9 @@ class NarrativePlotPlugin:
 
             return None
 
-        except:
-            if not isinstance(sys.exc_info()[1], Exception):
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
                 raise
             return None
 

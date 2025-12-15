@@ -56,8 +56,9 @@ def get_fill_color(venn_abers: dict, reduction: float = 1.0) -> str:
     # determine winning class: 1 if predict >= 0.5 else 0
     try:
         pred = float(venn_abers.get("predict", 0.0))
-    except:
-        if not isinstance(sys.exc_info()[1], Exception):
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
             raise
         pred = 0.0
     winner_class = int(pred >= 0.5)
@@ -67,8 +68,9 @@ def get_fill_color(venn_abers: dict, reduction: float = 1.0) -> str:
     # Normalize alpha into [.25, 1] range like legacy code
     try:
         alpha = ((alpha - 0.5) / (1 - 0.5)) * (1 - 0.25) + 0.25
-    except:
-        if not isinstance(sys.exc_info()[1], Exception):
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
             raise
         alpha = 0.25
     if reduction != 1:

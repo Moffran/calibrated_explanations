@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import sys
 import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
@@ -75,16 +74,11 @@ def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
             lo = float(threshold[0])
             hi = float(threshold[1])
             return (f"{lo:.2f} <= Y < {hi:.2f}", "Outside interval")
-    except:
-        exc = sys.exc_info()[1]
-        if not isinstance(exc, Exception):
-            raise
+    except Exception as exc:
         logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", exc)
     try:
         value = float(threshold)
-    except:
-        if not isinstance(sys.exc_info()[1], Exception):
-            raise
+    except Exception:
         return ("Target within threshold", "Outside threshold")
     return (f"Y < {value:.2f}", f"Y ≥ {value:.2f}")
 
@@ -127,7 +121,9 @@ class LegacyPredictBridge(PredictBridge):
             epsilon = 1e-9
             # Ignore NaNs in the check
             valid_mask = ~np.isnan(low_arr) & ~np.isnan(high_arr)
-            if np.any(valid_mask) and not np.all(low_arr[valid_mask] <= high_arr[valid_mask] + epsilon):
+            if np.any(valid_mask) and not np.all(
+                low_arr[valid_mask] <= high_arr[valid_mask] + epsilon
+            ):
                 diff = np.max(low_arr[valid_mask] - high_arr[valid_mask])
                 raise ValidationError(f"Interval invariant violated: low > high (max diff: {diff})")
 
@@ -135,8 +131,13 @@ class LegacyPredictBridge(PredictBridge):
             if task == "regression":
                 preds_arr = np.asarray(preds)
                 valid_pred_mask = valid_mask & ~np.isnan(preds_arr)
-                if np.any(valid_pred_mask) and not np.all((low_arr[valid_pred_mask] - epsilon <= preds_arr[valid_pred_mask]) & (preds_arr[valid_pred_mask] <= high_arr[valid_pred_mask] + epsilon)):
-                    raise ValidationError("Prediction invariant violated: predict not in [low, high]")
+                if np.any(valid_pred_mask) and not np.all(
+                    (low_arr[valid_pred_mask] - epsilon <= preds_arr[valid_pred_mask])
+                    & (preds_arr[valid_pred_mask] <= high_arr[valid_pred_mask] + epsilon)
+                ):
+                    raise ValidationError(
+                        "Prediction invariant violated: predict not in [low, high]"
+                    )
 
         if task == "classification":
             payload["classes"] = np.asarray(self._explainer.predict(x, calibrated=True, bins=bins))
@@ -488,11 +489,22 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                                 "Unable to attach per-instance feature filter state to explainer",
                                 exc_info=True,
                             )
+
+                        # Debug: log filtered request details for troubleshooting propagation
+                        logging.getLogger(__name__).debug(
+                            "Feature filter produced global_ignore(len=%s) extra_ignore(len=%s)",
+                            len(filter_result.global_ignore),
+                            0,
+                        )
                         # Only propagate the additional ignore indices beyond the explainer defaults.
                         extra_ignore = np.setdiff1d(
                             filter_result.global_ignore,
                             base_explainer_ignore,
                             assume_unique=False,
+                        )
+                        logging.getLogger(__name__).debug(
+                            "Extra ignore computed: len=%s",
+                            len(extra_ignore),
                         )
                         new_request_ignore = np.union1d(request_ignore, extra_ignore)
                         filtered_request = ExplanationRequest(
@@ -522,10 +534,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             ),
                             extras=request.extras,
                         )
-            except:
-                exc_cfg = sys.exc_info()[1]
-                if not isinstance(exc_cfg, Exception):
-                    raise
+            except Exception as exc_cfg:
                 logging.getLogger(__name__).debug(
                     "FAST feature filter configuration failed for mode '%s': %s",
                     self._mode,
@@ -548,6 +557,13 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 self._explainer, x, filtered_request
             )
 
+            # Debug: log explain_request ignore fields (helps diagnose propagation)
+            logging.getLogger(__name__).debug(
+                "Explain request features_to_ignore: %s; per_instance: %s",
+                getattr(explain_request, "features_to_ignore", None),
+                getattr(explain_request, "features_to_ignore_per_instance", None) is not None,
+            )
+
             # Respect the execution plugin's own capability check when present.
             # This avoids over-eager legacy fallback when tests (or downstream
             # users) inject a custom execution plugin that does not require a
@@ -568,14 +584,26 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             "bins": request.bins,
                         }
                         if self._mode != "fast":
-                            kwargs["features_to_ignore"] = request.features_to_ignore
+                            kwargs["features_to_ignore"] = getattr(
+                                filtered_request, "features_to_ignore", request.features_to_ignore
+                            )
                         kwargs["_use_plugin"] = False
                         collection = explanation_callable(x, **kwargs)
+                        # Attach per-instance feature ignore masks from filtered request
+                        per_instance_ignore_from_request = getattr(
+                            filtered_request, "features_to_ignore_per_instance", None
+                        )
+                        if per_instance_ignore_from_request is not None:
+                            with contextlib.suppress(Exception):
+                                collection.features_to_ignore_per_instance = (
+                                    per_instance_ignore_from_request
+                                )
+                                # Reset rules cache on all explanations so they recompute with the new masks
+                                for exp in getattr(collection, "explanations", []):
+                                    with contextlib.suppress(Exception):
+                                        exp.reset()
                         return _collection_to_batch(collection)
-                except:
-                    exc_supports = sys.exc_info()[1]
-                    if not isinstance(exc_supports, Exception):
-                        raise
+                except Exception as exc_supports:
                     logging.getLogger(__name__).warning(
                         "Execution plugin supports() check failed for mode '%s': %s; falling back to legacy",
                         self._mode,
@@ -593,19 +621,31 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                         "bins": request.bins,
                     }
                     if self._mode != "fast":
-                        kwargs["features_to_ignore"] = request.features_to_ignore
+                        kwargs["features_to_ignore"] = getattr(
+                            filtered_request, "features_to_ignore", request.features_to_ignore
+                        )
                     kwargs["_use_plugin"] = False
                     collection = explanation_callable(x, **kwargs)
+                    # Attach per-instance feature ignore masks from filtered request
+                    per_instance_ignore_from_request = getattr(
+                        filtered_request, "features_to_ignore_per_instance", None
+                    )
+                    if per_instance_ignore_from_request is not None:
+                        with contextlib.suppress(Exception):
+                            collection.features_to_ignore_per_instance = (
+                                per_instance_ignore_from_request
+                            )
+                            # Reset rules cache on all explanations so they recompute with the new masks
+                            for exp in getattr(collection, "explanations", []):
+                                with contextlib.suppress(Exception):
+                                    exp.reset()
                     return _collection_to_batch(collection)
 
             # Manage executor lifetime across explain runs using the runtime context.
             with runtime:
                 collection = plugin.execute(explain_request, explain_config, self._explainer)
 
-        except:
-            exc = sys.exc_info()[1]
-            if not isinstance(exc, Exception):
-                raise
+        except Exception as exc:
             # Fallback to legacy implementation with warning
             _logger = logging.getLogger(__name__)
             _logger.warning(
@@ -613,6 +653,8 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 self._mode,
                 exc,
             )
+            # Log full exception stack for debugging plugin failures
+            _logger.exception("Execution plugin exception:", exc_info=True)
             warnings.warn(
                 f"Execution plugin failed for mode '{self._mode}' ({exc!r}); falling back to legacy sequential execution.",
                 UserWarning,
@@ -625,9 +667,32 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 "bins": request.bins,
             }
             if self._mode != "fast":
-                kwargs["features_to_ignore"] = request.features_to_ignore
+                kwargs["features_to_ignore"] = getattr(
+                    filtered_request, "features_to_ignore", request.features_to_ignore
+                )
             kwargs["_use_plugin"] = False
             collection = explanation_callable(x, **kwargs)
+
+        # Attach per-instance feature ignore masks from the filtered request to the collection.
+        # This ensures that when rules are accessed via _get_rules(), they will respect
+        # the per-instance masks computed by FAST-based feature filtering.
+        per_instance_ignore_from_request = getattr(
+            filtered_request, "features_to_ignore_per_instance", None
+        )
+        if per_instance_ignore_from_request is not None:
+            with contextlib.suppress(Exception):
+                collection.features_to_ignore_per_instance = per_instance_ignore_from_request
+                # Reset rules cache on all explanations so they recompute with the new masks
+                for exp in getattr(collection, "explanations", []):
+                    with contextlib.suppress(Exception):
+                        exp.reset()
+                logging.getLogger(__name__).debug(
+                    "Attached %d per-instance feature ignore masks to collection and reset %d explanation caches",
+                    len(per_instance_ignore_from_request)
+                    if hasattr(per_instance_ignore_from_request, "__len__")
+                    else 0,
+                    len(getattr(collection, "explanations", [])),
+                )
 
         return _collection_to_batch(collection)
 
@@ -1008,9 +1073,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             def _safe_float(value: Any) -> float | None:
                 try:
                     val = float(value)
-                except:
-                    if not isinstance(sys.exc_info()[1], Exception):
-                        raise
+                except Exception:
                     return None
                 if not np.isfinite(val):
                     return None
@@ -1026,9 +1089,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             if isinstance(y_minmax, Sequence) and len(y_minmax) >= 2:
                 try:
                     y0, y1 = float(y_minmax[0]), float(y_minmax[1])
-                except:
-                    if not isinstance(sys.exc_info()[1], Exception):
-                        raise
+                except Exception:
                     normalised_y_minmax = None
                 else:
                     if np.isfinite(y0) and np.isfinite(y1):
@@ -1088,10 +1149,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 for idx in features_to_plot_raw:
                     try:
                         value = int(idx)
-                    except:
-                        exc = sys.exc_info()[1]
-                        if not isinstance(exc, Exception):
-                            raise
+                    except Exception as exc:
                         logging.getLogger(__name__).debug(
                             "Failed to convert feature index to int: %s", exc
                         )
@@ -1140,9 +1198,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                         try:
                             lo_val = float(y_threshold[0])
                             hi_val = float(y_threshold[1])
-                        except:
-                            if not isinstance(sys.exc_info()[1], Exception):
-                                raise
+                        except Exception:
                             threshold_label = None
                         else:
                             threshold_label = (
@@ -1151,9 +1207,7 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                     elif y_threshold is not None:
                         try:
                             thr = float(y_threshold)
-                        except:
-                            if not isinstance(sys.exc_info()[1], Exception):
-                                raise
+                        except Exception:
                             threshold_label = None
                         else:
                             threshold_label = f"Probability of target being below {thr:.2f}"
@@ -1277,10 +1331,7 @@ class PlotSpecDefaultRenderer(PlotRenderer):
                     render_plotspec(artifact, show=True, save_path=None)
             else:
                 render_plotspec(artifact, show=context.show, save_path=base_path)
-        except:  # pragma: no cover - defensive fallback
-            exc = sys.exc_info()[1]
-            if not isinstance(exc, Exception):
-                raise
+        except Exception as exc:  # pragma: no cover - defensive fallback
             raise ConfigurationError(
                 f"PlotSpec renderer failed: {exc}",
                 details={"context": "plot_rendering", "original_error": str(exc)},

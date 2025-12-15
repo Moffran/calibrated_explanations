@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 import numpy as np
 
 from ...utils import concatenate_thresholds
+from ...utils.exceptions import CalibratedError
 from ...utils.helper import assign_threshold as normalize_threshold
 from ...utils.int_utils import as_int_array
-from ...utils.exceptions import CalibratedError
 from .feature_task import (
     FeatureTaskResult,
     assign_weight_scalar,
@@ -562,10 +562,7 @@ def explain_predict_step(
         perturbed_x = np.concatenate(perturbed_x_list)
         perturbed_feature = np.concatenate(perturbed_feature_list)
         perturbed_class = np.concatenate(perturbed_class_list)
-        if bins is not None:
-            perturbed_bins = np.concatenate(perturbed_bins_list)
-        else:
-            perturbed_bins = None
+        perturbed_bins = np.concatenate(perturbed_bins_list) if bins is not None else None
     else:
         perturbed_x = np.empty((0, explainer.num_features))
         perturbed_feature = np.empty((0, 4))

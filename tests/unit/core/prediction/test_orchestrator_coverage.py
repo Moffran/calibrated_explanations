@@ -583,9 +583,8 @@ def test_resolve_interval_plugin_denied(orchestrator, mock_explainer):
     with patch(
         "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
         return_value=True,
-    ):
-        with pytest.raises(core_exceptions.ConfigurationError, match="denied via CE_DENY_PLUGIN"):
-            orchestrator._resolve_interval_plugin(fast=False)
+    ), pytest.raises(core_exceptions.ConfigurationError, match="denied via CE_DENY_PLUGIN"):
+        orchestrator._resolve_interval_plugin(fast=False)
 
 
 def test_resolve_interval_plugin_not_registered_preferred(orchestrator, mock_explainer):
@@ -604,9 +603,8 @@ def test_resolve_interval_plugin_not_registered_preferred(orchestrator, mock_exp
     ), patch(
         "calibrated_explanations.core.prediction.orchestrator.find_interval_plugin_trusted",
         return_value=None,
-    ):
-        with pytest.raises(core_exceptions.ConfigurationError, match="not registered"):
-            orchestrator._resolve_interval_plugin(fast=False)
+    ), pytest.raises(core_exceptions.ConfigurationError, match="not registered"):
+        orchestrator._resolve_interval_plugin(fast=False)
 
 
 def test_resolve_interval_plugin_metadata_error_preferred(orchestrator, mock_explainer):
@@ -625,9 +623,8 @@ def test_resolve_interval_plugin_metadata_error_preferred(orchestrator, mock_exp
     with patch(
         "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
         return_value=mock_descriptor,
-    ):
-        with pytest.raises(core_exceptions.ConfigurationError, match="missing modes declaration"):
-            orchestrator._resolve_interval_plugin(fast=False)
+    ), pytest.raises(core_exceptions.ConfigurationError, match="missing modes declaration"):
+        orchestrator._resolve_interval_plugin(fast=False)
 
 
 def test_obtain_interval_calibrator_success(orchestrator, mock_explainer):
@@ -899,7 +896,7 @@ def test_predict_regression_invalid_percentiles(orchestrator, mock_explainer):
         orchestrator._predict_impl(np.array([[1]]), low_high_percentiles=(-10, 110))
 
 
-def test_compute_weight_delta_scalar(orchestrator):
+def test_compute_weight_delta_scalar_duplicate(orchestrator):
     baseline = 1.0
     perturbed = 0.5
     delta = orchestrator._compute_weight_delta(baseline, perturbed)
@@ -927,7 +924,7 @@ def test_ensure_interval_runtime_state_missing_attributes(orchestrator, mock_exp
     assert mock_explainer._interval_context_metadata == {"default": {}, "fast": {}}
 
 
-def test_gather_interval_hints(orchestrator, mock_explainer):
+def test_gather_interval_hints_duplicate(orchestrator, mock_explainer):
     mock_explainer._interval_plugin_hints = {
         "fast": ("fast_hint",),
         "factual": ("factual_hint",),
@@ -964,12 +961,11 @@ def test_resolve_interval_plugin_denied_preferred(orchestrator, mock_explainer):
     with patch(
         "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
         return_value=True,
-    ):
-        with pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"):
-            orchestrator._resolve_interval_plugin(fast=False)
+    ), pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"):
+        orchestrator._resolve_interval_plugin(fast=False)
 
 
-def test_resolve_interval_plugin_metadata_error_preferred(orchestrator, mock_explainer):
+def test_resolve_interval_plugin_metadata_error_preferred_duplicate(orchestrator, mock_explainer):
     mock_explainer._interval_plugin_override = "bad_metadata_plugin"
     mock_explainer._plugin_manager.coerce_plugin_override.return_value = "bad_metadata_plugin"
     mock_explainer._interval_plugin_fallbacks = {"default": ["bad_metadata_plugin"]}
@@ -983,16 +979,14 @@ def test_resolve_interval_plugin_metadata_error_preferred(orchestrator, mock_exp
     with patch(
         "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
         return_value=False,
-    ):
-        with patch(
-            "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-            return_value=mock_descriptor,
-        ):
-            with pytest.raises(ConfigurationError, match="unsupported interval schema_version"):
-                orchestrator._resolve_interval_plugin(fast=False)
+    ), patch(
+        "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
+        return_value=mock_descriptor,
+    ), pytest.raises(ConfigurationError, match="unsupported interval schema_version"):
+        orchestrator._resolve_interval_plugin(fast=False)
 
 
-def test_obtain_interval_calibrator_creation_failure(orchestrator, mock_explainer):
+def test_obtain_interval_calibrator_creation_failure_duplicate(orchestrator, mock_explainer):
     mock_explainer._interval_plugin_override = "failing_plugin"
     mock_explainer._plugin_manager.coerce_plugin_override.return_value = "failing_plugin"
     mock_explainer._interval_plugin_fallbacks = {"default": ["failing_plugin"]}
@@ -1017,16 +1011,13 @@ def test_obtain_interval_calibrator_creation_failure(orchestrator, mock_explaine
     with patch(
         "calibrated_explanations.core.prediction.orchestrator.is_identifier_denied",
         return_value=False,
-    ):
-        with patch(
-            "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
-            return_value=mock_descriptor,
-        ):
-            with patch(
-                "calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins"
-            ):
-                with pytest.raises(ConfigurationError, match="Interval plugin execution failed"):
-                    orchestrator._obtain_interval_calibrator(fast=False, metadata={})
+    ), patch(
+        "calibrated_explanations.core.prediction.orchestrator.find_interval_descriptor",
+        return_value=mock_descriptor,
+    ), patch(
+        "calibrated_explanations.core.prediction.orchestrator.ensure_builtin_plugins"
+    ), pytest.raises(ConfigurationError, match="Interval plugin execution failed"):
+        orchestrator._obtain_interval_calibrator(fast=False, metadata={})
 
 
 def test_resolve_interval_plugin_override_object_fast(orchestrator, mock_explainer):
@@ -1040,7 +1031,7 @@ def test_resolve_interval_plugin_override_object_fast(orchestrator, mock_explain
     assert identifier == "custom_plugin_fast"
 
 
-def test_check_interval_runtime_metadata_fast_incompatible(orchestrator, mock_explainer):
+def test_check_interval_runtime_metadata_fast_incompatible_duplicate(orchestrator, mock_explainer):
     metadata = {
         "schema_version": 1,
         "modes": ("regression",),

@@ -10,7 +10,6 @@ import pytest
 
 from calibrated_explanations.utils.deprecations import (
     _EMITTED,
-    _EMITTED_PER_TEST,
     _should_raise,
     deprecate,
 )
@@ -145,7 +144,9 @@ class TestDeprecate:
         pytest_test_id = "test_unique_pytest_emitpertest"
         env = {"PYTEST_CURRENT_TEST": pytest_test_id}
 
-        with patch.dict(os.environ, env):
+        # Explicitly clear CE_DEPRECATIONS so we exercise the warning path even
+        # when the surrounding CI job exports CE_DEPRECATIONS=error.
+        with patch.dict(os.environ, env, clear=True):
             unique_key = "pytest_key_unique_emitpertest"
             # Should emit in pytest
             with pytest.warns(DeprecationWarning, match="Per-test warning"):

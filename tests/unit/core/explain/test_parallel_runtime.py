@@ -108,9 +108,8 @@ class TestExplainParallelRuntime:
             executor=executor, min_instances_for_parallel=10, chunk_size=5
         )
 
-        with pytest.warns(UserWarning, match="Parallel execution fell back to sequential"):
-            with runtime:
-                pass
+        with pytest.warns(UserWarning, match="Parallel execution fell back to sequential"), runtime:
+            pass
 
     def test_telemetry_duration_tracking(self):
         """Verify that total_duration is updated on exit."""
@@ -126,9 +125,8 @@ class TestExplainParallelRuntime:
             executor=executor, min_instances_for_parallel=1, chunk_size=1
         )
 
-        with patch("time.perf_counter", side_effect=[100.0, 100.5]):
-            with runtime:
-                pass
+        with patch("time.perf_counter", side_effect=[100.0, 100.5]), runtime:
+            pass
 
         # The runtime adds the duration to the existing total_duration
         assert executor.metrics.total_duration == 0.5

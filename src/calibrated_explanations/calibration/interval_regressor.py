@@ -246,11 +246,10 @@ class IntervalRegressor:
         """
         y_test_hat = self.ce.predict_function(x).reshape(-1, 1)
 
-        if bins is not None:
-            if len(bins) != len(y_test_hat):
-                raise DataShapeError(
-                    f"Length of test bins ({len(bins)}) does not match number of test instances ({len(y_test_hat)})."
-                )
+        if bins is not None and len(bins) != len(y_test_hat):
+            raise DataShapeError(
+                f"Length of test bins ({len(bins)}) does not match number of test instances ({len(y_test_hat)})."
+            )
 
         sigma_test = self.ce._get_sigma_test(x=x)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]

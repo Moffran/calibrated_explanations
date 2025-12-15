@@ -19,7 +19,6 @@ Classes:
 import contextlib
 import math
 import re
-import sys
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -294,9 +293,8 @@ class CalibratedExplanation(ABC):
             self.calibrated_explanations, "features_to_ignore_per_instance", None
         )
         instance_mask = None
-        if isinstance(per_instance, Sequence):
-            if 0 <= self.index < len(per_instance):
-                instance_mask = per_instance[self.index]
+        if isinstance(per_instance, Sequence) and 0 <= self.index < len(per_instance):
+            instance_mask = per_instance[self.index]
         if instance_mask is not None:
             ignored.update(collect_ints(instance_mask))
         return ignored
@@ -710,9 +708,7 @@ class CalibratedExplanation(ABC):
         feature_names = getattr(self._get_explainer(), "feature_names", None)
         try:
             idx = int(feature_index)
-        except:  # pylint: disable=bare-except
-            if sys.exc_info()[0] not in (TypeError, ValueError):
-                raise
+        except (TypeError, ValueError):
             return str(feature_index)
         if feature_names and 0 <= idx < len(feature_names):
             return str(feature_names[idx])
@@ -730,9 +726,7 @@ class CalibratedExplanation(ABC):
             return float("inf")
         try:
             return float(text)
-        except:  # pylint: disable=bare-except
-            if sys.exc_info()[0] != ValueError:
-                raise
+        except ValueError:
             return text
 
     def _parse_condition(self, feature_name: str, rule_text: str) -> Tuple[str, Optional[str]]:
@@ -1229,8 +1223,7 @@ class FactualExplanation(CalibratedExplanation):
                         )
                 else:
                     self.prediction_probabilities = None
-        except:  # pylint: disable=bare-except
-            # pragma: no cover - defensive
+        except Exception:  # pragma: no cover - defensive
             self.prediction_probabilities = None
 
     def __repr__(self):
@@ -1732,8 +1725,7 @@ class FactualExplanation(CalibratedExplanation):
                     style_override=style_override,
                     use_legacy=plot_use_legacy,
                 )
-        except:  # pylint: disable=bare-except
-            e = sys.exc_info()[1]
+        except Exception as e:
             if isinstance(e, RuntimeError) and "Agg" in str(e):
                 from ..utils.exceptions import ConfigurationError
 

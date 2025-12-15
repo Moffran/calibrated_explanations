@@ -15,7 +15,10 @@ from typing import Any
 import numpy as np
 from pandas import CategoricalDtype
 
-# from calibrated_explanations.core import NotFittedError, ValidationError
+try:  # pragma: no cover - script-mode fallback
+    from .exceptions import NotFittedError, ValidationError
+except ImportError:  # pragma: no cover - invoked when run as a script
+    from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 
 
 def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:  # pylint: disable=unused-private-member
@@ -73,8 +76,6 @@ def safe_isinstance(obj, class_path_str):
         class_path_strs = [""]
 
     # try each module path in order
-    from .exceptions import ValidationError
-
     for _class_path_str in class_path_strs:
         if "." not in _class_path_str:
             raise ValidationError(
@@ -126,14 +127,14 @@ def safe_import(module_name, class_name=None):
             f"The required module '{module_name}' is not installed. "
             f"Please install it using 'pip install {module_name}' or another method."
         ) from exc
-    except:
-        exc = sys.exc_info()[1]
-        if not isinstance(exc, AttributeError):
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, AttributeError):
             raise
         raise ImportError(
             f"The class or function '{class_name}' does "
             + f"not exist in the module '{module_name}'."
-        ) from exc
+        ) from exc_info
 
 
 # copied from sklearn.utils.validation.check_is_fitted
@@ -184,8 +185,6 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
     NotFittedError
         If the attributes are not found.
     """
-    from .exceptions import NotFittedError, ValidationError
-
     if isclass(estimator):
         raise ValidationError(f"{estimator} is a class, not an instance.")
     if msg is None:
@@ -229,8 +228,9 @@ def is_notebook():
 
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             return False
-    except:
-        if not isinstance(sys.exc_info()[1], (ImportError, AttributeError)):
+    except BaseException:
+        exc_type = sys.exc_info()[0]
+        if exc_type not in (ImportError, AttributeError):
             raise
         return False
     return True
@@ -391,8 +391,6 @@ def assert_threshold(threshold, x):
         ...
     AssertionError: list thresholds must have the same length as the number of samples
     """
-    from .exceptions import ValidationError
-
     if threshold is None:
         return threshold
     if np.isscalar(threshold) and isinstance(threshold, (numbers.Integral, numbers.Real)):
@@ -466,8 +464,6 @@ def calculate_metrics(
     -----
     If the method is called with no arguments, it will return the list of available metrics.
     """
-    from .exceptions import ValidationError
-
     if uncertainty is None and prediction is None:
         return ["ensured"]
 
@@ -629,8 +625,9 @@ def safe_mean(values, default=0.0):
         if arr.size == 0:
             return default
         return float(np.mean(arr))
-    except:
-        if not isinstance(sys.exc_info()[1], Exception):
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
             raise
         return default
 
@@ -666,8 +663,9 @@ def safe_first_element(values, default=0.0, col=None):
         if arr.shape[0] > 0 and arr.shape[1] > col:
             return float(arr[0, col])
         return float(default)
-    except:
-        if not isinstance(sys.exc_info()[1], Exception):
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
             raise
         return float(default)
 

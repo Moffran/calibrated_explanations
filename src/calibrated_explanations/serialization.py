@@ -13,11 +13,11 @@ from __future__ import annotations
 import contextlib
 from typing import Any, Mapping
 
-from .utils.exceptions import ValidationError
 from .explanations import Explanation, FeatureRule
 from .schema import (
     validate_payload as _schema_validate_payload,  # noqa: F401 - re-exported under alias
 )
+from .utils.exceptions import ValidationError
 
 
 def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]:

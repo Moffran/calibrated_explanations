@@ -16,7 +16,7 @@ from typing import Any, Callable, Iterable, List, Literal, Mapping, Sequence, Ty
 try:  # pragma: no cover - optional dependency
     from joblib import Parallel as _JoblibParallel
     from joblib import delayed as _joblib_delayed
-except:  # pragma: no cover - joblib remains optional
+except BaseException:  # pragma: no cover - joblib remains optional
     if not isinstance(sys.exc_info()[1], Exception):
         raise
     _JoblibParallel = None  # type: ignore[assignment]
@@ -184,7 +184,7 @@ class ParallelExecutor:
                     n_jobs = self.config.max_workers or -1
                     self._pool = _JoblibParallel(n_jobs=n_jobs, prefer="processes")
                     self._pool.__enter__()
-        except:
+        except BaseException:  # ADR-002: catch all exceptions including system exits
             exc = sys.exc_info()[1]
             if not isinstance(exc, Exception):
                 raise
@@ -220,7 +220,7 @@ class ParallelExecutor:
                 try:
                     # Python 3.9+ supports cancel_futures
                     self._pool.shutdown(wait=False, cancel_futures=True)
-                except:
+                except:  # noqa: E722 - ADR-002: check for specific exception types
                     if not isinstance(sys.exc_info()[1], TypeError):
                         raise
                     # Fallback for older Pythons or executors without cancel_futures
@@ -342,7 +342,7 @@ class ParallelExecutor:
         try:
             strategy = self._resolve_strategy(work_items=candidate)
             results = strategy(fn, items_list, workers=workers, chunksize=chunksize)
-        except:  # pragma: no cover - best effort fallback
+        except BaseException:  # pragma: no cover - best effort fallback; ADR-002
             exc = sys.exc_info()[1]
             if not isinstance(exc, Exception):
                 raise
@@ -357,7 +357,7 @@ class ParallelExecutor:
                 )
                 results = [fn(item) for item in items_list]
             else:
-                raise exc
+                raise exc from None
         else:
             self.metrics.completed += len(results)
             duration = time.perf_counter() - start_time
@@ -646,7 +646,7 @@ class ParallelExecutor:
             return
         try:  # pragma: no cover - telemetry best effort
             self.config.telemetry(event, payload)
-        except:
+        except BaseException:  # ADR-002: catch all exceptions including system exits
             exc = sys.exc_info()[1]
             if not isinstance(exc, Exception):
                 raise

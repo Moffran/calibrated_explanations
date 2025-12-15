@@ -15,7 +15,7 @@ from ..utils.exceptions import ConfigurationError
 try:  # pragma: no cover - optional dependency
     import matplotlib.colors as mcolors
     import matplotlib.pyplot as plt
-except:  # pragma: no cover - optional dependency
+except ImportError:
     _e = sys.exc_info()[1]
     if not isinstance(_e, Exception):
         raise

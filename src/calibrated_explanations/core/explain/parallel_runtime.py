@@ -17,6 +17,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, Tuple
 
+import numpy as np
+
 from ...parallel import ParallelConfig, ParallelExecutor
 from ...utils.int_utils import as_int_array
 from ._helpers import merge_ignore_features, validate_and_prepare_input

@@ -150,8 +150,9 @@ class PluginManager:
         for k, v in self.__dict__.items():
             try:
                 setattr(result, k, copy.deepcopy(v, memo))
-            except:
-                if not isinstance(sys.exc_info()[1], TypeError):
+            except BaseException:
+                exc_type = sys.exc_info()[0]
+                if exc_type is not TypeError:
                     raise
                 # Fallback for unpicklable objects (e.g., mappingproxy in contexts)
                 # We shallow copy containers to avoid sharing the container itself,
@@ -450,7 +451,7 @@ class PluginManager:
         if callable(override) and not hasattr(override, "plugin_meta"):
             try:
                 candidate = override()
-            except:  # pragma: no cover - defensive
+            except BaseException:  # pragma: no cover - defensive; ADR-002
                 exc = sys.exc_info()[1]
                 if not isinstance(exc, Exception):
                     raise

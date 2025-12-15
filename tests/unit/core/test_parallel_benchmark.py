@@ -26,6 +26,7 @@ def stub_parallel_executor(monkeypatch: pytest.MonkeyPatch):
 
 def test_parallel_benchmark_collects_results(monkeypatch: pytest.MonkeyPatch):
     """Benchmark sequential and threaded runs with deterministic timing."""
+
     class DummyExplainer:
         def __init__(self):
             self._perf_parallel = None

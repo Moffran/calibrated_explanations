@@ -187,8 +187,9 @@ class PredictBridgeMonitor(PredictBridge):
                     UserWarning,
                     stacklevel=2,
                 )
-        except:
-            if not isinstance(sys.exc_info()[1], (TypeError, ValueError)):
+        except BaseException:
+            exc_type = sys.exc_info()[0]
+            if exc_type not in (TypeError, ValueError):
                 raise
             # Skip validation if type conversion or comparison fails
             pass

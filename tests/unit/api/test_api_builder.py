@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import is_dataclass
 
+import pytest
 from sklearn.ensemble import RandomForestClassifier
 
 from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig

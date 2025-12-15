@@ -252,7 +252,7 @@ def test_resolve_plugin_success(orchestrator, mock_explainer):
         "calibrated_explanations.core.explain.orchestrator.find_explanation_descriptor"
     ) as mock_find_desc, patch(
         "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin"
-    ) as mock_find_plugin:
+    ):
         # Setup mock descriptor and plugin
         mock_desc = MagicMock()
         mock_desc.trusted = True
@@ -363,9 +363,8 @@ def test_resolve_plugin_denied(orchestrator, mock_explainer):
 
     with patch(
         "calibrated_explanations.core.explain.orchestrator.is_identifier_denied", return_value=True
-    ):
-        with pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"):
-            orchestrator._resolve_plugin("factual")
+    ), pytest.raises(ConfigurationError, match="denied via CE_DENY_PLUGIN"):
+        orchestrator._resolve_plugin("factual")
 
 
 def test_resolve_plugin_not_registered(orchestrator, mock_explainer):
@@ -381,13 +380,12 @@ def test_resolve_plugin_not_registered(orchestrator, mock_explainer):
     ), patch(
         "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
         return_value=None,
-    ):
+    ), pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
         # Should raise ConfigurationError because plugin1 is preferred (only one in chain)
         # Wait, preferred_identifier is None unless override is set.
         # But if chain has items, it tries them. If all fail, it raises ConfigurationError at the end.
 
-        with pytest.raises(ConfigurationError, match="Unable to resolve explanation plugin"):
-            orchestrator._resolve_plugin("factual")
+        orchestrator._resolve_plugin("factual")
 
 
 def test_resolve_plugin_missing_supports_mode(orchestrator, mock_explainer):

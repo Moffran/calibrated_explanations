@@ -12,10 +12,10 @@ import sys
 
 import numpy as np
 
-from ..utils.exceptions import ValidationError
 from ..plotting import _MATPLOTLIB_IMPORT_ERROR  # noqa: F401  (exported indirectly)
 from ..plotting import __require_matplotlib as _require_mpl  # reuse lazy guard
 from ..plotting import __setup_plot_style as _setup_style
+from ..utils.exceptions import ValidationError
 from .plotspec import BarHPanelSpec, PlotSpec
 
 # Preload matplotlib submodules to avoid lazy loading issues with coverage

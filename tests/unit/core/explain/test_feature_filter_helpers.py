@@ -153,3 +153,47 @@ def test_compute_filtered_features_covers_padding_truncation():
 
     assert np.array_equal(result.global_ignore, baseline)
     assert [arr.tolist() for arr in result.per_instance_ignore] == [[0, 1], [0, 2]]
+
+
+def test_compute_filtered_features_preserves_disjoint_global_keeps():
+    """Global mask should keep all features selected across instances."""
+    collection = _FakeCollection(
+        [
+            np.array([10.0, 0.0, 0.0, 0.0]),
+            np.array([0.0, 5.0, 0.3, 1.0]),
+        ]
+    )
+    cfg = FeatureFilterConfig(enabled=True, per_instance_top_k=1)
+    baseline = np.array([2], dtype=int)
+
+    result = compute_filtered_features_to_ignore(
+        collection,
+        num_features=4,
+        base_ignore=baseline,
+        config=cfg,
+    )
+
+    assert np.array_equal(result.global_ignore, np.array([2, 3], dtype=int))
+    global_keep = set(range(4)) - set(result.global_ignore.tolist())
+    assert global_keep == {0, 1}
+
+
+def test_compute_filtered_features_drops_unused_candidates():
+    """Global mask should remove candidates never kept by FAST."""
+    collection = _FakeCollection(
+        [
+            np.array([10.0, 0.5, 0.0]),
+            np.array([9.0, 0.1, 0.0]),
+        ]
+    )
+    cfg = FeatureFilterConfig(enabled=True, per_instance_top_k=1)
+    baseline = np.array([], dtype=int)
+
+    result = compute_filtered_features_to_ignore(
+        collection,
+        num_features=3,
+        base_ignore=baseline,
+        config=cfg,
+    )
+
+    assert np.array_equal(result.global_ignore, np.array([1, 2], dtype=int))
