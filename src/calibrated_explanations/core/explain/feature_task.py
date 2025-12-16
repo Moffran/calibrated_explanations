@@ -386,8 +386,10 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
 
         # Optimized grouping using numpy to avoid slow python loop
         flag_ints = np.zeros(len(slice_flags), dtype=np.int8)
-        flag_ints[slice_flags] = 1
-        flag_ints[~slice_flags] = 2
+        # Convert object array to boolean for proper indexing
+        slice_flags_bool = np.asarray(slice_flags, dtype=bool)
+        flag_ints[slice_flags_bool] = 1
+        flag_ints[~slice_flags_bool] = 2
 
         # Sort by (inst, bin, flag)
         sort_order = np.lexsort((flag_ints, slice_bins, feature_instances))

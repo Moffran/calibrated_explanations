@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 else:
     CalibratedExplainer = object
 
+MIN_CHUNK_SIZE = 100  # Minimum chunk size to amortize overhead
 
 def _instance_parallel_task(
     task: Tuple[int, np.ndarray, Any, Any, Any, Any, Any, Any, Any],
@@ -153,23 +154,11 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
                 # Dynamic chunking heuristic:
                 # 1. Aim to utilize all workers (n_instances // n_workers)
                 # 2. Enforce a minimum chunk size (e.g. 200) to amortize overhead
-                # 3. But don't exceed the default config.chunk_size if it was explicitly set?
-                #    Actually, config.chunk_size is just a default (100). We should override it.
 
                 n_workers = getattr(executor.config, "max_workers", None) or os.cpu_count() or 1
                 # Use a larger minimum chunk to avoid tiny tasks that are dominated by pickling/spawn overhead
                 # Sequential execution is now very fast (~5ms/instance), so we need substantial chunks.
-                min_chunk = 200
-
-                # Calculate ideal chunk size to split work evenly
-                if n_workers > 0:
-                    dynamic_chunk = n_instances // n_workers
-                    # Ensure we have at least min_chunk, unless that would result in fewer chunks than workers?
-                    # No, if dynamic_chunk < min_chunk, it means we don't have enough work to justify
-                    # splitting into n_workers chunks of size min_chunk.
-                    # In that case, we should just use min_chunk (resulting in fewer active workers),
-                    # or even larger.
-                    chunk_size = max(min_chunk, dynamic_chunk)
+                min_chunk = MIN_CHUNK_SIZE
 
         total_start_time = time()
 

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "timestamp": 1765803163.9247687,
+    "timestamp": 1765871912.2565947,
     "platform": "posix",
     "cpu_count": 12,
     "workers": 6,
@@ -8,39 +8,39 @@
     "logical_cores": 12
   },
   "classification_small": {
-    "sequential": 0.8587980270385742,
-    "threads:instance": 0.9525907039642334,
-    "processes:instance": 0.8632376194000244,
-    "joblib:instance": 0.9564540386199951
+    "sequential": 6.340107202529907,
+    "threads": 12.135370254516602,
+    "processes": 2.9438140392303467,
+    "joblib": 18.952178955078125
   },
   "classification_feature": {
-    "sequential": 4.431158065795898,
-    "threads:instance": 5.0963733196258545,
-    "processes:instance": 4.325615882873535,
-    "joblib:instance": 4.689345121383667
+    "sequential": 28.626837253570557,
+    "threads": 60.00135850906372,
+    "processes": 14.634300231933594,
+    "joblib": 25.098886489868164
   },
   "classification_instance": {
-    "sequential": 8.636322259902954,
-    "threads:instance": 20.831153869628906,
-    "processes:instance": 3.6380233764648438,
-    "joblib:instance": 20.279661655426025
+    "sequential": 56.555641651153564,
+    "threads": 128.02147769927979,
+    "processes": 31.401428699493408,
+    "joblib": 42.802226543426514
   },
   "regression_small": {
-    "sequential": 0.9369604587554932,
-    "threads:instance": 1.213426113128662,
-    "processes:instance": 0.9550023078918457,
-    "joblib:instance": 1.3348362445831299
+    "sequential": 5.548893690109253,
+    "threads": 11.943594217300415,
+    "processes": 3.3649473190307617,
+    "joblib": 3.292712926864624
   },
   "regression_feature": {
-    "sequential": 4.75234580039978,
-    "threads:instance": 4.8237268924713135,
-    "processes:instance": 4.961409330368042,
-    "joblib:instance": 6.108025312423706
+    "sequential": 32.7356162071228,
+    "threads": 66.26797032356262,
+    "processes": 14.442328453063965,
+    "joblib": 21.53701877593994
   },
   "regression_instance": {
-    "sequential": 12.592541456222534,
-    "threads:instance": 24.314255714416504,
-    "processes:instance": 6.486704587936401,
-    "joblib:instance": 8.113684892654419
+    "sequential": 59.74869704246521,
+    "threads": 124.33370423316956,
+    "processes": 31.514123916625977,
+    "joblib": 38.206024408340454
   }
 }

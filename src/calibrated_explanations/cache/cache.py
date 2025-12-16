@@ -303,7 +303,8 @@ class CacheConfig:
             return cfg
         tokens = [segment.strip() for segment in raw.split(",") if segment.strip()]
         # ``CE_CACHE=1`` or ``on`` enables the cache with defaults
-        if len(tokens) == 1 and tokens[0].lower() in {"1", "true", "on", "yes"}:
+        enabled_labels = {"1", "true", "on", "yes", "enable"}
+        if len(tokens) == 1 and tokens[0].lower() in enabled_labels:
             cfg.enabled = True
             return cfg
         for token in tokens:
@@ -325,7 +326,7 @@ class CacheConfig:
             if token.startswith("ttl="):
                 cfg.ttl_seconds = max(0.0, float(token.split("=", 1)[1]))
                 continue
-            if token == "enable":  # noqa: S105  # nosec B105 - configuration toggle keyword
+            if token in enabled_labels:  # noqa: S105  # nosec B105 - configuration toggle keyword
                 cfg.enabled = True
         return cfg
 

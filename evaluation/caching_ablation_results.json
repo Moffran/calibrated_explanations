@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "timestamp": 1765877307.2661815,
+    "platform": "nt",
+    "cpu_count": 12
+  },
+  "classification_small": {
+    "no_cache": 5.2475266456604,
+    "with_cache": 3.9590189456939697
+  },
+  "classification_feature": {
+    "no_cache": 20.609160661697388,
+    "with_cache": 22.18821430206299
+  },
+  "classification_instance": {
+    "no_cache": 41.38306522369385,
+    "with_cache": 40.37429094314575
+  },
+  "regression_small": {
+    "no_cache": 5.563808917999268,
+    "with_cache": 6.2458109855651855
+  },
+  "regression_feature": {
+    "no_cache": 29.23211669921875,
+    "with_cache": 28.81281566619873
+  },
+  "regression_instance": {
+    "no_cache": 45.60158634185791,
+    "with_cache": 50.327669858932495
+  }
+}

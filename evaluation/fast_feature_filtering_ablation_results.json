@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "timestamp": 1765879853.0194976,
+    "platform": "nt",
+    "cpu_count": 12
+  },
+  "classification_small": {
+    "without_filtering": 0.3285858631134033,
+    "with_filtering": 0.24527668952941895
+  },
+  "classification_medium": {
+    "without_filtering": 4.9329423904418945,
+    "with_filtering": 2.3130743503570557
+  },
+  "classification_large": {
+    "without_filtering": 37.744523763656616,
+    "with_filtering": 16.851097106933594
+  },
+  "regression_small": {
+    "without_filtering": 0.32170581817626953,
+    "with_filtering": 0.3426167964935303
+  },
+  "regression_medium": {
+    "without_filtering": 5.015679359436035,
+    "with_filtering": 1.2292053699493408
+  },
+  "regression_large": {
+    "without_filtering": 34.70143675804138,
+    "with_filtering": 13.132117509841919
+  }
+}

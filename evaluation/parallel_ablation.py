@@ -21,12 +21,13 @@ RESULTS_FILE = "evaluation/parallel_ablation_results.json"
 PHYSICAL_CORES = 6
 LOGICAL_CORES = 12
 WORKERS = PHYSICAL_CORES  # default: optimize for physical cores
-SMALL_INSTANCE = 1000
-LARGE_INSTANCE = 2800
+SMALL_INSTANCE = 2000
+LARGE_INSTANCE = 11000
 SMALL_FEATURE = 20
 LARGE_FEATURE = 100
-SMALL_TEST = 200
-LARGE_TEST = 2000
+SMALL_TEST = 1000
+LARGE_TEST = 10000
+CALIBRATION_SIZE = 400
 
 
 def _configure_parallel_env(
@@ -34,6 +35,7 @@ def _configure_parallel_env(
     enabled: bool,
     strategy: str | None = None,
     workers: int | None = None,
+    instance_chunk_size: int | None = None,
 ) -> None:
     """Set CE_PARALLEL using the format expected by ParallelConfig.from_env."""
     if not enabled:
@@ -45,7 +47,46 @@ def _configure_parallel_env(
         tokens.append(strategy)
     if workers is not None:
         tokens.append(f"workers={workers}")
+    if instance_chunk_size is not None:
+        tokens.append(f"instance_chunk_size={instance_chunk_size}")
     os.environ["CE_PARALLEL"] = ",".join(tokens)
+
+
+def _expected_execution_plugin_identifier() -> str:
+    """Return the expected factual plugin identifier based on the current parallel config.
+
+    Maps the CE_PARALLEL environment variable to the corresponding built-in factual plugin:
+    - "sequential" -> "core.explanation.factual.sequential"
+    - "threads" -> "core.explanation.factual.instance_parallel"
+    - "processes" -> "core.explanation.factual.instance_parallel"
+    - "joblib" -> "core.explanation.factual.instance_parallel"
+    - "off" or disabled -> "core.explanation.factual.sequential"
+    """
+    ce_parallel = os.environ.get("CE_PARALLEL", "off")
+
+    if ce_parallel.lower() in ("off", "0", "false"):
+        return "core.explanation.factual.sequential"
+
+    # Parse the CE_PARALLEL string to find the strategy token
+    tokens = [t.strip() for t in ce_parallel.split(",") if t.strip()]
+
+    strategy = None
+    for token in tokens:
+        lower_token = token.lower()
+        if lower_token in ("threads", "processes", "joblib", "sequential"):
+            strategy = lower_token
+            break
+
+    # Map strategy to plugin identifier
+    if strategy == "sequential":
+        return "core.explanation.factual.sequential"
+    elif strategy in ("threads", "processes", "joblib"):
+        return "core.explanation.factual.instance_parallel"
+
+    # Default to sequential if unable to determine
+    print(f"    Warning: Unable to determine parallel strategy from CE_PARALLEL='{ce_parallel}'. Defaulting to sequential.")
+    return "core.explanation.factual.sequential"
+
 
 def _assert_parallel_wiring(
     wrapper: WrapCalibratedExplainer,
@@ -124,18 +165,12 @@ def run_benchmark(
         learner = RandomForestRegressor(n_estimators=10, random_state=42)
 
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=n_test, random_state=42)
-    x_train, x_cal, y_train, y_cal = train_test_split(x_train, y_train, test_size=SMALL_TEST, random_state=42)
+    x_train, x_cal, y_train, y_cal = train_test_split(x_train, y_train, test_size=CALIBRATION_SIZE, random_state=42)
 
     # Fit learner
     learner.fit(x_train, y_train)
 
     results = {}
-
-    # Warm-up run (sequential) to avoid cold-start effects
-    print("  Warm-up run (sequential)...")
-    explainer = WrapCalibratedExplainer(learner)
-    explainer.calibrate(x_cal, y_cal)
-    _ = explainer.explain_factual(x_test[:3])
 
     for strategy in strategies:
         print(f"  Testing strategy: {strategy}")
@@ -155,10 +190,13 @@ def run_benchmark(
 
         try:
             # Enable parallelism. NOTE: strategy is a *token* (e.g. "threads"), not "strategy=threads".
+            # Also set instance_chunk_size to a smaller value to enable better parallelization
+            # (default min_chunk=200 is too large and reduces parallelism).
             _configure_parallel_env(
                 enabled=True,
                 strategy=strategy,
                 workers=workers,
+                instance_chunk_size=50,  # Smaller chunks for better parallelism
             )
 
             plugin_id = _expected_execution_plugin_identifier()
