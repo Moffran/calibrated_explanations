@@ -495,8 +495,13 @@ def render(
                         if not isinstance(sys.exc_info()[1], Exception):
                             raise
                         exc = sys.exc_info()[1]
-                        logging.getLogger(__name__).debug(
-                            "Failed to draw fallback alternative bar: %s", exc
+                        logger = logging.getLogger(__name__)
+                        logger.debug("Failed to draw fallback alternative bar: %s", exc)
+                        logger.info("Matplotlib fallback: drawing simple alternative interval bar")
+                        warnings.warn(
+                            "Visualization fallback: alternative bar simplified due to drawing error",
+                            UserWarning,
+                            stacklevel=2,
                         )
 
                 if getattr(item, "line", None) is not None:
@@ -1061,6 +1066,14 @@ def render(
                 )
         # Fallback: if normalized empty but primitives is already a list, pass it through
         if not normalized and isinstance(primitives, list):
+            logging.getLogger(__name__).info(
+                "Visualization fallback: passing through raw primitives list due to normalization failure"
+            )
+            warnings.warn(
+                "Visualization fallback: raw primitives used when normalization yielded no entries",
+                UserWarning,
+                stacklevel=2,
+            )
             normalized = primitives
         if not return_fig:
             plt.close(fig)

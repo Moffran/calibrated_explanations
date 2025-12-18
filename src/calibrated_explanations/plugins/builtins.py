@@ -572,6 +572,10 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             if callable(supports):
                 try:
                     if not supports(explain_request, explain_config):
+                        logging.getLogger(__name__).info(
+                            "Execution plugin unsupported; falling back to legacy sequential execution (mode=%s)",
+                            self._mode,
+                        )
                         warnings.warn(
                             f"Execution plugin does not support request/config for mode '{self._mode}'; falling back to legacy sequential execution.",
                             UserWarning,
@@ -608,6 +612,10 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                         "Execution plugin supports() check failed for mode '%s': %s; falling back to legacy",
                         self._mode,
                         exc_supports,
+                    )
+                    logging.getLogger(__name__).info(
+                        "Execution plugin supports() failure; legacy sequential fallback (mode=%s)",
+                        self._mode,
                     )
                     warnings.warn(
                         f"Execution plugin supports() check failed for mode '{self._mode}' ({exc_supports!r}); falling back to legacy sequential execution.",
@@ -655,6 +663,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             )
             # Log full exception stack for debugging plugin failures
             _logger.exception("Execution plugin exception:", exc_info=True)
+            _logger.info("Execution plugin error; legacy sequential fallback engaged (mode=%s)", self._mode)
             warnings.warn(
                 f"Execution plugin failed for mode '{self._mode}' ({exc!r}); falling back to legacy sequential execution.",
                 UserWarning,

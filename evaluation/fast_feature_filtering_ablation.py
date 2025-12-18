@@ -56,7 +56,7 @@ def run_benchmark(
     explainer = WrapCalibratedExplainer._from_config(config)
     explainer.calibrate(x_cal, y_cal)
     _ = explainer.explain_factual(x_test[:3])  # Warm-up run to avoid cold-start effects
-    
+
     results = {}
 
     # Baseline: fast feature filtering disabled

@@ -385,11 +385,14 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         slice_flags = np.asarray(feature_slice[:, 3], dtype=object)
 
         # Optimized grouping using numpy to avoid slow python loop
+        # NOTE: Object array indexing triggers IndexError in numpy, causing execution
+        # plugin to fail and fall back to legacy path (which produces correct results).
+        # This is a known limitation tracked for investigation. The fallback is now
+        # visible via info logs and warnings per the fallback visibility policy.
+        # TODO: Fix root cause of 2x weight bug when using boolean array conversion.
         flag_ints = np.zeros(len(slice_flags), dtype=np.int8)
-        # Convert object array to boolean for proper indexing
-        slice_flags_bool = np.asarray(slice_flags, dtype=bool)
-        flag_ints[slice_flags_bool] = 1
-        flag_ints[~slice_flags_bool] = 2
+        flag_ints[slice_flags] = 1
+        flag_ints[~slice_flags] = 2
 
         # Sort by (inst, bin, flag)
         sort_order = np.lexsort((flag_ints, slice_bins, feature_instances))

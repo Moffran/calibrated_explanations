@@ -71,6 +71,16 @@ def categorical_perturbation(column, num_permutations=5, rng: Optional[np.random
     else:
         # As a deterministic fallback for tiny arrays or degenerate RNG states,
         # force a minimal change by swapping two positions when possible.
+        import logging as _logging
+        import warnings as _warnings
+        _logging.getLogger(__name__).info(
+            "Perturbation fallback: RNG produced identical permutation; applying deterministic swap when possible"
+        )
+        _warnings.warn(
+            "Perturbation fallback: deterministic swap applied due to degenerate RNG state",
+            UserWarning,
+            stacklevel=2,
+        )
         if column.size > 1 and len(np.unique(column)) > 1:
             i, j = 0, 1
             column_perturbed = column.copy()

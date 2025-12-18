@@ -9,6 +9,8 @@ from __future__ import annotations
 import contextlib
 import sys
 from pathlib import Path
+import logging
+import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ..core.narrative_generator import NarrativeGenerator
@@ -123,9 +125,25 @@ class NarrativePlotPlugin:
         if template and not Path(template).is_absolute() and not Path(template).exists():
             # For relative paths, fall back to default template
             template = self.default_template
+            logging.getLogger(__name__).info(
+                "Narrative template not found (relative path); using default template"
+            )
+            warnings.warn(
+                "Narrative template fallback: default template used because provided relative path was missing",
+                UserWarning,
+                stacklevel=2,
+            )
         elif template and Path(template).is_absolute() and not Path(template).exists():
             # For absolute paths, fall back to default template
             template = self.default_template
+            logging.getLogger(__name__).info(
+                "Narrative template not found (absolute path); using default template"
+            )
+            warnings.warn(
+                "Narrative template fallback: default template used because provided absolute path was missing",
+                UserWarning,
+                stacklevel=2,
+            )
 
         # Validate expertise level
         valid_levels = {"beginner", "intermediate", "advanced"}

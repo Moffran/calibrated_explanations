@@ -1,6 +1,6 @@
 {
   "meta": {
-    "timestamp": 1765871912.2565947,
+    "timestamp": 1765869650.228373,
     "platform": "posix",
     "cpu_count": 12,
     "workers": 6,
@@ -8,39 +8,39 @@
     "logical_cores": 12
   },
   "classification_small": {
-    "sequential": 6.340107202529907,
-    "threads": 12.135370254516602,
-    "processes": 2.9438140392303467,
-    "joblib": 18.952178955078125
+    "sequential": 6.6598687171936035,
+    "threads": 13.951909303665161,
+    "processes": 4.112945079803467,
+    "joblib": 43.0161657333374
   },
   "classification_feature": {
-    "sequential": 28.626837253570557,
-    "threads": 60.00135850906372,
-    "processes": 14.634300231933594,
-    "joblib": 25.098886489868164
+    "sequential": 33.614211082458496,
+    "threads": 73.91676616668701,
+    "processes": 32.4813346862793,
+    "joblib": 34.58495020866394
   },
   "classification_instance": {
-    "sequential": 56.555641651153564,
-    "threads": 128.02147769927979,
-    "processes": 31.401428699493408,
-    "joblib": 42.802226543426514
+    "sequential": 59.533124923706055,
+    "threads": 139.46924996376038,
+    "processes": 62.71617412567139,
+    "joblib": 22089.375923395157
   },
   "regression_small": {
-    "sequential": 5.548893690109253,
-    "threads": 11.943594217300415,
-    "processes": 3.3649473190307617,
-    "joblib": 3.292712926864624
+    "sequential": 7.609094619750977,
+    "threads": 9.849900722503662,
+    "processes": 178.61595797538757,
+    "joblib": 182.47039651870728
   },
   "regression_feature": {
-    "sequential": 32.7356162071228,
-    "threads": 66.26797032356262,
-    "processes": 14.442328453063965,
-    "joblib": 21.53701877593994
+    "sequential": 23.26167869567871,
+    "threads": 47.91100287437439,
+    "processes": 3964.5466890335083,
+    "joblib": 5143.545131444931
   },
   "regression_instance": {
-    "sequential": 59.74869704246521,
-    "threads": 124.33370423316956,
-    "processes": 31.514123916625977,
-    "joblib": 38.206024408340454
+    "sequential": 47.323662757873535,
+    "threads": 104.80135345458984,
+    "processes": 18402.404946804047,
+    "joblib": 19590.934319496155
   }
 }

@@ -20,6 +20,9 @@
   - Added `explain_exception` helper for human-readable error messages.
 - **Interval Safety**: Enforced robust `low <= predict <= high` invariants for all plugin predictions and serialization (ADR-021).
 - **Condition Source**: Added support for `condition_source` configuration to select conditioning data sources.
+- **Fallback Visibility**: Enforced visible notifications for all runtime fallbacks:
+  - Added info-level logs and `UserWarning` emissions for execution strategy fallbacks, plugin execution fallbacks, cache backend fallback, visualization simplifications, and perturbation fallbacks.
+  - Updated contributor guidance in `.github/copilot-instructions.md` and release plan to mandate no-silent-fallbacks.
 
 ### Changed
 

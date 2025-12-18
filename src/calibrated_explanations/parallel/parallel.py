@@ -189,6 +189,7 @@ class ParallelExecutor:
             if not isinstance(exc, Exception):
                 raise
             logger.warning("Failed to initialize parallel pool: %s. Falling back to serial.", exc)
+            logger.info("Parallel pool init failure; switching to sequential execution")
             warnings.warn(
                 f"Failed to initialize parallel pool ({exc!r}); falling back to sequential execution.",
                 UserWarning,
@@ -289,6 +290,11 @@ class ParallelExecutor:
                     candidate,
                     min_batch_threshold,
                 )
+                logger.info(
+                    "Parallel decision: sequential (reason=below_min_batch_size, workload=%d, threshold=%d)",
+                    candidate,
+                    min_batch_threshold,
+                )
                 warnings.warn(
                     f"Parallel execution disabled: workload ({candidate}) below minimum parallel threshold ({min_batch_threshold}); running sequential.",
                     UserWarning,
@@ -313,6 +319,11 @@ class ParallelExecutor:
             if not self._warned_tiny_workload:
                 logger.warning(
                     "Parallel execution disabled: workload (%d) below tiny-workload threshold (%d); running sequential.",
+                    candidate,
+                    tiny_threshold,
+                )
+                logger.info(
+                    "Parallel decision: sequential (reason=tiny_workload, workload=%d, threshold=%d)",
                     candidate,
                     tiny_threshold,
                 )
@@ -355,6 +366,7 @@ class ParallelExecutor:
                     UserWarning,
                     stacklevel=2,
                 )
+                logger.info("Parallel failure; forced serial fallback engaged")
                 results = [fn(item) for item in items_list]
             else:
                 raise exc from None

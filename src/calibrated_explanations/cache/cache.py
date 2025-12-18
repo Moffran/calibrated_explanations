@@ -15,6 +15,7 @@ lifecycle management for versioning, flush/reset operations, and telemetry.
 from __future__ import annotations
 
 import logging
+import warnings
 import os
 import sys
 import threading
@@ -42,6 +43,16 @@ except:  # noqa: E722
         raise
     cachetools = None  # type: ignore
     _HAVE_CACHETOOLS = False
+    # Visible notification: cachetools missing, falling back to minimal backend
+    _logger = logging.getLogger(__name__)
+    _logger.info(
+        "cachetools not available; falling back to minimal LRU/TTL cache backend"
+    )
+    warnings.warn(
+        "Cache backend fallback: using minimal in-package LRU/TTL implementation due to missing 'cachetools'",
+        UserWarning,
+        stacklevel=2,
+    )
     # Provide a tiny, well-tested fallback for environments where
     # `cachetools` is not installed (CI minimal images). The fallback
     # implements the minimal API used by this module: `LRUCache` and
