@@ -67,7 +67,7 @@ def _run_index_snippet() -> SimpleNamespace:
     )
 
 
-def test_index_snippet_execution(capsys):
+def test_index_snippet_execution(enable_fallbacks, capsys):
     context = _run_index_snippet()
     out = capsys.readouterr().out
     assert "Classification probability" in out

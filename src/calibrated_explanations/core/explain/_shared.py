@@ -13,6 +13,7 @@ from time import time
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
+from uuid import uuid4
 
 # Access to protected explainer internals is intentional in this module
 # Some names (e.g. dataclass fields) follow existing project API and are
@@ -190,6 +191,8 @@ def finalize_explanation(
         feature_predict["low"].append(low_matrix[i].copy())
         feature_predict["high"].append(high_matrix[i].copy())
 
+    # parity instrumentation removed
+
     elapsed_time = time() - instance_start_time
     list_instance_time = [elapsed_time / n_instances for _ in range(n_instances)]
     total_time = time() - total_start_time
@@ -217,6 +220,10 @@ def finalize_explanation(
     # Update explainer state
     explainer.latest_explanation = explanation
     explainer._last_explanation_mode = explainer._infer_explanation_mode()
+
+    # parity instrumentation removed
+
+    # parity instrumentation removed
 
     return explanation
 

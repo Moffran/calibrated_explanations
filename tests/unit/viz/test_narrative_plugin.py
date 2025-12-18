@@ -473,8 +473,11 @@ def test_narrative_plugin_single_instance(classification_explainer, iris_data):
     assert result[0]["instance_index"] == 0
 
 
-def test_narrative_plugin_template_fallback(tmp_path, monkeypatch):
-    """Ensure missing templates fall back to the default path."""
+def test_narrative_plugin_template_fallback(enable_fallbacks, tmp_path, monkeypatch):
+    """Ensure missing templates fall back to the default path.
+    
+    This test explicitly validates template fallback behavior.
+    """
     default_template = tmp_path / "templates" / "explain_template.yaml"
     default_template.parent.mkdir(parents=True, exist_ok=True)
     default_template.write_text("stub", encoding="utf-8")
@@ -520,7 +523,8 @@ def test_narrative_plugin_template_fallback(tmp_path, monkeypatch):
         y_threshold=None,
     )
     plugin = NarrativePlotPlugin()
-    result = plugin.plot(explanations, template_path="missing.yaml", output="dict")
+    with pytest.warns(UserWarning, match=r"fall.*back|template"):
+        result = plugin.plot(explanations, template_path="missing.yaml", output="dict")
 
     assert captured["template"] == str(default_template)
     assert result[0]["problem_type"] == "binary_classification"

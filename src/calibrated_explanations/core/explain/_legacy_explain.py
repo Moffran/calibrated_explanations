@@ -342,10 +342,11 @@ def explain(
         feature_weights["predict"].append(instance_weights[i]["predict"])
         feature_weights["low"].append(instance_weights[i]["low"])
         feature_weights["high"].append(instance_weights[i]["high"])
-
         feature_predict["predict"].append(instance_predict[i]["predict"])
         feature_predict["low"].append(instance_predict[i]["low"])
         feature_predict["high"].append(instance_predict[i]["high"])
+
+    # parity instrumentation removed
 
     elapsed_time = time() - instance_time
     list_instance_time = [elapsed_time / len(x) for _ in range(len(x))]
@@ -360,6 +361,7 @@ def explain(
     )
     explainer.latest_explanation = explanation
     explainer._last_explanation_mode = explainer._infer_explanation_mode()
+    # parity instrumentation removed
     return explanation
 
 

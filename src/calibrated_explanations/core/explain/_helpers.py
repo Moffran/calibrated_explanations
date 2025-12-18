@@ -13,6 +13,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, List, Mapping, Sequence, Tuple
 
 import numpy as np
+from uuid import uuid4
 
 from ...utils import safe_isinstance
 from ._computation import explain_predict_step  # Re-export for backward compatibility
@@ -188,6 +189,8 @@ def merge_feature_result(
     predict_matrix[:, feature_index] = feature_predict_values
     low_matrix[:, feature_index] = feature_low_values
     high_matrix[:, feature_index] = feature_high_values
+
+    # (parity instrumentation removed)
 
     if lower_update is not None:
         rule_boundaries[:, feature_index, 0] = lower_update

@@ -13,9 +13,10 @@ class StaticRNG:
         return np.array(values)
 
 
-def test_categorical_perturbation_swaps_when_permutation_same():
+def test_categorical_perturbation_swaps_when_permutation_same(enable_fallbacks):
     column = np.array(["a", "b", "c", "d"])
-    result = perturbation.categorical_perturbation(column, rng=StaticRNG())
+    with pytest.warns(UserWarning, match=r"fall.*back"):
+        result = perturbation.categorical_perturbation(column, rng=StaticRNG())
     assert set(result) == set(column)
     assert not np.array_equal(result, column)
 

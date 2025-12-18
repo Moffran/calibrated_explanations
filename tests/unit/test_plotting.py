@@ -160,8 +160,11 @@ def test_plot_alternative_multiclass(mock_require, mock_render):
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy._plot_alternative")
-def test_plot_alternative_fallback_on_error(mock_legacy, mock_require, mock_render):
-    """Should fall back to legacy plotting if render_plotspec raises exception."""
+def test_plot_alternative_fallback_on_error(mock_legacy, mock_require, mock_render, enable_fallbacks):
+    """Should fall back to legacy plotting if render_plotspec raises exception.
+    
+    This test explicitly validates visualization fallback behavior.
+    """
     mock_render.side_effect = Exception("Rendering failed")
 
     explanation = MagicMock()
@@ -229,8 +232,11 @@ def test_plot_regression(mock_require, mock_render):
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy._plot_regression")
-def test_plot_regression_fallback_on_error(mock_legacy, mock_require, mock_render):
-    """Should fall back to legacy plotting if render_plotspec raises exception in regression."""
+def test_plot_regression_fallback_on_error(mock_legacy, mock_require, mock_render, enable_fallbacks):
+    """Should fall back to legacy plotting if render_plotspec raises exception.
+    
+    This test explicitly validates visualization fallback behavior.
+    """
     mock_render.side_effect = Exception("Rendering failed")
 
     explanation = MagicMock()
@@ -464,7 +470,7 @@ def test_plot_probabilistic_renders_and_saves(monkeypatch: pytest.MonkeyPatch):
     ]
 
 
-def test_plot_probabilistic_falls_back_to_legacy(monkeypatch: pytest.MonkeyPatch):
+def test_plot_probabilistic_falls_back_to_legacy(monkeypatch: pytest.MonkeyPatch, enable_fallbacks):
     """Should warn and invoke legacy plotting when rendering fails."""
 
     monkeypatch.setattr(plotting, "__require_matplotlib", lambda: None)

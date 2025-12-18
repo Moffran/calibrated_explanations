@@ -6,14 +6,14 @@ import pytest
 from tests.helpers.doc_utils import run_quickstart_classification
 
 
-def test_quickstart_classification_snippet_output(capsys):
+def test_quickstart_classification_snippet_output(enable_fallbacks, capsys):
     context = run_quickstart_classification()
     # assert "Prediction" in captured # Removed print in helper
     assert len(context.factual) == 5
     assert len(context.alternatives) == 2
 
 
-def test_quickstart_classification_metadata():
+def test_quickstart_classification_metadata(enable_fallbacks):
     context = run_quickstart_classification()
     batch = context.factual
     assert len(batch) == 5

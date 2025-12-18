@@ -155,7 +155,7 @@ class TestParallelExecutor:
             strategy = executor._resolve_strategy()
             assert strategy.func == executor._joblib_strategy
 
-    def test_joblib_missing_fallback(self):
+    def test_joblib_missing_fallback(self, enable_fallbacks):
         """Test fallback to threads if joblib is requested but missing."""
         cfg = ParallelConfig(enabled=True, strategy="joblib")
         executor = ParallelExecutor(cfg)
@@ -163,10 +163,11 @@ class TestParallelExecutor:
         with patch("calibrated_explanations.parallel.parallel._JoblibParallel", None), patch.object(
             executor, "_thread_strategy"
         ) as mock_thread:
-            executor._joblib_strategy(lambda x: x, [1])
+            with pytest.warns(UserWarning, match=r"fall.*back"):
+                executor._joblib_strategy(lambda x: x, [1])
             mock_thread.assert_called_once()
 
-    def test_telemetry_emission(self):
+    def test_telemetry_emission(self, enable_fallbacks):
         """Test that telemetry callback is invoked on fallback."""
         mock_telemetry = MagicMock()
         cfg = ParallelConfig(
@@ -190,12 +191,9 @@ class TestParallelExecutor:
 
         with patch.object(executor, "_resolve_strategy", side_effect=ValueError("Strategy failed")):
             items = [1]
-            # The serial fallback will raise ValueError("Boom") when it runs failing_fn
-            # So we expect the map call to raise eventually, OR if map catches everything?
-            # Looking at code: map catches Exception during strategy execution, emits telemetry, then runs serial.
-            # Serial run will raise ValueError("Boom") which is NOT caught by map.
-            with pytest.raises(ValueError, match="Boom"):
-                executor.map(failing_fn, items)
+            with pytest.warns(UserWarning, match=r"fall.*back"):
+                with pytest.raises(ValueError, match="Boom"):
+                    executor.map(failing_fn, items)
 
             # Verify telemetry was called
             mock_telemetry.assert_called_with(

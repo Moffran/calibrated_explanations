@@ -96,7 +96,7 @@ def test_map_handles_disabled_and_small_batches():
     assert executor.metrics.submitted == 0
 
 
-def test_map_uses_strategy_and_updates_metrics(monkeypatch):
+def test_map_uses_strategy_and_updates_metrics(monkeypatch, enable_fallbacks):
     config = ParallelConfig(
         enabled=True, strategy="sequential", min_batch_size=1, min_instances_for_parallel=1
     )
@@ -441,7 +441,7 @@ def test_parallel_executor_context_manager_initializes_and_cleans_up(monkeypatch
     assert shutdown_calls == [1]
 
 
-def test_parallel_executor_context_manager_handles_init_failure(monkeypatch):
+def test_parallel_executor_context_manager_handles_init_failure(monkeypatch, enable_fallbacks):
     class ExplodingPool:
         def __init__(self, *args, **kwargs):
             raise RuntimeError("boom")

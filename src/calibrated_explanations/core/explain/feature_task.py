@@ -13,6 +13,9 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 
 from ...utils import safe_mean
+import os
+import json
+from uuid import uuid4
 
 # Type alias for the aggregated result of processing a single feature
 FeatureTaskResult = Tuple[
@@ -384,15 +387,30 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         slice_bins = np.array(feature_slice[:, 2], dtype=int)
         slice_flags = np.asarray(feature_slice[:, 3], dtype=object)
 
-        # Optimized grouping using numpy to avoid slow python loop
-        # NOTE: Object array indexing triggers IndexError in numpy, causing execution
-        # plugin to fail and fall back to legacy path (which produces correct results).
-        # This is a known limitation tracked for investigation. The fallback is now
-        # visible via info logs and warnings per the fallback visibility policy.
-        # TODO: Fix root cause of 2x weight bug when using boolean array conversion.
-        flag_ints = np.zeros(len(slice_flags), dtype=np.int8)
-        flag_ints[slice_flags] = 1
-        flag_ints[~slice_flags] = 2
+        # Optimized grouping using numpy to avoid slow python loop. Coerce the
+        # potentially-object `slice_flags` into a boolean mask safely so it can
+        # be used for indexing. Some environments produce object arrays here
+        # (e.g. sequences of Python bools or small arrays), which previously
+        # caused an IndexError when used as indices. Convert using `bool()` on
+        # each element to preserve truthiness semantics.
+        try:
+            # Preserve three-state flags: True, False, and None. Some entries
+            # may be `None` (meaning "between"); converting all to bool
+            # collapses None->False and loses the distinction. Map to
+            # integers: 1=True, 2=False, 0=None so downstream grouping can
+            # retrieve (inst, bin, None) groups.
+            flag_ints = np.zeros(len(slice_flags), dtype=np.int8)
+            for idx, v in enumerate(slice_flags):
+                if v is None:
+                    flag_ints[idx] = 0
+                else:
+                    try:
+                        flag_ints[idx] = 1 if bool(v) else 2
+                    except Exception:
+                        flag_ints[idx] = 2
+        except Exception:
+            # Fallback: if conversion fails, treat everything as False (2).
+            flag_ints = np.full(len(slice_flags), 2, dtype=np.int8)
 
         # Sort by (inst, bin, flag)
         sort_order = np.lexsort((flag_ints, slice_bins, feature_instances))
@@ -401,7 +419,7 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         sorted_bins = slice_bins[sort_order]
         sorted_flags = flag_ints[sort_order]
 
-        keys = np.column_stack((sorted_inst, sorted_bins, sorted_flags))
+        keys = np.column_stack((sorted_inst, sorted_bins, sorted_flags if 'sorted_flags' in locals() else flag_ints[sort_order]))
         unique_keys, start_indices = np.unique(keys, axis=0, return_index=True)
         groups = np.split(sorted_indices, start_indices[1:])
 
@@ -413,6 +431,7 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
                 flag = True
             elif flag_int == 2:
                 flag = False
+            # flag_int == 0 leaves flag as None
             numeric_grouped[(int(inst), int(bin_val), flag)] = g
 
         if numeric_sorted_values is None:
@@ -600,6 +619,7 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
                 np.array([], dtype=float),
                 np.array([], dtype=float),
             )
+    # parity instrumentation removed
 
     return (
         feature_index,
@@ -614,6 +634,9 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         lower_update,
         upper_update,
     )
+
+
+    # parity instrumentation removed
 
 
 # Alias for backward compatibility

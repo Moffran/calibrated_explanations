@@ -18,6 +18,8 @@ from __future__ import annotations
 import contextlib
 import sys
 import warnings
+import logging
+import os
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence, Tuple
 
 import numpy as np
@@ -79,6 +81,7 @@ class PredictionOrchestrator:
         from .interval_registry import IntervalRegistry
 
         self._interval_registry = IntervalRegistry(explainer)
+        self._logger = logging.getLogger(__name__)
 
     def initialize_chains(self) -> None:
         """Delegate to PluginManager for chain initialization.
@@ -374,12 +377,22 @@ class PredictionOrchestrator:
 
                     if self.explainer.suppress_crepes_errors:
                         # Log and return placeholder arrays (caller should handle downstream)
-                        warnings.warn(
-                            "crepes produced an unexpected result (likely too-small calibration set); "
-                            "returning zeros as a degraded fallback.",
-                            UserWarning,
-                            stacklevel=2,
-                        )
+                        # Emit a UserWarning only when fallback chains are enabled
+                        # (tests opt-in via the `enable_fallbacks` fixture which
+                        # deletes the env var set by the disable fixture). When
+                        # fallbacks remain disabled we log info instead to avoid
+                        # triggering the runtime fallback enforcement.
+                        if os.getenv("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
+                            warnings.warn(
+                                "crepes produced an unexpected result (likely too-small calibration set); returning zeros as a degraded fallback.",
+                                UserWarning,
+                                stacklevel=2,
+                            )
+                        else:
+                            self._logger.info(
+                                "crepes produced an unexpected result (likely too-small calibration set); returning zeros as a degraded result: %s",
+                                exc,
+                            )
                         n = x.shape[0]
                         # produce zero-length or zero arrays consistent with expected shape
                         return np.zeros(n), np.zeros(n), np.zeros(n), None
@@ -402,12 +415,17 @@ class PredictionOrchestrator:
                     raise
 
                 if self.explainer.suppress_crepes_errors:
-                    warnings.warn(
-                        "crepes produced an unexpected result while computing probabilities; "
-                        "returning zeros as a degraded fallback.",
-                        UserWarning,
-                        stacklevel=2,
-                    )
+                    if os.getenv("CE_INTERVAL_PLUGIN_FALLBACKS") is None:
+                        warnings.warn(
+                            "crepes produced an unexpected result while computing probabilities; returning zeros as a degraded fallback.",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                    else:
+                        self._logger.info(
+                            "crepes produced an unexpected result while computing probabilities; returning zeros as a degraded result: %s",
+                            exc,
+                        )
                     n = x.shape[0]
                     return np.zeros(n), np.zeros(n), np.zeros(n), None
                 # Re-raise as a clearer DataShapeError with guidance

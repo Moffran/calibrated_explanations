@@ -4,7 +4,7 @@ from __future__ import annotations
 from tests.helpers.doc_utils import run_quickstart_regression
 
 
-def test_quickstart_regression_snippet_output(capsys):
+def test_quickstart_regression_snippet_output(enable_fallbacks, capsys):
     context = run_quickstart_regression()
     # assert "Prediction interval" in captured # Removed print
     # assert "Calibrated probability" in captured # Removed print
@@ -12,7 +12,7 @@ def test_quickstart_regression_snippet_output(capsys):
     assert len(context.alternatives) == 2
 
 
-def test_quickstart_regression_metadata():
+def test_quickstart_regression_metadata(enable_fallbacks):
     context = run_quickstart_regression()
     batch = context.explainer.explore_alternatives(context.X_test[:3], threshold=150)
     telemetry = getattr(batch, "telemetry", {})

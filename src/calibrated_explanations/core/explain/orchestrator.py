@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import os
+import json
+from uuid import uuid4
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 import numpy as np
@@ -366,6 +369,7 @@ class ExplanationOrchestrator:
                 self.explainer._last_telemetry.update(instance_payload)
             with contextlib.suppress(Exception):
                 result.telemetry = dict(telemetry_payload)
+            # parity instrumentation removed
             self.explainer.latest_explanation = result
             self.explainer._last_explanation_mode = mode
             return result

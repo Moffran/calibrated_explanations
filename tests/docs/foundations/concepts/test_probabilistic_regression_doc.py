@@ -5,7 +5,7 @@ from tests.helpers.doc_utils import (
 )
 
 
-def test_probabilistic_regression_snippets():
+def test_probabilistic_regression_snippets(enable_fallbacks):
     context = run_quickstart_regression()
     probabilities, probability_interval = context.explainer.predict_proba(
         context.X_test[:1],

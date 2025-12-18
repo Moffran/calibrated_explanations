@@ -7,7 +7,7 @@ import pytest
 from tests.helpers.doc_utils import run_quickstart_classification
 
 
-def test_export_explanations_snippets(tmp_path):
+def test_export_explanations_snippets(enable_fallbacks, tmp_path):
     context = run_quickstart_classification()
     batch = context.explainer.explain_factual(context.X_test[:10])
     payload = batch.to_json()

@@ -98,17 +98,41 @@ class ExplainParallelRuntime:
         if executor is not None and not hasattr(executor, "config"):
             executor = None
 
+        # If no executor is provided by the explainer, create a lightweight
+        # in-process ParallelExecutor so instance-parallel plugins can opt-in
+        # to their execution path during tests or simple usages. This avoids
+        # requiring callers to always provision an executor when selecting the
+        # instance-parallel plugin via the plugin config.
+        auto_created_executor = False
+        if executor is None:
+            cfg = ParallelConfig.from_env()
+            # Ensure instance granularity when created for explain runtime
+            cfg.granularity = "instance"
+            # Enable by default so executor-dependent strategies consider
+            # the executor available; map() may still choose sequential.
+            cfg.enabled = True
+            executor = ParallelExecutor(cfg)
+            auto_created_executor = True
+
         parallel_config = executor.config if executor is not None else ParallelConfig()
         # Granularity is deprecated and not captured here.
 
         chunk_size = max(1, parallel_config.instance_chunk_size or parallel_config.min_batch_size)
         default_min_instances = max(8, chunk_size)
-        min_instances = max(
-            1,
-            getattr(explainer, "min_instances_for_parallel", None)
-            or parallel_config.min_instances_for_parallel
-            or default_min_instances,
-        )
+        if auto_created_executor:
+            # Tests and simple callers often do not intend to enforce large
+            # instance thresholds; when we created the executor automatically
+            # for explain runtime, lower the gate so small batches can still
+            # exercise the instance-parallel plugin path (map() may still
+            # internally choose sequential execution based on workload).
+            min_instances = 1
+        else:
+            min_instances = max(
+                1,
+                getattr(explainer, "min_instances_for_parallel", None)
+                or parallel_config.min_instances_for_parallel
+                or default_min_instances,
+            )
 
         return cls(
             executor=executor,

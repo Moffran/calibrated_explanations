@@ -41,6 +41,7 @@
 - **Serialization**: Fixed JSON serialization for explanation collections containing live objects.
 - **Interval Invariants**: Fixed `LegacyPredictBridge` to enforce `low <= predict <= high` invariants for regression tasks, raising `ValidationError` on violation (ADR-021).
 - **Plugin Semantics**: Fixed `PluginManager` to correctly wrap the predict bridge with `PredictBridgeMonitor` (ADR-026).
+- **Fallback enforcement**: Fixed pytest `filterwarnings` configuration to correctly match "falling back" messages so runtime fallback `UserWarning`s are enforced as test errors when appropriate.
 
 ### Removed
 

@@ -49,7 +49,7 @@ def _run_readme_snippet() -> SimpleNamespace:
     )
 
 
-def test_readme_quickstart_snippet(capsys):
+def test_readme_quickstart_snippet(enable_fallbacks, capsys):
     context = _run_readme_snippet()
     output = capsys.readouterr().out
     assert "Calibrated probability:" in output

@@ -6,7 +6,7 @@ applyTo:
 priority: 100
 ---
 
-All actionable guidance for tests now lives in `.github/tests-guidance.md`. Follow that document for:
+All actionable guidance for tests now lives in `.github/tests-guidance.md`. ALWAYS Follow that document for anything test related, including but not limited to:
 
 - Framework + style expectations (pytest + pytest-mock, behavior-first assertions)
 - File creation and grouping policy (when you can/can't create new files, required directory mapping, PR justification)

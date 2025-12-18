@@ -91,6 +91,11 @@ filterwarnings = [
     "error::DeprecationWarning",
     "error::PendingDeprecationWarning",
     "error::FutureWarning",
+    # Enforce fallback chain policy: treat UserWarnings containing "fall...back" as errors
+    # Tests that explicitly validate fallback behavior must use the enable_fallbacks fixture
+    # Matches variations like "falling back", "fall back", and "fallback"
+    "error:.*fall.*back.*:UserWarning",
+    # Allow other UserWarnings (but they'll be visible in test output)
     "ignore::UserWarning",
     "ignore:The legacy module 'calibrated_explanations.core' is deprecated; import from the 'calibrated_explanations.core' package instead.:DeprecationWarning",
     "ignore:The 'calibrated_explanations.perf' module is deprecated.*:DeprecationWarning",

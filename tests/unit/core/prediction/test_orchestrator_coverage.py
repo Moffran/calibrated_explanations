@@ -279,7 +279,7 @@ def test_predict_impl_regression_invalid_percentiles(orchestrator, mock_explaine
         orchestrator._predict_impl(np.array([[1]]), low_high_percentiles=(-10, 110))
 
 
-def test_predict_impl_regression_crepes_error(orchestrator, mock_explainer):
+def test_predict_impl_regression_crepes_error(orchestrator, mock_explainer, enable_fallbacks):
     mock_explainer.mode = "regression"
     mock_explainer.is_fast.return_value = False
     mock_explainer.suppress_crepes_errors = True
@@ -736,7 +736,7 @@ def test_predict_impl_regression_crepes_error_reraise(orchestrator, mock_explain
         orchestrator._predict_impl(x)
 
 
-def test_predict_impl_regression_probabilistic_crepes_error_suppress(orchestrator, mock_explainer):
+def test_predict_impl_regression_probabilistic_crepes_error_suppress(orchestrator, mock_explainer, enable_fallbacks):
     mock_explainer.mode = "regression"
     mock_explainer.is_fast.return_value = False
     mock_explainer.suppress_crepes_errors = True

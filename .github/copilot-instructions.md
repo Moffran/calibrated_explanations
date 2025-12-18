@@ -75,3 +75,23 @@ All runtime, plugin, visualization, and utility fallbacks must be visible to use
 - **Docs:** When introducing a new fallback, update `docs/improvement/RELEASE_PLAN_v1.md` and `CHANGELOG.md` with a short note.
 
 This policy enforces traceability and observability across all fallback decisions and is required for PR approval.
+
+---
+
+## 8. Python Scripting
+
+Never use the construct:
+
+```bash
+python - <<PY
+# Your Python code here
+PY
+```
+
+It does not work!
+
+Prefer using a python -c command, like:
+
+```pwsh
+python -c "import calibrated_explanations as ce; print(ce.__version__)"
+```
