@@ -293,14 +293,41 @@ class CalibratedExplainer:
         result = cls.__new__(cls)
         memo[id(self)] = result
         # Manually copy attributes
+        # Some attributes are runtime helpers or refer back into the explainer
+        # (plugin manager, parallel executor, caches, integration helpers, etc.).
+        # Deep-copying these can cause recursion or try to copy unpicklable objects.
+        # Shallow-copy them instead to preserve references and avoid recursion.
+        shallow_copy_keys = {
+            "_plugin_manager",
+            "_perf_parallel",
+            "_perf_cache",
+            "_lime_helper",
+            "_shap_helper",
+            "_predict_bridge",
+            "latest_explanation",
+            "learner",
+            "predict_function",
+            "rng",
+        }
+
         for k, v in self.__dict__.items():
+            if k in shallow_copy_keys:
+                try:
+                    setattr(result, k, v)
+                except Exception:
+                    # Best-effort: if assignment fails, skip the attribute.
+                    pass
+                continue
+
             try:
                 setattr(result, k, copy.deepcopy(v, memo))
-            except:  # noqa: E722
-                if not isinstance(sys.exc_info()[1], TypeError):
-                    raise
-                # Fallback for uncopyable objects
-                setattr(result, k, v)
+            except Exception:
+                # Fallback: if deepcopy fails for any reason, keep original reference.
+                try:
+                    setattr(result, k, v)
+                except Exception:
+                    # If even that fails, ignore the attribute to avoid breaking deepcopy.
+                    pass
 
         return result
 

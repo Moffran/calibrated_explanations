@@ -22,12 +22,12 @@ PHYSICAL_CORES = 6
 LOGICAL_CORES = 12
 WORKERS = PHYSICAL_CORES  # default: optimize for physical cores
 SMALL_INSTANCE = 2000
-LARGE_INSTANCE = 11000
+LARGE_INSTANCE = 6000
 SMALL_FEATURE = 20
 LARGE_FEATURE = 100
 SMALL_TEST = 1000
-LARGE_TEST = 10000
-CALIBRATION_SIZE = 400
+LARGE_TEST = 5000
+CALIBRATION_SIZE = 200
 
 
 def _configure_parallel_env(
@@ -172,6 +172,11 @@ def run_benchmark(
 
     results = {}
 
+    # Warm-up run to mitigate cold-start effects    
+    explainer = WrapCalibratedExplainer(learner)
+    explainer.calibrate(x_cal, y_cal)
+    _ = explainer.explain_factual(x_test[:10])  # small subset for warm-up
+
     for strategy in strategies:
         print(f"  Testing strategy: {strategy}")
 
@@ -179,13 +184,22 @@ def run_benchmark(
         # (Granularity is irrelevant when parallel is disabled.)
         if strategy == "sequential":
             _configure_parallel_env(enabled=False)
-            start_time = time.time()
+            # Measure init (creation + calibration)
+            init_start = time.time()
             explainer = WrapCalibratedExplainer(learner)
             explainer.calibrate(x_cal, y_cal)
+            init_duration = time.time() - init_start
+            # Measure explanation separately
+            explain_start = time.time()
             _ = explainer.explain_factual(x_test)
-            duration = time.time() - start_time
-            results["sequential"] = duration
-            print(f"    Duration: {duration:.2f}s (Duration/instance: {duration/n_test:.5f}s) (Duration/instance/feature: {duration/(n_test*n_features):.5f}s)")
+            explain_duration = time.time() - explain_start
+            total = init_duration + explain_duration
+            results["sequential"] = {
+                "init": init_duration,
+                "explain": explain_duration,
+                "total": total,
+            }
+            print(f"    Init: {init_duration:.2f}s, Explain: {explain_duration:.2f}s, Total: {total:.2f}s (Per-instance explain: {explain_duration/n_test:.5f}s) (Explain/instance/feature: {explain_duration/(n_test*n_features):.5f}s)")
             continue
 
         try:
@@ -203,13 +217,17 @@ def run_benchmark(
 
             # Initialize explainer (wraps learner)
             # We re-initialize to ensure fresh cache/executor state if any
-            start_time = time.time()
+            # Measure init (creation + calibration)
+            init_start = time.time()
             explainer = WrapCalibratedExplainer(learner)
             explainer.calibrate(x_cal, y_cal, factual_plugin=plugin_id)
+            init_duration = time.time() - init_start
 
-            # Explain
+            # Measure explanation separately
+            explain_start = time.time()
             _ = explainer.explain_factual(x_test)
-            duration = time.time() - start_time
+            explain_duration = time.time() - explain_start
+            total = init_duration + explain_duration
 
             _assert_parallel_wiring(
                 explainer,
@@ -217,8 +235,12 @@ def run_benchmark(
                 expected_workers=workers,
             )
 
-            results[f"{strategy}"] = duration
-            print(f"    Duration: {duration:.2f}s (Duration/instance: {duration/n_test:.5f}s) (Duration/instance/feature: {duration/(n_test*n_features):.5f}s)")
+            results[f"{strategy}"] = {
+                "init": init_duration,
+                "explain": explain_duration,
+                "total": total,
+            }
+            print(f"    Init: {init_duration:.2f}s, Explain: {explain_duration:.2f}s, Total: {total:.2f}s (Per-instance explain: {explain_duration/n_test:.5f}s) (Explain/instance/feature: {explain_duration/(n_test*n_features):.5f}s)")
         finally:
             pass
 
@@ -240,20 +262,34 @@ def print_summary(results: Dict[str, Any]):
             continue
 
         print(f"\nMode: {mode.upper()}")
-        print(f"{'Strategy':<25} | {'Duration (s)':<12} | {'Speedup':<10}")
-        print("-" * 53)
+        print(f"{'Strategy':<25} | {'Total duration (s)':<15} | {'Init (s)':<10} | {'Explain (s)':<10} | {'Speedup':<10}")
+        print("-" * 85)
 
         mode_results = results[mode]
-
         sequential_baseline = mode_results.get("sequential")
 
-        # Sort by duration (fastest first)
-        sorted_strategies = sorted(mode_results.items(), key=lambda x: x[1])
+        def _total_val(v):
+            if v is None:
+                return 0.0
+            return v.get("total") if isinstance(v, dict) else float(v)
 
-        for key, duration in sorted_strategies:
-            baseline = sequential_baseline if sequential_baseline is not None else duration
-            speedup = baseline / duration if duration > 0 else 0.0
-            print(f"{key:<25} | {duration:<12.4f} | {speedup:<10.2f}x")
+        # Build list of (key, total) and sort by total (fastest first)
+        sortable = [(k, _total_val(v)) for k, v in mode_results.items()]
+        sorted_strategies = sorted(sortable, key=lambda x: x[1])
+
+        baseline_total = _total_val(sequential_baseline)
+
+        for key, total in sorted_strategies:
+            baseline = baseline_total if baseline_total > 0 else total
+            speedup = baseline / total if total > 0 else 0.0
+            # Retrieve components if available
+            val = mode_results.get(key)
+            if isinstance(val, dict):
+                init = val.get("init", 0.0)
+                explain = val.get("explain", 0.0)
+                print(f"{key:<25} | {total:<15.4f} | {init:<10.2f} | {explain:<10.2f} | {speedup:<10.2f}x")
+            else:
+                print(f"{key:<25} | {total:<15.4f} | {0.0:<10.2f} | {0.0:<10.2f} | {speedup:<10.2f}x")
 
 
 def _parse_args() -> argparse.Namespace:

@@ -1,31 +1,79 @@
 {
   "meta": {
-    "timestamp": 1765879853.0194976,
+    "timestamp": 1766128083.018699,
     "platform": "nt",
     "cpu_count": 12
   },
   "classification_small": {
-    "without_filtering": 0.3285858631134033,
-    "with_filtering": 0.24527668952941895
+    "without_filtering": {
+      "init": 0.04324650764465332,
+      "explain": 0.5951929092407227,
+      "total": 0.638439416885376
+    },
+    "with_filtering": {
+      "init": 0.01641082763671875,
+      "explain": 0.4356057643890381,
+      "total": 0.45201659202575684
+    }
   },
   "classification_medium": {
-    "without_filtering": 4.9329423904418945,
-    "with_filtering": 2.3130743503570557
+    "without_filtering": {
+      "init": 0.01727294921875,
+      "explain": 6.21255898475647,
+      "total": 6.22983193397522
+    },
+    "with_filtering": {
+      "init": 0.019162893295288086,
+      "explain": 2.1934688091278076,
+      "total": 2.2126317024230957
+    }
   },
   "classification_large": {
-    "without_filtering": 37.744523763656616,
-    "with_filtering": 16.851097106933594
+    "without_filtering": {
+      "init": 0.045783042907714844,
+      "explain": 77.0346212387085,
+      "total": 77.08040428161621
+    },
+    "with_filtering": {
+      "init": 0.033387184143066406,
+      "explain": 22.596274852752686,
+      "total": 22.629662036895752
+    }
   },
   "regression_small": {
-    "without_filtering": 0.32170581817626953,
-    "with_filtering": 0.3426167964935303
+    "without_filtering": {
+      "init": 0.01651287078857422,
+      "explain": 0.5809645652770996,
+      "total": 0.5974774360656738
+    },
+    "with_filtering": {
+      "init": 0.010029077529907227,
+      "explain": 0.4830970764160156,
+      "total": 0.49312615394592285
+    }
   },
   "regression_medium": {
-    "without_filtering": 5.015679359436035,
-    "with_filtering": 1.2292053699493408
+    "without_filtering": {
+      "init": 0.016298294067382812,
+      "explain": 7.414633750915527,
+      "total": 7.43093204498291
+    },
+    "with_filtering": {
+      "init": 0.015576362609863281,
+      "explain": 1.7427561283111572,
+      "total": 1.7583324909210205
+    }
   },
   "regression_large": {
-    "without_filtering": 34.70143675804138,
-    "with_filtering": 13.132117509841919
+    "without_filtering": {
+      "init": 0.018059730529785156,
+      "explain": 53.91090989112854,
+      "total": 53.928969621658325
+    },
+    "with_filtering": {
+      "init": 0.03369331359863281,
+      "explain": 20.584240436553955,
+      "total": 20.617933750152588
+    }
   }
 }

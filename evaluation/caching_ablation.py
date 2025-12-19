@@ -63,24 +63,42 @@ def run_benchmark(
     # Baseline: caching disabled
     print("  Testing: caching disabled")
     _configure_caching_env(enabled=False)
-    start_time = time.time()
+    # Measure init (creation + calibration)
+    init_start = time.time()
     explainer = WrapCalibratedExplainer(learner)
     explainer.calibrate(x_cal, y_cal)
+    init_duration = time.time() - init_start
+    # Measure explanation separately
+    explain_start = time.time()
     _ = explainer.explain_factual(x_test)
-    duration_no_cache = time.time() - start_time
-    results["no_cache"] = duration_no_cache
-    print(f"    Duration: {duration_no_cache:.2f}s (Duration/instance: {duration_no_cache/n_test:.5f}s) (Duration/instance/feature: {duration_no_cache/(n_test*n_features):.5f}s)")
+    explain_duration = time.time() - explain_start
+    duration_no_cache = init_duration + explain_duration
+    results["no_cache"] = {
+        "init": init_duration,
+        "explain": explain_duration,
+        "total": duration_no_cache,
+    }
+    print(f"    Init: {init_duration:.2f}s, Explain: {explain_duration:.2f}s, Total: {duration_no_cache:.2f}s (Per-instance explain: {explain_duration/n_test:.5f}s) (Explain/instance/feature: {explain_duration/(n_test*n_features):.5f}s)")
 
     # Test: caching enabled
     print("  Testing: caching enabled")
     _configure_caching_env(enabled=True)
-    start_time = time.time()
+    # Measure init (creation + calibration)
+    init_start = time.time()
     explainer = WrapCalibratedExplainer(learner)
     explainer.calibrate(x_cal, y_cal)
+    init_duration = time.time() - init_start
+    # Measure explanation separately
+    explain_start = time.time()
     _ = explainer.explain_factual(x_test)
-    duration_with_cache = time.time() - start_time
-    results["with_cache"] = duration_with_cache
-    print(f"    Duration: {duration_with_cache:.2f}s (Duration/instance: {duration_with_cache/n_test:.5f}s) (Duration/instance/feature: {duration_with_cache/(n_test*n_features):.5f}s)")
+    explain_duration = time.time() - explain_start
+    duration_with_cache = init_duration + explain_duration
+    results["with_cache"] = {
+        "init": init_duration,
+        "explain": explain_duration,
+        "total": duration_with_cache,
+    }
+    print(f"    Init: {init_duration:.2f}s, Explain: {explain_duration:.2f}s, Total: {duration_with_cache:.2f}s (Per-instance explain: {explain_duration/n_test:.5f}s) (Explain/instance/feature: {explain_duration/(n_test*n_features):.5f}s)")
 
     # Cleanup env
     if "CE_CACHE" in os.environ:
@@ -100,18 +118,33 @@ def print_summary(results: Dict[str, Any]):
             continue
 
         print(f"\nMode: {mode.upper()}")
-        print(f"{'Caching':<25} | {'Duration (s)':<12} | {'Speedup':<10}")
-        print("-" * 53)
+        print(f"{'Caching':<25} | {'Total duration (s)':<15} | {'Init (s)':<10} | {'Explain (s)':<10} | {'Speedup':<10}")
+        print("-" * 85)
 
         mode_results = results[mode]
 
-        no_cache_duration = mode_results.get("no_cache")
-        with_cache_duration = mode_results.get("with_cache")
+        no_cache = mode_results.get("no_cache")
+        with_cache = mode_results.get("with_cache")
 
-        print(f"{'disabled':<25} | {no_cache_duration:<12.4f} | {'1.00x':<10}")
-        if with_cache_duration is not None and no_cache_duration is not None and no_cache_duration > 0:
-            speedup = no_cache_duration / with_cache_duration
-            print(f"{'enabled':<25} | {with_cache_duration:<12.4f} | {speedup:<10.2f}x")
+        def _total(v):
+            if v is None:
+                return None
+            return v.get("total") if isinstance(v, dict) else v
+
+        base_total = _total(no_cache) or 0.0
+        base_init = no_cache.get("init") if isinstance(no_cache, dict) else 0.0
+        base_explain = no_cache.get("explain") if isinstance(no_cache, dict) else 0.0
+
+        other_total = _total(with_cache) if with_cache is not None else None
+        other_init = with_cache.get("init") if isinstance(with_cache, dict) else 0.0
+        other_explain = with_cache.get("explain") if isinstance(with_cache, dict) else 0.0
+
+        print(f"{'disabled':<25} | {base_total:<15.4f} | {base_init:<10.2f} | {base_explain:<10.2f} | {'1.00x':<10}")
+        if other_total is not None and base_total > 0:
+            speedup = base_total / other_total if other_total else 0.0
+            print(f"{'enabled':<25} | {other_total:<15.4f} | {other_init:<10.2f} | {other_explain:<10.2f} | {speedup:<10.2f}x")
+        elif other_total is not None:
+            print(f"{'enabled':<25} | {other_total:<15.4f} | {other_init:<10.2f} | {other_explain:<10.2f} | {'-':<10}")
 
 
 def _parse_args() -> argparse.Namespace:
