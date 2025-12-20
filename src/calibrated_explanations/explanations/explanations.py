@@ -714,7 +714,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             for explanation in self.explanations
         ]
 
-    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """
         Add conjunctive rules to the explanations.
 
@@ -734,7 +734,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             Returns a self reference, to allow for method chaining.
         """
         for explanation in self.explanations:
-            explanation.add_conjunctions(n_top_features, max_rule_size)
+            explanation.add_conjunctions(n_top_features, max_rule_size, **kwargs)
         return self
 
     def reset(self):

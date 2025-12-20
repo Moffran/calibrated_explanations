@@ -580,11 +580,11 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
     assert isinstance(out, CalibratedExplanations)
 
 
-@pytest.mark.skip(
-    reason="Direct _feature_task test triggers object-array IndexError. "
-    "Integration tests verify correct behavior via fallback path. "
-    "Skip until execution plugin 2x weight bug is fixed."
-)
+# @pytest.mark.skip(
+#     reason="Direct _feature_task test triggers object-array IndexError. "
+#     "Integration tests verify correct behavior via fallback path. "
+#     "Skip until execution plugin 2x weight bug is fixed."
+# )
 def test_feature_task_numeric_branch_basic() -> None:
     """Test _feature_task numeric branch with proper boolean flags.
     

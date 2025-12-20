@@ -29,10 +29,10 @@ def test_calibrate_rejects_nans_in_calibration():
         w.calibrate(x_cal2, y_cal2)
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32",
-    reason="HistGradientBoostingClassifier.fit hangs indefinitely on Windows; upstream sklearn bug",
-)
+# @pytest.mark.skipif(
+#     sys.platform == "win32",
+#     reason="HistGradientBoostingClassifier.fit hangs indefinitely on Windows; upstream sklearn bug",
+# )
 @pytest.mark.slow
 def test_predict_allows_nans_in_x_test_for_nan_tolerant_model():
     # HistGradientBoostingClassifier supports NaNs in x

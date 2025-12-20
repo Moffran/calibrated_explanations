@@ -103,4 +103,4 @@ def test_explanation_collection_api_is_stable():
         assert expected in plot_params
 
     add_params = _param_names(CalibratedExplanations.add_conjunctions)
-    assert add_params == ["n_top_features", "max_rule_size"]
+    assert add_params == ["n_top_features", "max_rule_size", "kwargs"]

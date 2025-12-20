@@ -31,6 +31,7 @@
 
 ### Changed
 
+- **Conjunction Analysis**: Overhauled the conjunction analysis engine to use batched prediction and shared state management, enabling significant performance improvements and support for `max_rule_size >= 4`.
 - **Package Structure**: Restructured the internal package layout (ADR-001) to enforce strict boundaries and reduce circular dependencies.
   - Moved core logic into dedicated sub-packages (`core`, `calibration`, `explanations`, `cache`, `parallel`, `schema`, `plugins`, `viz`, `utils`).
   - Deprecated unsanctioned symbols and locked the public API to sanctioned entry points.
