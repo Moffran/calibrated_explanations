@@ -24,6 +24,11 @@
   - Added info-level logs and `UserWarning` emissions for execution strategy fallbacks, plugin execution fallbacks, cache backend fallback, visualization simplifications, and perturbation fallbacks.
   - Updated contributor guidance in `.github/copilot-instructions.md` and release plan to mandate no-silent-fallbacks.
 
+- **Pool-at-explainer initialization:** Added opt-in worker initializer and pool lifecycle API for warm-starting process pools at explainer creation.
+  - Added `ParallelConfig.worker_initializer` and `ParallelConfig.worker_init_args` to forward per-worker initializers.
+  - Added `CalibratedExplainer.initialize_pool()` and `CalibratedExplainer.close()` plus context-manager support for explainer-managed pools.
+  - Introduced `calibrated_explanations.core.explain.parallel_runtime.worker_init_from_explainer_spec` to install a per-worker `explain_slice` harness.
+
 ### Changed
 
 - **Package Structure**: Restructured the internal package layout (ADR-001) to enforce strict boundaries and reduce circular dependencies.

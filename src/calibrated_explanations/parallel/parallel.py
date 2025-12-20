@@ -12,7 +12,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Literal, Mapping, Sequence, TypeVar
+from typing import Any, Callable, Iterable, List, Literal, Mapping, Sequence, TypeVar, Optional, Tuple
 
 try:  # pragma: no cover - optional dependency
     from joblib import Parallel as _JoblibParallel
@@ -72,6 +72,10 @@ class ParallelConfig:
     task_size_hint_bytes: int = 0
     force_serial_on_failure: bool = False
     telemetry: TelemetryCallback | None = None
+    # Optional per-worker initializer to run at process start (picklable)
+    worker_initializer: Optional[Callable] = None
+    # Optional args to pass to the worker initializer
+    worker_init_args: Optional[Tuple] = None
 
     @classmethod
     def from_env(cls, base: "ParallelConfig | None" = None) -> "ParallelConfig":
@@ -179,7 +183,11 @@ class ParallelExecutor:
                 max_workers = self.config.max_workers or (os.cpu_count() or 1)
                 if self.cache is not None:
                     self.cache.forksafe_reset()
-                self._pool = ProcessPoolExecutor(max_workers=max_workers)
+                extra: dict[str, object] = {}
+                if getattr(self.config, "worker_initializer", None) is not None:
+                    extra["initializer"] = self.config.worker_initializer
+                    extra["initargs"] = self.config.worker_init_args or ()
+                self._pool = ProcessPoolExecutor(max_workers=max_workers, **extra)
             elif strategy_name == "joblib":
                 if _JoblibParallel is not None:
                     n_jobs = self.config.max_workers or -1
@@ -624,7 +632,11 @@ class ParallelExecutor:
         # Reset cache to avoid cross-process contamination (fork safety)
         if self.cache is not None:
             self.cache.forksafe_reset()
-        with ProcessPoolExecutor(max_workers=max_workers, mp_context=None) as pool:
+        extra: dict[str, object] = {}
+        if getattr(self.config, "worker_initializer", None) is not None:
+            extra["initializer"] = self.config.worker_initializer
+            extra["initargs"] = self.config.worker_init_args or ()
+        with ProcessPoolExecutor(max_workers=max_workers, mp_context=None, **extra) as pool:
             return list(pool.map(fn, items, chunksize=chunksize))
 
     def _joblib_strategy(

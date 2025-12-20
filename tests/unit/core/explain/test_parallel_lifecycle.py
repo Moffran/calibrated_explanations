@@ -91,7 +91,6 @@ class TestParallelLifecycle:
 
         executor._resolve_strategy = original_resolve
 
-    @pytest.mark.skipif(os.name == "nt", reason="Nested processes on Windows are slow/complex")
     def test_nested_parallelism_threads(self):
         # Threads inside threads should work
         config = ParallelConfig(enabled=True, strategy="threads", max_workers=2)

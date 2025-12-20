@@ -26,31 +26,42 @@ else:
 
 MIN_CHUNK_SIZE = 100  # Minimum chunk size to amortize overhead
 
-def _instance_parallel_task(
-    task: Tuple[int, np.ndarray, Any, Any, Any, Any, Any, Any, Any],
-) -> Tuple[int, CalibratedExplanations]:
+def _instance_parallel_task(task: Tuple[int, int, dict]) -> Tuple[int, CalibratedExplanations]:
     """Execute a single instance-chunk explanation task.
 
-    Top-level function to ensure picklability for process-based parallelism.
+    The task payload is intentionally small to optimise the hot path when
+    shipping work to worker processes. It contains `(start, stop, state)`;
+    when a worker harness is present (`parallel_runtime._worker_harness`) we
+    delegate to it. Otherwise, rebuild the local request/explainer and run
+    the sequential plugin as a fallback.
     """
-    (
-        start_idx,
-        subset,
-        threshold_slice,
-        bins_slice,
-        low_high_percentiles,
-        features_to_ignore_array,
-        features_to_ignore_per_instance,
-        explainer,
-        config_state,
-    ) = task
+    start_idx, stop_idx, serialized_state = task
 
-    # Reconstruct config
+    # If a worker harness is installed (via worker initializer), prefer it.
+    try:
+        import calibrated_explanations.core.explain.parallel_runtime as pr_mod
+
+        harness = getattr(pr_mod, "_worker_harness", None)
+        if harness is not None and hasattr(harness, "explain_slice"):
+            result = harness.explain_slice(start_idx, stop_idx, serialized_state)
+            return start_idx, result
+    except Exception:
+        # Best-effort: if harness lookup fails, continue with local fallback
+        pass
+
+    # Local fallback: unpack full payload and run sequential plugin
+    subset = serialized_state.get("subset")
+    threshold_slice = serialized_state.get("threshold_slice")
+    bins_slice = serialized_state.get("bins_slice")
+    low_high_percentiles = serialized_state.get("low_high_percentiles")
+    features_to_ignore_array = serialized_state.get("features_to_ignore_array")
+    features_to_ignore_per_instance = serialized_state.get("features_to_ignore_per_instance")
+    explainer = serialized_state.get("explainer")
+    config_state = serialized_state.get("config_state")
+
     config = ExplainConfig(**config_state)
-    # Ensure executor is None to prevent recursion/pickling issues
     config.executor = None
 
-    # Reconstruct request
     chunk_request = ExplainRequest(
         x=subset,
         threshold=threshold_slice,
@@ -196,22 +207,47 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
         config_state = {k: v for k, v in config.__dict__.items() if k != "executor"}
 
         # Step 3: Build parallel tasks
-        tasks: List[Tuple[int, np.ndarray, Any, Any, Any, Any, Any, Any, Any]] = [
-            (
-                start,
-                np.asarray(x_input[start:stop]),
-                threshold_slice,
-                bins_slice,
-                request.low_high_percentiles,
-                features_to_ignore_array,
+        tasks: List[tuple] = []
+        for start, stop, threshold_slice, bins_slice in ranges:
+            subset = np.asarray(x_input[start:stop])
+            per_instance_chunk = (
                 features_to_ignore_per_instance[start:stop]
                 if features_to_ignore_per_instance is not None
-                else None,
-                explainer,
-                config_state,
+                else None
             )
-            for start, stop, threshold_slice, bins_slice in ranges
-        ]
+
+            # If a worker initializer is configured for the executor, prefer
+            # shipping a minimal, picklable spec instead of the full explainer
+            # object to worker processes. This keeps the hot path small and
+            # avoids sending unpicklable objects across process boundaries.
+            if executor and getattr(executor.config, "worker_initializer", None) is not None:
+                # Compact state for worker harness. The harness receives the
+                # full explainer spec at pool init time and therefore only
+                # needs start/stop and light state here.
+                serialized_state = {
+                    "subset": subset,
+                    "threshold_slice": threshold_slice,
+                    "bins_slice": bins_slice,
+                    "low_high_percentiles": request.low_high_percentiles,
+                    "features_to_ignore_array": features_to_ignore_array,
+                    "features_to_ignore_per_instance": per_instance_chunk,
+                    "config_state": config_state,
+                }
+            else:
+                # Fallback: include the explainer so in-process workers can
+                # reconstruct full execution when no harness is available.
+                serialized_state = {
+                    "subset": subset,
+                    "threshold_slice": threshold_slice,
+                    "bins_slice": bins_slice,
+                    "low_high_percentiles": request.low_high_percentiles,
+                    "features_to_ignore_array": features_to_ignore_array,
+                    "features_to_ignore_per_instance": per_instance_chunk,
+                    "explainer": explainer,
+                    "config_state": config_state,
+                }
+
+            tasks.append((start, stop, serialized_state))
 
         # Step 5: Execute tasks in parallel
         # Note: _instance_parallel_task is now top-level

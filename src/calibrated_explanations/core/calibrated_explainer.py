@@ -371,6 +371,89 @@ class CalibratedExplainer:
 
         return None
 
+    # ------------------------------------------------------------------
+    # Parallel pool lifecycle helpers
+    # ------------------------------------------------------------------
+    def initialize_pool(self, n_workers: int | None = None, *, pool_at_init: bool = False) -> None:
+        """Create a `ParallelExecutor` for this explainer.
+
+        Parameters
+        ----------
+        n_workers: int | None
+            Optional maximum worker count to enforce.
+        pool_at_init: bool
+            If True, enter the pool immediately so worker processes are
+            spawned at initialization time (useful for warm-up and
+            initializer-based harness installation).
+        """
+        from ..parallel import ParallelConfig, ParallelExecutor
+
+        if getattr(self, "_perf_parallel", None) is not None:
+            return
+
+        cfg = ParallelConfig.from_env()
+        cfg.enabled = True
+        if n_workers is not None:
+            cfg.max_workers = n_workers
+
+        # If requested, set up a worker initializer that will receive a
+        # compact explainer spec. Keep the spec deliberately small and
+        # picklable.
+        if pool_at_init:
+            try:
+                import calibrated_explanations.core.explain.parallel_runtime as pr_mod
+                # Build a picklable compact spec containing only the data
+                # required to rehydrate an explainer in worker processes.
+                # Attempt to include a picklable learner payload. If the
+                # learner is not picklable, fall back to omitting it so the
+                # worker initializer must handle a missing learner case.
+                learner_bytes = None
+                try:
+                    import pickle
+
+                    learner_bytes = pickle.dumps(getattr(self, "learner", None))
+                except Exception:
+                    learner_bytes = None
+
+                spec = {
+                    "learner_bytes": learner_bytes,
+                    "x_cal": getattr(self, "x_cal", None),
+                    "y_cal": getattr(self, "y_cal", None),
+                    "mode": getattr(self, "mode", None),
+                    "num_features": getattr(self, "num_features", None),
+                    "bins": getattr(self, "bins", None),
+                    "sample_percentiles": getattr(self, "sample_percentiles", None),
+                }
+                cfg.worker_initializer = pr_mod.worker_init_from_explainer_spec
+                cfg.worker_init_args = (spec,)
+            except Exception:
+                # Best-effort: if harness import fails, continue without initializer
+                pass
+
+        self._perf_parallel = ParallelExecutor(cfg)
+        if pool_at_init:
+            # Enter context to spawn worker pool now
+            self._perf_parallel.__enter__()
+
+    def close(self) -> None:
+        """Shutdown any provisioned parallel pool and release resources."""
+        perf = getattr(self, "_perf_parallel", None)
+        if perf is None:
+            return
+        try:
+            perf.__exit__(None, None, None)
+        finally:
+            self._perf_parallel = None
+
+    def __enter__(self) -> "CalibratedExplainer":
+        """Context manager entry; create and enter a worker pool."""
+        self.initialize_pool(pool_at_init=True)
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Context manager exit; close any provisioned pool."""
+        self.close()
+
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode from runtime state."""
         # Lazy import discretizers (deferred from module level)

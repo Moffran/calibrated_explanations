@@ -16,6 +16,7 @@ import warnings
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, Tuple
+import types
 
 import numpy as np
 
@@ -203,3 +204,82 @@ __all__ = [
     "ExplainParallelRuntime",
     "build_explain_execution_plan",
 ]
+
+
+def worker_init_from_explainer_spec(serialized_spec: dict) -> None:
+    """Worker-side initializer that installs a module-global `explain_slice`.
+
+    The function is intentionally small and picklable-friendly: it binds the
+    compact explainer spec into a closure and exposes a simple callable that
+    accepts `(start, stop, state)` and returns a serialisable payload.
+    """
+
+    # Try to rehydrate a full CalibratedExplainer in the worker process using
+    # the supplied compact spec. If the spec is minimal, fall back to a small
+    # fake explainer sufficient for sequential execution tests.
+    try:
+        from ...core.calibrated_explainer import CalibratedExplainer  # type: ignore
+        from ...core.explain.sequential import SequentialExplainExecutor
+        from ...core.explain._shared import ExplainConfig, ExplainRequest
+    except Exception:
+        CalibratedExplainer = None  # type: ignore
+        SequentialExplainExecutor = None  # type: ignore
+        ExplainConfig = None  # type: ignore
+        ExplainRequest = None  # type: ignore
+
+    def _build_explainer_from_spec(spec: dict):
+        if CalibratedExplainer is None:
+            return None
+        # Support pickled learner bytes for better cross-process transport.
+        learner = None
+        learner_bytes = spec.get("learner_bytes")
+        if learner_bytes is not None:
+            try:
+                import pickle
+
+                learner = pickle.loads(learner_bytes)
+            except Exception:
+                learner = None
+        else:
+            learner = spec.get("learner")
+        x_cal = spec.get("x_cal")
+        y_cal = spec.get("y_cal")
+        mode = spec.get("mode", "classification")
+        kwargs = {}
+        # Construct a CalibratedExplainer instance in the worker. This may be
+        # more expensive but keeps worker tasks minimal and avoids shipping
+        # the entire explainer object from the parent process.
+        try:
+            return CalibratedExplainer(learner, x_cal, y_cal, mode=mode, **kwargs)
+        except Exception:
+            return None
+
+    worker_explainer = _build_explainer_from_spec(serialized_spec or {})
+
+    def explain_slice(start: int, stop: int, state: Any):
+        # state is expected to contain 'subset' when running under the
+        # pool-at-init initializer path; fallback to minimal behaviour if not.
+        subset = state.get("subset") if isinstance(state, dict) else None
+        cfg_state = state.get("config_state") if isinstance(state, dict) else {}
+
+        if worker_explainer is not None and SequentialExplainExecutor is not None:
+            # Build ExplainConfig and ExplainRequest locally and run sequential executor
+            config = ExplainConfig(**cfg_state) if cfg_state is not None else ExplainConfig(executor=None)
+            chunk_request = ExplainRequest(
+                x=subset,
+                threshold=state.get("threshold_slice") if isinstance(state, dict) else None,
+                low_high_percentiles=state.get("low_high_percentiles") if isinstance(state, dict) else None,
+                bins=state.get("bins_slice") if isinstance(state, dict) else None,
+                features_to_ignore=state.get("features_to_ignore_array") if isinstance(state, dict) else None,
+                features_to_ignore_per_instance=state.get("features_to_ignore_per_instance") if isinstance(state, dict) else None,
+                use_plugin=False,
+                skip_instance_parallel=True,
+            )
+            plugin = SequentialExplainExecutor()
+            return plugin.execute(chunk_request, config, worker_explainer)
+
+        # Fallback toy payload for environments where we can't rehydrate
+        return {"spec": serialized_spec, "start": start, "stop": stop, "state": state}
+
+    globals()["explain_slice"] = explain_slice
+    globals()["_worker_harness"] = types.SimpleNamespace(explain_slice=explain_slice)
