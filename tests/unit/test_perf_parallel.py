@@ -131,7 +131,7 @@ class TestParallelExecutor:
         # Mock joblib as missing so we test the OS fallback
         with patch("os.name", "nt"), patch(
             "calibrated_explanations.parallel.parallel._JoblibParallel", None
-        ):
+        ), patch.object(ParallelExecutor, "_is_ci_environment", return_value=False):
             strategy = executor._resolve_strategy()
             # Should resolve to thread strategy partial
             assert strategy.func == executor._thread_strategy
@@ -140,7 +140,9 @@ class TestParallelExecutor:
         """Test auto strategy selects threads on low CPU count."""
         cfg = ParallelConfig(enabled=True, strategy="auto")
         executor = ParallelExecutor(cfg)
-        with patch("os.name", "posix"), patch("os.cpu_count", return_value=2):
+        with patch("os.name", "posix"), patch("os.cpu_count", return_value=2), patch.object(
+            ParallelExecutor, "_is_ci_environment", return_value=False
+        ):
             strategy = executor._resolve_strategy()
             assert strategy.func == executor._thread_strategy
 
@@ -151,7 +153,7 @@ class TestParallelExecutor:
         # Mock joblib presence by patching the module attribute in the parallel module
         with patch("os.name", "posix"), patch("os.cpu_count", return_value=4), patch(
             "calibrated_explanations.parallel.parallel._JoblibParallel", new=MagicMock()
-        ):
+        ), patch.object(ParallelExecutor, "_is_ci_environment", return_value=False):
             strategy = executor._resolve_strategy()
             assert strategy.func == executor._joblib_strategy
 
@@ -191,9 +193,8 @@ class TestParallelExecutor:
 
         with patch.object(executor, "_resolve_strategy", side_effect=ValueError("Strategy failed")):
             items = [1]
-            with (
-                pytest.warns(UserWarning, match=r"fall.*back"),
-                pytest.raises(ValueError, match="Boom"),
+            with pytest.warns(UserWarning, match=r"fall.*back"), pytest.raises(
+                ValueError, match="Boom"
             ):
                 executor.map(failing_fn, items)
 

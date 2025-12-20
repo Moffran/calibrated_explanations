@@ -107,6 +107,9 @@ def disable_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
     from tests.helpers.fallback_control import disable_all_fallbacks
 
     disable_all_fallbacks(monkeypatch)
+    # Tests expect CI detection to be opt-in; clear CI/GitHub markers so auto strategy tests run as intended.
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
 
 
 @pytest.fixture

@@ -228,9 +228,8 @@ def is_notebook():
 
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             return False
-    except BaseException:
-        exc_type = sys.exc_info()[0]
-        if exc_type not in (ImportError, AttributeError):
+    except BaseException as exc:
+        if not isinstance(exc, (ImportError, AttributeError)):
             raise
         return False
     return True

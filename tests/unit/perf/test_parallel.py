@@ -644,6 +644,8 @@ def test_auto_strategy_respects_ci_and_workload(monkeypatch):
     assert executor._auto_strategy() == "sequential"
     assert events[-1]["reason"] == "ci_environment"
     monkeypatch.delenv("CI")
+    # Also ensure GITHUB_ACTIONS is not interfering if running in real CI
+    monkeypatch.setattr(ParallelExecutor, "_is_ci_environment", staticmethod(lambda: False))
 
     cfg.task_size_hint_bytes = 12 * 1024 * 1024
     assert executor._auto_strategy() == "threads"

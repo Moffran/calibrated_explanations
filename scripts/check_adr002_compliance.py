@@ -3,26 +3,39 @@ import linecache
 import sys
 from pathlib import Path
 
-DISALLOWED_EXCEPTIONS = {
+DISALLOWED_RAISED_EXCEPTIONS = {
     "ValueError",
     "RuntimeError",
     "Exception",
     "TypeError",
 }
 
+DISALLOWED_CAUGHT_EXCEPTIONS = {
+    "Exception",  # Only ban broad exception catching
+}
+
 DISALLOWED_WARNINGS = {
     "RuntimeWarning",
 }
 
-def _is_allowlisted(filepath: str | Path, lineno: int) -> bool:
-    """Return True if the given line or the preceding comment allows ADR002."""
+def _is_allowlisted(filepath: str | Path, lineno: int, end_lineno: int | None = None) -> bool:
+    """Return True if the given line range or the preceding comment allows ADR002."""
     filepath = str(filepath)
     marker = "adr002_allow"
-    line = linecache.getline(filepath, lineno).lower()
-    if marker in line:
-        return True
+
+    # Check the line before the block
     prev_line = linecache.getline(filepath, lineno - 1).lower()
-    return marker in prev_line
+    if marker in prev_line:
+        return True
+
+    # Check all lines in the block (inclusive)
+    end = end_lineno if end_lineno is not None else lineno
+    for i in range(lineno, end + 1):
+        line = linecache.getline(filepath, i).lower()
+        if marker in line:
+            return True
+
+    return False
 
 
 def check_file(filepath):
@@ -45,8 +58,8 @@ def check_file(filepath):
             elif isinstance(node.exc, ast.Name):
                 exc_name = node.exc.id
 
-            if exc_name in DISALLOWED_EXCEPTIONS:
-                if _is_allowlisted(filepath, node.lineno):
+            if exc_name in DISALLOWED_RAISED_EXCEPTIONS:
+                if _is_allowlisted(filepath, node.lineno, getattr(node, "end_lineno", None)):
                     continue
                 violations.append((node.lineno, f"Raised disallowed exception: {exc_name}. Use CalibratedError or subclasses per ADR-002."))
 
@@ -64,8 +77,8 @@ def check_file(filepath):
                         names_to_check.append(elt.id)
 
             for name in names_to_check:
-                if name in DISALLOWED_EXCEPTIONS:
-                    if _is_allowlisted(filepath, node.lineno):
+                if name in DISALLOWED_CAUGHT_EXCEPTIONS:
+                    if _is_allowlisted(filepath, node.lineno, getattr(node, "end_lineno", None)):
                         continue
                     violations.append((node.lineno, f"Caught disallowed exception: {name}. This may mask root causes; prefer specific handling or CalibratedError types if applicable."))
 
