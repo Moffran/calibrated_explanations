@@ -492,7 +492,7 @@ def test_should_warn_and_fallback_to_legacy_when_execution_plugin_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Wrapper plugins should warn and use legacy path on execution failure.
-    
+
     This test explicitly validates fallback behavior when the execution plugin fails.
     """
 

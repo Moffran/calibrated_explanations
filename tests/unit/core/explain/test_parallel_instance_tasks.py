@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 
 from calibrated_explanations.core.explain.parallel_instance import (
@@ -46,6 +45,7 @@ def test_tasks_omit_explainer_when_worker_initializer_present(monkeypatch):
     class FakeExplainer:
         num_features = 3
         mode = "classification"
+
         def _infer_explanation_mode(self):
             return "factual"
 
@@ -80,7 +80,9 @@ def test_tasks_omit_explainer_when_worker_initializer_present(monkeypatch):
             self.end_index = 0
             self.total_explain_time = 0.0
 
-    monkeypatch.setattr(pi_mod, "initialize_explanation", lambda explainer, x, a, b, c, d: SimpleCombined(x))
+    monkeypatch.setattr(
+        pi_mod, "initialize_explanation", lambda explainer, x, a, b, c, d: SimpleCombined(x)
+    )
 
     # Monkeypatch the executor.map to capture tasks
     class ChunkResult:
@@ -104,7 +106,9 @@ def test_tasks_omit_explainer_when_worker_initializer_present(monkeypatch):
     captured = getattr(fake_map, "captured", [])
     assert captured, "Expected tasks to be submitted"
     for _, _, state in captured:
-        assert "explainer" not in state, "Explainer should not be shipped when worker_initializer is present"
+        assert (
+            "explainer" not in state
+        ), "Explainer should not be shipped when worker_initializer is present"
 
 
 def test_worker_harness_used_when_present():
@@ -142,7 +146,9 @@ def test_fallback_runs_with_explainer_when_no_harness(monkeypatch):
     # Monkeypatch SequentialExplainExecutor.execute to return sentinel
     from calibrated_explanations.core.explain.parallel_instance import SequentialExplainExecutor
 
-    monkeypatch.setattr(SequentialExplainExecutor, "execute", lambda self, r, c, e: {"from": "sequential"})
+    monkeypatch.setattr(
+        SequentialExplainExecutor, "execute", lambda self, r, c, e: {"from": "sequential"}
+    )
 
     state = {
         "subset": np.zeros((2, 1)),

@@ -7,10 +7,10 @@ from calibrated explanations instead of traditional visualizations.
 from __future__ import annotations
 
 import contextlib
-import sys
-from pathlib import Path
 import logging
+import sys
 import warnings
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ..core.narrative_generator import NarrativeGenerator

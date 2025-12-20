@@ -77,7 +77,12 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
             def _safe_pick(arr, idx):
                 try:
                     return arr[idx]
-                except (IndexError, KeyError, TypeError, AttributeError):
+                except (
+                    IndexError,
+                    KeyError,
+                    TypeError,
+                    AttributeError,
+                ):  # ADR002_ALLOW: tolerance for ragged arrays.  # pragma: no cover
                     if len(arr) > 0:
                         return arr[-1]
                     return None
@@ -90,7 +95,12 @@ def from_legacy_dict(idx: int, payload: Mapping[str, Any]) -> Explanation:
                 arr = rules_block.get(key, [])
                 try:
                     return arr[idx]
-                except (IndexError, KeyError, TypeError, AttributeError):
+                except (
+                    IndexError,
+                    KeyError,
+                    TypeError,
+                    AttributeError,
+                ):  # ADR002_ALLOW: partial payloads tolerated.  # pragma: no cover
                     return arr[-1] if len(arr) > 0 else None
 
             is_conj = bool(_rb_pick("is_conjunctive", i) or isinstance(feat, list))

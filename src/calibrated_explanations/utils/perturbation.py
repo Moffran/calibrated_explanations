@@ -73,6 +73,7 @@ def categorical_perturbation(column, num_permutations=5, rng: Optional[np.random
         # force a minimal change by swapping two positions when possible.
         import logging as _logging
         import os as _os
+
         # Emit a UserWarning only when fallback chains are enabled (tests opt-in
         # via the `enable_fallbacks` fixture which removes the disabling env
         # vars). Otherwise log info to avoid triggering test-suite enforcement.

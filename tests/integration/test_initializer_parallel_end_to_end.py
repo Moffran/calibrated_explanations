@@ -16,16 +16,15 @@ def make_small_explainer():
     if DummyClassifier is None:
         # fallback simple learner if sklearn is not available
         class _Fallback:
-            def fit(self, X, y):
+            def fit(self, x, y):
                 self.fitted_ = True
                 return self
 
-            def predict(self, X):
-                return np.zeros(len(X))
+            def predict(self, x):
+                return np.zeros(len(x))
 
-            def predict_proba(self, X):
-                return np.vstack([np.zeros(len(X)), np.ones(len(X))]).T
-
+            def predict_proba(self, x):
+                return np.vstack([np.zeros(len(x)), np.ones(len(x))]).T
 
         learner = _Fallback()
     else:
@@ -53,16 +52,13 @@ def test_sequential_vs_initializer_parallel_end_to_end(tmp_path):
     # Initialize pool with worker initializer
     expl.initialize_pool(n_workers=1, pool_at_init=True)
 
-    start = time.perf_counter()
     parallel_res = expl.explain_factual(x_test)
-    duration = time.perf_counter() - start
 
     parallel_json = parallel_res.to_json()
 
     assert baseline_json == parallel_json
 
     # Pickling size/timing: spec vs full explainer
-    from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
 
     spec = {
         "learner": expl.learner,

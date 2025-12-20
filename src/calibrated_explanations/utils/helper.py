@@ -577,7 +577,7 @@ def immutable_array(array):
     >>> arr.flags.writeable
     False
     >>> arr[0]
-    np.int64(1)
+    1
     >>> arr[0] = 10
     Traceback (most recent call last):
         ...

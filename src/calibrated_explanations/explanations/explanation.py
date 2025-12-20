@@ -17,7 +17,6 @@ Classes:
 """
 
 import contextlib
-import itertools
 import math
 import re
 import warnings
@@ -710,7 +709,10 @@ class CalibratedExplanation(ABC):
         feature_names = getattr(self._get_explainer(), "feature_names", None)
         try:
             idx = int(feature_index)
-        except (TypeError, ValueError):
+        except (
+            TypeError,
+            ValueError,
+        ):  # ADR002_ALLOW: handle non-numeric feature ids.  # pragma: no cover
             return str(feature_index)
         if feature_names and 0 <= idx < len(feature_names):
             return str(feature_names[idx])
@@ -728,7 +730,9 @@ class CalibratedExplanation(ABC):
             return float("inf")
         try:
             return float(text)
-        except ValueError:
+        except (
+            ValueError
+        ):  # ADR002_ALLOW: textual rule fragments may not be numeric.  # pragma: no cover
             return text
 
     def _parse_condition(self, feature_name: str, rule_text: str) -> Tuple[str, Optional[str]]:
@@ -833,9 +837,7 @@ class CalibratedExplanation(ABC):
         predicted_class,
         bins=None,
     ):
-        """
-        Calculate the prediction for a conjunctive rule using batched inference.
-        """
+        """Calculate the prediction for a conjunctive rule using batched inference."""
         predict_fn = self._get_explainer()._predict
         perturbed = np.array(perturbed, copy=True)
 
@@ -885,7 +887,7 @@ class CalibratedExplanation(ABC):
             classes=predicted_class,
             bins=batch_bins,
         )
-        
+
         return (
             float(np.mean(p_value)),
             float(np.mean(low)),
@@ -1306,7 +1308,9 @@ class FactualExplanation(CalibratedExplanation):
                         )
                 else:
                     self.prediction_probabilities = None
-        except Exception:  # pragma: no cover - defensive
+        except (
+            Exception
+        ):  # ADR002_ALLOW: prediction payloads vary across plugins.  # pragma: no cover
             self.prediction_probabilities = None
 
     def __repr__(self):
@@ -1463,16 +1467,14 @@ class FactualExplanation(CalibratedExplanation):
         self._has_rules = False
         # i = self.index
         instance = np.array(self.x_test, copy=True)
-        
+
         state_helper = ConjunctionState(None)
         state_helper.state["classes"] = self.prediction["classes"]
-        
+
         state_helper.set_base_prediction(
-            self.prediction["predict"],
-            self.prediction["low"],
-            self.prediction["high"]
+            self.prediction["predict"], self.prediction["low"], self.prediction["high"]
         )
-        
+
         rules = self._define_conditions()
         ignored = self._ignored_features_for_instance()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
@@ -1480,7 +1482,7 @@ class FactualExplanation(CalibratedExplanation):
                 continue
             if self.prediction["predict"] == self.feature_predict["predict"][f]:
                 continue
-            
+
             value_str = ""
             if f in self._get_explainer().categorical_features:
                 if self._get_explainer().categorical_labels is not None:
@@ -1514,9 +1516,9 @@ class FactualExplanation(CalibratedExplanation):
                 is_conjunctive=False,
                 weight=w,
                 weight_low=w_low,
-                weight_high=w_high
+                weight_high=w_high,
             )
-            
+
         self.rules = state_helper.get_state()
         self._has_rules = True
         return self.rules
@@ -1542,7 +1544,10 @@ class FactualExplanation(CalibratedExplanation):
 
         if not use_batched:
             from .legacy_conjunctions import add_conjunctions_factual_legacy
-            add_conjunctions_factual_legacy(self, n_top_features=n_top_features, max_rule_size=max_rule_size)
+
+            add_conjunctions_factual_legacy(
+                self, n_top_features=n_top_features, max_rule_size=max_rule_size
+            )
             return self
 
         factual = self._get_rules() if not self._has_rules else self.rules
@@ -1560,9 +1565,12 @@ class FactualExplanation(CalibratedExplanation):
         scratch = np.array(self.x_test, copy=True)
         predicted_class = factual["classes"]
         state_helper.state["classes"] = predicted_class
-        base_weight_array = np.asarray(factual["weight"], dtype=float) if factual["weight"] else np.array([])
+        base_weight_array = (
+            np.asarray(factual["weight"], dtype=float) if factual["weight"] else np.array([])
+        )
         base_width_array = (
-            np.asarray(factual["weight_high"], dtype=float) - np.asarray(factual["weight_low"], dtype=float)
+            np.asarray(factual["weight_high"], dtype=float)
+            - np.asarray(factual["weight_low"], dtype=float)
             if factual["weight"]
             else np.array([])
         )
@@ -1587,7 +1595,7 @@ class FactualExplanation(CalibratedExplanation):
 
             weights_array = state_helper.get_weights()
             width_array = state_helper.get_widths()
-            
+
             top_conjunctives = list(
                 self._rank_features(
                     weights_array,
@@ -1626,7 +1634,7 @@ class FactualExplanation(CalibratedExplanation):
                     target_length = current_size - 1
                     if _feature_length(of2) != target_length:
                         continue
-                    
+
                     if state_helper.is_conjunctive(cf2):
                         if of1 in of2:
                             continue
@@ -1641,7 +1649,7 @@ class FactualExplanation(CalibratedExplanation):
                             sampled_values2
                             if isinstance(sampled_values2, np.ndarray)
                             else [sampled_values2]
-                    )
+                        )
 
                     combo_key = _normalise_features(original_features)
                     if state_helper.has_combination_key(combo_key):
@@ -1667,7 +1675,7 @@ class FactualExplanation(CalibratedExplanation):
                         feature=list(original_features),
                         sampled_values=list(rule_values),
                         feature_value=None,
-                        rule_text=factual["rule"][f1] + " & \n" + state_helper.get_rule(cf2)
+                        rule_text=factual["rule"][f1] + " & \n" + state_helper.get_rule(cf2),
                     )
 
         self.conjunctive_rules = state_helper.get_state()
@@ -1819,7 +1827,9 @@ class FactualExplanation(CalibratedExplanation):
                     style_override=style_override,
                     use_legacy=plot_use_legacy,
                 )
-        except Exception as e:
+        except (
+            Exception
+        ) as e:  # ADR002_ALLOW: plot renderers may fail on headless hosts.  # pragma: no cover
             if isinstance(e, RuntimeError) and "Agg" in str(e):
                 from ..utils.exceptions import ConfigurationError
 
@@ -2057,15 +2067,13 @@ class AlternativeExplanation(CalibratedExplanation):
         instance_predict = self.binned["predict"]
         instance_low = self.binned["low"]
         instance_high = self.binned["high"]
-        
+
         state_helper = ConjunctionState(None)
         state_helper.state["classes"] = self.prediction["classes"]
         state_helper.set_base_prediction(
-            self.prediction["predict"],
-            self.prediction["low"],
-            self.prediction["high"]
+            self.prediction["predict"], self.prediction["low"], self.prediction["high"]
         )
-        
+
         rule_boundaries = self._get_explainer().rule_boundaries(instance)
         ignored = self._ignored_features_for_instance()
         for f, _ in enumerate(instance):  # pylint: disable=invalid-name
@@ -2081,13 +2089,13 @@ class AlternativeExplanation(CalibratedExplanation):
                         and self.prediction["high"] == instance_high[f][value_bin]
                     ):
                         continue
-                    
+
                     value_str = ""
                     if self._get_explainer().categorical_labels is not None:
                         value_str = self._get_explainer().categorical_labels[f][int(instance[f])]
                     else:
                         value_str = str(np.around(instance[f], decimals=2))
-                    
+
                     rule_text = ""
                     if self._get_explainer().categorical_labels is not None:
                         self.labels[len(state_helper.state["rule"])] = f
@@ -2108,7 +2116,7 @@ class AlternativeExplanation(CalibratedExplanation):
                         sampled_values=value,
                         feature_value=self.x_test[f],
                         rule_text=rule_text,
-                        is_conjunctive=False
+                        is_conjunctive=False,
                     )
             else:
                 values = np.array(self._get_explainer().x_cal[:, f])
@@ -2133,7 +2141,7 @@ class AlternativeExplanation(CalibratedExplanation):
                             sampled_values=self.binned["rule_values"][f][0][0],
                             feature_value=self.x_test[f],
                             rule_text=f"{self._get_explainer().feature_names[f]} < {lesser:.2f}",
-                            is_conjunctive=False
+                            is_conjunctive=False,
                         )
                     value_bin = 1
 
@@ -2156,7 +2164,7 @@ class AlternativeExplanation(CalibratedExplanation):
                             ],
                             feature_value=self.x_test[f],
                             rule_text=f"{self._get_explainer().feature_names[f]} > {greater:.2f}",
-                            is_conjunctive=False
+                            is_conjunctive=False,
                         )
 
         self.rules = state_helper.get_state()
@@ -2439,7 +2447,10 @@ class AlternativeExplanation(CalibratedExplanation):
 
         if not use_batched:
             from .legacy_conjunctions import add_conjunctions_alternative_legacy
-            add_conjunctions_alternative_legacy(self, n_top_features=n_top_features, max_rule_size=max_rule_size)
+
+            add_conjunctions_alternative_legacy(
+                self, n_top_features=n_top_features, max_rule_size=max_rule_size
+            )
             return self
 
         alternative = self._get_rules() if not self._has_rules else self.rules
@@ -2466,7 +2477,11 @@ class AlternativeExplanation(CalibratedExplanation):
         scratch = np.array(self.x_test, copy=True)
         predicted_class = alternative["classes"]
         conjunctive_state["classes"] = predicted_class
-        base_weight_array = np.asarray(alternative["weight"], dtype=float) if alternative["weight"] else np.array([])
+        base_weight_array = (
+            np.asarray(alternative["weight"], dtype=float)
+            if alternative["weight"]
+            else np.array([])
+        )
         base_width_array = (
             np.asarray(alternative["weight_high"], dtype=float)
             - np.asarray(alternative["weight_low"], dtype=float)

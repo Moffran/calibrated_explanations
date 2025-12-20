@@ -7,7 +7,7 @@ using the sequential plugin to avoid nested parallelism.
 
 from __future__ import annotations
 
-import os
+import contextlib
 from time import time
 from typing import TYPE_CHECKING, Any, List, Tuple
 
@@ -26,6 +26,7 @@ else:
 
 MIN_CHUNK_SIZE = 100  # Minimum chunk size to amortize overhead
 
+
 def _instance_parallel_task(task: Tuple[int, int, dict]) -> Tuple[int, CalibratedExplanations]:
     """Execute a single instance-chunk explanation task.
 
@@ -38,16 +39,14 @@ def _instance_parallel_task(task: Tuple[int, int, dict]) -> Tuple[int, Calibrate
     start_idx, stop_idx, serialized_state = task
 
     # If a worker harness is installed (via worker initializer), prefer it.
-    try:
+    # ADR002_ALLOW: optional worker harness is best-effort.
+    with contextlib.suppress(Exception):
         import calibrated_explanations.core.explain.parallel_runtime as pr_mod
 
         harness = getattr(pr_mod, "_worker_harness", None)
         if harness is not None and hasattr(harness, "explain_slice"):
             result = harness.explain_slice(start_idx, stop_idx, serialized_state)
             return start_idx, result
-    except Exception:
-        # Best-effort: if harness lookup fails, continue with local fallback
-        pass
 
     # Local fallback: unpack full payload and run sequential plugin
     subset = serialized_state.get("subset")
@@ -166,10 +165,10 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
                 # 1. Aim to utilize all workers (n_instances // n_workers)
                 # 2. Enforce a minimum chunk size (e.g. 200) to amortize overhead
 
-                n_workers = getattr(executor.config, "max_workers", None) or os.cpu_count() or 1
+                # Use a larger minimum chunk to avoid tiny tasks that are dominated by pickling/spawn overhead
                 # Use a larger minimum chunk to avoid tiny tasks that are dominated by pickling/spawn overhead
                 # Sequential execution is now very fast (~5ms/instance), so we need substantial chunks.
-                min_chunk = MIN_CHUNK_SIZE
+                pass
 
         total_start_time = time()
 

@@ -587,7 +587,7 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
 # )
 def test_feature_task_numeric_branch_basic() -> None:
     """Test _feature_task numeric branch with proper boolean flags.
-    
+
     NOTE: This test directly calls internal _feature_task with synthetic data.
     Real execution flows through the explain pipeline which uses proper boolean
     flags (True/False) from _computation.py, not integers.
@@ -604,7 +604,9 @@ def test_feature_task_numeric_branch_basic() -> None:
     feature_values = {0: []}
     # perturbed_feature rows: (feature_index, instance, bin, flag)
     # Use proper boolean flags as the real code does (see _computation.py lines 501, 525)
-    perturbed_feature = np.asarray([[0, 0, 0, False], [0, 1, 0, False], [0, 2, 1, False]], dtype=object)
+    perturbed_feature = np.asarray(
+        [[0, 0, 0, False], [0, 1, 0, False], [0, 2, 1, False]], dtype=object
+    )
     feature_indices = np.asarray([0, 1, 2], dtype=int)
     lower_boundary = np.array([-np.inf, -np.inf, -np.inf])
     upper_boundary = np.array([np.inf, np.inf, np.inf])

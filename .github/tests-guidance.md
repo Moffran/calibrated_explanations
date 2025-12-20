@@ -66,7 +66,7 @@ This repository uses a single source of truth for all test-related instructions.
    - `"Parallel failure; forced serial fallback engaged"`
    - `"Cache backend fallback: using minimal in-package LRU/TTL implementation"`
    - `"Visualization fallback: alternative bar simplified due to drawing error"`
-   
+
    Your test is triggering a fallback and will fail in CI. Either fix the underlying issue or explicitly opt in with `enable_fallbacks`.
 
 **When to Use `enable_fallbacks`:**
@@ -707,21 +707,21 @@ The `disable_fallbacks` fixture empties all fallback chains by setting environme
 @pytest.fixture(autouse=True)
 def disable_fallbacks(monkeypatch):
     """Disable all plugin fallback chains by default.
-    
+
     Tests that explicitly need fallbacks must use the enable_fallbacks fixture.
     """
     # Disable explanation plugin fallbacks
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", "")
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS", "")
     monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FAST_FALLBACKS", "")
-    
+
     # Disable interval plugin fallbacks
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FALLBACKS", "")
     monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST_FALLBACKS", "")
-    
+
     # Disable plot style fallbacks
     monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "")
-    
+
     # Parallel execution: no serial fallback
     monkeypatch.setenv("CE_PARALLEL_MIN_BATCH_SIZE", "999999")
 ```
@@ -738,11 +738,11 @@ def test_explanation_plugin__should_fallback_when_primary_fails(enable_fallbacks
         model, x_cal, y_cal,
         _explanation_plugin_override="intentionally-missing"
     )
-    
+
     # Should fall back to default plugin and not raise
     with pytest.warns(UserWarning, match="fallback"):
         explanation = explainer.explain_factual(x_test)
-    
+
     assert explanation is not None
 ```
 
@@ -760,7 +760,7 @@ If your test fails with one of these warnings, it's triggering a fallback:
 
 ```
 UserWarning: Execution plugin error; legacy sequential fallback engaged
-UserWarning: Parallel failure; forced serial fallback engaged  
+UserWarning: Parallel failure; forced serial fallback engaged
 UserWarning: Cache backend fallback: using minimal in-package LRU/TTL implementation
 UserWarning: Visualization fallback: alternative bar simplified due to drawing error
 UserWarning: Perturbation fallback: deterministic swap applied due to degenerate RNG state

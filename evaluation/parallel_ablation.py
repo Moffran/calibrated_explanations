@@ -172,7 +172,7 @@ def run_benchmark(
 
     results = {}
 
-    # Warm-up run to mitigate cold-start effects    
+    # Warm-up run to mitigate cold-start effects
     explainer = WrapCalibratedExplainer(learner)
     explainer.calibrate(x_cal, y_cal)
     _ = explainer.explain_factual(x_test[:10])  # small subset for warm-up

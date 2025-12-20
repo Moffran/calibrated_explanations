@@ -80,10 +80,10 @@ def make_regression_dataset():
     no_of_features = x.shape[1]
     columns = x.columns
     categorical_features = [i for i in range(no_of_features) if len(np.unique(x.iloc[:, i])) < 10]
-    
+
     idx = np.argsort(y.values).astype(int)
     x, y = x.values[idx, :], y.values[idx]
-    
+
     num_to_test = 2
     test_index = np.array(
         [*range(num_to_test // 2), *range(len(y) - 1, len(y) - num_to_test // 2 - 1, -1)]
@@ -91,7 +91,7 @@ def make_regression_dataset():
     train_index = np.setdiff1d(np.array(range(len(y))), test_index)
     trainx_cal, x_test = x[train_index, :], x[test_index, :]
     y_train, y_test = y[train_index], y[test_index]
-    
+
     x_prop_train, x_cal, y_prop_train, y_cal = train_test_split(
         trainx_cal, y_train, test_size=0.33, random_state=42
     )

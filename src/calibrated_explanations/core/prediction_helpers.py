@@ -279,7 +279,9 @@ def format_classification_prediction(
                     else:
                         # Assume new_classes are already label values; coerce to ndarray
                         new_classes = np.asarray(new_classes)
-                except Exception:
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: tolerate unexpected label containers.  # pragma: no cover
                     new_classes = np.asarray(new_classes)
 
     return (new_classes, (low, high)) if uq_interval else new_classes

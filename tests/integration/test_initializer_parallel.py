@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
@@ -7,12 +6,12 @@ from calibrated_explanations.core.calibrated_explainer import CalibratedExplaine
 def test_initializer_based_pool_warmup():
     # Minimal dummy learner for regression
     class DummyLearner:
-        def fit(self, X, y):
+        def fit(self, x, y):
             self.fitted_ = True
             return self
 
-        def predict(self, X):
-            return np.zeros(len(X))
+        def predict(self, x):
+            return np.zeros(len(x))
 
     learner = DummyLearner()
     x_cal = np.zeros((5, 2))

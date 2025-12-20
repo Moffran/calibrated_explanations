@@ -13,7 +13,6 @@ from time import time
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
-from uuid import uuid4
 
 # Access to protected explainer internals is intentional in this module
 # Some names (e.g. dataclass fields) follow existing project API and are

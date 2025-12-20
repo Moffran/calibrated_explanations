@@ -141,6 +141,8 @@ def test_instance_parallel_factual_explanations_match_legacy(binary_dataset):
     plugin_result = explainer.explain_factual(x_test[:3])
 
     assert_explanation_collections_equal(plugin_result, legacy)
+
+
 # Removed feature_parallel factual test (deprecated execution strategy).
 # Feature-parallel is deprecated and intentionally falls back to instance-parallel.
 # These tests were removed to avoid hidden parity through baked-in fallbacks.
@@ -177,6 +179,8 @@ def test_instance_parallel_alternative_explanations_match_legacy(binary_dataset)
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
     assert_explanation_collections_equal(plugin_result, legacy)
+
+
 # Removed feature_parallel alternative test (deprecated execution strategy).
 # Feature-parallel is deprecated and intentionally falls back to instance-parallel.
 # These tests were removed to avoid hidden parity through baked-in fallbacks.
@@ -217,6 +221,8 @@ def test_multiclass_instance_parallel_factual_explanations_match_legacy(multicla
     plugin_result = explainer.explain_factual(x_test[:3])
 
     assert_explanation_collections_equal(plugin_result, legacy)
+
+
 # Removed multiclass feature_parallel factual test (deprecated execution strategy).
 # Feature-parallel is deprecated and intentionally falls back to instance-parallel.
 # These tests were removed to avoid hidden parity through baked-in fallbacks.
@@ -252,6 +258,8 @@ def test_multiclass_instance_parallel_alternative_explanations_match_legacy(mult
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
     assert_explanation_collections_equal(plugin_result, legacy)
+
+
 # Removed multiclass feature_parallel alternative test (deprecated execution strategy).
 # Feature-parallel is deprecated and intentionally falls back to instance-parallel.
 # These tests were removed to avoid hidden parity through baked-in fallbacks.
@@ -292,6 +300,8 @@ def test_regression_instance_parallel_factual_explanations_match_legacy(regressi
     plugin_result = explainer.explain_factual(x_test[:3])
 
     assert_explanation_collections_equal(plugin_result, legacy)
+
+
 # Removed regression feature_parallel factual test (deprecated execution strategy).
 # Feature-parallel is deprecated and intentionally falls back to instance-parallel.
 # These tests were removed to avoid hidden parity through baked-in fallbacks.
@@ -327,6 +337,8 @@ def test_regression_instance_parallel_alternative_explanations_match_legacy(regr
     plugin_result = explainer.explore_alternatives(x_test[:3])
 
     assert_explanation_collections_equal(plugin_result, legacy)
+
+
 # Removed regression feature_parallel alternative test (deprecated execution strategy).
 # Feature-parallel is deprecated and intentionally falls back to instance-parallel.
 # These tests were removed to avoid hidden parity through baked-in fallbacks.
@@ -369,6 +381,8 @@ def test_probabilistic_regression_instance_parallel_factual_explanations_match_l
     plugin_result = explainer.explain_factual(x_test[:3], threshold=0.5)
 
     assert_explanation_collections_equal(plugin_result, legacy)
+
+
 # Removed probabilistic regression feature_parallel factual test (deprecated execution strategy).
 # Feature-parallel is deprecated and intentionally falls back to instance-parallel.
 # These tests were removed to avoid hidden parity through baked-in fallbacks.

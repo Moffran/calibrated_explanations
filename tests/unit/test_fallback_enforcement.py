@@ -62,7 +62,10 @@ class TestFallbackEnforcement:
 
         # Assert: The specific chain should be enabled, others still disabled
         env_vars = get_fallback_env_vars()
-        assert env_vars["CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS"] == "core.explanation.factual,legacy.fallback"
+        assert (
+            env_vars["CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS"]
+            == "core.explanation.factual,legacy.fallback"
+        )
         assert env_vars["CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS"] == ""
         assert env_vars["CE_EXPLANATION_PLUGIN_FAST_FALLBACKS"] == ""
 
@@ -78,9 +81,11 @@ class TestFallbackEnforcement:
     def test_should_detect_fallback_warnings(self):
         """Verify that assert_no_fallbacks_triggered detects fallback warnings."""
         # Act & Assert: Emitting a fallback warning should raise AssertionError
-        with pytest.raises(AssertionError, match="Unexpected fallback warnings detected"):
-            with assert_no_fallbacks_triggered():
-                warnings.warn("Test fallback warning", UserWarning, stacklevel=2)
+        with (
+            pytest.raises(AssertionError, match="Unexpected fallback warnings detected"),
+            assert_no_fallbacks_triggered(),
+        ):
+            warnings.warn("Test fallback warning", UserWarning, stacklevel=2)
 
     def test_should_pass_when_no_fallback_warnings(self):
         """Verify that assert_no_fallbacks_triggered passes with no fallback warnings."""
@@ -112,7 +117,7 @@ class TestFallbackFixtures:
         """Verify that tests have fallbacks disabled by default via autouse fixture."""
         # This test runs with the autouse disable_fallbacks fixture
         env_vars = get_fallback_env_vars()
-        
+
         # All fallback chains should be empty or have high threshold
         assert env_vars["CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS"] == ""
         assert env_vars["CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS"] == ""
@@ -126,7 +131,7 @@ class TestFallbackFixtures:
         """Verify that enable_fallbacks fixture removes fallback restrictions."""
         # This test explicitly uses enable_fallbacks fixture
         env_vars = get_fallback_env_vars()
-        
+
         # Fallback environment variables should not be set (allowing default behavior)
         assert env_vars["CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS"] is None
         assert env_vars["CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS"] is None
@@ -142,10 +147,10 @@ class TestPytestWarningFilter:
 
     def test_should_fail_on_fallback_warning_in_ci(self, enable_fallbacks):
         """Verify that fallback warnings cause test failure per pytest config.
-        
+
         This test verifies that the pytest.ini configuration correctly
         treats fallback-related UserWarnings as errors.
-        
+
         NOTE: This test will fail if run without the pytest warning filters.
         In normal test runs, the filters are applied automatically.
         """

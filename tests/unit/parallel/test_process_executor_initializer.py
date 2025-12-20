@@ -1,5 +1,3 @@
-import pytest
-
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
 
 

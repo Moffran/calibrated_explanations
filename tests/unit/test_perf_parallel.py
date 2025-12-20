@@ -191,9 +191,11 @@ class TestParallelExecutor:
 
         with patch.object(executor, "_resolve_strategy", side_effect=ValueError("Strategy failed")):
             items = [1]
-            with pytest.warns(UserWarning, match=r"fall.*back"):
-                with pytest.raises(ValueError, match="Boom"):
-                    executor.map(failing_fn, items)
+            with (
+                pytest.warns(UserWarning, match=r"fall.*back"),
+                pytest.raises(ValueError, match="Boom"),
+            ):
+                executor.map(failing_fn, items)
 
             # Verify telemetry was called
             mock_telemetry.assert_called_with(

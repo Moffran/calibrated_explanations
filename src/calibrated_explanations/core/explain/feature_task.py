@@ -13,9 +13,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 
 from ...utils import safe_mean
-import os
-import json
-from uuid import uuid4
 
 # Type alias for the aggregated result of processing a single feature
 FeatureTaskResult = Tuple[
@@ -406,9 +403,13 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
                 else:
                     try:
                         flag_ints[idx] = 1 if bool(v) else 2
-                    except Exception:
+                    except (
+                        Exception
+                    ):  # ADR002_ALLOW: fallback for uncoercible flag.  # pragma: no cover
                         flag_ints[idx] = 2
-        except Exception:
+        except (
+            Exception
+        ):  # ADR002_ALLOW: coarse guard for unexpected flag containers.  # pragma: no cover
             # Fallback: if conversion fails, treat everything as False (2).
             flag_ints = np.full(len(slice_flags), 2, dtype=np.int8)
 
@@ -419,7 +420,13 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         sorted_bins = slice_bins[sort_order]
         sorted_flags = flag_ints[sort_order]
 
-        keys = np.column_stack((sorted_inst, sorted_bins, sorted_flags if 'sorted_flags' in locals() else flag_ints[sort_order]))
+        keys = np.column_stack(
+            (
+                sorted_inst,
+                sorted_bins,
+                sorted_flags if "sorted_flags" in locals() else flag_ints[sort_order],
+            )
+        )
         unique_keys, start_indices = np.unique(keys, axis=0, return_index=True)
         groups = np.split(sorted_indices, start_indices[1:])
 
@@ -634,7 +641,6 @@ def _feature_task(args: Tuple[Any, ...]) -> FeatureTaskResult:
         lower_update,
         upper_update,
     )
-
 
     # parity instrumentation removed
 

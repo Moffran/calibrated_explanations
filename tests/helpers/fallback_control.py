@@ -175,7 +175,7 @@ def assert_no_fallbacks_triggered() -> Generator[None, None, None]:
     >>> with assert_no_fallbacks_triggered():
     ...     explainer = CalibratedExplainer(model, x_cal, y_cal)
     ...     explanation = explainer.explain_factual(x_test)
-    
+
     Notes
     -----
     This detects fallback warnings by looking for common patterns:
@@ -183,7 +183,7 @@ def assert_no_fallbacks_triggered() -> Generator[None, None, None]:
     - "fallback:"
     - "fallback engaged"
     - etc.
-    
+
     It will NOT trigger on words that merely contain "fallback" as a substring.
     """
     with warnings.catch_warnings(record=True) as warning_list:
@@ -201,7 +201,7 @@ def assert_no_fallbacks_triggered() -> Generator[None, None, None]:
             " fallback-",
             "-fallback ",
         ]
-        
+
         fallback_warnings = []
         for w in warning_list:
             if not issubclass(w.category, UserWarning):
@@ -213,9 +213,8 @@ def assert_no_fallbacks_triggered() -> Generator[None, None, None]:
 
         if fallback_warnings:
             messages = [str(w.message) for w in fallback_warnings]
-            msg = (
-                f"Unexpected fallback warnings detected:\n"
-                + "\n".join(f"  - {m}" for m in messages)
+            msg = "Unexpected fallback warnings detected:\n" + "\n".join(
+                f"  - {m}" for m in messages
             )
             raise AssertionError(msg)
 

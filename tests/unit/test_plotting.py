@@ -160,9 +160,11 @@ def test_plot_alternative_multiclass(mock_require, mock_render):
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy._plot_alternative")
-def test_plot_alternative_fallback_on_error(mock_legacy, mock_require, mock_render, enable_fallbacks):
+def test_plot_alternative_fallback_on_error(
+    mock_legacy, mock_require, mock_render, enable_fallbacks
+):
     """Should fall back to legacy plotting if render_plotspec raises exception.
-    
+
     This test explicitly validates visualization fallback behavior.
     """
     mock_render.side_effect = Exception("Rendering failed")
@@ -232,9 +234,11 @@ def test_plot_regression(mock_require, mock_render):
 @patch("calibrated_explanations.viz.matplotlib_adapter.render")
 @patch("calibrated_explanations.plotting.__require_matplotlib")
 @patch("calibrated_explanations.plotting.legacy._plot_regression")
-def test_plot_regression_fallback_on_error(mock_legacy, mock_require, mock_render, enable_fallbacks):
+def test_plot_regression_fallback_on_error(
+    mock_legacy, mock_require, mock_render, enable_fallbacks
+):
     """Should fall back to legacy plotting if render_plotspec raises exception.
-    
+
     This test explicitly validates visualization fallback behavior.
     """
     mock_render.side_effect = Exception("Rendering failed")

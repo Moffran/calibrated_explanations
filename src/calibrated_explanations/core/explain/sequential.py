@@ -41,11 +41,11 @@ class SequentialExplainExecutor(BaseExplainExecutor):
     instances during perturbation generation in `explain_predict_step`. For very
     large datasets (e.g., 1000+ instances × 1000+ features), this can require
     significant memory. Users experiencing memory exhaustion should consider:
-    
+
     1. Reducing test set size (fewer instances)
     2. Enabling parallelism (which chunks instances internally)
     3. Reducing number of features via feature selection
-    
+
     A future optimization will implement lazy perturbation generation or instance-
     level chunking in sequential mode to better handle large datasets (tracked as
     a memory efficiency improvement).

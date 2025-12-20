@@ -475,7 +475,7 @@ def test_narrative_plugin_single_instance(classification_explainer, iris_data):
 
 def test_narrative_plugin_template_fallback(enable_fallbacks, tmp_path, monkeypatch):
     """Ensure missing templates fall back to the default path.
-    
+
     This test explicitly validates template fallback behavior.
     """
     default_template = tmp_path / "templates" / "explain_template.yaml"

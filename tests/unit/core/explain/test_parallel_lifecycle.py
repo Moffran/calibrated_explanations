@@ -1,4 +1,3 @@
-import os
 import pytest
 import time
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor

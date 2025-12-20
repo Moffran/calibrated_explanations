@@ -7,7 +7,12 @@ import numpy as np
 from typing import Any, Iterable, Sequence, Tuple, Union, Mapping
 
 from calibrated_explanations import CalibratedExplainer
-from tests.helpers.model_utils import get_classification_model, get_regression_model, DummyLearner, DummyIntervalLearner
+from tests.helpers.model_utils import (
+    get_classification_model,
+    get_regression_model,
+    DummyLearner,
+    DummyIntervalLearner,
+)
 
 
 def patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,5 +1,3 @@
-import pytest
-
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
 
 
@@ -26,9 +24,7 @@ def test_process_pool_receives_initializer_and_initargs(monkeypatch):
     # Monkeypatch the ProcessPoolExecutor used by the parallel facade
     import calibrated_explanations.parallel.parallel as perf_parallel
 
-    monkeypatch.setattr(
-        perf_parallel, "ProcessPoolExecutor", RecordingProcessPool, raising=False
-    )
+    monkeypatch.setattr(perf_parallel, "ProcessPoolExecutor", RecordingProcessPool, raising=False)
 
     # Using the context manager will trigger pool initialization path
     with ParallelExecutor(cfg) as executor:

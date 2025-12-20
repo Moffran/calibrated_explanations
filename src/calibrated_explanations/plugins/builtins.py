@@ -74,11 +74,13 @@ def _derive_threshold_labels(threshold: Any) -> tuple[str, str]:
             lo = float(threshold[0])
             hi = float(threshold[1])
             return (f"{lo:.2f} <= Y < {hi:.2f}", "Outside interval")
-    except Exception as exc:
+    except Exception as exc:  # ADR002_ALLOW: heuristic parsing best-effort.  # pragma: no cover
         logging.getLogger(__name__).debug("Failed to parse threshold as interval: %s", exc)
     try:
         value = float(threshold)
-    except Exception:
+    except (
+        Exception
+    ):  # ADR002_ALLOW: fallback labels when threshold coercion fails.  # pragma: no cover
         return ("Target within threshold", "Outside threshold")
     return (f"Y < {value:.2f}", f"Y ≥ {value:.2f}")
 
@@ -534,7 +536,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                             ),
                             extras=request.extras,
                         )
-            except Exception as exc_cfg:
+            except Exception as exc_cfg:  # ADR002_ALLOW: filter is optional; continue without it.  # pragma: no cover
                 logging.getLogger(__name__).debug(
                     "FAST feature filter configuration failed for mode '%s': %s",
                     self._mode,
@@ -607,7 +609,7 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                                     with contextlib.suppress(Exception):
                                         exp.reset()
                         return _collection_to_batch(collection)
-                except Exception as exc_supports:
+                except Exception as exc_supports:  # ADR002_ALLOW: degrade gracefully on plugin errors.  # pragma: no cover
                     logging.getLogger(__name__).warning(
                         "Execution plugin supports() check failed for mode '%s': %s; falling back to legacy",
                         self._mode,
@@ -653,7 +655,9 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             with runtime:
                 collection = plugin.execute(explain_request, explain_config, self._explainer)
 
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: fall back to legacy path when executor fails.  # pragma: no cover
             # Fallback to legacy implementation with warning
             _logger = logging.getLogger(__name__)
             _logger.warning(
@@ -663,7 +667,9 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
             )
             # Log full exception stack for debugging plugin failures
             _logger.exception("Execution plugin exception:", exc_info=True)
-            _logger.info("Execution plugin error; legacy sequential fallback engaged (mode=%s)", self._mode)
+            _logger.info(
+                "Execution plugin error; legacy sequential fallback engaged (mode=%s)", self._mode
+            )
             warnings.warn(
                 f"Execution plugin failed for mode '{self._mode}' ({exc!r}); falling back to legacy sequential execution.",
                 UserWarning,
@@ -1082,7 +1088,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             def _safe_float(value: Any) -> float | None:
                 try:
                     val = float(value)
-                except Exception:
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: plotting tolerates malformed inputs.  # pragma: no cover
                     return None
                 if not np.isfinite(val):
                     return None
@@ -1098,7 +1106,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
             if isinstance(y_minmax, Sequence) and len(y_minmax) >= 2:
                 try:
                     y0, y1 = float(y_minmax[0]), float(y_minmax[1])
-                except Exception:
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: fallback when bounds cannot be coerced.  # pragma: no cover
                     normalised_y_minmax = None
                 else:
                     if np.isfinite(y0) and np.isfinite(y1):
@@ -1158,7 +1168,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                 for idx in features_to_plot_raw:
                     try:
                         value = int(idx)
-                    except Exception as exc:
+                    except (
+                        Exception
+                    ) as exc:  # ADR002_ALLOW: ignore bad feature indices.  # pragma: no cover
                         logging.getLogger(__name__).debug(
                             "Failed to convert feature index to int: %s", exc
                         )
@@ -1207,7 +1219,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                         try:
                             lo_val = float(y_threshold[0])
                             hi_val = float(y_threshold[1])
-                        except Exception:
+                        except (
+                            Exception
+                        ):  # ADR002_ALLOW: ignore malformed threshold payloads.  # pragma: no cover
                             threshold_label = None
                         else:
                             threshold_label = (
@@ -1216,7 +1230,9 @@ class PlotSpecDefaultBuilder(PlotBuilder):
                     elif y_threshold is not None:
                         try:
                             thr = float(y_threshold)
-                        except Exception:
+                        except (
+                            Exception
+                        ):  # ADR002_ALLOW: ignore malformed threshold payloads.  # pragma: no cover
                             threshold_label = None
                         else:
                             threshold_label = f"Probability of target being below {thr:.2f}"
@@ -1340,7 +1356,9 @@ class PlotSpecDefaultRenderer(PlotRenderer):
                     render_plotspec(artifact, show=True, save_path=None)
             else:
                 render_plotspec(artifact, show=context.show, save_path=base_path)
-        except Exception as exc:  # pragma: no cover - defensive fallback
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: bubble up renderer failures as config errors.  # pragma: no cover
             raise ConfigurationError(
                 f"PlotSpec renderer failed: {exc}",
                 details={"context": "plot_rendering", "original_error": str(exc)},

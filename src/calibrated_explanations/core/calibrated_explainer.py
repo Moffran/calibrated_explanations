@@ -312,22 +312,20 @@ class CalibratedExplainer:
 
         for k, v in self.__dict__.items():
             if k in shallow_copy_keys:
-                try:
+                # ADR002_ALLOW: swallowing to keep deepcopy best-effort.
+                with contextlib.suppress(Exception):
                     setattr(result, k, v)
-                except Exception:
-                    # Best-effort: if assignment fails, skip the attribute.
-                    pass
                 continue
 
             try:
                 setattr(result, k, copy.deepcopy(v, memo))
-            except Exception:
+            except (
+                Exception
+            ):  # ADR002_ALLOW: fallback to shallow copy when deepcopy fails.  # pragma: no cover
                 # Fallback: if deepcopy fails for any reason, keep original reference.
-                try:
+                # ADR002_ALLOW: ignore attributes that cannot be copied.
+                with contextlib.suppress(Exception):
                     setattr(result, k, v)
-                except Exception:
-                    # If even that fails, ignore the attribute to avoid breaking deepcopy.
-                    pass
 
         return result
 
@@ -400,8 +398,10 @@ class CalibratedExplainer:
         # compact explainer spec. Keep the spec deliberately small and
         # picklable.
         if pool_at_init:
-            try:
+            # ADR002_ALLOW: optional initializer wiring should not block.
+            with contextlib.suppress(Exception):
                 import calibrated_explanations.core.explain.parallel_runtime as pr_mod
+
                 # Build a picklable compact spec containing only the data
                 # required to rehydrate an explainer in worker processes.
                 # Attempt to include a picklable learner payload. If the
@@ -409,10 +409,12 @@ class CalibratedExplainer:
                 # worker initializer must handle a missing learner case.
                 learner_bytes = None
                 try:
-                    import pickle
+                    import pickle  # nosec B403
 
                     learner_bytes = pickle.dumps(getattr(self, "learner", None))
-                except Exception:
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: learner pickling best-effort fallback.  # pragma: no cover
                     learner_bytes = None
 
                 spec = {
@@ -426,9 +428,6 @@ class CalibratedExplainer:
                 }
                 cfg.worker_initializer = pr_mod.worker_init_from_explainer_spec
                 cfg.worker_init_args = (spec,)
-            except Exception:
-                # Best-effort: if harness import fails, continue without initializer
-                pass
 
         self._perf_parallel = ParallelExecutor(cfg)
         if pool_at_init:
@@ -1559,7 +1558,6 @@ class CalibratedExplainer:
         """
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
-        import sys
         from pathlib import Path
 
         # Ensure the repository root is in the path
@@ -1596,7 +1594,6 @@ class CalibratedExplainer:
         """
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
-        import sys
         from pathlib import Path
 
         # Ensure the repository root is in the path

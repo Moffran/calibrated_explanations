@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import logging
 import time
+import types
 import warnings
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, Tuple
-import types
 
 import numpy as np
 
@@ -213,32 +213,38 @@ def worker_init_from_explainer_spec(serialized_spec: dict) -> None:
     compact explainer spec into a closure and exposes a simple callable that
     accepts `(start, stop, state)` and returns a serialisable payload.
     """
-
     # Try to rehydrate a full CalibratedExplainer in the worker process using
     # the supplied compact spec. If the spec is minimal, fall back to a small
     # fake explainer sufficient for sequential execution tests.
     try:
-        from ...core.calibrated_explainer import CalibratedExplainer  # type: ignore
-        from ...core.explain.sequential import SequentialExplainExecutor
-        from ...core.explain._shared import ExplainConfig, ExplainRequest
-    except Exception:
-        CalibratedExplainer = None  # type: ignore
-        SequentialExplainExecutor = None  # type: ignore
-        ExplainConfig = None  # type: ignore
-        ExplainRequest = None  # type: ignore
+        from ...core import calibrated_explainer as ce_module  # type: ignore
+        from ...core.explain import _shared as shared_module
+        from ...core.explain import sequential as sequential_module
+    except (
+        Exception
+    ):  # ADR002_ALLOW: worker bootstrap must not block on optional deps.  # pragma: no cover
+        calibrated_explainer_cls = None  # type: ignore
+        sequential_executor_cls = None  # type: ignore
+        explain_config_cls = None  # type: ignore
+        explain_request_cls = None  # type: ignore
+    else:
+        calibrated_explainer_cls = getattr(ce_module, "CalibratedExplainer", None)
+        explain_config_cls = getattr(shared_module, "ExplainConfig", None)
+        explain_request_cls = getattr(shared_module, "ExplainRequest", None)
+        sequential_executor_cls = getattr(sequential_module, "SequentialExplainExecutor", None)
 
     def _build_explainer_from_spec(spec: dict):
-        if CalibratedExplainer is None:
+        if calibrated_explainer_cls is None:
             return None
         # Support pickled learner bytes for better cross-process transport.
         learner = None
         learner_bytes = spec.get("learner_bytes")
         if learner_bytes is not None:
             try:
-                import pickle
+                import pickle  # noqa: S403 # nosec B403
 
-                learner = pickle.loads(learner_bytes)
-            except Exception:
+                learner = pickle.loads(learner_bytes)  # noqa: S301 # nosec B301
+            except Exception:  # ADR002_ALLOW: learner payload is best-effort.  # pragma: no cover
                 learner = None
         else:
             learner = spec.get("learner")
@@ -250,8 +256,10 @@ def worker_init_from_explainer_spec(serialized_spec: dict) -> None:
         # more expensive but keeps worker tasks minimal and avoids shipping
         # the entire explainer object from the parent process.
         try:
-            return CalibratedExplainer(learner, x_cal, y_cal, mode=mode, **kwargs)
-        except Exception:
+            return calibrated_explainer_cls(learner, x_cal, y_cal, mode=mode, **kwargs)
+        except (
+            Exception
+        ):  # ADR002_ALLOW: spec may be incomplete; fall back to None.  # pragma: no cover
             return None
 
     worker_explainer = _build_explainer_from_spec(serialized_spec or {})
@@ -262,20 +270,35 @@ def worker_init_from_explainer_spec(serialized_spec: dict) -> None:
         subset = state.get("subset") if isinstance(state, dict) else None
         cfg_state = state.get("config_state") if isinstance(state, dict) else {}
 
-        if worker_explainer is not None and SequentialExplainExecutor is not None:
+        if (
+            worker_explainer is not None
+            and sequential_executor_cls is not None
+            and explain_config_cls is not None
+            and explain_request_cls is not None
+        ):
             # Build ExplainConfig and ExplainRequest locally and run sequential executor
-            config = ExplainConfig(**cfg_state) if cfg_state is not None else ExplainConfig(executor=None)
-            chunk_request = ExplainRequest(
+            config = (
+                explain_config_cls(**cfg_state)
+                if cfg_state is not None
+                else explain_config_cls(executor=None)
+            )
+            chunk_request = explain_request_cls(
                 x=subset,
                 threshold=state.get("threshold_slice") if isinstance(state, dict) else None,
-                low_high_percentiles=state.get("low_high_percentiles") if isinstance(state, dict) else None,
+                low_high_percentiles=state.get("low_high_percentiles")
+                if isinstance(state, dict)
+                else None,
                 bins=state.get("bins_slice") if isinstance(state, dict) else None,
-                features_to_ignore=state.get("features_to_ignore_array") if isinstance(state, dict) else None,
-                features_to_ignore_per_instance=state.get("features_to_ignore_per_instance") if isinstance(state, dict) else None,
+                features_to_ignore=state.get("features_to_ignore_array")
+                if isinstance(state, dict)
+                else None,
+                features_to_ignore_per_instance=state.get("features_to_ignore_per_instance")
+                if isinstance(state, dict)
+                else None,
                 use_plugin=False,
                 skip_instance_parallel=True,
             )
-            plugin = SequentialExplainExecutor()
+            plugin = sequential_executor_cls()
             return plugin.execute(chunk_request, config, worker_explainer)
 
         # Fallback toy payload for environments where we can't rehydrate

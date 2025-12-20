@@ -13,7 +13,6 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, List, Mapping, Sequence, Tuple
 
 import numpy as np
-from uuid import uuid4
 
 from ...utils import safe_isinstance
 from ._computation import explain_predict_step  # Re-export for backward compatibility

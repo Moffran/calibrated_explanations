@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import sys
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.experimental import enable_hist_gradient_boosting  # noqa: F401
 from sklearn.ensemble import HistGradientBoostingClassifier

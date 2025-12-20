@@ -8,6 +8,7 @@ from calibrated_explanations.explanations.legacy_conjunctions import (
     add_conjunctions_alternative_legacy,
 )
 
+
 def compare_payloads(p1, p2):
     assert p1.keys() == p2.keys()
     for k in p1:
@@ -39,22 +40,36 @@ def compare_payloads(p1, p2):
         else:
             assert v1 == v2
 
+
 def test_factual_conjunction_parity(binary_dataset):
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = binary_dataset
-    
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
+
     model = RandomForestClassifier(n_estimators=10, random_state=42)
-    model.fit(X_prop_train, y_prop_train)
-    
+    model.fit(x_prop_train, y_prop_train)
+
     explainer = WrapCalibratedExplainer(model)
-    explainer.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
-    
+    explainer.calibrate(
+        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
+
     # Get an explanation for the first test instance
-    explanation = explainer.explain_factual(X_test[0].reshape(1, -1))
-    explanation_legacy = explainer.explain_factual(X_test[0].reshape(1, -1))
-    
+    explanation = explainer.explain_factual(x_test[0].reshape(1, -1))
+    explanation_legacy = explainer.explain_factual(x_test[0].reshape(1, -1))
+
     # Run new (currently same as legacy)
     explanation.add_conjunctions(n_top_features=5, max_rule_size=2)
-    
+
     # Run legacy
     for exp in explanation_legacy:
         add_conjunctions_factual_legacy(exp, n_top_features=5, max_rule_size=2)
@@ -62,22 +77,36 @@ def test_factual_conjunction_parity(binary_dataset):
     for e1, e2 in zip(explanation, explanation_legacy):
         compare_payloads(e1.conjunctive_rules, e2.conjunctive_rules)
 
+
 def test_alternative_conjunction_parity(binary_dataset):
-    X_prop_train, y_prop_train, X_cal, y_cal, X_test, y_test, _, _, categorical_features, feature_names = binary_dataset
-    
+    (
+        x_prop_train,
+        y_prop_train,
+        x_cal,
+        y_cal,
+        x_test,
+        y_test,
+        _,
+        _,
+        categorical_features,
+        feature_names,
+    ) = binary_dataset
+
     model = RandomForestClassifier(n_estimators=10, random_state=42)
-    model.fit(X_prop_train, y_prop_train)
-    
+    model.fit(x_prop_train, y_prop_train)
+
     explainer = WrapCalibratedExplainer(model)
-    explainer.calibrate(X_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features)
-    
+    explainer.calibrate(
+        x_cal, y_cal, feature_names=feature_names, categorical_features=categorical_features
+    )
+
     # Get an explanation for the first test instance
-    explanation = explainer.explore_alternatives(X_test[0].reshape(1, -1))
-    explanation_legacy = explainer.explore_alternatives(X_test[0].reshape(1, -1))
-    
+    explanation = explainer.explore_alternatives(x_test[0].reshape(1, -1))
+    explanation_legacy = explainer.explore_alternatives(x_test[0].reshape(1, -1))
+
     # Run new
     explanation.add_conjunctions(n_top_features=5, max_rule_size=2)
-    
+
     # Run legacy
     for exp in explanation_legacy:
         add_conjunctions_alternative_legacy(exp, n_top_features=5, max_rule_size=2)

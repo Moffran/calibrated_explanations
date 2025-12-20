@@ -139,7 +139,7 @@ def _propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
     try:
         raw_meta["trusted"] = trusted_value
         raw_meta["trust"] = trust_value
-    except Exception:
+    except Exception:  # ADR002_ALLOW: metadata propagation is best-effort.  # pragma: no cover
         # pragma: no cover - defensive
         _LOGGER.debug(
             "Failed to propagate trust metadata for plugin %r",
@@ -1241,7 +1241,9 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
     loaded: list[ExplainerPlugin] = []
     try:
         entry_points = importlib_metadata.entry_points()
-    except Exception as exc:
+    except (
+        Exception
+    ) as exc:  # ADR002_ALLOW: entrypoint discovery is best-effort.  # pragma: no cover
         # pragma: no cover - defensive
         warnings.warn(
             f"Failed to enumerate plugin entry points: {exc}",
@@ -1263,7 +1265,9 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
         )
         try:
             plugin = entry_point.load()
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: keep discovery resilient to plugin failures.  # pragma: no cover
             warnings.warn(
                 f"Failed to load plugin entry point {identifier!r}: {exc}",
                 UserWarning,
@@ -1282,7 +1286,10 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
         meta: Dict[str, Any] = dict(raw_meta)
         try:
             validate_plugin_meta(meta)
-        except (ValueError, ValidationError) as exc:
+        except (
+            ValueError,
+            ValidationError,
+        ) as exc:  # ADR002_ALLOW: warn and skip invalid metadata.  # pragma: no cover
             warnings.warn(
                 f"Invalid metadata for plugin {identifier!r}: {exc}",
                 UserWarning,
@@ -1540,7 +1547,7 @@ def register(plugin: ExplainerPlugin) -> None:
         try:
             raw_meta["trusted"] = meta["trusted"]
             raw_meta["trust"] = meta["trust"]
-        except Exception:
+        except Exception:  # ADR002_ALLOW: metadata propagation is best-effort.  # pragma: no cover
             # pragma: no cover - defensive
             _LOGGER.debug(
                 "Failed to propagate trust metadata for plugin %r",
@@ -1587,7 +1594,9 @@ def _resolve_plugin_from_name(name: str) -> ExplainerPlugin:
             continue
         try:
             plugin_name = getter("name")
-        except Exception:
+        except (
+            Exception
+        ):  # ADR002_ALLOW: continue enumerating if metadata misbehaves.  # pragma: no cover
             # pragma: no cover - defensive
             _LOGGER.debug(
                 "Failed to read plugin name for %r",
@@ -1655,7 +1664,7 @@ def _safe_supports(plugin: ExplainerPlugin, model: Any) -> bool:
     """Return True when a plugin reports support for *model* without raising."""
     try:
         return bool(plugin.supports(model))
-    except Exception:
+    except Exception:  # ADR002_ALLOW: treat plugin errors as lack of support.  # pragma: no cover
         return False
 
 

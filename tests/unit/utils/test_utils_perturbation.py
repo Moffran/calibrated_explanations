@@ -32,12 +32,14 @@ def test_categorical_perturbation_respects_rng_and_returns_copy():
 
 def test_categorical_perturbation_identity_rng_triggers_swap_fallback(enable_fallbacks):
     """Test that degenerate RNG triggers perturbation fallback.
-    
+
     This test explicitly validates perturbation fallback behavior.
     """
     column = np.array([1, 2, 3, 4])
     with pytest.warns(UserWarning, match=r"fall.*back"):
-        result = perturbation.categorical_perturbation(column, num_permutations=0, rng=IdentityRNG())
+        result = perturbation.categorical_perturbation(
+            column, num_permutations=0, rng=IdentityRNG()
+        )
 
     # The degenerate RNG should force the fallback swap branch.
     assert np.array_equal(result, np.array([2, 1, 3, 4]))

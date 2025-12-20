@@ -15,10 +15,10 @@ lifecycle management for versioning, flush/reset operations, and telemetry.
 from __future__ import annotations
 
 import logging
-import warnings
 import os
 import sys
 import threading
+import warnings
 from dataclasses import dataclass as _dataclass
 from dataclasses import field
 from hashlib import blake2b
@@ -45,9 +45,7 @@ except:  # noqa: E722
     _HAVE_CACHETOOLS = False
     # Visible notification: cachetools missing, falling back to minimal backend
     _logger = logging.getLogger(__name__)
-    _logger.info(
-        "cachetools not available; falling back to minimal LRU/TTL cache backend"
-    )
+    _logger.info("cachetools not available; falling back to minimal LRU/TTL cache backend")
     warnings.warn(
         "Cache backend fallback: using minimal in-package LRU/TTL implementation due to missing 'cachetools'",
         UserWarning,

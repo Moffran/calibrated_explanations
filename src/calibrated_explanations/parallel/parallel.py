@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-import os
 import sys
 import time
 import warnings
@@ -12,7 +11,18 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Literal, Mapping, Sequence, TypeVar, Optional, Tuple
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+)
 
 try:  # pragma: no cover - optional dependency
     from joblib import Parallel as _JoblibParallel

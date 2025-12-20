@@ -6,9 +6,13 @@ FactualExplanation and AlternativeExplanation, as well as the helper
 _predict_conjunctive. These are preserved for parity testing and must
 NOT be modified.
 """
-from typing import Dict, Any, Tuple
+
+from typing import Any, Dict, Tuple
+
 import numpy as np
+
 from ..utils.helper import safe_first_element
+
 
 def _predict_conjunctive_legacy(
     self,
@@ -65,9 +69,7 @@ def _predict_conjunctive_legacy(
     rule_high = 0.0
     rule_count = 0
 
-    value_iterables = [
-        np.asarray(values) for values in rule_value_set[: len(original_features)]
-    ]
+    value_iterables = [np.asarray(values) for values in rule_value_set[: len(original_features)]]
 
     def _restore() -> None:
         for pos, feat_idx in enumerate(original_features):
@@ -122,6 +124,7 @@ def _predict_conjunctive_legacy(
         rule_low /= rule_count
         rule_high /= rule_count
     return rule_predict, rule_low, rule_high
+
 
 def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
     """Add conjunctive factual rules (Legacy)."""
@@ -203,9 +206,7 @@ def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
             of1 = factual["feature"][f1]
             sampled_values1 = factual["sampled_values"][f1]
             rule_value1 = (
-                sampled_values1
-                if isinstance(sampled_values1, np.ndarray)
-                else [sampled_values1]
+                sampled_values1 if isinstance(sampled_values1, np.ndarray) else [sampled_values1]
             )
 
             for cf2 in top_conjunctives:
@@ -270,6 +271,7 @@ def add_conjunctions_factual_legacy(self, n_top_features=5, max_rule_size=2):
     self.conjunctive_rules = conjunctive_state
     self._has_conjunctive_rules = True
     return self
+
 
 def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2):
     """
@@ -365,9 +367,7 @@ def add_conjunctions_alternative_legacy(self, n_top_features=5, max_rule_size=2)
             of1 = alternative["feature"][f1]
             sampled_values1 = alternative["sampled_values"][f1]
             rule_value1 = (
-                sampled_values1
-                if isinstance(sampled_values1, np.ndarray)
-                else [sampled_values1]
+                sampled_values1 if isinstance(sampled_values1, np.ndarray) else [sampled_values1]
             )
 
             for cf2 in top_conjunctives:

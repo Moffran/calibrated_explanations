@@ -16,9 +16,6 @@ from __future__ import annotations
 
 import contextlib
 import copy
-import os
-import json
-from uuid import uuid4
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
 import numpy as np
@@ -299,7 +296,9 @@ class ExplanationOrchestrator:
             monitor.reset_usage()
         try:
             batch = plugin.explain_batch(x, request)
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: wrap plugin failures in ConfigurationError.  # pragma: no cover
             raise ConfigurationError(
                 f"Explanation plugin execution failed for mode '{mode}': {exc}"
             ) from exc
@@ -309,7 +308,9 @@ class ExplanationOrchestrator:
                 expected_mode=mode,
                 expected_task=self.explainer.mode,
             )
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: rewrap validation errors with context.  # pragma: no cover
             raise ConfigurationError(
                 f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
             ) from exc
@@ -562,7 +563,9 @@ class ExplanationOrchestrator:
         context = self._build_context(mode, plugin, identifier)
         try:
             plugin.initialize(context)
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: wrap plugin initialization failure.  # pragma: no cover
             raise ConfigurationError(
                 f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
             ) from exc
@@ -667,7 +670,9 @@ class ExplanationOrchestrator:
                         f"unsupported for task {self.explainer.mode}"
                     )
                     continue
-            except Exception as exc:
+            except (
+                Exception
+            ) as exc:  # ADR002_ALLOW: defensive catch for third-party plugins.  # pragma: no cover
                 # pragma: no cover - defensive
                 errors.append(f"{identifier}: error during supports_mode ({exc})")
                 continue
@@ -786,10 +791,12 @@ class ExplanationOrchestrator:
         plugin_cls = type(prototype)
         try:
             return plugin_cls()
-        except Exception:
+        except Exception:  # ADR002_ALLOW: fallback when plugins require args.  # pragma: no cover
             try:
                 return copy.deepcopy(prototype)
-            except Exception:
+            except (
+                Exception
+            ):  # ADR002_ALLOW: final fallback to reuse prototype instance.  # pragma: no cover
                 # pragma: no cover - defensive
                 return prototype
 
@@ -898,7 +905,9 @@ class ExplanationOrchestrator:
         """
         try:
             first_explanation = explanations[0]  # type: ignore[index]
-        except Exception:
+        except (
+            Exception
+        ):  # ADR002_ALLOW: telemetry is optional and best-effort.  # pragma: no cover
             # pragma: no cover - defensive: empty or non-indexable containers
             return {}
         builder = getattr(first_explanation, "to_telemetry", None)

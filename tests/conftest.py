@@ -105,7 +105,6 @@ def disable_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
     tests.helpers.fallback_control : Helper functions for fallback management
     """
     from tests.helpers.fallback_control import disable_all_fallbacks
-    from tests.helpers.fallback_control import restore_runtime_warnings
 
     disable_all_fallbacks(monkeypatch)
 

@@ -1,4 +1,5 @@
 import ast
+import linecache
 import sys
 from pathlib import Path
 
@@ -12,6 +13,17 @@ DISALLOWED_EXCEPTIONS = {
 DISALLOWED_WARNINGS = {
     "RuntimeWarning",
 }
+
+def _is_allowlisted(filepath: str | Path, lineno: int) -> bool:
+    """Return True if the given line or the preceding comment allows ADR002."""
+    filepath = str(filepath)
+    marker = "adr002_allow"
+    line = linecache.getline(filepath, lineno).lower()
+    if marker in line:
+        return True
+    prev_line = linecache.getline(filepath, lineno - 1).lower()
+    return marker in prev_line
+
 
 def check_file(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
@@ -34,6 +46,8 @@ def check_file(filepath):
                 exc_name = node.exc.id
 
             if exc_name in DISALLOWED_EXCEPTIONS:
+                if _is_allowlisted(filepath, node.lineno):
+                    continue
                 violations.append((node.lineno, f"Raised disallowed exception: {exc_name}. Use CalibratedError or subclasses per ADR-002."))
 
         # Check for disallowed exceptions in ExceptHandler
@@ -51,6 +65,8 @@ def check_file(filepath):
 
             for name in names_to_check:
                 if name in DISALLOWED_EXCEPTIONS:
+                    if _is_allowlisted(filepath, node.lineno):
+                        continue
                     violations.append((node.lineno, f"Caught disallowed exception: {name}. This may mask root causes; prefer specific handling or CalibratedError types if applicable."))
 
         # Check for warnings.warn usage

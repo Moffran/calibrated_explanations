@@ -69,8 +69,8 @@ All runtime, plugin, visualization, and utility fallbacks must be visible to use
 - **Log Info:** Emit an `INFO` log summarizing the fallback decision (what failed, what path is chosen).
 - **Raise Warning:** Emit a `warnings.warn(..., UserWarning)` with a clear message. No silent fallbacks.
 - **Where:** Apply to execution strategy selection (parallel → sequential), plugin execution fallbacks (legacy path), cache backend fallbacks, visualization simplifications, and perturbation fallbacks.
-- **Tests:** 
-  - If a test depends on a fallback, assert that a warning is raised using `pytest.warns(UserWarning)`. 
+- **Tests:**
+  - If a test depends on a fallback, assert that a warning is raised using `pytest.warns(UserWarning)`.
   - If a test does not depend on a fallback, then the fallback chain must be explicitly made empty to avoid unexpected fallbacks.
 - **Docs:** When introducing a new fallback, update `docs/improvement/RELEASE_PLAN_v1.md` and `CHANGELOG.md` with a short note.
 
