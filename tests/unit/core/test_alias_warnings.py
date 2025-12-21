@@ -49,37 +49,67 @@ def prepare_wrapper():
     return w, x
 
 
-@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_warn_on_aliases_emits_deprecation_once_predict():
     w, x = prepare_wrapper()
-    with warns_or_raises():
-        # use alias 'n_jobs' to trigger warning mapping to parallel_workers
-        w.predict(x, n_jobs=2)
+    import warnings as _warnings
+
+    with _warnings.catch_warnings(record=True) as rec:
+        _warnings.simplefilter("always")
+        with warns_or_raises():
+            # use alias 'n_jobs' to trigger warning mapping to parallel_workers
+            w.predict(x, n_jobs=2)
+        assert any(isinstance(r.message, UserWarning) for r in rec) or any(
+            issubclass(r.category, DeprecationWarning) for r in rec
+        )
 
 
-@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_warn_on_aliases_emits_deprecation_once_predict_proba():
     w, x = prepare_wrapper()
-    with warns_or_raises():
-        w.predict_proba(x, n_jobs=2)
+    import warnings as _warnings
+
+    with _warnings.catch_warnings(record=True) as rec:
+        _warnings.simplefilter("always")
+        with warns_or_raises():
+            w.predict_proba(x, n_jobs=2)
+        assert any(isinstance(r.message, UserWarning) for r in rec) or any(
+            issubclass(r.category, DeprecationWarning) for r in rec
+        )
 
 
-@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_warn_on_aliases_emits_deprecation_once_explain_factual():
     w, x = prepare_wrapper()
-    with warns_or_raises():
-        w.explain_factual(x, alpha=0.1)
+    import warnings as _warnings
+
+    with _warnings.catch_warnings(record=True) as rec:
+        _warnings.simplefilter("always")
+        with warns_or_raises():
+            w.explain_factual(x, alpha=0.1)
+        assert any(isinstance(r.message, UserWarning) for r in rec) or any(
+            issubclass(r.category, DeprecationWarning) for r in rec
+        )
 
 
-@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_warn_on_aliases_emits_deprecation_once_explore_alternatives():
     w, x = prepare_wrapper()
-    with warns_or_raises():
-        w.explore_alternatives(x, alphas=(0.05, 0.95))
+    import warnings as _warnings
+
+    with _warnings.catch_warnings(record=True) as rec:
+        _warnings.simplefilter("always")
+        with warns_or_raises():
+            w.explore_alternatives(x, alphas=(0.05, 0.95))
+        assert any(isinstance(r.message, UserWarning) for r in rec) or any(
+            issubclass(r.category, DeprecationWarning) for r in rec
+        )
 
 
-@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_warn_on_aliases_emits_deprecation_once_explain_fast():
     w, x = prepare_wrapper()
-    with warns_or_raises():
-        w.explain_fast(x, n_jobs=1)
+    import warnings as _warnings
+
+    with _warnings.catch_warnings(record=True) as rec:
+        _warnings.simplefilter("always")
+        with warns_or_raises():
+            w.explain_fast(x, n_jobs=1)
+        assert any(isinstance(r.message, UserWarning) for r in rec) or any(
+            issubclass(r.category, DeprecationWarning) for r in rec
+        )

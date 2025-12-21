@@ -34,6 +34,21 @@ class SequentialExplainExecutor(BaseExplainExecutor):
 
     Processes all test instances and features in a single thread.
     This is the default fallback when parallelism is disabled or unavailable.
+
+    Notes
+    -----
+    **Memory considerations**: The sequential executor materializes all perturbed
+    instances during perturbation generation in `explain_predict_step`. For very
+    large datasets (e.g., 1000+ instances × 1000+ features), this can require
+    significant memory. Users experiencing memory exhaustion should consider:
+
+    1. Reducing test set size (fewer instances)
+    2. Enabling parallelism (which chunks instances internally)
+    3. Reducing number of features via feature selection
+
+    A future optimization will implement lazy perturbation generation or instance-
+    level chunking in sequential mode to better handle large datasets (tracked as
+    a memory efficiency improvement).
     """
 
     @property
@@ -77,6 +92,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
 
         x_input = request.x
         features_to_ignore_array = request.features_to_ignore
+        features_to_ignore_per_instance = getattr(request, "features_to_ignore_per_instance", None)
 
         # Track total explanation time
         total_start_time = time()
@@ -116,6 +132,7 @@ class SequentialExplainExecutor(BaseExplainExecutor):
             request.low_high_percentiles,
             request.bins,
             features_to_ignore_array,
+            features_to_ignore_per_instance=features_to_ignore_per_instance,
         )
 
         # Step 2: Initialize data structures to store feature-level results

@@ -7,7 +7,7 @@ from calibrated_explanations.core.validation import (
     validate_inputs_matrix,
     validate_model,
 )
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.utils.exceptions import (
     ValidationError,
     DataShapeError,
     ModelNotSupportedError,

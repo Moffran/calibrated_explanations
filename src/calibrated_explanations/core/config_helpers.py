@@ -6,6 +6,7 @@ configuration sources like pyproject.toml and environment variables.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, Sequence, Tuple
 
@@ -49,7 +50,9 @@ def read_pyproject_section(path: Sequence[str]) -> Dict[str, Any]:
     try:
         with candidate.open("rb") as fh:  # type: ignore[arg-type]
             data = _tomllib.load(fh)
-    except Exception:  # pragma: no cover - permissive fallback
+    except:  # noqa: E722
+        if not isinstance(sys.exc_info()[1], Exception):
+            raise
         return {}
 
     cursor: Any = data

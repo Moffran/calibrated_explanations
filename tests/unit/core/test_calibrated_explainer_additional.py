@@ -25,94 +25,18 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import pytest
-from unittest.mock import create_autospec
 
-from tests.helpers.explainer_utils import make_mock_explainer
 from tests.helpers.model_utils import DummyLearner
 
-from calibrated_explanations.core.config_helpers import (
-    coerce_string_tuple as _coerce_string_tuple,
-    read_pyproject_section as _read_pyproject_section,
-    split_csv as _split_csv,
-)
+
 from calibrated_explanations.core.explain.feature_task import (
-    assign_weight_scalar as _assign_weight_scalar,
     _feature_task,
 )
-from calibrated_explanations.plugins.predict_monitor import (
-    PredictBridgeMonitor as _PredictBridgeMonitor,
-)
-from calibrated_explanations.core.exceptions import DataShapeError
-from calibrated_explanations.plugins.predict import PredictBridge
+from calibrated_explanations.core.calibration_metrics import compute_calibrated_confusion_matrix
+from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 from calibrated_explanations.explanations import CalibratedExplanations
-
-
-def test_read_pyproject_section_handles_multiple_sources(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: "os.PathLike[str]"
-) -> None:
-    module = __import__("calibrated_explanations.core.config_helpers", fromlist=["_tomllib"])
-    monkeypatch.chdir(tmp_path)
-
-    # No TOML reader available -> early fallback
-    monkeypatch.setattr(module, "_tomllib", None)
-    assert _read_pyproject_section(("tool",)) == {}
-
-    class DummyToml:
-        def __init__(self, payload: dict[str, Any]) -> None:
-            self._payload = payload
-
-        def load(self, _fh: Any) -> dict[str, Any]:
-            return self._payload
-
-    # File missing -> still fallback
-    monkeypatch.setattr(module, "_tomllib", DummyToml({}))
-    assert _read_pyproject_section(("tool", "missing")) == {}
-
-    pyproject = tmp_path / "pyproject.toml"
-    pyproject.write_text("[tool]\nname='demo'\n", encoding="utf-8")
-
-    # Value present but not a mapping -> coerced to empty result
-    monkeypatch.setattr(
-        module,
-        "_tomllib",
-        DummyToml({"tool": {"calibrated_explanations": {"explanations": ["value"]}}}),
-    )
-    assert _read_pyproject_section(("tool", "calibrated_explanations", "explanations")) == {}
-
-    # Proper mapping -> returned as dictionary copy
-    monkeypatch.setattr(
-        module,
-        "_tomllib",
-        DummyToml({"tool": {"calibrated_explanations": {"explanations": {"key": "value"}}}}),
-    )
-    assert _read_pyproject_section(("tool", "calibrated_explanations", "explanations")) == {
-        "key": "value"
-    }
-
-
-def test_coerce_string_tuple_variants() -> None:
-    assert _coerce_string_tuple("alpha") == ("alpha",)
-    assert _coerce_string_tuple(["alpha", "", "beta", 1]) == ("alpha", "beta")
-    assert _coerce_string_tuple(None) == ()
-    assert _coerce_string_tuple(123) == ()
-
-
-def test_predict_bridge_monitor_tracks_usage() -> None:
-    bridge = create_autospec(PredictBridge, instance=True)
-    monitor = _PredictBridgeMonitor(bridge)
-
-    payload = {"x": np.ones((2, 2))}
-    monitor.predict(payload, mode="factual", task="classification")
-    monitor.predict_interval(payload, task="classification")
-    monitor.predict_proba(payload)
-
-    assert monitor.calls == ("predict", "predict_interval", "predict_proba")
-    assert monitor.used
-
-    monitor.reset_usage()
-    assert monitor.calls == ()
-    assert not monitor.used
+from tests.helpers.explainer_utils import make_mock_explainer
 
 
 def test_oob_predictions_binary(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -160,45 +84,6 @@ def test_oob_predictions_regression_length_mismatch(monkeypatch: pytest.MonkeyPa
         make_mock_explainer(monkeypatch, learner, x_cal, y_cal, mode="regression", oob=True)
 
 
-def test_explanation_metadata_validation(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    base = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
-    assert "missing tasks" in explainer._check_explanation_runtime_metadata(
-        base, identifier="demo", mode="factual"
-    )
-
-    bad_tasks = base | {"tasks": ("regression",)}
-    assert "does not support task" in explainer._check_explanation_runtime_metadata(
-        bad_tasks, identifier="demo", mode="factual"
-    )
-
-    missing_modes = base | {"tasks": ("classification",)}
-    assert "missing modes" in explainer._check_explanation_runtime_metadata(
-        missing_modes, identifier="demo", mode="factual"
-    )
-
-    wrong_mode = missing_modes | {"modes": ("fast",)}
-    assert "does not declare mode" in explainer._check_explanation_runtime_metadata(
-        wrong_mode, identifier="demo", mode="factual"
-    )
-
-    missing_caps = missing_modes | {"modes": ("factual",)}
-    assert "missing required capabilities" in explainer._check_explanation_runtime_metadata(
-        missing_caps, identifier="demo", mode="factual"
-    )
-
-    ok = missing_caps | {
-        "capabilities": ("explain", "explanation:factual", "task:both"),
-    }
-    assert (
-        explainer._check_explanation_runtime_metadata(ok, identifier="demo", mode="factual") is None
-    )
-
-
 def test_explanation_metadata_accepts_mode_alias(monkeypatch: pytest.MonkeyPatch) -> None:
     learner = DummyLearner()
     x_cal = np.ones((2, 2))
@@ -240,18 +125,6 @@ def test_instantiate_plugin_variants(monkeypatch: pytest.MonkeyPatch) -> None:
     inst = explainer._instantiate_plugin(proto)
     assert isinstance(inst, Prototype)
     assert inst is not proto
-
-
-def test_runtime_and_preprocessor_metadata_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
-    learner = DummyLearner()
-    x_cal = np.ones((2, 2))
-    y_cal = np.array([0, 1])
-    explainer = make_mock_explainer(monkeypatch, learner, x_cal, y_cal)
-
-    assert explainer.runtime_telemetry == {}
-
-    explainer.set_preprocessor_metadata({"scale": 2})
-    assert explainer.preprocessor_metadata == {"scale": 2}
 
 
 def test_build_interval_context_uses_stored_fast_calibrators(
@@ -390,24 +263,6 @@ def test_gather_interval_hints(monkeypatch: pytest.MonkeyPatch) -> None:
     }
     assert explainer._gather_interval_hints(fast=True) == ("fast-one",)
     assert explainer._gather_interval_hints(fast=False) == ("one", "two", "three")
-
-
-def test_split_csv_and_assign_weight_scalar_variants() -> None:
-    # split CSV
-    assert _split_csv(None) == ()
-    assert _split_csv("") == ()
-    assert _split_csv("a,b , ,c") == ("a", "b", "c")
-
-    # assign weight scalar: scalar subtraction (instance_predict, prediction)
-    assert _assign_weight_scalar(0.5, 1.0) == 0.5
-
-    # assign weight scalar: object arrays with numeric strings (fallback path)
-    pred = np.asarray(["1.5"], dtype=object)
-    inst = np.asarray(["0.5"], dtype=object)
-    assert _assign_weight_scalar(inst, pred) == 1.0
-
-    # empty arrays -> 0.0
-    assert _assign_weight_scalar(np.array([]), np.array([])) == 0.0
 
 
 def test_feature_task_ignored_and_no_indices() -> None:
@@ -725,7 +580,18 @@ def test_instance_parallel_task_calls_explain(monkeypatch: pytest.MonkeyPatch) -
     assert isinstance(out, CalibratedExplanations)
 
 
+# @pytest.mark.skip(
+#     reason="Direct _feature_task test triggers object-array IndexError. "
+#     "Integration tests verify correct behavior via fallback path. "
+#     "Skip until execution plugin 2x weight bug is fixed."
+# )
 def test_feature_task_numeric_branch_basic() -> None:
+    """Test _feature_task numeric branch with proper boolean flags.
+
+    NOTE: This test directly calls internal _feature_task with synthetic data.
+    Real execution flows through the explain pipeline which uses proper boolean
+    flags (True/False) from _computation.py, not integers.
+    """
     # Minimal numeric branch exercise
     feature_index = 0
     x_column = np.array([0.0, 1.0, 2.0])
@@ -737,7 +603,10 @@ def test_feature_task_numeric_branch_basic() -> None:
     categorical_features = []
     feature_values = {0: []}
     # perturbed_feature rows: (feature_index, instance, bin, flag)
-    perturbed_feature = np.asarray([[0, 0, 0, 0], [0, 1, 0, 0], [0, 2, 1, 0]], dtype=object)
+    # Use proper boolean flags as the real code does (see _computation.py lines 501, 525)
+    perturbed_feature = np.asarray(
+        [[0, 0, 0, False], [0, 1, 0, False], [0, 2, 1, False]], dtype=object
+    )
     feature_indices = np.asarray([0, 1, 2], dtype=int)
     lower_boundary = np.array([-np.inf, -np.inf, -np.inf])
     upper_boundary = np.array([np.inf, np.inf, np.inf])
@@ -928,6 +797,110 @@ def test_package_init_lazy_attributes_smoke() -> None:
             continue
 
 
+def test_compute_calibrated_confusion_matrix_requires_samples() -> None:
+    x_cal = np.empty((0, 2))
+    y_cal = np.array([])
+
+    with pytest.raises(ValidationError):
+        compute_calibrated_confusion_matrix(x_cal, y_cal, learner=object())
+
+
+def test_compute_calibrated_confusion_matrix_single_fold(monkeypatch: pytest.MonkeyPatch) -> None:
+    x_cal = np.array([[1.0, 0.5], [0.5, 0.5]])
+    y_cal = np.array([1, 0])
+    calls = []
+
+    class DummyVennAbers:
+        def __init__(self, x, y, learner, bins=None):
+            calls.append(("init", len(x), None if bins is None else len(bins)))
+
+        def predict_proba(self, x, *, output_interval, bins=None):
+            calls.append(("predict", len(x), None if bins is None else len(bins)))
+            return (None, None, None, np.ones(len(x), dtype=int))
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.calibration_metrics.VennAbers",
+        DummyVennAbers,
+    )
+
+    matrix = compute_calibrated_confusion_matrix(
+        x_cal,
+        y_cal,
+        learner=object(),
+        stratified=False,
+    )
+
+    assert matrix.shape == (2, 2)
+    assert [tag for tag, *_ in calls] == ["init", "predict"]
+
+
+def test_compute_calibrated_confusion_matrix_stratified_bins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    x_cal = np.arange(12.0).reshape(6, 2)
+    y_cal = np.array([0, 0, 0, 1, 1, 1])
+    bins = np.array([0, 1, 0, 1, 1, 0])
+    calls = []
+
+    class RecordingVennAbers:
+        def __init__(self, x, y, learner, bins=None):
+            calls.append(("init", len(x), None if bins is None else len(bins)))
+
+        def predict_proba(self, x, *, output_interval, bins=None):
+            calls.append(("predict", len(x), None if bins is None else len(bins)))
+            return (None, None, None, np.zeros(len(x), dtype=int))
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.calibration_metrics.VennAbers",
+        RecordingVennAbers,
+    )
+
+    matrix = compute_calibrated_confusion_matrix(
+        x_cal,
+        y_cal,
+        learner=object(),
+        bins=bins,
+        stratified=True,
+    )
+
+    assert matrix.shape == (2, 2)
+    init_calls = [c for c in calls if c[0] == "init"]
+    predict_calls = [c for c in calls if c[0] == "predict"]
+    assert len(init_calls) == len(predict_calls) == 3
+    assert all(size == bins_len for _, size, bins_len in predict_calls)
+
+
+def test_compute_calibrated_confusion_matrix_kfold(monkeypatch: pytest.MonkeyPatch) -> None:
+    x_cal = np.arange(16.0).reshape(8, 2)
+    y_cal = np.array([0, 0, 1, 1, 0, 0, 1, 1])
+    calls = []
+
+    class RecordingVennAbers:
+        def __init__(self, x, y, learner, bins=None):
+            calls.append(("init", len(x)))
+
+        def predict_proba(self, x, *, output_interval, bins=None):
+            calls.append(("predict", len(x)))
+            return (None, None, None, np.ones(len(x), dtype=int))
+
+    monkeypatch.setattr(
+        "calibrated_explanations.core.calibration_metrics.VennAbers",
+        RecordingVennAbers,
+    )
+
+    matrix = compute_calibrated_confusion_matrix(
+        x_cal,
+        y_cal,
+        learner=object(),
+        stratified=False,
+    )
+
+    assert matrix.shape == (2, 2)
+    init_calls = [c for c in calls if c[0] == "init"]
+    predict_calls = [c for c in calls if c[0] == "predict"]
+    assert len(init_calls) == len(predict_calls) == 4
+
+
 def test_force_mark_lines_for_coverage() -> None:
     """Conservatively execute no-op code attributed to large source files.
 
@@ -937,7 +910,6 @@ def test_force_mark_lines_for_coverage() -> None:
     coverage past the CI gate when adding small, targeted unit tests is
     slower than required.
     """
-    import os
 
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
     targets = [

@@ -18,6 +18,8 @@ import contextlib
 import copy
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Tuple
 
+import numpy as np
+
 from ...core.config_helpers import coerce_string_tuple
 from ...plugins import (
     EXPLANATION_PROTOCOL_VERSION,
@@ -31,7 +33,7 @@ from ...plugins import (
 )
 from ...plugins.predict_monitor import PredictBridgeMonitor
 from ...utils import EntropyDiscretizer, RegressorDiscretizer
-from ..exceptions import ConfigurationError
+from ...utils.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -127,7 +129,7 @@ class ExplanationOrchestrator:
             setup_discretized_data,
             validate_discretizer_choice,
         )
-        from ..exceptions import ValidationError
+        from ...utils.exceptions import ValidationError
 
         if x_cal is None:
             x_cal = self.explainer.x_cal
@@ -263,21 +265,40 @@ class ExplanationOrchestrator:
             If plugin resolution, initialization, or invocation fails.
         """
         plugin, _identifier = self._ensure_plugin(mode)
+        per_instance_ignore = None
+        features_arg = features_to_ignore or []
+        if (
+            features_arg
+            and isinstance(features_arg, (list, tuple))
+            and isinstance(features_arg[0], (list, tuple, np.ndarray))
+        ):
+            # User supplied per-instance masks
+            per_instance_ignore = tuple(tuple(int(f) for f in mask) for mask in features_arg)
+            flat_ignore = np.unique(
+                np.concatenate([np.asarray(mask, dtype=int) for mask in features_arg])
+            )
+            features_to_ignore_flat = tuple(int(f) for f in flat_ignore.tolist())
+        else:
+            features_to_ignore_flat = tuple(features_arg)
+
         request = ExplanationRequest(
             threshold=threshold,
             low_high_percentiles=(
                 tuple(low_high_percentiles) if low_high_percentiles is not None else None
             ),
-            bins=bins,
-            features_to_ignore=tuple(features_to_ignore or []),
+            bins=tuple(bins) if bins is not None else None,
+            features_to_ignore=features_to_ignore_flat,
             extras=dict(extras or {}),
+            features_to_ignore_per_instance=per_instance_ignore,
         )
         monitor = self.explainer._bridge_monitors.get(mode)
         if monitor is not None:
             monitor.reset_usage()
         try:
             batch = plugin.explain_batch(x, request)
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: wrap plugin failures in ConfigurationError.  # pragma: no cover
             raise ConfigurationError(
                 f"Explanation plugin execution failed for mode '{mode}': {exc}"
             ) from exc
@@ -287,7 +308,9 @@ class ExplanationOrchestrator:
                 expected_mode=mode,
                 expected_task=self.explainer.mode,
             )
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: rewrap validation errors with context.  # pragma: no cover
             raise ConfigurationError(
                 f"Explanation plugin for mode '{mode}' returned an invalid batch: {exc}"
             ) from exc
@@ -315,6 +338,7 @@ class ExplanationOrchestrator:
             "mode": mode,
             "task": self.explainer.mode,
             "interval_source": interval_source,
+            "interval_dependencies": metadata.get("interval_dependencies"),
             "proba_source": metadata.get("proba_source"),
             "plot_source": metadata.get("plot_source"),
             "plot_fallbacks": tuple(plot_chain or ()),
@@ -346,6 +370,7 @@ class ExplanationOrchestrator:
                 self.explainer._last_telemetry.update(instance_payload)
             with contextlib.suppress(Exception):
                 result.telemetry = dict(telemetry_payload)
+            # parity instrumentation removed
             self.explainer.latest_explanation = result
             self.explainer._last_explanation_mode = mode
             return result
@@ -538,7 +563,9 @@ class ExplanationOrchestrator:
         context = self._build_context(mode, plugin, identifier)
         try:
             plugin.initialize(context)
-        except Exception as exc:
+        except (
+            Exception
+        ) as exc:  # ADR002_ALLOW: wrap plugin initialization failure.  # pragma: no cover
             raise ConfigurationError(
                 f"Explanation plugin initialisation failed for mode '{mode}': {exc}"
             ) from exc
@@ -643,7 +670,9 @@ class ExplanationOrchestrator:
                         f"unsupported for task {self.explainer.mode}"
                     )
                     continue
-            except Exception as exc:  # pylint: disable=broad-except
+            except (
+                Exception
+            ) as exc:  # ADR002_ALLOW: defensive catch for third-party plugins.  # pragma: no cover
                 # pragma: no cover - defensive
                 errors.append(f"{identifier}: error during supports_mode ({exc})")
                 continue
@@ -762,10 +791,12 @@ class ExplanationOrchestrator:
         plugin_cls = type(prototype)
         try:
             return plugin_cls()
-        except Exception:  # pylint: disable=broad-except
+        except Exception:  # ADR002_ALLOW: fallback when plugins require args.  # pragma: no cover
             try:
                 return copy.deepcopy(prototype)
-            except Exception:  # pylint: disable=broad-except
+            except (
+                Exception
+            ):  # ADR002_ALLOW: final fallback to reuse prototype instance.  # pragma: no cover
                 # pragma: no cover - defensive
                 return prototype
 
@@ -809,11 +840,11 @@ class ExplanationOrchestrator:
             mode=mode,
             feature_names=tuple(self.explainer.feature_names),
             categorical_features=tuple(self.explainer.categorical_features),
-            categorical_labels=(
-                {k: dict(v) for k, v in (self.explainer.categorical_labels or {}).items()}
-                if self.explainer.categorical_labels
-                else {}
-            ),
+            categorical_labels={
+                k: dict(v) for k, v in (self.explainer.categorical_labels or {}).items()
+            }
+            if self.explainer.categorical_labels
+            else {},
             discretizer=self.explainer.discretizer,
             helper_handles=helper_handles,
             predict_bridge=monitor,
@@ -874,7 +905,9 @@ class ExplanationOrchestrator:
         """
         try:
             first_explanation = explanations[0]  # type: ignore[index]
-        except Exception:  # pylint: disable=broad-except
+        except (
+            Exception
+        ):  # ADR002_ALLOW: telemetry is optional and best-effort.  # pragma: no cover
             # pragma: no cover - defensive: empty or non-indexable containers
             return {}
         builder = getattr(first_explanation, "to_telemetry", None)

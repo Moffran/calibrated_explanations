@@ -412,7 +412,7 @@ def test_length_and_metadata_helpers(simple_explanation):
 
 
 def test_rank_features_requires_input(simple_explanation):
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError):
         simple_explanation._rank_features()
@@ -505,6 +505,25 @@ def test_build_uncertainty_payload_controls_percentiles():
     )
     assert no_percentiles["raw_percentiles"] is None
     assert no_percentiles["confidence_level"] is None
+
+
+def test_ignored_features_for_instance_combines_global_and_per_instance(simple_explanation):
+    """_ignored_features_for_instance should merge collection and per-instance masks."""
+    explanation = simple_explanation
+    container = explanation.calibrated_explanations
+
+    # Global ignore only
+    container.features_to_ignore = [0]
+    container.features_to_ignore_per_instance = [[], []]
+    ignored = explanation._ignored_features_for_instance()
+    assert 0 in ignored
+
+    # Per-instance ignore for this index should be honoured
+    container.features_to_ignore = []
+    container.features_to_ignore_per_instance = [[], [1]]
+    ignored = explanation._ignored_features_for_instance()
+    assert 1 in ignored
+    assert 0 not in ignored
 
 
 def test_build_instance_uncertainty_for_modes():
@@ -639,7 +658,7 @@ def test_predict_conjunctive_average():
 
 
 def test_predict_conjunctive_requires_multiple_features():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     explanation = _make_explanation()
     with pytest.raises(ValidationError):

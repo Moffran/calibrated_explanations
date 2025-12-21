@@ -8,17 +8,23 @@ from unittest.mock import patch
 
 import pytest
 
-from calibrated_explanations.utils import _EMITTED, _EMITTED_PER_TEST, _should_raise, deprecate
+from calibrated_explanations.utils.deprecations import (
+    _EMITTED,
+    _should_raise,
+    deprecate,
+)
 
 
 @pytest.fixture(autouse=True)
 def reset_deprecation_state():
     """Reset deprecation state before and after each test."""
-    _EMITTED.clear()
-    _EMITTED_PER_TEST.clear()
+    from calibrated_explanations.utils import deprecations
+
+    deprecations._EMITTED.clear()
+    deprecations._EMITTED_PER_TEST.clear()
     yield
-    _EMITTED.clear()
-    _EMITTED_PER_TEST.clear()
+    deprecations._EMITTED.clear()
+    deprecations._EMITTED_PER_TEST.clear()
 
 
 class TestShouldRaise:
@@ -118,9 +124,6 @@ class TestDeprecate:
                 # permissive assertion to avoid flaky failures in CI/dev shells.
                 assert len(w) >= 0
 
-    @pytest.mark.xfail(
-        reason="Global state pollution in full suite due to deprecations module design"
-    )
     def test_should_deduplicate_outside_pytest(self):
         """deprecate() should emit once per session outside pytest."""
         with patch.dict(os.environ, {}, clear=True):
@@ -132,25 +135,28 @@ class TestDeprecate:
                 deprecate("Session warning", key=unique_key)
 
             # Verify recorded
-            assert unique_key in _EMITTED
+            from calibrated_explanations.utils import deprecations
 
-    @pytest.mark.xfail(
-        reason="Global state pollution in full suite due to deprecations module design"
-    )
+            assert unique_key in deprecations._EMITTED
+
     def test_should_emit_per_test_under_pytest(self):
         """deprecate() should emit per-test under pytest."""
         pytest_test_id = "test_unique_pytest_emitpertest"
         env = {"PYTEST_CURRENT_TEST": pytest_test_id}
 
-        with patch.dict(os.environ, env):
+        # Explicitly clear CE_DEPRECATIONS so we exercise the warning path even
+        # when the surrounding CI job exports CE_DEPRECATIONS=error.
+        with patch.dict(os.environ, env, clear=True):
             unique_key = "pytest_key_unique_emitpertest"
             # Should emit in pytest
             with pytest.warns(DeprecationWarning, match="Per-test warning"):
                 deprecate("Per-test warning", key=unique_key)
 
             # Should record in per-test map
-            assert pytest_test_id in _EMITTED_PER_TEST
-            assert unique_key in _EMITTED_PER_TEST[pytest_test_id]
+            from calibrated_explanations.utils import deprecations
+
+            assert pytest_test_id in deprecations._EMITTED_PER_TEST
+            assert unique_key in deprecations._EMITTED_PER_TEST[pytest_test_id]
 
     def test_should_respect_custom_stacklevel(self):
         """deprecate() should pass stacklevel to warnings.warn."""
@@ -160,9 +166,6 @@ class TestDeprecate:
             with pytest.warns(DeprecationWarning):
                 deprecate("Test stacklevel", key="stacklevel_test", stacklevel=3)
 
-    @pytest.mark.xfail(
-        reason="Global state pollution in full suite due to deprecations module design"
-    )
     def test_should_record_key_when_raising_in_ci(self):
         """deprecate() should record key even when raising in CI (non-pytest mode)."""
         # Use environment without PYTEST_CURRENT_TEST to simulate CI runner
@@ -174,11 +177,10 @@ class TestDeprecate:
                 deprecate("CI error", key=unique_key)
 
             # Key should be recorded in session-wide dict
-            assert unique_key in _EMITTED
+            from calibrated_explanations.utils import deprecations
 
-    @pytest.mark.xfail(
-        reason="Global state pollution in full suite due to deprecations module design"
-    )
+            assert unique_key in deprecations._EMITTED
+
     def test_should_record_key_in_pytest_when_raising(self):
         """deprecate() should record in per-test map when raising under pytest."""
         pytest_test_id = "test_pytest_raise_unique"
@@ -192,8 +194,10 @@ class TestDeprecate:
                 deprecate("Pytest CI error", key=unique_key)
 
             # Key should be recorded in per-test map
-            assert pytest_test_id in _EMITTED_PER_TEST
-            assert unique_key in _EMITTED_PER_TEST[pytest_test_id]
+            from calibrated_explanations.utils import deprecations
+
+            assert pytest_test_id in deprecations._EMITTED_PER_TEST
+            assert unique_key in deprecations._EMITTED_PER_TEST[pytest_test_id]
 
     def test_should_not_re_emit_after_first_call_outside_pytest(self):
         """deprecate() should not emit twice for same key outside pytest."""

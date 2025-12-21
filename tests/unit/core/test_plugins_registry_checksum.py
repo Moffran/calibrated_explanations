@@ -85,7 +85,7 @@ def test_register_explanation_plugin_verifies_checksum(tmp_path, monkeypatch):
 
 def test_register_explanation_plugin_rejects_checksum_mismatch(tmp_path, monkeypatch):
     """An incorrect checksum raises a ValidationError to prevent tampering."""
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     module_name = _write_checksum_plugin(tmp_path)
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -142,7 +142,7 @@ def test_register_explanation_plugin_warns_when_module_missing(tmp_path):
     MissingFilePlugin.__module__ = module_name
 
     try:
-        with pytest.warns(RuntimeWarning, match="Cannot verify checksum"):
+        with pytest.warns(UserWarning, match="Cannot verify checksum"):
             registry.register_explanation_plugin("checksum.missing", MissingFilePlugin())
     finally:
         registry.clear()

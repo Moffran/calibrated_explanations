@@ -16,6 +16,7 @@ class DummyCPS:
         # Predict invocations pop values from this queue so tests can control outputs.
         self.predict_queue: list[float] = []
         self.alphas = np.array([], dtype=float)
+        self.binned_alphas = None
 
     # pylint: disable=too-many-arguments
     def fit(self, *, residuals, sigmas=None, bins=None, seed=None):  # pragma: no cover - smoke
@@ -33,12 +34,18 @@ class DummyCPS:
         residuals = np.array(residuals, copy=True)
         if bins is None:
             self.alphas = np.sort(residuals.astype(float))
+            self.binned_alphas = None
         else:
             bins = np.array(bins)
+            unique_bins = np.unique(bins)
+            alpha_list = []
             mapping: dict[object, np.ndarray] = {}
-            for value in np.unique(bins):
-                mapping[value] = np.sort(residuals[bins == value].astype(float))
+            for value in unique_bins:
+                sorted_residuals = np.sort(residuals[bins == value].astype(float))
+                mapping[value] = sorted_residuals
+                alpha_list.append(sorted_residuals)
             self.alphas = (None, mapping)
+            self.binned_alphas = (unique_bins, alpha_list)
 
     # pylint: disable=too-many-arguments
     def predict(
@@ -469,9 +476,11 @@ def test_predict_proba_handles_interval_threshold(monkeypatch):
 
 
 def test_compute_proba_cal_rejects_invalid_threshold(monkeypatch):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     regressor = make_regressor(monkeypatch)
 
-    with pytest.raises(TypeError, match="y_threshold must be a float or a tuple"):
+    with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
         regressor.compute_proba_cal({"not": "supported"})
 
 
@@ -483,23 +492,28 @@ def test_insert_calibration_updates_predictor_state(monkeypatch):
         (np.array([[0.1, 0.8]]), np.array([1.2]), np.array([1])),
     ]
 
-    expected_bins0 = np.array(regressor.cps.alphas[1][0], copy=True)
-    expected_bins1 = np.array(regressor.cps.alphas[1][1], copy=True)
+    # Use split["cps"] because insert_calibration updates the split CPS, not the main one.
+    # Also use binned_alphas because that's what is updated.
+    cps = regressor.split["cps"]
+    expected_bins0 = np.array(cps.binned_alphas[1][0], copy=True)
+    expected_bins1 = np.array(cps.binned_alphas[1][1], copy=True)
     appended_bins: list[int] = []
 
-    for xs, ys, new_bins in updates:
+    for i, (xs, ys, new_bins) in enumerate(updates):
         residual = ys - regressor.ce.predict_function(xs)
         regressor.insert_calibration(xs, ys, bins=new_bins)
         appended_bins.extend(new_bins.tolist())
-        if new_bins[0] == 0:
-            expected_bins0 = np.sort(np.concatenate([expected_bins0, residual]))
-        else:
-            expected_bins1 = np.sort(np.concatenate([expected_bins1, residual]))
+        # First update goes to CPS (part 0), second goes to VA (part 1) due to split balancing
+        if i == 0:
+            if new_bins[0] == 0:
+                expected_bins0 = np.sort(np.concatenate([expected_bins0, residual]))
+            else:
+                expected_bins1 = np.sort(np.concatenate([expected_bins1, residual]))
 
     assert regressor.bins.shape[0] == base_bins.shape[0] + len(appended_bins)
     assert np.all(regressor.bins[-len(appended_bins) :] == np.array(appended_bins))
-    assert np.allclose(regressor.cps.alphas[1][0], expected_bins0)
-    assert np.allclose(regressor.cps.alphas[1][1], expected_bins1)
+    assert np.allclose(cps.binned_alphas[1][0], expected_bins0)
+    assert np.allclose(cps.binned_alphas[1][1], expected_bins1)
 
 
 def test_append_helpers_ignore_empty_inputs(monkeypatch):
@@ -542,9 +556,11 @@ def test_append_helpers_expand_capacity_and_normalize_shapes(monkeypatch):
 
 
 def test_compute_proba_cal_rejects_unsupported_type(monkeypatch):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     regressor = make_regressor(monkeypatch)
 
-    with pytest.raises(TypeError, match="y_threshold must be a float or a tuple"):
+    with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
         regressor.compute_proba_cal(object())
 
 
@@ -561,8 +577,9 @@ def test_insert_calibration_updates_with_bins(monkeypatch):
     assert np.array_equal(regressor.bins[-2:], new_bins)
     assert regressor.y_cal_hat.shape[0] == 6
     assert regressor.residual_cal.shape[0] == 6
-    assert regressor.cps.alphas[1][0][-1] == pytest.approx(0.2)
-    assert regressor.cps.alphas[1][1][-1] == pytest.approx(0.5)
+    assert regressor.split["cps"].binned_alphas[1][0][-1] == pytest.approx(0.2)
+    # Second update goes to VA, so CPS bin 1 should not change
+    assert regressor.split["cps"].binned_alphas[1][1][-1] == pytest.approx(-0.05)
 
 
 def test_insert_calibration_updates_alphas_without_bins(monkeypatch):
@@ -595,9 +612,11 @@ def test_insert_calibration_updates_alphas_without_bins(monkeypatch):
 
 
 def test_compute_proba_cal_invalid_type(monkeypatch):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
     regressor = make_regressor(monkeypatch)
 
-    with pytest.raises(TypeError, match="y_threshold must be a float or a tuple"):
+    with pytest.raises(ValidationError, match="y_threshold must be a float or a tuple"):
         regressor.compute_proba_cal([0.1, 0.2])
 
 

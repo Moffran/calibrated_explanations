@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from calibrated_explanations.core import calibrated_explainer as explainer_module
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.utils.exceptions import (
     DataShapeError,
     ValidationError,
 )

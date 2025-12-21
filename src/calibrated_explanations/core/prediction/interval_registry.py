@@ -18,7 +18,7 @@ from ...calibration.interval_learner import (
     initialize_interval_learner,
     initialize_interval_learner_for_fast_explainer,
 )
-from ..exceptions import ConfigurationError
+from ...utils.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -114,7 +114,7 @@ class IntervalRegistry:
             # pylint: disable=fixme
             # TODO: change so that existing calibrators are extended with new calibration instances
             # Import here to allow monkeypatching in tests
-            from ..calibration.venn_abers import VennAbers
+            from ...calibration.venn_abers import VennAbers
 
             self.interval_learner = VennAbers(
                 self.explainer.x_cal,

@@ -16,7 +16,7 @@ import numpy as np
 if TYPE_CHECKING:
     from ..explanations import CalibratedExplanations
 
-from .exceptions import (
+from ..utils.exceptions import (
     ValidationError,
     DataShapeError,
 )
@@ -255,8 +255,34 @@ def format_classification_prediction(
     if new_classes is None:
         new_classes = (predict >= 0.5).astype(int)
 
+    # When class_labels or label_map are provided we may need to map numeric
+    # indices to human-readable labels. Be defensive: new_classes can already
+    # contain labels (strings) or numeric indices. Also allow dict-style
+    # mappings.
     if label_map is not None or class_labels is not None:
-        new_classes = np.array([class_labels[c] for c in new_classes])
+        # Prefer explicit mapping function when label_map provided
+        if label_map is not None:
+            mapped = [label_map.get(int(c), label_map.get(str(c), c)) for c in new_classes]
+            new_classes = np.array(mapped)
+        else:
+            # class_labels may be a sequence (list/ndarray) or a mapping.
+            if isinstance(class_labels, dict):
+                mapped = [class_labels.get(c, class_labels.get(int(c), c)) for c in new_classes]
+                new_classes = np.array(mapped)
+            else:
+                # sequence-like: map only when new_classes are integer indices
+                try:
+                    arr_nc = np.asarray(new_classes)
+                    if np.issubdtype(arr_nc.dtype, np.integer):
+                        mapped = [class_labels[int(c)] for c in arr_nc]
+                        new_classes = np.array(mapped)
+                    else:
+                        # Assume new_classes are already label values; coerce to ndarray
+                        new_classes = np.asarray(new_classes)
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: tolerate unexpected label containers.  # pragma: no cover
+                    new_classes = np.asarray(new_classes)
 
     return (new_classes, (low, high)) if uq_interval else new_classes
 

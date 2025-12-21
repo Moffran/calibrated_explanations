@@ -10,11 +10,15 @@ import numbers
 import os
 import sys
 from inspect import isclass
+from typing import Any
 
 import numpy as np
 from pandas import CategoricalDtype
 
-# from calibrated_explanations.core import NotFittedError, ValidationError
+try:  # pragma: no cover - script-mode fallback
+    from .exceptions import NotFittedError, ValidationError
+except ImportError:  # pragma: no cover - invoked when run as a script
+    from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 
 
 def make_directory(path: str, save_ext=None, add_plots_folder=True) -> None:  # pylint: disable=unused-private-member
@@ -72,8 +76,6 @@ def safe_isinstance(obj, class_path_str):
         class_path_strs = [""]
 
     # try each module path in order
-    from calibrated_explanations.core import ValidationError
-
     for _class_path_str in class_path_strs:
         if "." not in _class_path_str:
             raise ValidationError(
@@ -125,11 +127,14 @@ def safe_import(module_name, class_name=None):
             f"The required module '{module_name}' is not installed. "
             f"Please install it using 'pip install {module_name}' or another method."
         ) from exc
-    except AttributeError as exc:
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, AttributeError):
+            raise
         raise ImportError(
             f"The class or function '{class_name}' does "
             + f"not exist in the module '{module_name}'."
-        ) from exc
+        ) from exc_info
 
 
 # copied from sklearn.utils.validation.check_is_fitted
@@ -180,10 +185,8 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
     NotFittedError
         If the attributes are not found.
     """
-    from calibrated_explanations.core import NotFittedError
-
     if isclass(estimator):
-        raise TypeError(f"{estimator} is a class, not an instance.")
+        raise ValidationError(f"{estimator} is a class, not an instance.")
     if msg is None:
         msg = (
             "This %(name)s instance is not fitted yet. Call 'fit' with "
@@ -200,7 +203,7 @@ def check_is_fitted(estimator, attributes=None, *, msg=None, all_or_any=all):
         or hasattr(estimator, "partial_fit")  # handle online models
         or hasattr(estimator, "learn_initial_training_set")
     ):  # handle online_cp package
-        raise TypeError(f"{estimator} is not an estimator instance.")
+        raise ValidationError(f"{estimator} is not an estimator instance.")
 
     if attributes is not None:
         if not isinstance(attributes, (list, tuple)):
@@ -225,7 +228,9 @@ def is_notebook():
 
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             return False
-    except (ImportError, AttributeError):
+    except BaseException as exc:
+        if not isinstance(exc, (ImportError, AttributeError)):
+            raise
         return False
     return True
 
@@ -385,8 +390,6 @@ def assert_threshold(threshold, x):
         ...
     AssertionError: list thresholds must have the same length as the number of samples
     """
-    from calibrated_explanations.core import ValidationError
-
     if threshold is None:
         return threshold
     if np.isscalar(threshold) and isinstance(threshold, (numbers.Integral, numbers.Real)):
@@ -460,8 +463,6 @@ def calculate_metrics(
     -----
     If the method is called with no arguments, it will return the list of available metrics.
     """
-    from calibrated_explanations.core import ValidationError
-
     if uncertainty is None and prediction is None:
         return ["ensured"]
 
@@ -574,8 +575,8 @@ def immutable_array(array):
     >>> arr = immutable_array([1, 2, 3])
     >>> arr.flags.writeable
     False
-    >>> arr[0]
-    np.int64(1)
+    >>> int(arr[0])
+    1
     >>> arr[0] = 10
     Traceback (most recent call last):
         ...
@@ -623,7 +624,10 @@ def safe_mean(values, default=0.0):
         if arr.size == 0:
             return default
         return float(np.mean(arr))
-    except Exception:
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
+            raise
         return default
 
 
@@ -658,8 +662,50 @@ def safe_first_element(values, default=0.0, col=None):
         if arr.shape[0] > 0 and arr.shape[1] > col:
             return float(arr[0, col])
         return float(default)
-    except Exception:
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
+            raise
         return float(default)
+
+
+def assign_threshold(threshold: Any) -> Any:
+    """Normalize regression threshold for prediction tasks.
+
+    Returns empty containers for list/array inputs to prevent
+    threshold broadcast errors. For scalar thresholds, returns the
+    value unchanged. Used in probabilistic regression to validate
+    and prepare thresholds before making predictions.
+
+    Parameters
+    ----------
+    threshold : scalar, list, array-like, or None
+        Optional threshold value for regression explanations.
+
+    Returns
+    -------
+    None, scalar, or empty array
+        For None: returns None.
+        For scalar: returns the scalar unchanged.
+        For list/array: returns empty array (no threshold broadcast).
+
+    Examples
+    --------
+    Scalar threshold (valid for single prediction):
+
+    >>> assign_threshold(5.0)
+    5.0
+    """
+    if threshold is None:
+        return None
+    if isinstance(threshold, (list, np.ndarray)):
+        # Return empty array to signal invalid threshold list for broadcast
+        return (
+            np.empty((0,), dtype=tuple)
+            if len(threshold) > 0 and isinstance(threshold[0], tuple)
+            else np.empty((0,))
+        )
+    return threshold
 
 
 if __name__ == "__main__":

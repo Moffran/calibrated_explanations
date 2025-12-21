@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import is_dataclass
 
+import pytest
 from sklearn.ensemble import RandomForestClassifier
 
 from calibrated_explanations.api.config import ExplainerBuilder, ExplainerConfig
@@ -106,3 +107,52 @@ def test_wrap_from_config_applies_defaults_fast():
     out = w.explain_fast([[0.0]])
     assert out["low_high_percentiles"] == (20, 80)
     assert out["threshold"] == 0.4
+
+
+def test_explainer_builder_perf_options(monkeypatch: pytest.MonkeyPatch):
+    model = RandomForestClassifier()
+    builder = ExplainerBuilder(model)
+    builder = builder.perf_cache(
+        True,
+        max_items=10,
+        max_bytes=1024,
+        namespace="ns",
+        version="1.2.3",
+        ttl=60.0,
+    )
+    builder = builder.perf_parallel(
+        True,
+        backend="threads",
+        workers=4,
+        min_batch=8,
+        min_instances=16,
+        tiny_workload=32,
+        granularity="instance",
+    )
+    builder = builder.perf_feature_filter(True, per_instance_top_k=3)
+    builder = builder.perf_telemetry(lambda event, payload: None)
+
+    cfg = builder.build_config()
+    assert cfg.perf_cache_enabled is True
+    assert cfg.perf_cache_max_items == 10
+    assert cfg.perf_cache_max_bytes == 1024
+    assert cfg.perf_cache_namespace == "ns"
+    assert cfg.perf_parallel_backend == "threads"
+    assert cfg.perf_parallel_workers == 4
+    assert cfg.perf_parallel_min_batch == 8
+    assert cfg.perf_parallel_min_instances == 16
+    assert cfg.perf_parallel_tiny_workload == 32
+    assert cfg.perf_feature_filter_enabled is True
+    assert cfg.perf_feature_filter_per_instance_top_k == 3
+
+
+def test_explainer_builder_perf_factory_failure(monkeypatch: pytest.MonkeyPatch):
+    model = RandomForestClassifier()
+    builder = ExplainerBuilder(model)
+
+    def boom(cfg):
+        raise RuntimeError("perf factory broke")
+
+    monkeypatch.setattr("calibrated_explanations.api.config._perf_from_config", boom)
+    cfg = builder.build_config()
+    assert getattr(cfg, "_perf_factory") is None

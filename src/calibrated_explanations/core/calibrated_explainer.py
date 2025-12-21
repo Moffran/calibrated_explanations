@@ -14,6 +14,8 @@ conformal predictive systems (regression).
 from __future__ import annotations
 
 import copy
+import sys
+import contextlib
 from time import time
 from typing import TYPE_CHECKING
 
@@ -36,7 +38,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for <3.11
 # Core imports (no cross-sibling dependencies)
 from ..utils import check_is_fitted, convert_targets_to_numeric, safe_isinstance
 
-from .exceptions import (
+from ..utils.exceptions import (
     DataShapeError,
     ValidationError,
 )
@@ -140,23 +142,20 @@ class CalibratedExplainer:
         self._numeric_sorted_cache: Dict[int, np.ndarray] | None = None
         self._calibration_summary_shape: Tuple[int, int] | None = None
         if self.oob:
-            try:
-                if mode == "classification":
-                    y_oob_proba = self.learner.oob_decision_function_
-                    if (
-                        len(y_oob_proba.shape) == 1 or y_oob_proba.shape[1] == 1
-                    ):  # Binary classification
-                        y_oob = (y_oob_proba > 0.5).astype(np.dtype(y_cal.dtype))
-                    else:  # Multiclass classification
-                        y_oob = np.argmax(y_oob_proba, axis=1)
-                        if safe_isinstance(y_cal, "pandas.core.arrays.categorical.Categorical"):
-                            y_oob = y_cal.categories[y_oob]
-                        else:
-                            y_oob = y_oob.astype(np.dtype(y_cal.dtype))
-                else:
-                    y_oob = self.learner.oob_prediction_
-            except Exception as exc:
-                raise exc
+            if mode == "classification":
+                y_oob_proba = self.learner.oob_decision_function_
+                if (
+                    len(y_oob_proba.shape) == 1 or y_oob_proba.shape[1] == 1
+                ):  # Binary classification
+                    y_oob = (y_oob_proba > 0.5).astype(np.dtype(y_cal.dtype))
+                else:  # Multiclass classification
+                    y_oob = np.argmax(y_oob_proba, axis=1)
+                    if safe_isinstance(y_cal, "pandas.core.arrays.categorical.Categorical"):
+                        y_oob = y_cal.categories[y_oob]
+                    else:
+                        y_oob = y_oob.astype(np.dtype(y_cal.dtype))
+            else:
+                y_oob = self.learner.oob_prediction_
             if len(x_cal) != len(y_oob):
                 raise DataShapeError(
                     "The length of the out-of-bag predictions does not match the length of X_cal."
@@ -294,12 +293,39 @@ class CalibratedExplainer:
         result = cls.__new__(cls)
         memo[id(self)] = result
         # Manually copy attributes
+        # Some attributes are runtime helpers or refer back into the explainer
+        # (plugin manager, parallel executor, caches, integration helpers, etc.).
+        # Deep-copying these can cause recursion or try to copy unpicklable objects.
+        # Shallow-copy them instead to preserve references and avoid recursion.
+        shallow_copy_keys = {
+            "_plugin_manager",
+            "_perf_parallel",
+            "_perf_cache",
+            "_lime_helper",
+            "_shap_helper",
+            "_predict_bridge",
+            "latest_explanation",
+            "learner",
+            "predict_function",
+            "rng",
+        }
+
         for k, v in self.__dict__.items():
+            if k in shallow_copy_keys:
+                # ADR002_ALLOW: swallowing to keep deepcopy best-effort.
+                with contextlib.suppress(Exception):
+                    setattr(result, k, v)
+                continue
+
             try:
                 setattr(result, k, copy.deepcopy(v, memo))
-            except TypeError:
-                # Fallback for uncopyable objects
-                setattr(result, k, v)
+            except (
+                Exception
+            ):  # ADR002_ALLOW: fallback to shallow copy when deepcopy fails.  # pragma: no cover
+                # Fallback: if deepcopy fails for any reason, keep original reference.
+                # ADR002_ALLOW: ignore attributes that cannot be copied.
+                with contextlib.suppress(Exception):
+                    setattr(result, k, v)
 
         return result
 
@@ -316,7 +342,7 @@ class CalibratedExplainer:
 
     def _require_plugin_manager(self) -> PluginManager:
         """Return the plugin manager or raise if the explainer is not initialized."""
-        from .exceptions import NotFittedError
+        from ..utils.exceptions import NotFittedError
 
         manager = getattr(self, "_plugin_manager", None)
         if manager is None:
@@ -342,6 +368,90 @@ class CalibratedExplainer:
             return ParallelExecutor(env_config)
 
         return None
+
+    # ------------------------------------------------------------------
+    # Parallel pool lifecycle helpers
+    # ------------------------------------------------------------------
+    def initialize_pool(self, n_workers: int | None = None, *, pool_at_init: bool = False) -> None:
+        """Create a `ParallelExecutor` for this explainer.
+
+        Parameters
+        ----------
+        n_workers: int | None
+            Optional maximum worker count to enforce.
+        pool_at_init: bool
+            If True, enter the pool immediately so worker processes are
+            spawned at initialization time (useful for warm-up and
+            initializer-based harness installation).
+        """
+        from ..parallel import ParallelConfig, ParallelExecutor
+
+        if getattr(self, "_perf_parallel", None) is not None:
+            return
+
+        cfg = ParallelConfig.from_env()
+        cfg.enabled = True
+        if n_workers is not None:
+            cfg.max_workers = n_workers
+
+        # If requested, set up a worker initializer that will receive a
+        # compact explainer spec. Keep the spec deliberately small and
+        # picklable.
+        if pool_at_init:
+            # ADR002_ALLOW: optional initializer wiring should not block.
+            with contextlib.suppress(Exception):
+                import calibrated_explanations.core.explain.parallel_runtime as pr_mod
+
+                # Build a picklable compact spec containing only the data
+                # required to rehydrate an explainer in worker processes.
+                # Attempt to include a picklable learner payload. If the
+                # learner is not picklable, fall back to omitting it so the
+                # worker initializer must handle a missing learner case.
+                learner_bytes = None
+                try:
+                    import pickle  # nosec B403
+
+                    learner_bytes = pickle.dumps(getattr(self, "learner", None))
+                except (
+                    Exception
+                ):  # ADR002_ALLOW: learner pickling best-effort fallback.  # pragma: no cover
+                    learner_bytes = None
+
+                spec = {
+                    "learner_bytes": learner_bytes,
+                    "x_cal": getattr(self, "x_cal", None),
+                    "y_cal": getattr(self, "y_cal", None),
+                    "mode": getattr(self, "mode", None),
+                    "num_features": getattr(self, "num_features", None),
+                    "bins": getattr(self, "bins", None),
+                    "sample_percentiles": getattr(self, "sample_percentiles", None),
+                }
+                cfg.worker_initializer = pr_mod.worker_init_from_explainer_spec
+                cfg.worker_init_args = (spec,)
+
+        self._perf_parallel = ParallelExecutor(cfg)
+        if pool_at_init:
+            # Enter context to spawn worker pool now
+            self._perf_parallel.__enter__()
+
+    def close(self) -> None:
+        """Shutdown any provisioned parallel pool and release resources."""
+        perf = getattr(self, "_perf_parallel", None)
+        if perf is None:
+            return
+        try:
+            perf.__exit__(None, None, None)
+        finally:
+            self._perf_parallel = None
+
+    def __enter__(self) -> "CalibratedExplainer":
+        """Context manager entry; create and enter a worker pool."""
+        self.initialize_pool(pool_at_init=True)
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Context manager exit; close any provisioned pool."""
+        self.close()
 
     def _infer_explanation_mode(self) -> str:
         """Infer the explanation mode from runtime state."""
@@ -796,9 +906,10 @@ class CalibratedExplainer:
     @property
     def _pyproject_intervals(self) -> Dict[str, Any] | None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
+        manager = getattr(self, "_plugin_manager", None)
+        if manager is None:
             return None
-        return self._plugin_manager._pyproject_intervals
+        return getattr(manager, "_pyproject_intervals", None)
 
     @_pyproject_intervals.setter
     def _pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
@@ -811,9 +922,10 @@ class CalibratedExplainer:
     @property
     def _pyproject_plots(self) -> Dict[str, Any] | None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
+        manager = getattr(self, "_plugin_manager", None)
+        if manager is None:
             return None
-        return self._plugin_manager._pyproject_plots
+        return getattr(manager, "_pyproject_plots", None)
 
     @_pyproject_plots.setter
     def _pyproject_plots(self, value: Dict[str, Any] | None) -> None:
@@ -1150,16 +1262,18 @@ class CalibratedExplainer:
         """
         # Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "binaryRegressor" if "regression" in self.mode else "binaryEntropy"
-        return self._explanation_orchestrator.invoke_factual(
-            x,
-            threshold,
-            low_high_percentiles,
-            bins,
-            features_to_ignore,
-            discretizer=discretizer,
-            _use_plugin=_use_plugin,
-            **kwargs,
-        )
+        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+        with ctx:
+            return self._explanation_orchestrator.invoke_factual(
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                discretizer=discretizer,
+                _use_plugin=_use_plugin,
+                **kwargs,
+            )
 
     def explain_counterfactual(
         self,
@@ -1228,24 +1342,24 @@ class CalibratedExplainer:
         Returns
         -------
         AlternativeExplanations : :class:`.AlternativeExplanations`
-            An `AlternativeExplanations` containing one :class:`.AlternativeExplanation` for each instance.
-
         Notes
         -----
         The `explore_alternatives` will eventually be used instead of the `explain_counterfactual` method.
         """
         # Thin delegator that sets discretizer and delegates to orchestrator
         discretizer = "regressor" if "regression" in self.mode else "entropy"
-        return self._explanation_orchestrator.invoke_alternative(
-            x,
-            threshold,
-            low_high_percentiles,
-            bins,
-            features_to_ignore,
-            discretizer=discretizer,
-            _use_plugin=_use_plugin,
-            **kwargs,
-        )  # type: ignore[return-value]
+        ctx = self._perf_parallel if self._perf_parallel is not None else contextlib.nullcontext()
+        with ctx:
+            return self._explanation_orchestrator.invoke_alternative(
+                x,
+                threshold,
+                low_high_percentiles,
+                bins,
+                features_to_ignore,
+                discretizer=discretizer,
+                _use_plugin=_use_plugin,
+                **kwargs,
+            )  # type: ignore[return-value]
 
     def __call__(
         self,
@@ -1260,9 +1374,9 @@ class CalibratedExplainer:
     ) -> CalibratedExplanations:
         """Call self as a function to create a :class:`.CalibratedExplanations` object for the test data with the already assigned discretizer.
 
-        Since v0.4.0, this method is equivalent to the `explain` method.
+        Since v0.4.0, this method is equivalent to the `_explain` method.
         """
-        return self.explain(
+        return self._explain(
             x,
             threshold,
             low_high_percentiles,
@@ -1271,7 +1385,7 @@ class CalibratedExplainer:
             _use_plugin=_use_plugin,
         )
 
-    def explain(
+    def _explain(
         self,
         x,
         threshold=None,
@@ -1284,7 +1398,8 @@ class CalibratedExplainer:
     ) -> CalibratedExplanations:
         """Generate explanations for test instances by analyzing feature effects.
 
-        This is a thin delegator that delegates to the explanation orchestrator.
+        This is an internal orchestration primitive that delegates to the explanation orchestrator.
+        It is NOT part of the public API and should not be called directly.
 
         This method:
         1. Makes predictions on original test instances
@@ -1443,7 +1558,6 @@ class CalibratedExplainer:
         """
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
-        import sys
         from pathlib import Path
 
         # Ensure the repository root is in the path
@@ -1480,7 +1594,6 @@ class CalibratedExplainer:
         """
         # Delegate to external plugin pipeline
         # pylint: disable-next=import-outside-toplevel
-        import sys
         from pathlib import Path
 
         # Ensure the repository root is in the path

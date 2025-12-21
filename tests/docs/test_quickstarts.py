@@ -9,7 +9,7 @@ from calibrated_explanations import WrapCalibratedExplainer
 from tests.helpers.doc_utils import extract_threshold_value
 
 
-def test_classification_quickstart() -> None:
+def test_classification_quickstart(enable_fallbacks) -> None:
     dataset = load_breast_cancer()
     x = dataset.data
     y = dataset.target
@@ -60,7 +60,7 @@ def test_classification_quickstart() -> None:
     assert extract_threshold_value(prediction_uncertainty.get("threshold")) is None
 
 
-def test_regression_quickstart() -> None:
+def test_regression_quickstart(enable_fallbacks) -> None:
     dataset = load_diabetes()
     x = dataset.data
     y = dataset.target

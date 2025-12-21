@@ -43,7 +43,7 @@ v0.9.0 release plan:
       python -m sphinx -b html -W docs docs/_build/html
       python -m sphinx -b linkcheck docs docs/_build/linkcheck
       pytest tests/docs
-      pytest --cov --cov-fail-under=88
+      pytest --cov --cov-fail-under=90
       ```
 
     Capture the `pytest --cov` summary for the release notes and update the

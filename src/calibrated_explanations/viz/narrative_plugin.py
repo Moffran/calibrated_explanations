@@ -6,6 +6,10 @@ from calibrated explanations instead of traditional visualizations.
 
 from __future__ import annotations
 
+import contextlib
+import logging
+import sys
+import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -121,15 +125,31 @@ class NarrativePlotPlugin:
         if template and not Path(template).is_absolute() and not Path(template).exists():
             # For relative paths, fall back to default template
             template = self.default_template
+            logging.getLogger(__name__).info(
+                "Narrative template not found (relative path); using default template"
+            )
+            warnings.warn(
+                "Narrative template fallback: default template used because provided relative path was missing",
+                UserWarning,
+                stacklevel=2,
+            )
         elif template and Path(template).is_absolute() and not Path(template).exists():
             # For absolute paths, fall back to default template
             template = self.default_template
+            logging.getLogger(__name__).info(
+                "Narrative template not found (absolute path); using default template"
+            )
+            warnings.warn(
+                "Narrative template fallback: default template used because provided absolute path was missing",
+                UserWarning,
+                stacklevel=2,
+            )
 
         # Validate expertise level
         valid_levels = {"beginner", "intermediate", "advanced"}
         if isinstance(expertise_level, str):
             if expertise_level not in valid_levels:
-                from ..core.exceptions import ValidationError
+                from ..utils.exceptions import ValidationError
 
                 raise ValidationError(
                     f"Invalid expertise level: {expertise_level}. "
@@ -145,7 +165,7 @@ class NarrativePlotPlugin:
             levels = tuple(expertise_level)
             invalid = [lv for lv in levels if lv not in valid_levels]
             if invalid:
-                from ..core.exceptions import ValidationError
+                from ..utils.exceptions import ValidationError
 
                 raise ValidationError(
                     f"Invalid expertise level(s): {', '.join(invalid)}. "
@@ -160,7 +180,7 @@ class NarrativePlotPlugin:
         # Validate output format
         valid_outputs = {"dataframe", "text", "html", "dict"}
         if output not in valid_outputs:
-            from ..core.exceptions import ValidationError
+            from ..utils.exceptions import ValidationError
 
             raise ValidationError(
                 f"Invalid output format: {output}. "
@@ -208,7 +228,10 @@ class NarrativePlotPlugin:
                         feature_names=feature_names,
                     )
                     row[f"{explanation_type}_explanation_{level}"] = narrative
-                except Exception as e:
+                except BaseException:
+                    e = sys.exc_info()[1]
+                    if not isinstance(e, Exception):
+                        raise
                     # Include error message in output for debugging
                     row[f"{explanation_type}_explanation_{level}"] = (
                         f"Error generating narrative: {e}"
@@ -250,7 +273,10 @@ class NarrativePlotPlugin:
                 # Check if multiclass
                 try:
                     is_multiclass = explainer.is_multiclass()
-                except Exception:
+                except BaseException:
+                    exc_info = sys.exc_info()[1]
+                    if not isinstance(exc_info, Exception):
+                        raise
                     is_multiclass = getattr(explainer, "is_multiclass", False)
 
                 if is_multiclass:
@@ -263,7 +289,10 @@ class NarrativePlotPlugin:
             # Default fallback
             return "regression"
 
-        except Exception:
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
+                raise
             # Fallback to regression if detection fails
             return "regression"
 
@@ -295,7 +324,10 @@ class NarrativePlotPlugin:
 
             return None
 
-        except Exception:
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
+                raise
             return None
 
     def _is_alternative(self, explanations) -> bool:
@@ -318,10 +350,9 @@ class NarrativePlotPlugin:
 
         # Check if the explanations have the _is_alternative method
         if hasattr(explanations, "_is_alternative"):
-            try:
+            with contextlib.suppress(AttributeError, TypeError):
                 return explanations._is_alternative()
-            except (AttributeError, TypeError):
-                return False
+            return False
 
         return False
 
@@ -355,7 +386,7 @@ class NarrativePlotPlugin:
             return self._format_as_html(results)
 
         # Should not reach here due to validation
-        from ..core.exceptions import ConfigurationError
+        from ..utils.exceptions import ConfigurationError
 
         raise ConfigurationError(
             f"Unsupported output format: {output_format}",

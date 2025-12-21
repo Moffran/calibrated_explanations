@@ -13,9 +13,10 @@ class StaticRNG:
         return np.array(values)
 
 
-def test_categorical_perturbation_swaps_when_permutation_same():
+def test_categorical_perturbation_swaps_when_permutation_same(enable_fallbacks):
     column = np.array(["a", "b", "c", "d"])
-    result = perturbation.categorical_perturbation(column, rng=StaticRNG())
+    with pytest.warns(UserWarning, match=r"fall.*back"):
+        result = perturbation.categorical_perturbation(column, rng=StaticRNG())
     assert set(result) == set(column)
     assert not np.array_equal(result, column)
 
@@ -42,7 +43,7 @@ def test_perturb_dataset_uniform_with_seed():
 
 
 def test_perturb_dataset_invalid_noise_type():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     x = np.array([[0.0], [1.0]])
     y = np.array([0.0, 1.0])

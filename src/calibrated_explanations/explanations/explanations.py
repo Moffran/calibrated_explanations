@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import sys
 import warnings
+from collections.abc import Sequence as ABCSequence
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from time import time
@@ -12,8 +14,8 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 
 import numpy as np
 
-from ..core.exceptions import ValidationError
 from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
+from ..utils.exceptions import ValidationError
 from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
 from .models import Explanation as DomainExplanation
@@ -37,6 +39,8 @@ def _jsonify(value: Any) -> Any:
         return {str(key): _jsonify(val) for key, val in value.items()}
     if isinstance(value, np.generic):  # numpy scalars
         return value.item()
+    if callable(value):
+        return str(value)
     return value
 
 
@@ -96,6 +100,10 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         self.features_to_ignore: List[int] = (
             features_to_ignore if features_to_ignore is not None else []
         )
+        # Optional per-instance feature ignore masks produced by the internal
+        # FAST-based feature filter. When present, each entry corresponds to
+        # the indices ignored for that instance on top of any global ignore.
+        self.features_to_ignore_per_instance: Optional[Sequence[Sequence[int]]] = None
         # Derived caches (set during finalize of individual explanations)
         self._feature_names_cache: Optional[Sequence[str]] = None  # populated lazily
         self._predictions_cache: Optional[np.ndarray] = None
@@ -166,6 +174,14 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             else:
                 # assume list of tuples aligned with instances
                 new_.y_threshold = [self.y_threshold[e.index] for e in new_]
+            # Preserve per-instance feature ignore masks when present by slicing
+            # them in the same way as bins/x_test/y_threshold.
+            masks_value = getattr(self, "features_to_ignore_per_instance", None)
+            if isinstance(masks_value, ABCSequence):
+                try:
+                    new_.features_to_ignore_per_instance = [masks_value[e.index] for e in new_]
+                except IndexError:
+                    new_.features_to_ignore_per_instance = None
             # Reset cached aggregates to avoid referencing stale state from the source
             new_._feature_names_cache = None
             new_._predictions_cache = None
@@ -176,7 +192,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             for i, e in enumerate(new_):
                 e.index = i
             return new_
-        raise TypeError("Invalid argument type.")
+        raise ValidationError("Invalid argument type.", details={"argument": key})
 
     def __repr__(self) -> str:
         """Return the string representation of the CalibratedExplanations object."""
@@ -200,7 +216,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def from_batch(cls, batch):
         """Reconstruct a collection from an :class:`ExplanationBatch`."""
-        from ..core.exceptions import SerializationError, ValidationError
+        from ..utils.exceptions import SerializationError, ValidationError
 
         container = batch.collection_metadata.get("container")
         if container is None:
@@ -289,7 +305,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 warnings.simplefilter("ignore")
                 try:
                     rules_blob = exp._get_rules()  # type: ignore[attr-defined]
-                except Exception:  # pragma: no cover - defensive
+                except:  # noqa: E722
+                    if not isinstance(sys.exc_info()[1], Exception):
+                        raise
                     rules_blob = {}
 
         payload: dict[str, Any] = {
@@ -313,21 +331,27 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             names = self.feature_names
             if names is not None:
                 feature_names = list(names)
-        except Exception:  # pragma: no cover - defensive
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             feature_names = None
 
         class_labels = None
         if hasattr(base, "class_labels"):
             try:
                 class_labels = _jsonify(base.class_labels)  # type: ignore[attr-defined]
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 class_labels = None
 
         sample_percentiles = None
         if hasattr(base, "sample_percentiles"):
             try:
                 sample_percentiles = _jsonify(base.sample_percentiles)  # type: ignore[attr-defined]
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 sample_percentiles = None
 
         runtime_telemetry = None
@@ -336,7 +360,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 runtime_telemetry = getattr(underlying, "runtime_telemetry", None)
                 if callable(runtime_telemetry):
                     runtime_telemetry = runtime_telemetry()
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 runtime_telemetry = None
 
         metadata = {
@@ -381,7 +407,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             # Underlying FrozenCalibratedExplainer exposes feature_names via original explainer
             try:
                 self._feature_names_cache = self.calibrated_explainer._explainer.feature_names  # noqa: SLF001
-            except Exception:  # pragma: no cover - defensive
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._feature_names_cache = None
         return self._feature_names_cache
 
@@ -396,7 +424,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     # assume keys are numeric class indices
                     labels = [labels[k] for k in sorted(labels.keys())]
                 self._class_labels_cache = labels
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._class_labels_cache = None
         return self._class_labels_cache
 
@@ -406,7 +436,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if self._predictions_cache is None:
             try:
                 self._predictions_cache = np.asarray([e.predict for e in self.explanations])
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._predictions_cache = None
         return self._predictions_cache
 
@@ -431,7 +463,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     else:
                         # Case (a): stack per-instance vectors
                         self._probabilities_cache = np.vstack(raw)
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._probabilities_cache = None
         return self._probabilities_cache
 
@@ -445,7 +479,9 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 ]
                 if any(low is not None for low in lows):
                     self._lower_cache = np.asarray(lows)
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._lower_cache = None
         return self._lower_cache
 
@@ -459,11 +495,14 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                 ]
                 if any(h is not None for h in highs):
                     self._upper_cache = np.asarray(highs)
-            except Exception:  # pragma: no cover
+            except:  # noqa: E722
+                if not isinstance(sys.exc_info()[1], Exception):
+                    raise
                 self._upper_cache = None
         return self._upper_cache
 
-    def _is_probabilistic_regression(self) -> bool:
+    @property
+    def is_probabilistic_regression(self) -> bool:
         """Check if the explanations use probabilistic regression (thresholded).
 
         Probabilistic regression and thresholded regression are synonymous terms.
@@ -471,19 +510,28 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
-    def _is_thresholded(self) -> bool:
-        """Use _is_probabilistic_regression() instead (deprecated).
+    def _is_probabilistic_regression(self) -> bool:
+        """Check if the explanations use probabilistic regression (thresholded).
 
-        Backward-compatible alias kept until v0.10.0.
-        This method is identical to _is_probabilistic_regression().
+        .. deprecated:: 0.10.0
+            Use :attr:`is_probabilistic_regression` instead.
         """
-        return self._is_probabilistic_regression()
+        return self.is_probabilistic_regression
 
-    def _is_one_sided(self) -> bool:
+    @property
+    def is_one_sided(self) -> bool:
         """Check if the explanations are one-sided."""
         if self.low_high_percentiles is None:
             return False
         return np.isinf(self.get_low_percentile()) or np.isinf(self.get_high_percentile())
+
+    def _is_one_sided(self) -> bool:
+        """Check if the explanations are one-sided.
+
+        .. deprecated:: 0.10.0
+            Use :attr:`is_one_sided` instead.
+        """
+        return self.is_one_sided
 
     def get_confidence(self) -> float:
         """Return the confidence level of the explanations.
@@ -666,7 +714,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             for explanation in self.explanations
         ]
 
-    def add_conjunctions(self, n_top_features=5, max_rule_size=2):
+    def add_conjunctions(self, n_top_features=5, max_rule_size=2, **kwargs):
         """
         Add conjunctive rules to the explanations.
 
@@ -686,7 +734,7 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
             Returns a self reference, to allow for method chaining.
         """
         for explanation in self.explanations:
-            explanation.add_conjunctions(n_top_features, max_rule_size)
+            explanation.add_conjunctions(n_top_features, max_rule_size, **kwargs)
         return self
 
     def reset(self):
@@ -718,8 +766,8 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         --------
         Deprecated: This method is deprecated and may be removed in future versions. Use indexing instead.
         """
-        from ..core.exceptions import ValidationError
         from ..utils import deprecate
+        from ..utils.exceptions import ValidationError
 
         deprecate(
             "This method is deprecated and may be removed in future versions. Use indexing instead.",

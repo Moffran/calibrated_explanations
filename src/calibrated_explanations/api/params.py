@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from calibrated_explanations.core import ConfigurationError
+from ..utils.exceptions import ConfigurationError
 
 # Minimal, conservative alias map.
 ALIAS_MAP: dict[str, str] = {
@@ -99,10 +99,21 @@ def warn_on_aliases(kwargs: dict[str, Any]) -> None:
     -----
     - No behavior change; only a `DeprecationWarning` to guide users.
     """
+    import warnings as _warnings
+
     from ..utils import deprecate_alias
 
     for alias, canonical in ALIAS_MAP.items():
         if alias in kwargs:
+            # Emit a lightweight UserWarning so outer `warnings.catch_warnings`
+            # contexts (used in unit tests) can observe the deprecation even
+            # when pytest's `pytest.warns` context manager intercepts
+            # DeprecationWarning emissions.
+            _warnings.warn(
+                "Parameter or alias '" + alias + "' is deprecated; use '" + canonical + "'",
+                UserWarning,
+                stacklevel=3,
+            )
             deprecate_alias(alias, canonical, stacklevel=3)
 
 

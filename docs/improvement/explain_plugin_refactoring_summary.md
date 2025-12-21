@@ -25,7 +25,7 @@ src/calibrated_explanations/core/explain/
 ├── _shared.py            # ExplainRequest, ExplainResponse, ExplainConfig dataclasses
 ├── _helpers.py           # Shared utility functions
 ├── sequential.py         # SequentialExplainExecutor
-├── parallel_feature.py   # FeatureParallelExplainExecutor
+<!-- ├── parallel_feature.py   # FeatureParallelExplainExecutor -->
 └── parallel_instance.py  # InstanceParallelExplainExecutor
 ```
 
@@ -36,10 +36,10 @@ src/calibrated_explanations/core/explain/
 - Universal fallback that always supports any request
 - 300 lines, faithfully reproducing original sequential logic
 
-#### FeatureParallelExplainExecutor (Priority: 20)
-- Distributes feature tasks across executor workers
-- Requires executor enabled with `granularity='feature'`
-- 310 lines, reusing sequential setup with parallel dispatch
+#### FeatureParallelExplainExecutor (Deprecated)
+- **Deprecated**: Replaced by a shim that falls back to `InstanceParallelExplainExecutor`.
+- Original intent: Distribute feature tasks across executor workers.
+- Reason for deprecation: High overhead and poor performance in benchmarks.
 
 #### InstanceParallelExplainExecutor (Priority: 30)
 - Partitions instances into chunks for parallel processing
@@ -157,7 +157,7 @@ The `select_plugin()` function in `core/explain/__init__.py`:
 ## Performance Characteristics
 
 - **Sequential**: No overhead, matches original implementation exactly
-- **Feature-parallel**: Same dispatch cost as before, now isolated in dedicated plugin
+- **Feature-parallel**: Deprecated due to high overhead. Now aliases to instance-parallel.
 - **Instance-parallel**: Chunk combination logic preserved, slightly cleaner code path
 
 ## Future Work

@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 

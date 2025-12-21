@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Mapping, Protocol, Sequence
 
-from ..core.exceptions import ValidationError
+from ..utils.exceptions import ValidationError
 
 try:  # Python < 3.10 compatibility
     from typing import TypeAlias

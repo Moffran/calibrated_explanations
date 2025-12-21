@@ -168,7 +168,9 @@ def test_getitem_slice_singleton_returns_explanation(collection: CalibratedExpla
 
 
 def test_getitem_invalid_type_raises(collection: CalibratedExplanations) -> None:
-    with pytest.raises(TypeError):
+    from calibrated_explanations.utils.exceptions import ValidationError
+
+    with pytest.raises(ValidationError):
         _ = collection[1.5]  # type: ignore[index]
 
 
@@ -214,7 +216,7 @@ def test_get_low_high_percentile_validation(collection: CalibratedExplanations) 
 
 
 def test_deprecated_get_explanation_checks(collection: CalibratedExplanations) -> None:
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     if deprecations_error_enabled():
         # In raise-mode deprecations trigger before the validation checks;
@@ -281,7 +283,7 @@ def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> 
 
 
 def test_from_batch_validation_errors(collection: CalibratedExplanations) -> None:
-    from calibrated_explanations.core.exceptions import SerializationError, ValidationError
+    from calibrated_explanations.utils.exceptions import SerializationError, ValidationError
 
     batch_missing = SimpleNamespace(collection_metadata={})
     with pytest.raises(SerializationError):

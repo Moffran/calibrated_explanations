@@ -2,7 +2,7 @@
 
 import pytest
 
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.utils.exceptions import (
     ConfigurationError,
     ValidationError,
     explain_exception,

@@ -14,8 +14,8 @@ from typing import Any, Mapping
 
 try:  # optional validator
     import jsonschema  # type: ignore
-except Exception:  # pragma: no cover - optional
-    jsonschema = None  # type: ignore
+except ImportError:
+    jsonschema = None
 
 
 def _schema_json() -> dict[str, Any]:  # pragma: no cover - tiny IO

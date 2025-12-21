@@ -33,6 +33,8 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 - **ADR-002 – Exception Taxonomy and Validation Contract:** Completed with taxonomy adoption and validator parity; appendix holds the consolidated gap status.
 - **ADR-003 – Caching Strategy:** Completed with cache governance and telemetry; appendix retains the unified gap table.
 - **ADR-004 – Parallel Execution Framework:** Phases tracked in the roadmap table in the the appendix; remaining heuristics/benchmarking items align to v0.10.0. Gap details are maintained only in the appendix.
+  - **Update (2025-12-13):** Feature-parallel execution strategy deprecated and shimmed to fall back to instance-parallel execution due to performance overhead.
+  - **Update (2025-12-14):** Granularity parameter and FeatureParallel strategy scheduled for removal in v1.0.0-rc as only instance granularity remains supported.
 - **ADR-005 – Explanation Envelope & Schema:** Scheduled for v0.10.1 schema & visualization contracts; appendix table captures the remaining envelope/schema gaps.
 - **ADR-006 – Plugin Trust Model:** Trust gating tasks land in v0.10.2; see appendix for the unified gap status.
 - **ADR-007 – PlotSpec Abstraction:** PlotSpec registry/validation rollout targets v0.10.1; appendix retains the per-gap severities.
@@ -49,7 +51,7 @@ Gap-by-gap severity tables now live only in the ADR status appendix to avoid dup
 - **ADR-018 – Documentation Standardisation:** Docstring uplift plan is consolidated in `code_documentation_uplift.md`; appendix gap tracking only.
 - **ADR-019 – Test Coverage Standard:** Coverage uplift runs through v0.9.1–v0.11.0 milestones; appendix table is the authoritative gap log.
 - **ADR-020 – Legacy User API Stability:** Legacy contract enforcement is tracked against v0.9.1–v0.10.x release gates; appendix retains the severity table.
-- **ADR-021 – Calibrated Interval Semantics:** Interval invariant enforcement continues through v0.10.x; appendix captures the outstanding semantics gaps.
+- **ADR-021 – Calibrated Interval Semantics:** Interval invariant enforcement completed in v0.10.0; appendix captures the outstanding semantics gaps.
 - **ADR-022 – Documentation Information Architecture:** Superseded by ADR-027; gap tracking removed. See ADR-027 entry for current IA expectations.
 - **ADR-023 – Matplotlib Coverage Exemption:** Visualization coverage enforcement aligns with v0.9.1; appendix table holds the remaining coverage deltas.
 - **ADR-024 – Legacy Plot Input Contracts:** Legacy plotting fixes ship in v0.10.1; appendix retains the per-gap list.
@@ -199,6 +201,7 @@ Release gate: Deprecation dashboard live, docs CI runs with notebook execution, 
 8. Condition source and discretizer branching: introduce `condition_source` configuration and thread it through `CalibratedExplainer`, `CalibratedExplanations`, orchestrators, and explanation instances so condition labels can be derived from either observed labels or calibrated predictions. Update discretizer construction to branch between observed-label and prediction-based label building and propagate the choice into `instantiate_discretizer` with validated defaults. Extend runtime helper tests to exercise both observed- and prediction-based condition sources and update discretizer interface stubs accordingly. Plan the user-visible default change (`condition_source="prediction"`) to land in v0.11.0 (or at latest in `v1.0.0-rc`) with an explicit upgrade note and migration guidance for any callers that relied on the historical observed-label behaviour.
 9. Update the Docs with a comprehensive API reference for the public API of `CalibratedExplainer`, `WrapCalibratedExplainer`, `CalibratedExplanations`, `CalibratedExplanation`, `FactualExplanation`, and `AlternativeExplanation` including detailed descriptions of methods, parameters, return types, and usage examples. This will help users understand how to effectively utilize the library's capabilities.【F:docs/api_reference/calibrated_explainer.md†L1-L150】
 10. **Anti-Pattern Remediation Phase 1:** Triage and categorize private member usage in tests. Rename and move test utilities (Category B) to public helpers to decouple tests from implementation details. See `docs/improvement/ANTI_PATTERN_REMEDIATION_PLAN.md`.
+11. **Close ADR-019 Phase 2 gates.** Execute the coverage uplift roadmap for this milestone: (a) complete the waiver audit with expiry metadata and refresh `.coveragerc`/`[tool.coverage.paths]` so Windows/WSL reports collapse to a single source of truth, (b) raise local + CI invocations (pytest + `make test-cov`) to `--cov-fail-under=90` while enabling the Codecov ≥88 % patch gate, and (c) deliver Iteration 3 remediation from the uplift plan—drive deterministic tests for `plugins/registry.py`, `plugins/builtins.py`, `plugins/cli.py`, and legacy plotting save-routing so trust toggles, CLI error paths, and renderer parity are all exercised before we cut the v0.10.0 branch.【F:docs/improvement/coverage_uplift_plan.md†L24-L119】
 
 Release gate: Package boundaries, validation/caching/parallel tests, interval invariants, terminology cleanup, and updated ADR status notes all green with telemetry dashboards verifying the new signals (see ADR status appendix in this document).
 
@@ -385,12 +388,12 @@ descending order of this product within each ADR.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | ParallelFacade (conservative chooser) missing | 0 | 0 | 0 | **COMPLETED.** `ParallelExecutor` facade implemented with basic `_auto_strategy`. |
 | 2 | Workload-aware auto strategy absent | 0 | 0 | 0 | **COMPLETED.** Auto strategy now consumes workload hints (`work_items`, `task_size_hint_bytes`, granularity) and defaults to serial for tiny batches. |
-| 3 | Telemetry lacks timings and utilisation metrics | 5 | 4 | 20 | **COMPLETED.** `ParallelMetrics` tracks durations and worker counts; telemetry emitted via `_emit`. |
+| 3 | Telemetry lacks timings and utilisation metrics | 0 | 0 | 0 | **COMPLETED.** `ParallelMetrics` tracks durations, worker counts, and utilisation; telemetry emitted via `_emit`. |
 | 4 | Context management & cancellation missing | 4 | 4 | 16 | **COMPLETED.** `__enter__`/`__exit__` and cancellation support implemented. |
 | 5 | Configuration surface incomplete | 4 | 3 | 12 | **COMPLETED.** `ParallelConfig` adds `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, `feature_chunk_size`. |
-| 6 | Resource guardrails ignore cgroup/CI limits | 4 | 3 | 12 | **COMPLETED.** Guardrails enforce `max_workers` bounds and auto-strategy fallbacks under constrained environments. |
+| 6 | Resource guardrails ignore cgroup/CI limits | 0 | 0 | 0 | **COMPLETED.** Guardrails enforce `max_workers` bounds and auto-strategy fallbacks under constrained environments (cgroup/CI). |
 | 7 | Fallback warnings not emitted | 4 | 2 | 8 | **COMPLETED.** Telemetry and `force_serial_on_failure` emit fallback visibility for users. |
-| 8 | Testing and benchmarking coverage limited | 0 | 0 | 0 | **COMPLETED.** Workload-hint resolution and auto-strategy heuristics now covered by targeted unit tests. |
+| 8 | Testing and benchmarking coverage limited | 0 | 0 | 0 | **COMPLETED.** Workload-hint resolution covered by unit tests; benchmark harness implemented in `evaluation/parallel_ablation.py`. |
 | 9 | Documentation for strategies & troubleshooting lacking | 0 | 0 | 0 | **COMPLETED.** Practitioner playbook updated with ADR-004-complete guardrails and workload-driven chooser guidance. |
 
 ### ADR-004 phase tracking (release alignment)
@@ -401,8 +404,8 @@ descending order of this product within each ADR.
 | Phase 1 – Configuration Surface | v0.9.0 runtime polish | Defines chunk-size and configuration knobs promised as opt-in runtime controls. | ✅ `ParallelConfig` extended with chunk/size hints and failure toggles. |
 | Phase 2 – Executor & Plugin Refactor | v0.10.0 runtime realignment | Payload sharing, batching hooks, and lifecycle management for ADR-004. | ✅ Context manager and pooling lifecycle complete; payload sharing hooks merged. |
 | Phase 3 – Workload-aware Strategy | v0.10.0 runtime realignment | Workload estimator and adaptive gating. | ✅ Auto strategy consumes work-item hints and size estimates, defaulting to serial for small batches. |
-| Phase 4 – Testing & Benchmarking | v0.10.0 runtime realignment | Spawn lifecycle coverage and automated benchmark reporting. | ✅ Auto-strategy heuristics covered by unit tests; perf harness tracked via monitoring backlog. |
-| Phase 5 – Rollout & Documentation | v0.10.0 release prep / v1.0.0-RC readiness | User guidance, changelog, and telemetry artefacts for release checklists. | ✅ Practitioner playbook and release status updated for ADR-004 completion. |
+| Phase 4 – Testing & Benchmarking | v0.10.0 runtime realignment | Spawn lifecycle coverage and automated benchmark reporting. | ✅ Auto-strategy heuristics covered by unit tests; perf harness implemented and baseline results generated. |
+| Phase 5 – Rollout & Documentation | v0.10.0 release prep / v1.0.0-RC readiness | User guidance, changelog, and telemetry artefacts for release checklists. | ✅ Practitioner playbook and release status updated for ADR-004 completion. <br> ⚠️ **Update:** Granularity and FeatureParallel removal added to v1.0.0-rc scope. |
 
 Alignment note: Parallel is treated as a shared service with domain-specific runtime wrappers (e.g., explain) expected to wrap
 the shared `ParallelExecutor` so heuristics and chunking remain co-located with domain executors while respecting ADR-001
@@ -574,9 +577,9 @@ boundaries. ADR-004 now documents this expectation.
 
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Interval invariants never enforced | 5 | 4 | 20 | Prediction bridges return payloads without checking `low ≤ predict ≤ high`, undermining safety guarantees. **STATUS 2025-11-04 (CRITICAL): Invariant contract clarified uniformly across three levels (prediction, feature-weight, scenario) in ADR-021 subsections 4a-4b; enforcement remains for v0.10.0.** |
-| 2 | FAST explanations drop probability cubes | 4 | 3 | 12 | `explain_fast` omits `__full_probabilities__`, so ADR-promised metadata is missing for FAST runs. |
-| 3 | JSON export stores live callables | 3 | 2 | 6 | `_collection_metadata` serializes `assign_threshold` functions, breaking downstream tooling expectations. |
+| 1 | Interval invariants never enforced | 0 | 0 | 0 | **COMPLETED.** Invariant enforcement implemented in `PredictBridgeMonitor`, `PredictionOrchestrator`, and `CalibratedExplanation` (with warnings for violations). |
+| 2 | FAST explanations drop probability cubes | 0 | 0 | 0 | **COMPLETED.** `FastExplanationPipeline` updated to include `__full_probabilities__` in prediction output. |
+| 3 | JSON export stores live callables | 0 | 0 | 0 | **COMPLETED.** `_jsonify` helper updated to safely handle callables during serialization. |
 
 ## ADR-022 – Documentation Information Architecture (Superseded)
 
@@ -612,7 +615,7 @@ boundaries. ADR-004 now documents this expectation.
 | Rank | Gap | Violation | Scope | Unified severity | Notes |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | `explain` method remains public | 5 | 4 | 20 | `CalibratedExplainer.explain` is exposed as a public method, but ADR-026 defines it as an internal orchestration primitive that must not be invoked directly. |
-| 2 | Predict bridge skips interval invariant checks | 5 | 3 | 15 | `_PredictBridgeMonitor` never enforces `low ≤ predict ≤ high`, letting malformed intervals through. **STATUS 2025-11-04 (CRITICAL): Calibration contract and validation requirements clarified in ADR-026 subsections 2a/2b/3a/3b; enforcement remains for v0.10.0.** |
+| 2 | Predict bridge skips interval invariant checks | 0 | 0 | 0 | **COMPLETED.** Invariant enforcement implemented in `PredictBridgeMonitor` (with warnings for violations). |
 | 3 | Explanation context exposes mutable dicts | 4 | 3 | 12 | Context builder embeds plain dicts despite the frozen contract, enabling plugin-side mutation. **STATUS 2025-11-04: Frozen context requirement clarified in ADR-026 subsection 1; enforcement remains.** |
 | 4 | Telemetry omits interval dependency hints | 3 | 2 | 6 | Batch telemetry drops `interval_dependencies`, reducing observability. |
 | 5 | Mondrian bins left mutable in requests | 2 | 2 | 4 | `ExplanationRequest` stores caller-supplied bins verbatim, violating the immutability promise. |

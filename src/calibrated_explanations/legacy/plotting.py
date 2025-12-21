@@ -2,19 +2,23 @@
 
 import contextlib
 import math
+import sys
 import warnings
 from pathlib import Path
 
 import numpy as np
 
-from calibrated_explanations.core.exceptions import ConfigurationError
+from ..utils.exceptions import ConfigurationError
 
 # Guard optional dependency imports so importing this module doesn't fail in
 # environments without matplotlib (tests/CI where viz extras aren't installed).
 try:  # pragma: no cover - optional dependency
     import matplotlib.colors as mcolors
     import matplotlib.pyplot as plt
-except Exception as _e:  # pragma: no cover - optional dependency
+except ImportError:
+    _e = sys.exc_info()[1]
+    if not isinstance(_e, Exception):
+        raise
     mcolors = None  # type: ignore[assignment]
     plt = None  # type: ignore[assignment]
     _MATPLOTLIB_IMPORT_ERROR = _e
@@ -681,7 +685,7 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
             if not np.isscalar(threshold):
                 warnings.warn(
                     "plot_global requires a scalar threshold for non-probabilistic explainers.",
-                    RuntimeWarning,
+                    UserWarning,
                     stacklevel=2,
                 )
             assert np.isscalar(

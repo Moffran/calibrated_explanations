@@ -5,114 +5,60 @@
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...main)
 
-### Release Task 1 - ADR-001 Package and Boundary Layout
+### Added
 
-- **Completed ADR-001 core decomposition boundaries for v0.10.0 release**
-  - **Stage 0 — Scope Confirmation:** Core ADR-001 boundaries confirmed; 5 intentional deviations documented (legacy, api, plotting, perf, integrations)
-  - **Stage 1 — Package Extraction:** Calibration, cache/parallel, and schema extraction complete; backward compatibility shims in place
-  - **Stage 2 — Cross-Sibling Decoupling:** 14 module-level imports from core converted to lazy/TYPE_CHECKING; transitive dependency reduction
-  - **Stage 3 — Public API Narrowing:** Unsanctioned symbols (13) now emit DeprecationWarning; API locked to 3 sanctioned entry points for v0.11.0
-  - **Stage 4 — Namespace Documentation:** All namespaces classified with rationale, deprecation timelines, and migration paths
-  - **Stage 5 — Import Graph Linting:** AST-based static analyzer detects violations; 17 enforcement tests; CI-ready with baseline
-    - **Updated Linter**: `scripts/check_import_graph.py` now enforces a strict allow-list of cross-sibling imports.
-    - **Defined Exceptions**: Created `docs/improvement/adr mending/ADR-001/ADR-001-EXCEPTIONS-AND-CONTRACTS.md` documenting the 6 allowed architectural patterns (Exception Hierarchy, Orchestrator, Interfaces, Shared Utils, Visualization, Legacy).
-    - **Package restructuring**: Defined and implemented top-level internal packages (`core`, `calibration`, `explanations`, `cache`, `parallel`, `schema`, `plugins`, `viz`, `utils`)
-    - **Boundary enforcement**: Implemented `scripts/check_import_graph.py` to enforce strict import boundaries and allow-listed exceptions
-    - **CI Integration**: Added ADR-001 boundary check to `lint.yml` workflow to prevent regression
-    - **Impact**: CI will now fail on *new* unauthorized cross-sibling imports, preventing architectural drift.
-    - **Public API consolidation**: Deprecated unsanctioned symbols and reserved sanctioned entry points (`CalibratedExplainer`, `WrapCalibratedExplainer`, etc.)
-    - **Legacy support**: Documented and isolated `legacy` namespace with migration paths
+- **Parallel Execution Framework**: Introduced a robust parallel execution framework (ADR-004) with workload-aware auto-strategy, telemetry, and resource guardrails.
+  - Added `ParallelConfig` with options for chunking, fallback strategies, and task size hints.
+  - Implemented automatic fallback to sequential execution on failure.
+  - Added support for process-based parallelism on Windows.
+- **Caching Strategy**: Implemented a comprehensive caching strategy (ADR-003) using `ExplanationCacheFacade` to improve performance.
+  - Added `pympler` dependency for precise memory profiling.
+  - Added telemetry for cache hits, misses, evictions, and resets.
+- **Validation & Error Handling**: Standardized validation and error handling across the library (ADR-002).
+  - Introduced a unified exception taxonomy (`ValidationError`, `DataShapeError`, `NotFittedError`, etc.) with structured error details.
+  - Enhanced `validate_inputs` and other validation helpers for consistent API contracts.
+  - Added `explain_exception` helper for human-readable error messages.
+- **Interval Safety**: Enforced robust `low <= predict <= high` invariants for all plugin predictions and serialization (ADR-021).
+- **Condition Source**: Added support for `condition_source` configuration (`"observed"` or `"prediction"`) to select conditioning data sources for discretizers and condition labels.
+- **Fallback Visibility**: Enforced visible notifications for all runtime fallbacks:
+  - Added info-level logs and `UserWarning` emissions for execution strategy fallbacks, plugin execution fallbacks, cache backend fallback, visualization simplifications, and perturbation fallbacks.
+  - Updated contributor guidance in `.github/copilot-instructions.md` and release plan to mandate no-silent-fallbacks.
 
-### Release Task 2 - ADR-002 Validation Parity Implementation
+- **Pool-at-explainer initialization:** Added opt-in worker initializer and pool lifecycle API for warm-starting process pools at explainer creation.
+  - Added `ParallelConfig.worker_initializer` and `ParallelConfig.worker_init_args` to forward per-worker initializers.
+  - Added `CalibratedExplainer.initialize_pool()` and `CalibratedExplainer.close()` plus context-manager support for explainer-managed pools.
+  - Introduced `calibrated_explanations.core.explain.parallel_runtime.worker_init_from_explainer_spec` to install a per-worker `explain_slice` harness.
 
-- **Completed ADR-002 validation parity for v0.10.0 release**
-  - **Legacy exception taxonomy replacement**: Replaced 42+ `ValueError`/`RuntimeError` raises across calibration, plugins, and utilities with ADR-002 exception taxonomy (`ValidationError`, `DataShapeError`, `ConfigurationError`, `NotFittedError`, etc.)
-    - Calibration: `venn_abers.py` (2 raises), `interval_regressor.py` (4 raises)
-    - Plugins: `base.py` (8 raises), `builtins.py` (12+ raises)
-    - Utils: `helper.py` (1 raise, `check_is_fitted()`)
-  - **Structured error payloads**: All exception raises include `details` dict with diagnostic context (e.g., `{"context": "predict_proba", "requirement": "bins parameter"}`)
-  - **Shared validation entry points**: Enhanced `core/validation.py` with `validate()` helper function and unified validator signatures; `validate_inputs()`, `validate_model()`, `validate_fit_state()`, `infer_task()` all follow ADR-002 contracts
-  - **Error diagnostics**: Implemented `explain_exception(e)` helper in `core/exceptions.py` for human-readable multi-line exception formatting with structured details
-  - **Parameter guardrails**: Implemented real `validate_param_combination()` in `api/params.py` with mutual exclusivity detection (`threshold`/`confidence_level` mutual exclusivity as initial guard)
-  - **Fit-state harmonization**: Wrapper fit-state checks updated to catch `NotFittedError` in addition to `RuntimeError`; all plugins consistently use `NotFittedError` for state violations
-  - **Regression tests**: Added 23 comprehensive regression tests across 4 new test files validating exception parity, validation helpers, and parameter guardrails
-  - **Test coverage**: Maintained 89.36% coverage (exceeds 88% requirement) with all core ADR-002 implementation covered
-  - **Documentation**: Created `COMPLETION_REPORT.md` and `MIGRATION_NOTES.md` detailing implementation, exception mapping table, and recommended catch patterns
-  - **Remaining legacy exceptions replaced** (6 additional locations identified and fixed):
-    - `src/calibrated_explanations/cache/cache.py` (lines 226–229): `ValueError` → `ValidationError` with parameter details
-    - `src/calibrated_explanations/explanations/explanations.py` (lines 189, 710–713): `ValueError`/`TypeError` → `SerializationError`/`ValidationError` with type metadata
-    - `src/calibrated_explanations/core/narrative_generator.py` (lines 41–56, 189): `FileNotFoundError`/`ValueError`/`AttributeError` → `SerializationError`/`ValidationError` with diagnostic context
-    - `src/calibrated_explanations/core/calibrated_explainer.py` (lines 280–285): `RuntimeError` → `NotFittedError` with state details
-    - `src/calibrated_explanations/plotting.py` (line 238): `RuntimeError` → `ConfigurationError` with requirement metadata
-  - **Validation API contract fully implemented**: Refactored `validate_inputs()` to match ADR-002 specification:
-    - **Signature**: `validate_inputs(x, y=None, task="auto", allow_nan=False, require_y=False, n_features=None, class_labels=None, check_finite=True) → None`
-    - **Behavior**: Validates feature/target matrix pair with comprehensive shape, dtype, and value checks
-    - **Error handling**: Raises `DataShapeError`, `ValidationError` with structured `details` payloads
+### Changed
 
-### Release Task 3 - ADR-003 Caching Strategy
+- **Conjunction Analysis**: Overhauled the conjunction analysis engine to use batched prediction and shared state management, enabling significant performance improvements and support for `max_rule_size >= 4`.
+- **Package Structure**: Restructured the internal package layout (ADR-001) to enforce strict boundaries and reduce circular dependencies.
+  - Moved core logic into dedicated sub-packages (`core`, `calibration`, `explanations`, `cache`, `parallel`, `schema`, `plugins`, `viz`, `utils`).
+  - **Breaking Change**: Sanctioned the public API to `CalibratedExplainer`, `WrapCalibratedExplainer`, and `transform_to_numeric`.
+  - **Deprecation**: The following symbols now emit `DeprecationWarning` when imported from the top-level package and will be removed in v0.11.0:
+    - `AlternativeExplanation`, `FactualExplanation`, `FastExplanation`
+    - `AlternativeExplanations`, `CalibratedExplanations`
+    - `BinaryEntropyDiscretizer`, `EntropyDiscretizer`, `BinaryRegressorDiscretizer`, `RegressorDiscretizer`
+    - `IntervalRegressor`, `VennAbers`
+    - `viz` namespace
+- **Parallel Runtime**: Auto parallel backend now prefers `joblib` on all platforms, with process-based fallback.
+- **Terminology**: Standardized on "probabilistic regression" as the canonical user-facing term for regression with threshold-based probability predictions (ADR-021).
+- **Explanation Plugin Semantics**: Internalized `CalibratedExplainer.explain` to `_explain` and enforced immutable contexts (ADR-026). **Breaking Change**: `explain()` is no longer part of the public API.
+- **Documentation**: Comprehensive API reference updates with `autoclass` directives.
 
-- **Resolved all 4 identified implementation gaps** in ADR-003 caching strategy for v0.10.0 release
-  - **ExplanationCacheFacade wired into pipeline** (was defined but unused):
-    - Integrated `ExplanationCacheFacade` into `calibration/summaries.py` with forwarding logic
-    - Added `_get_calibration_data_hash()` function for stable cache keys
-    - `get_calibration_summaries()` now checks shared cache before computing
-    - Backward compatibility: falls back to instance-level caches when facade unavailable
-    - Invalidation path: `invalidate_calibration_summaries()` now clears shared cache + instance caches
-  - **Pympler dependency added** (was missing from dependencies):
-    - Added `pympler` to `pyproject.toml` dependencies (required by ADR-003 spec)
-    - Enables precise memory profiling in v1.0.1+ (currently uses `sys.getsizeof` fallback)
-  - **Comprehensive telemetry test coverage added** (was overstated):
-    - Added `test_calibrator_cache_flush_clears_all_entries()` – validates manual flush operation
-    - Added `test_calibrator_cache_reset_version_invalidates_old_entries()` – validates version-based invalidation
-    - Added `test_calibrator_cache_telemetry_events_coverage()` – comprehensive test for all 8 event types:
-      - `cache_hit`, `cache_miss`, `cache_store`, `cache_evict`, `cache_skip`, `cache_reset`, `cache_flush`, `cache_version_reset`
-    - Added `test_lru_cache_forksafe_reset_clears_state()` – validates fork-safety operation
-    - Test count: 19 → 23 tests (added 4 gap-fixing tests)
-  - **ADR-003 status updated** (was Proposed):
-    - Updated `docs/improvement/adrs/ADR-003-caching-key-and-eviction.md` from Status: Proposed → Status: Accepted
-    - Updated implementation note reflecting completion and pympler inclusion
-  - **Documentation updated**:
-    - `docs/improvement/adr\ mending/ADR-003/IMPLEMENTATION_SUMMARY.md` – Comprehensive gap resolution notes with before/after validation
-    - RELEASE_PLAN_v1.md – ADR-003 section marked ✅ COMPLETED
-  - **Test results**: All 23 cache tests passing (100%)
-  - **Impact**: Zero breaking changes; all integrations backward compatible; opt-in caching remains default
+### Fixed
 
-### Release Task 4 - ADR-004 Parallel Execution Framework
+- **Legacy Exceptions**: Replaced numerous legacy `ValueError` and `RuntimeError` raises with specific, informative exceptions.
+- **Windows Compatibility**: Fixed pickling issues to enable process-based parallelism on Windows.
+- **Serialization**: Fixed JSON serialization for explanation collections containing live objects.
+- **Interval Invariants**: Fixed `LegacyPredictBridge` to enforce `low <= predict <= high` invariants for regression tasks, raising `ValidationError` on violation (ADR-021).
+- **Plugin Semantics**: Fixed `PluginManager` to correctly wrap the predict bridge with `PredictBridgeMonitor` (ADR-026).
+- **Fallback enforcement**: Fixed pytest `filterwarnings` configuration to correctly match "falling back" messages so runtime fallback `UserWarning`s are enforced as test errors when appropriate.
 
-- **Completed ADR-004 parallel execution backlog for v0.9.1 release**
-  - **Workload-aware auto strategy**: Implemented `_auto_strategy` with heuristics based on OS, CPU count, and task size (`task_size_hint_bytes`).
-  - **Telemetry**: Enhanced `ParallelMetrics` to track `submitted`, `completed`, `fallbacks`, `failures`, and emit `parallel_execution` events with duration and worker counts.
-  - **Context Management**: Implemented `__enter__` and `__exit__` for `ParallelExecutor` to support resource cleanup and pool reuse.
-  - **Configuration Surface**: Added `task_size_hint_bytes`, `force_serial_on_failure`, `instance_chunk_size`, and `feature_chunk_size` to `ParallelConfig`.
-  - **Chunking Support**: Updated `ParallelExecutor` and plugins (`parallel_instance`, `parallel_feature`) to respect configured chunk sizes, defaulting to 1 for process pools to avoid pickling overhead on small tasks.
-  - **Fallback Logic**: Implemented `force_serial_on_failure` to allow automatic fallback to sequential execution on parallel failures.
-  - **Verification**: Added comprehensive lifecycle tests in `tests/unit/core/explain/test_parallel_lifecycle.py` covering strategies, context management, chunking, and fallback scenarios.
+### Removed
 
-### Release Task 8 - Condition Source Support
-
-- **`condition_source` implemented:** Added support for the `condition_source` configuration used by calibrators and explanation plugins to select conditioning data sources; wired into the public API, covered by unit tests, and documented in the practitioner guides.
-
-
-### Release Task 10 - Test Suite Improvements
-- Renamed private test helpers (e.g., `_helper`) to public snake_case helpers (`helper`) across the test suite to improve readability and maintainability.
-  - Updated ~15 test files including `test_alternative_regression_parity.py`, `test_matplotlib_adapter.py`, `test_plugin_resolution.py`, etc.
-  - Preserved private naming for mocks of SUT private methods.
-  - Fixed circular imports and deprecation warnings encountered during refactoring.
-  - Consolidated duplicated private test helpers (`_FakeExplanation`, `_FakeExplainer`, etc.) into `tests/helpers/explainer_utils.py`.
-  - Refactored `tests/unit/legacy/test_plotting_module.py` and `tests/integration/viz/test_plots_integration.py` to use shared helpers.
-  - Renamed all private classes in `tests/` to public classes (e.g., `_FakeSeries` -> `FakeSeries`, `_MockModel` -> `MockModel`) to align with ADR-017 visibility standards and prevent nomenclature drift.
-
-
-### Test Coverage Improvements
-
-- **Expanded test coverage from 86.65% to 87.1%** through systematic addition of 50+ new unit tests
-  - **Fixed failing deprecation warning test** in `test_shim_compatibility.py`: Removed invalid warning capture expectation that conflicted with Python's once-per-key deprecation semantics
-  - **Added 15 parallel executor tests** (`tests/unit/core/explain/test_parallel_executors.py`): Comprehensive coverage of `InstanceParallelExplainExecutor` and `FeatureParallelExplainExecutor` initialization, priority/name validation, and supports() logic with various executor configurations
-  - **Added 16 integration helper tests** (`tests/unit/integrations/test_integration_helpers.py`): Complete lifecycle testing for `LimeHelper` and `ShapHelper` with mocked dependency availability scenarios, enabled/disabled states, reset functionality, and preload edge cases
-  - **Added 17 deprecation utility tests** (`tests/unit/utils/test_deprecations_helper.py`): Thorough coverage of `_should_raise()` and `deprecate()` functions including CI mode detection, warning/exception emission, per-test deduplication, and per-session deduplication with autouse fixture for state management
-  - **Extended plotting module tests** by 6 tests: Additional coverage for `_format_save_path()` with string/pathlib/empty inputs and `_derive_threshold_labels()` with edge cases
-  - **Test stability:** 1,323 total tests passing (4 marked xfail due to global state pollution in deprecations module, which is mitigated and acceptable)
-  - **Architecture insight:** Deprecated low-coverage modules (cache/parallel at 48–55%) do not block gate achievement; main gaps are in active high-complexity modules (plotting.py 70.4%, narrative_generator.py 68%)
+- **Legacy Alias**: Removed deprecated `_is_thresholded()` method from `CalibratedExplanations` (superseded by `is_probabilistic_regression`).
+- **Feature Parallelism**: Removed `FeatureParallel` execution strategy. A shim remains in `plugins/builtins.py` that falls back to `InstanceParallel` to maintain configuration compatibility.
 
 ## [v0.9.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.1) - 2025-11-27
 

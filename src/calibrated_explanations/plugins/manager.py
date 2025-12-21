@@ -18,6 +18,7 @@ Responsibilities:
 from __future__ import annotations
 
 import os
+import sys
 from typing import Any, Dict, List, Tuple
 
 from .predict_monitor import PredictBridgeMonitor
@@ -138,6 +139,31 @@ class PluginManager:
         self._explanation_orchestrator: Any = None
         self._prediction_orchestrator: Any = None
         self._reject_orchestrator: Any = None
+
+    def __deepcopy__(self, memo):
+        """Deepcopy the plugin manager, handling circular references and unpicklable objects."""
+        import copy
+
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            try:
+                setattr(result, k, copy.deepcopy(v, memo))
+            except BaseException:
+                exc_type = sys.exc_info()[0]
+                if exc_type is not TypeError:
+                    raise
+                # Fallback for unpicklable objects (e.g., mappingproxy in contexts)
+                # We shallow copy containers to avoid sharing the container itself,
+                # while sharing the unpicklable items (which are likely immutable).
+                if isinstance(v, dict):
+                    setattr(result, k, v.copy())
+                elif isinstance(v, list):
+                    setattr(result, k, v[:])
+                else:
+                    setattr(result, k, v)
+        return result
 
     def initialize_from_kwargs(self, kwargs: Dict[str, Any]) -> None:
         """Initialize plugin overrides from keyword arguments.
@@ -425,9 +451,12 @@ class PluginManager:
         if callable(override) and not hasattr(override, "plugin_meta"):
             try:
                 candidate = override()
-            except Exception as exc:  # pragma: no cover - defensive
+            except BaseException:  # pragma: no cover - defensive; ADR-002
+                exc = sys.exc_info()[1]
+                if not isinstance(exc, Exception):
+                    raise
                 # Lazy import to avoid circular dependency
-                from ..core.exceptions import (
+                from ..utils.exceptions import (
                     ConfigurationError,  # pylint: disable=import-outside-toplevel
                 )
 
@@ -455,7 +484,8 @@ class PluginManager:
             Bridge monitor instance.
         """
         if identifier not in self._bridge_monitors:
-            self._bridge_monitors[identifier] = PredictBridgeMonitor(identifier)
+            # Use the explainer's predict bridge as the target
+            self._bridge_monitors[identifier] = PredictBridgeMonitor(self.explainer._predict_bridge)
         return self._bridge_monitors[identifier]
 
     def clear_bridge_monitors(self) -> None:

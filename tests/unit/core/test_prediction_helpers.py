@@ -3,11 +3,12 @@ import pytest
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from unittest.mock import MagicMock
 
 from calibrated_explanations.core import prediction_helpers as ph
 from calibrated_explanations.core.explain._computation import explain_predict_step
 from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
-from calibrated_explanations.core.exceptions import DataShapeError, ValidationError
+from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 
 
 def test_prediction_helpers_round_trip():
@@ -291,4 +292,68 @@ def test_predict_internal_delegates_to_underlying_protocol():
     assert kwargs["classes"] == [1]
     np.testing.assert_array_equal(kwargs["bins"], np.array([0, 1]))
     assert kwargs["feature"] == 0
+    assert isinstance(result, tuple)
+
+
+def test_format_regression_prediction_handles_thresholds():
+    predict = np.array([1.0, 2.0])
+    low = np.array([0.5, 1.5])
+    high = np.array([1.5, 2.5])
+
+    labels = ph.format_regression_prediction(predict, low, high, threshold=1.5)
+    assert isinstance(labels, list)
+    assert all("y_hat" in label for label in labels)
+
+    multi_labels = ph.format_regression_prediction(
+        predict, low, high, threshold=[(0.5, 1.5), (0.1, 0.9)]
+    )
+    assert isinstance(multi_labels, list)
+
+    interval_result = ph.format_regression_prediction(
+        predict, low, high, threshold=None, uq_interval=True
+    )
+    assert isinstance(interval_result, tuple)
+
+
+def test_format_classification_prediction_maps_labels():
+    predict = np.array([0.6, 0.4])
+    low = np.zeros_like(predict)
+    high = np.ones_like(predict)
+    new_classes = None
+    class_labels = np.array(["neg", "pos"])
+
+    mapped = ph.format_classification_prediction(
+        predict,
+        low,
+        high,
+        new_classes,
+        is_multiclass_val=False,
+        class_labels=class_labels,
+        uq_interval=True,
+    )
+    assert isinstance(mapped, tuple)
+    assert mapped[0].tolist() == ["pos", "neg"]
+
+
+def test_handle_uncalibrated_regression_prediction():
+    learner = MagicMock()
+    learner.predict.return_value = np.array([1.0, 2.0])
+    x = np.ones((2, 2))
+
+    with pytest.raises(ValidationError):
+        ph.handle_uncalibrated_regression_prediction(learner, x, threshold=1.0)
+
+    result = ph.handle_uncalibrated_regression_prediction(learner, x, uq_interval=True)
+    assert isinstance(result, tuple)
+
+
+def test_handle_uncalibrated_classification_prediction():
+    learner = MagicMock()
+    learner.predict.return_value = np.array([0, 1])
+    x = np.ones((2, 2))
+
+    with pytest.raises(ValidationError):
+        ph.handle_uncalibrated_classification_prediction(learner, x, threshold=0.5)
+
+    result = ph.handle_uncalibrated_classification_prediction(learner, x, uq_interval=True)
     assert isinstance(result, tuple)

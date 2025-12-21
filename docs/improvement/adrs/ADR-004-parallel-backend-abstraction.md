@@ -2,7 +2,7 @@
 
 # ADR-004: Parallel Backend Abstraction
 
-Status: Proposed (targeting v0.9.0 opt-in release)
+Status: Accepted
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -81,11 +81,13 @@ Negative / Risks:
 - Maintenance of strategy matrix as code evolves.
 - Added light abstraction layer overhead.
 
-### Implementation status (2025-11-05)
+### Implementation status (2025-12-13)
 
 - v0.9.1 decision: implement the conservative "ParallelFacade" scoped deliverable (see Decision above). The facade will centralize conservative selection heuristics, emit decision telemetry, and provide a safe opt-in path for the existing executor interface. This work is small, testable, and intended to ship in the v0.9.1 governance & observability hardening milestone.
 
 - v0.10: the full `ParallelExecutor` strategy matrix and deeper runtime instrumentation remain a candidate for v0.10; the team will decide to proceed, postpone, or cancel after analyzing the telemetry collected from the facade in v0.9.1.
+
+- **Update (2025-12-13):** Feature-parallel execution strategy has been deprecated and shimmed to fall back to instance-parallel execution. Benchmarking revealed that feature-parallelism introduced significant overhead without providing performance benefits for typical workloads. The `FeatureParallelExplanationPlugin` and `FeatureParallelAlternativeExplanationPlugin` now alias to their instance-parallel counterparts to maintain API compatibility.
 
 ### Testing and rollout guidance (v0.9.1)
 

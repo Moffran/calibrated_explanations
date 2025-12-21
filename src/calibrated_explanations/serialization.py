@@ -10,12 +10,14 @@ Note: Schema validation has been moved to calibrated_explanations.schema.
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any, Mapping
 
 from .explanations import Explanation, FeatureRule
 from .schema import (
     validate_payload as _schema_validate_payload,  # noqa: F401 - re-exported under alias
 )
+from .utils.exceptions import ValidationError
 
 
 def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]:
@@ -49,7 +51,49 @@ def to_json(exp: Explanation, *, include_version: bool = True) -> dict[str, Any]
     }
     if include_version:
         payload["schema_version"] = "1.0.0"
+
+    _validate_invariants(payload)
     return payload
+
+
+def _validate_invariants(payload: dict[str, Any]) -> None:
+    """Enforce low <= predict <= high invariant on exported payload."""
+
+    def check(d: dict[str, Any] | None, context: str) -> None:
+        if not d:
+            return
+        predict = d.get("predict")
+        low = d.get("low")
+        high = d.get("high")
+        if predict is None or low is None or high is None:
+            return
+
+        with contextlib.suppress(TypeError, ValueError):
+            # Handle scalar values (common case)
+            if (
+                isinstance(predict, (int, float))
+                and isinstance(low, (int, float))
+                and isinstance(high, (int, float))
+            ):
+                if not low <= high:
+                    raise ValidationError(
+                        f"{context}: interval invariant violated (low > high)",
+                        details={"low": low, "high": high},
+                    )
+                # Use small epsilon for float comparison if needed, but strict for now
+                if not (low <= predict <= high):
+                    # Allow small floating point tolerance
+                    epsilon = 1e-9
+                    if not (low - epsilon <= predict <= high + epsilon):
+                        raise ValidationError(
+                            f"{context}: prediction invariant violated (predict not in [low, high])",
+                            details={"predict": predict, "low": low, "high": high},
+                        )
+
+    check(payload.get("prediction"), "Global prediction")
+    for i, rule in enumerate(payload.get("rules", []) or []):
+        check(rule.get("rule_prediction"), f"Rule {i} prediction")
+        check(rule.get("instance_prediction"), f"Rule {i} instance prediction")
 
 
 def from_json(obj: Mapping[str, Any]) -> Explanation:

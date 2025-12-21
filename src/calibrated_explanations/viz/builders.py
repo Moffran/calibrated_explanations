@@ -6,7 +6,9 @@ render via the PlotSpec + matplotlib adapter for selected plots.
 
 from __future__ import annotations
 
+import contextlib
 import math
+import sys
 from typing import Any, Sequence
 
 import numpy as np
@@ -47,7 +49,10 @@ def is_valid_probability_values(*values: float) -> bool:
     for value in values:
         try:
             numeric = float(value)
-        except Exception:
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
+                raise
             return False
         if not math.isfinite(numeric):
             return False
@@ -72,22 +77,20 @@ def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index:
     """
     if seq is None or max_index < 0:
         return
-    try:
+    with contextlib.suppress(TypeError):
         length = len(seq)
-    except TypeError:  # pragma: no cover - defensive: non-sized sequences
-        return
-    if length <= max_index:
-        from ..core.exceptions import ValidationError
+        if length <= max_index:
+            from ..utils.exceptions import ValidationError
 
-        raise ValidationError(
-            f"{name} length {length} does not cover feature index {max_index}",
-            details={
-                "param": name,
-                "length": length,
-                "required_to_cover": max_index,
-                "shortfall": max_index - length + 1,
-            },
-        )
+            raise ValidationError(
+                f"{name} length {length} does not cover feature index {max_index}",
+                details={
+                    "param": name,
+                    "length": length,
+                    "required_to_cover": max_index,
+                    "shortfall": max_index - length + 1,
+                },
+            )
 
 
 def _normalize_interval_bounds(
@@ -245,7 +248,10 @@ def build_regression_bars_spec(
     if confidence is not None:
         try:
             confidence_label = f"Prediction interval with {confidence}% confidence"
-        except Exception:
+        except BaseException:
+            exc_info = sys.exc_info()[1]
+            if not isinstance(exc_info, Exception):
+                raise
             confidence_label = "Prediction interval"
     else:
         confidence_label = (
@@ -958,14 +964,20 @@ def build_global_plotspec_dict(
         if arr:
             min_x = float(min(arr))
             max_x = float(max(arr))
-    except Exception:
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
+            raise
         min_x = 0.0
         max_x = 1.0
     try:
         if uncertainty is not None:
             min_y = float(min(uncertainty))
             max_y = float(max(uncertainty))
-    except Exception:
+    except BaseException:
+        exc_info = sys.exc_info()[1]
+        if not isinstance(exc_info, Exception):
+            raise
         min_y = 0.0
         max_y = 1.0
 

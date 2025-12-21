@@ -36,12 +36,14 @@ import glob
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import yaml
@@ -170,6 +172,53 @@ def parse_github_output(path: str) -> Dict[str, str]:
     return outputs
 
 
+def resolve_bash_executable() -> Tuple[str, str]:
+    """Prefer Git Bash on Windows so that bash steps share the same env as pwsh."""
+    if os.name != "nt":
+        return "bash", "posix"
+
+    candidates: List[Tuple[str, str]] = []
+
+    env_candidate = os.environ.get("GIT_BASH_PATH")
+    if env_candidate:
+        candidates.append(("git", env_candidate))
+
+    search_roots = [
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("ProgramFiles", "")) / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("ProgramFiles(x86)", "")) / "Git" / "bin" / "bash.exe",
+    ]
+    for path in search_roots:
+        if path and path.exists():
+            candidates.append(("git", str(path)))
+
+    which_bash = shutil.which("bash")
+    if which_bash:
+        candidates.append(("wsl", which_bash))
+
+    for flavor, candidate in candidates:
+        if candidate and os.path.exists(candidate):
+            return candidate, flavor
+    return "bash", "posix"
+
+
+def convert_path_for_bash(path: str, flavor: str) -> str:
+    """Convert a Windows path to the format expected by the bash flavor."""
+    if os.name != "nt":
+        return path
+    abs_path = os.path.abspath(path)
+    drive, tail = os.path.splitdrive(abs_path)
+    tail = tail.replace("\\", "/")
+    drive_letter = drive.rstrip(":").lower()
+    if not drive_letter:
+        return abs_path
+    if flavor == "wsl":
+        return f"/mnt/{drive_letter}{tail}"
+    if flavor == "git":
+        return f"/{drive_letter}{tail}"
+    return abs_path
+
+
 def run_script_block(
     script: str,
     env: Dict[str, str],
@@ -190,19 +239,37 @@ def run_script_block(
         with tempfile.NamedTemporaryFile("w", delete=False, dir=temp_dir) as out_fh:
             gh_output_path = out_fh.name
 
+    bash_exec = None
+    bash_flavor = "posix"
+    if shell == "bash":
+        bash_exec, bash_flavor = resolve_bash_executable()
+
     full_env = dict(os.environ)
     full_env.update(env)
+    full_env.setdefault("MPLBACKEND", "Agg")
+    if os.name == "nt":
+        # Windows uses a case-insensitive environment so some tools set PATH while
+        # others set Path. When launching bash we need the upper-case variant or
+        # it will see an empty $PATH and fail to locate executables such as mypy.
+        path_value = full_env.get("PATH") or full_env.get("Path")
+        if path_value:
+            full_env["PATH"] = path_value
+            full_env["Path"] = path_value
     if gh_output_path:
-        full_env["GITHUB_OUTPUT"] = gh_output_path
+        gh_path = gh_output_path
+        if shell == "bash" and os.name == "nt":
+            gh_path = convert_path_for_bash(gh_output_path, bash_flavor)
+        full_env["GITHUB_OUTPUT"] = gh_path
 
     script_path = tmp
     if shell == "bash":
+        bash_exe = bash_exec or "bash"
         if os.name == "nt":
             rel = os.path.relpath(script_path, start=temp_dir)
             quoted = shlex.quote(rel)
-            cmd = ["bash", "-lc", f". {quoted}"]
+            cmd = [bash_exe, "-lc", f". {quoted}"]
         else:
-            cmd = ["bash", script_path]
+            cmd = [bash_exe, script_path]
     else:
         ps_tmp = script_path + ".ps1"
         os.rename(script_path, ps_tmp)
@@ -274,9 +341,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         for s in steps:
             print(f"\n--- Job: {s['job']} | Step: {s['name']} ---")
             env_vars = {k: str(v) for k, v in (s.get("env") or {}).items()}
-            # Prioritize the local shell (args.shell) over the workflow's inferred shell (job_shell)
-            # so that we can run Linux workflows on Windows (pwsh) and vice versa.
-            step_shell = s.get("shell") or args.shell
+            # Use the shell specified by the workflow step if provided.
+            # Otherwise fall back to the job's inferred shell so that setup/install
+            # steps share the same environment as subsequent commands (e.g. pip
+            # installs performed in bash are visible to later bash steps).
+            # Finally, if neither is defined, default to the user-selected shell.
+            step_shell = s.get("shell") or s.get("job_shell") or args.shell
             script = render_step_expressions(s['run'], step_outputs)
             capture = bool(s.get("id"))
             rc, outputs = run_script_block(script, env_vars, step_shell, cwd=args.cwd, capture_outputs=capture)

@@ -13,14 +13,14 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.explanations import CalibratedExplanations
+from calibrated_explanations.integrations.lime import LimeHelper
+from calibrated_explanations.utils import assert_threshold, safe_isinstance
+from calibrated_explanations.utils.exceptions import (
     ConfigurationError,
     DataShapeError,
     ValidationError,
 )
-from calibrated_explanations.explanations import CalibratedExplanations
-from calibrated_explanations.integrations.lime import LimeHelper
-from calibrated_explanations.utils import assert_threshold, safe_isinstance
 
 if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer

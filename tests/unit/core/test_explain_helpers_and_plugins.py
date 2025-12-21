@@ -1,19 +1,8 @@
 import numpy as np
 
-from calibrated_explanations.core.explain import _computation as comp
 from calibrated_explanations.core.explain import _helpers as helpers
-from calibrated_explanations.core.explain import sequential, parallel_feature, parallel_instance
+from calibrated_explanations.core.explain import sequential, parallel_instance
 from calibrated_explanations.core.explain import feature_task as feature_task_module
-
-
-def test_assign_weight_scalar_variants():
-    # scalar
-    assert np.isclose(comp.assign_weight_scalar(0.1, 0.6), 0.5)
-
-    # array differences -> return first element
-    inst = np.array([0.2, 0.3])
-    pred = np.array([0.7, 0.8])
-    assert np.isclose(comp.assign_weight_scalar(inst, pred), 0.5)
 
 
 def test_merge_ignore_features_union():
@@ -112,7 +101,14 @@ def make_executor(enabled=True, min_batch_size=1):
 def test_sequential_plugin_execute_minimal(monkeypatch):
     # Monkeypatch explain_predict_step and initialize_explanation to return minimal data
     def fake_explain_predict_step(
-        explainer, x, threshold, low_high_percentiles, bins, features_to_ignore
+        explainer,
+        x,
+        threshold,
+        low_high_percentiles,
+        bins,
+        features_to_ignore,
+        *,
+        features_to_ignore_per_instance=None,
     ):
         n = x.shape[0]
         # predict, low, high arrays sized for the n instances (no perturbed entries)
@@ -254,7 +250,12 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
 
     execr = make_executor()
     cfg = ExplainConfig(
-        executor=execr, num_features=1, categorical_features=(), feature_values={0: np.array([])}
+        executor=execr,
+        num_features=1,
+        categorical_features=(),
+        feature_values={0: np.array([])},
+        granularity="instance",
+        min_instances_for_parallel=1,
     )
     req = ExplainRequest(
         x=np.zeros((1, 1)),
@@ -306,12 +307,18 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
         def finalize(self, *args, **kwargs):
             return self
 
-    monkeypatch.setattr(helpers, "explain_predict_step", fake_explain_predict_step)
-    monkeypatch.setattr(helpers, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1]))
-    # Also patch module-level references imported by plugins
-    monkeypatch.setattr(parallel_feature, "explain_predict_step", fake_explain_predict_step)
+        monkeypatch.setattr(helpers, "explain_predict_step", fake_explain_predict_step)
+        monkeypatch.setattr(sequential, "explain_predict_step", fake_explain_predict_step)
+        monkeypatch.setattr(
+            helpers, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
+        )
+        monkeypatch.setattr(
+            sequential, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
+        )
+        # Also patch module-level references imported by plugins
+
     monkeypatch.setattr(
-        parallel_feature, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
+        parallel_instance, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
     )
 
     # simple explainer stub
@@ -324,10 +331,21 @@ def test_feature_parallel_supports_and_execute(monkeypatch):
             "_is_mondrian": lambda self: False,
             "mode": "factual",
             "_merge_feature_result": lambda self, *a, **k: helpers.merge_feature_result(*a, **k),
+            "num_features": 1,
+            "x_cal": np.zeros((1, 1)),
+            "_predict": lambda self, *a, **k: (
+                np.zeros(1),
+                np.zeros(1),
+                np.zeros(1),
+                np.zeros(1, dtype=int),
+            ),
+            "is_multiclass": lambda self: False,
+            "discretizer": None,
+            "sample_percentiles": [25, 50, 75],
         },
     )()
 
-    plugin = parallel_feature.FeatureParallelExplainExecutor()
+    plugin = parallel_instance.InstanceParallelExplainExecutor()
     assert plugin.supports(req, cfg)
     out = plugin.execute(req, cfg, explainer)
     assert hasattr(out, "explanations")
@@ -401,9 +419,8 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
     monkeypatch.setattr(
         sequential, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
     )
-    monkeypatch.setattr(parallel_feature, "explain_predict_step", fake_explain_predict_step)
     monkeypatch.setattr(
-        parallel_feature, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
+        parallel_instance, "initialize_explanation", lambda *a, **k: SimpleExplanation(a[1])
     )
 
     # Mock the internal _feature_task to produce deterministic per-feature tuples
@@ -481,7 +498,7 @@ def test_sequential_and_feature_parallel_equivalence(monkeypatch):
     )()
 
     seq_plugin = sequential.SequentialExplainExecutor()
-    par_plugin = parallel_feature.FeatureParallelExplainExecutor()
+    par_plugin = parallel_instance.InstanceParallelExplainExecutor()
 
     out_seq = seq_plugin.execute(req, cfg_seq, explainer)
     out_par = par_plugin.execute(req, cfg_par, explainer)
@@ -641,3 +658,74 @@ def test_finalize_explanation_aggregation():
     fw = out.finalized["feature_weights"]["predict"]
     assert np.allclose(fw[0], weights_predict[0])
     assert np.allclose(fw[1], weights_predict[1])
+
+
+def test_finalize_explanation_attaches_per_instance_ignore():
+    """finalize_explanation should propagate per-instance ignore masks from explainer."""
+    from calibrated_explanations.core.explain._shared import finalize_explanation
+
+    n_instances = 2
+    num_features = 2
+
+    weights_predict = np.zeros((n_instances, num_features))
+    weights_low = np.zeros_like(weights_predict)
+    weights_high = np.zeros_like(weights_predict)
+    predict_matrix = np.zeros_like(weights_predict)
+    low_matrix = np.zeros_like(weights_predict)
+    high_matrix = np.zeros_like(weights_predict)
+
+    rule_values = [{} for _ in range(n_instances)]
+    instance_binned = [
+        {"predict": {}, "low": {}, "high": {}, "current_bin": {}, "counts": {}, "fractions": {}},
+        {"predict": {}, "low": {}, "high": {}, "current_bin": {}, "counts": {}, "fractions": {}},
+    ]
+    rule_boundaries = np.zeros((n_instances, num_features, 2))
+    prediction = {"predict": np.zeros(n_instances)}
+
+    class SimpleExplanationWithIgnore:
+        def __init__(self):
+            self.finalized = None
+
+        def finalize(self, binned_predict, feature_weights, feature_predict, prediction, **kwargs):
+            self.finalized = {
+                "binned_predict": binned_predict,
+                "feature_weights": feature_weights,
+                "feature_predict": feature_predict,
+                "prediction": prediction,
+                "kwargs": kwargs,
+            }
+            return self
+
+    explanation = SimpleExplanationWithIgnore()
+
+    # explainer stub with feature-filter state
+    per_instance_ignore = [np.array([0], dtype=int), np.array([1], dtype=int)]
+
+    class ExplainerWithFilterState:
+        def __init__(self):
+            self._feature_filter_per_instance_ignore = per_instance_ignore
+
+        def _infer_explanation_mode(self):
+            return "factual"
+
+    explainer = ExplainerWithFilterState()
+
+    out = finalize_explanation(
+        explanation,
+        weights_predict,
+        weights_low,
+        weights_high,
+        predict_matrix,
+        low_matrix,
+        high_matrix,
+        rule_values,
+        instance_binned,
+        rule_boundaries,
+        prediction,
+        instance_start_time=0.0,
+        total_start_time=0.0,
+        explainer=explainer,
+    )
+
+    assert hasattr(out, "features_to_ignore_per_instance")
+    assert out.features_to_ignore_per_instance == per_instance_ignore

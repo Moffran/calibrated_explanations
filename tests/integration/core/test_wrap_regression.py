@@ -14,7 +14,7 @@ Functions:
 import numpy as np
 import pytest
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
-from calibrated_explanations.core.exceptions import NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
 import os

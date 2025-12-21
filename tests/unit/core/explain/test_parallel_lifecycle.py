@@ -1,4 +1,3 @@
-import os
 import pytest
 import time
 from calibrated_explanations.parallel import ParallelConfig, ParallelExecutor
@@ -34,7 +33,13 @@ class TestParallelLifecycle:
         assert results == [x * x for x in range(10)]
 
     def test_context_manager(self):
-        config = ParallelConfig(enabled=True, strategy="threads", max_workers=2, min_batch_size=1)
+        config = ParallelConfig(
+            enabled=True,
+            strategy="threads",
+            max_workers=2,
+            min_batch_size=1,
+            min_instances_for_parallel=1,
+        )
 
         with ParallelExecutor(config) as executor:
             results1 = executor.map(square, range(5))
@@ -54,7 +59,11 @@ class TestParallelLifecycle:
 
     def test_force_serial_on_failure(self):
         config = ParallelConfig(
-            enabled=True, strategy="threads", force_serial_on_failure=True, min_batch_size=1
+            enabled=True,
+            strategy="threads",
+            force_serial_on_failure=True,
+            min_batch_size=1,
+            min_instances_for_parallel=1,
         )
         executor = ParallelExecutor(config)
 
@@ -65,7 +74,7 @@ class TestParallelLifecycle:
         # Let's mock _resolve_strategy
         original_resolve = executor._resolve_strategy
 
-        def failing_resolve():
+        def failing_resolve(*args, **kwargs):
             print("Failing resolve called")
             raise RuntimeError("Simulated failure")
 
@@ -81,7 +90,6 @@ class TestParallelLifecycle:
 
         executor._resolve_strategy = original_resolve
 
-    @pytest.mark.skipif(os.name == "nt", reason="Nested processes on Windows are slow/complex")
     def test_nested_parallelism_threads(self):
         # Threads inside threads should work
         config = ParallelConfig(enabled=True, strategy="threads", max_workers=2)

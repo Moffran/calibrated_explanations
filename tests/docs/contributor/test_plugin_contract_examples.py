@@ -398,7 +398,7 @@ class TestPluginWiringMethodsAB:
         chain = explainer._plot_style_chain
         assert chain[0] == "plot_spec.default"
 
-    def test_method_b_plot_parameter(self):
+    def test_method_b_plot_parameter(self, enable_fallbacks):
         """Test Method B: Wiring via explanation.plot() parameter."""
         from tests._helpers import get_classification_model
         from sklearn.datasets import load_breast_cancer

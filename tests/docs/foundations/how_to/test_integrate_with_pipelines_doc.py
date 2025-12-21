@@ -68,7 +68,7 @@ def _build_pipeline_context() -> SimpleNamespace:
     )
 
 
-def test_integrate_with_pipelines_snippet():
+def test_integrate_with_pipelines_snippet(enable_fallbacks):
     context = _build_pipeline_context()
     assert context.factual
     assert "preprocessor" in context.telemetry

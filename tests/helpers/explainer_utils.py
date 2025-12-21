@@ -1,11 +1,18 @@
 """Helper fixtures and mocks for explainer tests."""
 
+from __future__ import annotations
+
 import pytest
 import numpy as np
 from typing import Any, Iterable, Sequence, Tuple, Union, Mapping
 
 from calibrated_explanations import CalibratedExplainer
-from tests.helpers.model_utils import get_classification_model, DummyLearner, DummyIntervalLearner
+from tests.helpers.model_utils import (
+    get_classification_model,
+    get_regression_model,
+    DummyLearner,
+    DummyIntervalLearner,
+)
 
 
 def patch_interval_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -37,13 +44,15 @@ def make_mock_explainer(
     return CalibratedExplainer(learner, x_cal, y_cal, **kwargs)
 
 
-def make_explainer_from_dataset(binary_dataset, **overrides):
-    """Create a calibrated explainer from the binary_dataset fixture.
+def make_explainer_from_dataset(dataset, mode="classification", **overrides):
+    """Create a calibrated explainer from the dataset fixture.
 
     Parameters
     ----------
-    binary_dataset : tuple
-        Fixture tuple produced by `make_binary_dataset`.
+    dataset : tuple
+        Fixture tuple produced by `make_binary_dataset` or `make_regression_dataset`.
+    mode : str
+        "classification" or "regression".
     **overrides : Any
         Overrides to pass to the `CalibratedExplainer` constructor.
 
@@ -63,20 +72,33 @@ def make_explainer_from_dataset(binary_dataset, **overrides):
         _num_features,
         categorical_features,
         feature_names,
-    ) = binary_dataset
+    ) = dataset
 
-    model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
-    explainer = CalibratedExplainer(
-        model,
-        x_cal,
-        y_cal,
-        mode="classification",
-        feature_names=feature_names,
-        categorical_features=categorical_features,
-        class_labels=["No", "Yes"],
-        seed=overrides.pop("seed", 42),
-        **overrides,
-    )
+    if mode == "classification":
+        model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
+        explainer = CalibratedExplainer(
+            model,
+            x_cal,
+            y_cal,
+            mode="classification",
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            class_labels=["No", "Yes"],
+            seed=overrides.pop("seed", 42),
+            **overrides,
+        )
+    else:
+        model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
+        explainer = CalibratedExplainer(
+            model,
+            x_cal,
+            y_cal,
+            mode="regression",
+            feature_names=feature_names,
+            categorical_features=categorical_features,
+            seed=overrides.pop("seed", 42),
+            **overrides,
+        )
     return explainer, x_test
 
 

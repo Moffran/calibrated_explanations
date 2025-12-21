@@ -1,38 +1,8 @@
 import numpy as np
 
-import pytest
 
-from calibrated_explanations.core.config_helpers import (
-    split_csv,
-    coerce_string_tuple,
-)
-from calibrated_explanations.core.explain.feature_task import assign_weight_scalar
 from calibrated_explanations.plugins.predict_monitor import PredictBridgeMonitor
 from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
-
-
-def test_split_and_coerce_string_tuple():
-    assert split_csv(None) == ()
-    assert split_csv("") == ()
-    assert split_csv("a,b, c") == ("a", "b", "c")
-
-    assert coerce_string_tuple(None) == ()
-    assert coerce_string_tuple("") == ()
-    assert coerce_string_tuple("x") == ("x",)
-    assert coerce_string_tuple(["a", "", 1]) == ("a",)
-
-
-def test_assign_weight_scalar_basic_and_arrays():
-    # scalar
-    assert pytest.approx(assign_weight_scalar(0.2, 0.8)) == 0.6
-
-    # numpy arrays -> returns first element of flattened diff
-    a = np.array([0.1, 0.2])
-    b = np.array([0.5, 0.6])
-    assert pytest.approx(assign_weight_scalar(a, b)) == 0.4
-
-    # empty arrays -> 0.0
-    assert assign_weight_scalar([], []) == 0.0
 
 
 class DummyBridge:

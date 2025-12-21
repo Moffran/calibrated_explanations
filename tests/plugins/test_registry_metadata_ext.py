@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 
 
@@ -74,11 +74,11 @@ def test_warn_untrusted_plugin_only_warns_once():
     meta = {"name": "plugin", "provider": "tests"}
 
     with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", RuntimeWarning)
+        warnings.simplefilter("always", UserWarning)
         registry._warn_untrusted_plugin(meta, source="entry point")
         registry._warn_untrusted_plugin(meta, source="entry point")
 
-    runtime_warnings = [item for item in caught if item.category is RuntimeWarning]
+    runtime_warnings = [item for item in caught if item.category is UserWarning]
     assert len(runtime_warnings) == 1
 
 
@@ -112,7 +112,7 @@ def test_verify_plugin_checksum_handles_success_failure_and_missing(tmp_path, mo
 
     module_path.unlink()
     with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", RuntimeWarning)
+        warnings.simplefilter("always", UserWarning)
         registry._verify_plugin_checksum(plugin, {"checksum": digest, "name": "missing"})
     assert any("Cannot verify checksum" in str(item.message) for item in caught)
 

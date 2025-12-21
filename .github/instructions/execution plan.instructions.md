@@ -10,7 +10,6 @@ When asked to "proceed according to plan" or to determine the next development s
 
 2. **Maintain a future-oriented action plan and update the changelog**:
    - When an item in the action plan has been completed satisfactorily, **add it to the `CHANGELOG.md`** under the appropriate section.
-   - **Mark completed items in the `docs/improvement/RELEASE_PLAN_v1.md`** as finished.
 
 3. **Enforce ADR conformance**:
    - For any implementation, design, or architectural decision, **review all relevant ADRs** in `docs/improvement/adrs/`.

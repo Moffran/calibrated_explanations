@@ -51,40 +51,74 @@ def test_venn_abers_mondrian_without_bins_raises_configuration_error():
 
 def test_interval_regressor_bins_mismatch_raises_data_shape_error():
     """IntervalRegressor with mismatched bins should raise DataShapeError."""
-    # XFAIL: Test uses IntervalRegressor.add_calibration_data() which is not implemented
-    # This appears to be a test for a future refactored API
-    pytest.xfail(reason="IntervalRegressor.add_calibration_data() not implemented (future API)")
-
     rng = np.random.default_rng(42)
     x_cal = rng.standard_normal((50, 3))
     y_cal = rng.standard_normal(50)
     model = LinearRegression()
     model.fit(x_cal, y_cal)
 
-    regressor = IntervalRegressor(model)
-    regressor.add_calibration_data(x_cal, y_cal, bins=np.repeat([1, 2], 25))
+    # Wrap model in a mock CalibratedExplainer to satisfy IntervalRegressor
+    bins = np.repeat([1, 2], 25)
+
+    class MockExplainer:
+        def __init__(self, model):
+            self.model = model
+            self.bins = bins
+            self.y_cal = y_cal
+            self.x_cal = x_cal
+            self.seed = 42
+            self.difficulty_estimator = None
+
+        def predict_calibration(self):
+            return self.model.predict(self.x_cal)
+
+        def _get_sigma_test(self, x):
+            return np.ones(len(x))
+
+        def predict_function(self, x):
+            return self.model.predict(x)
+
+    explainer = MockExplainer(model)
+    regressor = IntervalRegressor(explainer)
+    regressor.insert_calibration(x_cal, y_cal, bins=bins)
 
     # Test: test bins with different length should raise DataShapeError
     x_test = rng.standard_normal((10, 3))
     bins_test = np.array([1, 2])  # Too short
-    with pytest.raises(DataShapeError, match="Length of test bins"):
-        regressor.predict(x_test, bins=bins_test)
+    with pytest.raises(DataShapeError, match="length of test bins"):
+        regressor.predict_probability(x_test, 0.5, bins=bins_test)
 
 
 def test_interval_regressor_inconsistent_bins_raises_configuration_error():
     """IntervalRegressor mixing bins and no-bins raises ConfigurationError."""
-    # XFAIL: Test uses IntervalRegressor.add_calibration_data() which is not implemented
-    # This appears to be a test for a future refactored API
-    pytest.xfail(reason="IntervalRegressor.add_calibration_data() not implemented (future API)")
-
     rng = np.random.default_rng(42)
     x_cal = rng.standard_normal((50, 3))
     y_cal = rng.standard_normal(50)
     model = LinearRegression()
     model.fit(x_cal, y_cal)
 
-    regressor = IntervalRegressor(model)
-    regressor.add_calibration_data(x_cal, y_cal, bins=None)
+    # Wrap model in a mock CalibratedExplainer to satisfy IntervalRegressor
+    class MockExplainer:
+        def __init__(self, model):
+            self.model = model
+            self.bins = None
+            self.y_cal = y_cal
+            self.x_cal = x_cal
+            self.seed = 42
+            self.difficulty_estimator = None
+
+        def predict_calibration(self):
+            return self.model.predict(self.x_cal)
+
+        def _get_sigma_test(self, x):
+            return np.ones(len(x))
+
+        def predict_function(self, x):
+            return self.model.predict(x)
+
+    explainer = MockExplainer(model)
+    regressor = IntervalRegressor(explainer)
+    regressor.insert_calibration(x_cal, y_cal, bins=None)
 
     # Add calibration with bins should raise ConfigurationError
     x_cal_2 = rng.standard_normal((25, 3))
@@ -92,12 +126,14 @@ def test_interval_regressor_inconsistent_bins_raises_configuration_error():
     bins_2 = np.repeat([1, 2], 12)
     bins_2 = np.append(bins_2, [1])  # Pad to match length
 
-    with pytest.raises(ConfigurationError, match="Cannot add calibration instances with bins"):
-        regressor.add_calibration_data(x_cal_2, y_cal_2, bins=bins_2)
+    with pytest.raises(
+        ConfigurationError, match="Cannot mix calibration instances with and without bins"
+    ):
+        regressor.insert_calibration(x_cal_2, y_cal_2, bins=bins_2)
 
     # Verify details are attached
     try:
-        regressor.add_calibration_data(x_cal_2, y_cal_2, bins=bins_2)
+        regressor.insert_calibration(x_cal_2, y_cal_2, bins=bins_2)
     except ConfigurationError as e:
         assert e.details is not None
         assert "requirement" in e.details

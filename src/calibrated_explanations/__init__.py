@@ -9,7 +9,6 @@ by Helena Löfström et al.
 
 import importlib
 import logging as _logging
-from contextlib import suppress
 
 # Expose viz namespace lazily via __getattr__ (avoid importing heavy backends eagerly)
 # Note: avoid eager imports of explanation, viz and discretizer modules here.
@@ -31,90 +30,6 @@ __all__ = [
     "WrapCalibratedExplainer",
     "transform_to_numeric",
 ]
-
-# Emit structured deprecation warnings for the documented, unsanctioned
-# top-level symbols. Tests in the suite expect these deprecations to be
-# available when symbols are resolved. Importing the small helper here
-# keeps messages consistent across the codebase.
-with suppress(Exception):
-    from .utils import deprecate_public_api_symbol  # type: ignore
-
-    # Emit deprecations for documented unsanctioned exports. These are
-    # intentionally informational and follow ADR-011 guidance.
-    with suppress(Exception):
-        deprecate_public_api_symbol(
-            "viz",
-            "from calibrated_explanations import viz",
-            "from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter",
-            extra_context=(
-                "The viz namespace is now a submodule. Import specific classes/functions "
-                "from it directly."
-            ),
-        )
-        for sym, cur, rec in [
-            (
-                "AlternativeExplanation",
-                "from calibrated_explanations import AlternativeExplanation",
-                "from calibrated_explanations.explanations.explanation import AlternativeExplanation",
-            ),
-            (
-                "FactualExplanation",
-                "from calibrated_explanations import FactualExplanation",
-                "from calibrated_explanations.explanations.explanation import FactualExplanation",
-            ),
-            (
-                "FastExplanation",
-                "from calibrated_explanations import FastExplanation",
-                "from calibrated_explanations.explanations.explanation import FastExplanation",
-            ),
-            (
-                "AlternativeExplanations",
-                "from calibrated_explanations import AlternativeExplanations",
-                "from calibrated_explanations.explanations import AlternativeExplanations",
-            ),
-            (
-                "CalibratedExplanations",
-                "from calibrated_explanations import CalibratedExplanations",
-                "from calibrated_explanations.explanations import CalibratedExplanations",
-            ),
-            (
-                "BinaryEntropyDiscretizer",
-                "from calibrated_explanations import BinaryEntropyDiscretizer",
-                "from calibrated_explanations.utils import BinaryEntropyDiscretizer",
-            ),
-            (
-                "BinaryRegressorDiscretizer",
-                "from calibrated_explanations import BinaryRegressorDiscretizer",
-                "from calibrated_explanations.utils import BinaryRegressorDiscretizer",
-            ),
-            (
-                "EntropyDiscretizer",
-                "from calibrated_explanations import EntropyDiscretizer",
-                "from calibrated_explanations.utils import EntropyDiscretizer",
-            ),
-            (
-                "RegressorDiscretizer",
-                "from calibrated_explanations import RegressorDiscretizer",
-                "from calibrated_explanations.utils import RegressorDiscretizer",
-            ),
-            (
-                "IntervalRegressor",
-                "from calibrated_explanations import IntervalRegressor",
-                "from calibrated_explanations.calibration import IntervalRegressor",
-            ),
-            (
-                "VennAbers",
-                "from calibrated_explanations import VennAbers",
-                "from calibrated_explanations.calibration import VennAbers",
-            ),
-            (
-                "plotting",
-                "from calibrated_explanations import plotting",
-                "from calibrated_explanations.viz import PlotSpec, plots, matplotlib_adapter",
-            ),
-        ]:
-            with suppress(Exception):
-                deprecate_public_api_symbol(sym, cur, rec)
 
 
 def __getattr__(name: str):

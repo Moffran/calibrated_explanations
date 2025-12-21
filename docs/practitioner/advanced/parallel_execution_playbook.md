@@ -18,9 +18,7 @@ small workloads, especially on Windows.
   Windows deployments cannot rely on thread-safe payloads.
 - **Use instance-parallel** when instances dominate (``n_instances ≥ 4 × workers × 64``)
   and feature counts stay below ~64; aim for chunks between 256 and 1,024 rows.
-- **Use feature-parallel** when features dominate (``n_features ≥ 4 × workers × 4``)
-  and the test set stays below ~200 instances; prefer thread-based backends on
-  Windows.
+- **Use feature-parallel** (Deprecated) - Feature-parallel execution is deprecated and falls back to instance-parallel.
 - **Avoid process pools on Windows** unless work items take hundreds of
   milliseconds and payloads are shared via memory mapping.
 
@@ -45,7 +43,7 @@ Best for wide batches of instances with relatively few features.
 - **Fallback** – switch back to sequential when chunk sizes shrink below 128 or
   when feature counts top 128 (feature-parallel usually performs better there).
 
-### Feature-parallel (`FeatureParallelExplainExecutor`)
+<!-- ### Feature-parallel (`FeatureParallelExplainExecutor`)
 
 Ideal for feature-dense explain workloads with modest instance counts.
 
@@ -57,7 +55,7 @@ Ideal for feature-dense explain workloads with modest instance counts.
   on Linux when arrays are memmapped.
 - **Fallback** – revert to sequential when feature counts fall within a single
   worker group (e.g. ``n_features ≤ workers × 4``) or when test sets exceed 250
-  rows.
+  rows. -->
 
 ## Backend recommendations
 
@@ -77,8 +75,7 @@ Ideal for feature-dense explain workloads with modest instance counts.
    processes).
 4. Derive chunk sizes from the recommended bounds; clamp instance chunks to
    256–1,024 rows.
-5. Keep feature-parallel gated behind at least ~10k work items to avoid needless
-   overhead.
+5. (Deprecated) Feature-parallel tuning is no longer relevant as it falls back to instance-parallel.
 6. Benchmark against sequential; adopt the executor only when you see ≥1.2×
    speed-up.
 

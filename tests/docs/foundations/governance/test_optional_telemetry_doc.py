@@ -31,7 +31,7 @@ def _build_classification_context() -> SimpleNamespace:
     return SimpleNamespace(explainer=explainer, X_test=x_test)
 
 
-def test_optional_telemetry_snippets(tmp_path):
+def test_optional_telemetry_snippets(enable_fallbacks, tmp_path):
     context = _build_classification_context()
     explainer = context.explainer
     x_test = context.X_test

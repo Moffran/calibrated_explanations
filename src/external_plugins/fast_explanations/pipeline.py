@@ -9,19 +9,20 @@ discretization, and rule extraction.
 
 from __future__ import annotations
 
+from contextlib import suppress
 from time import time
 from typing import TYPE_CHECKING, Any, Dict, List
 
 import numpy as np
 
-from calibrated_explanations.core.exceptions import (
+from calibrated_explanations.core.explain._helpers import compute_feature_effects
+from calibrated_explanations.explanations import CalibratedExplanations
+from calibrated_explanations.utils import assert_threshold, safe_isinstance
+from calibrated_explanations.utils.exceptions import (
     ConfigurationError,
     DataShapeError,
     ValidationError,
 )
-from calibrated_explanations.core.explain._helpers import compute_feature_effects
-from calibrated_explanations.explanations import CalibratedExplanations
-from calibrated_explanations.utils import assert_threshold, safe_isinstance
 
 if TYPE_CHECKING:
     from calibrated_explanations.core.calibrated_explainer import CalibratedExplainer
@@ -195,6 +196,18 @@ class FastExplanationPipeline:
                 predicted_class if self.explainer.is_multiclass() else np.ones(x_test.shape[0])
             ),
         }
+
+        if self.explainer.mode == "classification":
+            with suppress(Exception):
+                if self.explainer.is_multiclass():
+                    full_probs = self.explainer.interval_learner[  # pylint: disable=protected-access
+                        self.explainer.num_features
+                    ].predict_proba(x_test, bins=bins)
+                else:
+                    full_probs = self.explainer.interval_learner[  # pylint: disable=protected-access
+                        self.explainer.num_features
+                    ].predict_proba(x_test, bins=bins)
+                prediction["__full_probabilities__"] = full_probs
 
         # Temporarily swap calibration targets for feature computation
         y_cal = self.explainer.y_cal

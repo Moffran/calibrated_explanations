@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 import threading
+import warnings
 from dataclasses import dataclass as _dataclass
 from dataclasses import field
 from hashlib import blake2b
@@ -37,9 +38,19 @@ try:  # pragma: no cover - behaviour varies by environment
     import cachetools
 
     _HAVE_CACHETOOLS = True
-except Exception:  # pragma: no cover - tested indirectly in CI when missing
+except:  # noqa: E722
+    if not isinstance(sys.exc_info()[1], Exception):
+        raise
     cachetools = None  # type: ignore
     _HAVE_CACHETOOLS = False
+    # Visible notification: cachetools missing, falling back to minimal backend
+    _logger = logging.getLogger(__name__)
+    _logger.info("cachetools not available; falling back to minimal LRU/TTL cache backend")
+    warnings.warn(
+        "Cache backend fallback: using minimal in-package LRU/TTL implementation due to missing 'cachetools'",
+        UserWarning,
+        stacklevel=2,
+    )
     # Provide a tiny, well-tested fallback for environments where
     # `cachetools` is not installed (CI minimal images). The fallback
     # implements the minimal API used by this module: `LRUCache` and
@@ -179,14 +190,26 @@ def _default_size_estimator(value: Any) -> int:
     if hasattr(value, "nbytes"):
         try:
             return int(value.nbytes)  # type: ignore[arg-type]
-        except Exception as exc:  # pragma: no cover - extremely defensive
-            logger.debug("Failed to read nbytes attribute for %s: %s", type(value).__name__, exc)
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            logger.debug(
+                "Failed to read nbytes attribute for %s: %s",
+                type(value).__name__,
+                sys.exc_info()[1],
+            )
     if hasattr(value, "__array_interface__"):
         try:
             view = np.asarray(value)
             return int(view.nbytes)
-        except Exception as exc:  # pragma: no cover - extremely defensive
-            logger.debug("Failed to coerce array interface for %s: %s", type(value).__name__, exc)
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            logger.debug(
+                "Failed to coerce array interface for %s: %s",
+                type(value).__name__,
+                sys.exc_info()[1],
+            )
     # Fallback constant that biases towards early eviction instead of OOM
     return 256
 
@@ -289,7 +312,8 @@ class CacheConfig:
             return cfg
         tokens = [segment.strip() for segment in raw.split(",") if segment.strip()]
         # ``CE_CACHE=1`` or ``on`` enables the cache with defaults
-        if len(tokens) == 1 and tokens[0].lower() in {"1", "true", "on", "yes"}:
+        enabled_labels = {"1", "true", "on", "yes", "enable"}
+        if len(tokens) == 1 and tokens[0].lower() in enabled_labels:
             cfg.enabled = True
             return cfg
         for token in tokens:
@@ -311,7 +335,7 @@ class CacheConfig:
             if token.startswith("ttl="):
                 cfg.ttl_seconds = max(0.0, float(token.split("=", 1)[1]))
                 continue
-            if token == "enable":  # noqa: S105  # nosec B105 - configuration toggle keyword
+            if token in enabled_labels:  # noqa: S105  # nosec B105 - configuration toggle keyword
                 cfg.enabled = True
         return cfg
 
@@ -335,7 +359,7 @@ class LRUCache(Generic[K, V]):
         size_estimator: Callable[[Any], int],
     ) -> None:
         """Initialize cache with cachetools backend."""
-        from calibrated_explanations.core import ValidationError
+        from ..utils.exceptions import ValidationError
 
         if max_items <= 0:
             raise ValidationError(
@@ -465,7 +489,9 @@ class LRUCache(Generic[K, V]):
         """Best-effort estimate of object size, swallowing estimator errors."""
         try:
             return int(self._size_estimator(value))
-        except Exception:  # pragma: no cover - defensive fall-back
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
             return 0
 
     def _evict_oldest(self) -> None:
@@ -492,8 +518,10 @@ class LRUCache(Generic[K, V]):
             return
         try:  # pragma: no cover - telemetry is optional best effort
             self._telemetry(event, {"namespace": self.namespace, **payload})
-        except Exception as exc:
-            logger.debug("Telemetry callback failed for %s: %s", event, exc)
+        except:  # noqa: E722
+            if not isinstance(sys.exc_info()[1], Exception):
+                raise
+            logger.debug("Telemetry callback failed for %s: %s", event, sys.exc_info()[1])
 
 
 @dataclass

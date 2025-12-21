@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 import calibrated_explanations.core.wrap_explainer as wrap_module
-from calibrated_explanations.core.exceptions import DataShapeError, NotFittedError, ValidationError
+from calibrated_explanations.utils.exceptions import DataShapeError, NotFittedError, ValidationError
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 

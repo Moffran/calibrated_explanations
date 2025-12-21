@@ -68,3 +68,34 @@ def test_cli_trust_command(monkeypatch, capsys):
     assert exit_code == 0
     assert called["trusted"] == "plugin.trusted"
     assert "Marked 'plugin.trusted' as trusted" in output
+
+
+def test_cli_untrust_command(monkeypatch, capsys):
+    descriptor = types.SimpleNamespace(identifier="plugin.untrusted")
+    called = {"untrusted": False}
+
+    def mark(identifier):
+        called["untrusted"] = identifier
+        return descriptor
+
+    monkeypatch.setattr(cli_module, "mark_explanation_untrusted", mark)
+
+    exit_code = cli_module.main(["untrust", "plugin.untrusted"])
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert called["untrusted"] == "plugin.untrusted"
+    assert "Marked 'plugin.untrusted' as untrusted" in output
+
+
+def test_cli_trust_missing(monkeypatch, capsys):
+    def mark(identifier):
+        raise KeyError(f"Plugin '{identifier}' not found")
+
+    monkeypatch.setattr(cli_module, "mark_explanation_trusted", mark)
+
+    exit_code = cli_module.main(["trust", "missing"])
+
+    output = capsys.readouterr().out
+    assert exit_code == 1
+    assert "Plugin 'missing' not found" in output

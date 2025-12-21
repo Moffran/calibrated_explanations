@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from calibrated_explanations.core.exceptions import ValidationError
+from calibrated_explanations.utils.exceptions import ValidationError
 from calibrated_explanations.plugins import registry
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
 
@@ -133,7 +133,7 @@ class DummyPlugin:
 
 
 def test_register_and_trust_flow(tmp_path):
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     p = DummyPlugin()
     # ensure clean start
@@ -203,7 +203,7 @@ def test_register_explanation_plugin_descriptor():
 
 
 def test_register_explanation_plugin_requires_modes():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     registry.clear_explanation_plugins()
 
@@ -224,7 +224,7 @@ def test_register_explanation_plugin_requires_modes():
 
 
 def test_register_explanation_plugin_requires_tasks():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     registry.clear_explanation_plugins()
 
@@ -271,7 +271,7 @@ def test_register_explanation_plugin_translates_aliases():
 
 
 def test_register_explanation_plugin_schema_version_future():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     registry.clear_explanation_plugins()
 
@@ -326,7 +326,7 @@ def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
         lambda: fake_entries,
     )
 
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         loaded = registry.load_entrypoint_plugins()
 
     assert loaded == ()
@@ -380,7 +380,7 @@ def test_register_interval_plugin_descriptor():
 
 
 def test_register_interval_plugin_requires_modes():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     registry.clear_interval_plugins()
 
@@ -455,7 +455,7 @@ def test_register_plot_components():
 
 
 def test_register_plot_builder_requires_style():
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     registry.clear_plot_plugins()
 
@@ -588,7 +588,7 @@ def test_find_plot_plugin_trusted_requires_trusted_components():
 
 
 def test_verify_plugin_checksum_success_and_failure(monkeypatch):
-    from calibrated_explanations.core.exceptions import ValidationError
+    from calibrated_explanations.utils.exceptions import ValidationError
 
     plugin = ExamplePlotBuilder()
     module_path = Path(__file__)
@@ -612,7 +612,7 @@ def test_verify_plugin_checksum_success_and_failure(monkeypatch):
         "_resolve_plugin_module_file",
         lambda plugin: module_path.with_name("nonexistent_file"),
     )
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         registry._verify_plugin_checksum(object(), meta_missing)
 
     with pytest.raises(ValidationError, match="must be a string or mapping"):
@@ -873,7 +873,7 @@ def test_trust_normalisation_helpers(monkeypatch):
     assert registry._should_trust(meta_env) is True
 
     meta_untrusted = {"name": "manual", "provider": "tests"}
-    with pytest.warns(RuntimeWarning):
+    with pytest.warns(UserWarning):
         registry._warn_untrusted_plugin(meta_untrusted, source="entry")
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("error", RuntimeWarning)
@@ -947,7 +947,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
     monkeypatch.setattr(registry.importlib_metadata, "entry_points", lambda: entry_points)
 
     try:
-        with pytest.warns(RuntimeWarning):
+        with pytest.warns(UserWarning):
             loaded = registry.load_entrypoint_plugins()
         assert {plugin.plugin_meta["name"] for plugin in loaded} == {"entry.trusted", "entry.attr"}
         # untrusted plugin should not be registered when include_untrusted is False

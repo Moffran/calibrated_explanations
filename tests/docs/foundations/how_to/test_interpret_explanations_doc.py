@@ -3,7 +3,7 @@ from __future__ import annotations
 from tests.helpers.doc_utils import run_quickstart_classification
 
 
-def test_interpret_explanations_snippets():
+def test_interpret_explanations_snippets(enable_fallbacks):
     context = run_quickstart_classification()
     explainer = context.explainer
     x_test = context.X_test

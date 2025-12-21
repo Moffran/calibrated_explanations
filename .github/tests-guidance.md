@@ -26,9 +26,59 @@ This repository uses a single source of truth for all test-related instructions.
 - **Performance:** keep unit tests <100 ms, integration tests <2 s when feasible. Mark slow tests using existing repo conventions.
 
 ## Coverage & Tooling Expectations
-- Local gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=88`.
+- Local gate: `pytest --cov=src/calibrated_explanations --cov-config=.coveragerc --cov-fail-under=90`.
 - Lint/mypy requirements still apply to any touched modules; update docs when behavior changes.
 - For deep domain context, see the "Detailed Guidelines & Patterns" section below.
+
+## Fallback Chain Enforcement (MANDATORY)
+
+**Policy:** Tests MUST NOT trigger fallback chains unless the test is explicitly validating fallback behavior.
+
+**Rationale:**
+- Fallback chains obscure test failures. If a plugin fails and silently falls back to a legacy implementation, the test may pass while hiding real bugs.
+- Tests should validate the primary code path, not accidental fallback paths.
+- Fallback-dependent tests are fragile and lead to false confidence.
+
+**Implementation:**
+1. **Default Behavior:** All tests inherit the `disable_fallbacks` fixture, which automatically sets all fallback chains to empty tuples.
+2. **Explicit Opt-In:** If a test is validating fallback behavior, it MUST explicitly opt in by using the `enable_fallbacks` fixture.
+3. **Fixture Usage:**
+   ```python
+   # Normal test (fallbacks disabled by default via autouse fixture)
+   def test_explanation_plugin_execution():
+       explainer = CalibratedExplainer(...)
+       explanation = explainer.explain_factual(x_test)
+       assert explanation is not None
+
+   # Test that explicitly validates fallback behavior
+   def test_explanation_plugin_fallback_chain(enable_fallbacks):
+       """Verify fallback chain handles missing plugin."""
+       explainer = CalibratedExplainer(..., _explanation_plugin_override="missing-plugin")
+       # Should fall back to default plugin
+       explanation = explainer.explain_factual(x_test)
+       assert explanation is not None
+   ```
+
+4. **CI Enforcement:** The CI pipeline runs with strict fallback detection enabled. Any test that triggers a fallback warning will fail unless explicitly marked with `enable_fallbacks`.
+
+5. **How to Check:** If you see warnings like:
+   - `"Execution plugin error; legacy sequential fallback engaged"`
+   - `"Parallel failure; forced serial fallback engaged"`
+   - `"Cache backend fallback: using minimal in-package LRU/TTL implementation"`
+   - `"Visualization fallback: alternative bar simplified due to drawing error"`
+
+   Your test is triggering a fallback and will fail in CI. Either fix the underlying issue or explicitly opt in with `enable_fallbacks`.
+
+**When to Use `enable_fallbacks`:**
+- Testing that the fallback chain works correctly
+- Testing error recovery behavior
+- Testing graceful degradation
+- Testing compatibility with missing optional dependencies
+
+**When NOT to Use `enable_fallbacks`:**
+- Normal feature tests
+- Unit tests for specific plugins
+- Integration tests that should use the primary code path
 
 Adhering to this document keeps Copilot policies, automation prompts, and human contributors aligned. If a scenario demands deviating, document the reasoning explicitly in the PR.
 
@@ -48,7 +98,8 @@ Adhering to this document keeps Copilot policies, automation prompts, and human 
 6. [Snapshots and Serialization](#snapshots-and-serialization)
 7. [Test Naming Convention (Extended)](#test-naming-convention-extended)
 8. [Integration Testing Checklist](#integration-testing-checklist)
-9. [Common Pitfalls & Solutions](#common-pitfalls--solutions)
+9. [Fallback Chain Testing](#fallback-chain-testing)
+10. [Common Pitfalls & Solutions](#common-pitfalls--solutions)
 
 ---
 
@@ -634,3 +685,158 @@ def test_explainer__should_infer_task_from_model(task, n_classes):
 
     assert explainer.task == task
 ```
+
+---
+
+## Fallback Chain Testing
+
+### Policy: No Fallbacks by Default
+
+**Rule:** Tests MUST NOT trigger fallback chains unless explicitly testing fallback behavior.
+
+**Mechanism:** The test suite uses fixtures to control fallback chain behavior:
+- `disable_fallbacks` (autouse): Automatically disables all fallback chains for every test
+- `enable_fallbacks`: Explicitly re-enables fallbacks for tests that validate fallback behavior
+
+### How Fallbacks Are Disabled
+
+The `disable_fallbacks` fixture empties all fallback chains by setting environment variables:
+
+```python
+# Automatically applied to all tests via autouse=True
+@pytest.fixture(autouse=True)
+def disable_fallbacks(monkeypatch):
+    """Disable all plugin fallback chains by default.
+
+    Tests that explicitly need fallbacks must use the enable_fallbacks fixture.
+    """
+    # Disable explanation plugin fallbacks
+    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FACTUAL_FALLBACKS", "")
+    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_ALTERNATIVE_FALLBACKS", "")
+    monkeypatch.setenv("CE_EXPLANATION_PLUGIN_FAST_FALLBACKS", "")
+
+    # Disable interval plugin fallbacks
+    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FALLBACKS", "")
+    monkeypatch.setenv("CE_INTERVAL_PLUGIN_FAST_FALLBACKS", "")
+
+    # Disable plot style fallbacks
+    monkeypatch.setenv("CE_PLOT_STYLE_FALLBACKS", "")
+
+    # Parallel execution: no serial fallback
+    monkeypatch.setenv("CE_PARALLEL_MIN_BATCH_SIZE", "999999")
+```
+
+### Writing Tests That Validate Fallbacks
+
+If your test explicitly validates fallback behavior, use the `enable_fallbacks` fixture:
+
+```python
+def test_explanation_plugin__should_fallback_when_primary_fails(enable_fallbacks):
+    """Verify fallback chain activates when primary plugin fails."""
+    # This test explicitly validates fallback behavior
+    explainer = CalibratedExplainer(
+        model, x_cal, y_cal,
+        _explanation_plugin_override="intentionally-missing"
+    )
+
+    # Should fall back to default plugin and not raise
+    with pytest.warns(UserWarning, match="fallback"):
+        explanation = explainer.explain_factual(x_test)
+
+    assert explanation is not None
+```
+
+### Detecting Fallback Violations in CI
+
+The CI pipeline enforces this policy using pytest's warning capture:
+
+1. **Strict warning mode**: `pytest -Werror::UserWarning` treats warnings as errors
+2. **Fallback detection**: All fallback paths emit `UserWarning` (per Fallback Visibility Policy)
+3. **Automatic failure**: Tests that trigger unexpected fallbacks fail in CI
+
+### Common Fallback Warning Patterns
+
+If your test fails with one of these warnings, it's triggering a fallback:
+
+```
+UserWarning: Execution plugin error; legacy sequential fallback engaged
+UserWarning: Parallel failure; forced serial fallback engaged
+UserWarning: Cache backend fallback: using minimal in-package LRU/TTL implementation
+UserWarning: Visualization fallback: alternative bar simplified due to drawing error
+UserWarning: Perturbation fallback: deterministic swap applied due to degenerate RNG state
+UserWarning: Narrative template fallback: default template used because provided path was missing
+```
+
+**Fix strategies:**
+1. **If the fallback is unexpected**: Fix the root cause (missing plugin, configuration error, etc.)
+2. **If the test validates fallback**: Add `enable_fallbacks` fixture parameter
+3. **If testing edge cases**: Mock the failure condition instead of triggering actual fallback
+
+### Example: Refactoring a Fallback-Dependent Test
+
+**BEFORE (❌ Fails in CI):**
+```python
+def test_explanation_with_missing_plugin():
+    """Test explanation when plugin is missing."""
+    explainer = CalibratedExplainer(model, x_cal, y_cal)
+    # This silently falls back to legacy implementation
+    explanation = explainer.explain_factual(x_test)
+    assert explanation is not None  # False confidence!
+```
+
+**AFTER (✅ Fixed):**
+
+**Option 1: Test the primary path**
+```python
+def test_explanation_with_registered_plugin():
+    """Verify explanation uses the registered plugin."""
+    explainer = CalibratedExplainer(model, x_cal, y_cal)
+    # Fallbacks disabled; will raise if plugin missing
+    explanation = explainer.explain_factual(x_test)
+    assert explanation is not None
+```
+
+**Option 2: Explicitly test fallback**
+```python
+def test_explanation__should_fallback_to_legacy_when_plugin_fails(enable_fallbacks):
+    """Verify graceful degradation when plugin execution fails."""
+    explainer = CalibratedExplainer(model, x_cal, y_cal)
+    # Explicitly testing fallback behavior
+    with pytest.warns(UserWarning, match="fallback"):
+        explanation = explainer.explain_factual(x_test)
+    assert explanation is not None
+```
+
+### Integration with Test Helpers
+
+The test helper module (`tests/helpers/fallback_control.py`) provides utilities for fallback management:
+
+```python
+from tests.helpers.fallback_control import (
+    assert_no_fallbacks_triggered,
+    disable_all_fallbacks,
+    enable_specific_fallback,
+)
+
+def test_complex_workflow():
+    """Verify workflow without fallbacks."""
+    # Ensure no fallbacks during test
+    with assert_no_fallbacks_triggered():
+        explainer = CalibratedExplainer(...)
+        result = explainer.explain_factual(x_test)
+        assert result is not None
+```
+
+### Rationale
+
+**Why this matters:**
+- **Test reliability**: Fallbacks obscure real failures
+- **Coverage accuracy**: Tests should validate the primary code path
+- **Debugging**: Fallback-dependent tests are hard to debug
+- **Regression detection**: Silent fallbacks hide regressions
+
+**When fallbacks are acceptable:**
+- Testing error recovery paths
+- Testing graceful degradation
+- Testing compatibility with missing optional dependencies
+- Testing the fallback mechanism itself

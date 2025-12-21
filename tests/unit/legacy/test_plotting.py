@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import types
 
 import numpy as np
@@ -354,7 +356,7 @@ def test_plot_global_requires_scalar_threshold_for_non_probabilistic():
     x_vals = np.zeros((3, 1))
     y_vals = np.array([0, 1, 0])
 
-    with pytest.warns(RuntimeWarning), pytest.raises(AssertionError):
+    with pytest.warns(UserWarning), pytest.raises(AssertionError):
         plotting._plot_global(
             explainer,
             x_vals,
@@ -945,3 +947,224 @@ def test_require_matplotlib_raises(monkeypatch):
         plotting.__require_matplotlib()
 
     assert "missing backend" in str(excinfo.value)
+
+
+def test_probabilistic_rejects_mismatched_lengths():
+    """Feature/instance size mismatches should be rejected to avoid mis-rendering."""
+    instance = np.array([0.1])
+    predict = {"predict": 0.5, "low": 0.2, "high": 0.7}
+    feature_weights = np.array([0.3, -0.2])
+
+    with pytest.raises(IndexError):
+        plotting._plot_probabilistic(
+            explanation=DummyExplanation(),
+            instance=instance,
+            predict=predict,
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="mismatch",
+            path="",
+            show=True,
+            interval=False,
+            save_ext=[".png"],
+        )
+
+
+def test_probabilistic_headless_short_circuit(monkeypatch):
+    """Headless invocations without save metadata must return without importing mpl."""
+    monkeypatch.setattr(plotting, "plt", None)
+    monkeypatch.setattr(plotting, "_MATPLOTLIB_IMPORT_ERROR", ImportError("backend missing"))
+    monkeypatch.setattr(
+        plotting,
+        "__require_matplotlib",
+        lambda: (_ for _ in ()).throw(RuntimeError("should not import")),
+    )
+
+    plotting._plot_probabilistic(
+        explanation=DummyExplanation(),
+        instance=np.array([]),
+        predict={"predict": 0.5, "low": 0.2, "high": 0.7},
+        feature_weights=np.array([]),
+        features_to_plot=[],
+        num_to_show=0,
+        column_names=None,
+        title=None,
+        path=None,
+        show=False,
+        interval=False,
+        save_ext=None,
+    )
+
+
+def test_probabilistic_errors_for_misaligned_instance():
+    """Ensure ``_plot_probabilistic`` rejects instances shorter than features."""
+    explanation = DummyExplanation()
+    instance = np.array([0.1])
+    feature_weights = np.array([0.2, -0.1])
+
+    with pytest.raises(IndexError):
+        plotting._plot_probabilistic(
+            explanation=explanation,
+            instance=instance,
+            predict={"predict": 0.5, "low": 0.3, "high": 0.7},
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=2,
+            column_names=["f0", "f1"],
+            title="misaligned_instance",
+            path="",
+            show=False,
+            interval=False,
+            save_ext=[".png"],
+        )
+
+
+def test_probabilistic_errors_for_num_to_show_mismatch():
+    """``_plot_probabilistic`` should fail when ``num_to_show`` exceeds feature count."""
+    explanation = DummyExplanation()
+    instance = np.array([0.1, 0.2])
+    feature_weights = np.array([0.2, -0.1])
+
+    with pytest.raises(ValueError) as excinfo:
+        plotting._plot_probabilistic(
+            explanation=explanation,
+            instance=instance,
+            predict={"predict": 0.5, "low": 0.3, "high": 0.7},
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1],
+            num_to_show=3,
+            column_names=["f0", "f1"],
+            title="num_to_show_mismatch",
+            path="",
+            show=False,
+            interval=False,
+            save_ext=[".png"],
+        )
+
+    assert "FixedLocator" in str(excinfo.value)
+
+
+def test_probabilistic_headless_noop_without_save_metadata(monkeypatch):
+    """When show/save are disabled the helper should short-circuit without matplotlib."""
+    explanation = DummyExplanation()
+
+    def fail():
+        raise AssertionError("matplotlib should not be required for headless no-op")
+
+    monkeypatch.setattr(plotting, "plt", None)
+    monkeypatch.setattr(plotting, "__require_matplotlib", fail)
+
+    plotting._plot_probabilistic(
+        explanation=explanation,
+        instance=np.array([0.1]),
+        predict={"predict": 0.5, "low": 0.3, "high": 0.7},
+        feature_weights=np.array([0.2]),
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title=None,
+        path=None,
+        show=False,
+        interval=False,
+        save_ext=None,
+    )
+
+
+def test_color_brew_and_fill_color_behaviour():
+    colors = plotting.__color_brew(3)
+    assert len(colors) == 3
+    assert all(len(rgb) == 3 for rgb in colors)
+
+    palette = plotting.__color_brew(2)
+    high_color = palette[1]
+    alpha = 0.5
+    expected_high = "#%02x%02x%02x" % tuple(
+        int(round(alpha * channel + (1 - alpha) * 255, 0)) for channel in high_color
+    )
+    shade = plotting.__get_fill_color({"predict": 0.8}, reduction=0.5)
+    assert shade == expected_high
+
+    low_color = palette[0]
+    computed_alpha = ((1 - 0.2) - 0.5) / 0.5 * (1 - 0.25) + 0.25
+    expected_low = "#%02x%02x%02x" % tuple(
+        int(round(computed_alpha * channel + (1 - computed_alpha) * 255, 0))
+        for channel in low_color
+    )
+    assert plotting.__get_fill_color({"predict": 0.2}) == expected_low
+
+
+def test_probabilistic_raises_when_feature_lengths_mismatch(tmp_path):
+    """Mismatched feature/index sizes should not silently succeed."""
+    explanation = DummyExplanation()
+    instance = np.array([0.2, 0.4])
+    predict = {"predict": 0.6, "low": 0.2, "high": 0.8}
+    feature_weights = {
+        "predict": np.array([0.1, 0.2, 0.3]),
+        "low": np.array([0.0, 0.1, 0.2]),
+        "high": np.array([0.2, 0.3, 0.4]),
+    }
+
+    with pytest.raises(IndexError):
+        plotting._plot_probabilistic(
+            explanation=explanation,
+            instance=instance,
+            predict=predict,
+            feature_weights=feature_weights,
+            features_to_plot=[0, 1, 2],
+            num_to_show=2,
+            column_names=["a", "b", "c"],
+            title="mismatch",
+            path=str(tmp_path) + "/",
+            show=False,
+            interval=True,
+            idx=0,
+            save_ext=[".png"],
+        )
+
+
+def test_probabilistic_short_circuits_without_show_or_save(monkeypatch):
+    """Headless mode should exit before importing matplotlib."""
+    explanation = DummyExplanation()
+    instance = np.array([0.1])
+    predict = {"predict": 0.2, "low": 0.1, "high": 0.3}
+    feature_weights = np.array([0.05])
+
+    def boom():
+        raise AssertionError("matplotlib should not be required")
+
+    monkeypatch.setattr(plotting, "__require_matplotlib", boom)
+
+    plotting._plot_probabilistic(
+        explanation=explanation,
+        instance=instance,
+        predict=predict,
+        feature_weights=feature_weights,
+        features_to_plot=[0],
+        num_to_show=1,
+        column_names=["f0"],
+        title=None,
+        path=None,
+        show=False,
+        interval=False,
+        idx=None,
+        save_ext=None,
+    )
+
+
+def test_compose_save_target_parity():
+    from calibrated_explanations.legacy.plotting import _compose_save_target
+
+    # Test prefix behavior (when path is not a dir and doesn't end with separator)
+    target = _compose_save_target("prefix_", "plot", ".png")
+    assert target == "prefix_plot.png"
+
+
+def test_compose_save_target_directory(tmp_path):
+    from calibrated_explanations.legacy.plotting import _compose_save_target
+
+    # Test with actual directory
+    target = _compose_save_target(tmp_path, "plot", ".png")
+    expected = tmp_path / "plot.png"
+    assert str(target) == str(expected)

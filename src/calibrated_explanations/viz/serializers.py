@@ -109,7 +109,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
     the matplotlib adapter and tests.
     """
     if not isinstance(obj, dict):
-        from ..core.exceptions import ValidationError
+        from ..utils.exceptions import ValidationError
 
         raise ValidationError(
             "PlotSpec payload must be a dict",
@@ -118,7 +118,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
 
     version = obj.get("plotspec_version")
     if version != PLOTSPEC_VERSION:
-        from ..core.exceptions import ValidationError
+        from ..utils.exceptions import ValidationError
 
         raise ValidationError(
             f"unsupported or missing plotspec_version: {version}",
@@ -128,7 +128,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
     # Basic body validation for bar-panel specs
     body = obj.get("body")
     if body is None:
-        from ..core.exceptions import ValidationError
+        from ..utils.exceptions import ValidationError
 
         raise ValidationError(
             "PlotSpec body is required for bar plots",
@@ -136,7 +136,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
         )
     bars = body.get("bars")
     if not isinstance(bars, list):
-        from ..core.exceptions import ValidationError
+        from ..utils.exceptions import ValidationError
 
         raise ValidationError(
             "PlotSpec body.bars must be a list",
@@ -148,7 +148,7 @@ def validate_plotspec(obj: Dict[str, Any]) -> None:
         )
     for i, b in enumerate(bars):
         if "label" not in b or "value" not in b:
-            from ..core.exceptions import ValidationError
+            from ..utils.exceptions import ValidationError
 
             raise ValidationError(
                 f"bar at index {i} missing required fields 'label' or 'value'",

@@ -63,10 +63,21 @@ def __getattr__(name: str) -> Any:
         return WrapCalibratedExplainer
 
     if name == "assign_threshold":
-        from .explain.feature_task import assign_threshold
+        from ..utils.helper import assign_threshold
 
         globals()[name] = assign_threshold
         return assign_threshold
+
+    # Compatibility: allow attribute-style access to the explain subpackage.
+    # Some tests and downstream code monkeypatch using dotted strings like
+    # `calibrated_explanations.core.explain.<...>` which requires `core.explain`
+    # to be resolvable via getattr on this package.
+    if name == "explain":
+        import importlib
+
+        explain_module = importlib.import_module(f"{__name__}.explain")
+        globals()["explain"] = explain_module
+        return explain_module
 
     if name in {
         "CalibratedError",
@@ -79,7 +90,7 @@ def __getattr__(name: str) -> Any:
         "SerializationError",
         "explain_exception",
     }:
-        from .exceptions import (
+        from ..utils.exceptions import (
             CalibratedError,
             ConfigurationError,
             ConvergenceError,

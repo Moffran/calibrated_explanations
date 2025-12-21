@@ -26,7 +26,7 @@ class AntiPatternVisitor(ast.NodeVisitor):
     def __init__(self, path: Path) -> None:
         self.path = path
         self.findings: list[Finding] = []
-        self.lines = path.read_text().splitlines()
+        self.lines = path.read_text(encoding="utf-8").splitlines()
 
     def visit_call(self, node: ast.Call) -> None:
         """Handle function calls that might trigger anti-patterns."""
@@ -127,7 +127,7 @@ def scan_tests(tree_root: Path) -> list[Finding]:
         resolved = path.resolve()
         visitor = AntiPatternVisitor(resolved)
         try:
-            visitor.visit(ast.parse(resolved.read_text()))
+            visitor.visit(ast.parse(resolved.read_text(encoding="utf-8")))
         except SyntaxError as exc:
             print(f"Unable to parse {path}: {exc}")
             continue
@@ -138,7 +138,7 @@ def scan_tests(tree_root: Path) -> list[Finding]:
 def write_report(findings: list[Finding], output_path: Path, root: Path | None = None) -> None:
     """Write the findings into a CSV report."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with output_path.open("w", newline="") as handle:
+    with output_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         writer.writerow(["file", "line", "pattern", "snippet"])
         for finding in findings:

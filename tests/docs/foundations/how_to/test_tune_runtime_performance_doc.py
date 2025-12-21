@@ -3,7 +3,7 @@ from __future__ import annotations
 from tests.helpers.doc_utils import run_quickstart_classification
 
 
-def test_tune_runtime_performance_snippet():
+def test_tune_runtime_performance_snippet(enable_fallbacks):
     from calibrated_explanations import WrapCalibratedExplainer
     from calibrated_explanations.api.config import ExplainerBuilder
 

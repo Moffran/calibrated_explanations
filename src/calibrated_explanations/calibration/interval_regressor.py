@@ -13,9 +13,8 @@ from functools import singledispatchmethod
 import crepes
 import numpy as np
 
-from calibrated_explanations.core import ConfigurationError, DataShapeError
-
 from ..utils import safe_first_element
+from ..utils.exceptions import ConfigurationError, DataShapeError, ValidationError
 from .venn_abers import VennAbers
 
 
@@ -247,6 +246,11 @@ class IntervalRegressor:
         """
         y_test_hat = self.ce.predict_function(x).reshape(-1, 1)
 
+        if bins is not None and len(bins) != len(y_test_hat):
+            raise DataShapeError(
+                f"Length of test bins ({len(bins)}) does not match number of test instances ({len(y_test_hat)})."
+            )
+
         sigma_test = self.ce._get_sigma_test(x=x)  # pylint: disable=protected-access
         low = [low_high_percentiles[0], 50] if low_high_percentiles[0] != -np.inf else [50, 50]
         high = [low_high_percentiles[1], 50] if low_high_percentiles[1] != np.inf else [50, 50]
@@ -340,7 +344,7 @@ class IntervalRegressor:
             y_threshold : float or tuple
                 Threshold defining the calibration target event.
         """
-        raise TypeError("y_threshold must be a float or a tuple.")
+        raise ValidationError("y_threshold must be a float or a tuple.")
 
     @compute_proba_cal.register(numbers.Real)
     def _(self, y_threshold: numbers.Real):
@@ -461,11 +465,17 @@ class IntervalRegressor:
                 indices = np.searchsorted(alphas, residuals[cps_idx])
                 self.split["cps"].alphas = np.insert(alphas, indices, residuals[cps_idx])
             else:
+                bin_values = self.split["cps"].binned_alphas[0]
+                alpha_list = self.split["cps"].binned_alphas[1]
                 for b in np.unique(bins):
-                    alphas = self.split["cps"].alphas[1][b]
+                    if b not in bin_values:
+                        continue
+                    idx = np.where(bin_values == b)[0][0]
+                    alphas = alpha_list[idx]
                     res = residuals[cps_idx]
-                    indices = np.searchsorted(alphas, res[bins == b])
-                    self.split["cps"].alphas[1][b] = np.insert(alphas, indices, res[bins == b])
+                    subset_mask = bins[cps_idx] == b
+                    indices = np.searchsorted(alphas, res[subset_mask])
+                    alpha_list[idx] = np.insert(alphas, indices, res[subset_mask])
 
         # Update cps
         if bins is None:
@@ -473,10 +483,15 @@ class IntervalRegressor:
             indices = np.searchsorted(alphas, residuals)
             self.cps.alphas = np.insert(alphas, indices, residuals)
         else:
+            bin_values = self.cps.binned_alphas[0]
+            alpha_list = self.cps.binned_alphas[1]
             for b in np.unique(bins):
-                alphas = self.cps.alphas[1][b]
+                if b not in bin_values:
+                    continue
+                idx = np.where(bin_values == b)[0][0]
+                alphas = alpha_list[idx]
                 indices = np.searchsorted(alphas, residuals[bins == b])
-                self.cps.alphas[1][b] = np.insert(alphas, indices, residuals[bins == b])
+                alpha_list[idx] = np.insert(alphas, indices, residuals[bins == b])
 
     @property
     def y_cal_hat(self):

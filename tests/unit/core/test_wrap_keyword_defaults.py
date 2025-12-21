@@ -8,6 +8,8 @@ from typing import Any
 import numpy as np
 import pytest
 
+from sklearn.base import BaseEstimator
+
 from calibrated_explanations.api.config import ExplainerConfig
 from calibrated_explanations.core.wrap_explainer import WrapCalibratedExplainer
 from tests.helpers.deprecation import warns_or_raises, deprecations_error_enabled
@@ -37,16 +39,21 @@ class RecordingExplainer:
 
 
 @dataclass
-class DummyModel:
+class DummyModel(BaseEstimator):
     """Tiny stand-in compatible with WrapCalibratedExplainer._from_config."""
 
     value: float = 0.0
+
+    def fit(self, x=None, y=None):
+        self.value_ = self.value
+        return self
 
 
 def _configured_wrapper(
     threshold: float | None, percentiles: tuple[int, int]
 ) -> tuple[WrapCalibratedExplainer, RecordingExplainer]:
     cfg = ExplainerConfig(model=DummyModel(), threshold=threshold, low_high_percentiles=percentiles)
+    cfg.model.fit(None, None)
     wrapper = WrapCalibratedExplainer._from_config(cfg)
     recorder = RecordingExplainer()
     wrapper.explainer = recorder

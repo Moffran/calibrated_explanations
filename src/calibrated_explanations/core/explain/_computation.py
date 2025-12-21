@@ -6,20 +6,21 @@ and weight calculation used by all explain executors.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
 
 from ...utils import concatenate_thresholds
+from ...utils.exceptions import CalibratedError
+from ...utils.helper import assign_threshold as normalize_threshold
+from ...utils.int_utils import as_int_array
 from .feature_task import (
     FeatureTaskResult,
     assign_weight_scalar,
 )
 from .feature_task import (
     _feature_task as feature_task,
-)
-from .feature_task import (
-    assign_threshold as normalize_threshold,
 )
 
 if TYPE_CHECKING:
@@ -322,7 +323,9 @@ def explain_predict_step(
     threshold: Any,
     low_high_percentiles: Tuple[int, int],
     bins: Any,
-    features_to_ignore: Any,  # pylint: disable=unused-argument
+    features_to_ignore: Any,
+    *,
+    features_to_ignore_per_instance: Any | None = None,
 ) -> ExplainPredictStepResult:
     """Execute the baseline prediction and perturbation planning step.
 
@@ -360,6 +363,24 @@ def explain_predict_step(
     if features_to_ignore is None:
         features_to_ignore = ()
 
+    if bins is not None:
+        bins = np.asarray(bins)
+    n_instances = x.shape[0]
+    num_features = explainer.num_features
+    ignore_mask = np.zeros((n_instances, num_features), dtype=bool)
+    ignore_indices = as_int_array(features_to_ignore)
+    if ignore_indices.size:
+        ignore_mask[:, ignore_indices] = True
+    if isinstance(features_to_ignore_per_instance, Iterable) and not isinstance(
+        features_to_ignore_per_instance, (str, bytes)
+    ):
+        for idx, inst_mask in enumerate(features_to_ignore_per_instance):
+            if idx >= n_instances:
+                break
+            inst_indices = as_int_array(inst_mask)
+            if inst_indices.size:
+                ignore_mask[idx, inst_indices] = True
+
     x_cal = explainer.x_cal
     base_predict, base_low, base_high, predicted_class = explainer._predict(  # pylint: disable=protected-access
         x, threshold=threshold, low_high_percentiles=low_high_percentiles, bins=bins
@@ -392,7 +413,7 @@ def explain_predict_step(
                         x, bins=bins
                     )
             prediction["__full_probabilities__"] = full_probs
-        except Exception as exc:  # pragma: no cover  # pylint: disable=broad-except
+        except (AttributeError, CalibratedError) as exc:
             logging.getLogger("calibrated_explanations").debug(
                 "Failed to compute full calibrated probabilities: %s", exc
             )
@@ -400,10 +421,12 @@ def explain_predict_step(
     x.flags.writeable = False
     assert_threshold(threshold, x)
     perturbed_threshold = normalize_threshold(threshold)
-    perturbed_bins = np.empty((0,)) if bins is not None else None
-    perturbed_x = np.empty((0, explainer.num_features))
-    perturbed_feature = np.empty((0, 4))  # (feature, instance, bin_index, is_lesser)
-    perturbed_class = np.empty((0,), dtype=int)
+    # Optimization: Use lists for accumulation to avoid O(N^2) concatenation
+    perturbed_bins_list = []
+    perturbed_x_list = []
+    perturbed_feature_list = []
+    perturbed_class_list = []
+
     x_perturbed = discretize(explainer, x)
     rule_boundaries_result = rule_boundaries(explainer, x, x_perturbed)
 
@@ -414,23 +437,33 @@ def explain_predict_step(
     categorical_features = set(getattr(explainer, "categorical_features", ()))
 
     for f in range(explainer.num_features):
-        if f in features_to_ignore:
+        active_indices = np.where(~ignore_mask[:, f])[0]
+        if active_indices.size == 0:
             continue
         if f in categorical_features:
             feature_values = explainer.feature_values[f]
             x_copy = np.array(x, copy=True)
             for value in feature_values:
-                x_copy[:, f] = value
-                perturbed_x = np.concatenate((perturbed_x, np.array(x_copy)))
-                perturbed_feature = np.concatenate(
-                    (perturbed_feature, [(f, i, value, None) for i in range(x.shape[0])])
-                )
-                perturbed_bins = (
-                    np.concatenate((perturbed_bins, bins)) if bins is not None else None
-                )
-                perturbed_class = np.concatenate((perturbed_class, prediction["predict"]))
+                x_local = x_copy[active_indices, :]
+                x_local[:, f] = value
+                perturbed_x_list.append(x_local)
+                perturbed_feature_list.append([(f, int(i), value, None) for i in active_indices])
+
+                if bins is not None:
+                    selected_bins = (
+                        bins[active_indices]
+                        if len(active_indices) > 1
+                        else [bins[active_indices[0]]]
+                    )
+                    perturbed_bins_list.append(selected_bins)
+
+                p_class = prediction.get("predict", np.zeros_like(active_indices))[active_indices]
+                if not hasattr(p_class, "__len__"):
+                    p_class = np.full(len(active_indices), p_class)
+                perturbed_class_list.append(p_class)
+
                 perturbed_threshold = concatenate_thresholds(
-                    perturbed_threshold, threshold, list(range(x.shape[0]))
+                    perturbed_threshold, threshold, active_indices
                 )
         else:
             x_copy = np.array(x, copy=True)
@@ -448,79 +481,93 @@ def explain_predict_step(
             lesser_values[f] = {}
             greater_values[f] = {}
             covered_values[f] = {}
-            for j, val in enumerate(np.unique(lower_boundary)):
+
+            active_lower = lower_boundary[active_indices]
+            active_upper = upper_boundary[active_indices]
+
+            for j, val in enumerate(np.unique(active_lower)):
                 lesser_values[f][j] = (
                     np.unique(get_lesser_values(explainer, f, val)),
                     val,
                 )
                 indices = np.where(lower_boundary == val)[0]
+                indices = np.intersect1d(indices, active_indices, assume_unique=False)
+                if len(indices) == 0:
+                    continue
                 for value in lesser_values[f][j][0]:
                     x_local = x_copy[indices, :]
                     x_local[:, f] = value
-                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
-                    perturbed_feature = np.concatenate(
-                        (perturbed_feature, [(f, i, j, True) for i in indices])
-                    )
+                    perturbed_x_list.append(x_local)
+                    perturbed_feature_list.append([(f, int(i), j, True) for i in indices])
+
                     if bins is not None:
-                        perturbed_bins = np.concatenate(
-                            (
-                                perturbed_bins,
-                                bins[indices] if len(indices) > 1 else [bins[indices[0]]],
-                            )
-                        )
-                    perturbed_class = np.concatenate(
-                        (perturbed_class, prediction["classes"][indices])
-                    )
+                        selected_bins = bins[indices] if len(indices) > 1 else [bins[indices[0]]]
+                        perturbed_bins_list.append(selected_bins)
+
+                    perturbed_class_list.append(prediction["classes"][indices])
+
                     perturbed_threshold = concatenate_thresholds(
                         perturbed_threshold, threshold, indices
                     )
-            for j, val in enumerate(np.unique(upper_boundary)):
+            for j, val in enumerate(np.unique(active_upper)):
                 greater_values[f][j] = (
                     np.unique(get_greater_values(explainer, f, val)),
                     val,
                 )
                 indices = np.where(upper_boundary == val)[0]
+                indices = np.intersect1d(indices, active_indices, assume_unique=False)
+                if len(indices) == 0:
+                    continue
                 for value in greater_values[f][j][0]:
                     x_local = x_copy[indices, :]
                     x_local[:, f] = value
-                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local)))
-                    perturbed_feature = np.concatenate(
-                        (perturbed_feature, [(f, i, j, False) for i in indices])
-                    )
+                    perturbed_x_list.append(x_local)
+                    perturbed_feature_list.append([(f, int(i), j, False) for i in indices])
+
                     if bins is not None:
-                        perturbed_bins = np.concatenate(
-                            (
-                                perturbed_bins,
-                                bins[indices] if len(indices) > 1 else [bins[indices[0]]],
-                            )
-                        )
-                    perturbed_class = np.concatenate(
-                        (perturbed_class, prediction["classes"][indices])
-                    )
+                        selected_bins = bins[indices] if len(indices) > 1 else [bins[indices[0]]]
+                        perturbed_bins_list.append(selected_bins)
+
+                    perturbed_class_list.append(prediction["classes"][indices])
+
                     perturbed_threshold = concatenate_thresholds(
                         perturbed_threshold, threshold, indices
                     )
-            indices = range(len(x))
-            for i in indices:
-                covered_values[f][i] = (
+            for i in active_indices:
+                covered_values[f][int(i)] = (
                     get_covered_values(explainer, f, lower_boundary[i], upper_boundary[i]),
                     (lower_boundary[i], upper_boundary[i]),
                 )
-                for value in covered_values[f][i][0]:
-                    x_local = x_copy[i, :]
+                for value in covered_values[f][int(i)][0]:
+                    x_local = x_copy[int(i), :]
                     x_local[f] = value
-                    perturbed_x = np.concatenate((perturbed_x, np.array(x_local.reshape(1, -1))))
-                    perturbed_feature = np.concatenate((perturbed_feature, [(f, i, i, None)]))
+                    perturbed_x_list.append(x_local.reshape(1, -1))
+                    perturbed_feature_list.append([(f, int(i), int(i), None)])
+
                     if bins is not None:
-                        perturbed_bins = np.concatenate((perturbed_bins, [bins[i]]))
-                    perturbed_class = np.concatenate((perturbed_class, [prediction["classes"][i]]))
+                        perturbed_bins_list.append([bins[int(i)]])
+
+                    perturbed_class_list.append([prediction["classes"][int(i)]])
+
                     if threshold is not None and isinstance(threshold, (list, np.ndarray)):
                         if isinstance(threshold[0], tuple) and len(perturbed_threshold) == 0:
-                            perturbed_threshold = [threshold[i]]
+                            perturbed_threshold = [threshold[int(i)]]
                         else:
                             perturbed_threshold = np.concatenate(
-                                (perturbed_threshold, [threshold[i]])
+                                (perturbed_threshold, [threshold[int(i)]])
                             )
+
+    # Finalize arrays from lists
+    if perturbed_x_list:
+        perturbed_x = np.concatenate(perturbed_x_list)
+        perturbed_feature = np.concatenate(perturbed_feature_list)
+        perturbed_class = np.concatenate(perturbed_class_list)
+        perturbed_bins = np.concatenate(perturbed_bins_list) if bins is not None else None
+    else:
+        perturbed_x = np.empty((0, explainer.num_features))
+        perturbed_feature = np.empty((0, 4))
+        perturbed_class = np.empty((0,), dtype=int)
+        perturbed_bins = np.empty((0,)) if bins is not None else None
 
     if (
         threshold is not None

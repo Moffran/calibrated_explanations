@@ -5,10 +5,10 @@ coverage:
   status:
     patch:
       default:
-        target: '88%'
+        target: '90%'
         threshold: '0%'
       runtime-calibration:
-        target: '88%'
+        target: '90%'
         threshold: '0%'
         paths:
           - "src/calibrated_explanations/core/"

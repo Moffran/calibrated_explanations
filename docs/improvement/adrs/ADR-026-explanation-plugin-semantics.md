@@ -2,7 +2,7 @@
 
 # ADR-026 — Explanation Plugin Semantics and Legacy Contracts
 
-Status: Draft
+Status: Accepted
 Date: 2025-10-18
 Deciders: Core maintainers
 Reviewers: TBD
@@ -30,7 +30,10 @@ clear contract without duplicating the in-tree implementation details.
 ### 1. Orchestrator lifecycle and plugin resolution
 
 * **Entry Point & Delegation:** `CalibratedExplainer` is the definitive public entry point for creating explanations. It is architected as a thin delegator that contains no explanation logic itself; instead, it forwards all requests to the `PluginManager` and its resolved orchestrators. This design ensures a consistent API surface while allowing the underlying implementation to vary by plugin.
-* **Internal Orchestration:** The `explain` method is strictly an internal orchestration primitive used by the public `explain_factual` and `explore_alternatives` methods. It is **not** part of the public API and must not be invoked directly by users. Its role is solely to bridge the public API calls to the `PluginManager`. To reinforce `CalibratedExplainer`'s role as a thin facade rather than an orchestrator, this method may be moved to a dedicated internal module in future refactors.
+* **Internal Orchestration:** The `explain` method (renamed to `_explain` in v0.10.0) is strictly an internal orchestration primitive used by the public `explain_factual` and `explore_alternatives` methods. It is **not** part of the public API and must not be invoked directly by users. Its role is solely to bridge the public API calls to the `PluginManager`. To reinforce `CalibratedExplainer`'s role as a thin facade rather than an orchestrator, this method may be moved to a dedicated internal module in future refactors.
+
+**Note on ADR-015:** ADR-015 defines the *architecture* (how plugins are resolved and invoked), while this ADR (ADR-026) defines the *policy* (visibility and semantic contracts). The internalization of `explain` is a policy decision enforced by this ADR.
+
 * **Plugin Resolution:** The internal orchestration delegates all work to `_invoke_explanation_plugin`, which resolves or instantiates a plugin per mode, initialises it once with an `ExplanationContext`, and reuses the instance for subsequent calls. Resolution draws from (in priority order) keyword overrides, environment variables, pyproject configuration, descriptor-declared fallbacks, and the default built-ins before giving up, so authors can override behaviour without touching code.【F:src/calibrated_explanations/core/calibrated_explainer.py†L421-L459】【F:src/calibrated_explanations/core/calibrated_explainer.py†L894-L959】
 * Runtime metadata is validated before a plugin is accepted. The resolver checks
   schema versions, declared modes/tasks, and capability tags (`explain`,

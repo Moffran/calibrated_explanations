@@ -27,7 +27,7 @@ class JoblibBackend:
         """Execute *fn* over *items* using joblib when available."""
         try:
             from joblib import Parallel, delayed  # type: ignore
-        except Exception:
+        except Exception:  # ADR002_ALLOW: joblib optional dependency.  # pragma: no cover
             return [fn(x) for x in items]
         n_jobs = workers if workers is not None else -1
         return Parallel(n_jobs=n_jobs)(delayed(fn)(x) for x in items)

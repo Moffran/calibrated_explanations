@@ -170,7 +170,7 @@ def test_plot_runtimeerror_agg_raises_configuration_error(monkeypatch):
     monkeypatch.setattr(explanation_module, "_plot_regression", raise_agg)
     monkeypatch.setattr(explanation_module, "_plot_probabilistic", raise_agg)
 
-    from calibrated_explanations.core.exceptions import ConfigurationError
+    from calibrated_explanations.utils.exceptions import ConfigurationError
 
     with pytest.raises(ConfigurationError):
         factual.plot(show=True)
