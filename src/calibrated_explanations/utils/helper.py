@@ -575,7 +575,7 @@ def immutable_array(array):
     >>> arr = immutable_array([1, 2, 3])
     >>> arr.flags.writeable
     False
-    >>> arr[0]
+    >>> int(arr[0])
     1
     >>> arr[0] = 10
     Traceback (most recent call last):
