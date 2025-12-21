@@ -19,7 +19,7 @@
   - Enhanced `validate_inputs` and other validation helpers for consistent API contracts.
   - Added `explain_exception` helper for human-readable error messages.
 - **Interval Safety**: Enforced robust `low <= predict <= high` invariants for all plugin predictions and serialization (ADR-021).
-- **Condition Source**: Added support for `condition_source` configuration to select conditioning data sources.
+- **Condition Source**: Added support for `condition_source` configuration (`"observed"` or `"prediction"`) to select conditioning data sources for discretizers and condition labels.
 - **Fallback Visibility**: Enforced visible notifications for all runtime fallbacks:
   - Added info-level logs and `UserWarning` emissions for execution strategy fallbacks, plugin execution fallbacks, cache backend fallback, visualization simplifications, and perturbation fallbacks.
   - Updated contributor guidance in `.github/copilot-instructions.md` and release plan to mandate no-silent-fallbacks.
@@ -34,10 +34,16 @@
 - **Conjunction Analysis**: Overhauled the conjunction analysis engine to use batched prediction and shared state management, enabling significant performance improvements and support for `max_rule_size >= 4`.
 - **Package Structure**: Restructured the internal package layout (ADR-001) to enforce strict boundaries and reduce circular dependencies.
   - Moved core logic into dedicated sub-packages (`core`, `calibration`, `explanations`, `cache`, `parallel`, `schema`, `plugins`, `viz`, `utils`).
-  - Deprecated unsanctioned symbols and locked the public API to sanctioned entry points.
+  - **Breaking Change**: Sanctioned the public API to `CalibratedExplainer`, `WrapCalibratedExplainer`, and `transform_to_numeric`.
+  - **Deprecation**: The following symbols now emit `DeprecationWarning` when imported from the top-level package and will be removed in v0.11.0:
+    - `AlternativeExplanation`, `FactualExplanation`, `FastExplanation`
+    - `AlternativeExplanations`, `CalibratedExplanations`
+    - `BinaryEntropyDiscretizer`, `EntropyDiscretizer`, `BinaryRegressorDiscretizer`, `RegressorDiscretizer`
+    - `IntervalRegressor`, `VennAbers`
+    - `viz` namespace
 - **Parallel Runtime**: Auto parallel backend now prefers `joblib` on all platforms, with process-based fallback.
 - **Terminology**: Standardized on "probabilistic regression" as the canonical user-facing term for regression with threshold-based probability predictions (ADR-021).
-- **Explanation Plugin Semantics**: Internalized `CalibratedExplainer.explain` to `_explain` and enforced immutable contexts (ADR-026).
+- **Explanation Plugin Semantics**: Internalized `CalibratedExplainer.explain` to `_explain` and enforced immutable contexts (ADR-026). **Breaking Change**: `explain()` is no longer part of the public API.
 - **Documentation**: Comprehensive API reference updates with `autoclass` directives.
 
 ### Fixed
@@ -51,8 +57,8 @@
 
 ### Removed
 
-- **Feature Parallelism**: Deprecated `FeatureParallel` execution strategy in favor of more efficient instance-based parallelism.
-- **Legacy Shim**: Removed `src/calibrated_explanations/core/exceptions.py` shim as part of ADR-001 completion.
+- **Legacy Alias**: Removed deprecated `_is_thresholded()` method from `CalibratedExplanations` (superseded by `is_probabilistic_regression`).
+- **Feature Parallelism**: Removed `FeatureParallel` execution strategy. A shim remains in `plugins/builtins.py` that falls back to `InstanceParallel` to maintain configuration compatibility.
 
 ## [v0.9.1](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.9.1) - 2025-11-27
 
