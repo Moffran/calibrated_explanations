@@ -15,14 +15,16 @@ Planned plugin system will allow third parties to register calibration or explan
 
 ## Decision
 
-Implement a conservative, opt-in plugin registry:
+Implement a conservative, opt-in plugin registry with explicit trust policy hooks:
 
 - Discovery via entry points group `calibrated_explanations.plugins` (setuptools) or explicit `register_plugin()` call.
-- Registry stores metadata: name, version, provider, capabilities, checksum (optional), `trusted` flag.
+- Registry stores metadata: name, version, provider, capabilities, checksum or signature metadata (optional), `trusted` status.
 - By default, only built-in plugins auto-load. Third-party plugins require explicit trust action: environment variable `CE_TRUST_PLUGIN=<name>` or programmatic `trust_plugin(name)`.
-- On first detection of untrusted plugin, emit warning with guidance and skip load.
+- Support allowlist/denylist policy controls (`CE_TRUST_PLUGIN`, `CE_DENY_PLUGIN`) and a `PluginTrustPolicy` interface that can be overridden by integrators.
+- On detection of untrusted or denied plugins, emit a warning with guidance and skip load.
 - Provide `list_plugins(include_untrusted=True)` API for diagnostics.
-- Optional integrity field: author may supply SHA256 of source dist; library can verify if hash file present (best-effort, not security grade initially).
+- Integrity checks: allow authors to supply SHA256 or a signed metadata blob. If present, the registry verifies against the supplied hash/signature and records the result (best-effort, non-blocking unless policy requires it).
+- Activation logging: every plugin load or rejection emits a structured audit event via the existing logging/telemetry hook (name, version, provider, decision, reason).
 - Isolation: no sandboxing initially (document risk); future ADR may explore subprocess / WASM.
 - **Delegation & Ownership:** The `PluginManager` serves as the single source of truth for plugin resolution and defaults. `CalibratedExplainer` delegates all explanation requests to this manager, ensuring that trust and opt-in rules are consistently enforced regardless of the entry point.
 
@@ -45,6 +47,7 @@ Negative / Risks:
 - False sense of security (trust flag is coarse; code still executes in-process).
 - Added friction for quick experimentation (must trust explicitly).
 - Users may ignore warnings; need clear docs.
+- Optional signature verification depends on producers supplying correct metadata.
 
 ## Adoption & Migration
 
@@ -53,7 +56,6 @@ Phase E–F (v0.7.0): Enable third-party registration & trust workflow behind ex
 
 ## Open Questions
 
-- Should we support a denylist environment variable? (Probably yes for defense-in-depth.)
 - Provide structured plugin capability descriptors for filtering? (Yes, minimal early.)
 - Expose plugin health/validation checks (schema compliance, version compatibility)?
 

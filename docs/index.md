@@ -116,6 +116,7 @@ migration/index
 
 appendices/external_plugins
 appendices/changelog_links
+maintenance/legacy-plotting-reference
 citing
 ```
 

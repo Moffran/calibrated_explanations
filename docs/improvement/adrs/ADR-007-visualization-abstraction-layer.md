@@ -2,7 +2,7 @@
 
 # ADR-007: Visualization Abstraction Layer
 
-Status: Accepted
+Status: Accepted (scoped)
 Date: 2025-08-16
 Deciders: Core maintainers
 Reviewers: TBD
@@ -11,26 +11,26 @@ Superseded-by: None
 
 ## Context
 
-Visualization currently couples matplotlib-specific code with explanation data construction. Need separation so alternative backends (plotly, bokeh) or headless export (SVG/JSON) can be supported without rewriting explanation logic.
+Visualization currently couples matplotlib-specific code with explanation data construction. We need a modest separation so optional renderers (plotly, bokeh, headless export) can be introduced without rewriting explanation logic. At the same time, plotting is secondary to calibrated explanations and should not become a core architectural dependency.
 
 ## Decision
 
-Introduce `PlotSpec` intermediate representation (IR): a pure-Python (JSON-serializable) dict structure describing intended plot (kind, axes, data series, styles, annotations). Explanation strategies emit `PlotSpec` objects; backend renderers translate to concrete library calls.
+Introduce an **optional** `PlotSpec` intermediate representation (IR) as a minimal, JSON-serializable dict that describes the intended plot (kind, axes, data series, styles, annotations). Explanation strategies may emit `PlotSpec` objects; backends can render them when users explicitly opt in. The default plotting path remains the legacy matplotlib implementation.
 
-Components:
+Scope and constraints:
 
-- `PlotSpec` dataclass (kind, data, encodings, meta, version).
-- Registry of renderer adapters (`matplotlib`, future `plotly`).
-- Validation: `validate_plotspec(spec)` ensuring required fields by kind.
-- Stable minimal schema version (1.0) independent from explanation schema (see ADR-005).
+- `PlotSpec` is a lightweight, backend-agnostic contract intended for interoperability, not a full grammar-of-graphics.
+- The rendering adapter layer is treated as a **secondary subsystem**. It must not impose new requirements on the core explanation API.
+- The initial implementation can focus on a single adapter (matplotlib) and a small subset of plot kinds to validate the concept.
+- Exact parity with legacy visuals is not a requirement of `PlotSpec`; the legacy renderer remains the canonical source for pixel-level behaviour.
 
-Rendering API:
+Rendering API (optional):
 `render(spec, backend="matplotlib", **opts) -> FigureLike` where `FigureLike` can be a matplotlib Figure, plotly Figure, or plain SVG/PNG bytes (if headless requested).
 
 Extensibility:
 
-- Plugins may register new `kind` with declared required fields + default renderer fallback.
-- Convert `PlotSpec` to/from JSON for caching or remote rendering.
+- Plugins may register new `kind` identifiers, but this is optional and should not gate core explanation releases.
+- Convert `PlotSpec` to/from JSON for caching or remote rendering when needed.
 
 ## Alternatives Considered
 
@@ -42,19 +42,19 @@ Extensibility:
 
 Positive:
 
-- Backend-agnostic; easier to add interactive outputs later.
-- Supports caching or diffing of visual specs for golden tests.
-- Simplifies testing by asserting spec content without rendering.
+- Enables optional backends without entangling the core explanation runtime.
+- Supports caching or diffing of visual specs for targeted tests.
+- Keeps plotting improvements incremental and opt-in.
 
 Negative / Risks:
 
-- Requires discipline to avoid backend leakage into spec (document constraints).
-- Initial time investment to implement adapters.
+- Requires discipline to avoid backend leakage into spec.
+- Multiple rendering paths increase test surface area if expanded too quickly.
 
 ## Adoption & Migration
 
 Phase C (v0.6.x): Define `PlotSpec` + matplotlib adapter; convert 1–2 plots to emit spec then render; keep optional deps via extras.
-Phase later (v0.7+): Add a second backend (plotly) to validate abstraction; extend examples and docs.
+Phase later (v0.7+): Add a second backend only if it delivers clear user value and does not expand the core contract.
 
 ## Open Questions
 

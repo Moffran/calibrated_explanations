@@ -15,50 +15,38 @@ Some calibration and explanation workflows run per-fold, per-bootstrap, or per-f
 
 ## Decision
 
-The original ADR proposed a full pluggable `ParallelExecutor` with multiple strategy implementations (thread, process, joblib, serial) and an automatic selection algorithm. After review and a decision to pursue a pragmatic, low-risk rollout for v0.9.1, the ADR is amended to the following two-stage approach:
+Adopt an explicit, opt-in parallelism surface with serial-by-default behaviour and no automatic strategy selection:
 
-1) v0.9.1 Scoped Deliverable — ParallelFacade (conservative, low-risk)
-
-- Implement a small `ParallelFacade` (also referenced as "ParallelFacade" or "ParallelChooser") that centralizes conservative selection heuristics and telemetry hooks. The facade will:
-  - Accept the existing executor-like objects used by callers and expose a lightweight decision API (e.g., decide_use_parallel(...)).
-  - Apply conservative heuristics to prefer serial execution unless clear benefits exist (checks include executor enabled flag, granularity, explicit min thresholds for instances/features, platform heuristics for spawn cost, and an optional task_size_hint_bytes).
-  - Honor explicit operator overrides (env var `CE_PARALLEL=off|on|joblib`) and per-call hints.
-  - Emit a compact, structured telemetry decision record (decision, reason, n_instances, n_features, bytes_hint, platform, executor_type) via a pluggable telemetry hook so the team can measure real-world benefits before broader rollout.
-  - Be intentionally small and conservative: it does not implement new strategy classes, cgroup detection, or fork-safety mechanics in v0.9.1.
-
-  Rationale: this incremental approach reduces immediate engineering risk, provides measurable telemetry to inform further investment, and preserves the current, tested plugin execution paths while enabling safer opt-in parallelism.
-
-2) v0.10 (deferred) — Full ParallelExecutor Strategy Matrix (optional)
-
-- The full `ParallelExecutor` with multiple strategy implementations, workload-aware `_auto_strategy` selection, deep cgroup/container awareness, fork-safety hooks, cooperative cancellation, and expanded telemetry (timings, worker utilisation, fallback counters) is deferred to a later decision point targeting v0.10. The v0.9.1 facade will collect the field evidence needed to determine whether the full ADR should be implemented, postponed, or called off entirely.
-
-Selection algorithm and unified API for the full strategy (v0.10) remain as originally described in this ADR, but are explicitly out of scope for v0.9.1.
+- Provide a minimal `ParallelFacade` that accepts user-supplied executors and standardizes how core routines invoke them.
+- Do not auto-select strategies or infer parallelism based on workload size. Callers must explicitly pass an executor or enable parallelism through configuration.
+- Keep supported strategies limited to what callers provide (serial, threads, processes, joblib). The core library does not implement a strategy matrix.
+- Ensure parallel execution remains deterministic with respect to input ordering and output aggregation (parallelism may affect timing but not results).
+- Defer any heuristic selection, cgroup awareness, or advanced telemetry to a separate ADR if evidence warrants it.
 
 ### Operational clarifications
 
-The following clarifications capture the phased approach and guardrails for the v0.9.1 facade and the deferred v0.10 work:
+The following clarifications capture the guardrails for explicit, opt-in parallelism:
 
-- Opt-in default (unchanged): parallel execution stays disabled unless an executor or an enabling flag is supplied. The v0.9.1 facade will respect `executor.config.enabled`, `ParallelConfig` flags, and `CE_PARALLEL` overrides.
+- Opt-in default (unchanged): parallel execution stays disabled unless an executor or an enabling flag is supplied. The facade will respect `executor.config.enabled`, `ParallelConfig` flags, and `CE_PARALLEL` overrides.
 
-- Domain-specific orchestration wraps the facade: per-domain runtimes (e.g., explain) should provide their own wrappers around the shared `ParallelExecutor` so that heuristics, chunk sizing, and nesting guards remain co-located with domain logic while the low-level executor stays in `calibrated_explanations.parallel`.
+- Domain-specific orchestration wraps the facade: per-domain runtimes (e.g., explain) should provide their own wrappers around the shared facade so that chunk sizing and nesting guards remain co-located with domain logic while the low-level executor stays in `calibrated_explanations.parallel`.
 
 - API contract preservation: strategy selection and configuration MUST remain optional enhancements. `WrapCalibratedExplainer` public entry points (`fit`, `calibrate`, `explain_factual`, `explore_alternatives`, `predict`, `predict_proba`, and plotting/uncertainty helpers) keep their existing signatures without deprecation warnings or behavioural breaking changes.
 
-- Graceful degradation (v0.9.1 minimum): the facade will detect basic executor errors (missing executor, disabled executor, platform hints indicating high spawn cost) and prefer serial; it will also surface a telemetry record when it forces a fallback to serial. Full automatic fallback-on-exception semantics for strategy construction remain part of the v0.10 scope.
+- Graceful degradation: if the supplied executor is missing or disabled, fall back to serial with a warning. No automated strategy construction or fallback matrix is required.
 
-- Compatibility with caching (deferred): fork/spawn cache hygiene is a known issue and remains part of the v0.10 scope. The v0.9.1 facade will document the requirement and provide guidance but will not implement automated fork-safety hooks.
+- Compatibility with caching: fork/spawn cache hygiene is out of scope; document that cache is process-local and must be reset by caller if needed.
 
-- Resource limits: honour `max_workers` caps and expose heuristics for CPU count detection, respecting container cgroup quotas. Provide guardrails to avoid oversubscription in CI (detect via env flags, default to serial). The facade will include conservative defaults and expose overrides for CI/staging.
+- Resource limits: honor `max_workers` caps from the supplied executor and avoid adding new auto-detection heuristics in core.
 
-- Telemetry contract (phased): v0.9.1 will require the facade to emit compact decision telemetry (as described above). The fuller set of runtime metrics (`tasks_submitted`, `tasks_completed`, `worker_utilisation_pct`, etc.) will be part of the v0.10 effort once the facade's field telemetry indicates sufficient benefit to justify the instrumentation cost.
+- Telemetry contract: no mandatory telemetry emission for decisions. Optional debug logs are acceptable.
 
-- Testing requirements (v0.9.1): add unit tests for the facade decision logic (env var overrides, thresholds, platform heuristics), and a micro-benchmark harness for evidence collection. More exhaustive lifecycle tests (fork/spawn, joblib backends) are deferred to v0.10.
+- Testing requirements: add unit tests verifying opt-in behavior, explicit overrides, and serial fallback when executor is disabled.
 
 ### Documentation & rollout requirements
 
-- Extend configuration docs and release notes with parallel strategy descriptions, environment variable matrix, and troubleshooting tips for common platforms (macOS spawn, Windows spawn).
+- Extend configuration docs and release notes with the explicit opt-in model, environment variable controls, and troubleshooting tips for common platforms (macOS spawn, Windows spawn).
 - Ship an upgrade guide snippet covering interaction with plugin-provided executors and guidance for opting out when running within user-managed pools.
-- Capture heuristics and defaults in an appendix so future contributors can tune thresholds without re-auditing the ADR history.
 
 ## Alternatives Considered
 
@@ -71,30 +59,25 @@ The following clarifications capture the phased approach and guardrails for the 
 
 Positive:
 
-- Central point to optimize heuristics without touching algorithm code.
+- Central point to invoke user-supplied executors without touching algorithm code.
 - Easier debugging with serial fallback.
 - Future extension to distributed frameworks via new strategy class.
 
 Negative / Risks:
 
-- Heuristic misclassification (may choose suboptimal strategy) -> mitigate with logging hint & override.
-- Maintenance of strategy matrix as code evolves.
+- Some users may expect automatic parallelism and need to enable it explicitly.
 - Added light abstraction layer overhead.
 
 ### Implementation status (2025-12-13)
 
-- v0.9.1 decision: implement the conservative "ParallelFacade" scoped deliverable (see Decision above). The facade will centralize conservative selection heuristics, emit decision telemetry, and provide a safe opt-in path for the existing executor interface. This work is small, testable, and intended to ship in the v0.9.1 governance & observability hardening milestone.
-
-- v0.10: the full `ParallelExecutor` strategy matrix and deeper runtime instrumentation remain a candidate for v0.10; the team will decide to proceed, postpone, or cancel after analyzing the telemetry collected from the facade in v0.9.1.
-
+- v0.9.1 decision: implement the explicit opt-in "ParallelFacade" scoped deliverable (see Decision above). The facade standardizes executor usage without adding selection heuristics or telemetry requirements.
 - **Update (2025-12-13):** Feature-parallel execution strategy has been deprecated and shimmed to fall back to instance-parallel execution. Benchmarking revealed that feature-parallelism introduced significant overhead without providing performance benefits for typical workloads. The `FeatureParallelExplanationPlugin` and `FeatureParallelAlternativeExplanationPlugin` now alias to their instance-parallel counterparts to maintain API compatibility.
 
 ### Testing and rollout guidance (v0.9.1)
 
-- Add unit tests for the facade decision logic (respect env var overrides, minimum thresholds, platform heuristics).
-- Add a small micro-benchmark harness (evaluation/parallel_ablation.py) that records wall-clock improvements for canonical workloads and stores results in JSON so the v0.10 decision can be evidence-driven.
+- Add unit tests for opt-in behavior and serial fallback when the executor is disabled.
 - Ship the facade behind the existing executor opt-in flags; do not change the default behaviour for users.
 
 ### Notes
 
-- This amendment aims to provide an incremental, low-risk path to gather data about when parallelism improves performance in realistic usage. If the telemetry shows limited benefit, the full ADR-004 work may be postponed or scoped smaller during v0.10 planning.
+- This amendment limits scope to explicit, opt-in parallelism to keep the OSS core predictable. Any broader automation should be revisited only with evidence and a separate ADR.

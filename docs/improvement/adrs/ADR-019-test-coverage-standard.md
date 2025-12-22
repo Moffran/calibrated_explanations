@@ -21,17 +21,19 @@ confidence in calibration guarantees erodes as the code evolves.【F:pytest.ini�
 
 ## Decision
 
-Adopt a layered coverage policy that couples numeric thresholds with risk-based exceptions:
+Adopt a layered coverage policy that couples numeric targets with risk-based exceptions,
+while right-sizing enforcement for OSS development:
 
-- **Package-wide floor:** Require `pytest --cov` runs to meet **90% statement coverage** across
-  `src/calibrated_explanations`. CI will enforce this via `--cov-fail-under=90` when reaching the stable v1.0.0.
-- **Critical paths:** Enforce **95% coverage** on calibrated prediction helpers, interval
-  regression, serialization, and plugin registries by using `coverage report --fail-under` with
-  per-path configuration.
+- **Package-wide floor:** Target **90% statement coverage** across
+  `src/calibrated_explanations`. OSS/mainline CI reports the percentage but does not block.
+  Release/stable branches enforce `--cov-fail-under=90`.
+- **Critical paths:** Target **95% coverage** on calibrated prediction helpers, interval
+  regression, serialization, and plugin registries. OSS/mainline CI reports per-path coverage;
+  release/stable branches enforce via `coverage report --fail-under` per-path configuration.
 - **Change-based gating:** Add a `coverage xml` step and integrate the Codecov “patch coverage”
-  gate at **≥88%** for modified lines/files (raised from 85% as part of the v0.9.0 release).
-  Pull requests that lower patch coverage below the
-  threshold must justify waivers in the review checklist.
+  gate at **≥88%** for modified lines/files. This is advisory on OSS/mainline and blocking on
+  release/stable branches. Pull requests that lower patch coverage below the threshold must
+  justify waivers in the review checklist.
 - **Documented exemptions:** Generated code, visualization golden files, and deprecated
   shims can be excluded via `.coveragerc` with explicit comments that describe the rationale
   and expiry date.
@@ -56,17 +58,20 @@ Positive:
 - Quantitative gate keeps critical calibration logic exercised by tests before release.
 - Contributors receive immediate feedback locally and in CI when coverage slips.
 - Patch coverage guard discourages untested features while permitting incremental debt paydown.
+- OSS contributions are not blocked by legacy coverage gaps.
 
 Negative/Risks:
 - Initial CI failures until legacy debt is addressed; requires remediation efforts.
 - Slightly longer test runtime from additional reporting/threshold checks.
+- Advisory-only enforcement can slow convergence without clear ownership.
 
 ## Adoption & Migration
 
 1. Land this ADR and announce during contributor sync and release notes.
 2. Introduce a shared `.coveragerc` that encodes thresholds and named exemptions.
 3. Update CI (`test.yml`) to run `pytest --cov=src/calibrated_explanations --cov-report=xml \
-   --cov-report=term --cov-fail-under=90` and pass the XML to Codecov with patch gating enabled.
+   --cov-report=term` and pass the XML to Codecov with patch gating enabled; enforce
+   `--cov-fail-under=90` and per-path fail-under only on release/stable branches.
 4. Add a `make test-cov` (or invoke via `tox` target) so developers can trigger the same checks
    locally; ensure the dev extra installs `pytest-cov` by default.
 5. Complete remediation tasks outlined in the coverage improvement plan so that historical debt
@@ -90,14 +95,15 @@ Negative/Risks:
   document the waiver workflow.
 - v0.8.0 – Critical-path modules (`core`, calibration, serialization,
   registry) are raised to ≥95% coverage, Codecov patch gating at ≥85%
-  becomes mandatory, and local tooling (`make test-cov`) mirrors the CI
-  workflow.
+  is advisory on mainline, and local tooling (`make test-cov`) mirrors
+  the CI workflow.
 - v0.9.0 – Package-wide floor raised to ≥88%, waiver inventory trimmed,
   Codecov patch gating tightened to ≥88%, and coverage enforcement is
-  fully blocking on the release branch per the milestone gate.
-- v1.0.0-rc – CI enforces the final ≥90% package floor, coverage
-  dashboards become part of the release checklist, and branch protection
-  rules require green coverage jobs before freeze.
+  blocking on release branches per the milestone gate while remaining
+  advisory on mainline.
+- v1.0.0-rc – CI enforces the final ≥90% package floor on release
+  branches, coverage dashboards become part of the release checklist,
+  and branch protection rules require green coverage jobs before freeze.
 - v1.0.0 – Stable release maintains ≥90% gating with scheduled audits of
   exemptions and telemetry-driven monitoring to detect regressions ahead
   of v1.0.x maintenance updates.

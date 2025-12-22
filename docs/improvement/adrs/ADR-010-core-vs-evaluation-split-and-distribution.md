@@ -17,7 +17,7 @@ Additionally, plot code is part of the package and tests exercise plotting. We w
 
 ## Decision
 
-Adopt a monorepo with a strict “core vs. evaluation” separation and shift non-essential dependencies to optional extras:
+Adopt a monorepo with a strict “core vs. evaluation” separation, and define clear distribution boundaries for optional capabilities:
 
 - Keep a single repository. Maintain the installable library confined to `src/calibrated_explanations`.
 - Keep research/evaluation assets in top-level folders (`evaluation/`, `debug/`, `notebooks/`, `scripts/`) that are excluded from packaging.
@@ -29,6 +29,8 @@ Adopt a monorepo with a strict “core vs. evaluation” separation and shift no
 - Keep default/core runtime dependencies minimal (e.g., `numpy`, `pandas`, `scikit-learn`, `crepes`, `venn-abers`), moving `ipython`, `lime`, and `matplotlib` to optional extras where feasible.
 - Mark plotting code as an optional feature at runtime: attempt lazy imports and raise a clear, actionable error if the `viz` extra is not installed (implementation scheduled after plan approval).
 - Document the split in README and CONTRIBUTING, with a quickstart that works without `viz` when plotting is not requested.
+- Define extension boundaries: optional packages or plugins that add features must be opt-in and interact only through public extension points. Core APIs and numerical behavior must remain unchanged when optional packages are not enabled.
+- Add compatibility checks that assert core results are unchanged when optional packages are installed but disabled.
 
 Future consideration:
 
@@ -41,11 +43,13 @@ Positive:
 - Smaller default install, faster import for core usage.
 - Clearer mental model: core library vs. evaluation/research assets.
 - Easier to maintain and communicate optional features.
+- Stronger guarantees that optional capabilities do not alter core behavior by default.
 
 Negative / Risks:
 
 - Test suite must adapt to optional visualization (skip or mark when extras not installed).
 - Some users may need to change installation commands (e.g., `pip install calibrated-explanations[viz]`).
+- Additional compatibility tests increase CI time.
 
 ## Adoption & Migration
 
@@ -72,6 +76,7 @@ Pending:
 - Update README installation section with extras matrix and examples.
 - Mark/skip viz-dependent tests and add a CI job without viz extras to enforce core independence.
 - Optional evaluation workflow that installs `[eval]` and runs benchmarks.
+- Add compatibility checks confirming optional packages do not change core outputs unless explicitly enabled.
 
 ## Alternatives Considered
 
