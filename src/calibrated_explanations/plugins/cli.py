@@ -19,7 +19,6 @@ from .registry import (
     list_plot_builder_descriptors,
     list_plot_renderer_descriptors,
     list_plot_style_descriptors,
-    register_plot_style,
     mark_explanation_trusted,
     mark_explanation_untrusted,
     mark_interval_trusted,
@@ -28,6 +27,7 @@ from .registry import (
     mark_plot_builder_untrusted,
     mark_plot_renderer_trusted,
     mark_plot_renderer_untrusted,
+    register_plot_style,
 )
 
 _LIST_KIND_CHOICES = (
@@ -226,9 +226,9 @@ def _cmd_list(args: argparse.Namespace) -> int:
 def _cmd_validate_plot(args: argparse.Namespace) -> int:
     """Validate a plot builder by identifier by attempting a dry build."""
     builder_id = args.builder
-    from .registry import find_plot_builder
-    from ..viz.serializers import validate_plotspec
     from ..plugins.plots import PlotRenderContext
+    from ..viz.serializers import validate_plotspec
+    from .registry import find_plot_builder
 
     builder = find_plot_builder(builder_id)
     if builder is None:
@@ -238,7 +238,9 @@ def _cmd_validate_plot(args: argparse.Namespace) -> int:
     ctx = PlotRenderContext(
         explanation=None,
         instance_metadata={"type": "test"},
-        style=builder.plugin_meta.get("style", "unknown") if hasattr(builder, "plugin_meta") else "unknown",
+        style=builder.plugin_meta.get("style", "unknown")
+        if hasattr(builder, "plugin_meta")
+        else "unknown",
         intent={"type": "test"},
         show=False,
         path=None,

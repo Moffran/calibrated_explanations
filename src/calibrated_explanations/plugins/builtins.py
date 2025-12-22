@@ -993,7 +993,7 @@ class LegacyPlotBuilder(PlotBuilder):
         """Return a legacy-compatible payload representing the plot request."""
         intent = context.intent if isinstance(context.intent, Mapping) else {}
         intent_type = intent.get("type", "")
-        
+
         if intent_type == "global":
             # For global plots, delegate to legacy._plot_global
             options = context.options if isinstance(context.options, Mapping) else {}
@@ -1041,6 +1041,7 @@ class LegacyPlotRenderer(PlotRenderer):
         legacy_function = artifact.get("legacy_function")
         if legacy_function == "global":
             from ..legacy import plotting as legacy
+
             legacy._plot_global(
                 explainer=artifact["explainer"],
                 x=artifact["x"],

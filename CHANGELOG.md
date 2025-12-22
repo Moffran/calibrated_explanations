@@ -19,6 +19,15 @@
   - Created JSON schema (`plotspec_schema.json`) for PlotSpec validation alignment.
   - Added unit tests verifying round-trip serialization, kind-aware validation, and bytes export behavior.
 
+  - **Legacy plotting maintenance (v0.10.1):** Documented legacy matplotlib plotting behavior and marked ADR-024 / ADR-025 as superseded. Consolidated maintenance guidance for legacy plot helpers, fallback visibility, and testing conventions in `docs/maintenance/legacy-plotting-reference.md`.
+    - **Tests:** Confirmed existing legacy plotting regression tests exercise parity; guidance added to assert visible fallbacks via `pytest.warns(UserWarning)` when applicable.
+
+  - **ADR-014: Visualization plugin architecture completion:** Restored the plot plugin architecture with base classes, metadata alignment, override resolution, legacy fallback, CLI tooling, and docs.
+    - **Code:** Added `BasePlotBuilder` / `BasePlotRenderer` helpers under `src/calibrated_explanations/viz/plugins.py`, introduced `PlotPluginError` in `src/calibrated_explanations/utils/exceptions.py`, and registered a legacy builder/renderer pair in `src/calibrated_explanations/plugins/builtins.py` that delegates to `legacy.plotting`.
+    - **Behavior:** `src/calibrated_explanations/plotting.py` now respects explicit `renderer`/`style` kwargs, environment overrides (`CE_PLOT_RENDERER`, `CE_PLOT_STYLE`), and pyproject configuration (`[tool.calibrated_explanations.plots]`). Plugin metadata includes `default_renderer` and versioning fields.
+    - **CLI & Docs:** Added plot-related CLI helpers (`ce.plugins list --plots`, `ce.plugins validate-plot`, `ce.plugins set-default --plot-style`) and a "Writing plot plugins" guide in `docs/plugins.md` with migration notes.
+    - **Tests:** Added unit tests asserting `.plot()` resolves to the legacy fallback when no plugin is configured, validation hooks raise `PlotPluginError` on invalid metadata, and CLI commands return expected output.
+
 ## [v0.10.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.0) - 2025-12-21
 
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.9.1...v0.10.0)

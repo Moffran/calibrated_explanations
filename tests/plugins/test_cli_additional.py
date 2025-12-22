@@ -195,7 +195,11 @@ def test_set_default_plot_style_alias(monkeypatch, capsys):
     # Patch the registry functions that are imported inside the command
     import calibrated_explanations.plugins.registry as registry
 
-    monkeypatch.setattr(registry, "find_plot_style_descriptor", lambda identifier: descriptor if identifier == "demo.plot" else None)
+    monkeypatch.setattr(
+        registry,
+        "find_plot_style_descriptor",
+        lambda identifier: descriptor if identifier == "demo.plot" else None,
+    )
     monkeypatch.setattr(registry, "list_plot_style_descriptors", lambda: [descriptor])
     # Register_plot_style should be callable; capture calls via a simple wrapper
     calls: list[tuple[str, dict]] = []

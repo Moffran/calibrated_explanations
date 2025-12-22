@@ -3,6 +3,7 @@
 This module provides minimal base classes for plot builders and renderers so
 that plugins can opt-in to validation and standardised initialisation.
 """
+
 from __future__ import annotations
 
 from typing import Any, Mapping

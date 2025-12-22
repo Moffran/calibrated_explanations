@@ -149,6 +149,7 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
     # If no explicit style provided, prepend the default style from registry
     if not chain:
         from .plugins.registry import list_plot_style_descriptors
+
         for descriptor in list_plot_style_descriptors():
             if descriptor.metadata.get("is_default", False):
                 chain.append(descriptor.identifier)
@@ -1484,11 +1485,9 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
                 override_renderer = None
             if override_renderer is not None:
                 # Combined plugin returned by registry exposes .builder and .renderer
-                try:
+                # best-effort: ignore substitution failures
+                with contextlib.suppress(Exception):
                     plugin.renderer = override_renderer
-                except Exception:
-                    # best-effort: ignore substitution failures
-                    pass
         if not hasattr(plugin, "build") or not hasattr(plugin, "render"):
             errors.append(f"{identifier}: missing build/render implementation")
             continue
