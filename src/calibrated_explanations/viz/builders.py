@@ -16,9 +16,19 @@ import numpy as np
 from .plotspec import (
     BarHPanelSpec,
     BarItem,
+    GlobalPlotSpec,
+    GlobalSpec,
     IntervalHeaderSpec,
     IntervalSegment,
     PlotSpec,
+    TriangularPlotSpec,
+    TriangularSpec,
+)
+from .serializers import (
+    global_plotspec_to_dict,
+    plotspec_to_dict,
+    triangular_plotspec_to_dict,
+    validate_plotspec,
 )
 
 _PROBABILITY_TOL = 1e-9
@@ -346,7 +356,14 @@ def build_regression_bars_spec(
         ylabel="Rules",
         solid_on_interval_crosses_zero=legacy_solid_behavior,
     )
-    return PlotSpec(title=title, header=header, body=body)
+    spec = PlotSpec(title=title, header=header, body=body)
+    # metadata
+    spec.kind = "factual_regression"
+    spec.mode = "regression"
+    if spec.body is not None:
+        spec.feature_order = tuple(b.label for b in spec.body.bars)
+    validate_plotspec(plotspec_to_dict(spec))
+    return spec
 
 
 def build_factual_probabilistic_spec(**kwargs) -> PlotSpec:
@@ -548,7 +565,12 @@ def build_alternative_probabilistic_spec(
     )
 
     height = max(len(bars), 1) * 0.5
-    return PlotSpec(title=title, figure_size=(10.0, height), header=None, body=body)
+    spec = PlotSpec(title=title, figure_size=(10.0, height), header=None, body=body)
+    spec.kind = "alternative_probabilistic"
+    spec.mode = "classification"
+    spec.feature_order = tuple(b.label for b in spec.body.bars)
+    validate_plotspec(plotspec_to_dict(spec))
+    return spec
 
 
 def build_alternative_regression_spec(
@@ -731,7 +753,12 @@ def build_alternative_regression_spec(
     )
 
     height = max(len(bars), 1) * 0.5
-    return PlotSpec(title=title, figure_size=(10.0, height), header=None, body=body)
+    spec = PlotSpec(title=title, figure_size=(10.0, height), header=None, body=body)
+    spec.kind = "alternative_regression"
+    spec.mode = "regression"
+    spec.feature_order = tuple(b.label for b in spec.body.bars)
+    validate_plotspec(plotspec_to_dict(spec))
+    return spec
 
 
 __all__ = [
@@ -893,11 +920,16 @@ def build_probabilistic_bars_spec(
         solid_on_interval_crosses_zero=legacy_solid_behavior,
         show_base_interval=interval,
     )
-    return PlotSpec(title=title, header=header, body=body)
+    spec = PlotSpec(title=title, header=header, body=body)
+    spec.kind = "factual_probabilistic"
+    spec.mode = "classification"
+    spec.feature_order = tuple(b.label for b in spec.body.bars)
+    validate_plotspec(plotspec_to_dict(spec))
+    return spec
 
 
 # --- Triangular and global builders (return JSON-serializable dicts) ---
-def build_triangular_plotspec_dict(
+def build_triangular_plotspec(
     *,
     title: str | None,
     proba: list[float] | float,
@@ -906,35 +938,27 @@ def build_triangular_plotspec_dict(
     rule_uncertainty: list[float],
     num_to_show: int = 50,
     is_probabilistic: bool = True,
-) -> dict:
-    """Create a triangular PlotSpec dict describing quiver+scatter data.
-
-    This does not return a PlotSpec dataclass because triangular plots are
-    non-panel (no header/body) and are conveyed as a payload in the dict
-    form consumed by adapters via the PlotSpec JSON contract.
-    """
-    return {
-        "plot_spec": {
-            "kind": "triangular",
-            "mode": "classification" if is_probabilistic else "regression",
-            "header": None,
-            "body": None,
-            "style": "triangular",
-            "uncertainty": True,
-            "feature_order": [],
-            "triangular": {
-                "proba": proba,
-                "uncertainty": uncertainty,
-                "rule_proba": rule_proba,
-                "rule_uncertainty": rule_uncertainty,
-                "num_to_show": int(num_to_show),
-                "is_probabilistic": bool(is_probabilistic),
-            },
-        }
-    }
+) -> TriangularPlotSpec:
+    """Create a TriangularPlotSpec dataclass for triangular plots."""
+    triangular = TriangularSpec(
+        proba=proba,
+        uncertainty=uncertainty,
+        rule_proba=rule_proba,
+        rule_uncertainty=rule_uncertainty,
+        num_to_show=num_to_show,
+        is_probabilistic=is_probabilistic,
+    )
+    spec = TriangularPlotSpec(
+        title=title,
+        triangular=triangular,
+        kind="triangular",
+        mode="classification" if is_probabilistic else "regression",
+    )
+    validate_plotspec(triangular_plotspec_to_dict(spec))
+    return spec
 
 
-def build_global_plotspec_dict(
+def build_global_plotspec(
     *,
     title: str | None,
     proba: list[float] | None,
@@ -944,123 +968,24 @@ def build_global_plotspec_dict(
     uncertainty: list[float],
     y_test: list | None = None,
     is_regularized: bool = True,
-) -> dict:
-    """Create a global PlotSpec dict for scatter of uncertainty vs proba/predict.
-
-    Contains arrays and axis hints; adapters should render scatter accordingly.
-    """
-    # basic axis hints
-    min_x = None
-    max_x = None
-    min_y = None
-    max_y = None
-    try:
-        if proba is not None:
-            arr = list(proba)
-        elif predict is not None:
-            arr = list(predict)
-        else:
-            arr = []
-        if arr:
-            min_x = float(min(arr))
-            max_x = float(max(arr))
-    except BaseException:
-        exc_info = sys.exc_info()[1]
-        if not isinstance(exc_info, Exception):
-            raise
-        min_x = 0.0
-        max_x = 1.0
-    try:
-        if uncertainty is not None:
-            min_y = float(min(uncertainty))
-            max_y = float(max(uncertainty))
-    except BaseException:
-        exc_info = sys.exc_info()[1]
-        if not isinstance(exc_info, Exception):
-            raise
-        min_y = 0.0
-        max_y = 1.0
-
-    axis_hints = {"xlim": [min_x or 0.0, max_x or 1.0], "ylim": [min_y or 0.0, max_y or 1.0]}
-    return {
-        "plot_spec": {
-            "kind": "global_probabilistic" if is_regularized else "global_regression",
-            "mode": "classification" if is_regularized else "regression",
-            "header": None,
-            "body": None,
-            "style": "regular",
-            "uncertainty": True,
-            "feature_order": [],
-            "global_entries": {
-                "proba": list(proba) if proba is not None else None,
-                "predict": list(predict) if predict is not None else None,
-                "low": list(low),
-                "high": list(high),
-                "uncertainty": list(uncertainty),
-                "y_test": list(y_test) if y_test is not None else None,
-            },
-            "axis_hints": axis_hints,
-        }
-    }
-
-
-def plotspec_to_dict(spec: PlotSpec) -> dict:
-    """Convert a PlotSpec dataclass to a JSON-serializable dict matching plotspec_schema.json."""
-    out = {
-        "plot_spec": {
-            "kind": (
-                "factual_probabilistic"
-                if (spec.header is not None and spec.header.dual)
-                else "factual_regression"
-            ),
-            "mode": (
-                "classification" if spec.header is not None and spec.header.dual else "regression"
-            ),
-            "header": {
-                "pred": float(spec.header.pred) if spec.header is not None else None,
-                "low": float(spec.header.low) if spec.header is not None else None,
-                "high": float(spec.header.high) if spec.header is not None else None,
-                "xlim": (
-                    list(spec.header.xlim)
-                    if (spec.header is not None and spec.header.xlim is not None)
-                    else None
-                ),
-                "xlabel": spec.header.xlabel if spec.header is not None else None,
-                "ylabel": spec.header.ylabel if spec.header is not None else None,
-                "dual": bool(spec.header.dual) if spec.header is not None else False,
-            }
-            if spec.header is not None
-            else None,
-            "body": None,
-            "style": "regular",
-            "uncertainty": False,
-            "feature_order": [],
-        }
-    }
-    if spec.body is not None:
-        entries = []
-        for i, b in enumerate(spec.body.bars):
-            e = {
-                "index": i,
-                "name": b.label,
-                "weight": float(b.value),
-                "low": (float(b.interval_low) if b.interval_low is not None else None),
-                "high": (float(b.interval_high) if b.interval_high is not None else None),
-                "instance_value": b.instance_value,
-            }
-            entries.append(e)
-        out["plot_spec"]["body"] = {
-            "bars_count": len(entries),
-            "xlabel": spec.body.xlabel,
-            "ylabel": spec.body.ylabel,
-        }
-        out["plot_spec"]["feature_entries"] = entries
-        out["plot_spec"]["feature_order"] = list(range(len(entries)))
-        # uncertainty flag if any bar has interval
-        out["plot_spec"]["uncertainty"] = any(
-            (b.interval_low is not None and b.interval_high is not None) for b in spec.body.bars
-        )
-    return out
+) -> GlobalPlotSpec:
+    """Create a GlobalPlotSpec dataclass for global plots."""
+    global_entries = GlobalSpec(
+        proba=proba,
+        predict=predict,
+        low=low,
+        high=high,
+        uncertainty=uncertainty,
+        y_test=y_test,
+    )
+    spec = GlobalPlotSpec(
+        title=title,
+        global_entries=global_entries,
+        kind="global_probabilistic" if is_regularized else "global_regression",
+        mode="classification" if is_regularized else "regression",
+    )
+    validate_plotspec(global_plotspec_to_dict(spec))
+    return spec
 
 
 def build_factual_probabilistic_plotspec_dict(**kwargs) -> dict:
@@ -1072,3 +997,23 @@ def build_factual_probabilistic_plotspec_dict(**kwargs) -> dict:
     """
     spec = build_probabilistic_bars_spec(**kwargs)
     return plotspec_to_dict(spec)
+
+
+def build_triangular_plotspec_dict(**kwargs) -> dict:
+    """Build a TriangularPlotSpec and return a JSON-serializable dict.
+
+    Wrapper for `build_triangular_plotspec` that converts the dataclass
+    into the envelope expected by adapters and `plotting.py`.
+    """
+    spec = build_triangular_plotspec(**kwargs)
+    return triangular_plotspec_to_dict(spec)
+
+
+def build_global_plotspec_dict(**kwargs) -> dict:
+    """Build a GlobalPlotSpec and return a JSON-serializable dict.
+
+    Wrapper for `build_global_plotspec` that converts the dataclass
+    into the envelope expected by adapters and plugin builders.
+    """
+    spec = build_global_plotspec(**kwargs)
+    return global_plotspec_to_dict(spec)

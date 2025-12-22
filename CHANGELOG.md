@@ -3,13 +3,21 @@
 
 ## [Unreleased]
 
+[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.0...main)
+
 ### Added
 
 - **ADR-005: Explanation schema v1 contract:** Confirmed `explanation_schema_v1.json` as the canonical v1 payload contract, relaxed the schema_version literal requirement (recommended but not required), clarified `provenance`/`metadata` as optional extension points, and aligned validation helpers/docs/fixtures with the serializer semantics.
   - **Tests:** Added unit tests that (a) assert the canonical golden v1 payload validates with `jsonschema` when available, and (b) assert that missing required fields are rejected by the schema validator.
   - **Docs:** Clarified `provenance` guidance in `docs/schema_v1.md` by suggesting minimal recommended keys (`library_version`, `created_at`, `generator`) as conventions (not enforced by schema).
 
-[Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.0...main)
+- **PlotSpec v0.10.1 (ADR-007/ADR-016):** Added PlotSpec metadata, validation, registry, and headless export support.
+  - Added `PlotKindRegistry` for kind-aware validation with supported plot kinds and their requirements.
+  - Migrated `PlotSpec`, `TriangularPlotSpec`, and `GlobalPlotSpec` to dataclasses with required metadata fields (`kind`, `mode`, `feature_order`, `plotspec_version`, `save_behavior`).
+  - Updated builders to return dedicated dataclass types and call `validate_plotspec` with preserved `feature_order`.
+  - Added headless export support to the matplotlib adapter (returns in-memory bytes for requested formats when `save_behavior` requests headless export).
+  - Created JSON schema (`plotspec_schema.json`) for PlotSpec validation alignment.
+  - Added unit tests verifying round-trip serialization, kind-aware validation, and bytes export behavior.
 
 ## [v0.10.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.0) - 2025-12-21
 

@@ -77,6 +77,21 @@ class BarHPanelSpec:
 
 
 @dataclass
+class SaveBehavior:
+    """Hints describing how and where a plot should be saved or exported.
+
+    - path: Optional filesystem path to write files to. When None, a headless
+      export may be requested and adapters can return bytes instead of writing.
+    - title: Suggested filename or title to use for saved artifacts.
+    - default_exts: Preferred output extensions (e.g., ["png", "svg"]).
+    """
+
+    path: str | None = None
+    title: str | None = None
+    default_exts: Sequence[str] | None = None
+
+
+@dataclass
 class PlotSpec:
     """A simple multi-panel plot specification."""
 
@@ -84,6 +99,79 @@ class PlotSpec:
     figure_size: Tuple[float, float] | None = None
     header: IntervalHeaderSpec | None = None
     body: BarHPanelSpec | None = None
+
+    # Metadata fields added in v0.10.1
+    kind: str | None = None
+    mode: str | None = None
+    feature_order: Sequence[str] | None = None
+    plotspec_version: str = "1.0.0"
+    save_behavior: SaveBehavior | None = None
+
+    # Optional provenance fields for reproducibility/audit
+    data_slice_id: str | None = None
+    rendering_seed: int | None = None
+
+
+@dataclass
+class TriangularSpec:
+    """Specification for triangular plot data (quiver/scatter)."""
+
+    proba: Any | None = None
+    uncertainty: Any | None = None
+    rule_proba: Sequence[float] | None = None
+    rule_uncertainty: Sequence[float] | None = None
+    num_to_show: int = 50
+    is_probabilistic: bool = True
+
+
+@dataclass
+class GlobalSpec:
+    """Specification for global plot data (scatter of uncertainty vs proba/predict)."""
+
+    proba: Sequence[float] | None = None
+    predict: Sequence[float] | None = None
+    low: Sequence[float] | None = None
+    high: Sequence[float] | None = None
+    uncertainty: Sequence[float] | None = None
+    y_test: Sequence[Any] | None = None
+
+
+@dataclass
+class TriangularPlotSpec:
+    """PlotSpec for triangular plots (non-panel)."""
+
+    title: str | None = None
+    figure_size: Tuple[float, float] | None = None
+    triangular: TriangularSpec | None = None
+
+    # Metadata fields
+    kind: str | None = None
+    mode: str | None = None
+    plotspec_version: str = "1.0.0"
+    save_behavior: SaveBehavior | None = None
+
+    # Optional provenance fields
+    data_slice_id: str | None = None
+    rendering_seed: int | None = None
+
+
+@dataclass
+class GlobalPlotSpec:
+    """PlotSpec for global plots (non-panel)."""
+
+    title: str | None = None
+    figure_size: Tuple[float, float] | None = None
+    global_entries: GlobalSpec | None = None
+
+    # Metadata fields
+    kind: str | None = None
+    mode: str | None = None
+    plotspec_version: str = "1.0.0"
+    save_behavior: SaveBehavior | None = None
+
+    # Optional provenance fields
+    data_slice_id: str | None = None
+    rendering_seed: int | None = None
 
 
 @dataclass(frozen=True)

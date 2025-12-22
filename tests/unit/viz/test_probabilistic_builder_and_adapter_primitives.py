@@ -30,6 +30,8 @@ def test_builder_outputs_valid_shape():
         ascending=False,
     )
     assert isinstance(spec_dict, dict)
+    # envelope-level metadata for schema/versioning
+    assert "plotspec_version" in spec_dict
     ps = spec_dict.get("plot_spec")
     assert ps is not None
     assert ps.get("kind") in ("factual_probabilistic", "factual_regression")

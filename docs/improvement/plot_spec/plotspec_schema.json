@@ -29,6 +29,8 @@
   "feature_entries": {"type": "array", "items": {"type": "object", "required": ["index","name","weight"], "properties": {"index": {"type":"integer"}, "name":{"type":"string"}, "weight":{"type":"number"}, "low":{"type":["number","null"]}, "high":{"type":["number","null"]}, "instance_value": {} }}},
   "global_entries": {"type": "object", "properties": {"proba": {"type": "array"}, "predict": {"type":"array"}, "low": {"type":"array"}, "high": {"type":"array"}, "uncertainty": {"type":"array"}, "y_test": {"type": ["array","null"]}}},
     "axis_hints": {"type": "object"},
-    "color_roles": {"type": "object"}
+    "color_roles": {"type": "object"},
+    "save_behavior": {"type": ["object","null"], "properties": {"path": {"type": ["string","null"]}, "title": {"type": ["string","null"]}, "default_exts": {"type": ["array","null"], "items": {"type": "string"}}}},
+    "provenance": {"type": ["object","null"], "properties": {"data_slice_id": {"type": ["string","null"]}, "rendering_seed": {"type": ["integer","null"]}}}
   }
 }
