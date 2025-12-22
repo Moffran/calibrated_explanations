@@ -2,9 +2,9 @@
 
 # Release Plan to v1.0.0
 
-## Current released version: v0.9.1
+## Current released version: v0.10.0
 
-> Status: v0.9.1 shipped on 2025-11-27.
+> Status: v0.10.0 shipped on 2025-12-21.
 
 
 Maintainers: Core team
@@ -214,6 +214,12 @@ Release gate: Package boundaries, validation/caching/parallel tests, interval in
 5. Document dynamically generated visualization classes to close the remaining ADR-018 docstring gap tied to plugin guides (see ADR status appendix in this document).
 6. Prototype streaming-friendly explanation delivery (opt-in) — implement an opt-in, non-breaking generator API for large exports (e.g., `CalibratedExplanations.to_json_stream(chunk_size=256)` or `to_json(stream=True)`) that yields JSON Lines or safe chunked JSON pieces. Collect minimal export telemetry (`export_rows`, `chunk_size`, `mode` (`batch`|`stream`), `peak_memory_mb`, `elapsed_seconds`, `schema_version`, `feature_branch`) and validate the memory profile (reference target: 10k rows < 200 MB at `chunk_size=256`). Mark streaming as experimental until prototype validation completes and record follow-up actions in the release notes.
 7. **Anti-Pattern Remediation Phase 2:** Refactor core internal tests (Category A) to use public APIs and remove dead code. This reduces brittleness and improves maintainability. See `docs/improvement/ANTI_PATTERN_REMEDIATION_PLAN.md`.
+8. **Open-source readiness plan (v0.10.1 → v1.0.0-rc):** add the following workstream tasks here and track them through the remaining milestones so everything lands before the v1.0.0-rc freeze.
+   - **Repository structure & metadata:** add top-level community health files (`CODE_OF_CONDUCT.md`, `SECURITY.md`, and `GOVERNANCE.md`/`MAINTAINERS.md`), link them from the README, and document the maintainer/decision-making model in a lightweight, discoverable format.
+   - **Documentation:** expand the API reference coverage beyond `CalibratedExplainer` to include CLI entry points, plugin registry contracts, serialization schema, and visualization APIs; add a README "documentation map" that links to API, architecture, contributor, and changelog pages.
+   - **Quality & maintainability:** introduce a dependency vulnerability scan in CI (e.g., `pip-audit` or CodeQL), and add a reproducible dependency constraints/lockfile workflow for dev/CI to reduce drift.
+   - **Community & contribution:** create a `ROADMAP.md` that summarizes the release plan in contributor-facing language and link it from README/CONTRIBUTING; ensure issue/PR templates reference the new governance and security guidance.
+   - **Licensing & governance:** add a contribution licensing statement (DCO or inbound=outbound clause) to CONTRIBUTING and clarify how contributions are licensed under BSD-3-Clause.
 
 Release gate: Envelope round-trips verified, PlotSpec/visualization plugin registries fully validated, legacy helpers behaving per ADR contracts, and docs updated with new schema references (see ADR status appendix in this document)
 
