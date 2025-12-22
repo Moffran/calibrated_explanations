@@ -3,6 +3,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- **ADR-005: Explanation schema v1 contract:** Confirmed `explanation_schema_v1.json` as the canonical v1 payload contract, relaxed the schema_version literal requirement (recommended but not required), clarified `provenance`/`metadata` as optional extension points, and aligned validation helpers/docs/fixtures with the serializer semantics.
+  - **Tests:** Added unit tests that (a) assert the canonical golden v1 payload validates with `jsonschema` when available, and (b) assert that missing required fields are rejected by the schema validator.
+  - **Docs:** Clarified `provenance` guidance in `docs/schema_v1.md` by suggesting minimal recommended keys (`library_version`, `created_at`, `generator`) as conventions (not enforced by schema).
+
 [Full changelog](https://github.com/Moffran/calibrated_explanations/compare/v0.10.0...main)
 
 ## [v0.10.0](https://github.com/Moffran/calibrated_explanations/releases/tag/v0.10.0) - 2025-12-21

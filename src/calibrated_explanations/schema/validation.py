@@ -1,8 +1,11 @@
 """Schema validation and loading helpers.
 
 This module provides utilities for loading and validating explanation payloads
-against the ADR-005 explanation schema v1. Schema validation is optional to avoid
-a hard dependency on jsonschema.
+against the ADR-005 explanation schema v1. Schema validation is intentionally
+kept focused on structural (JSON Schema) checks and is optional to avoid a hard
+dependency on ``jsonschema``. Semantic invariants (for example, the
+``low <= predict <= high`` interval invariant) are enforced at
+serialization-time by the library and are not performed by this helper.
 
 Part of ADR-001: Core Decomposition Boundaries (Stage 1c).
 """
