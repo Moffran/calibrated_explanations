@@ -595,6 +595,9 @@ def validate_plot_builder_metadata(meta: Mapping[str, Any]) -> Mapping[str, Any]
     _validate_dependencies(meta)
     _ensure_bool(meta, "legacy_compatible")
     _ensure_sequence(meta, "output_formats", allow_empty=False)
+    # Optional default renderer identifier for builders that recommend a renderer
+    if "default_renderer" in meta:
+        _ensure_string(meta, "default_renderer")
     declared_trust = _normalise_trust(meta)
     if isinstance(meta, dict):
         _update_trust_keys(meta, declared_trust)  # type: ignore[arg-type]

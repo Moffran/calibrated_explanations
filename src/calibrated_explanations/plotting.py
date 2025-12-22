@@ -146,6 +146,14 @@ def _resolve_plot_style_chain(explainer, explicit_style: str | None) -> Sequence
         chain.append(py_style)
     chain.extend(_split_csv(py_settings.get("fallbacks")))
 
+    # If no explicit style provided, prepend the default style from registry
+    if not chain:
+        from .plugins.registry import list_plot_style_descriptors
+        for descriptor in list_plot_style_descriptors():
+            if descriptor.metadata.get("is_default", False):
+                chain.append(descriptor.identifier)
+                break
+
     mode = getattr(explainer, "_last_explanation_mode", None)
     plot_fallbacks = getattr(explainer, "_plot_plugin_fallbacks", {})
     if mode and isinstance(plot_fallbacks, dict):
@@ -1442,10 +1450,18 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
         find_plot_plugin,
         find_plot_plugin_trusted,
     )
+    from .plugins.registry import find_plot_renderer
 
     ensure_builtin_plugins()
 
     chain = _resolve_plot_style_chain(explainer, style)
+    # Resolve renderer override from kwargs/env/pyproject
+    renderer_override = kwargs.get("renderer")
+    if not renderer_override:
+        renderer_override = os.environ.get("CE_PLOT_RENDERER")
+    if not renderer_override:
+        py_settings = _read_plot_pyproject()
+        renderer_override = py_settings.get("renderer")
     errors: List[str] = []
 
     for identifier in chain:
@@ -1455,6 +1471,24 @@ def _plot_global(explainer, x, y=None, threshold=None, **kwargs):
         if plugin is None:
             errors.append(f"{identifier}: not registered")
             continue
+        # If no renderer override, use default_renderer from builder metadata
+        effective_renderer_override = renderer_override
+        if not effective_renderer_override:
+            builder_meta = getattr(plugin.builder, "plugin_meta", {})
+            effective_renderer_override = builder_meta.get("default_renderer")
+        # If a renderer override is specified, try to substitute the renderer
+        if effective_renderer_override:
+            try:
+                override_renderer = find_plot_renderer(effective_renderer_override)
+            except Exception:
+                override_renderer = None
+            if override_renderer is not None:
+                # Combined plugin returned by registry exposes .builder and .renderer
+                try:
+                    plugin.renderer = override_renderer
+                except Exception:
+                    # best-effort: ignore substitution failures
+                    pass
         if not hasattr(plugin, "build") or not hasattr(plugin, "render"):
             errors.append(f"{identifier}: missing build/render implementation")
             continue

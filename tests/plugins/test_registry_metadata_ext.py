@@ -236,6 +236,12 @@ def test_validate_plot_builder_and_renderer_metadata():
         )
 
 
+def test_validate_plot_builder_accepts_default_renderer():
+    meta = _plot_builder_meta(default_renderer="core.plot.legacy")
+    validated = registry.validate_plot_builder_metadata(meta)
+    assert validated.get("default_renderer") == "core.plot.legacy"
+
+
 def test_ensure_string_and_bool_validation():
     assert registry._ensure_string({"name": "value"}, "name") == "value"
     assert registry._ensure_bool({"flag": True}, "flag") is True

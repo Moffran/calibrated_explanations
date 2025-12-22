@@ -991,7 +991,31 @@ class LegacyPlotBuilder(PlotBuilder):
 
     def build(self, context: PlotRenderContext) -> Mapping[str, Any]:
         """Return a legacy-compatible payload representing the plot request."""
-        return {"context": context}
+        intent = context.intent if isinstance(context.intent, Mapping) else {}
+        intent_type = intent.get("type", "")
+        
+        if intent_type == "global":
+            # For global plots, delegate to legacy._plot_global
+            options = context.options if isinstance(context.options, Mapping) else {}
+            payload = options.get("payload", {})
+            if not isinstance(payload, Mapping):
+                raise ConfigurationError(
+                    "Legacy builder expected payload mapping for global plot",
+                    details={"intent_type": "global", "requirement": "payload must be a mapping"},
+                )
+            return {
+                "legacy_function": "global",
+                "explainer": context.explanation,
+                "x": payload.get("x"),
+                "y": payload.get("y"),
+                "threshold": payload.get("threshold"),
+                "show": context.show,
+                "path": context.path,
+                "save_ext": context.save_ext,
+            }
+        else:
+            # For individual plots, the payload is built in plotting.py
+            return {"context": context}
 
 
 class LegacyPlotRenderer(PlotRenderer):
@@ -1013,8 +1037,23 @@ class LegacyPlotRenderer(PlotRenderer):
     def render(
         self, artifact: Mapping[str, Any], *, context: PlotRenderContext
     ) -> PlotRenderResult:
-        """Render the placeholder legacy artefact and return an empty result."""
-        return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
+        """Render using the legacy plotting pathway."""
+        legacy_function = artifact.get("legacy_function")
+        if legacy_function == "global":
+            from ..legacy import plotting as legacy
+            legacy._plot_global(
+                explainer=artifact["explainer"],
+                x=artifact["x"],
+                y=artifact["y"],
+                threshold=artifact["threshold"],
+                show=artifact["show"],
+                path=artifact["path"],
+                save_ext=artifact["save_ext"],
+            )
+            return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
+        else:
+            # For other cases, fall back to no-op for now
+            return PlotRenderResult(artifact=artifact, figure=None, saved_paths=(), extras={})
 
 
 class PlotSpecDefaultBuilder(PlotBuilder):

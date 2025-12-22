@@ -19,6 +19,7 @@ from .registry import (
     list_plot_builder_descriptors,
     list_plot_renderer_descriptors,
     list_plot_style_descriptors,
+    register_plot_style,
     mark_explanation_trusted,
     mark_explanation_untrusted,
     mark_interval_trusted,
@@ -162,7 +163,8 @@ def _emit_plot_renderer_descriptor(descriptor) -> None:
 
 def _cmd_list(args: argparse.Namespace) -> int:
     """Handle the `plugins list` subcommand."""
-    kind = args.kind
+    # Honor the convenience `--plots` flag which acts as an alias for `kind=plots`
+    kind = "plots" if getattr(args, "plots", False) else args.kind
     trusted_only = args.trusted_only
 
     if kind in ("explanations", "all"):
@@ -218,6 +220,68 @@ def _cmd_list(args: argparse.Namespace) -> int:
             for descriptor in descriptors:
                 _emit_plot_descriptor(descriptor)
 
+    return 0
+
+
+def _cmd_validate_plot(args: argparse.Namespace) -> int:
+    """Validate a plot builder by identifier by attempting a dry build."""
+    builder_id = args.builder
+    from .registry import find_plot_builder
+    from ..viz.serializers import validate_plotspec
+    from ..plugins.plots import PlotRenderContext
+
+    builder = find_plot_builder(builder_id)
+    if builder is None:
+        print(f"Builder '{builder_id}' is not registered")
+        return 1
+    # Construct a minimal context and attempt to build
+    ctx = PlotRenderContext(
+        explanation=None,
+        instance_metadata={"type": "test"},
+        style=builder.plugin_meta.get("style", "unknown") if hasattr(builder, "plugin_meta") else "unknown",
+        intent={"type": "test"},
+        show=False,
+        path=None,
+        save_ext=None,
+        options={},
+    )
+    try:
+        artifact = builder.build(ctx)
+    except Exception as exc:
+        print(f"Builder '{builder_id}' build failed: {exc}")
+        return 2
+    # If artifact looks like a PlotSpec envelope/dict, validate its shape
+    try:
+        if isinstance(artifact, dict) and ("plot_spec" in artifact or "kind" in artifact):
+            validate_plotspec(dict(artifact.get("plot_spec") or artifact))
+    except Exception as exc:
+        print(f"Builder '{builder_id}' produced invalid PlotSpec: {exc}")
+        return 3
+
+    print(f"Builder '{builder_id}' validated successfully")
+    return 0
+
+
+def _cmd_set_default(args: argparse.Namespace) -> int:
+    """Set a plot style as the default. Updates registration metadata."""
+    style_id = args.style
+    from .registry import (
+        find_plot_style_descriptor,
+        list_plot_style_descriptors,
+    )
+
+    desc = find_plot_style_descriptor(style_id)
+    if desc is None:
+        print(f"Plot style '{style_id}' is not registered")
+        return 1
+
+    # Re-register styles setting is_default appropriately
+    for sd in list_plot_style_descriptors():
+        meta = dict(sd.metadata)
+        meta["is_default"] = sd.identifier == style_id
+        register_plot_style(sd.identifier, metadata=meta)
+
+    print(f"Set '{style_id}' as default plot style")
     return 0
 
 
@@ -292,6 +356,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default="explanations",
         help="Plugin category to list",
     )
+    # Backwards-compatible convenience flag: `--plots` maps to `kind=plots`
+    list_parser.add_argument(
+        "--plots",
+        action="store_true",
+        help="Alias for listing plot styles (sets kind=plots)",
+    )
     list_parser.add_argument(
         "--trusted-only",
         action="store_true",
@@ -334,6 +404,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Plugin category to mark as untrusted",
     )
     untrust_parser.set_defaults(func=_cmd_trust, action="untrust")
+
+    validate_plot_parser = subparsers.add_parser(
+        "validate-plot", help="Validate a plot builder by identifier"
+    )
+    validate_plot_parser.add_argument("--builder", required=True, help="Builder identifier")
+    validate_plot_parser.set_defaults(func=_cmd_validate_plot)
+
+    set_default_parser = subparsers.add_parser(
+        "set-default", help="Set default plot style (by identifier)"
+    )
+    # Accept both `--style` (existing) and `--plot-style` (doc/CLI convenience)
+    set_default_parser.add_argument(
+        "--style",
+        "--plot-style",
+        required=True,
+        dest="style",
+        help="Plot style identifier to set as default",
+    )
+    set_default_parser.set_defaults(func=_cmd_set_default)
 
     try:
         args = parser.parse_args(argv)

@@ -8,6 +8,8 @@ using the sequential plugin to avoid nested parallelism.
 from __future__ import annotations
 
 import contextlib
+import os
+import warnings
 from time import time
 from typing import TYPE_CHECKING, Any, List, Tuple
 
@@ -255,6 +257,16 @@ class InstanceParallelExplainExecutor(BaseExplainExecutor):
         )
         if active_strategy == "auto" and hasattr(executor, "_auto_strategy"):
             active_strategy = executor._auto_strategy(work_items=n_instances)
+
+        configured_strategy = getattr(executor.config, "strategy", active_strategy)
+        if os.name == "nt" and active_strategy in {"threads", "sequential"}:
+            if configured_strategy not in {"threads", "sequential"}:
+                warnings.warn(
+                    "Instance-parallel execution on Windows is using a thread/sequential fallback. "
+                    "Set CE_PARALLEL=processes or CE_PARALLEL=joblib to keep process-based execution.",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         # Route through ParallelExecutor.map() only for the real facade so its
         # telemetry (metrics.submitted/completed) stays accurate (used by the

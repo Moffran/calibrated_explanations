@@ -178,3 +178,37 @@ def test_main_without_command_prints_help(monkeypatch, capsys):
 
     # banner should not be printed without a command being executed
     assert "Optional tooling" not in out
+
+
+def test_main_list_plots_flag(capsys):
+    """`ce.plugins list --plots` should behave like `list plots` and print styles."""
+    exit_code = cli.main(["list", "--plots"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "Plot styles" in out
+
+
+def test_set_default_plot_style_alias(monkeypatch, capsys):
+    """`set-default --plot-style` should be accepted as an alias for --style."""
+    descriptor = DummyDescriptor("demo.plot", metadata={"builder_id": "b", "renderer_id": "r"})
+
+    # Patch the registry functions that are imported inside the command
+    import calibrated_explanations.plugins.registry as registry
+
+    monkeypatch.setattr(registry, "find_plot_style_descriptor", lambda identifier: descriptor if identifier == "demo.plot" else None)
+    monkeypatch.setattr(registry, "list_plot_style_descriptors", lambda: [descriptor])
+    # Register_plot_style should be callable; capture calls via a simple wrapper
+    calls: list[tuple[str, dict]] = []
+
+    def fake_register_plot_style(identifier: str, metadata: dict):
+        calls.append((identifier, dict(metadata)))
+        return None
+
+    monkeypatch.setattr(cli, "register_plot_style", fake_register_plot_style)
+
+    exit_code = cli.main(["set-default", "--plot-style", "demo.plot"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "Set 'demo.plot' as default plot style" in out
+    assert calls, "register_plot_style should have been invoked"
+    assert calls[0][0] == "demo.plot"

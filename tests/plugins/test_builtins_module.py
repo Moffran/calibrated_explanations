@@ -375,7 +375,10 @@ def test_explanation_plugin_missing_explainer_raises(explanation_context: Explan
 
 def test_plot_builder_and_renderer_behaviour(monkeypatch: pytest.MonkeyPatch):
     builder = LegacyPlotBuilder()
-    context = make_local_plot_context()
+    # Use a non-global intent to exercise the individual-plot build path
+    from types import MappingProxyType
+
+    context = make_local_plot_context(intent=MappingProxyType({"type": "individual"}))
     assert builder.build(context)["context"] is context
 
     renderer_calls: list[Dict[str, Any]] = []
