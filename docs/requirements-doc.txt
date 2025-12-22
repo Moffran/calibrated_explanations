@@ -12,7 +12,7 @@ furo==2025.9.25
 sphinxcontrib-mermaid==1.2.2
 linkify-it-py==2.0.3
 sphinx==7.4.7
-docutils==0.20.1
+docutils==0.22.4
 sphinx_rtd_theme==3.0.2
 venn-abers
 roman
