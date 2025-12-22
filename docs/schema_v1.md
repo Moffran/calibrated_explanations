@@ -1,6 +1,6 @@
 # Explanation Schema v1
 
-This page summarizes the stable JSON contract for serialized explanations in v0.6.0 (ADR-005).
+This page summarizes the stable JSON contract for serialized explanations in v1.0.0 (ADR-005).
 
 - Schema file: `calibrated_explanations/schemas/explanation_schema_v1.json`
 - Version: `schema_version` (string, optional; recommended)
@@ -17,14 +17,16 @@ This page summarizes the stable JSON contract for serialized explanations in v0.
 - `provenance` (object|null): optional metadata (library version, timestamp, etc.). Recommended minimal keys: `library_version`, `created_at` (ISO8601), and `generator` (e.g., plugin or pipeline id). Note: these are conventions only and not validated by the schema.
 - `metadata` (object|null): additional caller-provided info.
 
+`provenance` and `metadata` are the stable extension surface for runtime context; the v1 contract is payload-only and does not require an outer envelope.
+
 ## Rule fields (per entry in `rules`)
 
 - `feature` (integer): feature index.
 - `rule` (string): human-readable rule string representing the condition (factual for factual explanations, alternative for alternative explanations).
-- `rule_weight` (object|null):
+- `rule_weight` (object):
   - **Factual explanations** – calibrated feature weight summary with uncertainty bounds, always exposing `{predict, low, high}` to match the CE paper definition. The rule represents a factual condition covering the feature’s instance value.
   - **Alternative explanations** – optional metadata capturing the delta from the factual baseline for ranking/metadata; consumers should rely on the `rule_prediction` field for decision making.
-- `rule_prediction` (object|null):
+- `rule_prediction` (object):
   - **Factual explanations** – optional metadata used in legacy exports. The calibrated prediction for the instance lives at the top level.
   - **Alternative explanations** – calibrated prediction estimate plus uncertainty interval for the alternative condition. This is the primary quantity mandated by the CE papers. The rule represents an alternative condition covering alternative instance values for the feature.
 - `instance_prediction` (object|null): instance-specific prediction (optional).
@@ -39,7 +41,6 @@ If `jsonschema` is installed, `calibrated_explanations.schema.validate_payload(o
 
 ## Examples
 
-See the unit tests for round-trip examples:
+See the tests for round-trip examples:
 
-- `tests/test_serialization_and_quick.py::test_domain_json_round_trip_and_schema_validation`
-- `tests/test_serialization_and_quick.py::test_adapter_legacy_to_json_round_trip`
+- `tests/integration/core/test_golden_fixture.py::test_golden_fixture_roundtrip_and_validate`
