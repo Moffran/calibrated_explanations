@@ -1,6 +1,7 @@
 import sys
 import time
 import types
+import json
 
 import numpy as np
 import pytest
@@ -480,6 +481,54 @@ def test_collection_to_json_and_back(calibrated_collection):
     assert exported.metadata["size"] == len(calibrated_collection)
     assert len(exported.explanations) == len(calibrated_collection)
     assert all(exp.task == "classification" for exp in exported.explanations)
+
+
+def test_collection_to_json_stream(calibrated_collection):
+    for i, exp in enumerate(calibrated_collection.explanations):
+        exp.provenance = {"steps": np.array([i, i + 1])}
+        exp.metadata = {"scores": np.array([[i]])}
+
+    # Test JSONL format
+    chunks = list(calibrated_collection.to_json_stream(format="jsonl"))
+    assert len(chunks) == len(calibrated_collection) + 2  # metadata + explanations + telemetry
+
+    # First chunk is metadata
+    meta = json.loads(chunks[0])
+    assert "collection" in meta
+    assert meta["schema_version"] == "1.0.0"
+
+    # Last chunk is telemetry
+    telemetry = json.loads(chunks[-1])
+    assert "export_telemetry" in telemetry
+    assert telemetry["export_telemetry"]["export_rows"] == len(calibrated_collection)
+    assert "elapsed_seconds" in telemetry["export_telemetry"]
+    assert "peak_memory_mb" in telemetry["export_telemetry"]
+
+    # Middle chunks are explanations
+    for chunk in chunks[1:-1]:
+        exp_data = json.loads(chunk)
+        assert "schema_version" in exp_data
+        assert exp_data["schema_version"] == "1.0.0"
+
+    # Test chunked format
+    chunks_chunked = list(calibrated_collection.to_json_stream(format="chunked", chunk_size=2))
+    assert len(chunks_chunked) >= 2  # at least metadata and one chunk
+
+    # First is metadata
+    meta_chunked = json.loads(chunks_chunked[0])
+    assert "collection" in meta_chunked
+
+    # Last is telemetry
+    telemetry_chunked = json.loads(chunks_chunked[-1])
+    assert "export_telemetry" in telemetry_chunked
+
+    # Middle chunks are JSON arrays
+    for chunk in chunks_chunked[1:-1]:
+        assert chunk.startswith("[") and chunk.endswith("]")
+        # Parse as JSON array
+        arr = json.loads(chunk)
+        assert isinstance(arr, list)
+        assert len(arr) <= 2  # chunk_size=2
 
 
 def test_legacy_payload_prefers_available_rules(calibrated_collection):

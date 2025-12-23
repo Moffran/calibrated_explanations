@@ -11,6 +11,8 @@
   - **Tests:** Added unit tests that (a) assert the canonical golden v1 payload validates with `jsonschema` when available, and (b) assert that missing required fields are rejected by the schema validator.
   - **Docs:** Clarified `provenance` guidance in `docs/schema_v1.md` by suggesting minimal recommended keys (`library_version`, `created_at`, `generator`) as conventions (not enforced by schema).
 
+- **Streaming export (experimental):** Added an opt-in streaming export generator to `CalibratedExplanations.to_json_stream()` supporting `jsonl` and `chunked` modes with minimal export telemetry captured in collection metadata and a fuller record written to the explainer `_last_telemetry` when available. Marked the feature experimental and added a simple benchmark script under `scripts/stream_benchmark.py`.
+
 - **PlotSpec v0.10.1 (ADR-007/ADR-016):** Added PlotSpec metadata, validation, registry, and headless export support.
   - Added `PlotKindRegistry` for kind-aware validation with supported plot kinds and their requirements.
   - Migrated `PlotSpec`, `TriangularPlotSpec`, and `GlobalPlotSpec` to dataclasses with required metadata fields (`kind`, `mode`, `feature_order`, `plotspec_version`, `save_behavior`).

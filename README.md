@@ -144,8 +144,8 @@ underlying estimator and read the returned intervals.
   [docs/foundations/governance/release_checklist.md](https://calibrated-explanations.readthedocs.io/en/latest/governance/release_checklist.html),
   and the implementation plan in
   [`docs/improvement/RELEASE_PLAN_v1.md`](https://github.com/Moffran/calibrated_explanations/blob/main/docs/improvement/RELEASE_PLAN_v1.md).
-- Confirm Standards and ADR alignment via 
-  [docs/improvement/standards/](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/standards) and 
+- Confirm Standards and ADR alignment via
+  [docs/improvement/standards/](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/standards) and
   [docs/improvement/adrs/](https://github.com/Moffran/calibrated_explanations/tree/main/docs/improvement/adrs)
   and keep docs navigation synced with the
   [IA crosswalk](https://calibrated-explanations.readthedocs.io/en/latest/foundations/governance/nav_crosswalk.html).

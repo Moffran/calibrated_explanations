@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import json
 import sys
+import tracemalloc
 import warnings
 from collections.abc import Sequence as ABCSequence
 from copy import copy, deepcopy
@@ -272,6 +274,110 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if include_version:
             payload.setdefault("schema_version", "1.0.0")
         return payload
+
+    def to_json_stream(self, *, chunk_size: int = 256, format: str = "jsonl"):
+        """Stream the collection as JSON.
+
+        This generator yields either a JSON Lines stream or chunked JSON arrays.
+
+        Parameters
+        ----------
+        chunk_size:
+            Number of explanations per yielded chunk (for "chunked") or
+            used only for grouping when `format=="chunked"`.
+        format:
+            Either ``"jsonl"`` (default) for JSON Lines or ``"chunked"`` for
+            chunked JSON arrays.
+
+        Yields
+        ------
+        str
+            UTF-8 JSON fragments (one per yield). The first yielded fragment is
+            a small metadata object describing the collection and the export
+            telemetry.
+        """
+        from ..serialization import to_json as _explanation_to_json
+
+        if format not in {"jsonl", "chunked"}:
+            raise ValidationError("Unsupported stream format", details={"format": format})
+
+        start = time()
+        tracemalloc.start()
+
+        # Prepare collection metadata snapshot (without export telemetry yet)
+        metadata = dict(self._collection_metadata())
+
+        # Yield metadata first as a standalone JSON object line
+        # Telemetry placeholders updated after the stream completes.
+        meta_fragment = {"collection": metadata, "schema_version": "1.0.0"}
+        yield json.dumps(meta_fragment, default=_jsonify)
+
+        # Stream explanations
+        chunk: List[str] = []
+        n = 0
+        for exp in self.explanations:
+            domain = legacy_to_domain(exp.index, self._legacy_payload(exp))
+            provenance = getattr(exp, "provenance", None)
+            metadata_exp = getattr(exp, "metadata", None)
+            if provenance is not None:
+                domain.provenance = cast(Optional[Mapping[str, Any]], _jsonify(provenance))
+            if metadata_exp is not None:
+                domain.metadata = cast(Optional[Mapping[str, Any]], _jsonify(metadata_exp))
+            item = _explanation_to_json(domain, include_version=True)
+            line = json.dumps(item, default=_jsonify)
+            n += 1
+            if format == "jsonl":
+                yield line
+            else:  # chunked
+                chunk.append(line)
+                if len(chunk) >= chunk_size:
+                    # yield a JSON array for this chunk
+                    yield "[" + ",".join(chunk) + "]"
+                    chunk = []
+
+        # flush remaining chunk
+        if format == "chunked" and chunk:
+            yield "[" + ",".join(chunk) + "]"
+
+        # stop tracemalloc and capture peak memory
+        peak = tracemalloc.get_traced_memory()[1]
+        tracemalloc.stop()
+        elapsed = time() - start
+
+        # Build telemetry
+        telemetry = {
+            "export_rows": n,
+            "chunk_size": chunk_size,
+            "mode": getattr(self.calibrated_explainer, "mode", None),
+            "peak_memory_mb": round(float(peak) / (1024 * 1024), 3),
+            "elapsed_seconds": round(float(elapsed), 3),
+            "schema_version": "1.0.0",
+            # feature_branch replaced by explicit fields
+            "build_id": None,
+            "feature_flags": None,
+        }
+
+        # Attach minimal telemetry to collection metadata and attempt to store
+        # a more complete record on the underlying explainer if available.
+        try:
+            # minimal metadata
+            metadata.setdefault("export_telemetry", {})
+            metadata["export_telemetry"].update(telemetry)
+            # attempt to update underlying explainer last telemetry
+            underlying = getattr(self.calibrated_explainer, "_explainer", None)
+            if underlying is not None:
+                try:
+                    last = getattr(underlying, "_last_telemetry", None) or {}
+                    last.update({"export": telemetry})
+                    underlying._last_telemetry = last
+                except Exception:
+                    # best-effort only
+                    pass
+        except Exception:
+            pass
+
+        # final telemetry fragment
+        yield json.dumps({"export_telemetry": telemetry}, default=_jsonify)
 
     @classmethod
     def from_json(cls, payload: Mapping[str, Any]) -> ExportedExplanationCollection:
