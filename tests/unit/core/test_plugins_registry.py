@@ -561,8 +561,8 @@ def test_find_plot_plugin_trusted_requires_trusted_components():
             "supports_interactive": False,
         }
 
-        def render(self, value):
-            return ("renderer", value)
+        def render(self, artifact, *, context):
+            return ("renderer", artifact)
 
     try:
         builder_desc = registry.register_plot_builder("example.plot.mixed", Builder())
@@ -580,7 +580,19 @@ def test_find_plot_plugin_trusted_requires_trusted_components():
         combined = registry.find_plot_plugin("example.plot.mixed")
         assert combined is not None
         assert combined.build("data")[0] == "builder"
-        assert combined.render("data")[0] == "renderer"
+        from calibrated_explanations.plugins.plots import PlotRenderContext
+
+        context = PlotRenderContext(
+            explanation=None,
+            instance_metadata={},
+            style="example.plot.mixed",
+            intent={},
+            show=False,
+            path=None,
+            save_ext=None,
+            options={},
+        )
+        assert combined.render("data", context=context)[0] == "renderer"
 
         assert registry.find_plot_plugin_trusted("example.plot.mixed") is None
     finally:

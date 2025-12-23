@@ -1149,18 +1149,8 @@ def find_plot_plugin(identifier: str) -> Any | None:
     if builder is None or renderer is None:
         return None
 
-    # Create a combined plugin that has both build and render methods
-    class CombinedPlotPlugin:
-        def __init__(self, builder, renderer):
-            self.builder = builder
-            self.renderer = renderer
-            self.plugin_meta = getattr(builder, "plugin_meta", {})
-
-        def build(self, *args, **kwargs):
-            return self.builder.build(*args, **kwargs)
-
-        def render(self, *args, **kwargs):
-            return self.renderer.render(*args, **kwargs)
+    # Use the named wrapper class to combine builder and renderer.
+    from .plots import CombinedPlotPlugin
 
     return CombinedPlotPlugin(builder, renderer)
 
@@ -1192,18 +1182,7 @@ def find_plot_plugin_trusted(identifier: str) -> Any | None:
     builder = builder_descriptor.builder
     renderer = renderer_descriptor.renderer
 
-    # Create a combined plugin that has both build and render methods
-    class CombinedPlotPlugin:
-        def __init__(self, builder, renderer):
-            self.builder = builder
-            self.renderer = renderer
-            self.plugin_meta = getattr(builder, "plugin_meta", {})
-
-        def build(self, *args, **kwargs):
-            return self.builder.build(*args, **kwargs)
-
-        def render(self, *args, **kwargs):
-            return self.renderer.render(*args, **kwargs)
+    from .plots import CombinedPlotPlugin
 
     return CombinedPlotPlugin(builder, renderer)
 

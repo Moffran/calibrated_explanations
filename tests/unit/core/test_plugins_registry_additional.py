@@ -534,8 +534,20 @@ def test_find_plot_plugin_variants():
     registry.register_plot_renderer("renderer", Renderer())
     plugin = registry.find_plot_plugin("style")
     assert plugin is not None
-    assert plugin.build({}, {}) == {}
-    assert plugin.render({}, {}) == {}
+    from calibrated_explanations.plugins.plots import PlotRenderContext
+
+    context = PlotRenderContext(
+        explanation=None,
+        instance_metadata={},
+        style="style",
+        intent={},
+        show=False,
+        path=None,
+        save_ext=None,
+        options={},
+    )
+    assert plugin.build(context) == {}
+    assert plugin.render({}, context=context) == {}
 
 
 def test_find_plot_plugin_trusted_requires_trust():
@@ -557,8 +569,20 @@ def test_find_plot_plugin_trusted_requires_trust():
     registry.mark_plot_renderer_trusted("renderer")
     trusted = registry.find_plot_plugin_trusted("style")
     assert trusted is not None
-    assert trusted.build({}, {}) == {}
-    assert trusted.render({}, {}) == {}
+    from calibrated_explanations.plugins.plots import PlotRenderContext
+
+    context = PlotRenderContext(
+        explanation=None,
+        instance_metadata={},
+        style="style",
+        intent={},
+        show=False,
+        path=None,
+        save_ext=None,
+        options={},
+    )
+    assert trusted.build(context) == {}
+    assert trusted.render({}, context=context) == {}
 
 
 def test_find_interval_trusted_and_builtin_helpers(monkeypatch):

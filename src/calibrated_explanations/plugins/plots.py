@@ -83,4 +83,31 @@ __all__ = [
     "PlotRenderContext",
     "PlotRenderResult",
     "PlotRenderer",
+    "CombinedPlotPlugin",
 ]
+
+
+class CombinedPlotPlugin:
+    """Combine a `PlotBuilder` and `PlotRenderer` into a single plugin object.
+
+    This wrapper exposes the surface expected by the registry:
+    - `plugin_meta`: metadata sourced from the builder
+    - `build(context)`: delegate to the configured builder
+    - `render(artifact, *, context)`: delegate to the configured renderer
+
+    Providing a named, documented class satisfies ADR-018 requirements for
+    dynamically composed plugin classes (pydocstyle and docstring coverage).
+    """
+
+    def __init__(self, builder: PlotBuilder, renderer: PlotRenderer) -> None:
+        self.builder = builder
+        self.renderer = renderer
+        self.plugin_meta = getattr(builder, "plugin_meta", {})
+
+    def build(self, context: PlotRenderContext) -> PlotArtifact:
+        """Return a serialisable artefact by delegating to the builder."""
+        return self.builder.build(context)
+
+    def render(self, artifact: PlotArtifact, *, context: PlotRenderContext) -> PlotRenderResult:
+        """Render *artifact* by delegating to the renderer with the given context."""
+        return self.renderer.render(artifact, context=context)

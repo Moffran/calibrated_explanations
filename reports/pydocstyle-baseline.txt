@@ -1,0 +1,8 @@
+tests\__init__.py:1 at module level:
+        D104: Missing docstring in public package
+tests\helpers\__init__.py:1 at module level:
+        D104: Missing docstring in public package
+tests\legacy\__init__.py:1 at module level:
+        D104: Missing docstring in public package
+tests\unit\legacy\__init__.py:1 at module level:
+        D104: Missing docstring in public package

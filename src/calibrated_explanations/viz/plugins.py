@@ -22,7 +22,7 @@ class BasePlotBuilder:
     plugin_meta: Mapping[str, Any] = {}
 
     def initialize(self, context: Any) -> None:
-        """Optional initialisation hook called with a PlotRenderContext."""
+        """Initialize the plugin with the given context."""
         self._context = context
 
     def build(self, context: Any) -> Mapping[str, Any]:
@@ -45,7 +45,7 @@ class BasePlotRenderer:
     plugin_meta: Mapping[str, Any] = {}
 
     def initialize(self, context: Any) -> None:
-        """Optional initialisation hook called with a PlotRenderContext."""
+        """Initialize the plugin with the given context."""
         self._context = context
 
     def render(self, artifact: Mapping[str, Any], *, context: Any) -> Any:
