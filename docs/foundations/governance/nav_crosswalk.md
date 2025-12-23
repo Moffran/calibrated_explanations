@@ -1,9 +1,9 @@
 # Navigation crosswalk
 
-Track where legacy documentation pages now live in the **ADR-027** audience-first
+Track where legacy documentation pages now live in the **STD-027** audience-first
 information architecture. Update this checklist whenever a page moves or is retired.
 
-> **Status note:** Last updated 2025-11-10 · Per ADR-027 (Documentation Audience Standard) · Supersedes ADR-022.
+> **Status note:** Last updated 2025-11-10 · Per STD-027 (Documentation Audience Standard) · Supersedes ADR-022.
 
 ## Legacy → New location mapping
 
@@ -23,7 +23,7 @@ information architecture. Update this checklist whenever a page moves or is reti
 
 ## Audience-first structure verification
 
-Per ADR-027, the documentation now follows an audience-led structure:
+Per STD-027, the documentation now follows an audience-led structure:
 
 - [x] **Getting Started** appears first in the main toctree (`:doc:`../../get-started/index``)
 - [x] **Practitioner hub** includes core workflow (quickstarts → interpretation) and advanced extras (telemetry, performance, PlotSpec)

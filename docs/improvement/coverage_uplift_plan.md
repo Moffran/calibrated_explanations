@@ -1,6 +1,6 @@
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Latest coverage run (`pytest --cov=src/calibrated_explanations --cov-report=term`) on 2025-10-24 reached **88.4%** line coverage with `fail_under=88` satisfied. Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
-# Coverage Uplift Plan (ADR-019)
+# Coverage Uplift Plan (Standard-019)
 
 This merged plan combines the coverage standardization roadmap with the module-level gap analysis so gating, baselines, and remediation tactics live together.
 

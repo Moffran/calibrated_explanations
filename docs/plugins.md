@@ -15,7 +15,7 @@ Community listings and the curated install extra live here: {doc}`appendices/ext
 
 Notes
 
-- Plugins are optional and externally distributed. Core workflows work without them (ADR-027).
+- Plugins are optional and externally distributed. Core workflows work without them (STD-027).
 - Wiring methods (priority order):
   1) Explainer parameters; 2) Environment variables; 3) pyproject.toml; 4) Plugin-declared dependencies.
 - Trust/deny controls and discovery are available via the registry and CLI; see contributor docs for details.

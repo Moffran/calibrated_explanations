@@ -1,6 +1,6 @@
 > **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Re-evaluate post-v1.0.0 maintenance review · Implementation window: v0.9.0–v1.0.0.
 
-# ADR-017 Nomenclature Remediation
+# Standard-017 Nomenclature Remediation
 
 This consolidated plan combines the nomenclature review and standardization roadmap so the problem statement, phases, and success criteria live in one place. Terminology follows hard guardrails without accidentally breaking published workflows. Terminology follows [terminology](RELEASE_PLAN_v1.md#terminology-for-improvement-plans): phases are numbered plan segments, release milestones mark the gates, and any “stage” references belong only to ADR-001 historical material.
 
@@ -18,7 +18,7 @@ Collectively these issues indicate that nomenclature drift is systemic rather th
 ## Phase plan
 
 ### Phase 0 – Preparatory work (week 0)
-1. Circulate ADR-017 for acceptance and add a shortstyle excerpt to `CONTRIBUTING.md`.
+1. Circulate Standard-017 for acceptance and add a shortstyle excerpt to `CONTRIBUTING.md`.
 2. Enable repository tooling (pre-commit hooks or CI) that flags non-snake_case filenames and new double-underscore attributes.
 3. Inventory external entry-points (e.g. notebooks, docs snippets) that import internal modules so that rename impacts are known ahead of time.
 
@@ -36,7 +36,7 @@ Collectively these issues indicate that nomenclature drift is systemic rather th
 ### Phase 3 – Attribute and helper cleanup
 1. Replace direct access to mangled attributes (e.g. `_CalibratedExplainer__initialized`) with public or protected accessors so that helper modules stop propagating mangled names.【F:src/calibrated_explanations/core/calibration_helpers.py†L19-L115】
 2. Rename helper functions to follow verb-first snake_case conventions, removing ambiguous prefixes such as `safe_` unless they convey a real semantic guarantee.
-3. Update plugin identifiers and schema keys to follow the dot-delimited lowercase format described in ADR-017. Audit docs and code comments for alignment.
+3. Update plugin identifiers and schema keys to follow the dot-delimited lowercase format described in Standard-017. Audit docs and code comments for alignment.
 
 ### Phase 4 – Enforcement & cleanup (weeks 9–10)
 1. Remove deprecated shims once warning periods expire and downstream projects have migrated.

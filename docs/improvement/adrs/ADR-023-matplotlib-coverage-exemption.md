@@ -46,7 +46,7 @@ AttributeError: module 'matplotlib' has no attribute 'artist'
 ### Rationale
 
 1. **Test suite integrity**: All 639 tests pass when run without coverage (`pytest --no-cov`)
-2. **Coverage threshold met**: Package-wide coverage (excluding matplotlib_adapter.py) reaches 85%+, meeting ADR-019 requirement
+2. **Coverage threshold met**: Package-wide coverage (excluding matplotlib_adapter.py) reaches 85%+, meeting Standard-019 requirement
 3. **Tests validate functionality**: Viz tests run normally without coverage instrumentation and validate behavior
 4. **CI workflow**: CI runs tests with `pytest --no-cov -m viz` for viz validation, and `pytest` for coverage on remaining modules
 5. **Isolated impact**: Only affects one adapter module (matplotlib_adapter.py), not the broader viz subsystem
@@ -106,11 +106,11 @@ omit =
 
 - [Matplotlib Issue #28242](https://github.com/matplotlib/matplotlib/issues/28242) - Lazy loading AttributeError reports
 - [pytest-cov documentation](https://pytest-cov.readthedocs.io/en/latest/) - Coverage plugin behavior
-- ADR-019: Test Coverage Standard (85% threshold requirement)
+- Standard-019: Test Coverage Standard (85% threshold requirement)
 - Test infrastructure investigation: October 2025
 
 ---
 
 **Supersedes:** None
 **Superseded by:** None (active)
-**Related:** ADR-019 (Test Coverage Standard)
+**Related:** Standard-019 (Test Coverage Standard)

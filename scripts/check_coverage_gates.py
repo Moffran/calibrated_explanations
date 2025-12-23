@@ -1,4 +1,4 @@
-"""Enforce per-module coverage thresholds (ADR-019).
+"""Enforce per-module coverage thresholds (Standard-019).
 
 Usage:
     python scripts/check_coverage_gates.py [coverage_xml_path]
@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, Tuple, List
 
-# Thresholds defined in ADR-019
+# Thresholds defined in Standard-019
 # Path suffix -> Minimum coverage percentage
 GATES: Dict[str, float] = {
     "src/calibrated_explanations/core/calibrated_explainer.py": 95.0,

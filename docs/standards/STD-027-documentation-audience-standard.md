@@ -1,11 +1,11 @@
-# ADR-027: Documentation Audience Standard
+# Standard-027: Documentation Audience Standard
 
-Status: Accepted
-Date: 2025-10-28
-Deciders: Documentation Working Group
-Reviewers: Core maintainers
-Supersedes: ADR-022
-Superseded-by: None
+> **Status note (2025-12-23):** Last edited 2025-12-23 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Completed (see Adoption Plan).
+
+Formerly ADR-027. Reclassified as an engineering standard to keep ADRs scoped to
+architectural or contract decisions.
+
+Status: Active (2025-10-28)
 
 ## Context
 
@@ -48,5 +48,5 @@ Adopt an audience-led documentation structure anchored on three journeys—pract
 ## References
 - Documentation Overhaul Blueprint (docs/improvement/documentation_overhaul.md)
 - ADR-012: Documentation & Gallery Build Policy
-- ADR-018: Code Documentation Standard
+- Standard-018: Code Documentation Standard
 - ADR-026: Explanation Plugin Semantics

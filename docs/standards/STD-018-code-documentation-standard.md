@@ -1,8 +1,11 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2025-12-22):** Last edited 2025-12-24 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).
 
-# ADR-018: Code Documentation Standardization
+# Standard-018: Code Documentation Standardization
 
-Status: Accepted
+Formerly ADR-018. Reclassified as an engineering standard to keep ADRs scoped to
+architectural or contract decisions.
+
+Status: Active
 Date: 2025-10-06
 Deciders: Core maintainers
 Reviewers: TBD
@@ -39,9 +42,7 @@ extensions, while right-sizing enforcement for OSS development:
   for related APIs to aid Sphinx cross-linking.
 - **Automation hooks**: Introduce docstring linting via `pydocstyle` configured for numpydoc
   conventions, complemented by custom checks for coverage targets.
-- **Enforcement posture**: On OSS/mainline CI, linting and coverage signals are advisory to
-  guide incremental cleanup. Release/stable branches treat docstring linting and coverage
-  targets as blocking gates.
+- **Enforcement posture**: On OSS/mainline CI, linting and coverage signals are blocking gates to prevent regressions. Release/stable branches continue to treat docstring linting and coverage targets as blocking gates, with the current threshold set at ≥94% overall coverage.
 
 ## Alternatives Considered
 
@@ -89,12 +90,12 @@ Negative/Risks:
 - v0.8.0 – Batches C (`explanations/`, `perf/`) and D (`plugins/`) reach
   compliance, CI starts reporting docstring coverage per module, and the
   documentation standardisation plan is updated with progress dashboards.
-- v0.9.0 – Batches E (`viz/`, `viz/plots.py`, `legacy/plotting.py`) and F
-  (`serialization.py`, `core.py`) are completed, docstring linting remains
-  advisory on mainline CI while release branches treat it as blocking, and
+- v0.10.0 – Batches E (`viz/`, `viz/plots.py`, `legacy/plotting.py`) and F
+  (`serialization.py`, `core.py`) are completed, docstring linting and coverage
+  enforcement elevated to blocking on mainline CI with ≥94% threshold, and
   badges/reporting integrate with the docs build workflow per the release
   gate.
-- v1.0.0-rc – Docstring coverage maintained at ≥90%, RC checklist calls
+- v1.0.0-rc – Docstring coverage maintained at ≥94%, RC checklist calls
   out ongoing maintenance cadences, and regression alerts are wired into
   the release branch policies.
 - v1.0.0 – Post-release audits ensure coverage remains above the gate and

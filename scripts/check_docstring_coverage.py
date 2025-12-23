@@ -1,4 +1,4 @@
-"""Docstring coverage reporting utility for ADR-018 guardrails."""
+"""Docstring coverage reporting utility for Standard-018 guardrails."""
 
 from __future__ import annotations
 
@@ -121,7 +121,7 @@ def main() -> None:
 
     report = build_report(root)
 
-    print("Docstring coverage summary (ADR-018 baseline)")
+    print("Docstring coverage summary (Standard-018 baseline)")
     print("=" * 48)
     for label, counter in report.rows():
         print(f"{label:10s}: {counter.documented:4d}/{counter.total:4d} ({counter.coverage:6.2f}%)")

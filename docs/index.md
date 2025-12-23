@@ -98,6 +98,13 @@ plugins
 
 ```{toctree}
 :maxdepth: 1
+:caption: Engineering standards
+
+standards/index
+```
+
+```{toctree}
+:maxdepth: 1
 :caption: Reference
 
 api/index
@@ -124,5 +131,6 @@ citing
 :maxdepth: 1
 :caption: Project Management
 
+../ROADMAP
 improvement/index
 ```

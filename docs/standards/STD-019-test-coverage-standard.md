@@ -1,8 +1,11 @@
-> **Status note (2025-10-24):** Last edited 2025-10-24 · Archive after: Retain indefinitely as architectural record · Implementation window: Per ADR status (see Decision).
+> **Status note (2025-12-22):** Last edited 2025-12-22 · Archive after: Retain indefinitely as an engineering standard · Implementation window: Per Standard status (see Decision).
 
-# ADR-019: Test Coverage Standardization
+# Standard-019: Test Coverage Standardization
 
-Status: Accepted
+Formerly ADR-019. Reclassified as an engineering standard to keep ADRs scoped to
+architectural or contract decisions.
+
+Status: Active
 Date: 2025-10-06
 Deciders: Core maintainers
 Reviewers: TBD
