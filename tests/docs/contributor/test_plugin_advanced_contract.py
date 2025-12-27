@@ -18,7 +18,7 @@ class TestMethodCEnvironmentVariables:
     def test_ce_plot_style_environment_variable(self):
         """Verify CE_PLOT_STYLE environment variable configuration."""
         from calibrated_explanations.plotting import _resolve_plot_style_chain
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -58,7 +58,7 @@ class TestMethodCEnvironmentVariables:
     def test_ce_plot_style_fallbacks_environment_variable(self):
         """Verify CE_PLOT_STYLE_FALLBACKS environment variable."""
         from calibrated_explanations.plotting import _resolve_plot_style_chain
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -255,7 +255,7 @@ class TestMethodEPluginMetadata:
 
     def test_plugin_dependency_propagation_in_explainer(self):
         """Verify that plugin dependencies are propagated in CalibratedExplainer."""
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -303,7 +303,7 @@ class TestPriorityResolution:
 
     def test_method_priority_order(self):
         """Verify that Method A (parameter override) has highest priority."""
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
@@ -342,7 +342,7 @@ class TestPriorityResolution:
     def test_method_fallback_chain(self):
         """Verify that fallback chain works when lower-priority method is used."""
         from calibrated_explanations.plotting import _resolve_plot_style_chain
-        from tests._helpers import get_classification_model
+        from tests.helpers.model_utils import get_classification_model
         from sklearn.datasets import load_breast_cancer
         from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler

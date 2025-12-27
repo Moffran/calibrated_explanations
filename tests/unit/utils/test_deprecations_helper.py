@@ -61,34 +61,26 @@ class TestShouldRaise:
             assert _should_raise() is False
 
     def test_should_not_raise_during_pytest_without_ci(self):
-        """_should_raise() should return False during pytest without CI flags."""
+        """_should_raise() should return True when CE_DEPRECATIONS='error' even during pytest."""
+        # Note: The current implementation always honors CE_DEPRECATIONS when set to error values,
+        # regardless of pytest or CI status (per ADR requirements).
         env = {
             "CE_DEPRECATIONS": "error",
             "PYTEST_CURRENT_TEST": "test_module.py::test_func",
         }
-        with patch.dict(os.environ, env), patch(
-            "calibrated_explanations.utils.deprecations._CE_DEPRECATIONS_AT_START",
-            "error",
-        ):
-            # When running pytest locally with CE_DEPRECATIONS set at start,
-            # we should NOT raise even if CE_DEPRECATIONS="error"
-            # This depends on whether CI or GITHUB_ACTIONS is set
-            result = _should_raise()
-            # When pytest is running without CI flags, it should return False
-            # (or True if CI/GITHUB_ACTIONS is set)
-            assert isinstance(result, bool)
+        with patch.dict(os.environ, env):
+            # When CE_DEPRECATIONS="error" is set, _should_raise() should return True
+            # regardless of pytest or CI status
+            assert _should_raise() is True
 
     def test_should_raise_during_ci_with_pytest(self):
-        """_should_raise() should return True during CI even with pytest."""
+        """_should_raise() should return True during CI with pytest when CE_DEPRECATIONS='error'."""
         env = {
             "CE_DEPRECATIONS": "error",
             "PYTEST_CURRENT_TEST": "test_module.py::test_func",
             "CI": "true",
         }
-        with patch.dict(os.environ, env), patch(
-            "calibrated_explanations.utils.deprecations._CE_DEPRECATIONS_AT_START",
-            "error",
-        ):
+        with patch.dict(os.environ, env):
             assert _should_raise() is True
 
 

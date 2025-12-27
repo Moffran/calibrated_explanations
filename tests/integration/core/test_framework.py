@@ -22,7 +22,7 @@ from calibrated_explanations.utils import check_is_fitted, is_notebook, make_dir
 from crepes.extras import DifficultyEstimator
 from sklearn.ensemble import RandomForestClassifier
 
-from tests._helpers import get_classification_model, get_regression_model
+from tests.helpers.model_utils import get_classification_model, get_regression_model
 
 
 def test_failure():

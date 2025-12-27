@@ -302,3 +302,69 @@ class FakeExplanation:
     def is_one_sided(self) -> bool:
         """Indicate whether the explanation produces one-sided intervals."""
         return False
+
+
+def generic_test(cal_exp, x_prop_train, y_prop_train, x, y):
+    """Run a generic calibrated explainer test routine.
+
+    This function encapsulates repeated assertions used across several
+    test modules. Tests should import and call this helper rather than
+    importing from another test module.
+    """
+    cal_exp.fit(x_prop_train, y_prop_train)
+    assert cal_exp.fitted
+    assert cal_exp.calibrated
+
+    learner = cal_exp.learner
+
+    from calibrated_explanations.core import WrapCalibratedExplainer
+
+    new_exp = WrapCalibratedExplainer(learner)
+    assert new_exp.fitted
+    assert not new_exp.calibrated
+    assert new_exp.learner == learner
+
+    explainer = getattr(cal_exp, "explainer", None)
+    if explainer is not None:
+        new_exp = WrapCalibratedExplainer(explainer)
+        assert new_exp.fitted
+        assert new_exp.calibrated
+        assert new_exp.explainer == explainer
+        assert new_exp.learner == learner
+
+    cal_exp.plot(x, show=False)
+    cal_exp.plot(x, y, show=False)
+    return cal_exp
+
+
+def initiate_explainer(
+    model,
+    x_cal,
+    y_cal,
+    feature_names,
+    categorical_features,
+    mode,
+    class_labels=None,
+    difficulty_estimator=None,
+    bins=None,
+    fast=False,
+    verbose=False,
+    **kwargs,
+):
+    """Initialize a CalibratedExplainer instance."""
+    from calibrated_explanations.core import CalibratedExplainer
+
+    return CalibratedExplainer(
+        model,
+        x_cal,
+        y_cal,
+        feature_names=feature_names,
+        categorical_features=categorical_features,
+        mode=mode,
+        class_labels=class_labels,
+        bins=bins,
+        fast=fast,
+        difficulty_estimator=difficulty_estimator,
+        verbose=verbose,
+        **kwargs,
+    )

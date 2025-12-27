@@ -122,37 +122,44 @@ def scan_workspace(root_path, analysis_data):
     return occurrences
 
 def main():
-    root = "."
-    if len(sys.argv) > 1:
-        root = sys.argv[1]
+    import argparse
+    parser = argparse.ArgumentParser(description="Scan for private member usage in tests.")
+    parser.add_argument("roots", nargs="*", default=["."], help="Root directories to scan.")
+    parser.add_argument("--output", default="reports/private_usage_scan.csv", help="Output CSV file.")
+    parser.add_argument("--analysis", help="Path to private_method_analysis.csv.")
+    
+    args = parser.parse_args()
 
-    analysis_file = os.path.join(root, "reports", "private_method_analysis.csv")
+    analysis_file = args.analysis or os.path.join(args.roots[0], "reports", "private_method_analysis.csv")
     analysis_data = load_analysis(analysis_file)
 
-    print(f"Scanning {root} for private member usage in tests...")
-    data = scan_workspace(root, analysis_data)
+    all_data = []
+    for root in args.roots:
+        print(f"Scanning {root} for private member usage in tests...")
+        data = scan_workspace(root, analysis_data)
+        all_data.extend(data)
 
-    print(f"\nFound {len(data)} occurrences.")
+    print(f"\nFound {len(all_data)} occurrences.")
     
     # Write detailed CSV
-    out_file = os.path.join("reports", "private_usage_scan.csv")
-    Path("reports").mkdir(exist_ok=True)
+    out_file = args.output
+    Path(out_file).parent.mkdir(exist_ok=True, parents=True)
 
     with open(out_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["file", "line", "name", "type", "category", "pattern", "message"])
         writer.writeheader()
-        writer.writerows(data)
+        writer.writerows(all_data)
 
     print(f"\nDetailed report written to {out_file}")
     
     # Summary by Category
-    cat_counts = collections.Counter(d["category"] for d in data)
+    cat_counts = collections.Counter(d["category"] for d in all_data)
     print("\nUsages by Category:")
     for cat, count in cat_counts.most_common():
         print(f"{cat:<40} {count}")
 
     # Summary by Pattern
-    pat_counts = collections.Counter(d["pattern"] for d in data)
+    pat_counts = collections.Counter(d["pattern"] for d in all_data)
     print("\nUsages by Pattern:")
     for pat, count in pat_counts.most_common():
         print(f"{pat:<40} {count}")

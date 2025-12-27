@@ -71,7 +71,7 @@ class LegacySchemaFactualPlugin(LegacyFactualExplanationPlugin):
 
 
 def make_regression_explainer(regression_dataset, **overrides):
-    from tests._helpers import get_regression_model
+    from tests.helpers.model_utils import get_regression_model
 
     (
         x_prop_train,

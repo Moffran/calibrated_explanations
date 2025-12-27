@@ -18,7 +18,7 @@ from calibrated_explanations.utils.exceptions import NotFittedError, ValidationE
 from crepes.extras import MondrianCategorizer
 from sklearn.ensemble import RandomForestRegressor
 import os
-from tests._helpers import generic_test
+from tests.helpers.explainer_utils import generic_test
 
 
 class TestWrapRegressionExplainer:

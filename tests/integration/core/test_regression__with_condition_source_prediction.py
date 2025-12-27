@@ -32,7 +32,8 @@ from calibrated_explanations.core.calibrated_explainer import CalibratedExplaine
 from calibrated_explanations.utils.exceptions import NotFittedError, ValidationError
 from crepes.extras import DifficultyEstimator
 
-from tests._helpers import get_regression_model, initiate_explainer
+from tests.helpers.model_utils import get_regression_model
+from tests.helpers.explainer_utils import initiate_explainer
 
 
 def safe_fit_difficulty(x, y, scaler=True):

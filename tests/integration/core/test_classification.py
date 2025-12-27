@@ -17,7 +17,8 @@ Tests:
 """
 
 import pytest
-from tests._helpers import get_classification_model, initiate_explainer
+from tests.helpers.model_utils import get_classification_model
+from tests.helpers.explainer_utils import initiate_explainer
 
 
 @pytest.mark.viz

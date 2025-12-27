@@ -1,12 +1,13 @@
 from calibrated_explanations.serialization import to_json, from_json
 from calibrated_explanations.explanations import legacy_to_domain
-from tests._helpers import initiate_explainer
+from tests.helpers.explainer_utils import initiate_explainer
+from tests.helpers.model_utils import get_classification_model, get_regression_model
 from tests.helpers.dataset_utils import make_binary_dataset
 
 from numpy import testing as npt
 
 
-def _build_payload_from_exp(exp):
+def build_payload_from_exp(exp):
     # defensive: some explanation types may omit fields
     return {
         "task": getattr(exp, "get_mode", lambda: "unknown")(),
@@ -31,9 +32,6 @@ def test_explain_factual_and_roundtrip():
         categorical_features,
         feature_names,
     ) = make_binary_dataset()
-
-    # Trained model helper used across tests
-    from tests._helpers import get_classification_model
 
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
@@ -86,8 +84,6 @@ def test_explore_alternatives_and_conjunctive_rules():
         categorical_features,
         feature_names,
     ) = make_binary_dataset()
-    from tests._helpers import get_classification_model
-
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
@@ -145,8 +141,6 @@ def test_fast_explanation_roundtrip_classification(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    from tests._helpers import get_classification_model
-
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model, x_cal, y_cal, feature_names, categorical_features, mode="classification", fast=True
@@ -156,14 +150,14 @@ def test_fast_explanation_roundtrip_classification(binary_dataset):
 
     # round-trip each fast explanation via legacy->domain->json->domain
     for orig in fast:
-        payload = _build_payload_from_exp(orig)
+        payload = build_payload_from_exp(orig)
         domain = legacy_to_domain(orig.index, payload)
         js = to_json(domain)
         rt = from_json(js)
         assert rt.index == domain.index
 
 
-def _assert_collections_close(lhs, rhs):
+def assert_collections_close(lhs, rhs):
     assert len(lhs) == len(rhs)
     for left, right in zip(lhs, rhs):
         npt.assert_allclose(
@@ -202,8 +196,6 @@ def test_plugin_runtime_matches_legacy_factual(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    from tests._helpers import get_classification_model
-
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
@@ -218,7 +210,7 @@ def test_plugin_runtime_matches_legacy_factual(binary_dataset):
     plugin = cal_exp.explain_factual(x_test)
     legacy = cal_exp.explain_factual(x_test, _use_plugin=False)
 
-    _assert_collections_close(plugin, legacy)
+    assert_collections_close(plugin, legacy)
 
 
 def test_plugin_runtime_matches_legacy_alternative(binary_dataset):
@@ -235,8 +227,6 @@ def test_plugin_runtime_matches_legacy_alternative(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    from tests._helpers import get_classification_model
-
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
@@ -251,7 +241,7 @@ def test_plugin_runtime_matches_legacy_alternative(binary_dataset):
     plugin = cal_exp.explore_alternatives(x_test)
     legacy = cal_exp.explore_alternatives(x_test, _use_plugin=False)
 
-    _assert_collections_close(plugin, legacy)
+    assert_collections_close(plugin, legacy)
 
 
 def test_plugin_runtime_matches_legacy_fast(binary_dataset):
@@ -268,8 +258,6 @@ def test_plugin_runtime_matches_legacy_fast(binary_dataset):
         feature_names,
     ) = binary_dataset
 
-    from tests._helpers import get_classification_model
-
     model, _ = get_classification_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model,
@@ -285,7 +273,7 @@ def test_plugin_runtime_matches_legacy_fast(binary_dataset):
     plugin = cal_exp.explain_fast(x_test)
     legacy = cal_exp.explain_fast(x_test, _use_plugin=False)
 
-    _assert_collections_close(plugin, legacy)
+    assert_collections_close(plugin, legacy)
 
 
 def test_regression_factual_and_alternatives_roundtrip(regression_dataset):
@@ -301,8 +289,6 @@ def test_regression_factual_and_alternatives_roundtrip(regression_dataset):
         feature_names,
     ) = regression_dataset
 
-    from tests._helpers import get_regression_model
-
     model, _ = get_regression_model("RF", x_prop_train, y_prop_train)
     cal_exp = initiate_explainer(
         model, x_cal, y_cal, feature_names, categorical_features, mode="regression"
@@ -312,7 +298,7 @@ def test_regression_factual_and_alternatives_roundtrip(regression_dataset):
     factual = cal_exp.explain_factual(x_test, y_test)
     factual.add_conjunctions()
     for orig in factual:
-        payload = _build_payload_from_exp(orig)
+        payload = build_payload_from_exp(orig)
         domain = legacy_to_domain(orig.index, payload)
         js = to_json(domain)
         rt = from_json(js)
@@ -324,7 +310,7 @@ def test_regression_factual_and_alternatives_roundtrip(regression_dataset):
     alternatives.add_conjunctions()
     any_rules_found = False
     for alt in alternatives:
-        payload = _build_payload_from_exp(alt)
+        payload = build_payload_from_exp(alt)
         domain = legacy_to_domain(alt.index, payload)
         # check roundtrip
         js = to_json(domain)

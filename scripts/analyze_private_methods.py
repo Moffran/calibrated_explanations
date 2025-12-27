@@ -14,8 +14,6 @@ def get_private_definitions(root_path):
         # Prune skip_dirs
         dirnames[:] = [d for d in dirnames if d not in skip_dirs]
         
-        if "src" not in Path(dirpath).parts:
-            continue
             
         for filename in filenames:
             if not filename.endswith(".py"):

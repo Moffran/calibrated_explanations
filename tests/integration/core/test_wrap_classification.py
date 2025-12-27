@@ -24,7 +24,7 @@ from joblib import dump, load
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
-from tests._helpers import generic_test
+from tests.helpers.explainer_utils import generic_test
 
 
 @pytest.fixture(autouse=True)
