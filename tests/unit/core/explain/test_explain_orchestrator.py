@@ -19,10 +19,10 @@ def mock_explainer():
     explainer.bins = None
     explainer.condition_source = "observed"
     explainer.discretizer = None
-    explainer._plugin_manager = MagicMock()
+    explainer.plugin_manager = MagicMock()
     explainer._bridge_monitors = {}
-    explainer._telemetry_interval_sources = {}
-    explainer._interval_plugin_hints = {}
+    explainer.telemetry_interval_sources = {}
+    explainer.interval_plugin_hints = {}
     explainer._plot_plugin_fallbacks = {}
     explainer.preprocessor_metadata = None
     return explainer
@@ -377,7 +377,7 @@ def test_resolve_plugin_supports_mode_failure(orchestrator, mock_explainer):
     ), patch(
         "calibrated_explanations.core.explain.orchestrator.find_explanation_plugin",
         return_value=mock_plugin,
-    ), patch.object(orchestrator, "_check_metadata", return_value=None), pytest.raises(
+    ), patch.object(orchestrator, "check_metadata", return_value=None), pytest.raises(
         ConfigurationError, match="Unable to resolve explanation plugin"
     ):
         orchestrator._resolve_plugin("factual")
@@ -393,15 +393,13 @@ def test_check_metadata_valid(orchestrator, mock_explainer):
         "modes": ("factual",),
         "capabilities": ("explain", "explanation:factual", "task:classification"),
     }
-    assert orchestrator._check_metadata(metadata, identifier="test", mode="factual") is None
+    assert orchestrator.check_metadata(metadata, identifier="test", mode="factual") is None
 
 
 def test_check_metadata_invalid_version(orchestrator):
     """Test _check_metadata with invalid version."""
     metadata = {"schema_version": -1}
-    assert "unsupported" in orchestrator._check_metadata(
-        metadata, identifier="test", mode="factual"
-    )
+    assert "unsupported" in orchestrator.check_metadata(metadata, identifier="test", mode="factual")
 
 
 def test_check_metadata_missing_tasks(orchestrator):
@@ -409,7 +407,7 @@ def test_check_metadata_missing_tasks(orchestrator):
     from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 
     metadata = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
-    assert "missing tasks declaration" in orchestrator._check_metadata(
+    assert "missing tasks declaration" in orchestrator.check_metadata(
         metadata, identifier="test", mode="factual"
     )
 
@@ -419,7 +417,7 @@ def test_check_metadata_missing_modes(orchestrator):
     from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 
     metadata = {"schema_version": EXPLANATION_PROTOCOL_VERSION, "tasks": ("classification",)}
-    assert "missing modes declaration" in orchestrator._check_metadata(
+    assert "missing modes declaration" in orchestrator.check_metadata(
         metadata, identifier="test", mode="factual"
     )
 
@@ -434,7 +432,7 @@ def test_check_metadata_missing_capabilities(orchestrator):
         "modes": ("factual",),
         "capabilities": (),
     }
-    assert "missing required capabilities" in orchestrator._check_metadata(
+    assert "missing required capabilities" in orchestrator.check_metadata(
         metadata, identifier="test", mode="factual"
     )
 

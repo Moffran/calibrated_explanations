@@ -73,8 +73,6 @@ def is_valid_probability_values(*values: float) -> bool:
     return all(-tol <= v <= 1.0 + tol for v in finite)
 
 
-# Backward compatibility alias for private naming
-_looks_like_probability_values = is_valid_probability_values
 
 
 def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index: int) -> None:

@@ -20,7 +20,7 @@ def test_slice_threshold_branches_exercised():
 
     Tests should call explain module functions directly.
     """
-    from calibrated_explanations.core.explain._helpers import slice_threshold
+    from calibrated_explanations.core.explain.helpers import slice_threshold
 
     sentinel = object()
     assert slice_threshold(sentinel, 0, 1, 1) is sentinel
@@ -41,7 +41,7 @@ def test_slice_bins_handles_collections():
 
     Tests should call explain module functions directly.
     """
-    from calibrated_explanations.core.explain._helpers import slice_bins
+    from calibrated_explanations.core.explain.helpers import slice_bins
 
     assert slice_bins(None, 0, 1) is None
 

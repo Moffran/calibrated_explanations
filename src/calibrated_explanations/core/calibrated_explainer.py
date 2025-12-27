@@ -512,23 +512,16 @@ class CalibratedExplainer:
             return ()
         return self._plugin_manager._build_interval_chain(fast=fast)
 
-    def _build_plot_style_chain(self) -> Tuple[str, ...]:
-        """Delegate to PluginManager for plot style chain building."""
+    def build_plot_style_chain(self) -> Tuple[str, ...]:
+        """Return the plot style chain.
+
+        This is the public replacement for the legacy internal helper. It delegates
+        to :class:`PluginManager` to construct the chain when available and
+        otherwise returns an empty tuple for minimal explainer stubs used in tests.
+        """
         if not hasattr(self, "_plugin_manager"):
             return ()
         return self._plugin_manager._build_plot_chain()
-
-    def _check_explanation_runtime_metadata(
-        self,
-        metadata: Mapping[str, Any] | None,
-        *,
-        identifier: str | None,
-        mode: str,
-    ) -> str | None:
-        """Delegate to ExplanationOrchestrator."""
-        return self._explanation_orchestrator._check_metadata(
-            metadata, identifier=identifier, mode=mode
-        )
 
     def _instantiate_plugin(self, prototype: Any) -> Any:
         """Delegate to ExplanationOrchestrator."""
@@ -650,10 +643,8 @@ class CalibratedExplainer:
     @_explanation_plugin_overrides.setter
     def _explanation_plugin_overrides(self, value: Dict[str, Any]) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_explanation_overrides = value
-            return
-        self._plugin_manager._explanation_plugin_overrides = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._explanation_plugin_overrides = value
 
     @property
     def _interval_plugin_override(self) -> Any:
@@ -665,10 +656,8 @@ class CalibratedExplainer:
     @_interval_plugin_override.setter
     def _interval_plugin_override(self, value: Any) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_interval_override = value
-            return
-        self._plugin_manager._interval_plugin_override = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._interval_plugin_override = value
 
     @property
     def _fast_interval_plugin_override(self) -> Any:
@@ -680,10 +669,8 @@ class CalibratedExplainer:
     @_fast_interval_plugin_override.setter
     def _fast_interval_plugin_override(self, value: Any) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_fast_interval_override = value
-            return
-        self._plugin_manager._fast_interval_plugin_override = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._fast_interval_plugin_override = value
 
     @property
     def _plot_style_override(self) -> Any:
@@ -695,10 +682,109 @@ class CalibratedExplainer:
     @_plot_style_override.setter
     def _plot_style_override(self, value: Any) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_plot_style_override = value
-            return
-        self._plugin_manager._plot_style_override = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._plot_style_override = value
+
+    # Public aliases to replace test access of private members (safe one-line delegations)
+    @property
+    def plugin_manager(self) -> PluginManager:
+        """Public accessor for the active PluginManager."""
+        return self._require_plugin_manager()
+
+    @plugin_manager.setter
+    def plugin_manager(self, value: Any) -> None:
+        """Set the plugin manager for this explainer."""
+        self._plugin_manager = value
+
+    @plugin_manager.deleter
+    def plugin_manager(self) -> None:
+        """Delete the plugin manager."""
+        if hasattr(self, "_plugin_manager"):
+            del self._plugin_manager
+
+    @property
+    def interval_plugin_hints(self) -> Dict[str, Tuple[str, ...]]:
+        """Public alias for `_interval_plugin_hints`.
+
+        Tests should use this instead of accessing the private attribute.
+        """
+        return self._interval_plugin_hints
+
+    @interval_plugin_hints.setter
+    def interval_plugin_hints(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        self._interval_plugin_hints = value
+
+    @interval_plugin_hints.deleter
+    def interval_plugin_hints(self) -> None:
+        del self._interval_plugin_hints
+
+    @property
+    def interval_plugin_fallbacks(self) -> Dict[str, Tuple[str, ...]]:
+        """Public alias for `_interval_plugin_fallbacks`."""
+        return self._interval_plugin_fallbacks
+
+    @interval_plugin_fallbacks.setter
+    def interval_plugin_fallbacks(self, value: Dict[str, Tuple[str, ...]]) -> None:
+        self._interval_plugin_fallbacks = value
+
+    @property
+    def explanation_plugin_overrides(self) -> Dict[str, Any]:
+        """Public alias for `_explanation_plugin_overrides`."""
+        return self._explanation_plugin_overrides
+
+    @explanation_plugin_overrides.setter
+    def explanation_plugin_overrides(self, value: Dict[str, Any]) -> None:
+        self._explanation_plugin_overrides = value
+
+    @property
+    def interval_plugin_override(self) -> Any:
+        """Public alias for `_interval_plugin_override`."""
+        return self._interval_plugin_override
+
+    @interval_plugin_override.setter
+    def interval_plugin_override(self, value: Any) -> None:
+        self._interval_plugin_override = value
+
+    @property
+    def fast_interval_plugin_override(self) -> Any:
+        """Public alias for `_fast_interval_plugin_override`."""
+        return self._fast_interval_plugin_override
+
+    @fast_interval_plugin_override.setter
+    def fast_interval_plugin_override(self, value: Any) -> None:
+        self._fast_interval_plugin_override = value
+
+    @property
+    def plot_style_override(self) -> Any:
+        """Public alias for `_plot_style_override`."""
+        return self._plot_style_override
+
+    @plot_style_override.setter
+    def plot_style_override(self, value: Any) -> None:
+        self._plot_style_override = value
+
+    @property
+    def interval_preferred_identifier(self) -> Dict[str, str | None]:
+        """Public alias for `_interval_preferred_identifier`."""
+        return self._interval_preferred_identifier
+
+    @interval_preferred_identifier.setter
+    def interval_preferred_identifier(self, value: Dict[str, str | None]) -> None:
+        self._interval_preferred_identifier = value
+
+    @property
+    def telemetry_interval_sources(self) -> Dict[str, str | None]:
+        """Public alias for `_telemetry_interval_sources`."""
+        return self._telemetry_interval_sources
+
+    @telemetry_interval_sources.setter
+    def telemetry_interval_sources(self, value: Dict[str, str | None]) -> None:
+        self._telemetry_interval_sources = value
+
+    @property
+    def is_initialized(self) -> bool:
+        """Public check for whether the explainer has been initialized."""
+        return getattr(self, "_CalibratedExplainer__initialized", False)
 
     @property
     def _bridge_monitors(self) -> Dict[str, Any]:
@@ -868,10 +954,8 @@ class CalibratedExplainer:
     @_last_explanation_mode.setter
     def _last_explanation_mode(self, value: str | None) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_last_explanation_mode = value
-            return
-        self._plugin_manager._last_explanation_mode = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._last_explanation_mode = value
 
     @property
     def _last_telemetry(self) -> Dict[str, Any]:
@@ -883,10 +967,8 @@ class CalibratedExplainer:
     @_last_telemetry.setter
     def _last_telemetry(self, value: Dict[str, Any]) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_last_telemetry = value
-            return
-        self._plugin_manager._last_telemetry = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._last_telemetry = value
 
     @property
     def _pyproject_explanations(self) -> Dict[str, Any] | None:
@@ -898,10 +980,8 @@ class CalibratedExplainer:
     @_pyproject_explanations.setter
     def _pyproject_explanations(self, value: Dict[str, Any] | None) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_pyproject_explanations = value
-            return
-        self._plugin_manager._pyproject_explanations = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._pyproject_explanations = value
 
     @property
     def _pyproject_intervals(self) -> Dict[str, Any] | None:
@@ -914,10 +994,8 @@ class CalibratedExplainer:
     @_pyproject_intervals.setter
     def _pyproject_intervals(self, value: Dict[str, Any] | None) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_pyproject_intervals = value
-            return
-        self._plugin_manager._pyproject_intervals = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._pyproject_intervals = value
 
     @property
     def _pyproject_plots(self) -> Dict[str, Any] | None:
@@ -930,10 +1008,8 @@ class CalibratedExplainer:
     @_pyproject_plots.setter
     def _pyproject_plots(self, value: Dict[str, Any] | None) -> None:
         """Delegate to PluginManager."""
-        if not hasattr(self, "_plugin_manager"):
-            self._plugin_manager_cache_pyproject_plots = value
-            return
-        self._plugin_manager._pyproject_plots = value
+        if hasattr(self, "_plugin_manager"):
+            self._plugin_manager._pyproject_plots = value
 
     @property
     def runtime_telemetry(self) -> Mapping[str, Any]:
@@ -1129,6 +1205,21 @@ class CalibratedExplainer:
         managed by the PredictionOrchestrator. See ADR-001.
         """
         return self._prediction_orchestrator._interval_registry.get_sigma_test(x)
+
+    def get_sigma_test(self, x: np.ndarray) -> np.ndarray:
+        """Return the difficulty (sigma) of the test instances.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Test instances for which to estimate difficulty.
+
+        Returns
+        -------
+        np.ndarray
+            Difficulty estimates (sigma values) for each test instance.
+        """
+        return self._get_sigma_test(x)
 
     def _CalibratedExplainer__initialize_interval_learner_for_fast_explainer(self) -> None:  # noqa: N802
         """Backward-compatible wrapper for fast-mode interval learner initialization.
@@ -2013,7 +2104,7 @@ class CalibratedExplainer:
             )
         return (proba, (low, high)) if uq_interval else proba
 
-    def _is_lime_enabled(self, is_enabled=None) -> bool:
+    def is_lime_enabled(self, is_enabled=None) -> bool:
         """Return whether LIME export is enabled.
 
         .. deprecated:: 0.10.0
@@ -2035,7 +2126,7 @@ class CalibratedExplainer:
             self._lime_pipeline = LimePipeline(self)
         return self._lime_pipeline._is_lime_enabled(is_enabled)
 
-    def _is_shap_enabled(self, is_enabled=None) -> bool:
+    def is_shap_enabled(self, is_enabled=None) -> bool:
         """Return whether SHAP export is enabled.
 
         .. deprecated:: 0.10.0

@@ -32,6 +32,10 @@ from tests.helpers.model_utils import DummyLearner
 from calibrated_explanations.core.explain.feature_task import (
     _feature_task,
 )
+from calibrated_explanations.core.explain.helpers import (
+    compute_weight_delta,
+    merge_feature_result,
+)
 from calibrated_explanations.core.calibration_metrics import compute_calibrated_confusion_matrix
 from calibrated_explanations.utils.exceptions import DataShapeError, ValidationError
 from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
@@ -97,8 +101,12 @@ def test_explanation_metadata_accepts_mode_alias(monkeypatch: pytest.MonkeyPatch
         "capabilities": ("explain", "mode:factual", "task:both"),
     }
 
+    from calibrated_explanations.core.explain.orchestrator import ExplanationOrchestrator
+
     assert (
-        explainer._check_explanation_runtime_metadata(metadata, identifier="demo", mode="factual")
+        ExplanationOrchestrator(explainer).check_metadata(
+            metadata, identifier="demo", mode="factual"
+        )
         is None
     )
 
@@ -685,25 +693,17 @@ def test_compute_weight_delta_variants_and_merge_feature_result() -> None:
     # compute_weight_delta: scalar baseline vs array perturbed
     scalar_baseline = 1.0
     pert = np.array([0.2, 0.7])
-    deltas = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["compute_weight_delta"]
-    ).compute_weight_delta(scalar_baseline, pert)
+    deltas = compute_weight_delta(scalar_baseline, pert)
     assert isinstance(deltas, np.ndarray)
     assert deltas.shape == pert.shape
 
     # compute_weight_delta: broadcasting path (baseline shape mismatch)
     baseline = np.array([1.0])
     pert2 = np.array([[0.1, 0.2], [0.3, 0.4]])
-    deltas2 = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["compute_weight_delta"]
-    ).compute_weight_delta(baseline, pert2)
+    deltas2 = compute_weight_delta(baseline, pert2)
     assert deltas2.shape == pert2.shape
 
     # merge_feature_result: basic buffer update
-    mod = __import__(
-        "calibrated_explanations.core.explain._helpers", fromlist=["merge_feature_result"]
-    )
-    merge_feature_result = mod.merge_feature_result
 
     n_inst = 2
     n_feat = 3

@@ -14,13 +14,11 @@ def isolate_registry(monkeypatch):
 
     registry.clear_explanation_plugins()
     monkeypatch.setattr(registry, "ensure_builtin_plugins", lambda: None)
-    # Also clear plot renderers for the new tests
-    registry._PLOT_RENDERERS.clear()
-    registry._TRUSTED_PLOT_RENDERERS.clear()
+    # Also clear plot renderers for the new tests using public helpers
+    registry.clear_plot_renderers()
     yield
     registry.clear_explanation_plugins()
-    registry._PLOT_RENDERERS.clear()
-    registry._TRUSTED_PLOT_RENDERERS.clear()
+    registry.clear_plot_renderers()
 
 
 def make_metadata(name: str, trusted: bool) -> dict[str, object]:
@@ -78,7 +76,7 @@ def test_verify_plugin_checksum_raises_on_mismatch(tmp_path, monkeypatch):
         }
 
     with pytest.raises(ValidationError, match="Checksum mismatch"):
-        registry._verify_plugin_checksum(Plugin(), Plugin.plugin_meta)
+        registry.verify_plugin_checksum(Plugin(), Plugin.plugin_meta)
 
 
 def test_mark_plot_renderer_trusted_untrusted():
@@ -91,19 +89,20 @@ def test_mark_plot_renderer_trusted_untrusted():
     )
 
     # Mock the internal registry lists
-    registry._PLOT_RENDERERS["test.renderer"] = descriptor
+    registry.set_plot_renderer("test.renderer", descriptor, trusted=False)
 
     # Mark trusted
     updated_descriptor = registry.mark_plot_renderer_trusted("test.renderer")
     assert updated_descriptor.trusted is True
     assert updated_descriptor.metadata["trust"]["trusted"] is True
-    assert "test.renderer" in registry._TRUSTED_PLOT_RENDERERS
+    assert registry.find_plot_renderer_trusted("test.renderer") is not None
 
     # Mark untrusted
     updated_descriptor_2 = registry.mark_plot_renderer_untrusted("test.renderer")
     assert updated_descriptor_2.trusted is False
     assert updated_descriptor_2.metadata["trust"]["trusted"] is False
-    assert "test.renderer" not in registry._TRUSTED_PLOT_RENDERERS
+    trusted_ids = [d.identifier for d in registry.list_plot_renderer_descriptors(trusted_only=True)]
+    assert "test.renderer" not in trusted_ids
 
 
 def test_mark_plot_renderer_trusted_missing():

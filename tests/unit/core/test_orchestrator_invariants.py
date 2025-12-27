@@ -26,8 +26,8 @@ class TestPredictionOrchestratorInvariants:
         self.explainer._interval_plugin_fallbacks = {}
         self.explainer._interval_plugin_hints = {}
         self.explainer._interval_context_metadata = {}
-        self.explainer._telemetry_interval_sources = {}
-        self.explainer._interval_preferred_identifier = {}
+        self.explainer.telemetry_interval_sources = {}
+        self.explainer.interval_preferred_identifier = {}
 
         # Mock attributes accessed in _predict
         self.explainer._perf_cache = MagicMock()
@@ -40,7 +40,7 @@ class TestPredictionOrchestratorInvariants:
         # predict, low, high, extra
         valid_result = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
 
-        with patch.object(self.orchestrator, "_predict_impl", return_value=valid_result):
+        with patch.object(self.orchestrator, "_predict", return_value=valid_result):
             result = self.orchestrator._predict(np.array([[1]]))
             assert result == valid_result
 
@@ -48,27 +48,27 @@ class TestPredictionOrchestratorInvariants:
         # low > high
         invalid_result = (np.array([0.5]), np.array([0.7]), np.array([0.6]), None)
 
-        with patch.object(
-            self.orchestrator, "_predict_impl", return_value=invalid_result
-        ), pytest.warns(UserWarning, match="low > high"):
+        with patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result), pytest.warns(
+            UserWarning, match="low > high"
+        ):
             self.orchestrator._predict(np.array([[1]]))
 
     def test_predict_invalid_predict_lt_low(self):
         # predict < low
         invalid_result = (np.array([0.3]), np.array([0.4]), np.array([0.6]), None)
 
-        with patch.object(
-            self.orchestrator, "_predict_impl", return_value=invalid_result
-        ), pytest.warns(UserWarning, match="predict not in"):
+        with patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result), pytest.warns(
+            UserWarning, match="predict not in"
+        ):
             self.orchestrator._predict(np.array([[1]]))
 
     def test_predict_invalid_predict_gt_high(self):
         # predict > high
         invalid_result = (np.array([0.7]), np.array([0.4]), np.array([0.6]), None)
 
-        with patch.object(
-            self.orchestrator, "_predict_impl", return_value=invalid_result
-        ), pytest.warns(UserWarning, match="predict not in"):
+        with patch.object(self.orchestrator, "_predict_impl", return_value=invalid_result), pytest.warns(
+            UserWarning, match="predict not in"
+        ):
             self.orchestrator._predict(np.array([[1]]))
 
 

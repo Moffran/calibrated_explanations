@@ -20,61 +20,44 @@ def minimal_explainer() -> CalibratedExplainer:
     return CalibratedExplainer.__new__(CalibratedExplainer)
 
 
-def test_require_plugin_manager_raises_when_missing():
-    """_require_plugin_manager should raise when the manager is absent."""
+def test_plugin_manager_property_should_raise_not_fitted_error_when_missing():
+    """plugin_manager property should raise NotFittedError when the manager is absent."""
     from calibrated_explanations.utils.exceptions import NotFittedError
 
     explainer = minimal_explainer()
 
     with pytest.raises(NotFittedError, match="PluginManager is not initialized"):
-        explainer._require_plugin_manager()
+        _ = explainer.plugin_manager
 
 
-def test_plugin_state_accessors_cache_without_manager():
-    """Property setters should cache values when PluginManager is unavailable."""
-
-    explainer = minimal_explainer()
-
-    assert explainer._explanation_plugin_overrides == {}
-    explainer._explanation_plugin_overrides = {"factual": "explicit"}
-    assert explainer._plugin_manager_cache_explanation_overrides == {"factual": "explicit"}
-
-    assert explainer._interval_plugin_override is None
-    explainer._interval_plugin_override = "interval"
-    assert explainer._plugin_manager_cache_interval_override == "interval"
-
-    assert explainer._fast_interval_plugin_override is None
-    explainer._fast_interval_plugin_override = "fast-interval"
-    assert explainer._plugin_manager_cache_fast_interval_override == "fast-interval"
-
-    assert explainer._plot_style_override is None
-    explainer._plot_style_override = "plot-style"
-    assert explainer._plugin_manager_cache_plot_style_override == "plot-style"
-
-
-def test_chain_builders_use_fallback_without_manager():
-    """Chain builders should return empty tuples without an initialized manager."""
+def test_plugin_overrides_should_not_raise_when_manager_unavailable():
+    """Property setters should not raise when PluginManager is unavailable."""
 
     explainer = minimal_explainer()
-    assert explainer._build_explanation_chain("factual") == ()
-    assert explainer._build_interval_chain(fast=False) == ()
-    assert explainer._build_plot_style_chain() == ()
+
+    # Setting public properties should not raise
+    explainer.explanation_plugin_overrides = {"factual": "explicit"}
+    explainer.interval_plugin_override = "interval"
+    explainer.fast_interval_plugin_override = "fast-interval"
+    explainer.plot_style_override = "plot-style"
+
+    # Since no manager, getters return defaults
+    assert explainer.explanation_plugin_overrides == {}
+    assert explainer.interval_plugin_override is None
+    assert explainer.fast_interval_plugin_override is None
+    assert explainer.plot_style_override is None
+
+
+def test_build_plot_style_chain_should_return_empty_tuple_without_manager():
+    """build_plot_style_chain should return empty tuple without an initialized manager."""
+
+    explainer = minimal_explainer()
+    assert explainer.build_plot_style_chain() == ()
 
     # Provide a lightweight manager to ensure the delegation path is exercised
     class Manager:
-        def __init__(self):
-            self._default_explanation_identifiers = {"factual": "default"}
-
-        def _build_explanation_chain(self, mode, default_id):
-            return (mode, default_id)
-
-        def _build_interval_chain(self, *, fast: bool):
-            return ("interval", fast)
-
         def _build_plot_chain(self):
             return ("plot",)
 
     explainer._plugin_manager = Manager()
-    assert explainer._build_explanation_chain("factual") == ("factual", "default")
-    assert explainer._build_interval_chain(fast=True) == ("interval", True)
-    assert explainer._build_plot_style_chain() == ("plot",)
+    assert explainer.build_plot_style_chain() == ("plot",)

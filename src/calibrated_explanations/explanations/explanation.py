@@ -542,6 +542,16 @@ class CalibratedExplanation(ABC):
         """Populate the underlying rule structures when first accessed."""
         pass
 
+    def get_rules(self):
+        """Public accessor to populate and return the explanation rules.
+
+        This delegates to the legacy private `_get_rules` implementation so tests
+        can rely on a stable public method instead of accessing internals.
+        """
+        # Ensure rules are populated and return the cached value
+        self._get_rules()
+        return self.rules
+
     def reset(self):
         """Reset the explanation to its original state."""
         self._has_rules = False

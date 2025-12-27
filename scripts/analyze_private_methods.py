@@ -114,10 +114,14 @@ def main():
         actual_src_usages = [u for u in src_usages if not (u["file"] == def_info["file"] and u["line"] == def_info["line"])]
         
         pattern = "Unknown"
-        if len(test_usages) > 0 and len(actual_src_usages) == 0:
-            pattern = "Pattern 3 (Dead Code Candidate)"
-        elif len(test_usages) > 0:
-            pattern = "Pattern 1 (Internal Logic Fix)"
+        if len(actual_src_usages) == 0 and len(test_usages) == 0:
+            pattern = "Pattern 3 (Completely Dead)"
+        elif len(actual_src_usages) == 0 and len(test_usages) > 0:
+            pattern = "Pattern 3/2 (Only Tests)"
+        elif len(actual_src_usages) > 0 and len(test_usages) > 0:
+            pattern = "Pattern 1 (Inter-module / Testing leaked)"
+        elif len(actual_src_usages) > 0 and len(test_usages) == 0:
+            pattern = "Consistent (Internal Only)"
             
         report.append({
             "name": name,

@@ -201,7 +201,7 @@ def test_lower_upper_cache_arrays(collection: CalibratedExplanations) -> None:
 
 def test_one_sided_confidence_logic(collection: CalibratedExplanations) -> None:
     collection.low_high_percentiles = (5.0, np.inf)
-    assert collection._is_one_sided()
+    assert collection.is_one_sided
     assert collection.get_confidence() == 95.0
     collection.low_high_percentiles = (np.inf, 90.0)
     assert collection.get_confidence() == 90.0

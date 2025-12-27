@@ -53,7 +53,7 @@ def make_calibrated_explanations(n: int) -> CalibratedExplanations:
     collection = CalibratedExplanations(dummy_explainer, x, 0.5, bins)
     collection.explanations = [
         DummyExplanation(
-            i, x[i], predict=random.random(), interval=(random.random(), random.random()), 
+            i, x[i], predict=random.random(), interval=(random.random(), random.random()),
             feature_weights=[random.random() for _ in range(10)]
         )
         for i in range(n)
@@ -65,16 +65,16 @@ def make_calibrated_explanations(n: int) -> CalibratedExplanations:
 def run(n: int, chunk: int, fmt: str):
     print(f"Creating {n} dummy explanations...", file=sys.stderr)
     collection = make_calibrated_explanations(n)
-    
+
     tracemalloc.start()
     start = time.time()
-    
+
     chunks = list(collection.to_json_stream(chunk_size=chunk, format=fmt))
-    
+
     peak = tracemalloc.get_traced_memory()[1]
     tracemalloc.stop()
     elapsed = time.time() - start
-    
+
     # Output the telemetry from the stream
     telemetry_chunk = chunks[-1]
     telemetry = json.loads(telemetry_chunk)

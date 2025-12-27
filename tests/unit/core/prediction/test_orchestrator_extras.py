@@ -15,7 +15,7 @@ def mock_explainer():
     explainer.categorical_features = []
     explainer.bins = None
     explainer.difficulty_estimator = None
-    explainer._interval_plugin_hints = {}
+    explainer.interval_plugin_hints = {}
     explainer._interval_plugin_fallbacks = {}
     explainer._interval_plugin_identifiers = {"default": None, "fast": None}
     explainer._telemetry_interval_sources = {"default": None, "fast": None}
@@ -24,6 +24,7 @@ def mock_explainer():
     explainer._plugin_manager.coerce_plugin_override.return_value = None
     explainer._fast_interval_plugin_override = None
     explainer._interval_plugin_override = None
+    explainer._perf_cache = None
     return explainer
 
 
@@ -49,7 +50,7 @@ def test_predict_impl_fast_binary_classification(orchestrator, mock_explainer):
     mock_explainer.interval_learner = [mock_learner] * 11  # index by feature
 
     x = np.array([[1, 2]])
-    predict, low, high, classes = orchestrator._predict_impl(x, feature=0)
+    predict, low, high, classes = orchestrator.predict(x, feature=0)
 
     assert predict[0] == 0.9
     # low is (n_samples, n_classes), so low[0] is [0.05, 0.85]
@@ -75,21 +76,12 @@ def test_predict_impl_fast_probabilistic_regression(orchestrator, mock_explainer
     x = np.array([[1, 2]])
     threshold = 0.5
 
-    result = orchestrator._predict_impl(x, threshold=threshold, feature=0)
+    result = orchestrator.predict(x, threshold=threshold, feature=0)
 
     assert result[0][0] == 0.5
     mock_learner.predict_probability.assert_called_once()
 
 
-def test_compute_weight_delta_broadcasting(orchestrator):
-    """Test _compute_weight_delta with broadcasting (lines 371-373)."""
-    baseline = np.array([1])
-    perturbed = np.array([1, 2, 3])
-
-    delta = orchestrator._compute_weight_delta(baseline, perturbed)
-
-    assert delta.shape == (3,)
-    assert np.allclose(delta, np.array([0, -1, -2]))
 
 
 def test_resolve_interval_plugin_object_override(orchestrator, mock_explainer):

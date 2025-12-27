@@ -59,6 +59,15 @@ class NarrativePlotPlugin:
         self.default_template = self._get_default_template_path()
         self._template_path = template_path or self.default_template
 
+    @property
+    def template_path(self) -> str:
+        """Public accessor for the active template path.
+
+        Tests should use this non-underscore property instead of inspecting
+        the private `_template_path` attribute.
+        """
+        return self._template_path
+
     @staticmethod
     def _get_default_template_path() -> str:
         """Get the default template path from the package resources.

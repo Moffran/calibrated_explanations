@@ -206,7 +206,7 @@ def test_properties_delegation(mock_learner, mock_plugin_manager):
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
     # Access properties to ensure they delegate
-    _ = explainer._explanation_plugin_overrides
+    _ = explainer.explanation_plugin_overrides
     _ = explainer._interval_plugin_override
     _ = explainer._fast_interval_plugin_override
     _ = explainer._plot_style_override
@@ -232,7 +232,7 @@ def test_properties_delegation(mock_learner, mock_plugin_manager):
     # Just checking no attribute error is raised and they access the manager
     # We can verify one of them
     assert (
-        explainer._explanation_plugin_overrides
+        explainer.explanation_plugin_overrides
         == mock_plugin_manager.return_value._explanation_plugin_overrides
     )
 
@@ -242,7 +242,7 @@ def test_setters_delegation(mock_learner, mock_plugin_manager):
     y_cal = np.array([0, 1])
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
-    explainer._explanation_plugin_overrides = {"a": 1}
+    explainer.explanation_plugin_overrides = {"a": 1}
     assert mock_plugin_manager.return_value._explanation_plugin_overrides == {"a": 1}
 
 

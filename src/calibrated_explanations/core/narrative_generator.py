@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import json
-import math
 import re
 import sys
 from pathlib import Path
@@ -105,18 +104,6 @@ def _first_or_none(x):
     if isinstance(x, (list, tuple, np.ndarray)):
         return to_py(x[0]) if len(x) else None
     return to_py(x)
-
-
-def _num_or_none(x):
-    """Best-effort cast to float; return None on failure or NaN."""
-    if x is None:
-        return None
-    if isinstance(x, (np.floating, np.integer)):
-        x = x.item()
-    with contextlib.suppress(TypeError, ValueError):
-        xf = float(x)
-        return None if math.isnan(xf) else xf
-    return None
 
 
 def clean_condition(rule: str, feat_name: Any) -> str:

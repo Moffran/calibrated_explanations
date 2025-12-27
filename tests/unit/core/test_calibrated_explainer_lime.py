@@ -139,7 +139,7 @@ def test_preload_shap_refreshes_when_shape_changes(monkeypatch, explainer_factor
 
     shap_1, shap_exp_1 = explainer._preload_shap()
 
-    assert explainer._is_shap_enabled() is True
+    assert explainer.is_shap_enabled() is True
     assert shap_exp_1.shape == (1, explainer.num_features)
     assert len(RecordingShapExplainer.instances) == 1
 

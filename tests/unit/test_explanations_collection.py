@@ -219,7 +219,7 @@ def test_getitem_preserves_threshold_variants_and_str():
     assert isinstance(sliced_none, CalibratedExplanations)
     assert sliced_none.y_threshold is None
     none_collection.low_high_percentiles = None
-    assert not none_collection._is_one_sided()
+    assert not none_collection.is_one_sided
 
 
 def test_prediction_related_properties(calibrated_collection):
@@ -457,8 +457,7 @@ def test_conjunction_management(calibrated_collection):
 
 
 def test_alternative_specific_filters(calibrated_collection):
-    alt = AlternativeExplanations.__new__(AlternativeExplanations)
-    alt.__dict__ = calibrated_collection.__dict__.copy()
+    alt = AlternativeExplanations.from_collection(calibrated_collection)
     alt.super_explanations(only_ensured=True, include_potential=False)
     alt.semi_explanations(only_ensured=True, include_potential=False)
     alt.counter_explanations(only_ensured=True, include_potential=False)
@@ -535,30 +534,30 @@ def test_legacy_payload_prefers_available_rules(calibrated_collection):
     exp = calibrated_collection.explanations[0]
     exp._has_conjunctive_rules = True  # pylint: disable=protected-access
     exp.conjunctive_rules = {"ensured": ["rule-a"]}
-    payload = calibrated_collection._legacy_payload(exp)
+    payload = calibrated_collection.legacy_payload(exp)
     assert payload["rules"] == exp.conjunctive_rules
 
     exp._has_conjunctive_rules = False  # pylint: disable=protected-access
     exp.conjunctive_rules = None
     exp.rules = {"ensured": ["rule-b"]}
-    payload_rules = calibrated_collection._legacy_payload(exp)
+    payload_rules = calibrated_collection.legacy_payload(exp)
     assert payload_rules["rules"] == exp.rules
 
     exp.rules = None
-    generated = calibrated_collection._legacy_payload(exp)
+    generated = calibrated_collection.legacy_payload(exp)
     assert "rule" in generated["rules"]
 
 
 def test_internal_helper_accessors(calibrated_collection):
-    assert calibrated_collection._get_explainer() is calibrated_collection.calibrated_explainer
-    rules = calibrated_collection._get_rules()
+    assert calibrated_collection.get_explainer() is calibrated_collection.calibrated_explainer
+    rules = calibrated_collection.get_rules()
     assert len(rules) == len(calibrated_collection)
     calibrated_collection.low_high_percentiles = None
-    assert not calibrated_collection._is_one_sided()
+    assert not calibrated_collection.is_one_sided
 
 
 def test_collection_metadata_includes_runtime(calibrated_collection):
-    metadata = calibrated_collection._collection_metadata()
+    metadata = calibrated_collection.collection_metadata()
     assert metadata["feature_names"] == calibrated_collection.feature_names
     assert metadata["class_labels"] == {"1": "class_one", "0": "class_zero"}
     assert metadata["sample_percentiles"] == [5.0, 95.0]
@@ -581,13 +580,13 @@ def test_frozen_explainer_read_only():
     assert frozen.mode == dummy.mode
     assert frozen.is_multiclass == dummy.is_multiclass
     assert type(frozen.discretizer) is type(dummy.discretizer)
-    assert np.array_equal(frozen._discretize(dummy.x_cal), dummy.x_cal)
+    assert np.array_equal(frozen.discretize(dummy.x_cal), dummy.x_cal)
     assert frozen.rule_boundaries == dummy.rule_boundaries
     assert frozen.learner == dummy.learner
     assert frozen.difficulty_estimator == dummy.difficulty_estimator
-    assert frozen._predict(dummy.x_cal).shape[0] == dummy.x_cal.shape[0]
-    assert callable(frozen._preload_lime)
-    assert callable(frozen._preload_shap)
+    assert frozen.predict(dummy.x_cal).shape[0] == dummy.x_cal.shape[0]
+    assert callable(frozen.preload_lime)
+    assert callable(frozen.preload_shap)
     with pytest.raises(AttributeError):
         frozen.some_attribute = 5
 

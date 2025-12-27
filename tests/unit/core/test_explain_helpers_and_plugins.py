@@ -1,6 +1,6 @@
 import numpy as np
 
-from calibrated_explanations.core.explain import _helpers as helpers
+from calibrated_explanations.core.explain import helpers as helpers
 from calibrated_explanations.core.explain import sequential, parallel_instance
 from calibrated_explanations.core.explain import feature_task as feature_task_module
 

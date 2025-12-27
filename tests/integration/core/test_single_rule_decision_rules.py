@@ -47,7 +47,7 @@ def _split_data(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, ...]:
 def _top_rule_feature(explanation) -> int:
     """Return the feature index associated with the strongest rule weight."""
 
-    rules = explanation._get_rules()  # noqa: SLF001 - test needs rule internals
+    rules = explanation.get_rules()  # noqa: SLF001 - test needs rule internals
     top_idx = int(np.argmax(np.asarray(rules["weight"])))
     return int(rules["feature"][top_idx])
 
@@ -72,12 +72,12 @@ def test_single_split_classification_recovers_rule():
     factual = explainer.explain_factual(x_test[:3])
     top_feature = _top_rule_feature(factual[0])
     assert top_feature < len(feature_names) // 2
-    assert feature_names[top_feature] in factual[0]._get_rules()["rule"][0]
+    assert feature_names[top_feature] in factual[0].get_rules()["rule"][0]
 
     alternative = explainer.explore_alternatives(x_test[:3])
     top_feature = _top_rule_feature(alternative[0])
     assert top_feature < len(feature_names) // 2
-    assert feature_names[top_feature] in alternative[0]._get_rules()["rule"][0]
+    assert feature_names[top_feature] in alternative[0].get_rules()["rule"][0]
 
 
 def test_single_split_regression_recovers_rule():
@@ -100,12 +100,12 @@ def test_single_split_regression_recovers_rule():
     factual = explainer.explain_factual(x_test[:3])
     top_feature = _top_rule_feature(factual[0])
     assert top_feature < len(feature_names) // 2
-    assert feature_names[top_feature] in factual[0]._get_rules()["rule"][0]
+    assert feature_names[top_feature] in factual[0].get_rules()["rule"][0]
 
     alternative = explainer.explore_alternatives(x_test[:3])
     top_feature = _top_rule_feature(alternative[0])
     assert top_feature < len(feature_names) // 2
-    assert feature_names[top_feature] in alternative[0]._get_rules()["rule"][0]
+    assert feature_names[top_feature] in alternative[0].get_rules()["rule"][0]
 
 
 def test_single_split_probabilistic_regression_rule_and_intervals():
@@ -128,13 +128,13 @@ def test_single_split_probabilistic_regression_rule_and_intervals():
     factual = explainer.explain_factual(x_test[:3], threshold=y_test[:3])
     top_feature = _top_rule_feature(factual[0])
     assert top_feature < len(feature_names) // 2
-    rule_texts = factual[0]._get_rules()["rule"]
+    rule_texts = factual[0].get_rules()["rule"]
     assert any(feature_names[top_feature] in rule for rule in rule_texts)
 
     alternative = explainer.explore_alternatives(x_test[:3], threshold=y_test[:3])
     top_feature = _top_rule_feature(alternative[0])
     assert top_feature < len(feature_names) // 2
-    rule_texts = alternative[0]._get_rules()["rule"]
+    rule_texts = alternative[0].get_rules()["rule"]
     assert any(feature_names[top_feature] in rule for rule in rule_texts)
 
 
@@ -152,12 +152,12 @@ def test_single_split_classification_recovers_rule__with_condition_source_predic
     factual = explainer.explain_factual(x_test[:3], condition_source="prediction")
     top_feature = _top_rule_feature(factual[0])
     assert top_feature < len(feature_names) // 2
-    assert feature_names[top_feature] in factual[0]._get_rules()["rule"][0]
+    assert feature_names[top_feature] in factual[0].get_rules()["rule"][0]
 
     alternative = explainer.explore_alternatives(x_test[:3], condition_source="prediction")
     top_feature = _top_rule_feature(alternative[0])
     assert top_feature < len(feature_names) // 2
-    assert feature_names[top_feature] in alternative[0]._get_rules()["rule"][0]
+    assert feature_names[top_feature] in alternative[0].get_rules()["rule"][0]
 
 
 def test_single_split_regression_recovers_rule__with_condition_source_prediction():

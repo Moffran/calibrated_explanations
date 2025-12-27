@@ -164,6 +164,185 @@ def _warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
     _WARNED_UNTRUSTED.add(name)
 
 
+# Public testing helpers (temporary; used during Category A remediation).
+def normalise_trust(meta: Mapping[str, Any]) -> bool:
+    """Public wrapper around internal trust normalisation used by tests."""
+    return _normalise_trust(meta)
+
+
+def env_trusted_names() -> set[str]:
+    """Return names trusted via CE_TRUST_PLUGIN (public wrapper)."""
+    return _env_trusted_names()
+
+
+def should_trust(meta: Mapping[str, Any]) -> bool:
+    """Public wrapper around internal trust decision helper."""
+    return _should_trust(meta)
+
+
+def propagate_trust_metadata(plugin: Any, meta: Mapping[str, Any]) -> None:
+    """Public wrapper for best-effort propagation of trust metadata."""
+    return _propagate_trust_metadata(plugin, meta)
+
+
+def update_trust_keys(meta: dict, trusted: bool) -> None:
+    """Public wrapper for synchronising trust keys in metadata (testing helper)."""
+    return _update_trust_keys(meta, trusted)
+
+
+def resolve_plugin_module_file(plugin: ExplainerPlugin) -> Path | None:
+    """Public wrapper for module file resolution (used in tests)."""
+    return _resolve_plugin_module_file(plugin)
+
+
+def verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) -> None:
+    """Public wrapper for checksum verification used by tests."""
+    return _verify_plugin_checksum(plugin, meta)
+
+
+def clear_env_trust_cache() -> None:
+    """Clear the environment-derived trust cache (testing helper)."""
+    global _ENV_TRUST_CACHE
+    _ENV_TRUST_CACHE = None
+
+
+def clear_trust_warnings() -> None:
+    """Clear the warned-untrusted set (testing helper)."""
+    _WARNED_UNTRUSTED.clear()
+
+
+# Plot/registry accessors for tests (temporary)
+def get_entrypoint_group() -> str:
+    """Return the entrypoint group used for discovery."""
+    return _ENTRYPOINT_GROUP
+
+
+def plot_styles() -> Dict[str, Any]:
+    """Return the internal plot styles mapping (shallow copy)."""
+    return dict(_PLOT_STYLES)
+
+
+def set_plot_style(identifier: str, descriptor: Any) -> None:
+    """Set a plot style descriptor in the registry (testing helper)."""
+    _PLOT_STYLES[identifier] = descriptor
+
+
+def clear_plot_styles() -> None:
+    """Clear the registered plot styles (testing helper)."""
+    _PLOT_STYLES.clear()
+
+
+def plot_builders() -> Dict[str, Any]:
+    """Return the internal plot builders mapping (shallow copy)."""
+    return dict(_PLOT_BUILDERS)
+
+
+def set_plot_builder(identifier: str, descriptor: Any, *, trusted: bool = False) -> None:
+    """Set a plot builder descriptor and optionally mark trusted."""
+    _PLOT_BUILDERS[identifier] = descriptor
+    if trusted:
+        _TRUSTED_PLOT_BUILDERS.add(identifier)
+    else:
+        _TRUSTED_PLOT_BUILDERS.discard(identifier)
+
+
+def clear_plot_builders() -> None:
+    _PLOT_BUILDERS.clear()
+    _TRUSTED_PLOT_BUILDERS.clear()
+
+
+def plot_renderers() -> Dict[str, Any]:
+    """Return the internal plot renderers mapping (shallow copy)."""
+    return dict(_PLOT_RENDERERS)
+
+
+def set_plot_renderer(identifier: str, descriptor: Any, *, trusted: bool = False) -> None:
+    """Set a plot renderer descriptor and optionally mark trusted."""
+    _PLOT_RENDERERS[identifier] = descriptor
+    if trusted:
+        _TRUSTED_PLOT_RENDERERS.add(identifier)
+    else:
+        _TRUSTED_PLOT_RENDERERS.discard(identifier)
+
+
+def clear_plot_renderers() -> None:
+    _PLOT_RENDERERS.clear()
+    _TRUSTED_PLOT_RENDERERS.clear()
+
+
+def registry_snapshot() -> Tuple[ExplainerPlugin, ...]:
+    """Return a snapshot of the internal registry list for tests."""
+    return tuple(_REGISTRY)
+
+
+def append_to_registry(plugin: ExplainerPlugin) -> None:
+    """Append a plugin to the internal registry without validation (test helper)."""
+    if plugin not in _REGISTRY:
+        _REGISTRY.append(plugin)
+
+
+def remove_from_registry(plugin: ExplainerPlugin) -> None:
+    """Remove a plugin from the internal registry if present."""
+    with contextlib.suppress(ValueError):
+        _REGISTRY.remove(plugin)
+
+
+def resolve_plugin_from_name(name: str) -> ExplainerPlugin:
+    """Public wrapper resolving a plugin by human-readable name."""
+    return _resolve_plugin_from_name(name)
+
+
+def safe_supports(plugin: ExplainerPlugin, model: Any) -> bool:
+    """Public wrapper for safe support-checking used by tests."""
+    return _safe_supports(plugin, model)
+
+
+def warn_untrusted_plugin(meta: Mapping[str, Any], *, source: str) -> None:
+    """Public wrapper to emit the single-shot untrusted-plugin warning."""
+    return _warn_untrusted_plugin(meta, source=source)
+
+
+# Additional validation/testing wrappers
+def ensure_sequence(
+    meta: Mapping[str, Any],
+    key: str,
+    *,
+    allowed: Iterable[str] | None = None,
+    allow_empty: bool = False,
+) -> Tuple[str, ...]:
+    """Public wrapper for sequence validation used by tests."""
+    return _ensure_sequence(meta, key, allowed=allowed, allow_empty=allow_empty)
+
+
+def coerce_string_collection(value: Any, *, key: str | None = None):
+    """Public wrapper for coercing string collections."""
+    return _coerce_string_collection(value, key=key)
+
+
+def normalise_dependency_field(
+    value: Any, key: str, *, optional: bool = False, allow_empty: bool = False
+):
+    """Public wrapper for normalising dependency metadata.
+
+    This wrapper accepts the optional parameters used by the internal
+    implementation and forwards them through to :func:`_normalise_dependency_field`.
+    """
+    return _normalise_dependency_field(value, key, optional=optional, allow_empty=allow_empty)
+
+
+def normalise_tasks(value: Any):
+    """Public wrapper for normalising tasks metadata."""
+    return _normalise_tasks(value)
+
+
+def ensure_bool(value: Mapping[str, Any], key: str) -> bool:
+    return _ensure_bool(value, key)
+
+
+def ensure_string(value: Mapping[str, Any], key: str) -> str:
+    return _ensure_string(value, key)
+
+
 def _resolve_plugin_module_file(plugin: ExplainerPlugin) -> Path | None:
     """Attempt to resolve the module file for checksum verification."""
     module_name: str | None
@@ -206,7 +385,8 @@ def _verify_plugin_checksum(plugin: ExplainerPlugin, meta: Mapping[str, Any]) ->
         )
 
     checksum_value = checksum_value.lower()
-    module_file = _resolve_plugin_module_file(plugin)
+    # Use the public resolver to allow tests to monkeypatch via the public API.
+    module_file = resolve_plugin_module_file(plugin)
     if module_file is None or not module_file.exists():
         warnings.warn(
             "Cannot verify checksum for plugin '%s'; module file missing."
@@ -1124,6 +1304,13 @@ def find_plot_renderer(identifier: str) -> Any | None:
     """Return the registered plot renderer for *identifier* if any."""
     descriptor = find_plot_renderer_descriptor(identifier)
     return descriptor.renderer if descriptor else None
+
+
+def find_plot_renderer_trusted(identifier: str) -> PlotRendererDescriptor | None:
+    """Return the renderer descriptor for *identifier* if it is trusted."""
+    if identifier in _TRUSTED_PLOT_RENDERERS:
+        return _PLOT_RENDERERS.get(identifier)
+    return None
 
 
 def find_plot_style_descriptor(identifier: str) -> PlotStyleDescriptor | None:

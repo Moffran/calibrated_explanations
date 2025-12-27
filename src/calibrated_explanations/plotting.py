@@ -884,6 +884,14 @@ def __plot_proba_triangle():
     plt.plot((x + 0.5 - x) / (1 + x), x, color="black")
 
 
+def plot_alternative(*args, **kwargs):
+    """Public wrapper for the legacy `_plot_alternative` function.
+
+    Prefer this function in tests instead of accessing private `_plot_alternative`.
+    """
+    return _plot_alternative(*args, **kwargs)
+
+
 # pylint: disable=too-many-arguments, too-many-locals, invalid-name, too-many-branches, too-many-statements
 def _plot_alternative(
     explanation,

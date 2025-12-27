@@ -15,7 +15,7 @@ class StubVennAbers:
 
     def fit(self, probs, targets, precision=4):  # noqa: ARG002 - interface compatibility
         # Store the shapes to mimic basic stateful behaviour used by the calibrator.
-        self._last_fit = (np.asarray(probs).shape, np.asarray(targets).shape)
+        self.last_fit = (np.asarray(probs).shape, np.asarray(targets).shape)
         return self
 
     def predict_proba(self, probs):
@@ -31,12 +31,12 @@ class DummyLearner:
     """Simple learner returning deterministic probability tables."""
 
     def __init__(self, base_probs: np.ndarray):
-        self._base_probs = np.asarray(base_probs, dtype=float)
+        self.base_probs = np.asarray(base_probs, dtype=float)
 
     def predict_proba(self, x, bins=None):  # noqa: ARG002 - signature compatible with scikit-learn
         n_samples = len(x)
-        repeats = int(np.ceil(n_samples / len(self._base_probs)))
-        tiled = np.vstack([self._base_probs] * repeats)
+        repeats = int(np.ceil(n_samples / len(self.base_probs)))
+        tiled = np.vstack([self.base_probs] * repeats)
         return tiled[:n_samples]
 
 
@@ -44,12 +44,12 @@ class DifficultyEstimator:
     """Difficulty estimator returning a deterministic vector."""
 
     def __init__(self, values: np.ndarray):
-        self._values = np.asarray(values, dtype=float)
+        self.values = np.asarray(values, dtype=float)
 
     def apply(self, x):  # noqa: ARG002 - interface compatibility
         n_samples = len(x)
-        repeats = int(np.ceil(n_samples / len(self._values)))
-        tiled = np.concatenate([self._values] * repeats)
+        repeats = int(np.ceil(n_samples / len(self.values)))
+        tiled = np.concatenate([self.values] * repeats)
         return tiled[:n_samples]
 
 

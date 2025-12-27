@@ -35,6 +35,6 @@ def test_explain_factual_respects_per_instance_top_k():
     per_k = getattr(getattr(wrapper, "_feature_filter_config", None), "per_instance_top_k", None)
     assert per_k is not None
     for i, e in enumerate(explanations):
-        rules = e._get_rules()["rule"]
+        rules = e.get_rules()["rule"]
         kept = len(rules)
         assert kept <= per_k, f"instance {i} kept {kept} rules > top_k {per_k}"

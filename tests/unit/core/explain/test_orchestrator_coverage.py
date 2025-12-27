@@ -244,7 +244,7 @@ def test_invoke_wrappers(orchestrator, mock_explainer):
 
 def test_resolve_plugin_success(orchestrator, mock_explainer):
     # Mock plugin manager and overrides
-    mock_explainer._explanation_plugin_overrides = {}
+    mock_explainer.explanation_plugin_overrides = {}
     mock_explainer._plugin_manager.coerce_plugin_override.return_value = None
     mock_explainer._explanation_plugin_fallbacks = {"factual": ["plugin1"]}
 
@@ -293,13 +293,13 @@ def test_check_metadata_valid(orchestrator, mock_explainer):
         "capabilities": ("explain", "explanation:factual", "task:classification"),
     }
 
-    error = orchestrator._check_metadata(metadata, identifier="test", mode="factual")
+    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
     assert error is None
 
 
 def test_check_metadata_invalid_version(orchestrator):
     metadata = {"schema_version": "0.0.0"}
-    error = orchestrator._check_metadata(metadata, identifier="test", mode="factual")
+    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
     assert "unsupported" in error
 
 
@@ -307,7 +307,7 @@ def test_check_metadata_missing_tasks(orchestrator):
     from calibrated_explanations.plugins import EXPLANATION_PROTOCOL_VERSION
 
     metadata = {"schema_version": EXPLANATION_PROTOCOL_VERSION}
-    error = orchestrator._check_metadata(metadata, identifier="test", mode="factual")
+    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
     assert "missing tasks" in error
 
 
@@ -316,7 +316,7 @@ def test_check_metadata_unsupported_task(orchestrator, mock_explainer):
 
     mock_explainer.mode = "regression"
     metadata = {"schema_version": EXPLANATION_PROTOCOL_VERSION, "tasks": ("classification",)}
-    error = orchestrator._check_metadata(metadata, identifier="test", mode="factual")
+    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
     assert "does not support task" in error
 
 
@@ -338,7 +338,7 @@ def test_check_metadata_unsupported_mode(orchestrator, mock_explainer):
         "tasks": ("classification",),
         "modes": ("alternative",),
     }
-    error = orchestrator._check_metadata(metadata, identifier="test", mode="factual")
+    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
     assert "does not declare mode" in error
 
 
@@ -352,7 +352,7 @@ def test_check_metadata_missing_capabilities(orchestrator, mock_explainer):
         "modes": ("factual",),
         "capabilities": (),
     }
-    error = orchestrator._check_metadata(metadata, identifier="test", mode="factual")
+    error = orchestrator.check_metadata(metadata, identifier="test", mode="factual")
     assert "missing required capabilities" in error
 
 

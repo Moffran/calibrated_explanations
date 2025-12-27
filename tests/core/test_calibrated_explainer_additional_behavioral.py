@@ -24,24 +24,24 @@ def fake_pandas(monkeypatch):
 
     class FakeSeries:
         def __init__(self, values: Iterable[float]):
-            self._values = np.array(list(values))
+            self.values = np.array(list(values))
             self.iloc = FakeILoc(self)
 
         def __len__(self) -> int:  # pragma: no cover - defensive completeness
-            return len(self._values)
+            return len(self.values)
 
         def __getitem__(self, item):
-            return self._values[item]
+            return self.values[item]
 
         def to_numpy(self):
-            return np.array(self._values)
+            return np.array(self.values)
 
     class FakeILoc:
         def __init__(self, series: FakeSeries):
             self._series = series
 
         def __getitem__(self, key):
-            return FakeSeries(self._series._values[key])
+            return FakeSeries(self._series.values[key])
 
     class FakeDataFrame:
         def __init__(self, values: Iterable[Iterable[float]]):
@@ -81,7 +81,7 @@ def test_slice_helpers_support_multiple_input_types(fake_pandas):
 
     Tests call explain module functions directly.
     """
-    from calibrated_explanations.core.explain._helpers import slice_threshold, slice_bins
+    from calibrated_explanations.core.explain.helpers import slice_threshold, slice_bins
 
     scalar = slice_threshold(3.14, 0, 1, 2)
     assert scalar == 3.14
@@ -136,36 +136,36 @@ def test_set_difficulty_estimator_enforces_fitted_contract(explainer_factory):
 
     # Setting to None with initialize=False should result in unit difficulty
     explainer.set_difficulty_estimator(None, initialize=False)
-    np.testing.assert_array_equal(explainer._get_sigma_test(np.ones((3, 2))), np.ones(3))
+    np.testing.assert_array_equal(explainer.get_sigma_test(np.ones((3, 2))), np.ones(3))
 
     # Setting a fitted estimator with initialize=False should use its values
     estimator = DummyEstimator(fitted=True, value=2.5)
     explainer.set_difficulty_estimator(estimator, initialize=False)
-    np.testing.assert_array_equal(explainer._get_sigma_test(np.zeros((4, 2))), np.full(4, 2.5))
+    np.testing.assert_array_equal(explainer.get_sigma_test(np.zeros((4, 2))), np.full(4, 2.5))
 
     # Setting with initialize=False should keep the estimator without triggering initialization
     explainer.set_difficulty_estimator(estimator, initialize=False)
     # Verify difficulty estimator is set
     assert explainer.difficulty_estimator is estimator
     # Verify sigma test uses the estimator's values
-    np.testing.assert_array_equal(explainer._get_sigma_test(np.ones((2, 2))), np.full(2, 2.5))
+    np.testing.assert_array_equal(explainer.get_sigma_test(np.ones((2, 2))), np.full(2, 2.5))
 
 
-def test_private_set_mode_updates_state(explainer_factory):
-    """Test that __set_mode updates mode and num_classes correctly without initialization."""
-    explainer = explainer_factory()
-
-    explainer.y_cal = np.array([0, 1, 1, 2])
-    explainer._CalibratedExplainer__set_mode("classification", initialize=False)
+def test_mode_sets_num_classes_correctly(explainer_factory):
+    """Test that mode and num_classes are set correctly during initialization."""
+    # Test classification with multiple classes
+    explainer = explainer_factory(mode="classification", y_cal=np.array([0, 1, 1, 2]))
     assert explainer.num_classes == 3
     assert explainer.mode == "classification"
 
-    explainer._CalibratedExplainer__set_mode("regression", initialize=False)
+    # Test regression
+    explainer = explainer_factory(mode="regression")
     assert explainer.num_classes == 0
     assert explainer.mode == "regression"
 
+    # Test invalid mode
     with pytest.raises(ValidationError):
-        explainer._CalibratedExplainer__set_mode("unsupported", initialize=False)
+        explainer_factory(mode="unsupported")
 
 
 def test_runtime_metadata_helpers_return_copies(explainer_factory):
@@ -186,14 +186,10 @@ def test_runtime_metadata_helpers_return_copies(explainer_factory):
 
 def test_calibration_setters_handle_dataframe_inputs(explainer_factory, fake_pandas):
     explainer = explainer_factory()
-    explainer._categorical_value_counts_cache = {}
-    explainer._numeric_sorted_cache = {}
-    explainer._calibration_summary_shape = (1, 1)
 
     df = fake_pandas.DataFrame([[1.0, 2.0], [3.0, 4.0]])
     explainer.x_cal = df
     np.testing.assert_array_equal(explainer.x_cal, np.array([[1.0, 2.0], [3.0, 4.0]]))
-    assert explainer._categorical_value_counts_cache is None
 
     target_df = fake_pandas.DataFrame([[5.0], [6.0]])
     explainer.y_cal = target_df
@@ -208,10 +204,10 @@ def test_calibration_setters_handle_dataframe_inputs(explainer_factory, fake_pan
 
 def test_lime_and_shap_flags_toggle(explainer_factory):
     explainer = explainer_factory()
-    assert explainer._is_lime_enabled() is False
-    assert explainer._is_lime_enabled(True) is True
-    assert explainer._is_lime_enabled() is True
+    assert explainer.is_lime_enabled() is False
+    assert explainer.is_lime_enabled(True) is True
+    assert explainer.is_lime_enabled() is True
 
-    assert explainer._is_shap_enabled() is False
-    assert explainer._is_shap_enabled(True) is True
-    assert explainer._is_shap_enabled() is True
+    assert explainer.is_shap_enabled() is False
+    assert explainer.is_shap_enabled(True) is True
+    assert explainer.is_shap_enabled() is True

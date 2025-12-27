@@ -241,7 +241,7 @@ def test_plot_alternative_sets_positive_class_label(fake_matplotlib, tmp_path):
         "low": np.array([0.2, 0.1]),
         "high": np.array([0.9, 0.7]),
     }
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         explanation,
         instance=[1.0, 2.0],
         predict=predict,
@@ -267,7 +267,7 @@ def test_plot_alternative_threshold_array_uses_fallback(fake_matplotlib, tmp_pat
         "low": np.array([0.2]),
         "high": np.array([0.9]),
     }
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         explanation,
         instance=[1.0],
         predict=predict,

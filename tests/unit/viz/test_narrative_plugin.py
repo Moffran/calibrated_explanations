@@ -77,7 +77,7 @@ def test_narrative_plugin_initialization():
 def test_narrative_plugin_with_custom_template():
     """Test plugin initialization with custom template path."""
     plugin = NarrativePlotPlugin(template_path="custom_template.yaml")
-    assert plugin._template_path == "custom_template.yaml"
+    assert plugin.template_path == "custom_template.yaml"
 
 
 # Test with classification

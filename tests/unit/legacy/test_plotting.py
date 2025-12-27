@@ -573,7 +573,7 @@ def test_alternative_plot_handles_thresholded_classification(tmp_path):
     features_to_plot = [0, 1]
     column_names = ["alt_a", "alt_b"]
 
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         explanation,
         instance,
         predict,
@@ -599,7 +599,7 @@ def test_alternative_plot_regression_branch(tmp_path, disable_show):
         "low": np.array([-0.1, -0.5]),
         "high": np.array([0.2, -0.1]),
     }
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         explanation,
         instance,
         predict,
@@ -618,7 +618,7 @@ def test_alternative_plot_regression_branch(tmp_path, disable_show):
 
 
 def test_alternative_returns_without_output():
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         DummyExplanation(),
         instance=["only"],
         predict={"predict": 0.5, "low": 0.4, "high": 0.6},

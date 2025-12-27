@@ -8,7 +8,7 @@ the public explain module API rather than implementation details.
 import numpy as np
 import pytest
 
-from calibrated_explanations.core.explain import _helpers as helpers
+from calibrated_explanations.core.explain import helpers as helpers
 
 
 class TestSliceThreshold:

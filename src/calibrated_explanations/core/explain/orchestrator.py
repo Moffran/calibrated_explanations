@@ -696,6 +696,20 @@ class ExplanationOrchestrator:
             + ("; errors: " + "; ".join(errors) if errors else "")
         )
 
+    def check_metadata(
+        self,
+        metadata: Mapping[str, Any] | None,
+        *,
+        identifier: str | None,
+        mode: str,
+    ) -> str | None:
+        """Public wrapper for metadata validation (delegates to private validator).
+
+        Tests and external validators should call this public method instead of
+        inspecting the private helper `_check_metadata`.
+        """
+        return self._check_metadata(metadata, identifier=identifier, mode=mode)
+
     def _check_metadata(
         self,
         metadata: Mapping[str, Any] | None,

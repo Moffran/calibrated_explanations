@@ -104,10 +104,20 @@ class CombinedPlotPlugin:
         self.renderer = renderer
         self.plugin_meta = getattr(builder, "plugin_meta", {})
 
-    def build(self, context: PlotRenderContext) -> PlotArtifact:
-        """Return a serialisable artefact by delegating to the builder."""
-        return self.builder.build(context)
+    def build(self, *args, **kwargs) -> PlotArtifact:
+        """Delegate to the configured builder, preserving flexible signatures.
 
-    def render(self, artifact: PlotArtifact, *, context: PlotRenderContext) -> PlotRenderResult:
-        """Render *artifact* by delegating to the renderer with the given context."""
-        return self.renderer.render(artifact, context=context)
+        Older plugins may implement `build(*args, **kwargs)` while newer
+        implementations accept a single `context` argument. Forward all
+        arguments to the builder to remain compatible.
+        """
+        return self.builder.build(*args, **kwargs)
+
+    def render(self, *args, **kwargs) -> PlotRenderResult:
+        """Delegate rendering to the configured renderer.
+
+        Forward all args/kwargs so renderers that accept either
+        `render(artifact, *, context=...)` or a flexible signature still
+        work when wrapped.
+        """
+        return self.renderer.render(*args, **kwargs)

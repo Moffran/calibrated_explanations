@@ -439,31 +439,6 @@ class PredictionOrchestrator:
 
         return None, None, None, None  # Should never happen
 
-    def _compute_weight_delta(self, baseline, perturbed) -> np.ndarray:
-        """Return the contribution weight delta between *baseline* and *perturbed*."""
-        baseline_arr = np.asarray(baseline)
-        perturbed_arr = np.asarray(perturbed)
-
-        if baseline_arr.shape == ():
-            return np.asarray(baseline_arr - perturbed_arr, dtype=float)
-
-        if baseline_arr.shape != perturbed_arr.shape:
-            with contextlib.suppress(ValueError):
-                baseline_arr = np.broadcast_to(baseline_arr, perturbed_arr.shape)
-
-        with contextlib.suppress(TypeError, ValueError):
-            return np.asarray(baseline_arr - perturbed_arr, dtype=float)
-
-        # Fallback for object arrays or incompatible types
-        # Note: If fallback fails, we allow its exception to propagate (ADR-002)
-        baseline_flat = np.asarray(baseline, dtype=object).reshape(-1)
-        perturbed_flat = np.asarray(perturbed, dtype=object).reshape(-1)
-        deltas = np.empty_like(perturbed_flat, dtype=float)
-        for idx, (pert_value, base_value) in enumerate(zip(perturbed_flat, baseline_flat)):
-            delta_value = assign_weight(pert_value, base_value)
-            delta_array = np.asarray(delta_value, dtype=float).reshape(-1)
-            deltas[idx] = float(delta_array[0])
-        return deltas.reshape(perturbed_arr.shape)
 
     def _ensure_interval_runtime_state(self) -> None:
         """Ensure interval tracking members exist for legacy instances."""

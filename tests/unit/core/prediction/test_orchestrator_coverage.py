@@ -114,7 +114,7 @@ def test_validate_prediction_result_invalid_predict(orchestrator):
 def test_predict_impl_not_fitted(orchestrator, mock_explainer):
     mock_explainer._CalibratedExplainer__initialized = False
     with pytest.raises(NotFittedError):
-        orchestrator._predict_impl(np.array([[1]]))
+        orchestrator.predict(np.array([[1]]))
 
 
 def test_predict_impl_binary_classification(orchestrator, mock_explainer):
@@ -131,7 +131,7 @@ def test_predict_impl_binary_classification(orchestrator, mock_explainer):
     mock_explainer.interval_learner = mock_learner
 
     x = np.array([[1, 2]])
-    predict, low, high, classes = orchestrator._predict_impl(x)
+    predict, low, high, classes = orchestrator.predict(x)
 
     assert np.allclose(predict, [0.9])
     assert np.allclose(low, [[0.0, 0.8]])
@@ -154,7 +154,7 @@ def test_predict_impl_multiclass_classification(orchestrator, mock_explainer):
     mock_explainer.interval_learner = mock_learner
 
     x = np.array([[1, 2], [3, 4], [5, 6]])
-    predict, low, high, classes = orchestrator._predict_impl(x)
+    predict, low, high, classes = orchestrator.predict(x)
 
     assert len(predict) == 3
     assert len(low) == 3
@@ -176,7 +176,7 @@ def test_predict_impl_regression(orchestrator, mock_explainer):
     mock_explainer.interval_learner = mock_learner
 
     x = np.array([[1, 2]])
-    predict, low, high, classes = orchestrator._predict_impl(x)
+    predict, low, high, classes = orchestrator.predict(x)
 
     assert np.allclose(predict, [0.5])
     assert np.allclose(low, [0.4])
@@ -198,28 +198,10 @@ def test_predict_impl_regression_probabilistic(orchestrator, mock_explainer):
     mock_explainer.interval_learner = mock_learner
 
     x = np.array([[1, 2]])
-    predict, low, high, classes = orchestrator._predict_impl(x, threshold=0.5)
+    predict, low, high, classes = orchestrator.predict(x, threshold=0.5)
 
     assert np.allclose(predict, [0.8])
     assert classes is None
-
-
-def test_compute_weight_delta(orchestrator):
-    baseline = np.array([1.0, 2.0])
-    perturbed = np.array([0.5, 2.5])
-
-    delta = orchestrator._compute_weight_delta(baseline, perturbed)
-
-    assert np.allclose(delta, [0.5, -0.5])
-
-
-def test_compute_weight_delta_scalar(orchestrator):
-    baseline = 1.0
-    perturbed = 0.5
-
-    delta = orchestrator._compute_weight_delta(baseline, perturbed)
-
-    assert delta == 0.5
 
 
 def test_predict_impl_fast_binary(orchestrator, mock_explainer):
@@ -237,7 +219,7 @@ def test_predict_impl_fast_binary(orchestrator, mock_explainer):
     mock_explainer.interval_learner = mock_learner
 
     x = np.array([[1, 2]])
-    predict, low, high, classes = orchestrator._predict_impl(x)
+    predict, low, high, classes = orchestrator.predict(x)
 
     assert np.allclose(predict, [0.9])
     mock_learner.__getitem__.assert_called_with(0)
@@ -259,7 +241,7 @@ def test_predict_impl_fast_multiclass(orchestrator, mock_explainer):
     mock_explainer.interval_learner = mock_learner
 
     x = np.array([[1, 2]])
-    predict, low, high, classes = orchestrator._predict_impl(x)
+    predict, low, high, classes = orchestrator.predict(x)
 
     assert len(predict) == 1
     assert np.allclose(classes, [2])
@@ -273,10 +255,10 @@ def test_predict_impl_regression_invalid_percentiles(orchestrator, mock_explaine
     from calibrated_explanations.utils.exceptions import ValidationError
 
     with pytest.raises(ValidationError, match="low percentile must be smaller"):
-        orchestrator._predict_impl(np.array([[1]]), low_high_percentiles=(95, 5))
+        orchestrator.predict(np.array([[1]]), low_high_percentiles=(95, 5))
 
     with pytest.raises(ValidationError, match="percentiles must be between 0 and 100"):
-        orchestrator._predict_impl(np.array([[1]]), low_high_percentiles=(-10, 110))
+        orchestrator.predict(np.array([[1]]), low_high_percentiles=(-10, 110))
 
 
 def test_predict_impl_regression_crepes_error(orchestrator, mock_explainer, enable_fallbacks):
@@ -290,20 +272,11 @@ def test_predict_impl_regression_crepes_error(orchestrator, mock_explainer, enab
 
     x = np.array([[1, 2]])
     with pytest.warns(UserWarning, match="crepes produced an unexpected result"):
-        predict, low, high, classes = orchestrator._predict_impl(x)
+        predict, low, high, classes = orchestrator.predict(x)
 
     assert np.allclose(predict, [0])
     assert np.allclose(low, [0])
     assert np.allclose(high, [0])
-
-
-def test_compute_weight_delta_broadcasting(orchestrator):
-    baseline = np.array([1.0])
-    perturbed = np.array([0.5, 1.5])
-
-    delta = orchestrator._compute_weight_delta(baseline, perturbed)
-
-    assert np.allclose(delta, [0.5, -0.5])
 
 
 def test_ensure_interval_runtime_state(orchestrator, mock_explainer):
@@ -769,26 +742,6 @@ def test_predict_impl_regression_probabilistic_crepes_error_reraise(orchestrator
         orchestrator._predict_impl(x, threshold=0.5)
 
 
-def test_compute_weight_delta_fallback(orchestrator):
-    class WeirdObj:
-        def __init__(self, val):
-            self.val = val
-
-        def __sub__(self, other):
-            raise TypeError("Cannot subtract")
-
-    with patch("calibrated_explanations.core.prediction.orchestrator.assign_weight") as mock_assign:
-        mock_assign.return_value = 0.5
-
-        baseline = np.array([WeirdObj(1)], dtype=object)
-        perturbed = np.array([WeirdObj(0.5)], dtype=object)
-
-        delta = orchestrator._compute_weight_delta(baseline, perturbed)
-
-        assert np.allclose(delta, [0.5])
-        mock_assign.assert_called()
-
-
 def test_capture_interval_calibrators(orchestrator):
     context = MagicMock()
     context.metadata = {}
@@ -896,15 +849,6 @@ def test_predict_regression_invalid_percentiles(orchestrator, mock_explainer):
     # Out of bounds
     with pytest.raises(ValidationError):
         orchestrator._predict_impl(np.array([[1]]), low_high_percentiles=(-10, 110))
-
-
-def test_compute_weight_delta_scalar_duplicate(orchestrator):
-    baseline = 1.0
-    perturbed = 0.5
-    delta = orchestrator._compute_weight_delta(baseline, perturbed)
-    assert delta == 0.5
-    assert isinstance(delta, np.ndarray)
-    assert delta.shape == ()
 
 
 def test_ensure_interval_runtime_state_missing_attributes(orchestrator, mock_explainer):

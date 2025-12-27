@@ -45,7 +45,7 @@ def test_get_sigma_test_with_estimator(registry, mock_explainer):
 
 def test_constant_sigma_scalar(registry):
     # Although type hint says np.ndarray, it handles other types
-    sigma = registry._constant_sigma(1)
+    sigma = registry.constant_sigma(1)
     assert np.array_equal(sigma, np.ones(1))
 
 

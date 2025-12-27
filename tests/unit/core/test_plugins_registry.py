@@ -18,7 +18,7 @@ class FakeEntryPoint:
         self.name = plugin.plugin_meta["name"]
         self.module = "tests.plugins.fake"
         self.attr = None
-        self.group = registry._ENTRYPOINT_GROUP
+        self.group = registry.get_entrypoint_group()
         self._plugin = plugin
 
     def load(self):
@@ -66,7 +66,7 @@ def test_register_and_find_example_plugin(tmp_path, monkeypatch):
 
 def test_env_trust_marks_plugin_trusted(monkeypatch):
     registry.clear()
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_env_trust_cache()
     monkeypatch.setenv("CE_TRUST_PLUGIN", "tests.env")
 
     class EnvPlugin:
@@ -90,7 +90,7 @@ def test_env_trust_marks_plugin_trusted(monkeypatch):
     registry.register(plugin)
     assert plugin in registry.list_plugins(include_untrusted=False)
     registry.unregister(plugin)
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_env_trust_cache()
 
 
 def test_is_identifier_denied(monkeypatch):
@@ -315,8 +315,8 @@ def _make_entry_plugin(name: str = "tests.entry"):
 
 def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
     registry.clear()
-    registry._WARNED_UNTRUSTED.clear()
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_trust_warnings()
+    registry.clear_env_trust_cache()
 
     plugin = _make_entry_plugin()
     fake_entries = FakeEntryPoints([FakeEntryPoint(plugin)])
@@ -335,9 +335,9 @@ def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
 
 def test_load_entrypoint_plugins_trusted_by_env(monkeypatch):
     registry.clear()
-    registry._WARNED_UNTRUSTED.clear()
+    registry.clear_trust_warnings()
     monkeypatch.setenv("CE_TRUST_PLUGIN", "tests.entry")
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_env_trust_cache()
 
     plugin = _make_entry_plugin()
     fake_entries = FakeEntryPoints([FakeEntryPoint(plugin)])
@@ -351,7 +351,7 @@ def test_load_entrypoint_plugins_trusted_by_env(monkeypatch):
     assert loaded == (plugin,)
     assert plugin in registry.list_plugins(include_untrusted=False)
     registry.unregister(plugin)
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_env_trust_cache()
 
 
 class ExampleIntervalPlugin:
@@ -608,27 +608,27 @@ def test_verify_plugin_checksum_success_and_failure(monkeypatch):
 
     meta = {"checksum": {"sha256": good_digest}, "name": "example.plot.builder"}
     # Should not raise when checksum matches
-    registry._verify_plugin_checksum(plugin, dict(meta))
+    registry.verify_plugin_checksum(plugin, dict(meta))
 
     meta_string = {"checksum": good_digest, "name": "example.plot.builder"}
-    registry._verify_plugin_checksum(plugin, dict(meta_string))
+    registry.verify_plugin_checksum(plugin, dict(meta_string))
 
     bad_meta = {"checksum": {"sha256": "00" * 32}, "name": "example.plot.builder"}
     with pytest.raises(ValidationError, match="Checksum mismatch"):
-        registry._verify_plugin_checksum(plugin, bad_meta)
+        registry.verify_plugin_checksum(plugin, bad_meta)
 
     # Simulate a plugin whose module file cannot be resolved
     meta_missing = {"checksum": {"sha256": good_digest}, "name": "missing"}
     monkeypatch.setattr(
         registry,
-        "_resolve_plugin_module_file",
+        "resolve_plugin_module_file",
         lambda plugin: module_path.with_name("nonexistent_file"),
     )
     with pytest.warns(UserWarning):
-        registry._verify_plugin_checksum(object(), meta_missing)
+        registry.verify_plugin_checksum(object(), meta_missing)
 
     with pytest.raises(ValidationError, match="must be a string or mapping"):
-        registry._verify_plugin_checksum(plugin, {"checksum": 123, "name": "bad"})
+        registry.verify_plugin_checksum(plugin, {"checksum": 123, "name": "bad"})
 
 
 def test_list_descriptors_and_trust_management(monkeypatch):
@@ -868,35 +868,35 @@ def test_ensure_builtin_plugins_invokes_register(monkeypatch):
 
 
 def test_trust_normalisation_helpers(monkeypatch):
-    registry._ENV_TRUST_CACHE = None
-    registry._WARNED_UNTRUSTED.clear()
+    registry.clear_env_trust_cache()
+    registry.clear_trust_warnings()
     monkeypatch.setenv("CE_TRUST_PLUGIN", "auto_plugin")
 
     meta_mapping = {"trust": {"default": True}}
-    assert registry._normalise_trust(meta_mapping) is True
+    assert registry.normalise_trust(meta_mapping) is True
 
-    names = registry._env_trusted_names()
+    names = registry.env_trusted_names()
     assert names == {"auto_plugin"}
     # Cache should persist even if env changes
     monkeypatch.setenv("CE_TRUST_PLUGIN", "")
-    assert registry._env_trusted_names() == {"auto_plugin"}
+    assert registry.env_trusted_names() == {"auto_plugin"}
 
     meta_env = {"name": "auto_plugin", "trust": False}
-    assert registry._should_trust(meta_env) is True
+    assert registry.should_trust(meta_env) is True
 
     meta_untrusted = {"name": "manual", "provider": "tests"}
     with pytest.warns(UserWarning):
-        registry._warn_untrusted_plugin(meta_untrusted, source="entry")
+        registry.warn_untrusted_plugin(meta_untrusted, source="entry")
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("error", RuntimeWarning)
-        registry._warn_untrusted_plugin(meta_untrusted, source="entry")
+        registry.warn_untrusted_plugin(meta_untrusted, source="entry")
     assert caught == []
 
 
 def test_load_entrypoint_plugins_error_branches(monkeypatch):
     registry.clear()
-    registry._WARNED_UNTRUSTED.clear()
-    registry._ENV_TRUST_CACHE = None
+    registry.clear_trust_warnings()
+    registry.clear_env_trust_cache()
 
     class NoMetaPlugin:
         pass
@@ -937,7 +937,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
             self.name = name
             self.module = module or "tests.plugins.fake"
             self.attr = attr
-            self.group = registry._ENTRYPOINT_GROUP
+            self.group = registry.get_entrypoint_group()
             self._loader = loader
 
         def load(self):
@@ -966,6 +966,6 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
         assert all(plugin in registry.list_plugins(include_untrusted=False) for plugin in loaded)
     finally:
         registry.clear()
-        registry._WARNED_UNTRUSTED.clear()
-        registry._ENV_TRUST_CACHE = None
+        registry.clear_trust_warnings()
+        registry.clear_env_trust_cache()
         sys.modules.pop(attr_module_name, None)

@@ -1,7 +1,11 @@
 """Shared pytest fixtures for CalibratedExplainer tests."""
 
 from __future__ import annotations
-
+import json
+import re
+import warnings
+from datetime import datetime
+from pathlib import Path
 import os
 from typing import Any, Callable
 
@@ -14,6 +18,99 @@ from tests.helpers.utils import get_env_flag
 
 # Import additional fixtures from _fixtures module
 from ._fixtures import binary_dataset, regression_dataset, multiclass_dataset  # noqa: F401, pylint: disable=unused-import
+
+ATTR_RE = re.compile(r"\._[A-Za-z0-9_]+")
+GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(_[A-Za-z0-9_]+)'")
+
+
+def _load_allowlist(path: Path):
+    if not path.exists():
+        return []
+    try:
+        raw = json.loads(path.read_text(encoding="utf8"))
+        return raw.get("allowlist", [])
+    except Exception:
+        return []
+
+
+def _is_expired(entry: dict) -> bool:
+    expiry = entry.get("expiry")
+    if not expiry:
+        return False
+    try:
+        dt = datetime.fromisoformat(expiry)
+        return dt.date() < datetime.utcnow().date()
+    except Exception:
+        return False
+
+
+def _scan_and_check(root: Path):
+    tests_dir = root / "tests"
+    if not tests_dir.exists():
+        return []
+    findings = []
+    for p in tests_dir.rglob("*.py"):
+        try:
+            txt = p.read_text(encoding="utf8")
+        except Exception:
+            continue
+        syms = {m.lstrip(".") for m in ATTR_RE.findall(txt)}
+        syms.update(m for m in GETATTR_RE.findall(txt))
+        if syms:
+            findings.append((p, sorted(syms)))
+    return findings
+
+
+def pytest_sessionstart(session):
+    root = Path(session.config.rootpath)
+    findings = _scan_and_check(root)
+    if not findings:
+        return
+
+    allowlist_path = root / ".github" / "private_member_allowlist.json"
+    allowlist = _load_allowlist(allowlist_path)
+    allowed = set()
+    expired_allowed = []
+    for e in allowlist:
+        key = (e.get("file"), e.get("symbol"))
+        if key[0] and key[1]:
+            if _is_expired(e):
+                expired_allowed.append(e)
+            else:
+                allowed.add(key)
+
+    violations = []
+    for p, syms in findings:
+        rel = str(p).replace("\\\\", "/")
+        for s in syms:
+            if (rel, s) in allowed or (os.path.basename(rel), s) in allowed:
+                continue
+            violations.append((rel, s))
+
+    if not violations:
+        if expired_allowed:
+            warnings.warn("Some allowlist entries are expired; please review them.")
+        return
+
+    msg_lines = [
+        "Private-member usage detected in tests/",
+        "The repository enforces using public APIs in tests. Found the following:",
+    ]
+    for f, s in violations:
+        msg_lines.append(f"- {f}: {s}")
+    msg_lines.append("")
+    msg_lines.append(
+        "If this is a temporary exception, add an entry to .github/private_member_allowlist.json with an expiry date."
+    )
+    msg = "\n".join(msg_lines)
+
+    # Fail in CI (GitHub Actions) or when explicitly requested via env var
+    ci = os.environ.get("GITHUB_ACTIONS") == "true"
+    hard_fail = os.environ.get("CE_FAIL_PRIVATE_TESTS") == "1"
+    if ci or hard_fail:
+        raise pytest.UsageError(msg)
+    else:
+        warnings.warn(msg)
 
 
 @pytest.fixture(scope="session")

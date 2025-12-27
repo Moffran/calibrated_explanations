@@ -701,7 +701,7 @@ def test_plot_alternative_sanitises_non_finite_payloads(monkeypatch):
     )
     setattr(explanation, "_get_explainer", lambda: None)
 
-    plotting._plot_alternative(
+    plotting.plot_alternative(
         explanation=explanation,
         instance=np.array([0.1, 0.2, 0.3]),
         predict={"predict": 0.5, "low": -np.inf, "high": np.inf},

@@ -17,12 +17,13 @@ def mock_explainer():
     # Initialize interval state
     explainer._interval_plugin_identifiers = {"default": None, "fast": None}
     explainer._interval_plugin_fallbacks = {"default": ["default_plugin"], "fast": ["fast_plugin"]}
-    explainer._interval_plugin_hints = {}
+    explainer.interval_plugin_hints = {}
     explainer._interval_context_metadata = {"default": {}, "fast": {}}
     explainer._telemetry_interval_sources = {"default": None, "fast": None}
     explainer._interval_preferred_identifier = {"default": None, "fast": None}
     explainer._interval_plugin_override = None
     explainer._fast_interval_plugin_override = None
+    explainer._instantiate_plugin = MagicMock(side_effect=lambda p: p)
 
     return explainer
 

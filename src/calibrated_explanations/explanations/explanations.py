@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 import tracemalloc
 import warnings
@@ -17,6 +18,8 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 import numpy as np
 
 from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
+
+_LOGGER = logging.getLogger(__name__)
 from ..utils.exceptions import ValidationError
 from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
@@ -483,6 +486,23 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         }
         return {k: v for k, v in metadata.items() if v is not None}
 
+    # Public wrappers for formerly-private helpers (temporary, Category A remediation)
+    def collection_metadata(self) -> Mapping[str, Any]:
+        """Public wrapper around internal collection metadata helper."""
+        return self._collection_metadata()
+
+    def legacy_payload(self, exp) -> Mapping[str, Any]:
+        """Public wrapper to obtain the legacy payload for an explanation."""
+        return self._legacy_payload(exp)
+
+    def get_explainer(self):
+        """Return the underlying explainer (public wrapper)."""
+        return self._get_explainer()
+
+    def get_rules(self):
+        """Return materialised rules for each explanation (public wrapper)."""
+        return self._get_rules()
+
     @property
     def prediction_interval(self) -> List[Tuple[Optional[float], Optional[float]]]:
         """Return the prediction intervals for each explanation.
@@ -616,13 +636,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
-    def _is_probabilistic_regression(self) -> bool:
-        """Check if the explanations use probabilistic regression (thresholded).
-
-        .. deprecated:: 0.10.0
-            Use :attr:`is_probabilistic_regression` instead.
-        """
-        return self.is_probabilistic_regression
 
     @property
     def is_one_sided(self) -> bool:
@@ -630,14 +643,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         if self.low_high_percentiles is None:
             return False
         return np.isinf(self.get_low_percentile()) or np.isinf(self.get_high_percentile())
-
-    def _is_one_sided(self) -> bool:
-        """Check if the explanations are one-sided.
-
-        .. deprecated:: 0.10.0
-            Use :attr:`is_one_sided` instead.
-        """
-        return self.is_one_sided
 
     def get_confidence(self) -> float:
         """Return the confidence level of the explanations.
@@ -1199,6 +1204,42 @@ class AlternativeExplanations(CalibratedExplanations):
             )
         return self
 
+    @classmethod
+    def from_collection(cls, collection: "CalibratedExplanations"):
+        """Create an AlternativeExplanations instance from an existing collection.
+
+        This provides a safe public API for tests and callers that previously
+        constructed an instance via low-level hacks like `__new__` and
+        direct `__dict__` assignment.
+        """
+        inst = cls.__new__(cls)
+        # Copy the public and necessary internal state conservatively.
+        inst.calibrated_explainer = collection.calibrated_explainer
+        inst.condition_source = getattr(collection, "condition_source", None)
+        inst.x_test = getattr(collection, "x_test", None)
+        inst.y_threshold = getattr(collection, "y_threshold", None)
+        inst.low_high_percentiles = getattr(collection, "low_high_percentiles", None)
+        inst.explanations = list(getattr(collection, "explanations", []))
+        inst.start_index = getattr(collection, "start_index", 0)
+        inst.current_index = getattr(collection, "current_index", inst.start_index)
+        inst.end_index = getattr(
+            collection, "end_index", len(inst.x_test[:, 0]) if inst.x_test is not None else 0
+        )
+        inst.bins = getattr(collection, "bins", None)
+        inst.total_explain_time = getattr(collection, "total_explain_time", None)
+        inst.features_to_ignore = list(getattr(collection, "features_to_ignore", []))
+        inst.features_to_ignore_per_instance = getattr(
+            collection, "features_to_ignore_per_instance", None
+        )
+        # Preserve caches if present
+        inst._feature_names_cache = getattr(collection, "_feature_names_cache", None)
+        inst._predictions_cache = getattr(collection, "_predictions_cache", None)
+        inst._probabilities_cache = getattr(collection, "_probabilities_cache", None)
+        inst._lower_cache = getattr(collection, "_lower_cache", None)
+        inst._upper_cache = getattr(collection, "_upper_cache", None)
+        inst._class_labels_cache = getattr(collection, "_class_labels_cache", None)
+        return inst
+
     def semi_explanations(self, only_ensured=False, include_potential=True):
         """
         Return a copy with only semi-explanations.
@@ -1459,6 +1500,11 @@ class FrozenCalibratedExplainer:
         return self._explainer._discretize  # pylint: disable=protected-access
 
     @property
+    def discretize(self):
+        """Public accessor for the discretize function (testing helper)."""
+        return self._explainer._discretize  # pragma: no cover - thin wrapper
+
+    @property
     def rule_boundaries(self):
         """
         Retrieves the boundaries for rules in the explainer from the underlying explainer.
@@ -1511,6 +1557,11 @@ class FrozenCalibratedExplainer:
         return self._explainer._predict  # pylint: disable=protected-access
 
     @property
+    def predict(self):
+        """Public accessor for the predict function (testing helper)."""
+        return self._explainer._predict  # pragma: no cover - thin wrapper
+
+    @property
     def _preload_lime(self):
         """
         Retrieves the preload_lime function from the underlying explainer.
@@ -1524,6 +1575,11 @@ class FrozenCalibratedExplainer:
         return self._explainer._preload_lime  # pylint: disable=protected-access
 
     @property
+    def preload_lime(self):
+        """Public accessor for the lime preload helper (testing helper)."""
+        return self._explainer._preload_lime  # pragma: no cover - thin wrapper
+
+    @property
     def _preload_shap(self):
         """
         Retrieves the preload_shap function from the underlying explainer.
@@ -1535,6 +1591,11 @@ class FrozenCalibratedExplainer:
             function: The preload_shap function used by the explainer.
         """
         return self._explainer._preload_shap  # pylint: disable=protected-access
+
+    @property
+    def preload_shap(self):
+        """Public accessor for the shap preload helper (testing helper)."""
+        return self._explainer._preload_shap  # pragma: no cover - thin wrapper
 
     def __setattr__(self, key, value):
         """Prevent modification of attributes except for '_explainer'."""

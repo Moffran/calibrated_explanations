@@ -73,7 +73,7 @@ def prediction_orchestrator():
 def test_check_explanation_runtime_metadata_errors(
     explanation_orchestrator, metadata, expected_error
 ):
-    error = explanation_orchestrator._check_metadata(metadata, identifier="plugin", mode="factual")
+    error = explanation_orchestrator.check_metadata(metadata, identifier="plugin", mode="factual")
     assert error is not None
     assert expected_error in error
 
@@ -86,7 +86,7 @@ def test_check_explanation_runtime_metadata_success(explanation_orchestrator):
         "capabilities": ["explain", "mode:factual", "task:classification"],
     }
     assert (
-        explanation_orchestrator._check_metadata(metadata, identifier="plugin", mode="factual")
+        explanation_orchestrator.check_metadata(metadata, identifier="plugin", mode="factual")
         is None
     )
 

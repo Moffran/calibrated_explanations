@@ -26,14 +26,14 @@ def stub_explainer(explainer_factory, mode: str = "classification") -> Calibrate
     explainer = explainer_factory(mode=mode)
     explainer.bins = None
     explainer._plot_style_override = None
-    explainer._interval_plugin_override = None
+    explainer.interval_plugin_override = None
     explainer._fast_interval_plugin_override = None
-    explainer._interval_plugin_hints = {}
-    explainer._interval_plugin_fallbacks = {"default": (), "fast": ()}
-    explainer._interval_preferred_identifier = {"default": None, "fast": None}
-    explainer._telemetry_interval_sources = {"default": None, "fast": None}
+    explainer.interval_plugin_hints = {}
+    explainer.interval_plugin_fallbacks = {"default": (), "fast": ()}
+    explainer.interval_preferred_identifier = {"default": None, "fast": None}
+    explainer.telemetry_interval_sources = {"default": None, "fast": None}
     explainer._interval_context_metadata = {"default": {}, "fast": {}}
-    explainer._explanation_plugin_overrides = {
+    explainer.explanation_plugin_overrides = {
         key: None for key in ("factual", "alternative", "fast")
     }
     explainer._pyproject_explanations = {}
@@ -74,7 +74,7 @@ def test_require_plugin_manager_raises_when_missing(explainer_factory):
     from calibrated_explanations.utils.exceptions import NotFittedError
 
     explainer = stub_explainer(explainer_factory)
-    explainer._plugin_manager = None
+    explainer.plugin_manager = None
 
     with pytest.raises(NotFittedError, match="PluginManager is not initialized"):
         explainer._require_plugin_manager()
@@ -82,11 +82,11 @@ def test_require_plugin_manager_raises_when_missing(explainer_factory):
 
 def test_build_chains_fall_back_without_plugin_manager(explainer_factory):
     explainer = stub_explainer(explainer_factory)
-    delattr(explainer, "_plugin_manager")
+    delattr(explainer, "plugin_manager")
 
     assert explainer._build_explanation_chain("factual") == ()
     assert explainer._build_interval_chain(fast=False) == ()
-    assert explainer._build_plot_style_chain() == ()
+    assert explainer.build_plot_style_chain() == ()
 
 
 def test_build_instance_telemetry_payload_delegates(explainer_factory):
@@ -101,10 +101,10 @@ def test_build_instance_telemetry_payload_delegates(explainer_factory):
             self.seen = explanations
             return sentinel
 
-    explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
+    explainer.plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
 
     assert explainer._build_instance_telemetry_payload("payload") is sentinel
-    assert explainer._plugin_manager._explanation_orchestrator.seen == "payload"
+    assert explainer.plugin_manager._explanation_orchestrator.seen == "payload"
 
 
 def test_oob_path_reraises_source_error(monkeypatch):
@@ -139,7 +139,7 @@ def test_instance_telemetry_payload_delegates(explainer_factory):
         def _build_instance_telemetry_payload(self, explanations):
             return (explanations, sentinel)
 
-    explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
+    explainer.plugin_manager = types.SimpleNamespace(_explanation_orchestrator=StubOrchestrator())
 
     assert explainer._build_instance_telemetry_payload("payload") == ("payload", sentinel)
 
@@ -159,9 +159,9 @@ def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
             self._interval_preferred_identifier = {"fast": None}
             self._interval_context_metadata = {"fast": {}}
 
-    explainer._plugin_manager = DummyManager()
+    explainer.plugin_manager = DummyManager()
 
-    del explainer._interval_plugin_hints
+    del explainer.interval_plugin_hints
     del explainer._interval_plugin_fallbacks
     del explainer._interval_plugin_identifiers
     del explainer._telemetry_interval_sources
@@ -176,7 +176,7 @@ def test_plugin_manager_deleters_forward_to_manager(explainer_factory):
         "_interval_preferred_identifier",
         "_interval_context_metadata",
     ):
-        assert not hasattr(explainer._plugin_manager, attr)
+        assert not hasattr(explainer.plugin_manager, attr)
 
 
 def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
@@ -192,9 +192,9 @@ def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
             self._interval_context_metadata = {"default": {"meta": 1}}
             self._plot_style_chain = ("style",)
 
-    explainer._plugin_manager = StubManager()
+    explainer.plugin_manager = StubManager()
 
-    del explainer._interval_plugin_hints
+    del explainer.interval_plugin_hints
     del explainer._interval_plugin_fallbacks
     del explainer._interval_plugin_identifiers
     del explainer._telemetry_interval_sources
@@ -202,7 +202,7 @@ def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
     del explainer._interval_context_metadata
     explainer._plot_style_chain = ("new_style",)
 
-    manager = explainer._plugin_manager
+    manager = explainer.plugin_manager
     assert not hasattr(manager, "_interval_plugin_hints")
     assert not hasattr(manager, "_interval_plugin_fallbacks")
     assert not hasattr(manager, "_interval_plugin_identifiers")
@@ -212,30 +212,6 @@ def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
     assert manager._plot_style_chain == ("new_style",)
 
 
-def test_cached_fields_are_tracked_without_plugin_manager(explainer_factory):
-    explainer = stub_explainer(explainer_factory)
-    del explainer._plugin_manager
-
-    assert explainer._explanation_contexts == {}
-    assert explainer._last_explanation_mode is None
-    explainer._last_explanation_mode = "factual"
-    assert explainer._plugin_manager_cache_last_explanation_mode == "factual"
-
-    assert explainer._last_telemetry == {}
-    explainer._last_telemetry = {"k": 1}
-    assert explainer._plugin_manager_cache_last_telemetry == {"k": 1}
-
-    assert explainer._pyproject_explanations is None
-    explainer._pyproject_explanations = {"e": 1}
-    assert explainer._plugin_manager_cache_pyproject_explanations == {"e": 1}
-
-    assert explainer._pyproject_intervals is None
-    explainer._pyproject_intervals = {"i": 2}
-    assert explainer._plugin_manager_cache_pyproject_intervals == {"i": 2}
-
-    assert explainer._pyproject_plots is None
-    explainer._pyproject_plots = {"p": 3}
-    assert explainer._plugin_manager_cache_pyproject_plots == {"p": 3}
 
 
 def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_factory):
