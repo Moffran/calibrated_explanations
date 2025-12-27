@@ -36,9 +36,19 @@ Tests using private factory methods to instantiate objects in specific states, b
 ## 2. Remediation Strategy
 
 ### Phase 1: Triage & Grouping (Automated)
-Use the `tools/scan_private_usage.py` script to group occurrences by the called method name. This allows batch processing.
+We have established an **Analysis Toolbox** in the `scripts/` directory:
+*   [analyze_private_methods.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/analyze_private_methods.py): Scans `src/` for definitions and tracks usages across the project. Identifies Pattern 3 candidates.
+*   [scan_private_usage.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/scan_private_usage.py): Scans tests for private usages and categorizes them using definition data from the analysis.
+*   [summarize_analysis.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/summarize_analysis.py): Provides a high-level summary of findings.
 
-### Phase 2: Refactoring Patterns
+### Refined Category Data (Initial Scan)
+Initial analysis shows approximately 1426 private usages in tests:
+- **Category A (Internal Logic):** ~1043 usages (e.g. `_plugin_manager`, `_interval_context_metadata`).
+- **Category B (Test Utilities):** ~350 usages (helpers defined in `tests/`).
+- **Category D (Factory Bypass):** ~14 usages (e.g. `_from_config`).
+- **Pattern 3 (Dead Code):** 8 unique candidates (defined in `src/`, only called from tests).
+
+## 2. Remediation Strategy
 
 #### Pattern 1: The "Internal Logic" Fix
 **Before:**
@@ -78,11 +88,13 @@ Implement a CI check that fails if new private member accesses are introduced in
 
 ## 3. Execution Plan
 
-1.  **Tooling:** Create `tools/scan_private_usage.py` to track progress.
-2.  **Batch 1 (Test Utilities):** Rename and move `_make_binary_dataset`, `_run_quickstart_*`, etc. (~40% of cases).
-3.  **Batch 2 (Core Internals):** Refactor `CalibratedExplainer` internal tests. This is the hardest part and requires deep understanding of the public API.
-4.  **Batch 3 (Cleanup):** Remove dead code identified during Batch 2.
-5.  **CI Enforcement:** Enable the linter.
+1.  **Tooling:** Maintain the **Analysis Toolbox** (`scripts/analyze_private_methods.py`, etc.) to track progress.
+2.  **Batch 0 (Dead Code):** Remove the 8 identified Pattern 3 candidates and their associated tests.
+3.  **Batch 1 (Test Utilities):** Rename and move `_make_binary_dataset`, `_run_quickstart_*`, etc. (~25% of cases).
+4.  **Batch 2 (Core Internals):** Refactor `CalibratedExplainer` and `orchestrator` internal tests (Category A).
+5.  **Batch 3 (Cleanup):** Final sweep for remaining Category D and deprecated members.
+6.  **CI Enforcement:** Enable a linter check.
+
 
 ## 4. Coverage Maintenance
 Refactoring must not decrease coverage.

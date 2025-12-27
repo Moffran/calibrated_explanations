@@ -17,3 +17,7 @@ ci-local-dry-run:
 .PHONY: ci-local
 ci-local:
 	python scripts/run_ci_locally.py
+
+.PHONY: check-private-members
+check-private-members:
+	python scripts/scan_private_usage.py
