@@ -208,7 +208,7 @@ def test_fast_explanation_repr_and_build_payload():
     )
 
     # inject a minimal rules payload so repr has something to format
-    fast._rules = {
+    mock_rules = {
         "base_predict": [0.25],
         "base_predict_low": [0.2],
         "base_predict_high": [0.3],
@@ -224,7 +224,7 @@ def test_fast_explanation_repr_and_build_payload():
         "predict_low": [0.2],
         "predict_high": [0.3],
     }
-    fast.rules = fast._rules
+    fast.rules = mock_rules
     fast._has_rules = True
 
     r = repr(fast)

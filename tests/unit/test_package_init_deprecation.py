@@ -272,7 +272,7 @@ class TestDeprecatedVizNamespace:
             warnings.simplefilter("always")
             import calibrated_explanations
 
-            _viz_module = calibrated_explanations.viz
+            viz_mod = calibrated_explanations.viz
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -298,7 +298,7 @@ class TestDeprecationMessageFormat:
             warnings.simplefilter("always")
             import calibrated_explanations
 
-            _discretizer = calibrated_explanations.RegressorDiscretizer
+            discretizer_cls = calibrated_explanations.RegressorDiscretizer
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)
@@ -322,7 +322,7 @@ class TestDeprecationMessageFormat:
             warnings.simplefilter("always")
             import calibrated_explanations
 
-            _va = calibrated_explanations.VennAbers
+            va_cls = calibrated_explanations.VennAbers
 
             dep_warnings = [
                 warning for warning in w if issubclass(warning.category, DeprecationWarning)

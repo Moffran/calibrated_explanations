@@ -42,8 +42,8 @@ class DummyExplanation(CalibratedExplanation):
         self.prediction = {"classes": 1, "predict": 0.5, "low": 0.4, "high": 0.6}
         self.y_threshold = None
         self.bin = None
-        self._has_rules = False
-        self._has_conjunctive_rules = False
+        self.has_rules_flag = False
+        self.has_conjunctive_rules_flag = False
 
     def _get_explainer(self):
         return self._explainer
@@ -233,15 +233,15 @@ class SimpleExplanation(explanation_module.CalibratedExplanation):
         return None
 
     def _get_rules(self):
-        if not hasattr(self, "_rules"):
-            self._rules = {"rule": ["r1", "r2"]}
-        return self._rules
+        if not hasattr(self, "mock_rules"):
+            self.mock_rules = {"rule": ["r1", "r2"]}
+        return self.mock_rules
 
-    def _is_lesser(self, other):  # pragma: no cover - comparison unused in tests
+    def _is_lesser(self, other):  # pragma: no cover - stub
         return False
 
     def build_rules_payload(self):
-        rules = getattr(self, "rules", None) or getattr(self, "_rules", None) or {}
+        rules = getattr(self, "rules", None) or getattr(self, "mock_rules", None) or {}
         if isinstance(rules, dict) and "feature" in rules:
             return explanation_module.FactualExplanation.build_rules_payload(self)
         prediction_interval = self._build_interval(
@@ -342,9 +342,9 @@ def build_rules_fixture(explanation):
 def telemetry_explanation():
     explanation = make_explanation()
     rules = build_rules_fixture(explanation)
-    explanation._rules = rules
+    explanation.mock_rules = rules
     explanation.rules = rules
-    explanation._has_rules = True
+    explanation.has_rules_flag = True
     return explanation
 
 
@@ -353,8 +353,8 @@ class StubAlternative(explanation_module.AlternativeExplanation):
         return None
 
     def _get_rules(self):
-        if not hasattr(self, "_rules"):
-            self._rules = {
+        if not hasattr(self, "mock_rules"):
+            self.mock_rules = {
                 "rule": ["f0 <= 0.2"],
                 "feature": [0],
                 "sampled_values": [np.array([0.1, 0.2])],
@@ -372,7 +372,7 @@ class StubAlternative(explanation_module.AlternativeExplanation):
                 "is_conjunctive": [False],
                 "classes": self.prediction["classes"],
             }
-        return self._rules
+        return self.mock_rules
 
 
 @pytest.fixture
@@ -538,9 +538,9 @@ def test_build_instance_uncertainty_for_modes():
 
     thresholded = make_explanation(threshold=(0.2, 0.8))
     rules = build_rules_fixture(thresholded)
-    thresholded._rules = rules
+    thresholded.mock_rules = rules
     thresholded.rules = rules
-    thresholded._has_rules = True
+    thresholded.has_rules_flag = True
     threshold_payload = thresholded._build_instance_uncertainty()
     assert threshold_payload["representation"] == "threshold"
     assert threshold_payload["threshold"] == [0.2, 0.8]
@@ -617,9 +617,9 @@ def test_build_factual_rules_payload_serializes_rules(telemetry_explanation):
 def test_build_factual_rules_payload_threshold_representation():
     explanation = make_explanation(threshold=(0.2, 0.8))
     rules = build_rules_fixture(explanation)
-    explanation._rules = rules
+    explanation.mock_rules = rules
     explanation.rules = rules
-    explanation._has_rules = True
+    explanation.has_rules_flag = True
     payload = explanation.build_rules_payload()
     metadata_rule = payload["metadata"]["feature_rules"][0]
     prediction_metadata = metadata_rule["prediction_uncertainty"]

@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 
 
-def _make_simple_model():
+def make_simple_model_helper():
     x = np.array(
         [
             [0.0, 0.0],

@@ -60,10 +60,10 @@ def testread_pyproject_section_handles_multiple_sources(
 
     class DummyToml:
         def __init__(self, payload: dict[str, Any]) -> None:
-            self._payload = payload
+            self.payload_data = payload
 
         def load(self, _fh: Any) -> dict[str, Any]:
-            return self._payload
+            return self.payload_data
 
     # File missing -> still fallback
     monkeypatch.setattr(module, "_tomllib", DummyToml({}))

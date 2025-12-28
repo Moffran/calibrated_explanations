@@ -340,7 +340,7 @@ def probabilistic_explanation(
 
     explainer = SimpleNamespace(is_multiclass=lambda: explainer_multiclass)
 
-    def _get_labels():
+    def get_labels_helper():
         if class_label_error:
             raise RuntimeError("labels unavailable")
         return class_labels
@@ -348,7 +348,7 @@ def probabilistic_explanation(
     explanation = SimpleNamespace(
         prediction=prediction or {"classes": prediction_classes},
         y_minmax=y_minmax,
-        get_class_labels=_get_labels,
+        get_class_labels=get_labels_helper,
         is_thresholded=lambda: is_thresholded,
         y_threshold=y_threshold,
     )

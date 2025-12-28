@@ -16,21 +16,21 @@ matplotlib.use("Agg", force=True)
 
 class CalibratedStub:
     def __init__(self, confidence=95):
-        self._confidence = confidence
+        self.confidence = confidence
 
     def get_confidence(self):
-        return self._confidence
+        return self.confidence
 
 
 class InnerExplainer:
     def __init__(self, multiclass=False):
-        self._multiclass = multiclass
+        self.multiclass = multiclass
 
     def is_multiclass(self):
-        return self._multiclass
+        return self.multiclass
 
 
-_DEFAULT_LABELS = object()
+DEFAULT_LABELS_SENTINEL = object()
 
 
 class DummyExplanation:
@@ -39,7 +39,7 @@ class DummyExplanation:
         mode="classification",
         thresholded=False,
         y_threshold=0.7,
-        class_labels=_DEFAULT_LABELS,
+        class_labels=DEFAULT_LABELS_SENTINEL,
         multiclass=False,
         y_minmax=None,
         prediction_class=1,
@@ -47,37 +47,37 @@ class DummyExplanation:
         confidence=95,
         one_sided=False,
     ):
-        self._mode = mode
-        self._thresholded = thresholded
+        self.mode = mode
+        self.thresholded = thresholded
         self.y_threshold = y_threshold
         if y_minmax is None:
             y_minmax = (0.0, 1.0) if "regression" not in mode else (0.0, 10.0)
         self.y_minmax = y_minmax
         self.prediction = {"classes": prediction_class}
         self.is_multiclass = multiclass
-        if class_labels is _DEFAULT_LABELS:
+        if class_labels is DEFAULT_LABELS_SENTINEL:
             class_labels = ["neg", "pos"]
-        self._class_labels = class_labels
+        self.class_labels = class_labels
         self.calibrated_explanations = CalibratedStub(confidence)
         if inner_multiclass is None:
             inner_multiclass = multiclass
-        self._explainer = InnerExplainer(inner_multiclass)
-        self._one_sided = one_sided
+        self.explainer = InnerExplainer(inner_multiclass)
+        self.one_sided = one_sided
 
     def is_one_sided(self):
-        return self._one_sided
+        return self.one_sided
 
     def is_thresholded(self):
-        return self._thresholded
+        return self.thresholded
 
     def get_class_labels(self):
-        return self._class_labels
+        return self.class_labels
 
     def get_mode(self):
-        return self._mode
+        return self.mode
 
     def _get_explainer(self):
-        return self._explainer
+        return self.explainer
 
 
 @pytest.fixture(autouse=True)

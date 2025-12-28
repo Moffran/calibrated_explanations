@@ -102,7 +102,8 @@ def main():
 
     src_root = Path(args.src_root).absolute()
     test_root = Path(args.test_root).absolute()
-    project_root = src_root.parent
+    # Use the common parent of src and tests as project root
+    project_root = Path.cwd()
 
     print(f"Analyzing library private definitions in {src_root}...")
     lib_definitions = get_private_definitions(src_root)

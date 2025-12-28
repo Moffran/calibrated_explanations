@@ -496,10 +496,10 @@ def test_explain_parallel_instances_empty_and_combined(monkeypatch: pytest.Monke
 
         def __init__(self, results):
             self.config = self.Config()
-            self._results = results
+            self.results_data = results
 
         def map(self, func, tasks, work_items=None):
-            return self._results
+            return self.results_data
 
     # prepare two chunk results with one explanation each
     def make_chunk(start, subset):

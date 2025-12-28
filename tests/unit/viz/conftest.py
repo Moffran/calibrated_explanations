@@ -21,24 +21,24 @@ import pytest
 
 matplotlib = pytest.importorskip("matplotlib", reason="matplotlib is required for viz unit tests")
 
-_missing_reasons: list[str] = []
+missing_reasons: list[str] = []
 
 try:
     importlib.import_module("matplotlib.artist")
 except Exception as exc:  # pragma: no cover - defensive guard
-    _missing_reasons.append(f"matplotlib.artist import failed: {exc}")
+    missing_reasons.append(f"matplotlib.artist import failed: {exc}")
 
 try:
-    _axes_module = importlib.import_module("matplotlib.axes")
+    axes_mod = importlib.import_module("matplotlib.axes")
 except Exception as exc:  # pragma: no cover - defensive guard
-    _missing_reasons.append(f"matplotlib.axes import failed: {exc}")
+    missing_reasons.append(f"matplotlib.axes import failed: {exc}")
 else:
-    if not hasattr(_axes_module, "Axes"):
-        _missing_reasons.append("matplotlib.axes.Axes missing")
+    if not hasattr(axes_mod, "Axes"):
+        missing_reasons.append("matplotlib.axes.Axes missing")
 
-if _missing_reasons:
+if missing_reasons:
     pytest.skip(
-        "matplotlib installation lacks required primitives: " + ", ".join(_missing_reasons),
+        "matplotlib installation lacks required primitives: " + ", ".join(missing_reasons),
         allow_module_level=True,
     )
 

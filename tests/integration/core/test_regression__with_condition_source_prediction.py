@@ -74,10 +74,10 @@ def safe_fit_difficulty(x, y, scaler=True):
 def test_safe_fit_difficulty_fallback(monkeypatch):
     """Ensure the helper returns a stub difficulty estimator when fitting fails."""
 
-    def _failing_fit(self, *args, **kwargs):  # noqa: D401  - short helper, no doc needed
+    def failing_fit_mock(self, *args, **kwargs):  # noqa: D401  - short helper, no doc needed
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(DifficultyEstimator, "fit", _failing_fit, raising=True)
+    monkeypatch.setattr(DifficultyEstimator, "fit", failing_fit_mock, raising=True)
 
     stub = safe_fit_difficulty(np.zeros((3, 2)), np.zeros(3), scaler=False)
 

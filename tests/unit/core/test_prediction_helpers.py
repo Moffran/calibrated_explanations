@@ -65,12 +65,12 @@ class StubExplainer:
     ) -> None:
         self.num_features = num_features
         self.mode = mode
-        self._mondrian = mondrian
-        self._fast = fast
-        self._multiclass = multiclass
+        self.mondrian_flag = mondrian
+        self.fast_flag = fast
+        self.multiclass_flag = multiclass
         self.x_cal = np.zeros((2, num_features))
         self.interval_learner = self.build_interval_learner()
-        self._learner = (
+        self.learner_instance = (
             self.interval_learner[0]
             if isinstance(self.interval_learner, list)
             else self.interval_learner
@@ -88,26 +88,26 @@ class StubExplainer:
                 self.calls.append((np.asarray(x), bins))
                 return np.full((len(x), 2), 0.5)
 
-        learner = Learner(as_list=self._fast)
-        if self._fast:
+        learner = Learner(as_list=self.fast_flag)
+        if self.fast_flag:
             # ``explain_predict_step`` indexes the learner list by ``num_features``
             return [learner for _ in range(self.num_features + 1)]
         return learner
 
     # ``_ExplainerProtocol`` API -------------------------------------------------
     def _is_mondrian(self) -> bool:  # noqa: D401 - protocol implementation
-        return self._mondrian
+        return self.mondrian_flag
 
     def is_multiclass(self) -> bool:  # noqa: D401 - protocol implementation
-        return self._multiclass
+        return self.multiclass_flag
 
     def is_fast(self) -> bool:  # noqa: D401 - protocol implementation
-        return self._fast
+        return self.fast_flag
 
     def predict(self, x, **kwargs):  # noqa: D401 - protocol implementation
         self.predict_calls.append((np.asarray(x), kwargs))
         size = np.asarray(x).shape[0]
-        classes = np.arange(size) if self._multiclass else np.zeros(size, dtype=int)
+        classes = np.arange(size) if self.multiclass_flag else np.zeros(size, dtype=int)
         return (
             np.full((size,), 0.1),
             np.full((size,), -0.1),
@@ -223,7 +223,7 @@ def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
 
     recorded_calls: list[tuple] = []
 
-    def _fake_assert(thresh, data):
+    def fake_assert_mock(thresh, data):
         recorded_calls.append((thresh, np.asarray(data).shape))
         return thresh
 
@@ -234,7 +234,7 @@ def test_initialize_explanation_handles_regression_thresholds(monkeypatch):
     import calibrated_explanations.explanations as exp_module  # pylint: disable=import-outside-toplevel
 
     monkeypatch.setattr(exp_module, "CalibratedExplanations", Collection)
-    monkeypatch.setattr(ph, "assert_threshold", _fake_assert)
+    monkeypatch.setattr(ph, "assert_threshold", fake_assert_mock)
 
     with pytest.warns(UserWarning, match="list of interval thresholds"):
         explanation = ph.initialize_explanation(

@@ -30,7 +30,7 @@ class DummyCPS:
         )
         if sigmas is None:
             sigmas = np.ones_like(residuals)
-        self._last_sigmas = np.array(sigmas, copy=True)
+        self.last_sigmas = np.array(sigmas, copy=True)
         residuals = np.array(residuals, copy=True)
         if bins is None:
             self.alphas = np.sort(residuals.astype(float))
@@ -263,7 +263,6 @@ def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch)
 
     import importlib
 
-    _utils_module = importlib.import_module("calibrated_explanations.utils")
     calls: list[int] = []
 
     def stub_safe_first_element(values, *, col=0):
@@ -292,7 +291,6 @@ def test_predict_probability_vector_threshold_invokes_shared_helper(monkeypatch)
     x = np.array([[0.2, 0.1], [0.4, 0.3]])
     thresholds = np.array([0.25, 0.35])
 
-    _utils_module = importlib.import_module("calibrated_explanations.utils")
     calls: list[tuple[np.ndarray, int | None]] = []
 
     def fake_safe_first_element(values, col=None):

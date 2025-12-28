@@ -37,7 +37,7 @@ class PyprojectRecordingIntervalPlugin(IntervalCalibratorPlugin):
         return object()
 
 
-def _make_simple_classifier():
+def make_simple_classifier_helper():
     x = np.array(
         [
             [0.0, 0.0],
@@ -73,7 +73,7 @@ def test_pyproject_interval_override_resolves_plugin(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     try:
-        model, x_cal, y_cal = _make_simple_classifier()
+        model, x_cal, y_cal = make_simple_classifier_helper()
         explainer = CalibratedExplainer(
             model,
             x_cal,

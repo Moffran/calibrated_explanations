@@ -37,7 +37,7 @@ def make_feature_rule(
     )
 
 
-def _make_legacy_payload_zero_rules(task: str = "classification") -> Dict[str, Any]:
+def make_legacy_payload_zero_rules_helper(task: str = "classification") -> Dict[str, Any]:
     return {
         "task": task,
         "prediction": {"predict": [0.7], "low": [0.6], "high": [0.8]},
@@ -47,7 +47,7 @@ def _make_legacy_payload_zero_rules(task: str = "classification") -> Dict[str, A
     }
 
 
-def _make_legacy_payload_two_rules(task: str = "classification") -> Dict[str, Any]:
+def make_legacy_payload_two_rules_helper(task: str = "classification") -> Dict[str, Any]:
     return {
         "task": task,
         "prediction": {"predict": [0.7], "low": [0.6], "high": [0.8]},
@@ -68,8 +68,8 @@ def _make_legacy_payload_two_rules(task: str = "classification") -> Dict[str, An
 @pytest.mark.parametrize(
     "payload",
     [
-        _make_legacy_payload_zero_rules(),
-        _make_legacy_payload_two_rules(),
+        make_legacy_payload_zero_rules_helper(),
+        make_legacy_payload_two_rules_helper(),
     ],
 )
 def test_round_trip_legacy_domain_legacy_preserves_shape(payload: Dict[str, Any]) -> None:

@@ -13,7 +13,7 @@ from calibrated_explanations.plugins import registry
 
 
 @pytest.fixture(autouse=True)
-def _isolate_registry(monkeypatch):
+def isolate_registry_fixture(monkeypatch):
     # Use public clear helpers rather than patching internals.
     registry.clear()
     registry.clear_explanation_plugins()
@@ -76,7 +76,7 @@ def test_warn_untrusted_plugin_only_warns_once():
     assert len(runtime_warnings) == 1
 
 
-def _make_module(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, Path]:
+def make_module_helper(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, Path]:
     module_name = "tests.plugins._checksum_mod"
     module_path = tmp_path / "_checksum_mod.py"
     module_path.write_text("VALUE = 1\n", encoding="utf-8")
@@ -91,7 +91,7 @@ def _make_module(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[str, 
 
 
 def test_verify_plugin_checksum_handles_success_failure_and_missing(tmp_path, monkeypatch):
-    module_name, module_path = _make_module(tmp_path, monkeypatch)
+    module_name, module_path = make_module_helper(tmp_path, monkeypatch)
 
     class Plugin:
         __module__ = module_name

@@ -38,10 +38,10 @@ def fake_pandas(monkeypatch):
 
     class FakeILoc:
         def __init__(self, series: FakeSeries):
-            self._series = series
+            self.series_instance = series
 
         def __getitem__(self, key):
-            return FakeSeries(self._series.values[key])
+            return FakeSeries(self.series_instance.values[key])
 
     class FakeDataFrame:
         def __init__(self, values: Iterable[Iterable[float]]):

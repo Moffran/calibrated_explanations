@@ -15,7 +15,7 @@ import calibrated_explanations.core.explain.parallel_instance as parallel_instan
 from calibrated_explanations.perf import ParallelConfig, ParallelExecutor
 
 
-def _make_dataset() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def make_dataset_helper() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     rng = np.random.RandomState(0)
     x_cal = rng.randn(20, 3)
     y_cal = (x_cal[:, 0] + x_cal[:, 1] > 0).astype(int)
@@ -24,7 +24,7 @@ def _make_dataset() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 
 def test_instance_parallel_matches_sequential_output() -> None:
-    x_cal, y_cal, x_test = _make_dataset()
+    x_cal, y_cal, x_test = make_dataset_helper()
     learner = LogisticRegression(random_state=0, solver="liblinear")
     learner.fit(x_cal, y_cal)
 

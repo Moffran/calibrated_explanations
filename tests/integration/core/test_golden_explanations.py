@@ -12,7 +12,7 @@ CLASS_FILE = GOLDEN_DIR / "classification.json"
 REG_FILE = GOLDEN_DIR / "regression.json"
 
 
-def _serialize_classification(exp):
+def serialize_classification(exp):
     # Pull first 3 explanation objects for compact rule snapshot (string repr truncated)
     rule_summaries = []
     for e in exp.explanations[:3]:
@@ -35,7 +35,7 @@ def _serialize_classification(exp):
     }
 
 
-def _serialize_regression(exp):
+def serialize_regression(exp):
     rule_summaries = []
     for e in exp.explanations[:3]:
         s = str(e).splitlines()[:6]
@@ -91,7 +91,7 @@ def test_golden_classification():
     clf.fit(x_train, y_train)
     explainer = CalibratedExplainer(clf, x_cal, y_cal, mode="classification", seed=rng)
     factual = explainer.explain_factual(x_cal[:5])
-    payload = _serialize_classification(factual)
+    payload = serialize_classification(factual)
     if not CLASS_FILE.exists():
         write_if_missing(CLASS_FILE, payload)
         warnings.warn("Golden classification fixture created; re-run tests.")
@@ -113,7 +113,7 @@ def test_golden_regression():
     reg.fit(x_train, y_train)
     explainer = CalibratedExplainer(reg, x_cal, y_cal, mode="regression", seed=rng)
     factual = explainer.explain_factual(x_cal[:5])
-    payload = _serialize_regression(factual)
+    payload = serialize_regression(factual)
     if not REG_FILE.exists():
         write_if_missing(REG_FILE, payload)
         warnings.warn("Golden regression fixture created; re-run tests.")

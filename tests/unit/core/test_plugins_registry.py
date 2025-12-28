@@ -19,10 +19,10 @@ class FakeEntryPoint:
         self.module = "tests.plugins.fake"
         self.attr = None
         self.group = registry.get_entrypoint_group()
-        self._plugin = plugin
+        self.plugin_instance = plugin
 
     def load(self):
-        return self._plugin
+        return self.plugin_instance
 
 
 class FakeEntryPoints(list):
@@ -938,11 +938,11 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
             self.module = module or "tests.plugins.fake"
             self.attr = attr
             self.group = registry.get_entrypoint_group()
-            self._loader = loader
+            self.loader_func = loader
 
         def load(self):
-            if self._loader is not None:
-                return self.loader()
+            if self.loader_func is not None:
+                return self.loader_func()
             module = importlib.import_module(self.module)
             return getattr(module, self.attr)
 

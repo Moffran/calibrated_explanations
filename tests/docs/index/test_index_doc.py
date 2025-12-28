@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 
-def _run_index_snippet() -> SimpleNamespace:
+def run_index_snippet() -> SimpleNamespace:
     from sklearn.datasets import load_breast_cancer, load_diabetes
     from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
     from sklearn.model_selection import train_test_split
@@ -68,7 +68,7 @@ def _run_index_snippet() -> SimpleNamespace:
 
 
 def test_index_snippet_execution(enable_fallbacks, capsys):
-    context = _run_index_snippet()
+    context = run_index_snippet()
     out = capsys.readouterr().out
     assert "Classification probability" in out
     assert "Regression prediction" in out

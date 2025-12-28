@@ -26,15 +26,15 @@ class SentinelExplainer:
     """Minimal stub exposing the interfaces exercised by the legacy bridge."""
 
     def __init__(self, prediction, *, calibrated_classes=None):
-        self._prediction = prediction
-        self._calibrated_classes = calibrated_classes or ["c0", "c1"]
+        self.prediction_data = prediction
+        self.calibrated_classes_data = calibrated_classes or ["c0", "c1"]
         self.calls: list[tuple[str, tuple, dict]] = []
 
     def predict(self, *args, **kwargs):
         self.calls.append(("predict", args, kwargs))
         if kwargs.get("calibrated"):
-            return self._calibrated_classes
-        return self._prediction
+            return self.calibrated_classes_data
+        return self.prediction_data
 
     def predict_proba(self, *args, **kwargs):  # pragma: no cover - passthrough proxy
         self.calls.append(("predict_proba", args, kwargs))
@@ -429,7 +429,7 @@ def test_plotspec_builder_alternative_regression_threshold(monkeypatch):
 
     class Explanation:
         def __init__(self):
-            self._threshold = (0.25, 0.5)
+            self.threshold_data = (0.25, 0.5)
 
         def is_thresholded(self):
             return True

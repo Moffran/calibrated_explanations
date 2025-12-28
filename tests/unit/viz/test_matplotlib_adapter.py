@@ -32,7 +32,7 @@ class BadLabel:
 class FakeAxes:
     def __init__(self):
         self.calls = []
-        self._ylim = (0.0, 0.0)
+        self.ylim_value = (0.0, 0.0)
         self.spines = {key: FakeSpine() for key in ("top", "right", "bottom", "left")}
 
     def fill_betweenx(self, *args, **kwargs):
@@ -61,11 +61,11 @@ class FakeAxes:
 
     def set_ylim(self, *args, **kwargs):
         if args:
-            self._ylim = args[0]
+            self.ylim_value = args[0]
         self.calls.append(("set_ylim", args, kwargs))
 
     def get_ylim(self):
-        return self._ylim
+        return self.ylim_value
 
     def twinx(self):
         twin = FakeAxes()

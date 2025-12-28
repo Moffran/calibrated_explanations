@@ -340,8 +340,19 @@ class CalibratedExplainer:
         """Restore state after pickling without restoring helpers."""
         self.__dict__.update(state)
 
-    def _require_plugin_manager(self) -> PluginManager:
-        """Return the plugin manager or raise if the explainer is not initialized."""
+    def require_plugin_manager(self) -> PluginManager:
+        """Return the plugin manager or raise if the explainer is not initialized.
+
+        Returns
+        -------
+        PluginManager
+            The active plugin manager instance.
+
+        Raises
+        ------
+        NotFittedError
+            If the plugin manager is not initialized.
+        """
         from ..utils.exceptions import NotFittedError
 
         manager = getattr(self, "_plugin_manager", None)

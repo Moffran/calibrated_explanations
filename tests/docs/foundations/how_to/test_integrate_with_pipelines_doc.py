@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 
-def _build_pipeline_context() -> SimpleNamespace:
+def build_pipeline_context() -> SimpleNamespace:
     from sklearn.compose import ColumnTransformer
     from sklearn.datasets import load_breast_cancer
     from sklearn.ensemble import RandomForestClassifier
@@ -69,6 +69,6 @@ def _build_pipeline_context() -> SimpleNamespace:
 
 
 def test_integrate_with_pipelines_snippet(enable_fallbacks):
-    context = _build_pipeline_context()
+    context = build_pipeline_context()
     assert context.factual
     assert "preprocessor" in context.telemetry

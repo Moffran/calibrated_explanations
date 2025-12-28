@@ -53,22 +53,22 @@ def test_propagate_trust_metadata_variants():
 
     class CustomMeta(MutableMapping):
         def __init__(self):
-            self._data = {}
+            self.data = {}
 
         def __getitem__(self, key):
-            return self._data[key]
+            return self.data[key]
 
         def __setitem__(self, key, value):
-            self._data[key] = value
+            self.data[key] = value
 
         def __delitem__(self, key):  # pragma: no cover - protocol requirement
-            del self._data[key]
+            del self.data[key]
 
         def __iter__(self):
-            return iter(self._data)
+            return iter(self.data)
 
         def __len__(self):
-            return len(self._data)
+            return len(self.data)
 
     custom_meta = CustomMeta()
     plugin_custom = SimpleNamespace(plugin_meta=custom_meta)
@@ -78,22 +78,22 @@ def test_propagate_trust_metadata_variants():
 
     class ExplodingMeta(MutableMapping):
         def __init__(self):
-            self._data = {}
+            self.data = {}
 
         def __getitem__(self, key):
-            return self._data[key]
+            return self.data[key]
 
         def __setitem__(self, key, value):
             raise RuntimeError("boom")
 
         def __delitem__(self, key):  # pragma: no cover - protocol requirement
-            del self._data[key]
+            del self.data[key]
 
         def __iter__(self):
-            return iter(self._data)
+            return iter(self.data)
 
         def __len__(self):
-            return len(self._data)
+            return len(self.data)
 
     exploding_meta = ExplodingMeta()
     plugin_exploding = SimpleNamespace(plugin_meta=exploding_meta)
@@ -607,10 +607,10 @@ class EntryPoint:
         self.module = "tests.entry"
         self.attr = None
         self.group = registry.get_entrypoint_group()
-        self._plugin = plugin
+        self.plugin_instance = plugin
 
     def load(self):
-        return self._plugin
+        return self.plugin_instance
 
 
 def test_load_entrypoint_plugins_include_untrusted(monkeypatch):
@@ -718,22 +718,22 @@ def test_refresh_plot_builder_and_renderer_trust():
 
 class MutableMeta(MutableMapping):
     def __init__(self, data):
-        self._data = dict(data)
+        self.data = dict(data)
 
     def __getitem__(self, key):
-        return self._data[key]
+        return self.data[key]
 
     def __setitem__(self, key, value):
-        self._data[key] = value
+        self.data[key] = value
 
     def __delitem__(self, key):  # pragma: no cover - protocol requirement
-        del self._data[key]
+        del self.data[key]
 
     def __iter__(self):
-        return iter(self._data)
+        return iter(self.data)
 
     def __len__(self):
-        return len(self._data)
+        return len(self.data)
 
 
 class MutablePlugin:
@@ -819,7 +819,7 @@ def test_refresh_descriptor_and_register_errors():
 
     class FailingMeta(MutableMapping):
         def __init__(self):
-            self._data = {
+            self.data = {
                 "schema_version": 1,
                 "capabilities": ["explain"],
                 "name": "fail",
@@ -829,19 +829,19 @@ def test_refresh_descriptor_and_register_errors():
             }
 
         def __getitem__(self, key):
-            return self._data[key]
+            return self.data[key]
 
         def __setitem__(self, key, value):
             raise RuntimeError("nope")
 
         def __delitem__(self, key):  # pragma: no cover - protocol requirement
-            del self._data[key]
+            del self.data[key]
 
         def __iter__(self):
-            return iter(self._data)
+            return iter(self.data)
 
         def __len__(self):
-            return len(self._data)
+            return len(self.data)
 
     class FailingPlugin:
         def __init__(self):

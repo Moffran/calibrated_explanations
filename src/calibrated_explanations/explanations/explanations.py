@@ -639,13 +639,6 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
-    def _is_probabilistic_regression(self) -> bool:
-        """Check if the explanations use probabilistic regression (thresholded).
-
-        .. deprecated:: 0.10.0
-            Use :attr:`is_probabilistic_regression` instead.
-        """
-        return self.is_probabilistic_regression
 
     @property
     def is_one_sided(self) -> bool:

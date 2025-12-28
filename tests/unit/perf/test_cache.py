@@ -119,11 +119,11 @@ def test_default_size_estimator_prefers_numpy_buffers() -> None:
 
     class DummyArray:
         def __init__(self, data: Iterable[int]):
-            self._data = list(data)
+            self.data = list(data)
 
         @property
         def __array_interface__(self) -> Dict[str, object]:  # type: ignore[override]
-            array = np.asarray(self._data, dtype=np.float32)
+            array = np.asarray(self.data, dtype=np.float32)
             return array.__array_interface__
 
     shim = DummyArray([1, 2, 3, 4])

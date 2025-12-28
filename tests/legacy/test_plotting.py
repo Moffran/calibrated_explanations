@@ -52,7 +52,7 @@ class FakeAxes:
 
 class FakeFigure:
     def __init__(self, registry):
-        self._registry = registry
+        self.registry = registry
         self.axes = []
         self.saved = []
         self.tight_layout_called = False
@@ -61,19 +61,19 @@ class FakeFigure:
     def add_subplot(self, *_args, **_kwargs):
         ax = FakeAxes()
         self.axes.append(ax)
-        self._registry.last_axes = ax
+        self.registry.last_axes = ax
         return ax
 
     def savefig(self, path, **kwargs):
         self.saved.append((path, kwargs))
-        self._registry.saved_paths.append(path)
+        self.registry.saved_paths.append(path)
 
     def tight_layout(self):
         self.tight_layout_called = True
 
     def show(self):
         self.show_called = True
-        self._registry.figure_show_calls += 1
+        self.registry.figure_show_calls += 1
 
 
 class FakePlotLib:
@@ -139,8 +139,8 @@ class FakePlotLib:
 
 class DummyExplainer:
     def __init__(self, *, mode="classification", multiclass=False):
-        self._mode = mode
-        self._multiclass = multiclass
+        self.mode = mode
+        self.multiclass_flag = multiclass
         self.prediction = {"classes": 0}
         self.y_minmax = (0.0, 1.0)
         self.calibrated_explanations = types.SimpleNamespace(get_confidence=lambda: 90)
@@ -149,7 +149,7 @@ class DummyExplainer:
         self.y_cal = np.array([0.5, 0.5])
 
     def get_mode(self):
-        return self._mode
+        return self.mode
 
     def is_thresholded(self):
         return False
@@ -158,10 +158,10 @@ class DummyExplainer:
         return None
 
     def _get_explainer(self):
-        return types.SimpleNamespace(is_multiclass=lambda: self._multiclass)
+        return types.SimpleNamespace(is_multiclass=lambda: self.multiclass_flag)
 
     def is_multiclass(self):
-        return self._multiclass
+        return self.multiclass_flag
 
     def predict_proba(self, *_args, **_kwargs):
         proba = np.array([[0.3, 0.7]])
@@ -182,20 +182,20 @@ class DummyExplainer:
 class DummyThresholdExplanation(DummyExplainer):
     def __init__(self, y_threshold):
         super().__init__(mode="classification")
-        self._threshold = y_threshold
+        self.threshold_value = y_threshold
 
     def is_thresholded(self):
         return True
 
     @property
     def y_threshold(self):
-        return self._threshold
+        return self.threshold_value
 
 
 class DummyClassificationExplanation(DummyExplainer):
     def __init__(self, *, with_labels=False, multiclass=False):
         super().__init__(mode="classification", multiclass=multiclass)
-        self._with_labels = with_labels
+        self.with_labels_flag = with_labels
         if with_labels:
             self.class_labels = {0: "zero", 1: "one"}
         self.prediction = {"classes": 1}

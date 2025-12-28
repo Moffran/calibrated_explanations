@@ -241,12 +241,12 @@ def test_call_delegates_to_explain(explainer_factory, monkeypatch):
     explainer = explainer_factory()
     captured = {}
 
-    def _fake_explain(*args, **kwargs):
+    def fake_explain_mock(*args, **kwargs):
         captured["args"] = args
         captured["kwargs"] = kwargs
         return "explained"
 
-    monkeypatch.setattr(explainer, "_explain", _fake_explain)
+    monkeypatch.setattr(explainer, "_explain", fake_explain_mock)
 
     assert explainer("x", threshold=0.5) == "explained"
     assert captured["args"] == ("x", 0.5, (5, 95), None, None)
@@ -318,7 +318,7 @@ def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch
         mins: dict[int, list[float]] = {}
         means: dict[int, list[float]] = {}
 
-    def _fake_instantiate(
+    def fake_instantiate_mock(
         discretizer,
         x_cal,
         not_to_discretize,
@@ -333,7 +333,7 @@ def test_set_discretizer_defaults_feature_ignores(explainer_factory, monkeypatch
 
     monkeypatch.setattr(
         "calibrated_explanations.core.discretizer_config.instantiate_discretizer",
-        _fake_instantiate,
+        fake_instantiate_mock,
     )
 
     explainer.set_discretizer("entropy", features_to_ignore=np.asarray([0]))
@@ -489,13 +489,13 @@ def test_reinitialize_bins_validation_and_updates(monkeypatch, explainer_factory
 
     sentinel = object()
 
-    def _update_interval(self, xs, ys, bins=None):
+    def update_interval_mock(self, xs, ys, bins=None):
         self.marker = (xs.shape, ys.shape, None if bins is None else bins.shape)
         return sentinel
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.update_interval_learner",
-        _update_interval,
+        update_interval_mock,
     )
 
     explainer.reinitialize(
@@ -864,11 +864,11 @@ def test_legacy_explain_path(monkeypatch, explainer_factory):
     explainer = explainer_factory()
     sentinel = object()
 
-    def _legacy_explain(self, *args, **kwargs):
+    def legacy_explain_mock(self, *args, **kwargs):
         return (self, args, kwargs, sentinel)
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.explain._legacy_explain.explain", _legacy_explain
+        "calibrated_explanations.core.explain._legacy_explain.explain", legacy_explain_mock
     )
 
     result = explainer.explain_factual(np.zeros((1, 2)), _use_plugin=False)

@@ -249,7 +249,7 @@ def test_should_enter_parallel_executor_once_during_explain_batch(
     class CountingThreadPool:
         def __init__(self, max_workers: int | None = None):
             created_pools.append(max_workers)
-            self._max_workers = max_workers or 1
+            self.max_workers_count = max_workers or 1
 
         def map(self, fn, items, chunksize: int = 1):  # noqa: ARG002
             return list(map(fn, items))

@@ -40,7 +40,7 @@ def test_should_not_change_default_behavior_when_no_initializer(monkeypatch):
         def __init__(self, *args, **kwargs):
             captured["initializer"] = kwargs.get("initializer")
             captured["initargs"] = kwargs.get("initargs")
-            self._max_workers = kwargs.get("max_workers", 1)
+            self.max_workers_count = kwargs.get("max_workers", 1)
 
         def map(self, fn, items, chunksize=None):
             return list(map(fn, items))

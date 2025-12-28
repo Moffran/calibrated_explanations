@@ -35,10 +35,10 @@ class DummyPreprocessor:
 class SnapshotPreprocessor(DummyPreprocessor):
     def __init__(self, factor: float = 2.0, snapshot: dict[str, float] | None = None) -> None:
         super().__init__(factor)
-        self._snapshot = snapshot or {"factor": factor}
+        self.snapshot_data = snapshot or {"factor": factor}
 
     def get_mapping_snapshot(self):
-        return self._snapshot
+        return self.snapshot_data
 
 
 class StubModel:
