@@ -37,16 +37,17 @@ Tests using private factory methods to instantiate objects in specific states, b
 
 ### Phase 1: Triage & Grouping (Automated)
 We have established an **Analysis Toolbox** in the `scripts/` directory:
-*   [analyze_private_methods.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/analyze_private_methods.py): Scans `src/` for definitions and tracks usages across the project. Identifies Pattern 3 candidates.
-*   [scan_private_usage.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/scan_private_usage.py): Scans tests for private usages and categorizes them using definition data from the analysis.
-*   [summarize_analysis.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/summarize_analysis.py): Provides a high-level summary of findings.
+*   [analyze_private_methods.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/anti-pattern-analysis/analyze_private_methods.py): Scans `src/` for definitions and tracks usages across the project. Identifies Pattern 3 candidates.
+*   [scan_private_usage.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/anti-pattern-analysis/scan_private_usage.py): Scans tests for private usages and categorizes them using definition data from the analysis.
+*   [summarize_analysis.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/anti-pattern-analysis/summarize_analysis.py): Provides a high-level summary of findings.
+*   [analyze_category_a.py](file:///c:/Users/loftuw/Documents/Github/kristinebergs-calibrated_explanations/scripts/anti-pattern-analysis/analyze_category_a.py): Performs deep analysis on Category A (Internal Logic) methods to identify allow-list candidates.
 
-### Refined Category Data (Initial Scan)
-Initial analysis shows approximately 1426 private usages in tests:
-- **Category A (Internal Logic):** ~1043 usages (e.g. `_plugin_manager`, `_interval_context_metadata`).
-- **Category B (Test Utilities):** ~350 usages (helpers defined in `tests/`).
+### Refined Category Data (Current Status)
+Analysis shows approximately 1074 private usages in tests:
+- **Category A (Internal Logic):** ~1008 usages (e.g. `_plugin_manager`, `_interval_context_metadata`).
+- **Category B (Test Utilities):** ~52 usages (helpers defined in `tests/`).
 - **Category D (Factory Bypass):** ~14 usages (e.g. `_from_config`).
-- **Pattern 3 (Dead Code):** 8 unique candidates (defined in `src/`, only called from tests).
+- **Pattern 3 (Dead Code):** 0 unique candidates (Remediation Complete).
 
 ## 2. Remediation Strategy
 
@@ -62,6 +63,8 @@ assert explainer.num_classes == 3
 explainer = CalibratedExplainer(model, cal_data, mode="classification")
 assert explainer.num_classes == 3
 ```
+
+See the detailed [Pattern 1 Remediation Plan](PATTERN_1_REMEDIATION_PLAN.md) for the phased execution strategy.
 
 #### Pattern 2: The "Test Utility" Fix
 **Before:**
@@ -84,7 +87,16 @@ If a private method is *only* called by tests and not by any library code:
 ### Phase 3: Prevention (CI/Linting)
 Implement a CI check that fails if new private member accesses are introduced in tests.
 *   **Tool:** Custom AST-based linter or `flake8` plugin.
-*   **Policy:** Zero new violations. Existing violations are whitelisted until fixed.
+*   **Policy:** Zero new violations. Existing violations are whitelisted in `.github/private_member_allowlist.json` until fixed.
+
+#### Allow-list Policy
+Methods may be added to the allow-list if they meet one of the following criteria:
+1.  **Name-mangled internals**: Essential for verifying initialization state in unit tests (e.g., `_CalibratedExplainer__initialized`).
+2.  **Internal Factory/Setup**: Methods like `_from_config` used to bypass complex setup in integration tests.
+3.  **High Refactor Risk**: Methods with >20 test usages where refactoring would be extremely high effort with low immediate benefit.
+4.  **Legacy Maintenance**: Private methods in legacy modules (e.g., `legacy/plotting.py`) that are only tested by legacy tests.
+
+All allow-list entries must have an **expiry version** (defaulting to the next major release gate, e.g., `v0.11.0`).
 
 ## 3. Execution Plan
 

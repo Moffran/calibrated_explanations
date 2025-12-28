@@ -38,6 +38,15 @@ def is_expired(entry: dict) -> bool:
     if not expiry:
         return False
     try:
+        # Handle version-bound expiry (e.g., v0.11.0)
+        if expiry.startswith("v"):
+            from calibrated_explanations import __version__
+            # Simple version comparison (major.minor.patch)
+            current = [int(x) for x in __version__.split("-")[0].split(".")]
+            target = [int(x) for x in expiry.lstrip("v").split(".")]
+            return current >= target
+        
+        # Fallback to date-bound expiry
         dt = datetime.fromisoformat(expiry)
         return dt.date() < datetime.utcnow().date()
     except Exception:
@@ -100,7 +109,7 @@ def pytest_sessionstart(session):
         msg_lines.append(f"- {f}: {s}")
     msg_lines.append("")
     msg_lines.append(
-        "If this is a temporary exception, add an entry to .github/private_member_allowlist.json with an expiry date."
+        "If this is a temporary exception, add an entry to .github/private_member_allowlist.json with an expiry version (e.g., v0.11.0)."
     )
     msg = "\n".join(msg_lines)
 
