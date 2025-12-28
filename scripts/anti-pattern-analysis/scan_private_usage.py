@@ -37,7 +37,7 @@ def get_category_and_pattern(name, usage_file, analysis_data):
         def_file = data["def_file"]
 
         if data.get("scope") == "library":
-            if data["pattern"] == "Pattern 3 (Dead Code Candidate)":
+            if "Pattern 3" in data["pattern"]:
                 category = "Category A/C candidate"
                 pattern = "Pattern 3 (Dead Code Fix)"
                 message = "Defined in src/, only called from tests."
@@ -124,12 +124,12 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Scan for private member usage in tests.")
     parser.add_argument("roots", nargs="*", default=["."], help="Root directories to scan.")
-    parser.add_argument("--output", default="reports/private_usage_scan.csv", help="Output CSV file.")
-    parser.add_argument("--analysis", help="Path to private_method_analysis.csv.")
+    parser.add_argument("--output", default="reports/anti-pattern-analysis/private_usage_scan.csv", help="Output CSV file.")
+    parser.add_argument("--analysis", default="reports/anti-pattern-analysis/private_method_analysis.csv", help="Path to private_method_analysis.csv.")
 
     args = parser.parse_args()
 
-    analysis_file = args.analysis or os.path.join(args.roots[0], "reports", "private_method_analysis.csv")
+    analysis_file = args.analysis
     analysis_data = load_analysis(analysis_file)
 
     all_data = []

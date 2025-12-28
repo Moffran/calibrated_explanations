@@ -96,7 +96,7 @@ def main():
     parser = argparse.ArgumentParser(description="Analyze private method definitions and usages.")
     parser.add_argument("src_root", default="src", help="Source root directory.")
     parser.add_argument("test_root", default="tests", help="Test root directory.")
-    parser.add_argument("--output", default="reports/private_method_analysis.csv", help="Output CSV file.")
+    parser.add_argument("--output", default="reports/anti-pattern-analysis/private_method_analysis.csv", help="Output CSV file.")
 
     args = parser.parse_args()
 

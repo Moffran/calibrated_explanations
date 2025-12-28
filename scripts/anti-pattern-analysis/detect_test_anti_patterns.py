@@ -166,7 +166,7 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("reports/test_anti_pattern_report.csv"),
+        default=Path("reports/anti-pattern-analysis/test_anti_pattern_report.csv"),
         help="CSV path for the generated report.",
     )
     args = parser.parse_args()
