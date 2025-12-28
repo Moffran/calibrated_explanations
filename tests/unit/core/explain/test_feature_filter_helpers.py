@@ -7,24 +7,24 @@ from calibrated_explanations.core.explain._feature_filter import (
 )
 
 
-class _FakeExplanation:
+class FakeExplanation:
     def __init__(self, weights):
         self.feature_weights = {"predict": np.array(weights)}
 
 
-class _FakeCollection:
+class FakeCollection:
     def __init__(self, weight_sequences):
-        self.explanations = [_FakeExplanation(weights) for weights in weight_sequences]
+        self.explanations = [FakeExplanation(weights) for weights in weight_sequences]
 
 
-class _CustomExplanation:
+class CustomExplanation:
     def __init__(self, feature_weights):
         self.feature_weights = feature_weights
 
 
-class _CustomCollection:
+class CustomCollection:
     def __init__(self, feature_weights_list):
-        self.explanations = [_CustomExplanation(weights) for weights in feature_weights_list]
+        self.explanations = [CustomExplanation(weights) for weights in feature_weights_list]
 
 
 def test_feature_filter_config_parsing_thresholds(monkeypatch):
@@ -70,7 +70,7 @@ def test_feature_filter_config_enforces_top_k_bounds(monkeypatch):
 
 def test_compute_filtered_features_skips_when_disabled():
     """Disabled feature filtering should only echo the baseline ignore set."""
-    collection = _FakeCollection([])
+    collection = FakeCollection([])
     cfg = FeatureFilterConfig(enabled=False)
     baseline = np.array([2, 4], dtype=int)
 
@@ -94,7 +94,7 @@ def test_compute_filtered_features_skips_when_disabled():
 )
 def test_compute_filtered_features_picks_top_k(weights_list, expected_per_instance):
     """Verify that enabled filtering retains up to `per_instance_top_k` features."""
-    collection = _FakeCollection(weights_list)
+    collection = FakeCollection(weights_list)
     cfg = FeatureFilterConfig(enabled=True, per_instance_top_k=1)
     baseline = np.array([1], dtype=int)
 
@@ -113,7 +113,7 @@ def test_compute_filtered_features_picks_top_k(weights_list, expected_per_instan
 
 
 def test_compute_filtered_features_handles_invalid_weights():
-    collection = _CustomCollection(
+    collection = CustomCollection(
         [
             None,
             {},
@@ -135,7 +135,7 @@ def test_compute_filtered_features_handles_invalid_weights():
 
 
 def test_compute_filtered_features_covers_padding_truncation():
-    collection = _CustomCollection(
+    collection = CustomCollection(
         [
             {"predict": [1]},
             {"predict": [10, -1, 0, 2]},
@@ -157,7 +157,7 @@ def test_compute_filtered_features_covers_padding_truncation():
 
 def test_compute_filtered_features_preserves_disjoint_global_keeps():
     """Global mask should keep all features selected across instances."""
-    collection = _FakeCollection(
+    collection = FakeCollection(
         [
             np.array([10.0, 0.0, 0.0, 0.0]),
             np.array([0.0, 5.0, 0.3, 1.0]),
@@ -180,7 +180,7 @@ def test_compute_filtered_features_preserves_disjoint_global_keeps():
 
 def test_compute_filtered_features_drops_unused_candidates():
     """Global mask should remove candidates never kept by FAST."""
-    collection = _FakeCollection(
+    collection = FakeCollection(
         [
             np.array([10.0, 0.5, 0.0]),
             np.array([9.0, 0.1, 0.0]),

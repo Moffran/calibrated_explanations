@@ -78,6 +78,8 @@ class DummyExplanation:
         self.prediction = {"predict": predict}
         self.feature_weights = {"predict": np.array(feature_weights, dtype=float)}
         self.calls = []
+        self.rules = None
+        self.conjunctive_rules = None
 
     def __str__(self):
         return f"dummy-{self.index}"
@@ -106,14 +108,17 @@ class DummyExplanation:
     def ensured_explanations(self):
         self.calls.append(("ensured", None))
 
-    def _rank_features(self, feature_weights, num_to_show=None):
+    def rank_features(self, feature_weights, num_to_show=None):
         order = list(range(len(feature_weights)))
         return order[: num_to_show if num_to_show is not None else len(order)]
 
-    def _define_conditions(self):
+    def _rank_features(self, *args, **kwargs):
+        return self.rank_features(*args, **kwargs)
+
+    def define_conditions(self):
         return [f"rule_{i}" for i in range(len(self.feature_weights["predict"]))]
 
-    def _get_rules(self):
+    def get_rules(self):
         return {
             "rule": [f"rule_{self.index}"],
             "base_predict": [0.1],
@@ -130,6 +135,12 @@ class DummyExplanation:
             "predict_high": [self.prediction_interval[1]],
             "is_conjunctive": [False],
         }
+
+    def _get_rules(self):
+        return self.get_rules()
+
+    def _define_conditions(self):
+        return self.define_conditions()
 
 
 @pytest.fixture

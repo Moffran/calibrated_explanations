@@ -22,7 +22,6 @@ _EMITTED: Set[str] = set()
 _EMITTED_PER_TEST: Dict[str, Set[str]] = {}
 
 
-
 def _should_raise() -> bool:
     raw = os.getenv("CE_DEPRECATIONS")
     if not raw:

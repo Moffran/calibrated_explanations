@@ -36,7 +36,7 @@ from calibrated_explanations.plugins.intervals import IntervalCalibratorContext
 from calibrated_explanations.plugins.plots import PlotRenderContext
 
 
-def _make_interval_context(
+def make_interval_context(
     task: str, metadata: Dict[str, Any] | None = None
 ) -> IntervalCalibratorContext:
     """Create a minimal interval context for exercising the plugin."""
@@ -87,7 +87,7 @@ def explanation_context(monkeypatch: pytest.MonkeyPatch) -> ExplanationContext:
 
         def explain_factual(self, data: Any, **kwargs: Any):
             self.calls.append({"data": data, "kwargs": kwargs})
-            collection = _make_collection(with_instances=True)
+            collection = make_collection(with_instances=True)
             return collection
 
     bridge = DummyPredictBridge()
@@ -106,7 +106,7 @@ def explanation_context(monkeypatch: pytest.MonkeyPatch) -> ExplanationContext:
     return context
 
 
-def _make_collection(*, with_instances: bool) -> builtins_mod.CalibratedExplanations:
+def make_collection(*, with_instances: bool) -> builtins_mod.CalibratedExplanations:
     explainer = SimpleNamespace(
         x_cal=np.asarray([[0.0]]),
         y_cal=np.asarray([0.0]),
@@ -247,11 +247,11 @@ def test_supports_and_explain_methods(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_collection_to_batch_handles_empty_and_populated_collections():
-    empty_batch = _collection_to_batch(_make_collection(with_instances=False))
+    empty_batch = _collection_to_batch(make_collection(with_instances=False))
     assert empty_batch.instances == ()
     assert empty_batch.explanation_cls is builtins_mod.FactualExplanation
 
-    populated = _make_collection(with_instances=True)
+    populated = make_collection(with_instances=True)
     batch = _collection_to_batch(populated)
     assert isinstance(batch, ExplanationBatch)
     assert batch.instances[0]["explanation"].label == "dummy"
@@ -279,7 +279,7 @@ def test_interval_plugin_requires_handles_and_returns_calibrator(monkeypatch: py
         DummyCalibrator,
         raising=False,
     )
-    context = _make_interval_context("regression")
+    context = make_interval_context("regression")
 
     with pytest.raises(NotFittedError):
         LegacyIntervalCalibratorPlugin().create(context)
@@ -303,7 +303,7 @@ def test_interval_plugin_uses_predict_function_and_sets_metadata(monkeypatch: py
         DummyCalibrator,
         raising=False,
     )
-    context = _make_interval_context("classification")
+    context = make_interval_context("classification")
     context.metadata["explainer"] = SimpleNamespace(predict_function=lambda x: x)
     calibrator = LegacyIntervalCalibratorPlugin().create(context)
 
@@ -321,7 +321,7 @@ def test_interval_plugin_requires_predict_callable(monkeypatch: pytest.MonkeyPat
         DummyCalibrator,
         raising=False,
     )
-    context = _make_interval_context("classification")
+    context = make_interval_context("classification")
 
     with pytest.raises(NotFittedError):
         LegacyIntervalCalibratorPlugin().create(context)

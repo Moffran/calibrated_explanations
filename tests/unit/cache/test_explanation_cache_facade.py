@@ -5,7 +5,7 @@ import numpy as np
 from calibrated_explanations.cache.explanation_cache import ExplanationCacheFacade
 
 
-class _DummyCache:
+class DummyCache:
     """Minimal fake cache that mirrors the CalibratorCache interface used by the facade."""
 
     def __init__(self) -> None:
@@ -14,17 +14,17 @@ class _DummyCache:
         self.flush_count = 0
         self.reset_version_calls: list[str] = []
 
-    def _key(self, stage: str, parts: tuple) -> tuple[str, tuple]:
+    def key(self, stage: str, parts: tuple) -> tuple[str, tuple]:
         return stage, parts
 
     def get(self, *, stage: str, parts: tuple) -> object | None:
-        return self.storage.get(self._key(stage, parts))
+        return self.storage.get(self.key(stage, parts))
 
     def set(self, *, stage: str, parts: tuple, value: object) -> None:
-        self.storage[self._key(stage, parts)] = value
+        self.storage[self.key(stage, parts)] = value
 
     def compute(self, *, stage: str, parts: tuple, fn) -> object:
-        key = self._key(stage, parts)
+        key = self.key(stage, parts)
         if key in self.storage:
             return self.storage[key]
         value = fn()
@@ -40,7 +40,7 @@ class _DummyCache:
 
 
 def test_explanation_cache_facade_routes_calibration_summary_calls() -> None:
-    cache = _DummyCache()
+    cache = DummyCache()
     facade = ExplanationCacheFacade(cache)
     explainer_id = "test"
     xcal_hash = "hash"
@@ -80,7 +80,7 @@ def test_explanation_cache_facade_routes_calibration_summary_calls() -> None:
 
 
 def test_feature_names_and_invalidation_use_cache() -> None:
-    cache = _DummyCache()
+    cache = DummyCache()
     facade = ExplanationCacheFacade(cache)
     explainer_id = "names"
     facade.set_feature_names_cache(explainer_id=explainer_id, feature_names=("a", "b"))

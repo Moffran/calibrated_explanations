@@ -14,11 +14,11 @@ def clear_env(monkeypatch):
 def pyproject_factory(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
-    def _create(content=None):
+    def create(content=None):
         if content is not None:
             (tmp_path / "pyproject.toml").write_text(content, encoding="utf-8")
 
-    return _create
+    return create
 
 
 def test_read_plot_pyproject_missing_file(pyproject_factory):

@@ -324,7 +324,7 @@ def test_plot_probabilistic_noop_without_show_or_save(monkeypatch: pytest.Monkey
     pass
 
 
-def _probabilistic_explanation(
+def probabilistic_explanation(
     *,
     explainer_multiclass: bool = False,
     is_thresholded: bool = False,
@@ -391,7 +391,7 @@ def test_plot_probabilistic_falls_back_to_legacy(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr(plotting.legacy, "_plot_probabilistic", fake_legacy)
 
-    explanation = _probabilistic_explanation(explainer_multiclass=True)
+    explanation = probabilistic_explanation(explainer_multiclass=True)
 
     with pytest.warns(UserWarning, match="PlotSpec rendering failed"):
         plotting._plot_probabilistic(
@@ -433,7 +433,7 @@ def test_plot_probabilistic_thresholded_interval_captions(monkeypatch: pytest.Mo
         raising=False,
     )
 
-    explanation = _probabilistic_explanation(
+    explanation = probabilistic_explanation(
         is_thresholded=True,
         y_threshold=(0.25, 0.75),
         prediction={"predict": 0.6, "low": float("nan"), "high": None},
@@ -481,7 +481,7 @@ def test_plot_probabilistic_multiclass_without_labels(monkeypatch: pytest.Monkey
         raising=False,
     )
 
-    explanation = _probabilistic_explanation(
+    explanation = probabilistic_explanation(
         class_label_error=True,
         prediction={"predict": 0.2, "classes": 2},
         prediction_classes=2,
@@ -527,7 +527,7 @@ def test_plot_probabilistic_multiclass_label_lookup_fallback(monkeypatch: pytest
         raising=False,
     )
 
-    explanation = _probabilistic_explanation(
+    explanation = probabilistic_explanation(
         class_labels=("only-one",),
         prediction_classes=5,
         prediction={"predict": 0.3, "classes": 5},

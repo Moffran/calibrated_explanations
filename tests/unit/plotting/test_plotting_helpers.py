@@ -1,14 +1,18 @@
 import configparser
+import importlib
 from types import SimpleNamespace
 
 import pytest
 
-from calibrated_explanations import plotting
 from calibrated_explanations.utils.exceptions import ConfigurationError
 from calibrated_explanations.viz import coloring
 
+# Import plotting module directly to avoid deprecation warning
+# This test file tests internal plotting helpers
+plotting = importlib.import_module("calibrated_explanations.plotting")
 
-class _DummyExplainer:
+
+class DummyExplainer:
     def __init__(self):
         self._last_explanation_mode = "factual"
         self._plot_plugin_fallbacks = {"factual": ["fallback-mode"]}
@@ -21,7 +25,7 @@ def test_resolve_plot_style_chain_respects_order(monkeypatch):
         plotting, "_read_plot_pyproject", lambda: {"style": "py", "fallbacks": "py-fb"}
     )
 
-    explainer = _DummyExplainer()
+    explainer = DummyExplainer()
     chain = plotting._resolve_plot_style_chain(explainer, "explicit")
 
     assert chain[0] == "explicit"

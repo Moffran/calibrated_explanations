@@ -38,7 +38,7 @@ class DummyOriginalExplainer:
         self.learner = "dummy-learner"
         self.difficulty_estimator = "dummy-difficulty"
 
-    def _predict(self, data):  # pragma: no cover - not used directly
+    def predict(self, data):  # pragma: no cover - not used directly
         return np.asarray(data)
 
     def _preload_lime(self):
@@ -91,21 +91,21 @@ class DummyExplanation:
         self.feature_predict = {"predict": weight}
         self.prediction_probabilities = probabilities
         self.x_test = np.array([predict, predict + 1])
-        self._plot_calls: list[tuple] = []
-        self._conjunction_calls: list[str] = []
+        self.plot_calls: list[tuple] = []
+        self.conjunction_calls: list[str] = []
 
     # -- Helpers used by :mod:`CalibratedExplanations` --
     def remove_conjunctions(self) -> None:
-        self._conjunction_calls.append("remove")
+        self.conjunction_calls.append("remove")
 
     def add_conjunctions(self, *_args, **_kwargs) -> None:
-        self._conjunction_calls.append("add")
+        self.conjunction_calls.append("add")
 
     def reset(self) -> None:
-        self._conjunction_calls.append("reset")
+        self.conjunction_calls.append("reset")
 
     def plot(self, **kwargs) -> None:
-        self._plot_calls.append(tuple(sorted(kwargs.items())))
+        self.plot_calls.append(tuple(sorted(kwargs.items())))
 
     def _rank_features(self, _weights, num_to_show=None):  # pylint: disable=unused-argument
         size = len(self.feature_weights["predict"])
@@ -118,16 +118,16 @@ class DummyExplanation:
         return {"rule": [0, 1]}
 
     def super_explanations(self, **_kwargs) -> None:
-        self._conjunction_calls.append("super")
+        self.conjunction_calls.append("super")
 
     def semi_explanations(self, **_kwargs) -> None:
-        self._conjunction_calls.append("semi")
+        self.conjunction_calls.append("semi")
 
     def counter_explanations(self, **_kwargs) -> None:
-        self._conjunction_calls.append("counter")
+        self.conjunction_calls.append("counter")
 
     def ensured_explanations(self) -> None:
-        self._conjunction_calls.append("ensured")
+        self.conjunction_calls.append("ensured")
 
 
 @pytest.fixture()
@@ -246,11 +246,11 @@ def test_plot_routes_calls(monkeypatch, tmp_path, collection: CalibratedExplanat
     monkeypatch.setattr(helper_utils, "make_directory", lambda *_, **__: None)
     filename = tmp_path / "plot.png"
     collection.plot(index=0, filename=str(filename), show=False)
-    assert collection.explanations[0]._plot_calls  # plot called for index
+    assert collection.explanations[0].plot_calls  # plot called for index
     for exp in collection.explanations:
-        exp._plot_calls.clear()
+        exp.plot_calls.clear()
     collection.plot(show=False, filename=str(filename))
-    assert all(exp._plot_calls for exp in collection.explanations)
+    assert all(exp.plot_calls for exp in collection.explanations)
 
 
 def test_as_lime_and_as_shap_shapes(collection: CalibratedExplanations) -> None:
@@ -278,7 +278,7 @@ def test_alternative_explanation_proxies(collection: CalibratedExplanations) -> 
     alt.semi_explanations()
     alt.counter_explanations()
     alt.ensured_explanations()
-    calls = [exp._conjunction_calls for exp in collection.explanations]
+    calls = [exp.conjunction_calls for exp in collection.explanations]
     assert all({"super", "semi", "counter", "ensured"}.issubset(set(call)) for call in calls)
 
 

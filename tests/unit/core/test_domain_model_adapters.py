@@ -10,7 +10,7 @@ from calibrated_explanations.explanations import domain_to_legacy, legacy_to_dom
 from calibrated_explanations.explanations import models
 
 
-def _make_feature_rule(
+def make_feature_rule(
     feature: Any,
     rule: str,
     *,
@@ -105,7 +105,7 @@ def test_domain_to_legacy_emits_parallel_arrays_with_multiple_rules() -> None:
         explanation_type="factual",
         prediction={"predict": [0.8], "alt": [0.2]},
         rules=[
-            _make_feature_rule(
+            make_feature_rule(
                 0,
                 "x0 <= 0.3",
                 rule_weight={"predict": 0.11, "alt": 0.04},
@@ -113,7 +113,7 @@ def test_domain_to_legacy_emits_parallel_arrays_with_multiple_rules() -> None:
                 feature_value=0.25,
                 value_str="<= 0.3",
             ),
-            _make_feature_rule(
+            make_feature_rule(
                 2,
                 "x2 > 1.0",
                 rule_weight={"predict": 0.23, "alt": 0.09, "lift": 1.2},

@@ -4,7 +4,7 @@ from pathlib import Path
 SNAPSHOT = Path(__file__).parent / "data" / "api_snapshot.txt"
 
 
-def _exported_symbols(mod):
+def exported_symbols(mod):
     return sorted(getattr(mod, "__all__", []))
 
 
@@ -13,9 +13,9 @@ def test_public_api_snapshot():
     core_pkg = import_module("calibrated_explanations.core.__init__")
     snapshot_current = [
         "# root __all__",
-        *_exported_symbols(root),
+        *exported_symbols(root),
         "# core __all__",
-        *_exported_symbols(core_pkg),
+        *exported_symbols(core_pkg),
     ]
     if not SNAPSHOT.exists():
         SNAPSHOT.write_text("\n".join(snapshot_current))

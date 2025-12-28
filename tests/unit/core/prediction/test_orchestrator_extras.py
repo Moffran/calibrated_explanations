@@ -82,8 +82,6 @@ def test_predict_impl_fast_probabilistic_regression(orchestrator, mock_explainer
     mock_learner.predict_probability.assert_called_once()
 
 
-
-
 def test_resolve_interval_plugin_object_override(orchestrator, mock_explainer):
     """Test _resolve_interval_plugin with object override (lines 488-490)."""
     mock_plugin = MagicMock()

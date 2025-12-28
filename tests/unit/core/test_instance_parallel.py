@@ -30,7 +30,7 @@ def test_instance_parallel_matches_sequential_output() -> None:
 
     baseline = CalibratedExplainer(learner, x_cal, y_cal, mode="classification")
     baseline.set_discretizer(None)
-    baseline_result = baseline._explain(x_test, _use_plugin=False)
+    baseline_result = baseline.explain_factual(x_test, _use_plugin=False)
 
     parallel_executor = ParallelExecutor(
         ParallelConfig(
@@ -49,7 +49,7 @@ def test_instance_parallel_matches_sequential_output() -> None:
         perf_parallel=parallel_executor,
     )
     parallel.set_discretizer(None)
-    parallel_result = parallel._explain(x_test, _use_plugin=False)
+    parallel_result = parallel.explain_factual(x_test, _use_plugin=False)
 
     assert len(parallel_result) == len(baseline_result)
 
@@ -140,7 +140,7 @@ def test_uses_process_like_strategy_on_windows_by_default(
         def x_cal(self):
             return np.zeros((1, 1))
 
-        def _predict(self, x, threshold=None, low_high_percentiles=None, bins=None, classes=None):
+        def predict(self, x, threshold=None, low_high_percentiles=None, bins=None, classes=None):
             n = x.shape[0]
             return np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n, dtype=int)
 

@@ -193,10 +193,21 @@ def test_predict_delegates(mock_learner, mock_plugin_manager):
     explainer = CalibratedExplainer(mock_learner, x_cal, y_cal, mode="classification")
 
     x_test = np.array([[5, 6]])
-    explainer._predict(x_test)
 
-    mock_plugin_manager.return_value._prediction_orchestrator.predict.assert_called_once()
-    args, kwargs = mock_plugin_manager.return_value._prediction_orchestrator.predict.call_args
+    # Mock return value to allow unpacking in CalibratedExplainer.predict
+    orchestrator = explainer._prediction_orchestrator
+    orchestrator._predict_impl.return_value = (
+        np.array([0]),
+        np.array([0]),
+        np.array([0]),
+        np.array([0]),
+    )
+
+    explainer.predict(x_test)
+
+    # Check that it delegated to the implementation method
+    orchestrator._predict_impl.assert_called_once()
+    args, kwargs = orchestrator._predict_impl.call_args
     assert args[0] is x_test
 
 

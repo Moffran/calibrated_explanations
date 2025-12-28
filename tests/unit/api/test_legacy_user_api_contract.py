@@ -8,7 +8,7 @@ import calibrated_explanations as ce
 from calibrated_explanations.explanations import CalibratedExplanations
 
 
-def _param_names(func):
+def param_names(func):
     sig = inspect.signature(func)
     return [name for name in sig.parameters if name != "self"]
 
@@ -28,20 +28,20 @@ def test_wrap_calibrated_explainer_lifecycle_methods_exist():
 
 
 def test_wrap_predict_signature_includes_legacy_parameters():
-    params = _param_names(ce.WrapCalibratedExplainer.predict)
+    params = param_names(ce.WrapCalibratedExplainer.predict)
     assert params[:3] == ["x", "uq_interval", "calibrated"]
     assert params[-1] == "kwargs"  # **kwargs preserves legacy aliases
 
 
 def test_wrap_predict_proba_signature_includes_threshold():
-    params = _param_names(ce.WrapCalibratedExplainer.predict_proba)
+    params = param_names(ce.WrapCalibratedExplainer.predict_proba)
     assert params[:3] == ["x", "uq_interval", "calibrated"]
     assert "threshold" in params
     assert params[-1] == "kwargs"
 
 
 def test_calibrated_explainer_constructor_signature():
-    params = _param_names(ce.CalibratedExplainer.__init__)
+    params = param_names(ce.CalibratedExplainer.__init__)
     expected_prefix = [
         "learner",
         "x_cal",
@@ -59,8 +59,8 @@ def test_calibrated_explainer_constructor_signature():
 
 
 def test_calibrated_explainer_factories_support_expected_keywords():
-    factual_params = _param_names(ce.CalibratedExplainer.explain_factual)
-    alternative_params = _param_names(ce.CalibratedExplainer.explore_alternatives)
+    factual_params = param_names(ce.CalibratedExplainer.explain_factual)
+    alternative_params = param_names(ce.CalibratedExplainer.explore_alternatives)
     for params in (factual_params, alternative_params):
         assert "x" in params
         assert "threshold" in params
@@ -89,7 +89,7 @@ def test_explanation_collection_api_is_stable():
     for attr in required:
         assert hasattr(CalibratedExplanations, attr), attr
 
-    plot_params = _param_names(CalibratedExplanations.plot)
+    plot_params = param_names(CalibratedExplanations.plot)
     for expected in [
         "index",
         "filter_top",
@@ -102,5 +102,5 @@ def test_explanation_collection_api_is_stable():
     ]:
         assert expected in plot_params
 
-    add_params = _param_names(CalibratedExplanations.add_conjunctions)
+    add_params = param_names(CalibratedExplanations.add_conjunctions)
     assert add_params == ["n_top_features", "max_rule_size", "kwargs"]

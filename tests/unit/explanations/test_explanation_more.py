@@ -25,7 +25,7 @@ def make_container_and_explainer():
         def is_multiclass(self):
             return False
 
-        def _predict(self, data, **_kwargs):
+        def predict(self, data, **_kwargs):
             rows = data.shape[0]
             predict = np.ones((rows, 1)) * 0.5
             low = np.ones((rows, 1)) * 0.4

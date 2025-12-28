@@ -235,7 +235,7 @@ class TestExecutionPluginClassConfiguration:
         assert "InstanceParallel" in plugin._execution_plugin_class.__name__
 
 
-def _inc(x: int) -> int:
+def inc(x: int) -> int:
     return x + 1
 
 
@@ -264,8 +264,8 @@ def test_should_enter_parallel_executor_once_during_explain_batch(
 
     class DummyExecutionPlugin:
         def execute(self, explain_request, explain_config, explainer):  # noqa: ARG002
-            explain_config.executor.map(_inc, [1, 2], work_items=2)
-            explain_config.executor.map(_inc, [1, 2], work_items=2)
+            explain_config.executor.map(inc, [1, 2], work_items=2)
+            explain_config.executor.map(inc, [1, 2], work_items=2)
 
             class DummyCollection:
                 mode = "factual"

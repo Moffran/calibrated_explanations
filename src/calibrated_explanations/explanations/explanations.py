@@ -18,12 +18,12 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, c
 import numpy as np
 
 from ..utils import EntropyDiscretizer, RegressorDiscretizer, prepare_for_saving
-
-_LOGGER = logging.getLogger(__name__)
 from ..utils.exceptions import ValidationError
 from .adapters import legacy_to_domain
 from .explanation import AlternativeExplanation, FactualExplanation, FastExplanation
 from .models import Explanation as DomainExplanation
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -374,10 +374,13 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
                     last.update({"export": telemetry})
                     underlying._last_telemetry = last
                 except Exception:
-                    # best-effort only
-                    pass
+                    # best-effort only: log for observability per fallback policy
+                    _LOGGER.debug(
+                        "failed to attach export telemetry to underlying explainer",
+                        exc_info=True,
+                    )
         except Exception:
-            pass
+            _LOGGER.debug("failed to attach export telemetry to collection", exc_info=True)
 
         # final telemetry fragment
         yield json.dumps({"export_telemetry": telemetry}, default=_jsonify)
@@ -636,6 +639,13 @@ class CalibratedExplanations:  # pylint: disable=too-many-instance-attributes
         """
         return self.y_threshold is not None
 
+    def _is_probabilistic_regression(self) -> bool:
+        """Check if the explanations use probabilistic regression (thresholded).
+
+        .. deprecated:: 0.10.0
+            Use :attr:`is_probabilistic_regression` instead.
+        """
+        return self.is_probabilistic_regression
 
     @property
     def is_one_sided(self) -> bool:

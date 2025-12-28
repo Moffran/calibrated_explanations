@@ -35,7 +35,6 @@ from ...plugins import (
 )
 from ...utils import assert_threshold
 from ...utils.exceptions import ConfigurationError, DataShapeError, NotFittedError, ValidationError
-from ..explain.feature_task import assign_weight
 
 if TYPE_CHECKING:
     from ..calibrated_explainer import CalibratedExplainer
@@ -438,7 +437,6 @@ class PredictionOrchestrator:
                 ) from exc
 
         return None, None, None, None  # Should never happen
-
 
     def _ensure_interval_runtime_state(self) -> None:
         """Ensure interval tracking members exist for legacy instances."""

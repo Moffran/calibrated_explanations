@@ -359,8 +359,8 @@ def _plot_triangular(
     __require_matplotlib()
     if save_ext is None:
         save_ext = ["svg", "pdf", "png"]
-    # assert self._get_explainer().mode == 'classification' or \
-    #     (self._get_explainer().mode == 'regression' and self._is_probabilistic_regression()), \
+    # assert explanation.get_mode() == 'classification' or \
+    #     (explanation.get_mode() == 'regression' and explanation.is_thresholded()), \
     #     'Triangular plot is only available for classification or probabilistic regression'
     marker_size = 50
     min_x, min_y = 0, 0

@@ -118,7 +118,6 @@ def test_factual_plugin_matches_legacy(binary_dataset):
 
 
 def test_alternative_plugin_matches_legacy(binary_dataset):
-
     (
         x_prop_train,
         y_prop_train,
@@ -154,7 +153,6 @@ def test_alternative_plugin_matches_legacy(binary_dataset):
 
 
 def test_fast_plugin_matches_legacy(binary_dataset):
-
     (
         x_prop_train,
         y_prop_train,
@@ -191,7 +189,6 @@ def test_fast_plugin_matches_legacy(binary_dataset):
 
 
 def test_factual_plugin_matches_legacy_regression(regression_dataset):
-
     (
         x_prop_train,
         y_prop_train,
@@ -225,7 +222,6 @@ def test_factual_plugin_matches_legacy_regression(regression_dataset):
 
 
 def test_alternative_plugin_matches_legacy_regression(regression_dataset):
-
     (
         x_prop_train,
         y_prop_train,
@@ -259,7 +255,6 @@ def test_alternative_plugin_matches_legacy_regression(regression_dataset):
 
 
 def test_fast_plugin_matches_legacy_regression(regression_dataset):
-
     (
         x_prop_train,
         y_prop_train,

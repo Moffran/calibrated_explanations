@@ -9,7 +9,7 @@ def summarize():
 
     pattern_3_candidates = []
     category_a_top = []
-    
+
     with open(analysis_file, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -17,7 +17,7 @@ def summarize():
                 pattern_3_candidates.append(row)
             elif row["pattern"] == "Pattern 1 (Internal Logic Fix)":
                 category_a_top.append(row)
-                
+
     print("# Anti-Pattern Analysis Summary")
     print(f"\n## Pattern 3 (Dead Code Candidates): {len(pattern_3_candidates)}")
     print("These are defined in src/ but only called from tests. They can likely be deleted.")

@@ -17,13 +17,13 @@ from tests.helpers.model_utils import DummyLearner, DummyIntervalLearner
 from tests.helpers.utils import get_env_flag
 
 # Import additional fixtures from _fixtures module
-from ._fixtures import binary_dataset, regression_dataset, multiclass_dataset  # noqa: F401, pylint: disable=unused-import
+from tests.helpers.fixtures import binary_dataset, regression_dataset, multiclass_dataset  # noqa: F401, pylint: disable=unused-import
 
 ATTR_RE = re.compile(r"\._[A-Za-z0-9_]+")
-GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(_[A-Za-z0-9_]+)'")
+GETATTR_RE = re.compile(r"getattr\([^,]+,\s*'(_[A-Za-z0-9_]+)'\)")
 
 
-def _load_allowlist(path: Path):
+def load_allowlist(path: Path):
     if not path.exists():
         return []
     try:
@@ -33,7 +33,7 @@ def _load_allowlist(path: Path):
         return []
 
 
-def _is_expired(entry: dict) -> bool:
+def is_expired(entry: dict) -> bool:
     expiry = entry.get("expiry")
     if not expiry:
         return False
@@ -44,7 +44,7 @@ def _is_expired(entry: dict) -> bool:
         return False
 
 
-def _scan_and_check(root: Path):
+def scan_and_check(root: Path):
     tests_dir = root / "tests"
     if not tests_dir.exists():
         return []
@@ -63,18 +63,18 @@ def _scan_and_check(root: Path):
 
 def pytest_sessionstart(session):
     root = Path(session.config.rootpath)
-    findings = _scan_and_check(root)
+    findings = scan_and_check(root)
     if not findings:
         return
 
     allowlist_path = root / ".github" / "private_member_allowlist.json"
-    allowlist = _load_allowlist(allowlist_path)
+    allowlist = load_allowlist(allowlist_path)
     allowed = set()
     expired_allowed = []
     for e in allowlist:
         key = (e.get("file"), e.get("symbol"))
         if key[0] and key[1]:
-            if _is_expired(e):
+            if is_expired(e):
                 expired_allowed.append(e)
             else:
                 allowed.add(key)
@@ -140,20 +140,20 @@ def sample_limit():
 def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., CalibratedExplainer]:
     """Return a factory that builds fully initialized CalibratedExplainer instances."""
 
-    def _initialize_interval(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
+    def initialize_interval(explainer: CalibratedExplainer, *_args: Any, **_kwargs: Any) -> None:
         explainer.interval_learner = DummyIntervalLearner()
         explainer._CalibratedExplainer__initialized = True  # noqa: SLF001
 
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner",
-        _initialize_interval,
+        initialize_interval,
     )
     monkeypatch.setattr(
         "calibrated_explanations.calibration.interval_learner.initialize_interval_learner_for_fast_explainer",
-        _initialize_interval,
+        initialize_interval,
     )
 
-    def _factory(
+    def factory(
         *,
         mode: str = "classification",
         learner: Any | None = None,
@@ -172,7 +172,7 @@ def explainer_factory(monkeypatch: pytest.MonkeyPatch) -> Callable[..., Calibrat
                 y_cal = np.asarray([0.1, 0.9], dtype=float)
         return CalibratedExplainer(learner, x_cal, y_cal, mode=mode, **kwargs)
 
-    return _factory
+    return factory
 
 
 @pytest.fixture(autouse=True)

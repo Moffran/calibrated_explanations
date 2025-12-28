@@ -6,7 +6,7 @@ from calibrated_explanations.core import ValidationError
 from calibrated_explanations.plugins.base import validate_plugin_meta
 
 
-def _make_valid_meta() -> dict[str, object]:
+def make_valid_meta() -> dict[str, object]:
     """Return a minimal but valid ``plugin_meta`` payload."""
 
     return {
@@ -33,7 +33,7 @@ def test_validate_plugin_meta_rejects_non_dict():
     ],
 )
 def test_capabilities_must_be_sequence_of_strings(bad_value, message):
-    meta = _make_valid_meta()
+    meta = make_valid_meta()
     meta["capabilities"] = bad_value
 
     with pytest.raises(ValidationError, match=message):
@@ -49,7 +49,7 @@ def test_capabilities_must_be_sequence_of_strings(bad_value, message):
     ],
 )
 def test_required_scalar_fields_are_validated(key, value):
-    meta = _make_valid_meta()
+    meta = make_valid_meta()
     meta[key] = value
 
     with pytest.raises(ValidationError, match="must be a non-empty"):
@@ -57,7 +57,7 @@ def test_required_scalar_fields_are_validated(key, value):
 
 
 def test_capabilities_required():
-    meta = _make_valid_meta()
+    meta = make_valid_meta()
     meta.pop("capabilities")
 
     with pytest.raises(ValidationError, match="missing required key: capabilities"):
@@ -65,7 +65,7 @@ def test_capabilities_required():
 
 
 def test_checksum_type_is_validated():
-    meta = _make_valid_meta()
+    meta = make_valid_meta()
     meta["checksum"] = 123
 
     with pytest.raises(ValidationError, match="checksum"):
@@ -73,7 +73,7 @@ def test_checksum_type_is_validated():
 
 
 def test_trusted_must_be_boolean():
-    meta = _make_valid_meta()
+    meta = make_valid_meta()
     meta["trusted"] = "yes"
 
     with pytest.raises(ValidationError, match="must be a boolean"):
@@ -81,7 +81,7 @@ def test_trusted_must_be_boolean():
 
 
 def test_trust_mapping_is_normalised():
-    meta = _make_valid_meta()
+    meta = make_valid_meta()
     meta["trust"] = {"trusted": 1}
 
     validate_plugin_meta(meta)
@@ -90,7 +90,7 @@ def test_trust_mapping_is_normalised():
 
 
 def test_trust_scalar_is_normalised_to_boolean():
-    meta = _make_valid_meta()
+    meta = make_valid_meta()
     meta["trust"] = 0
 
     validate_plugin_meta(meta)
@@ -99,7 +99,7 @@ def test_trust_scalar_is_normalised_to_boolean():
 
 
 def test_default_trust_value_is_false():
-    meta = _make_valid_meta()
+    meta = make_valid_meta()
 
     validate_plugin_meta(meta)
 

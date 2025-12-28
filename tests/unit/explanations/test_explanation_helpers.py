@@ -184,12 +184,16 @@ class ExplainerStub:
     def is_multiclass(self):  # pragma: no cover - not exercised here
         return False
 
-    def _predict(self, data, **_kwargs):
+    def predict(self, data, **_kwargs):
         rows = data.shape[0]
         predict = np.ones((rows, 1))
         low = np.full((rows, 1), 0.5)
         high = np.full((rows, 1), 1.5)
         return predict, low, high, np.zeros(rows)
+
+    def _predict(self, data, **kwargs):
+        """Internal prediction method used by conjunctive predictions."""
+        return self.predict(data, **kwargs)
 
 
 class ContainerStub:
@@ -259,7 +263,7 @@ class SimpleExplanation(explanation_module.CalibratedExplanation):
         }
 
 
-def _make_explanation(
+def make_explanation(
     *,
     cls=SimpleExplanation,
     mode: str = "regression",
@@ -310,10 +314,10 @@ def _make_explanation(
 
 @pytest.fixture
 def simple_explanation():
-    return _make_explanation()
+    return make_explanation()
 
 
-def _build_rules_fixture(explanation):
+def build_rules_fixture(explanation):
     return {
         "rule": ["f0 <= 0.2", "f1 > 0.3"],
         "feature": [0, 1],
@@ -336,8 +340,8 @@ def _build_rules_fixture(explanation):
 
 @pytest.fixture
 def telemetry_explanation():
-    explanation = _make_explanation()
-    rules = _build_rules_fixture(explanation)
+    explanation = make_explanation()
+    rules = build_rules_fixture(explanation)
     explanation._rules = rules
     explanation.rules = rules
     explanation._has_rules = True
@@ -373,7 +377,7 @@ class StubAlternative(explanation_module.AlternativeExplanation):
 
 @pytest.fixture
 def alternative_explanation():
-    return _make_explanation(cls=StubAlternative)
+    return make_explanation(cls=StubAlternative)
 
 
 def test_prediction_interval(simple_explanation):
@@ -465,7 +469,7 @@ def test_to_python_number_handles_nested_arrays():
 
 
 def test_normalize_threshold_value_handles_sequences():
-    explanation = _make_explanation()
+    explanation = make_explanation()
     explanation.y_threshold = None
     assert explanation._normalize_threshold_value() is None
 
@@ -483,7 +487,7 @@ def test_normalize_threshold_value_handles_sequences():
 
 
 def test_build_uncertainty_payload_controls_percentiles():
-    explanation = _make_explanation()
+    explanation = make_explanation()
     payload = explanation._build_uncertainty_payload(
         value=np.array([0.6]),
         low=0.4,
@@ -527,13 +531,13 @@ def test_ignored_features_for_instance_combines_global_and_per_instance(simple_e
 
 
 def test_build_instance_uncertainty_for_modes():
-    base = _make_explanation()
+    base = make_explanation()
     payload = base._build_instance_uncertainty()
     assert payload["representation"] == "percentile"
     assert payload["raw_percentiles"] == [0.05, 0.95]
 
-    thresholded = _make_explanation(threshold=(0.2, 0.8))
-    rules = _build_rules_fixture(thresholded)
+    thresholded = make_explanation(threshold=(0.2, 0.8))
+    rules = build_rules_fixture(thresholded)
     thresholded._rules = rules
     thresholded.rules = rules
     thresholded._has_rules = True
@@ -542,14 +546,14 @@ def test_build_instance_uncertainty_for_modes():
     assert threshold_payload["threshold"] == [0.2, 0.8]
     assert threshold_payload["raw_percentiles"] is None
 
-    probabilistic = _make_explanation(mode="classification")
+    probabilistic = make_explanation(mode="classification")
     probabilistic_payload = probabilistic._build_instance_uncertainty()
     assert probabilistic_payload["representation"] == "venn_abers"
     assert probabilistic_payload["raw_percentiles"] is None
 
 
 def test_safe_feature_name_conversion():
-    explanation = _make_explanation()
+    explanation = make_explanation()
     explainer = explanation._get_explainer()
     explainer.feature_names = ["age", "height", "weight"]
     assert explanation._safe_feature_name(1) == "height"
@@ -611,8 +615,8 @@ def test_build_factual_rules_payload_serializes_rules(telemetry_explanation):
 
 
 def test_build_factual_rules_payload_threshold_representation():
-    explanation = _make_explanation(threshold=(0.2, 0.8))
-    rules = _build_rules_fixture(explanation)
+    explanation = make_explanation(threshold=(0.2, 0.8))
+    rules = build_rules_fixture(explanation)
     explanation._rules = rules
     explanation.rules = rules
     explanation._has_rules = True
@@ -643,7 +647,7 @@ def test_to_telemetry_includes_serialized_rules(telemetry_explanation):
 
 
 def test_predict_conjunctive_average():
-    explanation = _make_explanation()
+    explanation = make_explanation()
     perturbed = np.array(explanation.x_test[1], copy=True)
     predict, low, high = explanation._predict_conjunctive(
         [np.array([0.1, 0.2]), np.array([0.3, 0.4])],
@@ -660,7 +664,7 @@ def test_predict_conjunctive_average():
 def test_predict_conjunctive_requires_multiple_features():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    explanation = _make_explanation()
+    explanation = make_explanation()
     with pytest.raises(ValidationError):
         explanation._predict_conjunctive(
             [np.array([0.1])],
@@ -672,7 +676,7 @@ def test_predict_conjunctive_requires_multiple_features():
 
 
 def test_define_conditions_handles_categorical_labels():
-    explanation = _make_explanation()
+    explanation = make_explanation()
     explanation.calibrated_explanations.features_to_ignore = [1]
     explainer = explanation._get_explainer()
     explainer.categorical_features = [0]

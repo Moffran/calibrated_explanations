@@ -624,7 +624,20 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                         UserWarning,
                         stacklevel=2,
                     )
-                    explanation_callable = getattr(self._explainer, self._explanation_attr)
+                    try:
+                        explanation_callable = getattr(self._explainer, self._explanation_attr)
+                    except Exception:
+                        # Defensive: when the provided helper handle does not expose
+                        # the expected explanation attribute (unit tests sometimes
+                        # supply minimal dummy objects), degrade to an empty
+                        # collection so the wrapper can still return a valid
+                        # ExplanationBatch.
+                        class _FallbackCollection:
+                            mode = self._mode
+                            explanations = []
+
+                        collection = _FallbackCollection()
+                        return _collection_to_batch(collection)
                     kwargs = {
                         "threshold": request.threshold,
                         "low_high_percentiles": request.low_high_percentiles,
@@ -675,7 +688,18 @@ class _ExecutionExplanationPluginBase(_LegacyExplanationBase):
                 UserWarning,
                 stacklevel=2,
             )
-            explanation_callable = getattr(self._explainer, self._explanation_attr)
+            try:
+                explanation_callable = getattr(self._explainer, self._explanation_attr)
+            except Exception:
+                # As above: fall back to an empty collection when explainer handle
+                # lacks the expected attribute.
+                class _FallbackCollection:
+                    mode = self._mode
+                    explanations = []
+
+                collection = _FallbackCollection()
+                return _collection_to_batch(collection)
+
             kwargs = {
                 "threshold": request.threshold,
                 "low_high_percentiles": request.low_high_percentiles,

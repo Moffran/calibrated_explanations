@@ -9,7 +9,7 @@ def load_analysis(analysis_file):
     analysis_data = {}
     if not os.path.exists(analysis_file):
         return analysis_data
-    
+
     try:
         with open(analysis_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -24,7 +24,7 @@ def get_category_and_pattern(name, usage_file, analysis_data):
     category = "Unknown"
     pattern = "Unknown"
     message = ""
-    
+
     # Heuristic for Category D: Factory/Setup Bypass
     if name.startswith("_from_config") or name.endswith("_from_config"):
         category = "Category D: Factory/Setup Bypass"
@@ -35,8 +35,8 @@ def get_category_and_pattern(name, usage_file, analysis_data):
     if name in analysis_data:
         data = analysis_data[name]
         def_file = data["def_file"]
-        
-        if "src" in Path(def_file).parts:
+
+        if data.get("scope") == "library":
             if data["pattern"] == "Pattern 3 (Dead Code Candidate)":
                 category = "Category A/C candidate"
                 pattern = "Pattern 3 (Dead Code Fix)"
@@ -51,25 +51,24 @@ def get_category_and_pattern(name, usage_file, analysis_data):
             pattern = "Pattern 2 (Test Utility Fix)"
             message = f"Defined in {def_file}"
     else:
-        # If not in analysis_data (which only scans src/), it's likely defined in tests/
-        # but let's be careful. It might be an external lib or dynamic.
+        # If not in analysis_data
         if "_fixtures" in usage_file or "conftest" in usage_file:
              category = "Category B: Test Utilities"
              pattern = "Pattern 2 (Test Utility Fix)"
         else:
-            message = "Could not find definition in src/. Might be defined in tests/ or dynamic."
-            # We can't be sure without more analysis, but usually private methods 
+            message = "Could not find definition in analysis data."
+            # We can't be sure without more analysis, but usually private methods
             # used in tests that aren't in src/ are test helpers.
             category = "Category B: Test Utilities (Likely)"
             pattern = "Pattern 2 (Test Utility Fix)"
-        
+
     return category, pattern, message
 
 
 def scan_workspace(root_path, analysis_data):
     root = Path(root_path)
     skip_dirs = {".ci-env", "venv", ".venv", ".git", "site-packages", "__pycache__", "build", "dist"}
-    
+
     test_files = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in skip_dirs]
@@ -87,7 +86,7 @@ def scan_workspace(root_path, analysis_data):
             continue
 
         rel_path = str(p.relative_to(root))
-        
+
         for node in ast.walk(tree):
             name = None
             type_str = ""
@@ -127,7 +126,7 @@ def main():
     parser.add_argument("roots", nargs="*", default=["."], help="Root directories to scan.")
     parser.add_argument("--output", default="reports/private_usage_scan.csv", help="Output CSV file.")
     parser.add_argument("--analysis", help="Path to private_method_analysis.csv.")
-    
+
     args = parser.parse_args()
 
     analysis_file = args.analysis or os.path.join(args.roots[0], "reports", "private_method_analysis.csv")
@@ -140,7 +139,7 @@ def main():
         all_data.extend(data)
 
     print(f"\nFound {len(all_data)} occurrences.")
-    
+
     # Write detailed CSV
     out_file = args.output
     Path(out_file).parent.mkdir(exist_ok=True, parents=True)
@@ -151,7 +150,7 @@ def main():
         writer.writerows(all_data)
 
     print(f"\nDetailed report written to {out_file}")
-    
+
     # Summary by Category
     cat_counts = collections.Counter(d["category"] for d in all_data)
     print("\nUsages by Category:")

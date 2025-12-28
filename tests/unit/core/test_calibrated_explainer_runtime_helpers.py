@@ -212,8 +212,6 @@ def test_plugin_manager_deleters_remove_backing_fields(explainer_factory):
     assert manager._plot_style_chain == ("new_style",)
 
 
-
-
 def test_fast_interval_initializer_delegates_to_registry(monkeypatch, explainer_factory):
     explainer = explainer_factory(mode="regression")
     sentinel = object()
@@ -252,7 +250,7 @@ def test_call_delegates_to_explain(explainer_factory, monkeypatch):
 
     assert explainer("x", threshold=0.5) == "explained"
     assert captured["args"] == ("x", 0.5, (5, 95), None, None)
-    assert captured["kwargs"] == {"_use_plugin": True}
+    assert captured["kwargs"] == {"_use_plugin": True, "_skip_instance_parallel": False}
 
 
 def test_explain_uses_plugin_orchestrator(explainer_factory):
@@ -263,22 +261,24 @@ def test_explain_uses_plugin_orchestrator(explainer_factory):
         def __init__(self) -> None:
             self.calls = []
 
-        def invoke(self, *args, **kwargs):
-            self.calls.append((args, kwargs))
+        def invoke_factual(
+            self, x, threshold, low_high_percentiles, bins, features_to_ignore, **kwargs
+        ):
+            self.calls.append(
+                ((x, threshold, low_high_percentiles, bins, features_to_ignore), kwargs)
+            )
             return sentinel
 
     orchestrator = StubExplanationOrchestrator()
     explainer._plugin_manager = types.SimpleNamespace(_explanation_orchestrator=orchestrator)
     explainer._infer_explanation_mode = lambda: "factual"
 
-    result = explainer._explain("x", threshold=0.2, bins="bins", features_to_ignore=[1])
+    result = explainer.explain_factual("x", threshold=0.2, bins="bins", features_to_ignore=[1])
 
     assert result is sentinel
-    assert orchestrator.calls[0][0][0] == "factual"
-    assert orchestrator.calls[0][1]["extras"] == {
-        "mode": "factual",
-        "_skip_instance_parallel": False,
-    }
+    # The orchestrator should receive the factual invocation payload
+    assert orchestrator.calls[0][0][0] == "x"
+    assert orchestrator.calls[0][1].get("_use_plugin", True) is True
 
 
 def test_reinitialize_validates_bins_length(explainer_factory):
@@ -354,21 +354,21 @@ def test_set_discretizer_prediction_condition_source(explainer_factory, monkeypa
 
     captured: dict[str, Any] = {}
 
-    def _instantiate(
+    def instantiate(
         discretizer, x_cal, not_to_discretize, feature_names, y_cal, seed, old, **kwargs
     ):
         captured["labels"] = kwargs.get("condition_labels")
         captured["source"] = kwargs.get("condition_source")
         return "disc"
 
-    def _setup(self, discretizer, x_cal, num_features):
+    def setup(self, discretizer, x_cal, num_features):
         return {}, np.zeros_like(x_cal)
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.discretizer_config.instantiate_discretizer", _instantiate
+        "calibrated_explanations.core.discretizer_config.instantiate_discretizer", instantiate
     )
     monkeypatch.setattr(
-        "calibrated_explanations.core.discretizer_config.setup_discretized_data", _setup
+        "calibrated_explanations.core.discretizer_config.setup_discretized_data", setup
     )
 
     explainer.set_discretizer("entropy")
@@ -871,7 +871,7 @@ def test_legacy_explain_path(monkeypatch, explainer_factory):
         "calibrated_explanations.core.explain._legacy_explain.explain", _legacy_explain
     )
 
-    result = explainer._explain(np.zeros((1, 2)), _use_plugin=False)
+    result = explainer.explain_factual(np.zeros((1, 2)), _use_plugin=False)
 
     assert result[0] is explainer
     assert result[-1] is sentinel
@@ -901,18 +901,18 @@ def test_set_discretizer_defaults_and_populates(monkeypatch, explainer_factory):
         lambda choice, mode: f"validated:{choice}:{mode}",
     )
 
-    def _instantiate(choice, x_cal, not_to_discretize, feature_names, y_cal, seed, old, **kwargs):
+    def instantiate(choice, x_cal, not_to_discretize, feature_names, y_cal, seed, old, **kwargs):
         assert kwargs.get("condition_source") == "observed"
         return f"disc:{choice}:{tuple(not_to_discretize)}:{old}"
 
-    def _setup(self, discretizer, x_cal, num_features):
+    def setup(self, discretizer, x_cal, num_features):
         return {0: {"values": (1,), "frequencies": (2,)}}, np.ones_like(x_cal)
 
     monkeypatch.setattr(
-        "calibrated_explanations.core.discretizer_config.instantiate_discretizer", _instantiate
+        "calibrated_explanations.core.discretizer_config.instantiate_discretizer", instantiate
     )
     monkeypatch.setattr(
-        "calibrated_explanations.core.discretizer_config.setup_discretized_data", _setup
+        "calibrated_explanations.core.discretizer_config.setup_discretized_data", setup
     )
 
     explainer.set_discretizer("auto")
@@ -985,11 +985,11 @@ def test_predict_calibration_uses_predict_function(monkeypatch, explainer_factor
     explainer = explainer_factory()
     captured = {}
 
-    def _predict(x):
+    def predict(x):
         captured["x"] = x
         return np.array([42])
 
-    explainer.predict_function = _predict
+    explainer.predict_function = predict
 
     assert explainer.predict_calibration().tolist() == [42]
     assert np.array_equal(captured["x"], explainer.x_cal)

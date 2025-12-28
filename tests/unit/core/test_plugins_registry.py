@@ -292,7 +292,7 @@ def test_register_explanation_plugin_schema_version_future():
         registry.register_explanation_plugin("future", FuturePlugin())
 
 
-def _make_entry_plugin(name: str = "tests.entry"):
+def make_entry_plugin(name: str = "tests.entry"):
     class EntryPlugin:
         plugin_meta = {
             "schema_version": 1,
@@ -318,7 +318,7 @@ def test_load_entrypoint_plugins_skips_untrusted(monkeypatch):
     registry.clear_trust_warnings()
     registry.clear_env_trust_cache()
 
-    plugin = _make_entry_plugin()
+    plugin = make_entry_plugin()
     fake_entries = FakeEntryPoints([FakeEntryPoint(plugin)])
     monkeypatch.setattr(
         registry.importlib_metadata,
@@ -339,7 +339,7 @@ def test_load_entrypoint_plugins_trusted_by_env(monkeypatch):
     monkeypatch.setenv("CE_TRUST_PLUGIN", "tests.entry")
     registry.clear_env_trust_cache()
 
-    plugin = _make_entry_plugin()
+    plugin = make_entry_plugin()
     fake_entries = FakeEntryPoints([FakeEntryPoint(plugin)])
     monkeypatch.setattr(
         registry.importlib_metadata,
@@ -942,7 +942,7 @@ def test_load_entrypoint_plugins_error_branches(monkeypatch):
 
         def load(self):
             if self._loader is not None:
-                return self._loader()
+                return self.loader()
             module = importlib.import_module(self.module)
             return getattr(module, self.attr)
 

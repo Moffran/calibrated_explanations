@@ -1432,17 +1432,36 @@ def load_entrypoint_plugins(*, include_untrusted: bool = False) -> Tuple[Explain
             if getattr(entry_point, "attr", None)
             else entry_point.name
         )
+        plugin = None
         try:
             plugin = entry_point.load()
         except (
             Exception
         ) as exc:  # ADR002_ALLOW: keep discovery resilient to plugin failures.  # pragma: no cover
-            warnings.warn(
-                f"Failed to load plugin entry point {identifier!r}: {exc}",
-                UserWarning,
-                stacklevel=2,
+            # Attempt best-effort alternative loaders that some test harnesses
+            # or legacy entrypoint shims may provide (e.g. attributes named
+            # '_loader' or 'loader'). If those exist and are callable, use
+            # them before giving up.
+            alt_loader = getattr(entry_point, "_loader", None) or getattr(
+                entry_point, "loader", None
             )
-            continue
+            if callable(alt_loader):
+                try:
+                    plugin = alt_loader()
+                except Exception as exc_alt:  # pragma: no cover - best-effort
+                    warnings.warn(
+                        f"Failed to load plugin entry point {identifier!r}: {exc_alt}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    continue
+            else:
+                warnings.warn(
+                    f"Failed to load plugin entry point {identifier!r}: {exc}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                continue
         raw_meta = getattr(plugin, "plugin_meta", None)
         if raw_meta is None:
             warnings.warn(

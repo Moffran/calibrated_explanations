@@ -60,11 +60,11 @@ def _serialize_regression(exp):
     }
 
 
-def _write_if_missing(path, payload):
+def write_if_missing(path, payload):
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
 
 
-def _approx_equal(a, b):
+def approx_equal(a, b):
     if a is None or b is None:
         return a == b
     if isinstance(a, list) and isinstance(b, list):
@@ -93,14 +93,14 @@ def test_golden_classification():
     factual = explainer.explain_factual(x_cal[:5])
     payload = _serialize_classification(factual)
     if not CLASS_FILE.exists():
-        _write_if_missing(CLASS_FILE, payload)
+        write_if_missing(CLASS_FILE, payload)
         warnings.warn("Golden classification fixture created; re-run tests.")
         return
     golden = json.loads(CLASS_FILE.read_text())
     # Compare keys & values
     assert golden.keys() == payload.keys()
     for k in golden:
-        assert _approx_equal(golden[k], payload[k]), f"Mismatch in field {k}"
+        assert approx_equal(golden[k], payload[k]), f"Mismatch in field {k}"
 
 
 def test_golden_regression():
@@ -115,10 +115,10 @@ def test_golden_regression():
     factual = explainer.explain_factual(x_cal[:5])
     payload = _serialize_regression(factual)
     if not REG_FILE.exists():
-        _write_if_missing(REG_FILE, payload)
+        write_if_missing(REG_FILE, payload)
         warnings.warn("Golden regression fixture created; re-run tests.")
         return
     golden = json.loads(REG_FILE.read_text())
     assert golden.keys() == payload.keys()
     for k in golden:
-        assert _approx_equal(golden[k], payload[k]), f"Mismatch in field {k}"
+        assert approx_equal(golden[k], payload[k]), f"Mismatch in field {k}"

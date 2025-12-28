@@ -41,7 +41,7 @@ class SentinelExplainer:
         return (args, kwargs)
 
 
-def _make_interval_context(**overrides):
+def make_interval_context(**overrides):
     base = {
         "learner": "learner",
         "calibration_splits": [("x_cal", "y_cal")],
@@ -55,7 +55,7 @@ def _make_interval_context(**overrides):
     return IntervalCalibratorContext(**base)
 
 
-def _make_explanation_context(explainer, predict_bridge, **overrides):
+def make_explanation_context(explainer, predict_bridge, **overrides):
     context = {
         "task": "classification",
         "mode": "factual",
@@ -168,7 +168,7 @@ def test_interval_calibrator_create_for_regression(monkeypatch):
     interval_module.IntervalRegressor = DummyIntervalRegressor
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "regression", "explainer": object()},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
@@ -193,7 +193,7 @@ def test_interval_calibrator_create_for_classification(monkeypatch):
     class Explainer:
         predict_function = "sentinel"
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "classification", "explainer": Explainer()},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
@@ -208,7 +208,7 @@ def test_interval_calibrator_requires_predict_function(monkeypatch):
     venn_module.VennAbers = object
     monkeypatch.setitem(sys.modules, venn_module.__name__, venn_module)
 
-    context = _make_interval_context(
+    context = make_interval_context(
         metadata={"task": "classification"},
     )
     plugin = builtins.LegacyIntervalCalibratorPlugin()
@@ -221,7 +221,7 @@ def test_interval_calibrator_requires_explainer_for_regression(monkeypatch):
     interval_module.IntervalRegressor = object
     monkeypatch.setitem(sys.modules, interval_module.__name__, interval_module)
 
-    context = _make_interval_context(metadata={"task": "regression"})
+    context = make_interval_context(metadata={"task": "regression"})
     plugin = builtins.LegacyIntervalCalibratorPlugin()
     with pytest.raises(NotFittedError):
         plugin.create(context)
@@ -235,7 +235,7 @@ def test_explanation_plugin_requires_initialisation():
 
 def test_explanation_initialise_requires_explainer():
     plugin = builtins.LegacyFactualExplanationPlugin()
-    context = _make_explanation_context(
+    context = make_explanation_context(
         explainer=None, predict_bridge=builtins.LegacyPredictBridge(SentinelExplainer([1]))
     )
     with pytest.raises(NotFittedError):
@@ -273,7 +273,7 @@ def test_explanation_batch_adapts_legacy_collection(monkeypatch):
 
     explainer = DummyExplainer()
     plugin = builtins.LegacyFactualExplanationPlugin()
-    context = _make_explanation_context(
+    context = make_explanation_context(
         explainer=explainer, predict_bridge=DummyBridge(), task="classification"
     )
     plugin.initialize(context)

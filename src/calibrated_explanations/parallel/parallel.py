@@ -699,5 +699,12 @@ class ParallelExecutor:
                 raise
             logger.debug("Parallel telemetry callback failed for %s: %s", event, exc)
 
+    def emit(self, event: str, payload: Mapping[str, Any]) -> None:
+        """Public wrapper for emitting telemetry events (tests expect `emit`).
+
+        Calls the guarded internal `_emit` helper.
+        """
+        self._emit(event, payload)
+
 
 __all__ = ["ParallelConfig", "ParallelExecutor", "ParallelMetrics"]

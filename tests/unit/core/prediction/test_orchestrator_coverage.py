@@ -65,7 +65,7 @@ def test_predict_caching(orchestrator, mock_explainer):
     mock_cache.get.return_value = "cached_result"
     mock_explainer._perf_cache = mock_cache
 
-    result = orchestrator._predict(x)
+    result = orchestrator.predict(x)
     assert result == "cached_result"
     mock_cache.get.assert_called_once()
 
@@ -80,7 +80,7 @@ def test_predict_caching_miss(orchestrator, mock_explainer):
     with patch.object(orchestrator, "_predict_impl") as mock_impl:
         mock_impl.return_value = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
 
-        result = orchestrator._predict(x)
+        result = orchestrator.predict(x)
 
         mock_cache.get.assert_called_once()
         mock_impl.assert_called_once()
@@ -777,7 +777,7 @@ def test_predict_no_cache(orchestrator, mock_explainer):
     with patch.object(orchestrator, "_predict_impl") as mock_impl:
         mock_impl.return_value = (np.array([0.5]), np.array([0.4]), np.array([0.6]), None)
 
-        result = orchestrator._predict(x)
+        result = orchestrator.predict(x)
 
         mock_impl.assert_called_once()
         assert result == mock_impl.return_value

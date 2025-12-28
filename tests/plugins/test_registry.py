@@ -12,7 +12,7 @@ from calibrated_explanations.plugins import (
 )
 
 
-def _base_metadata() -> dict:
+def base_metadata() -> dict:
     return {
         "name": "test",
         "schema_version": 1,
@@ -25,7 +25,7 @@ def _base_metadata() -> dict:
 
 
 def test_validate_allows_canonical_modes() -> None:
-    meta = _base_metadata()
+    meta = base_metadata()
 
     normalised = validate_explanation_metadata(meta)
 
@@ -33,7 +33,7 @@ def test_validate_allows_canonical_modes() -> None:
 
 
 def test_validate_alias_emits_warning_and_normalises() -> None:
-    meta = _base_metadata()
+    meta = base_metadata()
     meta["modes"] = ("explanation:factual", "factual")
 
     with warnings.catch_warnings(record=True) as caught:
@@ -54,7 +54,7 @@ def test_validate_alias_emits_warning_and_normalises() -> None:
     ),
 )
 def test_dependency_fields_are_normalised(field: str, value, expected) -> None:
-    meta = _base_metadata()
+    meta = base_metadata()
     meta[field] = value
 
     normalised = validate_explanation_metadata(meta)
@@ -65,14 +65,14 @@ def test_dependency_fields_are_normalised(field: str, value, expected) -> None:
 def test_tasks_field_required_and_validated() -> None:
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    meta = _base_metadata()
+    meta = base_metadata()
     meta["tasks"] = ("classification", "regression")
 
     normalised = validate_explanation_metadata(meta)
 
     assert normalised["tasks"] == ("classification", "regression")
 
-    meta_invalid = _base_metadata()
+    meta_invalid = base_metadata()
     meta_invalid["tasks"] = ("unknown",)
 
     with pytest.raises(ValidationError):
@@ -82,7 +82,7 @@ def test_tasks_field_required_and_validated() -> None:
 def test_schema_version_future_rejected() -> None:
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    meta = _base_metadata()
+    meta = base_metadata()
     meta["schema_version"] = 999
 
     with pytest.raises(ValidationError) as exc:
@@ -107,7 +107,7 @@ def test_list_descriptors_respects_trust_state() -> None:
 def test_validate_explanation_metadata_invalid_modes():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    meta = _base_metadata()
+    meta = base_metadata()
     meta["modes"] = ("invalid_mode",)
 
     with pytest.raises(ValidationError, match="unsupported values"):
@@ -117,7 +117,7 @@ def test_validate_explanation_metadata_invalid_modes():
 def test_validate_explanation_metadata_no_modes():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    meta = _base_metadata()
+    meta = base_metadata()
     del meta["modes"]
 
     with pytest.raises(ValidationError, match="plugin_meta missing required key: modes"):
@@ -127,7 +127,7 @@ def test_validate_explanation_metadata_no_modes():
 def test_validate_explanation_metadata_missing_trust():
     from calibrated_explanations.utils.exceptions import ValidationError
 
-    meta = _base_metadata()
+    meta = base_metadata()
     del meta["trust"]
 
     with pytest.raises(ValidationError, match="missing required key: trust"):

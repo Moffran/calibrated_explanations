@@ -207,7 +207,7 @@ def test_cache_config_from_env_parses_tokens(monkeypatch: pytest.MonkeyPatch) ->
 def test_cache_forksafe_reset_clears_state_and_emits_telemetry() -> None:
     events: list[tuple[str, dict[str, object]]] = []
 
-    def _telemetry(event: str, payload: dict[str, object]) -> None:
+    def telemetry(event: str, payload: dict[str, object]) -> None:
         events.append((event, payload))
 
     cache = LRUCache[str, str](
@@ -216,7 +216,7 @@ def test_cache_forksafe_reset_clears_state_and_emits_telemetry() -> None:
         max_items=4,
         max_bytes=64,
         ttl_seconds=None,
-        telemetry=_telemetry,
+        telemetry=telemetry,
         size_estimator=lambda value: len(value.encode("utf8")),
     )
 
@@ -275,7 +275,7 @@ def test_cache_round_trips_none_values() -> None:
 
 
 def test_cache_telemetry_errors_do_not_raise() -> None:
-    def _noisy(event: str, payload: dict[str, object]) -> None:
+    def noisy(event: str, payload: dict[str, object]) -> None:
         raise RuntimeError(f"fail {event} {payload}")
 
     cache = LRUCache[str, int](
@@ -284,7 +284,7 @@ def test_cache_telemetry_errors_do_not_raise() -> None:
         max_items=2,
         max_bytes=None,
         ttl_seconds=None,
-        telemetry=_noisy,
+        telemetry=noisy,
         size_estimator=lambda _: 1,
     )
 

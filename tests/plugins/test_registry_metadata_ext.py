@@ -25,7 +25,7 @@ def _isolate_registry(monkeypatch):
     yield
 
 
-def _base_meta(**extra):
+def base_meta(**extra):
     meta = {
         "schema_version": 1,
         "name": "tests.meta",
@@ -163,7 +163,7 @@ def test_normalise_tasks_requires_known_values():
 
 
 def test_validate_explanation_metadata_requires_trust_key():
-    meta = _base_meta(
+    meta = base_meta(
         modes=("factual",),
         tasks=("classification",),
         dependencies=(),
@@ -173,8 +173,8 @@ def test_validate_explanation_metadata_requires_trust_key():
         registry.validate_explanation_metadata(meta)
 
 
-def _interval_meta(**extra):
-    return _base_meta(
+def interval_meta(**extra):
+    return base_meta(
         capabilities=["interval"],
         modes=("classification",),
         dependencies=(),
@@ -187,10 +187,10 @@ def _interval_meta(**extra):
 
 
 def test_validate_interval_metadata_handles_trust(monkeypatch):
-    meta = _interval_meta()
+    meta = interval_meta()
     registry.validate_interval_metadata(meta)
 
-    meta_with_trusted = _interval_meta(trusted=True)
+    meta_with_trusted = interval_meta(trusted=True)
     registry.validate_interval_metadata(meta_with_trusted)
     assert meta_with_trusted["trust"] is True
 
@@ -199,8 +199,8 @@ def test_validate_interval_metadata_handles_trust(monkeypatch):
         registry.validate_interval_metadata(meta_with_trusted)
 
 
-def _plot_builder_meta(**extra):
-    return _base_meta(
+def plot_builder_meta(**extra):
+    return base_meta(
         capabilities=["plot"],
         style="fancy",
         dependencies=(),
@@ -212,10 +212,10 @@ def _plot_builder_meta(**extra):
 
 
 def test_validate_plot_builder_and_renderer_metadata():
-    builder_meta = _plot_builder_meta()
+    builder_meta = plot_builder_meta()
     registry.validate_plot_builder_metadata(builder_meta)
 
-    renderer_meta = _base_meta(
+    renderer_meta = base_meta(
         capabilities=["plot"],
         dependencies=(),
         output_formats=("png",),
@@ -231,7 +231,7 @@ def test_validate_plot_builder_and_renderer_metadata():
 
 
 def test_validate_plot_builder_accepts_default_renderer():
-    meta = _plot_builder_meta(default_renderer="core.plot.legacy")
+    meta = plot_builder_meta(default_renderer="core.plot.legacy")
     validated = registry.validate_plot_builder_metadata(meta)
     assert validated.get("default_renderer") == "core.plot.legacy"
 
@@ -490,7 +490,7 @@ def test_list_plot_builder_descriptors_filters_trusted(monkeypatch):
 
 def test_register_explanation_plugin_invalid_identifier():
     class Plugin:
-        plugin_meta = _base_meta()
+        plugin_meta = base_meta()
 
     with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_explanation_plugin("", Plugin())
@@ -514,7 +514,7 @@ def test_register_explanation_plugin_invalid_metadata():
 
 def test_register_interval_plugin_invalid_identifier():
     class Plugin:
-        plugin_meta = _base_meta(capabilities=["interval"])
+        plugin_meta = base_meta(capabilities=["interval"])
 
     with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_interval_plugin("", Plugin())
@@ -522,21 +522,21 @@ def test_register_interval_plugin_invalid_identifier():
 
 def test_register_plot_builder_invalid_identifier():
     class Plugin:
-        plugin_meta = _base_meta(capabilities=["plot"])
+        plugin_meta = base_meta(capabilities=["plot"])
 
     with pytest.raises(ValidationError, match="identifier must be a non-empty string"):
         registry.register_plot_builder("", Plugin())
 
 
 def test_validate_interval_metadata_missing_modes():
-    meta = _base_meta(capabilities=["interval"])
+    meta = base_meta(capabilities=["interval"])
 
     with pytest.raises(ValidationError, match="plugin_meta missing required key: modes"):
         registry.validate_interval_metadata(meta)
 
 
 def test_validate_interval_metadata_invalid_modes():
-    meta = _base_meta(capabilities=["interval"])
+    meta = base_meta(capabilities=["interval"])
     meta["modes"] = ("invalid",)
 
     with pytest.raises(ValidationError):
@@ -544,7 +544,7 @@ def test_validate_interval_metadata_invalid_modes():
 
 
 def test_validate_interval_metadata_missing_capabilities():
-    meta = _base_meta(capabilities=["interval"])
+    meta = base_meta(capabilities=["interval"])
     del meta["capabilities"]
 
     with pytest.raises(ValidationError):
@@ -552,7 +552,7 @@ def test_validate_interval_metadata_missing_capabilities():
 
 
 def test_validate_plot_builder_metadata_missing_capabilities():
-    meta = _base_meta(capabilities=["plot"])
+    meta = base_meta(capabilities=["plot"])
     del meta["capabilities"]
 
     with pytest.raises(ValidationError):

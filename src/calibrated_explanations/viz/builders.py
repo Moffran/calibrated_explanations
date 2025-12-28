@@ -73,8 +73,6 @@ def is_valid_probability_values(*values: float) -> bool:
     return all(-tol <= v <= 1.0 + tol for v in finite)
 
 
-
-
 def _ensure_indexable_length(name: str, seq: Sequence[Any] | None, *, max_index: int) -> None:
     """Ensure ``seq`` can satisfy ``max_index`` when provided.
 

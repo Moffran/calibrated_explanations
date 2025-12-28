@@ -408,7 +408,7 @@ def test_emit_with_telemetry(monkeypatch):
 
     config = ParallelConfig(enabled=True, telemetry=telemetry)
     executor = ParallelExecutor(config)
-    executor._emit("test", {"value": 1})
+    executor.emit("test", {"value": 1})
     assert events == [("test", {"value": 1})]
 
     def broken(event, payload):
@@ -416,7 +416,7 @@ def test_emit_with_telemetry(monkeypatch):
 
     config = ParallelConfig(enabled=True, telemetry=broken)
     executor = ParallelExecutor(config)
-    executor._emit("test", {"value": 2})  # should not raise
+    executor.emit("test", {"value": 2})  # should not raise
 
 
 def test_parallel_executor_context_manager_initializes_and_cleans_up(monkeypatch):
@@ -551,7 +551,7 @@ def test_parallel_executor_joblib_pool_reuse(monkeypatch):
     assert executor._pool is None
 
 
-def _fake_path_factory(entries: dict[str, str]):
+def fake_path_factory(entries: dict[str, str]):
     class FakePath:
         def __init__(self, path: str):
             self.path = path
@@ -573,7 +573,7 @@ def _fake_path_factory(entries: dict[str, str]):
 
 def test_get_cgroup_cpu_quota_reads_v2(monkeypatch):
     entries = {"/sys/fs/cgroup/cpu.max": "200000 100000"}
-    fake_path = _fake_path_factory(entries)
+    fake_path = fake_path_factory(entries)
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel.Path",
         fake_path,
@@ -593,7 +593,7 @@ def test_get_cgroup_cpu_quota_reads_v1(monkeypatch):
         "/sys/fs/cgroup/cpu/cpu.cfs_quota_us": "500000",
         "/sys/fs/cgroup/cpu/cpu.cfs_period_us": "100000",
     }
-    fake_path = _fake_path_factory(entries)
+    fake_path = fake_path_factory(entries)
     monkeypatch.setattr(
         "calibrated_explanations.parallel.parallel.Path",
         fake_path,

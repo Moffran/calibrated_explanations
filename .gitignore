@@ -198,7 +198,5 @@ docs/improvement/archived/
 .ci-env/
 .github/private_member_allowlist.json
 scripts/private_usage_report.csv
-.github/private_member_allowlist.json.bak
-unit_test_output.txt
-legacy_plotting_output.txt
 reports/private_usage_scan.csv
+reports/test_anti_pattern_report.csv

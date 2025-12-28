@@ -69,7 +69,7 @@ class StubExplainer:
         self._fast = fast
         self._multiclass = multiclass
         self.x_cal = np.zeros((2, num_features))
-        self.interval_learner = self._build_interval_learner()
+        self.interval_learner = self.build_interval_learner()
         self._learner = (
             self.interval_learner[0]
             if isinstance(self.interval_learner, list)
@@ -78,7 +78,7 @@ class StubExplainer:
         self.predict_calls: list = []
         self.discretizer = None  # Required by explain_predict_step
 
-    def _build_interval_learner(self):
+    def build_interval_learner(self):
         class Learner:
             def __init__(self, *, as_list: bool) -> None:
                 self.as_list = as_list
@@ -104,7 +104,7 @@ class StubExplainer:
     def is_fast(self) -> bool:  # noqa: D401 - protocol implementation
         return self._fast
 
-    def _predict(self, x, **kwargs):  # noqa: D401 - protocol implementation
+    def predict(self, x, **kwargs):  # noqa: D401 - protocol implementation
         self.predict_calls.append((np.asarray(x), kwargs))
         size = np.asarray(x).shape[0]
         classes = np.arange(size) if self._multiclass else np.zeros(size, dtype=int)
@@ -115,7 +115,11 @@ class StubExplainer:
             classes,
         )
 
-    def _discretize(self, x):  # noqa: D401 - protocol implementation
+    def _predict(self, *args, **kwargs):
+        """Internal alias for predict."""
+        return self.predict(*args, **kwargs)
+
+    def discretize(self, x):  # noqa: D401 - protocol implementation
         return np.asarray(x) + 1
 
     def rule_boundaries(self, x, x_perturbed):  # noqa: D401 - protocol implementation
